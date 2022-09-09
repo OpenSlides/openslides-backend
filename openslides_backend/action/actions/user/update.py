@@ -54,6 +54,7 @@ class UserUpdate(
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[
@@ -80,4 +81,4 @@ class UserUpdate(
                 )
         if instance.get("is_active") and not user.get("is_active"):
             self.check_limit_of_user(1)
-        return super().update_instance(instance)
+        return instance

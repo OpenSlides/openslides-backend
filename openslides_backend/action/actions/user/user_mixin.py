@@ -23,8 +23,7 @@ class UsernameMixin(Action):
         """
         used_usernames: List[str] = []
         for username in usernames:
-            template_username = username.replace(" ", "")
-            username = template_username
+            template_username = username
             count = 0
             while True:
                 if username in used_usernames:
@@ -68,6 +67,8 @@ class UserMixin(CheckForArchivedMeetingMixin):
             self.strip_field(field, instance)
         user_fqid = fqid_from_collection_and_id("user", instance["id"])
         if "username" in instance:
+            if not instance["username"]:
+                raise ActionException("This username is forbidden.")
             result = self.datastore.filter(
                 "user",
                 FilterOperator("username", "=", instance["username"]),
@@ -83,8 +84,6 @@ class UserMixin(CheckForArchivedMeetingMixin):
             self.check_vote_delegated__to_id(instance, user_fqid)
         if "vote_delegations_$_from_ids" in instance:
             self.check_vote_delegations__from_ids(instance, user_fqid)
-        if "username" in instance and not instance["username"].strip():
-            raise ActionException("This username is forbidden.")
         return instance
 
     def strip_field(self, field: str, instance: Dict[str, Any]) -> None:
