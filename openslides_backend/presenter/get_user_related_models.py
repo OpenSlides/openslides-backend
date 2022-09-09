@@ -14,7 +14,7 @@ from ..permissions.permission_helper import (
 )
 from ..permissions.permissions import Permissions
 from ..services.datastore.commands import GetManyRequest
-from ..shared.exceptions import MissingPermission
+from ..shared.exceptions import MissingPermission, PresenterException
 from ..shared.filters import And, FilterOperator
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
@@ -119,6 +119,10 @@ class GetUserRelatedModels(BasePresenter):
             for committee_nr in user.get(f"committee_${level}_management_level", []):
                 if committee_nr in committees:
                     committees[committee_nr]["cml"].append(level)
+                else:
+                    raise PresenterException(
+                        f"Data error: committee/{committee_nr} is not user committee."
+                    )
         for committee_id, committee in committees.items():
             committees_data.append(
                 {
