@@ -238,7 +238,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             self.empty_if_none(user_values.get("username")),
             self.empty_if_none(user_values.get("first_name")),
             self.empty_if_none(user_values.get("last_name")),
-            self.empty_if_none(user_values.get("email")),
+            self.empty_if_none(user_values.get("email")).lower(),
         )
 
     def generate_merge_user_map(self, json_data: Dict[str, Any]) -> None:

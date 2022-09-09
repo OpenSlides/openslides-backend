@@ -761,6 +761,7 @@ class MeetingImport(BaseActionTestCase):
                             "last_name": "new user",
                             "group_$_ids": ["1"],
                             "group_$1_ids": [1],
+                            "email": "tesT@email.de",
                         },
                     ),
                 },
@@ -776,8 +777,10 @@ class MeetingImport(BaseActionTestCase):
                 "username": "user new",
                 "last_name": "new user",
                 "meeting_ids": [2],
+                'email': "tesT@email.de",
             },
         )
+        request_data["meeting"]["user"]["1"]["email"] = "Test@Email.de"
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -786,6 +789,7 @@ class MeetingImport(BaseActionTestCase):
                 "username": "user new",
                 "last_name": "new user",
                 "meeting_ids": [2, 3],
+                'email': "tesT@email.de",
             },
         )
         self.assert_model_not_exists("user/3")
