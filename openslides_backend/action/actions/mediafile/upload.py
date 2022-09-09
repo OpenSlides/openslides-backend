@@ -54,7 +54,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
                 continue
             if "token" in instance and instance["token"] is None:
                 raise ActionException("Token should not be None.")
-            if not instance.get("token"):
+            if "token" not in instance:
                 continue
             tokens.append(instance.get("token"))
             results = self.datastore.filter(
