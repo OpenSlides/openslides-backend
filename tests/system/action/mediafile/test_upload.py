@@ -102,6 +102,24 @@ class MediafileUploadActionTest(BaseActionTestCase):
         assert mediafile.get("create_timestamp", 0) >= start_time
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
+    def test_upload_orga_None_token(self) -> None:
+        self.create_model(ONE_ORGANIZATION_FQID, {})
+        filename = "fn_jumbo.txt"
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "filename": filename,
+                "file": file_content,
+                "parent_id": None,
+                "token": None,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Token should not be None."
+
     def test_create_cannot_guess_mimetype(self) -> None:
         self.create_model(
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}

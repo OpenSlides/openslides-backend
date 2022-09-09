@@ -52,6 +52,10 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             collection, _ = self.get_owner_data(instance)
             if collection != "organization":
                 continue
+            if "token" in instance and instance["token"] is None:
+                raise ActionException("Token should not be None.")
+            if not instance.get("token"):
+                continue
             tokens.append(instance.get("token"))
             results = self.datastore.filter(
                 self.model.collection,
