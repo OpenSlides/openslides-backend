@@ -1,5 +1,5 @@
 {
-    "_migration_index": 30,
+    "_migration_index": 31,
     "organization": {
         "1": {
             "id": 1,
@@ -441,7 +441,6 @@
                 3
             ],
             "motion_poll_default_backend": "fast",
-            "users_sort_by": "first_name",
             "users_enable_presence_view": true,
             "users_enable_vote_weight": false,
             "users_allow_self_set_present": true,

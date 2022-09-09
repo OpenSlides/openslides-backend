@@ -1172,14 +1172,6 @@ meeting:
     restriction_mode: B
 
   # Users
-  users_sort_by:
-    type: string
-    enum:
-      - first_name
-      - last_name
-      - number
-    default: first_name
-    restriction_mode: B
   users_enable_presence_view:
     type: boolean
     default: False

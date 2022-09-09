@@ -112,7 +112,6 @@ meeting_settings_keys = [
     "motion_poll_default_100_percent_base",
     "motion_poll_default_group_ids",
     "motion_poll_default_backend",
-    "users_sort_by",
     "users_enable_presence_view",
     "users_enable_vote_weight",
     "users_allow_self_set_present",
