@@ -777,7 +777,7 @@ class MeetingImport(BaseActionTestCase):
                 "username": "user new",
                 "last_name": "new user",
                 "meeting_ids": [2],
-                'email': "tesT@email.de",
+                "email": "tesT@email.de",
             },
         )
         request_data["meeting"]["user"]["1"]["email"] = "Test@Email.de"
@@ -789,7 +789,7 @@ class MeetingImport(BaseActionTestCase):
                 "username": "user new",
                 "last_name": "new user",
                 "meeting_ids": [2, 3],
-                'email': "tesT@email.de",
+                "email": "tesT@email.de",
             },
         )
         self.assert_model_not_exists("user/3")
