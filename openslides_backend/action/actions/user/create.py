@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict
 
 from ....models.models import User
@@ -57,6 +58,7 @@ class UserCreate(
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
         if instance.get("is_active"):
             self.check_limit_of_user(1)
         if not (
@@ -72,9 +74,15 @@ class UserCreate(
             instance = self.generate_and_set_password(instance)
         else:
             instance = self.set_password(instance)
-        return super().update_instance(instance)
+        return instance
 
     def generate_username(self, instance: Dict[str, Any]) -> str:
         return self.generate_usernames(
-            [instance.get("first_name", "") + instance.get("last_name", "")]
+            [
+                re.sub(
+                    r"\W",
+                    "",
+                    instance.get("first_name", "") + instance.get("last_name", ""),
+                )
+            ]
         )[0]

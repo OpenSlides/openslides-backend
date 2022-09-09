@@ -742,11 +742,15 @@ class MeetingImport(BaseActionTestCase):
                 "meeting_ids": [2],
             },
         )
-        self.assert_model_exists("user/2", {"username": "admin1", "last_name": "admin0"})
-        self.assert_model_exists("user/3", {"username": "admin11", "last_name": "admin1"})
+        self.assert_model_exists(
+            "user/2", {"username": "admin1", "last_name": "admin0"}
+        )
+        self.assert_model_exists(
+            "user/3", {"username": "admin11", "last_name": "admin1"}
+        )
         self.assert_model_exists("group/2", {"user_ids": [1, 2], "meeting_id": 2})
 
-    def test_check_usernames_new(self) -> None:
+    def test_check_usernames_new_and_twice(self) -> None:
         request_data = self.create_request_data(
             {
                 "user": {
@@ -769,10 +773,22 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "username": "usernew",
+                "username": "user new",
                 "last_name": "new user",
+                "meeting_ids": [2],
             },
         )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "user new",
+                "last_name": "new user",
+                "meeting_ids": [2, 3],
+            },
+        )
+        self.assert_model_not_exists("user/3")
 
     def test_check_negative_default_vote_weight(self) -> None:
         request_data = self.create_request_data({})

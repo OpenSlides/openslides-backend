@@ -242,6 +242,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         )
 
     def generate_merge_user_map(self, json_data: Dict[str, Any]) -> None:
+        for entry in json_data.get("user", {}).values():
+            entry["username"] = entry["username"].strip()
         filter_ = Or(
             *[
                 FilterOperator("username", "=", entry["username"])
