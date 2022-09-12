@@ -634,7 +634,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         # add new users to the organization.user_ids
         new_user_ids = []
         for user_entry in json_data.get("user", {}).values():
-            if user_entry["id"] not in self.merge_user_map:
+            if user_entry["id"] not in self.merge_user_map.values():
                 new_user_ids.append(user_entry["id"])
 
         if new_user_ids:

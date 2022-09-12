@@ -1469,6 +1469,8 @@ class MeetingImport(BaseActionTestCase):
         assert sorted(committee2.get("user_ids", [])) == [1, 14, 15, 16]
         meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 2})
         assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15, 16]
+        organization = self.assert_model_exists("organization/1")
+        assert sorted(organization.get("user_ids", [])) == [1, 14, 15, 16]
 
     def test_merge_users_check_user_meeting_ids(self) -> None:
         self.set_models(
