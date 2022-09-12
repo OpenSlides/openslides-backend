@@ -553,6 +553,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                                 fields[field] = value
                         elif isinstance(model_field, RelationListField):
                             list_fields["add"][field] = value
+                        elif isinstance(model_field, RelationField):
+                            fields[field] = value
                     fqid = fqid_from_collection_and_id(collection, entry["id"])
                     if fields or list_fields["add"]:
                         update_events.append(
