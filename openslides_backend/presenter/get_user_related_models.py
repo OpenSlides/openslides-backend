@@ -121,7 +121,7 @@ class GetUserRelatedModels(BasePresenter):
                     committees[committee_nr]["cml"].append(level)
                 else:
                     raise PresenterException(
-                        f"Data error: committee/{committee_nr} is not user committee."
+                        f"Data error: user has rights for committee {committee_nr}, but faultily is no member of committee."
                     )
         for committee_id, committee in committees.items():
             committees_data.append(

@@ -254,4 +254,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         )
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 400)
-        assert data["message"] == "Data error: committee/2 is not user committee."
+        assert (
+            data["message"]
+            == "Data error: user has rights for committee 2, but faultily is no member of committee."
+        )
