@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 import fastjsonschema
-from datastore.shared.util import is_reserved_field
+from datastore.shared.util import strip_reserved_fields
 
 from openslides_backend.migrations import get_backend_migration_index
 
@@ -64,9 +64,6 @@ class CheckDatabaseAll(BasePresenter):
 def remove_meta_fields(res: Dict[int, Any]) -> Dict[str, Any]:
     dict_without_meta_fields = {}
     for key in res:
-        new_entry = {}
-        for fieldname in res[key]:
-            if not is_reserved_field(fieldname):
-                new_entry[fieldname] = res[key][fieldname]
-        dict_without_meta_fields[str(key)] = new_entry
+        strip_reserved_fields(res[key])
+        dict_without_meta_fields[str(key)] = res[key]
     return dict_without_meta_fields
