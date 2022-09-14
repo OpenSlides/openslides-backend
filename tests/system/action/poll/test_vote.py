@@ -1152,6 +1152,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
             {"value": {"1": [None]}, "id": 1, "user_id": 1},
         )
         self.assert_status_code(response, 400)
+        self.assertIn('decoding payload: unknown vote value: `{"1":[null]}`', response.json["message"])
         self.assert_model_not_exists("vote/1")
 
 
