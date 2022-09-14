@@ -48,11 +48,6 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("is_public") is False
 
     def test_create_directory_organization_correct(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {},
-            }
-        )
         response = self.request(
             "mediafile.create_directory",
             {

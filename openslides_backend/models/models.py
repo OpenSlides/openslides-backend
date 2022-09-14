@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "4b883bd35baa390c2883925512f6a039"
+MODELS_YML_CHECKSUM = "61126fc806bbc2179c695f9eabf12517"
 
 
 class Organization(Model):
@@ -53,6 +53,7 @@ class Organization(Model):
     mediafile_ids = fields.RelationListField(
         to={"mediafile": "owner_id"}, on_delete=fields.OnDelete.CASCADE
     )
+    user_ids = fields.RelationListField(to={"user": "organization_id"})
     users_email_sender = fields.CharField(default="OpenSlides")
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
@@ -209,6 +210,9 @@ class User(Model):
         constraints={
             "description": "Calculated. All ids from group_$_ids as integers."
         },
+    )
+    organization_id = fields.OrganizationField(
+        to={"organization": "user_ids"}, required=True
     )
 
 

@@ -574,6 +574,9 @@ class Checker:
         if self.is_structured_field(field):
             _, replacement = self.to_template_field(collection, field)
 
+        if collection == "user" and field == "organization_id":
+            return
+
         if isinstance(field_type, RelationField):
             foreign_id = model[field]
             if not foreign_id:

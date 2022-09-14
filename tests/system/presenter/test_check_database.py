@@ -234,6 +234,7 @@ class TestCheckDatabase(BasePresenterTestCase):
             "can_change_own_password": False,
             "is_physical_person": True,
             "default_vote_weight": "1.000000",
+            "organization_id": 1,
             **datapart,
         }
 
@@ -245,6 +246,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "archived_meeting_ids": [1],
                     "organization_tag_ids": [1],
                     "template_meeting_ids": [1],
+                    "user_ids": [1, 2, 3, 4, 5, 6],
                 },
                 "organization_tag/1": {
                     "name": "TEST",
@@ -310,6 +312,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "can_change_own_password": False,
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
+                    "organization_id": 1,
                 },
                 "user/2": self.get_new_user(
                     "present_user",

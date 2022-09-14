@@ -4,7 +4,6 @@ from tests.system.action.base import BaseActionTestCase
 
 class OrganizationTagCreate(BaseActionTestCase):
     def test_create(self) -> None:
-        self.set_models({ONE_ORGANIZATION_FQID: {}})
         response = self.request(
             "organization_tag.create",
             {"name": "wSvQHymN", "color": "#eeeeee", "organization_id": 1},
@@ -17,7 +16,6 @@ class OrganizationTagCreate(BaseActionTestCase):
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"organization_tag_ids": [1]})
 
     def test_create_empty_data(self) -> None:
-        self.set_models({ONE_ORGANIZATION_FQID: {}})
         response = self.request("organization_tag.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -29,7 +27,6 @@ class OrganizationTagCreate(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"organization_management_level": "can_manage_users"},
-                ONE_ORGANIZATION_FQID: {},
             }
         )
         response = self.request(
@@ -46,7 +43,6 @@ class OrganizationTagCreate(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"organization_management_level": "can_manage_organization"},
-                ONE_ORGANIZATION_FQID: {},
             }
         )
         response = self.request(

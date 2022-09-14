@@ -18,7 +18,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         assert model.get("description") == "blablabla"
 
     def test_update_some_more_fields(self) -> None:
-        self.create_model(
+        self.update_model(
             ONE_ORGANIZATION_FQID,
             {
                 "name": "aBuwxoYU",
@@ -178,7 +178,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_too_many_active_meetings(self) -> None:
-        self.create_model(
+        self.update_model(
             ONE_ORGANIZATION_FQID,
             {
                 "name": "aBuwxoYU",

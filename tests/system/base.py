@@ -18,7 +18,12 @@ from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import collection_from_fqid, id_from_fqid
-from openslides_backend.shared.util import EXAMPLE_DATA_FILE, get_initial_data_file
+from openslides_backend.shared.util import (
+    EXAMPLE_DATA_FILE,
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    get_initial_data_file,
+)
 from tests.util import AuthData, Client, Response
 
 from .util import TestVoteService
@@ -60,6 +65,14 @@ class BaseSystemTestCase(TestCase):
                 "default_password": ADMIN_PASSWORD,
                 "is_active": True,
                 "organization_management_level": "superadmin",
+                "organization_id": ONE_ORGANIZATION_ID,
+            },
+        )
+        self.create_model(
+            ONE_ORGANIZATION_FQID,
+            {
+                "name": "OpenSlides Organization",
+                "user_ids": [1],
             },
         )
         self.client = self.create_client(self.update_vote_service_auth_data)

@@ -50,7 +50,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_only_required(self) -> None:
-        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
         committee_name = "test_committee1"
 
         response = self.request(
@@ -61,7 +60,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         assert model.get("name") == committee_name
 
     def test_create_user_management_level(self) -> None:
-        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
         self.create_model("user/13", {"username": "test"})
         committee_name = "test_committee1"
 
@@ -93,7 +91,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_user_management_level_ids_with_existing_committee(self) -> None:
-        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
         self.create_model(
             "user/13",
             {
@@ -129,8 +126,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
-
         response = self.request(
             "committee.create",
             {
@@ -161,19 +156,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("committee/1")
 
-    def test_not_existing_organization(self) -> None:
-        response = self.request(
-            "committee.create", {"organization_id": 1, "name": "test_name"}
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Model 'organization/1' does not exist.",
-            response.json["message"],
-        )
-        self.assert_model_not_exists("committee/1")
-
     def test_not_existing_user(self) -> None:
-        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
 
         response = self.request(
             "committee.create",

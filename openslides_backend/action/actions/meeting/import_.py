@@ -551,10 +551,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                                 list_fields["add"][field] = value
                             else:
                                 fields[field] = value
-                        elif isinstance(
-                            model_field, (RelationListField, RelationField)
-                        ):
+                        elif isinstance(model_field, RelationListField):
                             list_fields["add"][field] = value
+                        elif isinstance(model_field, RelationField):
+                            fields[field] = value
                     fqid = fqid_from_collection_and_id(collection, entry["id"])
                     if fields or list_fields["add"]:
                         update_events.append(
@@ -627,6 +627,26 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                             f"group_${meeting_id}_ids": [
                                 self.new_group_for_request_user
                             ],
+                        },
+                        "remove": {},
+                    },
+                )
+            )
+
+        # add new users to the organization.user_ids
+        new_user_ids = []
+        for user_entry in json_data.get("user", {}).values():
+            if user_entry["id"] not in self.merge_user_map.values():
+                new_user_ids.append(user_entry["id"])
+
+        if new_user_ids:
+            events.append(
+                self.build_event(
+                    EventType.Update,
+                    ONE_ORGANIZATION_FQID,
+                    list_fields={
+                        "add": {
+                            "user_ids": new_user_ids,
                         },
                         "remove": {},
                     },

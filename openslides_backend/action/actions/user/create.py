@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
+from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -74,6 +75,7 @@ class UserCreate(
             instance = self.generate_and_set_password(instance)
         else:
             instance = self.set_password(instance)
+        instance["organization_id"] = ONE_ORGANIZATION_ID
         return instance
 
     def generate_username(self, instance: Dict[str, Any]) -> str:
