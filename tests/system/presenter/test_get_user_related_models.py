@@ -236,3 +236,25 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         )
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 403)
+
+    def test_get_user_related_models_missing_committee(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"name": "test", "user_ids": [1]},
+                "committee/2": {"name": "test2", "user_ids": [1]},
+                "committee/3": {"name": "test3", "user_ids": [1]},
+                "user/1": {
+                    "committee_ids": [1],
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
+                    "committee_$can_manage_management_level": [1, 2],
+                },
+            }
+        )
+        status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
+        self.assertEqual(status_code, 400)
+        assert (
+            data["message"]
+            == "Data error: user has rights for committee 2, but faultily is no member of committee."
+        )
