@@ -52,11 +52,15 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             collection, _ = self.get_owner_data(instance)
             if collection != "organization":
                 continue
+            if "token" in instance and instance["token"] is None:
+                raise ActionException("Token should not be None.")
+            if "token" not in instance:
+                continue
             tokens.append(instance.get("token"))
             results = self.datastore.filter(
                 self.model.collection,
                 And(
-                    FilterOperator("token", "=", instance["token"]),
+                    FilterOperator("token", "=", instance.get("token")),
                     FilterOperator(
                         "owner_id", "=", "organization" + KEYSEPARATOR + "1"
                     ),
@@ -69,7 +73,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
                 id = next(iter(results))
                 self.execute_other_action(MediafileDelete, [{"id": id}])
             else:
-                text = f'Database corrupt: The resource token has to be unique, but there are {len(results)} tokens "{instance["token"]}".'
+                text = f'Database corrupt: The resource token has to be unique, but there are {len(results)} tokens "{instance.get("token")}".'
                 self.logger.error(text)
                 raise ActionException(text)
         if len(tokens) != len(set(tokens)):
