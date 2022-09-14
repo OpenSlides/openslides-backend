@@ -16,7 +16,7 @@ class Migration(BaseMigration):
     groups.
     """
 
-    target_migration_index = 30
+    target_migration_index = 32
     group_permission = "user.can_see_extra_data"
 
     def migrate_event(

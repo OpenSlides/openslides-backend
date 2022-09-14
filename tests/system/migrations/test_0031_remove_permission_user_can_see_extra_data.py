@@ -41,7 +41,7 @@ def test_migration(write, finalize, assert_model):
         }
     )
 
-    finalize("0029_remove_permission_user_can_see_extra_data")
+    finalize("0031_remove_permission_user_can_see_extra_data")
 
     assert_model(
         "group/1",
