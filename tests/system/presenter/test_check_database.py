@@ -97,7 +97,6 @@ class TestCheckDatabase(BasePresenterTestCase):
             "motion_poll_default_type": "pseudoanonymous",
             "motion_poll_default_100_percent_base": "YNA",
             "motion_poll_default_backend": "fast",
-            "users_sort_by": "first_name",
             "users_enable_presence_view": False,
             "users_enable_vote_weight": False,
             "users_allow_self_set_present": True,

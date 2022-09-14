@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "61126fc806bbc2179c695f9eabf12517"
+MODELS_YML_CHECKSUM = "c8db7072e1b716a6f59ba8cc0c0fb937"
 
 
 class Organization(Model):
@@ -507,10 +507,6 @@ class Meeting(Model):
     )
     motion_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
-    )
-    users_sort_by = fields.CharField(
-        default="first_name",
-        constraints={"enum": ["first_name", "last_name", "number"]},
     )
     users_enable_presence_view = fields.BooleanField(default=False)
     users_enable_vote_weight = fields.BooleanField(default=False)

@@ -147,7 +147,6 @@ class MeetingImport(BaseActionTestCase):
                         "motion_poll_default_100_percent_base": "YNA",
                         "motion_poll_default_group_ids": [],
                         "motion_poll_default_backend": "fast",
-                        "users_sort_by": "first_name",
                         "users_enable_presence_view": True,
                         "users_enable_vote_weight": True,
                         "users_allow_self_set_present": True,
