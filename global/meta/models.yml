@@ -149,7 +149,7 @@ organization:
     restriction_mode: A
   user_ids:
     type: relation-list
-    restriction_mode: A
+    restriction_mode: C
     to: user/organization_id
   users_email_sender:
     type: string

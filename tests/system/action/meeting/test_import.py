@@ -1761,6 +1761,7 @@ class MeetingImport(BaseActionTestCase):
     def test_all_migrations(self) -> None:
         data = self.create_request_data({})
         data["meeting"]["_migration_index"] = 1
+        del data["meeting"]["user"]["1"]["organization_id"]
 
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
@@ -1778,6 +1779,9 @@ class MeetingImport(BaseActionTestCase):
         self.assertCountEqual(committee1["meeting_ids"], [1, 2])
         self.assert_model_exists("motion_workflow/1", {"sequential_number": 1})
         self.assert_model_exists("projector/2", {"sequential_number": 1})
+        self.assert_model_exists(
+            "organization/1", {"user_ids": [1, 2], "active_meeting_ids": [1, 2]}
+        )
 
     @performance
     def test_big_file(self) -> None:
