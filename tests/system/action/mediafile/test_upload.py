@@ -72,7 +72,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
     def test_create_orga_missing_token(self) -> None:
-        self.create_model(ONE_ORGANIZATION_FQID, {})
         filename = "fn_jumbo.txt"
         file_content = base64.b64encode(b"testtesttest").decode()
         start_time = round(time())
@@ -103,7 +102,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
     def test_upload_orga_None_token(self) -> None:
-        self.create_model(ONE_ORGANIZATION_FQID, {})
         filename = "fn_jumbo.txt"
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
