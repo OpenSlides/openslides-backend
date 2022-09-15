@@ -66,7 +66,7 @@ class ActionHandler(BaseHandler):
     Action handler. It is the concrete implementation of Action interface.
     """
 
-    MAX_RETRY = 3
+    MAX_RETRY = 100
 
     on_success: List[Callable[[], None]]
 

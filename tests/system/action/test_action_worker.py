@@ -1,3 +1,4 @@
+from datetime import datetime
 from threading import Lock, Thread
 from typing import Any, Dict, List, Tuple
 
@@ -160,6 +161,7 @@ class ActionWorkerTest(BaseActionTestCase):
             "motion_statute_paragraph": {"text": "text"},
         }
 
+        start = datetime.now()
         threads = []
         for collection in self.collection_types:
             thread = Thread(target=self.thread_method, args=(collection,))
@@ -168,7 +170,7 @@ class ActionWorkerTest(BaseActionTestCase):
 
         for thread in threads:
             thread.join()
-
+        print(f"Runtime: {datetime.now() - start}")
         assert not self.result_list
 
     def thread_method(self, collection: str) -> None:
