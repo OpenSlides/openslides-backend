@@ -2118,10 +2118,12 @@ motion:
     to: motion/origin_id # Note: The related motions may not be in the same meeting
     restriction_mode: A
   all_origin_ids:
-    type: number[] # Calculated: All parents (origin_id), grandparents, etc. of this motion.
+    type: relation-list
+    to: motion/all_derived_motion_ids # Calculated: All parents (origin_id), grandparents, etc. of this motion.
     restriction_mode: A
   all_derived_motion_ids:
-    type: number[] # Calculated: All children (derived_motion_ids), grandchildren, etc. of this motion.
+    type: relation-list
+    to: motion/all_origin_ids # Calculated: All children (derived_motion_ids), grandchildren, etc. of this motion.
     restriction_mode: A
   state_id:
     type: relation

@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "c8db7072e1b716a6f59ba8cc0c0fb937"
+MODELS_YML_CHECKSUM = "a4453d85b71c0d0f11866d548310e9b1"
 
 
 class Organization(Model):
@@ -1079,8 +1079,8 @@ class Motion(Model):
     )
     origin_id = fields.RelationField(to={"motion": "derived_motion_ids"})
     derived_motion_ids = fields.RelationListField(to={"motion": "origin_id"})
-    all_origin_ids = fields.NumberArrayField()
-    all_derived_motion_ids = fields.NumberArrayField()
+    all_origin_ids = fields.RelationListField(to={"motion": "all_derived_motion_ids"})
+    all_derived_motion_ids = fields.RelationListField(to={"motion": "all_origin_ids"})
     state_id = fields.RelationField(
         to={"motion_state": "motion_ids"}, required=True, equal_fields="meeting_id"
     )
