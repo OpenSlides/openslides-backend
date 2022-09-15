@@ -32,13 +32,9 @@ class Migration(BaseMigration):
                 event.data["permissions"].remove(self.group_permission)
                 return [event]
         elif isinstance(event, ListUpdateEvent):
-            mark = False
             if self.group_permission in event.add.get("permissions", []):
                 event.add["permissions"].remove(self.group_permission)
-                mark = True
             if self.group_permission in event.remove.get("permissions", []):
                 event.remove["permissions"].remove(self.group_permission)
-                mark = True
-            if mark:
-                return [event]
+            return [event]
         return None
