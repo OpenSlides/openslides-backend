@@ -21,6 +21,20 @@ class TestCheckDatabase(BasePresenterTestCase):
         assert "Meeting 2" in data["errors"]
         assert "meeting/2: Missing fields" in data["errors"]
 
+    def test_found_errors_one_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"name": "test_foo"},
+                "meeting/2": {"name": "test_bar"},
+            }
+        )
+        status_code, data = self.request("check_database", {"meeting_id": 2})
+        assert status_code == 200
+        assert data["ok"] is False
+        assert "Meeting 1" not in data["errors"]
+        assert "Meeting 2" in data["errors"]
+        assert "meeting/2: Missing fields" in data["errors"]
+
     def get_meeting_defaults(self) -> Dict[str, Any]:
         return {
             "motions_export_title": "Motions",
