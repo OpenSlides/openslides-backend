@@ -1397,6 +1397,11 @@ meeting:
     to: motion/meeting_id
     on_delete: CASCADE
     restriction_mode: A
+  forwarded_motion_ids:
+    type: relation-list
+    to: motion/origin_meeting_id
+    on_delete: CASCADE
+    restriction_mode: A
   motion_comment_section_ids:
     type: relation-list
     to: motion_comment_section/meeting_id
@@ -2112,18 +2117,22 @@ motion:
     type: relation
     to: motion/derived_motion_ids # Note: The related motions may not be in the same meeting
     restriction_mode: A
+  origin_meeting_id: # The meeting of the motion in origin_id, if any
+    type: relation
+    to: meeting/forwarded_motion_ids
+    restriction_mode: A
     required: false
   derived_motion_ids:
     type: relation-list
     to: motion/origin_id # Note: The related motions may not be in the same meeting
     restriction_mode: A
-  all_origin_ids:
+  all_origin_ids: # Calculated: All parents (origin_id), grandparents, etc. of this motion.
     type: relation-list
-    to: motion/all_derived_motion_ids # Calculated: All parents (origin_id), grandparents, etc. of this motion.
+    to: motion/all_derived_motion_ids
     restriction_mode: A
-  all_derived_motion_ids:
+  all_derived_motion_ids: # Calculated: All children (derived_motion_ids), grandchildren, etc. of this motion.
     type: relation-list
-    to: motion/all_origin_ids # Calculated: All children (derived_motion_ids), grandchildren, etc. of this motion.
+    to: motion/all_origin_ids
     restriction_mode: A
   state_id:
     type: relation

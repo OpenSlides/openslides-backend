@@ -68,7 +68,8 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 2,
                 "origin_id": 12,
-                "all_derived_motion_ids": [],
+                "origin_meeting_id": 1,
+                "all_derived_motion_ids": None,
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx",
                 "submitter_ids": [1],
@@ -140,7 +141,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 2,
                 "origin_id": 12,
-                "all_derived_motion_ids": [],
+                "all_derived_motion_ids": None,
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx",
             },
@@ -191,7 +192,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 2,
                 "origin_id": 12,
-                "all_derived_motion_ids": [],
+                "all_derived_motion_ids": None,
                 "all_origin_ids": [12],
                 "submitter_ids": [1],
             },
@@ -337,7 +338,11 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "motion/14",
-            {"origin_id": 11, "all_origin_ids": [6, 11], "all_derived_motion_ids": []},
+            {
+                "origin_id": 11,
+                "all_origin_ids": [6, 11],
+                "all_derived_motion_ids": None,
+            },
         )
         self.assert_model_exists(
             "motion/13",
@@ -363,7 +368,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_history_information("motion/11", ["Forwarding created"])
         self.assert_history_information("motion/6", None)
 
-    def test_x(self) -> None:
+    def test_forward_with_deleted_motion_in_all_origin_ids(self) -> None:
         self.set_models(
             {
                 "meeting/1": {
@@ -408,10 +413,8 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "group/112": {"meeting_id": 2},
             }
         )
-        response = self.request(
-            "motion.delete", {"id": 1}
-        )
-        self.assert_model_exists("motion/2", {"all_origin_ids": [1]})
+        response = self.request("motion.delete", {"id": 1})
+        self.assert_model_exists("motion/2", {"all_origin_ids": []})
         response = self.request(
             "motion.create_forwarded",
             {

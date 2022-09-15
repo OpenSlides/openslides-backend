@@ -142,8 +142,9 @@ class MotionCreateForwarded(MotionCreateBase):
         if instance.get("origin_id"):
             origin = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["origin_id"]),
-                ["all_origin_ids"],
+                ["all_origin_ids", "meeting_id"],
             )
+            instance["origin_meeting_id"] = origin["meeting_id"]
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
             instance["all_origin_ids"].append(instance["origin_id"])
 
