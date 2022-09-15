@@ -27,7 +27,6 @@ def handle_action_in_worker_thread(
     is_atomic: bool,
     handler: ActionHandler,
 ) -> ActionsResponse:
-    starttime = round(time())
     logger = handler.logging.getLogger(__name__)
     lock = threading.Lock()
     try:
@@ -35,7 +34,7 @@ def handle_action_in_worker_thread(
     except Exception:
         action_names = "Cannot be determined"
     action_worker_writing = ActionWorkerWriting(
-        user_id, starttime, handler.logging, action_names, handler.services.datastore()
+        user_id, handler.logging, action_names, handler.services.datastore()
     )
     action_worker_thread = ActionWorker(
         payload,
@@ -51,18 +50,16 @@ def handle_action_in_worker_thread(
     while not action_worker_thread.started:
         sleep(0.001)  # The action_worker_thread should gain the lock and NOT this one
     if lock.acquire(timeout=THREAD_WATCH_TIMEOUT):
+        lock.release()
         if hasattr(action_worker_thread, "exception"):
-            logger.debug("Action request finished with exception within timeout.")
-            lock.release()
             raise action_worker_thread.exception
         if hasattr(action_worker_thread, "response"):
-            logger.debug("Action request finished successfully within timeout.")
-            lock.release()
             return action_worker_thread.response
-        lock.release()
-        raise ActionException(
+        msg = (
             "Action request ended with unknown reason, probably an unexpected timeout!"
         )
+        logger.error(" ".join(msg + str(payload)[:100]))
+        raise ActionException(msg)
 
     message = action_worker_writing.initial_action_worker_write()
     return ActionsResponse(
@@ -85,13 +82,12 @@ class ActionWorkerWriting(object):
     def __init__(
         self,
         user_id: int,
-        starttime: int,
         logging: LoggingModule,
         action_names: str,
         datastore: DatastoreService,
     ) -> None:
         self.user_id = user_id
-        self.starttime = starttime
+        self.start_time = round(time())
         self.logger = logging.getLogger(__name__)
         self.action_names = action_names
         self.datastore = datastore
@@ -117,12 +113,11 @@ class ActionWorkerWriting(object):
                                     "id": self.new_id,
                                     "name": self.action_names,
                                     "state": "running",
-                                    "created": self.starttime,
+                                    "created": self.start_time,
                                     "timestamp": current_time,
                                 },
                             )
                         ],
-                        information=[f"{self.fqid}: create action_worker"],
                         user_id=self.user_id,
                         locked_fields={},
                     )
@@ -143,7 +138,7 @@ class ActionWorkerWriting(object):
             ram = psutil.virtual_memory()
             response = {
                 "success": False,
-                "message": f"ram total:{ram.total} available:{ram.available} percent:{ram.percent} used:{ram.used} free.{ram.free}",
+                "message": f"Still running, percentage ram used {ram.percent} from total:{ram.total}.",
                 "action_error_index": 0,
                 "action_data_error_index": 0,
             }
@@ -159,15 +154,12 @@ class ActionWorkerWriting(object):
                             },
                         )
                     ],
-                    information=[
-                        f"{self.fqid}: timestamp during running action_worker"
-                    ],
                     user_id=self.user_id,
                     locked_fields={},
                 )
             )
             self.logger.debug(
-                f"timestamp during running action_worker '{self.fqid} {self.action_names}': {current_time}"
+                f"running action_worker '{self.fqid} {self.action_names}': {current_time}"
             )
 
     def final_action_worker_write(self, action_worker_thread: "ActionWorker") -> None:
@@ -204,13 +196,12 @@ class ActionWorkerWriting(object):
                             },
                         )
                     ],
-                    information=[f"{self.fqid}: finish action_worker"],
                     user_id=self.user_id,
                     locked_fields={},
                 )
             )
             self.logger.debug(
-                f"action_worker '{self.fqid} {self.action_names}': {current_time}"
+                f"finish action_worker '{self.fqid} {self.action_names}': {current_time}"
             )
 
 
@@ -261,9 +252,6 @@ def gunicorn_post_request(
     if the resp.status_code is 202 (HTTPStatus.ACCEPTED.value) there is an
     action_thread created, which wasn't finished before the response
     to the client was send and should be kept alive until it ends.
-
-    The corresponding action_worker-thread will be found by it's
-    thread executor_pid.
     """
     if resp.status_code != HTTPStatus.ACCEPTED.value:
         return
