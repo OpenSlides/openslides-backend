@@ -8,7 +8,7 @@ from ..models.checker import Checker, CheckException
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..shared.exceptions import PermissionDenied
-from ..shared.schema import schema_version
+from ..shared.schema import optional_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
 
@@ -18,7 +18,11 @@ check_database_schema = fastjsonschema.compile(
         "type": "object",
         "title": "check database",
         "description": "check database",
-        "properties": {},
+        "properties": {
+            "meeting_id": optional_id_schema,
+        },
+        "required": [],
+        "additionalProperties": False,
     }
 )
 
@@ -39,7 +43,10 @@ class CheckDatabase(BasePresenter):
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
 
-        meeting_ids = self.get_all_meeting_ids()
+        if self.data.get("meeting_id"):
+            meeting_ids = [self.data["meeting_id"]]
+        else:
+            meeting_ids = self.get_all_meeting_ids()
         errors: Dict[int, str] = {}
         for meeting_id in meeting_ids:
             export = export_meeting(self.datastore, meeting_id)
