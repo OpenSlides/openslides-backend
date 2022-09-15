@@ -602,7 +602,12 @@ class CreatePoll(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_analog_poll_without_YNA_values(self) -> None:
-        self.create_model("motion/3", {"meeting_id": 1})
+        self.set_models(
+            {
+                "motion/3": {"meeting_id": 1, "state_id": 444},
+                "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
+            }
+        )
         response = self.request(
             "poll.create",
             {
@@ -783,6 +788,28 @@ class CreatePoll(BaseActionTestCase):
             Permissions.Assignment.CAN_MANAGE,
         )
 
+    def test_create_forbidden_to_create_poll(self) -> None:
+        self.set_models(
+            {
+                "motion/23": {"meeting_id": 1, "state_id": 444},
+                "motion_state/444": {"meeting_id": 1, "allow_create_poll": False},
+            }
+        )
+        response = self.request(
+            "poll.create",
+            {
+                "meeting_id": 1,
+                "title": "Abstimmung",
+                "onehundred_percent_base": "YNA",
+                "pollmethod": "YNA",
+                "type": "analog",
+                "options": [{"content_object_id": "motion/23"}],
+                "content_object_id": "motion/23",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Motion state doesn't allow to create poll." in response.json["message"]
+
     def test_create_no_permissions_motion(self) -> None:
         self.base_permission_test(
             {"motion/23": {"meeting_id": 1}},
@@ -803,7 +830,10 @@ class CreatePoll(BaseActionTestCase):
 
     def test_create_permissions_motion(self) -> None:
         self.base_permission_test(
-            {"motion/23": {"meeting_id": 1}},
+            {
+                "motion/23": {"meeting_id": 1, "state_id": 444},
+                "motion_state/444": {"meeting_id": 1, "allow_create_poll": True},
+            },
             "poll.create",
             {
                 "title": "test",

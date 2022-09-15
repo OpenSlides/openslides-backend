@@ -4,6 +4,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
+from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, optional_fqid_schema
 from ...generics.create import CreateAction
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
@@ -96,6 +97,21 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
         # check non-analog and publish_immediately
         if instance["type"] != Poll.TYPE_ANALOG and "publish_immediately" in instance:
             raise ActionException("publish_immediately only allowed for analog polls.")
+
+        # check content_object_id motion and state allow_create_poll
+        if (
+            instance.get("content_object_id")
+            and collection_from_fqid(instance["content_object_id"]) == "motion"
+        ):
+            motion = self.datastore.get(instance["content_object_id"], ["state_id"])
+            if not motion.get("state_id"):
+                raise ActionException("Motion doesn't have a state.")
+            state = self.datastore.get(
+                fqid_from_collection_and_id("motion_state", motion["state_id"]),
+                ["allow_create_poll"],
+            )
+            if not state.get("allow_create_poll"):
+                raise ActionException("Motion state doesn't allow to create poll.")
 
         # handle non-global options
         weight = 1
