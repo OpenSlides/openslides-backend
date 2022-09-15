@@ -45,21 +45,17 @@ payload_schema = fastjsonschema.compile(
         "description": "An array of actions",
         "type": "array",
         "items": {
-            "anyOf": [
-                {
-                    "type": "object",
-                    "properties": {
-                        "action": {
-                            "description": "Name of the action to be performed on the server",
-                            "type": "string",
-                            "minLength": 1,
-                        },
-                        "data": action_data_schema,
-                    },
-                    "required": ["action", "data"],
-                    "additionalProperties": [False],
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "Name of the action to be performed on the server",
+                    "type": "string",
+                    "minLength": 1,
                 },
-            ]
+                "data": action_data_schema,
+            },
+            "required": ["action", "data"],
+            "additionalProperties": [False],
         },
     }
 )
