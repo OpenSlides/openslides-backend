@@ -54,16 +54,15 @@ class CheckDatabaseAll(BasePresenter):
     def get_everything(self) -> Dict[str, Any]:
         everything = self.datastore.get_everything()
         export: Dict[str, Any] = {
-            collection: remove_meta_fields(everything[collection])
+            collection: self.remove_meta_fields(everything[collection])
             for collection in everything
         }
         export["_migration_index"] = get_backend_migration_index()
         return export
 
-
-def remove_meta_fields(res: Dict[int, Any]) -> Dict[str, Any]:
-    dict_without_meta_fields = {}
-    for key in res:
-        strip_reserved_fields(res[key])
-        dict_without_meta_fields[str(key)] = res[key]
-    return dict_without_meta_fields
+    def remove_meta_fields(self, res: Dict[int, Any]) -> Dict[str, Any]:
+        dict_without_meta_fields = {}
+        for key in res:
+            strip_reserved_fields(res[key])
+            dict_without_meta_fields[str(key)] = res[key]
+        return dict_without_meta_fields
