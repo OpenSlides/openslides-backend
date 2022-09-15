@@ -28,7 +28,6 @@ def handle_action_in_worker_thread(
     handler: ActionHandler,
 ) -> ActionsResponse:
     starttime = round(time())
-    curr_thread = threading.current_thread()
     logger = handler.logging.getLogger(__name__)
     lock = threading.Lock()
     try:
@@ -44,9 +43,10 @@ def handle_action_in_worker_thread(
         is_atomic,
         handler,
         lock,
-        cast(int, curr_thread.native_id),
-        action_worker_writing,
     )
+    curr_thread = cast(OSGunicornThread, threading.current_thread())
+    curr_thread.action_worker_writing = action_worker_writing
+    curr_thread.action_worker_thread = action_worker_thread
     action_worker_thread.start()
     while not action_worker_thread.started:
         sleep(0.001)  # The action_worker_thread should gain the lock and NOT this one
@@ -122,7 +122,7 @@ class ActionWorkerWriting(object):
                                 },
                             )
                         ],
-                        information={self.fqid: ["create action_worker"]},
+                        information=[f"{self.fqid}: create action_worker"],
                         user_id=self.user_id,
                         locked_fields={},
                     )
@@ -159,7 +159,9 @@ class ActionWorkerWriting(object):
                             },
                         )
                     ],
-                    information={self.fqid: ["timestamp during running action_worker"]},
+                    information=[
+                        f"{self.fqid}: timestamp during running action_worker"
+                    ],
                     user_id=self.user_id,
                     locked_fields={},
                 )
@@ -202,7 +204,7 @@ class ActionWorkerWriting(object):
                             },
                         )
                     ],
-                    information={self.fqid: ["finish action_worker"]},
+                    information=[f"{self.fqid}: finish action_worker"],
                     user_id=self.user_id,
                     locked_fields={},
                 )
@@ -220,8 +222,6 @@ class ActionWorker(threading.Thread):
         is_atomic: bool,
         handler: ActionHandler,
         lock: threading.Lock,
-        thread_executor_pid: int,
-        action_worker_writing: ActionWorkerWriting,
     ) -> None:
         super().__init__(name="action_worker")
         self.handler = handler
@@ -229,8 +229,6 @@ class ActionWorker(threading.Thread):
         self.user_id = user_id
         self.is_atomic = is_atomic
         self.lock = lock
-        self.thread_executor_pid = thread_executor_pid
-        self.action_worker_writing = action_worker_writing
         self.started: bool = False
 
     def run(self):  # type: ignore
@@ -244,8 +242,17 @@ class ActionWorker(threading.Thread):
                 self.exception = exception
 
 
+class OSGunicornThread(ThreadWorker):
+    """
+    defined to still mypy
+    """
+
+    action_worker_writing: ActionWorkerWriting
+    action_worker_thread: ActionWorker
+
+
 def gunicorn_post_request(
-    worker: ThreadWorker, req: Request, environ: Dict[str, Any], resp: Response
+    worker: OSGunicornThread, req: Request, environ: Dict[str, Any], resp: Response
 ) -> None:
     """
     gunicorn server hook, called after response of one request
@@ -260,21 +267,11 @@ def gunicorn_post_request(
     """
     if resp.status_code != HTTPStatus.ACCEPTED.value:
         return
-    action_worker: Optional[ActionWorker] = None
-    curr_thread = threading.current_thread()
-    for thread in threading.enumerate():
-        if (
-            thread.name == "action_worker"
-            and cast(ActionWorker, thread).thread_executor_pid == curr_thread.native_id
-        ):
-            action_worker = cast(ActionWorker, thread)
-            break
 
-    if not action_worker:
-        return
-
+    action_worker = worker.action_worker_thread
+    action_worker_writing = worker.action_worker_writing
     lock = action_worker.lock
-    action_worker_writing = action_worker.action_worker_writing
+
     while True:
         worker.tmp.notify()
         if action_worker_writing.written:

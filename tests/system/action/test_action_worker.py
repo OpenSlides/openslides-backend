@@ -1,4 +1,7 @@
-from typing import Any, Dict, List
+from threading import Lock, Thread
+from typing import Any, Dict, List, Tuple
+
+import pytest
 
 from tests.system.action.base import BaseActionTestCase
 
@@ -144,3 +147,44 @@ class ActionWorkerTest(BaseActionTestCase):
         action_worker1 = self.assert_model_exists("action_worker/1", {"state": "end"})
         self.assertFalse(action_worker1["result"]["success"])
         self.assertIn("Text is required", action_worker1["result"]["message"])
+
+    @pytest.mark.skip("Just for manual stress and thread tests")
+    def test_action_worker_permanent_stress(self) -> None:
+        self.lock = Lock()
+        self.result_list: List[Tuple] = []
+        self.number = 201
+        self.collection_types: Dict[str, Dict[str, str]] = {
+            "motion_block": {},
+            "topic": {},
+            "assignment": {},
+            "motion_statute_paragraph": {"text": "text"},
+        }
+
+        threads = []
+        for collection in self.collection_types:
+            thread = Thread(target=self.thread_method, args=(collection,))
+            thread.start()
+            threads.append(thread)
+
+        for thread in threads:
+            thread.join()
+
+        assert not self.result_list
+
+    def thread_method(self, collection: str) -> None:
+        for i in range(1, self.number):
+            data = {
+                "title": f"title{i}",
+                "meeting_id": 222,
+                **self.collection_types[collection],
+            }
+            response = self.request(f"{collection}.create", data)
+            with self.lock:
+                if response.status_code != 200:
+                    self.result_list.append(
+                        (
+                            f"{collection}/{i}",
+                            response.status_code,
+                            response.json["message"],
+                        )
+                    )
