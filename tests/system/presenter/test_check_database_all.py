@@ -95,7 +95,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "motion_poll_default_type": "pseudoanonymous",
             "motion_poll_default_100_percent_base": "YNA",
             "motion_poll_default_backend": "fast",
-            "users_sort_by": "first_name",
             "users_enable_presence_view": False,
             "users_enable_vote_weight": False,
             "users_allow_self_set_present": True,
@@ -129,6 +128,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "limit_of_meetings": 0,
                     "users_email_sender": "test@example.com",
                     "limit_of_users": 0,
+                    "user_ids": [1],
                     "users_email_body": "ballspamhamfoo",
                     "users_email_subject": "hamfoo",
                     "theme_id": 1,
@@ -158,6 +158,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "can_change_own_password": False,
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
+                    "organization_id": 1,
                 },
                 "meeting/1": {
                     "committee_id": 1,
@@ -258,6 +259,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "can_change_own_password": False,
             "is_physical_person": True,
             "default_vote_weight": "1.000000",
+            "organization_id": 1,
             **datapart,
         }
 
@@ -270,6 +272,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "organization_tag_ids": [1],
                     "template_meeting_ids": [1],
                     "limit_of_meetings": 0,
+                    "user_ids": [1, 2, 3, 4, 5, 6],
                     "users_email_sender": "test@example.com",
                     "limit_of_users": 0,
                     "users_email_body": "ballspamhamfoo",
@@ -356,6 +359,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "can_change_own_password": False,
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
+                    "organization_id": 1,
                 },
                 "user/2": self.get_new_user(
                     "present_user",
@@ -525,6 +529,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "active_meeting_ids": [1, 2],
                     "organization_tag_ids": [1],
                     "limit_of_meetings": 0,
+                    "user_ids": [1],
                     "users_email_sender": "test@example.com",
                     "limit_of_users": 0,
                     "users_email_body": "ballspamhamfoo",
@@ -556,6 +561,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "can_change_own_password": False,
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
+                    "organization_id": 1,
                 },
                 "meeting/1": {
                     "committee_id": 1,
