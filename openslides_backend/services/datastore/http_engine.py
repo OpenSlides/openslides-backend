@@ -15,6 +15,7 @@ class HTTPEngine:
         "get",
         "get_many",
         "get_all",
+        "get_everything",
         "filter",
         "exists",
         "count",
