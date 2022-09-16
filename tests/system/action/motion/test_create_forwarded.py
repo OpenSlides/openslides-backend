@@ -68,7 +68,8 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 2,
                 "origin_id": 12,
-                "all_derived_motion_ids": [],
+                "origin_meeting_id": 1,
+                "all_derived_motion_ids": None,
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx",
                 "submitter_ids": [1],
@@ -140,7 +141,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 2,
                 "origin_id": 12,
-                "all_derived_motion_ids": [],
+                "all_derived_motion_ids": None,
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx",
             },
@@ -191,7 +192,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 2,
                 "origin_id": 12,
-                "all_derived_motion_ids": [],
+                "all_derived_motion_ids": None,
                 "all_origin_ids": [12],
                 "submitter_ids": [1],
             },
@@ -337,7 +338,11 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "motion/14",
-            {"origin_id": 11, "all_origin_ids": [6, 11], "all_derived_motion_ids": []},
+            {
+                "origin_id": 11,
+                "all_origin_ids": [6, 11],
+                "all_derived_motion_ids": None,
+            },
         )
         self.assert_model_exists(
             "motion/13",
@@ -362,6 +367,64 @@ class MotionCreateForwarded(BaseActionTestCase):
         # grandparent should not have a history entry
         self.assert_history_information("motion/11", ["Forwarding created"])
         self.assert_history_information("motion/6", None)
+
+    def test_forward_with_deleted_motion_in_all_origin_ids(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "committee_id": 53,
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "motions_default_workflow_id": 12,
+                    "committee_id": 52,
+                    "is_active_in_organization_id": 1,
+                    "default_group_id": 112,
+                    "group_ids": [112],
+                },
+                "user/1": {"meeting_ids": [1, 2]},
+                "motion_workflow/12": {
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "meeting_id": 2,
+                    "allow_motion_forwarding": True,
+                },
+                "motion/1": {
+                    "title": "deleted",
+                    "meeting_id": 1,
+                    "state_id": 34,
+                    "derived_motion_ids": [2],
+                    "all_derived_motion_ids": [2],
+                },
+                "motion/2": {
+                    "title": "motion",
+                    "meeting_id": 1,
+                    "state_id": 34,
+                    "origin_id": 1,
+                    "all_origin_ids": [1],
+                },
+                "committee/52": {"name": "committee_receiver"},
+                "committee/53": {
+                    "name": "committee_forwarder",
+                    "forward_to_committee_ids": [52],
+                },
+                "group/112": {"meeting_id": 2},
+            }
+        )
+        response = self.request("motion.delete", {"id": 1})
+        self.assert_model_exists("motion/2", {"all_origin_ids": []})
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "new",
+                "meeting_id": 2,
+                "origin_id": 2,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
 
     def test_not_allowed_to_forward_amendments(self) -> None:
         self.set_models(

@@ -11,7 +11,6 @@ from ...util.register import register_action
 from ..user.create import UserCreate
 from ..user.update import UserUpdate
 from .create_base import MotionCreateBase
-from .update_all_derived_motion_ids import MotionUpdateAllDerivedMotionIds
 
 
 @register_action("motion.create_forwarded")
@@ -86,7 +85,7 @@ class MotionCreateForwarded(MotionCreateBase):
         self.create_submitters(instance)
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
-        self.calculate_all_origin_ids_and_all_derived_motion_ids(instance)
+        self.set_origin_ids(instance)
         instance["forwarded"] = round(time.time())
         return instance
 
@@ -139,36 +138,15 @@ class MotionCreateForwarded(MotionCreateBase):
             msg = "Amendments cannot be forwarded."
             raise PermissionDenied(msg)
 
-    def calculate_all_origin_ids_and_all_derived_motion_ids(
-        self, instance: Dict[str, Any]
-    ) -> None:
-        instance["all_derived_motion_ids"] = []
+    def set_origin_ids(self, instance: Dict[str, Any]) -> None:
         if instance.get("origin_id"):
             origin = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["origin_id"]),
-                ["all_origin_ids"],
+                ["all_origin_ids", "meeting_id"],
             )
+            instance["origin_meeting_id"] = origin["meeting_id"]
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
             instance["all_origin_ids"].append(instance["origin_id"])
-        else:
-            instance["all_origin_ids"] = []
-
-        # Update the all_derived_motion_ids of the origins
-        action_data = []
-        for origin_id in instance["all_origin_ids"]:
-            origin = self.datastore.get(
-                fqid_from_collection_and_id("motion", origin_id),
-                ["all_derived_motion_ids"],
-            )
-            action_data.append(
-                {
-                    "id": origin_id,
-                    "all_derived_motion_ids": origin.get("all_derived_motion_ids", [])
-                    + [instance["id"]],
-                }
-            )
-        if action_data:
-            self.execute_other_action(MotionUpdateAllDerivedMotionIds, action_data)
 
     def check_state_allow_forwarding(self, instance: Dict[str, Any]) -> None:
         origin = self.datastore.get(

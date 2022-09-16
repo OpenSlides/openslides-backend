@@ -332,43 +332,6 @@ class MeetingImport(BaseActionTestCase):
             else:
                 data["meeting"][collection].update(models)
 
-        needed_collections = (
-            "user",
-            "meeting",
-            "group",
-            "personal_note",
-            "tag",
-            "agenda_item",
-            "list_of_speakers",
-            "speaker",
-            "topic",
-            "motion",
-            "motion_submitter",
-            "motion_comment",
-            "motion_comment_section",
-            "motion_category",
-            "motion_block",
-            "motion_change_recommendation",
-            "motion_state",
-            "motion_workflow",
-            "motion_statute_paragraph",
-            "poll",
-            "option",
-            "vote",
-            "assignment",
-            "assignment_candidate",
-            "mediafile",
-            "projector",
-            "projection",
-            "projector_message",
-            "projector_countdown",
-            "chat_group",
-            "chat_message",
-        )
-        for collection in needed_collections:
-            if collection not in data["meeting"].keys():
-                data["meeting"][collection] = {}
-
         return data
 
     def get_user_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
@@ -1219,8 +1182,16 @@ class MeetingImport(BaseActionTestCase):
                     "1": self.get_motion_data(
                         1,
                         {
-                            "all_origin_ids": [1],
+                            "all_origin_ids": [2],
                             "list_of_speakers_id": 1,
+                            "state_id": 1,
+                        },
+                    ),
+                    "2": self.get_motion_data(
+                        2,
+                        {
+                            "all_derived_motion_ids": [1],
+                            "list_of_speakers_id": 2,
                             "state_id": 1,
                         },
                     ),
@@ -1235,12 +1206,21 @@ class MeetingImport(BaseActionTestCase):
                         "speaker_ids": [],
                         "projection_ids": [],
                     },
+                    "2": {
+                        "id": 2,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/2",
+                        "closed": False,
+                        "sequential_number": 1,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    },
                 },
             }
         )
-        request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1]
-        request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
-        request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1, 2]
+        request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1, 2]
+        request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1, 2]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert (
