@@ -187,9 +187,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
             ],
         )
-        self.assert_400_202_message(
-            response,
+        self.assert_status_code(response, 400)
+        self.assertIn(
             "Datastore service sends HTTP 400. The following locks were broken: 'speaker/list_of_speakers_id', 'speaker/meeting_id', 'speaker/weight",
+            response.json["message"],
         )
 
     def test_create_user_present(self) -> None:

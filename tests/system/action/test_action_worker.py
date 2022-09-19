@@ -64,10 +64,9 @@ class ActionWorkerTest(BaseActionTestCase):
     def test_action_worker_not_ready_before_timeout_okay(self) -> None:
         """action thread used, main process ends before action_worker is ready,
         but the final result will be okay.
-        The THREAD_WATCH_TIMEOUT is fixed with 1 sec., if the result here is 200,
-        increase the count_motions to fail.
         """
-        count_motions: int = 100
+        self.set_thread_watch_timeout(0.0001)
+        count_motions: int = 2
         response = self.request_multi(
             "motion.create",
             [
@@ -103,12 +102,9 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assert_model_exists("action_worker/1", {"state": "end"})
 
     def test_action_worker_not_ready_before_timeout_exception(self) -> None:
-        """action thread used, ended after timeout
-        The THREAD_WATCH_TIMEOUT is fixed with 1 sec.,
-        if the result status code here is 200,
-        increase the count_motions to fail.
-        """
-        count_motions: int = 100
+        """action thread used, ended after timeout"""
+        self.set_thread_watch_timeout(0.0001)
+        count_motions: int = 2
         data: List[Dict[str, Any]] = [
             {
                 "title": f"test_title {i+1}",

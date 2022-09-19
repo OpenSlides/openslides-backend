@@ -7,6 +7,7 @@ import simplejson as json
 from datastore.shared.util import DeletedModelsBehaviour
 from fastjsonschema.exceptions import JsonSchemaException
 
+from openslides_backend.action import action_worker
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import DatastoreService
@@ -56,6 +57,7 @@ class BaseSystemTestCase(TestCase):
         self.vote_service = cast(TestVoteService, self.services.vote())
         self.datastore = self.services.datastore()
         self.datastore.truncate_db()
+        self.set_thread_watch_timeout(-1)
 
         self.created_fqids = set()
         self.create_model(
@@ -86,6 +88,9 @@ class BaseSystemTestCase(TestCase):
             BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.vote_service.clear_all()
         self.anon_client = self.create_client()
+
+    def set_thread_watch_timeout(self, thread_watch_timeout: float) -> None:
+        action_worker.THREAD_WATCH_TIMEOUT = thread_watch_timeout
 
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
@@ -270,15 +275,3 @@ class BaseSystemTestCase(TestCase):
             lock_result=False,
         )
         self.assertEqual(db_count, count)
-
-    def assert_400_202_message(self, response: Response, expected_message: str) -> None:
-        if response.status_code == 400:
-            msg = response.json["message"]
-        elif response.status_code == 202:
-            if action_worker := self.get_thread_by_name("action_worker"):
-                action_worker.join()
-            fqid = response.json["results"][0][0]["fqid"]
-            model = self.assert_model_exists(fqid, {"state": "end"})
-            assert not model["result"]["success"]
-            msg = model["result"]["message"]
-        self.assertIn(expected_message, msg)
