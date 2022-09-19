@@ -187,16 +187,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
             ],
         )
-        if response.status_code == 400:
-            msg = response.json["message"]
-        elif response.status_code == 202:
-            if action_worker := self.get_thread_by_name("action_worker"):
-                action_worker.join()
-            fqid = response.json["results"][0][0]["fqid"]
-            action_worker = self.assert_model_exists(fqid, {"state": "end"})
-            assert not action_worker["result"]["success"]
-            msg = action_worker["result"]["message"]
-        self.assertIn("Datastore service sends HTTP 400. The following locks were broken: 'speaker/list_of_speakers_id', 'speaker/meeting_id', 'speaker/weight", msg)
+        self.assert_400_202_message(
+            response,
+            "Datastore service sends HTTP 400. The following locks were broken: 'speaker/list_of_speakers_id', 'speaker/meeting_id', 'speaker/weight",
+        )
 
     def test_create_user_present(self) -> None:
         self.set_models(

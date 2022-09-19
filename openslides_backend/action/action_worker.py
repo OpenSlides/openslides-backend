@@ -233,7 +233,7 @@ class ActionWorker(threading.Thread):
                 self.exception = exception
 
 
-class OSGunicornThread(ThreadWorker):
+class OSGunicornThread(threading.Thread):
     """
     defined to still mypy
     """
@@ -243,7 +243,7 @@ class OSGunicornThread(ThreadWorker):
 
 
 def gunicorn_post_request(
-    worker: OSGunicornThread, req: Request, environ: Dict[str, Any], resp: Response
+    worker: ThreadWorker, req: Request, environ: Dict[str, Any], resp: Response
 ) -> None:
     """
     gunicorn server hook, called after response of one request
@@ -256,7 +256,7 @@ def gunicorn_post_request(
     if resp.status_code != HTTPStatus.ACCEPTED.value:
         return
 
-    curr_thread = threading.current_thread()
+    curr_thread = cast(OSGunicornThread, threading.current_thread())
     action_worker = curr_thread.action_worker_thread
     action_worker_writing = curr_thread.action_worker_writing
     lock = action_worker.lock
@@ -269,6 +269,6 @@ def gunicorn_post_request(
                 lock.release()
                 break
             else:
-                    action_worker_writing.continue_action_worker_write()
+                action_worker_writing.continue_action_worker_write()
         else:
             action_worker_writing.initial_action_worker_write()

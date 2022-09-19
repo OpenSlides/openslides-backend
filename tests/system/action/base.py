@@ -3,10 +3,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Union, cast
 from unittest.mock import MagicMock
 
-from openslides_backend.action.action_worker import (
-    OSGunicornThread,
-    gunicorn_post_request,
-)
+from openslides_backend.action.action_worker import gunicorn_post_request
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.action.util.crypto import get_random_string
@@ -29,7 +26,7 @@ from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_action_test_application, get_route_path
 from tests.util import Response
 
-from .mock_gunicorn_gthread_worker import getMockGunicornThreadWorker
+from .mock_gunicorn_gthread_worker import MockGunicornThreadWorker
 
 DEFAULT_PASSWORD = "password"
 ACTION_URL = get_route_path(ActionView.action_route)
@@ -89,7 +86,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         response = client.post(ACTION_URL, json=payload, headers=headers)
         if response.status_code == 202:
             gunicorn_post_request(
-                cast(OSGunicornThread, getMockGunicornThreadWorker()),
+                MockGunicornThreadWorker(),
                 None,  # type:ignore
                 None,  # type:ignore
                 response,

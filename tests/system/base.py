@@ -270,3 +270,15 @@ class BaseSystemTestCase(TestCase):
             lock_result=False,
         )
         self.assertEqual(db_count, count)
+
+    def assert_400_202_message(self, response: Response, expected_message: str) -> None:
+        if response.status_code == 400:
+            msg = response.json["message"]
+        elif response.status_code == 202:
+            if action_worker := self.get_thread_by_name("action_worker"):
+                action_worker.join()
+            fqid = response.json["results"][0][0]["fqid"]
+            model = self.assert_model_exists(fqid, {"state": "end"})
+            assert not model["result"]["success"]
+            msg = model["result"]["message"]
+        self.assertIn(expected_message, msg)
