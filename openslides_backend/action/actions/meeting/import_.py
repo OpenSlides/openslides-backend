@@ -507,7 +507,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
     def create_events(
         self, instance: Dict[str, Any], pure_create_events: bool = False
     ) -> Iterable[Event]:
-        """be carefull, this method is also used by meeting.clone action"""
+        """Be careful, this method is also used by meeting.clone!"""
         json_data = instance["meeting"]
         meeting = self.get_meeting_from_json(json_data)
         meeting_id = meeting["id"]

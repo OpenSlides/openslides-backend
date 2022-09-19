@@ -40,7 +40,7 @@ class MeetingImport(BaseActionTestCase):
             }
         )
 
-    def create_request_data(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def create_request_data(self, datapart: Dict[str, Any] = {}) -> Dict[str, Any]:
         data: Dict[str, Any] = {
             "committee_id": 1,
             "meeting": {
@@ -1578,6 +1578,47 @@ class MeetingImport(BaseActionTestCase):
         user16 = self.assert_model_exists("user/16", {"username": "test_new_user"})
         assert user16.get("is_present_in_meeting_ids") == [2]
         self.assert_model_exists("meeting/2", {"present_user_ids": [14, 16]})
+
+    def test_is_present_existing_user(self) -> None:
+        self.set_models(
+            {
+                "user/14": {
+                    "username": "test",
+                    "last_name": "Administrator",
+                    "organization_id": 1,
+                },
+                "organization/1": {"user_ids": [14]},
+            }
+        )
+        request_data = self.create_request_data()
+        request_data["meeting"]["meeting"]["1"]["present_user_ids"] = [1]
+        request_data["meeting"]["user"]["1"]["is_present_in_meeting_ids"] = [1]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/14", {"username": "test", "is_present_in_meeting_ids": [2]}
+        )
+        self.assert_model_exists("meeting/2", {"present_user_ids": [14]})
+
+    def test_is_present_new_user(self) -> None:
+        self.set_models(
+            {
+                "user/14": {
+                    "username": "test",
+                    "organization_id": 1,
+                },
+                "organization/1": {"user_ids": [14]},
+            }
+        )
+        request_data = self.create_request_data()
+        request_data["meeting"]["meeting"]["1"]["present_user_ids"] = [1]
+        request_data["meeting"]["user"]["1"]["is_present_in_meeting_ids"] = [1]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/15", {"username": "test1", "is_present_in_meeting_ids": [2]}
+        )
+        self.assert_model_exists("meeting/2", {"present_user_ids": [15]})
 
     def test_merge_users_template_fields(self) -> None:
         self.set_models(
