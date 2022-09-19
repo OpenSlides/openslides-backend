@@ -256,8 +256,9 @@ def gunicorn_post_request(
     if resp.status_code != HTTPStatus.ACCEPTED.value:
         return
 
-    action_worker = worker.action_worker_thread
-    action_worker_writing = worker.action_worker_writing
+    curr_thread = threading.current_thread()
+    action_worker = curr_thread.action_worker_thread
+    action_worker_writing = curr_thread.action_worker_writing
     lock = action_worker.lock
 
     while True:
@@ -268,6 +269,6 @@ def gunicorn_post_request(
                 lock.release()
                 break
             else:
-                action_worker_writing.continue_action_worker_write()
+                    action_worker_writing.continue_action_worker_write()
         else:
             action_worker_writing.initial_action_worker_write()
