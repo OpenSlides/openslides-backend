@@ -148,9 +148,7 @@ class UserUpdate(
         for instance in self.instances:
             if "group_$_ids" in instance:
                 group_ids_from_instance = self.get_group_ids_from_instance(instance)
-                group_ids_from_db = self.get_group_ids_from_db(
-                    f"user/{instance['id']}", instance
-                )
+                group_ids_from_db = self.get_group_ids_from_db(instance)
                 added = group_ids_from_instance - group_ids_from_db
                 removed = group_ids_from_db - group_ids_from_instance
                 all_groups_added.append(added)
@@ -203,9 +201,8 @@ class UserUpdate(
         else:
             informations.append(multi_msg)
 
-    def get_group_ids_from_db(
-        self, user_fqid: str, instance: Dict[str, Any]
-    ) -> Set[int]:
+    def get_group_ids_from_db(self, instance: Dict[str, Any]) -> Set[int]:
+        user_fqid = fqid_from_collection_and_id("user", instance["id"])
         user1 = self.datastore.get(user_fqid, ["group_$_ids"], use_changed_models=False)
         if not user1.get("group_$_ids"):
             return set()
