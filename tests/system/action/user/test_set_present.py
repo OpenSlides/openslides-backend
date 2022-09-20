@@ -23,6 +23,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
         assert model.get("is_present_in_meeting_ids") == [1]
         meeting = self.get_model("meeting/1")
         assert meeting.get("present_user_ids") == [111]
+        self.assert_history_information("user/111", ["Set (not) present in meeting 1"])
 
     def test_set_present_del_correct(self) -> None:
         self.set_models(
