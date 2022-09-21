@@ -127,3 +127,12 @@ class GetEverything(Command):
 
     def get_raw_data(self) -> CommandData:
         return {}
+
+
+class DeleteHistoryInformation(Command):
+    """
+    DeleteHistoryInformation command. Does not need data.
+    """
+
+    def get_raw_data(self) -> CommandData:
+        return {}

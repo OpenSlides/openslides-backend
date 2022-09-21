@@ -142,6 +142,9 @@ class BaseDatastoreService(Protocol):
     def get_everything(self) -> Dict[Collection, Dict[int, PartialModel]]:
         ...
 
+    def delete_history_information(self) -> None:
+        ...
+
 
 class DatastoreService(BaseDatastoreService):
     changed_models: ModelMap

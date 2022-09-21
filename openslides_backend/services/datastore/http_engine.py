@@ -22,7 +22,12 @@ class HTTPEngine:
         "min",
         "max",
     ]
-    WRITER_ENDPOINTS = ["reserve_ids", "write", "truncate_db"]
+    WRITER_ENDPOINTS = [
+        "reserve_ids",
+        "write",
+        "truncate_db",
+        "delete_history_information",
+    ]
 
     def __init__(
         self,
