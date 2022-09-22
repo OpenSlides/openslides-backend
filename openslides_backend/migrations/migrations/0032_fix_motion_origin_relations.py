@@ -40,7 +40,7 @@ class Migration(BaseMigration):
         elif isinstance(event, DeleteEvent):
             new_events: List[BaseEvent] = [event]
             model: Dict[str, Any] = self.new_accessor.get_model(event.fqid)
-            if "origin_id" in model:
+            if "origin_meeting_id" in model:
                 # remove again from reverse meeting field introduced in this migration
                 meeting_fqid = fqid_from_collection_and_id(
                     "meeting", model["origin_meeting_id"]
@@ -53,6 +53,7 @@ class Migration(BaseMigration):
             fields = ["all_origin_ids", "all_derived_motion_ids"]
             for i, field in enumerate(fields):
                 for other_motion_id in model.get(field, []):
+                    # breakpoint()
                     other_motion_fqid = fqid_from_collection_and_id(
                         "motion", other_motion_id
                     )

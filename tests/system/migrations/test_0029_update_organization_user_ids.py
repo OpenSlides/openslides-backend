@@ -45,3 +45,37 @@ def test_migration(write, finalize, assert_model):
         },
         position=2,
     )
+
+
+def test_create_user_before_organization(write, finalize, assert_model):
+    write(
+        {"type": "create", "fqid": USER_FQID, "fields": {"id": 1}},
+        {
+            "type": "create",
+            "fqid": ONE_ORGANIZATION_FQID,
+            "fields": {"id": 1},
+        },
+    )
+
+    finalize("0029_update_organization_user_ids")
+
+    assert_model(
+        ONE_ORGANIZATION_FQID,
+        {
+            "id": 1,
+            "user_ids": [1],
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
+        position=1,
+    )
+    assert_model(
+        USER_FQID,
+        {
+            "id": 1,
+            "organization_id": 1,
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
+        position=1,
+    )
