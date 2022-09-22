@@ -23,6 +23,9 @@ class VoteAdapter(VoteService):
         message = f"Vote service sends HTTP {response.status_code} with the following content: {str(response.content)}."
         if response.status_code < 400:
             self.logger.debug(message)
+        elif response.status_code == 500:
+            self.logger.error(message)
+            raise VoteServiceException("Vote service sends HTTP 500.")
         else:
             self.logger.error(message)
             raise VoteServiceException(message)
