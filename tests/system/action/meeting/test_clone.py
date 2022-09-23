@@ -734,6 +734,7 @@ class MeetingClone(BaseActionTestCase):
             "motion_poll_default_100_percent_base": "YN",
             "users_enable_presence_view": True,
             "users_enable_vote_weight": True,
+            "users_enable_vote_delegations": True,
             "users_allow_self_set_present": True,
             "users_pdf_welcometitle": "title",
             "users_pdf_welcometext": "text",

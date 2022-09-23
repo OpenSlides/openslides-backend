@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "055a748bcec9043cb9b76f1931292e0c"
+MODELS_YML_CHECKSUM = "4f1ac0faad81a76552f5230c639f8d40"
 
 
 class Organization(Model):
@@ -526,6 +526,7 @@ class Meeting(Model):
     users_email_body = fields.TextField(
         default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
     )
+    users_enable_vote_delegations = fields.BooleanField(default=True)
     assignments_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.TextField()
     assignment_poll_ballot_paper_selection = fields.CharField(

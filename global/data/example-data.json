@@ -443,6 +443,7 @@
             "motion_poll_default_backend": "fast",
             "users_enable_presence_view": true,
             "users_enable_vote_weight": false,
+            "users_enable_vote_delegations": true,
             "users_allow_self_set_present": true,
             "users_pdf_welcometitle": "Welcome to OpenSlides",
             "users_pdf_welcometext": "[Place for your welcome and help text.]",

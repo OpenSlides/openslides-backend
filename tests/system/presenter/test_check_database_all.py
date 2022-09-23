@@ -97,6 +97,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "motion_poll_default_backend": "fast",
             "users_enable_presence_view": False,
             "users_enable_vote_weight": False,
+            "users_enable_vote_delegations": True,
             "users_allow_self_set_present": True,
             "users_pdf_welcometitle": "Welcome to OpenSlides",
             "users_pdf_welcometext": "blablabla",

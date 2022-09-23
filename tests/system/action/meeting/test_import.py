@@ -151,6 +151,7 @@ class MeetingImport(BaseActionTestCase):
                         "motion_poll_default_backend": "fast",
                         "users_enable_presence_view": True,
                         "users_enable_vote_weight": True,
+                        "users_enable_vote_delegations": True,
                         "users_allow_self_set_present": True,
                         "users_pdf_welcometitle": "Welcome to OpenSlides",
                         "users_pdf_welcometext": "[Place for your welcome and help text.]",
