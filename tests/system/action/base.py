@@ -364,7 +364,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         informations = self.datastore.history_information([fqid])[fqid]
         if information is None:
-            assert information is None
+            assert informations is None
         else:
             assert informations
             self.assertEqual(informations[-1]["information"], information)

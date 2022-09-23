@@ -364,9 +364,8 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "all_derived_motion_ids": [11, 12, 13, 14],
             },
         )
-        # grandparent should not have a history entry
         self.assert_history_information("motion/11", ["Forwarding created"])
-        self.assert_history_information("motion/6", None)
+        self.assert_history_information("motion/6", ["Forwarding created"])
 
     def test_forward_with_deleted_motion_in_all_origin_ids(self) -> None:
         self.set_models(
