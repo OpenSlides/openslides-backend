@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional
+from collections import defaultdict
+from typing import Any, Dict, List, Optional, Set
 
 from datastore.migrations.core.base_migration import BaseMigration
 from datastore.migrations.core.events import (
@@ -6,6 +7,7 @@ from datastore.migrations.core.events import (
     CreateEvent,
     DeleteEvent,
     ListUpdateEvent,
+    UpdateEvent,
 )
 from datastore.shared.util import (
     collection_and_id_from_fqid,
@@ -15,6 +17,9 @@ from datastore.shared.util import (
 
 class Migration(BaseMigration):
     target_migration_index = 33
+
+    def position_init(self) -> None:
+        self.created_motion_ids: Dict[int, Set[int]] = defaultdict(set)
 
     def migrate_event(
         self,
@@ -26,17 +31,19 @@ class Migration(BaseMigration):
 
         if isinstance(event, CreateEvent):
             if "origin_id" in event.data:
-                origin = self.new_accessor.get_model(
-                    fqid_from_collection_and_id("motion", event.data["origin_id"])
+                self.created_motion_ids[event.data["origin_id"]].add(id)
+                origin_fqid = fqid_from_collection_and_id(
+                    "motion", event.data["origin_id"]
                 )
+                origin = self.new_accessor.get_model(origin_fqid)
                 event.data["origin_meeting_id"] = origin["meeting_id"]
                 meeting_fqid = fqid_from_collection_and_id(
                     "meeting", event.data["meeting_id"]
                 )
-                update_event = ListUpdateEvent(
+                meeting_update_event = ListUpdateEvent(
                     meeting_fqid, {"add": {"forwarded_motion_ids": [id]}}
                 )
-                return [event, update_event]
+                return [event, meeting_update_event]
         elif isinstance(event, DeleteEvent):
             new_events: List[BaseEvent] = [event]
             model: Dict[str, Any] = self.new_accessor.get_model(event.fqid)
@@ -63,4 +70,26 @@ class Migration(BaseMigration):
                         )
                     )
             return new_events
+        elif isinstance(event, UpdateEvent):
+            """Changes the update event
+            Precondition from backend: The backend sorts the events by type: create/update/delete
+            Therefore we don't need the self.get_additional_events-method and
+            can modify the original event.
+            To fix the current migration deleted motions will be removed from the update event
+            """
+            if "all_derived_motion_ids" in event.data and self.created_motion_ids.get(
+                id
+            ):
+                new_derived_motion_ids: List[int] = []
+                for motion_id in event.data["all_derived_motion_ids"]:
+                    if motion_id in self.created_motion_ids[id]:
+                        new_derived_motion_ids.append(motion_id)
+                        continue
+                    _, deleted = self.new_accessor.get_model_ignore_deleted(
+                        fqid_from_collection_and_id("motion", motion_id)
+                    )
+                    if not deleted:
+                        new_derived_motion_ids.append(motion_id)
+                event.data["all_derived_motion_ids"] = new_derived_motion_ids
+                return [event]
         return None
