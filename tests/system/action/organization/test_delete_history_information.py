@@ -32,18 +32,10 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
             {
                 "title": "test",
                 "type": "analog",
-                "content_object_id": "assignment/1",
                 "pollmethod": "Y",
                 "options": [{"text": "test2", "Y": "10.000000"}],
                 "meeting_id": 1,
-                "global_yes": True,
-                "global_no": True,
-                "global_abstain": True,
-                "onehundred_percent_base": "Y",
-                "min_votes_amount": 5,
-                "max_votes_amount": 10,
-                "max_votes_per_option": 1,
-                "backend": "long",
+                "content_object_id": "assignment/1",
             },
         )
         self.assert_status_code(response, 200)
