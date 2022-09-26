@@ -1,5 +1,4 @@
-from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 from datastore.migrations.core.base_migration import BaseMigration
 from datastore.migrations.core.events import (
@@ -18,9 +17,6 @@ from datastore.shared.util import (
 class Migration(BaseMigration):
     target_migration_index = 33
 
-    def position_init(self) -> None:
-        self.created_motion_ids: Dict[int, Set[int]] = defaultdict(set)
-
     def migrate_event(
         self,
         event: BaseEvent,
@@ -31,7 +27,6 @@ class Migration(BaseMigration):
 
         if isinstance(event, CreateEvent):
             if "origin_id" in event.data:
-                self.created_motion_ids[event.data["origin_id"]].add(id)
                 origin_fqid = fqid_from_collection_and_id(
                     "motion", event.data["origin_id"]
                 )
@@ -77,14 +72,9 @@ class Migration(BaseMigration):
             can modify the original event.
             To fix the current migration deleted motions will be removed from the update event
             """
-            if "all_derived_motion_ids" in event.data and self.created_motion_ids.get(
-                id
-            ):
+            if "all_derived_motion_ids" in event.data:
                 new_derived_motion_ids: List[int] = []
                 for motion_id in event.data["all_derived_motion_ids"]:
-                    if motion_id in self.created_motion_ids[id]:
-                        new_derived_motion_ids.append(motion_id)
-                        continue
                     _, deleted = self.new_accessor.get_model_ignore_deleted(
                         fqid_from_collection_and_id("motion", motion_id)
                     )
