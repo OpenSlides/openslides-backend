@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "47560d563dc75fb2eb397f4c838acd3c"
+MODELS_YML_CHECKSUM = "8b191ba1bdfbce9be8e19ab3453490f0"
 
 
 class Organization(Model):
@@ -1453,7 +1453,8 @@ class Poll(Model):
     description = fields.TextField()
     title = fields.CharField(required=True)
     type = fields.CharField(
-        required=True, constraints={"enum": ["analog", "named", "pseudoanonymous"]}
+        required=True,
+        constraints={"enum": ["analog", "named", "pseudoanonymous", "cryptographic"]},
     )
     backend = fields.CharField(
         required=True, default="fast", constraints={"enum": ["long", "fast"]}
@@ -1489,6 +1490,21 @@ class Poll(Model):
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
         },
+    )
+    cryptographic_key = fields.CharField(
+        read_only=True,
+        constraints={"description": "base64 public key to cryptographic votes."},
+    )
+    cryptographic_key_signature = fields.CharField(
+        read_only=True,
+        constraints={"description": "base64 signature of cryptographic_key."},
+    )
+    votes_raw = fields.CharField(
+        read_only=True, constraints={"description": "original form of decrypted votes."}
+    )
+    votes_signature = fields.CharField(
+        read_only=True,
+        constraints={"description": "base64 signature of votes_raw field."},
     )
     content_object_id = fields.GenericRelationField(
         to={"motion": "poll_ids", "assignment": "poll_ids", "topic": "poll_ids"},
