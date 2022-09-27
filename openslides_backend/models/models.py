@@ -4,10 +4,14 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 MODELS_YML_CHECKSUM = "47560d563dc75fb2eb397f4c838acd3c"
 =======
 MODELS_YML_CHECKSUM = "2105f41bc17f708e18e38c5d49b88f36"
 >>>>>>> f21b14ff (Update models for cryptographic votes)
+=======
+MODELS_YML_CHECKSUM = "8b191ba1bdfbce9be8e19ab3453490f0"
+>>>>>>> 39c00f60 (Fix merge)
 
 
 class Organization(Model):
