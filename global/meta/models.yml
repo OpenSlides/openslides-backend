@@ -2712,7 +2712,7 @@ poll:
       - analog
       - named
       - pseudoanonymous
-      - crypt
+      - cryptographic
     restriction_mode: A
   backend:
     type: string
@@ -2807,14 +2807,14 @@ poll:
     read_only: true
     required: true
     restriction_mode: A
-  crypt_key:
+  cryptographic_key:
     type: string
-    description: base64 public key to encrypt votes.
+    description: base64 public key to cryptographic votes.
     read_only: true
     restriction_mode: A
-  crypt_key_signature:
+  cryptographic_key_signature:
     type: string
-    description: base64 signature of crypt_key.
+    description: base64 signature of cryptographic_key.
     read_only: true
     restriction_mode: A
   votes_raw:
