@@ -444,3 +444,8 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1", {"all_projection_ids": [2], "projection_ids": [2]}
         )
+
+    def test_delete_prevent_delete_oneself(self) -> None:
+        response = self.request("user.delete", {"id": 1})
+        self.assert_status_code(response, 400)
+        assert "You cannot delete yourself." in response.json["message"]
