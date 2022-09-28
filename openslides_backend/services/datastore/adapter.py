@@ -455,5 +455,10 @@ class DatastoreAdapter(BaseDatastoreService):
         self.logger.debug("Get Everything from datastore.")
         return self.retrieve(command)
 
+    def delete_history_information(self) -> None:
+        command = commands.DeleteHistoryInformation()
+        self.logger.debug("Delete history information send to datastore.")
+        self.retrieve(command)
+
     def reset(self, hard: bool = True) -> None:
         self.locked_fields = {}
