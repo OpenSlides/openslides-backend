@@ -42,10 +42,12 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
         remove meeting_id if present is False.
         """
         self.meeting_ids: Set[int] = set()
+        self.present_values: Set[bool] = set()
         for instance in action_data:
             meeting_id = instance.pop("meeting_id")
             self.meeting_ids.add(meeting_id)
             present = instance.pop("present")
+            self.present_values.add(present)
             user = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["is_present_in_meeting_ids"],
@@ -94,7 +96,21 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
         raise PermissionDenied("You are not allowed to set present.")
 
     def get_history_information(self) -> Optional[List[str]]:
+        # use present_values to get present_str
+        present_str = "(not) "
+        if len(self.present_values) == 1 and list(self.present_values)[0]:
+            present_str = ""
+        elif len(self.present_values) == 1 and not list(self.present_values)[0]:
+            present_str = "not "
+
+        # use meeting_ids and present_str to get the history info.
         if len(self.meeting_ids) == 1:
             meeting_id = list(self.meeting_ids)[0]
-            return [f"Set (not) present in meeting {meeting_id}"]
-        return ["Set (not) present in different meetings"]
+            meeting = self.datastore.get(
+                fqid_from_collection_and_id("meeting", meeting_id), ["name"]
+            )
+            meeting_str = meeting.get("name")
+            if not meeting_str:
+                meeting_str = str(meeting_id)
+            return [f"Set {present_str}present in meeting {meeting_str}"]
+        return ["Set {present_str)present in different meetings"]
