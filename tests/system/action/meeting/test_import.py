@@ -1,6 +1,6 @@
 import base64
 import time
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Optional, cast
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
@@ -40,7 +40,9 @@ class MeetingImport(BaseActionTestCase):
             }
         )
 
-    def create_request_data(self, datapart: Dict[str, Any] = {}) -> Dict[str, Any]:
+    def create_request_data(
+        self, datapart: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         data: Dict[str, Any] = {
             "committee_id": 1,
             "meeting": {
@@ -326,11 +328,12 @@ class MeetingImport(BaseActionTestCase):
                 },
             },
         }
-        for collection, models in datapart.items():
-            if collection not in data["meeting"]:
-                data["meeting"][collection] = models
-            else:
-                data["meeting"][collection].update(models)
+        if datapart:
+            for collection, models in datapart.items():
+                if collection not in data["meeting"]:
+                    data["meeting"][collection] = models
+                else:
+                    data["meeting"][collection].update(models)
 
         return data
 
