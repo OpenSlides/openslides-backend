@@ -18,20 +18,21 @@ services:
             - ../global:/app/global
             - ../scripts:/app/scripts
         environment:
-            - DATASTORE_READER_HOST=reader
+            - DATASTORE_READER_HOST=datastore-reader
             - DATASTORE_READER_PORT=9010
-            - DATASTORE_WRITER_HOST=writer
+            - DATASTORE_WRITER_HOST=datastore-writer
             - DATASTORE_WRITER_PORT=9011
             - AUTH_HOST=auth
             - MESSAGE_BUS_HOST=redis
+            - DATASTORE_DATABASE_NAME=openslides-test
         depends_on:
-            - writer
+            - datastore-writer
         networks:
             - datastore
-            - postgresql
+            - postgres
             - auth
             - redis
-    reader:
+    datastore-reader:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
             args:
@@ -42,12 +43,13 @@ services:
             - "9010:9010"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
+            - DATASTORE_DATABASE_NAME=openslides-test
         depends_on:
-            - postgresql
+            - postgres
         networks:
             - datastore
-            - postgresql
-    writer:
+            - postgres
+    datastore-writer:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
             args:
@@ -58,12 +60,13 @@ services:
             - "9011:9011"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
+            - DATASTORE_DATABASE_NAME=openslides-test
         depends_on:
-            - postgresql
+            - postgres
             - redis
         networks:
             - datastore
-            - postgresql
+            - postgres
             - redis
     auth:
         build:
@@ -75,13 +78,13 @@ services:
         environment:
             - MESSAGE_BUS_HOST=redis
             - CACHE_HOST=cache
-            - DATASTORE_READER_HOST=reader
+            - DATASTORE_READER_HOST=datastore-reader
             - DATASTORE_READER_PORT=9010
-            - DATASTORE_WRITER_HOST=writer
+            - DATASTORE_WRITER_HOST=datastore-writer
             - DATASTORE_WRITER_PORT=9011
         depends_on:
-            - reader
-            - writer
+            - datastore-reader
+            - datastore-writer
             - redis
             - cache
         networks:
@@ -98,14 +101,14 @@ services:
         environment:
             - OPENSLIDES_DEVELOPMENT=1
             - VOTE_HOST=vote
-            - DATASTORE_READER_HOST=reader
+            - DATASTORE_READER_HOST=datastore-reader
             - MESSAGING=redis
             - MESSAGE_BUS_HOST=redis
             - VOTE_REDIS_HOST=cache
-            - VOTE_DATABASE_HOST=postgresql
+            - VOTE_DATABASE_HOST=postgres
             - VOTE_DATABASE_USER=openslides
             - VOTE_DATABASE_PASSWORD=openslides
-            - VOTE_DATABASE_NAME=openslides
+            - VOTE_DATABASE_NAME=openslides-test
             - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
             - DATASTORE_DATABASE_NAME=openslides
             - DATASTORE_DATABASE_USER=openslides
@@ -113,7 +116,7 @@ services:
             - AUTH=ticket
             - AUTH_HOST=auth
         depends_on:
-            - reader
+            - datastore-reader
             - redis
             - auth
             - cache
@@ -122,15 +125,15 @@ services:
             - redis
             - auth
             - cache
-            - postgresql
-    postgresql:
+            - postgres
+    postgres-test:
         image: postgres:11
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides
-            - POSTGRES_DB=openslides
+            - POSTGRES_DB=openslides-test
         networks:
-            - postgresql
+            - postgres
     redis:
         image: redis:alpine
         ports:
@@ -145,7 +148,7 @@ services:
             - cache
 networks:
     datastore:
-    postgresql:
+    postgres:
     redis:
     cache:
     auth:

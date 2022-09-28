@@ -10,7 +10,7 @@ services:
         environment:
             - PYTHONPATH=/app:/datastore-service
             - MYPYPATH=/app:/datastore-service
-    writer:
+    datastore-writer:
         build:
             context: ../../openslides-datastore-service/
             dockerfile: Dockerfile.dev
