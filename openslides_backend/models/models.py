@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "8b191ba1bdfbce9be8e19ab3453490f0"
+MODELS_YML_CHECKSUM = "6428f002f26d66164444d6f44089b8cb"
 
 
 class Organization(Model):
@@ -1491,11 +1491,11 @@ class Poll(Model):
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
         },
     )
-    cryptographic_key = fields.CharField(
+    crypt_key = fields.CharField(
         read_only=True,
         constraints={"description": "base64 public key to cryptographic votes."},
     )
-    cryptographic_key_signature = fields.CharField(
+    crypt_signature = fields.CharField(
         read_only=True,
         constraints={"description": "base64 signature of cryptographic_key."},
     )

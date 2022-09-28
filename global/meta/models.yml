@@ -2807,12 +2807,12 @@ poll:
     read_only: true
     required: true
     restriction_mode: A
-  cryptographic_key:
+  crypt_key:
     type: string
     description: base64 public key to cryptographic votes.
     read_only: true
     restriction_mode: A
-  cryptographic_key_signature:
+  crypt_signature:
     type: string
     description: base64 signature of cryptographic_key.
     read_only: true
