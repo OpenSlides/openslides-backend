@@ -244,7 +244,14 @@ class UpdateHistoryMixin(Action):
     def get_history_information(self) -> Optional[List[str]]:
         informations: List[str] = []
 
-        # User updated
+        info_update = False
+        all_meetings: List[Set[str]] = []
+        all_groups_added: List[Set[int]] = []
+        all_groups_removed: List[Set[int]] = []
+        info_cml_or_oml = False
+        info_active: Set[bool] = set()
+
+        # Scan the instances and collect the info for the history information
         for instance in self.instances:
             instance_fields = set(instance.keys())
 
@@ -261,29 +268,14 @@ class UpdateHistoryMixin(Action):
                 ]
             )
             if instance_fields & update_fields:
-                informations.append("User updated")
-                break
+                info_update = True
 
-        # User updated in meeting x
-        all_meetings: List[Set[str]] = []
-        for instance in self.instances:
             meeting_ids: Set[str] = set()
             for field in ("structure_level_$", "number_$", "vote_weight_$"):
                 if field in instance:
                     meeting_ids.update(instance[field] or set())
             all_meetings.append(meeting_ids)
-        if any(all_meetings):
-            self.add_to_history(
-                informations,
-                all_meetings,
-                "User updated in meeting {}",
-                "User updated in multiple meetings",
-            )
 
-        # Group x added/removed
-        all_groups_added: List[Set[int]] = []
-        all_groups_removed: List[Set[int]] = []
-        for instance in self.instances:
             if "group_$_ids" in instance:
                 group_ids_from_instance = self.get_group_ids_from_instance(instance)
                 group_ids_from_db = self.get_group_ids_from_db(instance)
@@ -291,33 +283,59 @@ class UpdateHistoryMixin(Action):
                 removed = group_ids_from_db - group_ids_from_instance
                 all_groups_added.append(added)
                 all_groups_removed.append(removed)
+
+            if (
+                "organization_management_level" in instance
+                or "committee_$_management_level" in instance
+            ):
+                info_cml_or_oml = True
+            if "is_active" in instance:
+                info_active.add(instance["is_active"])
+
+        # add the different history information
+        if info_update:
+            informations.append("User updated")
+
+        if any(all_meetings):
+            self.add_to_history(
+                informations,
+                all_meetings,
+                "User updated in meeting {}",
+                "User updated in multiple meetings",
+                "meeting",
+            )
+
         check_added = any(all_groups_added)
         check_removed = any(all_groups_removed)
         if check_added and check_removed:
             informations.append("Groups changed")
         elif check_added:
             self.add_to_history(
-                informations, all_groups_added, "Group {} added", "Groups changed"
+                informations,
+                all_groups_added,
+                "Group {} added",
+                "Groups changed",
+                "group",
             )
         elif check_removed:
             self.add_to_history(
-                informations, all_groups_removed, "Group {} removed", "Groups changed"
+                informations,
+                all_groups_removed,
+                "Group {} removed",
+                "Groups changed",
+                "group",
             )
 
-        # OML/CML changed
-        for instance in self.instances:
-            if (
-                "organization_management_level" in instance
-                or "committee_$_management_level" in instance
-            ):
-                informations.append("OML/CML changed")
-                break
+        if info_cml_or_oml:
+            informations.append("OML/CML changed")
 
-        # Set (in)active
-        for instance in self.instances:
-            if "is_active" in instance:
+        if info_active:
+            if len(info_active) == 1 and list(info_active)[0]:
+                informations.append("Set active")
+            elif len(info_active) == 1 and not list(info_active)[0]:
+                informations.append("Set inactive")
+            else:
                 informations.append("Set (in)active")
-                break
 
         return informations
 
@@ -327,6 +345,7 @@ class UpdateHistoryMixin(Action):
         data: List[Set[Any]],
         single_msg: str,
         multi_msg: str,
+        collection: str,
     ) -> None:
         # assert data not empty
         for entries in data:
@@ -335,27 +354,34 @@ class UpdateHistoryMixin(Action):
                 break
 
         if all([set([entry_id]) == entries for entries in data]):
-            informations.append(single_msg.format(entry_id))
+            name = self.datastore.get(
+                fqid_from_collection_and_id(collection, entry_id), ["name"]
+            ).get("name")
+            if not name:
+                name = entry_id
+            informations.append(single_msg.format(name))
         else:
             informations.append(multi_msg)
 
     def get_group_ids_from_db(self, instance: Dict[str, Any]) -> Set[int]:
         user_fqid = fqid_from_collection_and_id("user", instance["id"])
-        user1 = self.datastore.get(user_fqid, ["group_$_ids"], use_changed_models=False)
-        if not user1.get("group_$_ids"):
+        user_prepare_fetch = self.datastore.get(
+            user_fqid, ["group_$_ids"], use_changed_models=False
+        )
+        if not user_prepare_fetch.get("group_$_ids"):
             return set()
         # You can give partial group_$_ids in the instance.
         # so groups of meetings, which meeting is not in instance,
         # doesn't count.
         fields = [
             f"group_${meeting_id}_ids"
-            for meeting_id in user1["group_$_ids"]
+            for meeting_id in user_prepare_fetch["group_$_ids"]
             if f"group_${meeting_id}_ids" in instance
         ]
         group_ids: Set[int] = set()
-        user2 = self.datastore.get(user_fqid, fields, use_changed_models=False)
+        user = self.datastore.get(user_fqid, fields, use_changed_models=False)
         for field in fields:
-            group_ids.update(user2.get(field) or [])
+            group_ids.update(user.get(field) or [])
         return group_ids
 
     def get_group_ids_from_instance(self, instance: Dict[str, Any]) -> Set[int]:

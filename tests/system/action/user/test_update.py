@@ -1305,7 +1305,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/4", {"is_active": True})
-        self.assert_history_information("user/4", ["Set (in)active"])
+        self.assert_history_information("user/4", ["Set active"])
 
     def test_update_negative_default_vote_weight(self) -> None:
         self.create_model("user/111", {"username": "user111"})
@@ -1503,7 +1503,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/111": {"username": "user111"},
-                "meeting/110": {"is_active_in_organization_id": 1},
+                "meeting/110": {"is_active_in_organization_id": 1, "name": "Test"},
             }
         )
         response = self.request(
@@ -1514,7 +1514,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("user/111", ["User updated in meeting 110"])
+        self.assert_history_information("user/111", ["User updated in meeting Test"])
 
     def test_update_history_add_group(self) -> None:
         self.create_meeting()
