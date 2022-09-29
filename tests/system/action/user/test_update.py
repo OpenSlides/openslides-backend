@@ -146,7 +146,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertCountEqual(meeting.get("user_ids", []), [223])
         self.assert_history_information(
             "user/223",
-            ["User updated in multiple meetings", "Groups changed", "OML/CML changed"],
+            ["User updated in multiple meetings", "Groups changed", "CML changed"],
         )
 
     def test_committee_manager_without_committee_ids(self) -> None:
@@ -196,7 +196,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertCountEqual(user["committee_ids"], [60, 61])
         self.assertCountEqual(user["committee_$can_manage_management_level"], [60, 61])
         self.assert_history_information(
-            "user/111", ["User updated", "Group 600 removed", "OML/CML changed"]
+            "user/111", ["User updated", "Group 600 removed", "CML changed"]
         )
 
     def test_committee_manager_remove_committee_ids(self) -> None:
@@ -1092,6 +1092,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
             },
         )
+        self.assert_history_information("user/111", ["OML changed"])
 
     def test_perm_group_E_OML_not_high_enough(self) -> None:
         """OML level to set is higher than level of request user"""

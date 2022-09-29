@@ -248,7 +248,8 @@ class UpdateHistoryMixin(Action):
         all_meetings: Set[str] = set()
         all_groups_added: Set[int] = set()
         all_groups_removed: Set[int] = set()
-        info_cml_or_oml = False
+        info_cml = False
+        info_oml = False
         info_active: Set[bool] = set()
 
         # Scan the instances and collect the info for the history information
@@ -284,11 +285,10 @@ class UpdateHistoryMixin(Action):
                 all_groups_added.update(added)
                 all_groups_removed.update(removed)
 
-            if (
-                "organization_management_level" in instance
-                or "committee_$_management_level" in instance
-            ):
-                info_cml_or_oml = True
+            if "organization_management_level" in instance:
+                info_oml = True
+            if "committee_$_management_level" in instance:
+                info_cml = True
             if "is_active" in instance:
                 info_active.add(instance["is_active"])
 
@@ -326,8 +326,10 @@ class UpdateHistoryMixin(Action):
                 "group",
             )
 
-        if info_cml_or_oml:
-            informations.append("OML/CML changed")
+        if info_oml:
+            informations.append("OML changed")
+        if info_cml:
+            informations.append("CML changed")
 
         if info_active:
             if len(info_active) == 1:
