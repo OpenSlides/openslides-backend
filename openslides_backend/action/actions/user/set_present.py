@@ -97,20 +97,24 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
 
     def get_history_information(self) -> Optional[List[str]]:
         # use present_values to get present_str
-        present_str = "(not) "
-        if len(self.present_values) == 1 and list(self.present_values)[0]:
-            present_str = ""
-        elif len(self.present_values) == 1 and not list(self.present_values)[0]:
-            present_str = "not "
+        msg_part_1 = "Changed presence"
+        if len(self.present_values) == 1:
+            present = self.present_values.pop()
+            if present:
+                msg_part_1 = "Set present"
+            else:
+                msg_part_1 = "Set not present"
 
         # use meeting_ids and present_str to get the history info.
         if len(self.meeting_ids) == 1:
-            meeting_id = list(self.meeting_ids)[0]
+            meeting_id = self.meeting_ids.pop()
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", meeting_id), ["name"]
             )
             meeting_str = meeting.get("name")
             if not meeting_str:
                 meeting_str = str(meeting_id)
-            return [f"Set {present_str}present in meeting {meeting_str}"]
-        return ["Set {present_str)present in different meetings"]
+            msg_part_2 = f" in meeting {meeting_str}"
+        else:
+            msg_part_2 = " in multiple meetings"
+        return [msg_part_1 + msg_part_2]

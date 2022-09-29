@@ -245,9 +245,9 @@ class UpdateHistoryMixin(Action):
         informations: List[str] = []
 
         info_update = False
-        all_meetings: List[Set[str]] = []
-        all_groups_added: List[Set[int]] = []
-        all_groups_removed: List[Set[int]] = []
+        all_meetings: Set[str] = set()
+        all_groups_added: Set[int] = set()
+        all_groups_removed: Set[int] = set()
         info_cml_or_oml = False
         info_active: Set[bool] = set()
 
@@ -274,15 +274,15 @@ class UpdateHistoryMixin(Action):
             for field in ("structure_level_$", "number_$", "vote_weight_$"):
                 if field in instance:
                     meeting_ids.update(instance[field] or set())
-            all_meetings.append(meeting_ids)
+            all_meetings.update(meeting_ids)
 
             if "group_$_ids" in instance:
                 group_ids_from_instance = self.get_group_ids_from_instance(instance)
                 group_ids_from_db = self.get_group_ids_from_db(instance)
                 added = group_ids_from_instance - group_ids_from_db
                 removed = group_ids_from_db - group_ids_from_instance
-                all_groups_added.append(added)
-                all_groups_removed.append(removed)
+                all_groups_added.update(added)
+                all_groups_removed.update(removed)
 
             if (
                 "organization_management_level" in instance
@@ -330,30 +330,28 @@ class UpdateHistoryMixin(Action):
             informations.append("OML/CML changed")
 
         if info_active:
-            if len(info_active) == 1 and list(info_active)[0]:
-                informations.append("Set active")
-            elif len(info_active) == 1 and not list(info_active)[0]:
-                informations.append("Set inactive")
+            if len(info_active) == 1:
+                active = info_active.pop()
+                if active:
+                    informations.append("Set active")
+                else:
+                    informations.append("Set inactive")
             else:
-                informations.append("Set (in)active")
+                informations.append("Activation status changed")
 
         return informations
 
     def add_to_history(
         self,
         informations: List[str],
-        data: List[Set[Any]],
+        data: Set[Any],
         single_msg: str,
         multi_msg: str,
         collection: str,
     ) -> None:
         # assert data not empty
-        for entries in data:
-            if entries:
-                entry_id = list(entries)[0]
-                break
-
-        if all([set([entry_id]) == entries for entries in data]):
+        if len(data) == 1:
+            entry_id = data.pop()
             name = self.datastore.get(
                 fqid_from_collection_and_id(collection, entry_id), ["name"]
             ).get("name")
