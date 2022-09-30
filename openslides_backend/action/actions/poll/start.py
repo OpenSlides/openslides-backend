@@ -55,8 +55,10 @@ class PollStartAction(
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
             self.control_countdown(meeting["poll_countdown_id"], "restart")
 
-        self.vote_service.start(instance["id"])
-
+        vote_response = self.vote_service.start(instance["id"])
+        if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
+            instance["crypt_key"] = vote_response.get("public_key", "")
+            instance["crypt_signature"] = vote_response.get("public_key_sig", "")
         return instance
 
     def get_on_failure(self, action_data: ActionData) -> Callable[[], None]:

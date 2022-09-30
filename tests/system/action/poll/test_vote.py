@@ -23,7 +23,7 @@ class BaseVoteTestCase(BaseActionTestCase):
         """Overwrite request method to reroute voting requests to the vote service."""
         if action == "poll.vote":
             if start_poll_before_vote:
-                self.vote_service.start(data["id"])
+                self.execute_action_internally("poll.start", {"id": data["id"]})
             response = self.vote_service.vote(data)
             if stop_poll_after_vote:
                 self.execute_action_internally("poll.stop", {"id": data["id"]})
@@ -956,7 +956,8 @@ class VotePollBaseTestClass(BaseVoteTestCase):
         raise NotImplementedError()
 
     def start_poll(self) -> None:
-        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
+        pass
+        #self.update_model("poll/1", {"state": Poll.STATE_STARTED})
 
     def add_option(self) -> None:
         self.set_models(
@@ -2599,7 +2600,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_vote_data(self) -> None:
-        self.start_poll()
+        #self.start_poll()
         response = self.request(
             "poll.vote",
             {"id": 1, "value": {"1": [None]}, "user_id": 1},

@@ -91,7 +91,7 @@ services:
             - cache
     vote:
         build:
-            context: "https://github.com/OpenSlides/openslides-vote-service.git#main"
+            context: "https://github.com/ostcar/openslides-vote-service.git#crypto-preperation"
         image: openslides-vote-dev
         ports:
             - "9013:9013"
@@ -112,17 +112,36 @@ services:
             - DATASTORE_DATABASE_HOST=postgresql
             - AUTH=ticket
             - AUTH_HOST=auth
+            - VOTE_DECRYPT_SERVICE=vote-decrypt:9014
         depends_on:
             - reader
             - redis
             - auth
             - cache
+            - vote-decrypt
         networks:
             - datastore
             - redis
             - auth
             - cache
             - postgresql
+            - vote-decrypt
+
+    vote-decrypt:
+        build:
+            context: "https://github.com/OpenSlides/vote-decrypt.git#main"
+        image: vote-decrypt-dev
+        ports:
+            - "9014:9014"
+        volumes:
+            - ./vote_decrypt:/run/secrets
+            - ../tests/system/action/poll/vote_decrypt_clear_data:/vote_data
+        environment:
+            - OPENSLIDES_DEVELOPMENT=1
+            - VOTE_DECRYPT_PORT=9014
+            - VOTE_DECRYPT_STORE=vote_data
+        networks:
+            - vote-decrypt
     postgresql:
         image: postgres:11
         environment:
@@ -149,3 +168,4 @@ networks:
     redis:
     cache:
     auth:
+    vote-decrypt:

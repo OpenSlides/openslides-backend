@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -9,9 +10,9 @@ class PollPublishActionTest(BaseActionTestCase):
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
             "poll/1": {
-                "type": "named",
                 "pollmethod": "Y",
                 "backend": "long",
+                "type": Poll.TYPE_NAMED,
                 "state": "finished",
                 "meeting_id": 1,
                 "content_object_id": "topic/1",
@@ -45,9 +46,9 @@ class PollPublishActionTest(BaseActionTestCase):
         )
 
     def test_publish_started(self) -> None:
-        self.test_models["poll/1"]["state"] = "started"
+        self.test_models["poll/1"]["state"] = "created"
         self.set_models(self.test_models)
-        self.vote_service.start(1)
+        self.execute_action_internally("poll.start", {"id": 1})
         response = self.request("poll.publish", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(

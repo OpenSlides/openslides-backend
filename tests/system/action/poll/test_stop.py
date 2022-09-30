@@ -16,17 +16,17 @@ class PollStopActionTest(PollTestMixin):
                 "meeting_id": 1,
             },
             "poll/1": {
-                "type": "named",
                 "pollmethod": "Y",
                 "backend": "fast",
+                "type": Poll.TYPE_NAMED,
                 "content_object_id": "topic/1",
-                "state": Poll.STATE_STARTED,
+                "state": Poll.STATE_CREATED,
                 "meeting_id": 1,
             },
             "meeting/1": {"is_active_in_organization_id": 1},
         }
 
-    def test_stop_correct(self) -> None:
+    def test_stop_correct_named(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
@@ -38,7 +38,155 @@ class PollStopActionTest(PollTestMixin):
                     "type": Poll.TYPE_NAMED,
                     "pollmethod": "YN",
                     "backend": "fast",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
+                    "option_ids": [1],
+                    "meeting_id": 1,
+                    "entitled_group_ids": [1],
+                },
+                "option/1": {"meeting_id": 1, "poll_id": 1},
+                "group/1": {"meeting_id": 1},
+                "meeting/1": {
+                    "users_enable_vote_weight": True,
+                    "default_group_id": 1,
+                    "poll_couple_countdown": True,
+                    "poll_countdown_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "group_ids": [1],
+                },
+                "projector_countdown/1": {
+                    "running": True,
+                    "default_time": 60,
+                    "countdown_time": 30.0,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        user1 = self.create_user_for_meeting(1)
+        user2 = self.create_user_for_meeting(1)
+        user3 = self.create_user_for_meeting(1)
+        self.set_models(
+            {
+                f"user/{user1}": {
+                    "vote_weight_$1": "2.000000",
+                    "is_present_in_meeting_ids": [1],
+                },
+                f"user/{user2}": {
+                    "vote_weight_$1": "3.000000",
+                    "is_present_in_meeting_ids": [1],
+                },
+                f"user/{user3}": {"vote_delegated_$1_to_id": user2},
+            }
+        )
+        self.start_poll(1)
+        for user_id in (user1, user2):
+            self.login(user_id)
+            response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
+            self.assert_status_code(response, 200)
+        self.login(1)
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        countdown = self.get_model("projector_countdown/1")
+        assert countdown.get("running") is False
+        assert countdown.get("countdown_time") == 60
+        poll = self.get_model("poll/1")
+        assert poll.get("state") == Poll.STATE_FINISHED
+        assert poll.get("votescast") == "2.000000"
+        assert poll.get("votesinvalid") == "0.000000"
+        assert poll.get("votesvalid") == "5.000000"
+        assert poll.get("entitled_users_at_stop") == [
+            {"voted": True, "user_id": user1, "vote_delegated_to_id": None},
+            {"voted": True, "user_id": user2, "vote_delegated_to_id": None},
+            {"voted": False, "user_id": user3, "vote_delegated_to_id": user2},
+        ]
+        # test history
+        self.assert_history_information("motion/1", ["Voting stopped"])
+
+    def test_stop_correct_pseudoanonymous(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
+                "motion/1": {
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "content_object_id": "motion/1",
+                    "type": Poll.TYPE_PSEUDOANONYMOUS,
+                    "pollmethod": "YN",
+                    "state": Poll.STATE_CREATED,
+                    "option_ids": [1],
+                    "meeting_id": 1,
+                    "entitled_group_ids": [1],
+                },
+                "option/1": {"meeting_id": 1, "poll_id": 1},
+                "group/1": {"meeting_id": 1},
+                "meeting/1": {
+                    "users_enable_vote_weight": True,
+                    "default_group_id": 1,
+                    "poll_couple_countdown": True,
+                    "poll_countdown_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "group_ids": [1],
+                },
+                "projector_countdown/1": {
+                    "running": True,
+                    "default_time": 60,
+                    "countdown_time": 30.0,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        user1 = self.create_user_for_meeting(1)
+        user2 = self.create_user_for_meeting(1)
+        user3 = self.create_user_for_meeting(1)
+        self.set_models(
+            {
+                f"user/{user1}": {
+                    "vote_weight_$1": "2.000000",
+                    "is_present_in_meeting_ids": [1],
+                },
+                f"user/{user2}": {
+                    "vote_weight_$1": "3.000000",
+                    "is_present_in_meeting_ids": [1],
+                },
+                f"user/{user3}": {"vote_delegated_$1_to_id": user2},
+            }
+        )
+        self.start_poll(1)
+        for user_id in (user1, user2):
+            self.login(user_id)
+            response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
+            self.assert_status_code(response, 200)
+        self.login(1)
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        countdown = self.get_model("projector_countdown/1")
+        assert countdown.get("running") is False
+        assert countdown.get("countdown_time") == 60
+        poll = self.get_model("poll/1")
+        assert poll.get("state") == Poll.STATE_FINISHED
+        assert poll.get("votescast") == "2.000000"
+        assert poll.get("votesinvalid") == "0.000000"
+        assert poll.get("votesvalid") == "5.000000"
+        assert poll.get("entitled_users_at_stop") == [
+            {"voted": True, "user_id": user1, "vote_delegated_to_id": None},
+            {"voted": True, "user_id": user2, "vote_delegated_to_id": None},
+            {"voted": False, "user_id": user3, "vote_delegated_to_id": user2},
+        ]
+        # test history
+        self.assert_history_information("motion/1", ["Voting stopped"])
+
+    def test_stop_correct_cryptographic(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
+                "motion/1": {
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "content_object_id": "motion/1",
+                    "type": Poll.TYPE_CRYPTOGRAPHIC,
+                    "pollmethod": "YN",
+                    "state": Poll.STATE_CREATED,
                     "option_ids": [1],
                     "meeting_id": 1,
                     "entitled_group_ids": [1],
@@ -108,11 +256,11 @@ class PollStopActionTest(PollTestMixin):
                     "meeting_id": 1,
                 },
                 "poll/1": {
-                    "type": "named",
                     "pollmethod": "Y",
                     "backend": "fast",
+                    "type": Poll.TYPE_NAMED,
                     "content_object_id": "motion/1",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "meeting_id": 1,
                     "entitled_group_ids": [3, 4],
                 },
@@ -142,11 +290,11 @@ class PollStopActionTest(PollTestMixin):
                     "meeting_id": 1,
                 },
                 "poll/1": {
-                    "type": "named",
                     "pollmethod": "Y",
                     "backend": "fast",
+                    "type": Poll.TYPE_NAMED,
                     "content_object_id": "motion/1",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
                 },

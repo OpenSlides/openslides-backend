@@ -15,6 +15,7 @@ class PollResetActionTest(PollTestMixin):
                 "meeting_id": 1,
             },
             "poll/1": {
+                "type": Poll.TYPE_NAMED,
                 "state": Poll.STATE_STARTED,
                 "option_ids": [1],
                 "global_option_id": 2,
@@ -100,7 +101,7 @@ class PollResetActionTest(PollTestMixin):
                 "group/1": {"user_ids": [1]},
                 "user/1": {"group_$1_ids": [1], "is_present_in_meeting_ids": [1]},
                 "poll/1": {
-                    "state": "started",
+                    "state": "created",
                     "option_ids": [1],
                     "global_option_id": 2,
                     "meeting_id": 1,
