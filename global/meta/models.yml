@@ -2818,7 +2818,7 @@ poll:
     read_only: true
     restriction_mode: A
   votes_raw:
-    type: string
+    type: text
     description: original form of decrypted votes.
     read_only: true
     restriction_mode: B
