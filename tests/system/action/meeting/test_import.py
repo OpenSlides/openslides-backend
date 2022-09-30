@@ -1085,6 +1085,31 @@ class MeetingImport(BaseActionTestCase):
             "meeting/2", {"logo_$_id": ["web_header"], "logo_$web_header_id": 1}
         )
 
+    def test_logo_dollar_id_wrong_replacement(self) -> None:
+        # Template Relation Field
+        request_data = self.create_request_data(
+            {
+                "mediafile": {
+                    "3": self.get_mediafile_data(
+                        3,
+                        {
+                            "used_as_logo_$_in_meeting_id": ["web"],
+                            "used_as_logo_$web_in_meeting_id": 1,
+                        },
+                    )
+                }
+            }
+        )
+        request_data["meeting"]["meeting"]["1"]["logo_$_id"] = ["web"]
+        request_data["meeting"]["meeting"]["1"]["logo_$web_id"] = 3
+        request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [3]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert (
+            "meeting/1/logo_$_id: Replacement web does not match replacement_enum ['projector_main', 'projector_header', 'web_header', 'pdf_header_l', 'pdf_header_r', 'pdf_footer_l', 'pdf_footer_r', 'pdf_ballot_paper']"
+            in response.json["message"]
+        )
+
     def test_is_public_error(self) -> None:
         request_data = self.create_request_data(
             {

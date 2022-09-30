@@ -475,6 +475,14 @@ class Checker:
                             f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Replacement {replacement} does not exist as a model of collection {replacement_collection}"
                         )
 
+            if template_field.replacement_enum:
+                replacement_enum = template_field.replacement_enum
+                for replacement in replacements:
+                    if replacement not in replacement_enum:
+                        self.errors.append(
+                            f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Replacement {replacement} does not match replacement_enum {replacement_enum}"
+                        )
+
             for field in model.keys():
                 if self.is_structured_field(field) and model[field]:
                     try:
