@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "220c43c91649c3a78449d8f00ad0fde4"
+MODELS_YML_CHECKSUM = "724441ebf4572a1128b64e55d260eb87"
 
 
 class Organization(Model):
@@ -87,6 +87,7 @@ class User(Model):
     )
     last_email_send = fields.TimestampField()
     is_demo_user = fields.BooleanField()
+    last_login = fields.TimestampField(read_only=True)
     organization_management_level = fields.CharField(
         constraints={
             "description": "Hierarchical permission level for the whole organization.",
