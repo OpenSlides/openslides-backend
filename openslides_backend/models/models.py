@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "4a61e8d2df15d75001a6580e454a78b7"
+MODELS_YML_CHECKSUM = "055a748bcec9043cb9b76f1931292e0c"
 
 
 class Organization(Model):
@@ -183,7 +183,6 @@ class User(Model):
         index=21,
         replacement_collection="meeting",
         to={"assignment_candidate": "user_id"},
-        on_delete=fields.OnDelete.SET_NULL,
     )
     projection__ids = fields.TemplateRelationListField(
         index=11,
