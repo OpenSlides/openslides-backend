@@ -250,6 +250,10 @@ user:
   is_demo_user:
     type: boolean
     restriction_mode: A
+  last_login:
+    type: timestamp
+    restriction_mode: A
+    read_only: true
 
   # Organization, meeting and committee
   organization_management_level:
