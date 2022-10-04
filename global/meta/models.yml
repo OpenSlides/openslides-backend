@@ -403,7 +403,7 @@ user:
     fields:
       type: relation-list
       to: assignment_candidate/user_id
-      on_delete: CASCADE
+      on_delete: SET_NULL
     restriction_mode: A
   projection_$_ids:
     type: template
@@ -3070,7 +3070,6 @@ assignment_candidate:
     type: relation
     to: user/assignment_candidate_$_ids
     restriction_mode: A
-    required: true
   meeting_id:
     type: relation
     to: meeting/assignment_candidate_ids
