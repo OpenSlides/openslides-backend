@@ -29,7 +29,7 @@ services:
             - datastore-writer
         networks:
             - datastore
-            - postgres
+            - postgres-test
             - auth
             - redis
     datastore-reader:
@@ -45,10 +45,10 @@ services:
             - OPENSLIDES_DEVELOPMENT=1
             - DATASTORE_DATABASE_NAME=openslides-test
         depends_on:
-            - postgres
+            - postgres-test
         networks:
             - datastore
-            - postgres
+            - postgres-test
     datastore-writer:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
@@ -62,11 +62,11 @@ services:
             - OPENSLIDES_DEVELOPMENT=1
             - DATASTORE_DATABASE_NAME=openslides-test
         depends_on:
-            - postgres
+            - postgres-test
             - redis
         networks:
             - datastore
-            - postgres
+            - postgres-test
             - redis
     auth:
         build:
@@ -105,7 +105,7 @@ services:
             - MESSAGING=redis
             - MESSAGE_BUS_HOST=redis
             - VOTE_REDIS_HOST=cache
-            - VOTE_DATABASE_HOST=postgres
+            - VOTE_DATABASE_HOST=postgres-test
             - VOTE_DATABASE_USER=openslides
             - VOTE_DATABASE_PASSWORD=openslides
             - VOTE_DATABASE_NAME=openslides-test
@@ -125,7 +125,7 @@ services:
             - redis
             - auth
             - cache
-            - postgres
+            - postgres-test
     postgres-test:
         image: postgres:11
         environment:
@@ -133,7 +133,7 @@ services:
             - POSTGRES_PASSWORD=openslides
             - POSTGRES_DB=openslides-test
         networks:
-            - postgres
+            - postgres-test
     redis:
         image: redis:alpine
         ports:
@@ -148,7 +148,7 @@ services:
             - cache
 networks:
     datastore:
-    postgres:
+    postgres-test:
     redis:
     cache:
     auth:
