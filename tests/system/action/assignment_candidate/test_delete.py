@@ -126,8 +126,12 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("assignment_candidate.delete", {"id": 111})
 
-        self.assert_status_code(response, 200)
-        self.assert_model_deleted("assignment_candidate/111")
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("assignment_candidate/111")
+        self.assertIn(
+            "It is not permitted to remove a candidate from a finished assignment!",
+            response.json["message"],
+        )
 
     def test_delete_no_permission(self) -> None:
         self.create_meeting()
