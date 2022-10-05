@@ -90,7 +90,7 @@ class StopControl(CountdownControl, Action):
         )  # maps options to their respective YNA sums
         for ballot in votes:
             user_token = get_user_token()
-            vote_weight = Decimal(ballot.get("weight")) or Decimal("1.000000")
+            vote_weight = Decimal(ballot.get("weight", "1.000000")) or Decimal("1.000000")
             votesvalid += vote_weight
             vote_template = {"user_token": user_token}
             if "vote_user_id" in ballot:
