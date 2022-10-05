@@ -1241,7 +1241,6 @@ meeting:
     restriction_mode: B
   users_enable_vote_delegations:
     type: boolean
-    default: True
     restriction_mode: B
 
   # Assignments
