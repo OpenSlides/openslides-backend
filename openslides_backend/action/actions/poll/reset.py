@@ -80,6 +80,10 @@ class PollResetAction(ExtendHistoryMixin, UpdateAction, PollPermissionMixin):
         instance["votesvalid"] = None
         instance["votesinvalid"] = None
         instance["votescast"] = None
+        instance["crypt_key"] = None
+        instance["crypt_signature"] = None
+        instance["votes_raw"] = None
+        instance["votes_signature"] = None
         return instance
 
     def delete_all_votes(self, poll_id: int) -> None:

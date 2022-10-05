@@ -21,6 +21,10 @@ class PollResetActionTest(PollTestMixin):
                 "global_option_id": 2,
                 "meeting_id": 1,
                 "content_object_id": "topic/1",
+                "crypt_key": "crypt_key",
+                "crypt_signature": "crypt_signature",
+                "votes_raw": "votes_raw",
+                "votes_signature": "votes_signature",
             },
             "option/1": {"vote_ids": [1, 2], "poll_id": 1, "meeting_id": 1},
             "option/2": {
@@ -79,6 +83,12 @@ class PollResetActionTest(PollTestMixin):
         assert option_2.get("yes") == "0.000000"
         assert option_2.get("no") == "0.000000"
         assert option_2.get("abstain") == "0.000000"
+
+        #check if the cryptographic fileds are cleared
+        assert poll.get("crypt_key") is None
+        assert poll.get("crypt_signature") is None
+        assert poll.get("votes_raw") is None
+        assert poll.get("votes_signature") is None
 
         # test history
         self.assert_history_information("topic/1", ["Voting reset"])
