@@ -110,10 +110,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             "user/111",
             {"assignment_candidate_$1_ids": [34], "assignment_candidate_$_ids": ["1"]},
         )
-        self.assert_model_deleted(
-            "assignment_candidate/34", {"assignment_id": 123, "user_id": 111}
+        self.assert_model_exists(
+            "assignment_candidate/34", {"assignment_id": 123, "user_id": None}
         )
-        self.assert_model_exists("assignment/123", {"candidate_ids": []})
+        self.assert_model_exists("assignment/123", {"candidate_ids": [34]})
 
     def test_delete_with_submitter(self) -> None:
         self.set_models(
