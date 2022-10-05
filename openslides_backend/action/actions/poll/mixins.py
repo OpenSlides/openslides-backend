@@ -119,7 +119,7 @@ class StopControl(CountdownControl, Action):
                             **vote_template,
                         }
                     )
-            elif isinstance(ballot("value"), str):
+            elif isinstance(ballot.get("value"), str):
                 vote_value = ballot["value"]
                 option_id = poll["global_option_id"]
                 option_results[option_id][vote_value] += vote_weight

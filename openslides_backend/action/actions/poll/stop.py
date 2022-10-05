@@ -43,6 +43,7 @@ class PollStopAction(
                         "pollmethod",
                         "global_option_id",
                         "entitled_group_ids",
+                        "type",
                     ],
                 ),
             ],
