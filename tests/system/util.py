@@ -1,7 +1,6 @@
 import copy
 import cProfile
 import os
-import shutil
 from typing import Any, Callable, Dict, List, Type
 from unittest.mock import MagicMock, Mock, patch
 
@@ -156,6 +155,7 @@ class CountDatastoreCalls:
     @property
     def calls(self) -> int:
         return sum(mock.call_count for mock in self.mocks)
+
 
 def remove_files_from_vote_decrypt_service() -> None:
     path = "tests/system/action/poll/vote_decrypt_clear_data"

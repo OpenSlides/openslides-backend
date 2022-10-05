@@ -84,7 +84,7 @@ class PollResetActionTest(PollTestMixin):
         assert option_2.get("no") == "0.000000"
         assert option_2.get("abstain") == "0.000000"
 
-        #check if the cryptographic fileds are cleared
+        # check if the cryptographic fileds are cleared
         assert poll.get("crypt_key") is None
         assert poll.get("crypt_signature") is None
         assert poll.get("votes_raw") is None

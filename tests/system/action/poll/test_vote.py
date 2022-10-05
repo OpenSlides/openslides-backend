@@ -957,7 +957,7 @@ class VotePollBaseTestClass(BaseVoteTestCase):
 
     def start_poll(self) -> None:
         pass
-        #self.update_model("poll/1", {"state": Poll.STATE_STARTED})
+        # self.update_model("poll/1", {"state": Poll.STATE_STARTED})
 
     def add_option(self) -> None:
         self.set_models(
@@ -2600,7 +2600,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_vote_data(self) -> None:
-        #self.start_poll()
+        # self.start_poll()
         response = self.request(
             "poll.vote",
             {"id": 1, "value": {"1": [None]}, "user_id": 1},
