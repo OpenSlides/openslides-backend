@@ -141,6 +141,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         motion = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["meeting_id", "state_id", "submitter_ids"],
+            lock_result=False,
         )
 
         # check for can_manage, all allowed
@@ -246,6 +247,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                     instance = self.datastore.get(
                         fqid_from_collection_and_id(collection, single_value),
                         [name_field],
+                        lock_result=False,
                     )
                     return [verbose_collection + " set to {}", instance[name_field]]
             else:

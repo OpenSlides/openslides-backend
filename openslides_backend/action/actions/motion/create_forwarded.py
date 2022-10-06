@@ -120,6 +120,7 @@ class MotionCreateForwarded(MotionCreateBase):
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["meeting_id"],
+            lock_result=False,
         )
         perm_origin = Permissions.Motion.CAN_FORWARD
         if not has_perm(
@@ -133,6 +134,7 @@ class MotionCreateForwarded(MotionCreateBase):
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["lead_motion_id", "statute_paragraph_id"],
+            lock_result=False,
         )
         if origin.get("lead_motion_id") or origin.get("statute_paragraph_id"):
             msg = "Amendments cannot be forwarded."

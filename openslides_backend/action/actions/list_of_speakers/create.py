@@ -22,6 +22,7 @@ class ListOfSpeakersCreate(SequentialNumbersMixin, CreateActionWithInferredMeeti
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["list_of_speakers_initially_closed"],
+            lock_result=False,
         )
         instance["closed"] = meeting.get("list_of_speakers_initially_closed", False)
         return instance

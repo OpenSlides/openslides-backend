@@ -29,6 +29,7 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
                 "submitter_ids",
                 "meeting_id",
             ],
+            lock_result=False,
         )
         if has_perm(
             self.datastore,

@@ -27,6 +27,7 @@ class ChatGroupUpdate(ChatEnabledMixin, CheckUniqueNameMixin, UpdateAction):
             chat_group = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["name"],
+                lock_result=False,
             )
             if instance["name"] != chat_group.get("name"):
                 self.check_name_unique(instance)

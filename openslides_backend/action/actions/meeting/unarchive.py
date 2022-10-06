@@ -23,6 +23,7 @@ class MeetingUnarchive(UpdateAction):
         meeting = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["committee_id", "is_active_in_organization_id"],
+            lock_result=False,
         )
         if meeting.get("is_active_in_organization_id"):
             raise ActionException(f"Meeting {instance['id']} is not archived.")
@@ -30,6 +31,7 @@ class MeetingUnarchive(UpdateAction):
         organization = self.datastore.get(
             ONE_ORGANIZATION_FQID,
             ["active_meeting_ids", "limit_of_meetings"],
+            lock_result=False,
         )
         if (
             limit_of_meetings := organization.get("limit_of_meetings", 0)

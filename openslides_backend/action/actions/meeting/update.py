@@ -243,6 +243,7 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             meeting = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["committee_id"],
+                lock_result=False,
             )
             is_manager = has_committee_management_level(
                 self.datastore,

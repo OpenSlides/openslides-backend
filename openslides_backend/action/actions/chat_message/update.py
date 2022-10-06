@@ -23,6 +23,7 @@ class ChatMessageUpdate(UpdateAction):
         chat_message = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["user_id"],
+            lock_result=False,
         )
         if chat_message.get("user_id") != self.user_id:
             raise PermissionDenied("You must be creator of a chat message to edit it.")

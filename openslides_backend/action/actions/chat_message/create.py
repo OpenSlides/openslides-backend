@@ -35,12 +35,14 @@ class ChatMessageCreate(CreateActionWithInferredMeeting):
         chat_group = self.datastore.get(
             fqid_from_collection_and_id("chat_group", instance["chat_group_id"]),
             ["meeting_id", "write_group_ids"],
+            lock_result=False,
         )
         write_group_set = set(chat_group.get("write_group_ids", []))
         meeting_id = chat_group["meeting_id"]
         user = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id),
             [f"group_${meeting_id}_ids"],
+            lock_result=False,
         )
         user_group_set = set(user.get(f"group_${meeting_id}_ids", []))
         if not (
