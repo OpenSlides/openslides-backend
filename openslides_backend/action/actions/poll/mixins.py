@@ -24,6 +24,7 @@ class PollPermissionMixin(Action):
             poll = self.datastore.get(
                 fqid_from_collection_and_id("poll", instance["id"]),
                 ["content_object_id", "meeting_id"],
+                lock_result=False,
             )
             content_object_id = poll.get("content_object_id", "")
             meeting_id = poll["meeting_id"]

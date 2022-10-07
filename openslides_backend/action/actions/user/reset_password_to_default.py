@@ -19,6 +19,7 @@ class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin
         user = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["default_password"],
+            lock_result=False,
         )
         default_password = self.auth.hash(str(user.get("default_password")))
         instance["password"] = default_password

@@ -42,7 +42,9 @@ class UserScopePermissionCheckMixin(UserScopeMixin, Action):
                 )
         elif scope == UserScope.Meeting:
             meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", scope_id), ["committee_id"]
+                fqid_from_collection_and_id("meeting", scope_id),
+                ["committee_id"],
+                lock_result=False,
             )
             if not has_committee_management_level(
                 self.datastore,

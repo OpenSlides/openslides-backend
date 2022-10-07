@@ -23,6 +23,7 @@ class CheckSpeechState(Action):
                 "list_of_speakers_can_set_contribution_self",
                 "list_of_speakers_enable_pro_contra_speech",
             ],
+            lock_result=False,
         )
         has_can_manage = has_perm(
             self.datastore,

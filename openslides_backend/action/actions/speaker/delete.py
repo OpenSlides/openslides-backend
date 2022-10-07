@@ -18,6 +18,7 @@ class SpeakerDeleteAction(DeleteAction):
         speaker = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["user_id"],
+            lock_result=False,
         )
         if speaker.get("user_id") == self.user_id:
             return

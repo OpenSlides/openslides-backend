@@ -34,6 +34,7 @@ class ProjectorCountdownCreate(CreateAction):
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
                 ["projector_countdown_default_time"],
+                lock_result=False,
             )
             instance["default_time"] = meeting.get("projector_countdown_default_time")
         instance["countdown_time"] = instance["default_time"]

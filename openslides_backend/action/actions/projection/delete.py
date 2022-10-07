@@ -29,6 +29,7 @@ class ProjectionDelete(DeleteAction):
                 "content_object_id",
                 "meeting_id",
             ],
+            lock_result=False,
         )
         if not (
             projection.get("current_projector_id")

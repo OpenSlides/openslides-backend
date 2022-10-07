@@ -26,6 +26,7 @@ class ProjectorCountdownDelete(DeleteAction):
                 "used_as_list_of_speakers_countdown_meeting_id",
                 "used_as_poll_countdown_meeting_id",
             ],
+            lock_result=False,
         )
         meeting_id = projector_countdown.get(
             "used_as_list_of_speakers_countdown_meeting_id"
