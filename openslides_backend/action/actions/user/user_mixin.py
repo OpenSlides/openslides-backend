@@ -191,7 +191,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
             get_many_request = GetManyRequest(
                 self.model.collection, list(user_ids), ["id"]
             )
-            gm_result = self.datastore.get_many([get_many_request])
+            gm_result = self.datastore.get_many([get_many_request], lock_result=False)
             users = gm_result.get(self.model.collection, {})
 
             set_action_data = user_ids

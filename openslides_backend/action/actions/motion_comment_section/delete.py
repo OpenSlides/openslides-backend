@@ -28,7 +28,7 @@ class MotionCommentSectionDeleteAction(DeleteAction):
             get_many_request = GetManyRequest(
                 "motion_comment", comment_ids, ["motion_id"]
             )
-            gm_result = self.datastore.get_many([get_many_request])
+            gm_result = self.datastore.get_many([get_many_request], lock_result=False)
             comments = gm_result.get("motion_comment", {})
 
             motions = set(

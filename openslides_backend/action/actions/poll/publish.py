@@ -47,6 +47,7 @@ class PollPublishAction(
         polls = self.datastore.get_many(
             [GetManyRequest(self.model.collection, ids, ["state"])],
             use_changed_models=False,
+            lock_result=False,
         )
         states = set(poll["state"] for poll in polls[self.model.collection].values())
         if len(states) == 1 and states.pop() == Poll.STATE_FINISHED:
