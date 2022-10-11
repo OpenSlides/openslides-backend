@@ -101,7 +101,9 @@ class SetNumberMixin(BaseAction):
             return existing_number_value
 
         meeting = self.datastore.get(
-            fqid_from_collection_and_id("meeting", meeting_id), ["motions_number_type"]
+            fqid_from_collection_and_id("meeting", meeting_id),
+            ["motions_number_type"],
+            lock_result=False,
         )
         if lead_motion_id:
             filter: Union[And, FilterOperator] = FilterOperator(

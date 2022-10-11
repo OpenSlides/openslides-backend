@@ -12,6 +12,7 @@ class ChatEnabledMixin(Action):
         organization = self.datastore.get(
             ONE_ORGANIZATION_FQID,
             ["enable_chat"],
+            lock_result=False,
         )
 
         if not organization.get("enable_chat"):

@@ -46,7 +46,9 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
 
     def check_meeting_in_committee(self, meeting_id: int, committee_id: int) -> None:
         meeting = self.datastore.get(
-            fqid_from_collection_and_id("meeting", meeting_id), ["committee_id"]
+            fqid_from_collection_and_id("meeting", meeting_id),
+            ["committee_id"],
+            lock_result=False,
         )
         if meeting.get("committee_id") != committee_id:
             raise ActionException(

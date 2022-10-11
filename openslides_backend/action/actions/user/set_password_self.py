@@ -30,6 +30,7 @@ class UserSetPasswordSelf(UpdateAction, CheckForArchivedMeetingMixin):
         db_instance = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, self.user_id),
             ["password"],
+            lock_result=False,
         )
 
         if not self.auth.is_equals(old_pw, db_instance["password"]):
@@ -44,6 +45,7 @@ class UserSetPasswordSelf(UpdateAction, CheckForArchivedMeetingMixin):
         user = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, self.user_id),
             ["can_change_own_password"],
+            lock_result=False,
         )
         if not user.get("can_change_own_password"):
             raise PermissionDenied("You cannot change your password.")

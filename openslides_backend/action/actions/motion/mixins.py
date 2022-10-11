@@ -12,6 +12,7 @@ class PermissionHelperMixin(Action):
         state = self.datastore.get(
             fqid_from_collection_and_id("motion_state", state_id),
             ["allow_submitter_edit"],
+            lock_result=False,
         )
         if not state.get("allow_submitter_edit"):
             return False

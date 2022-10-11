@@ -71,6 +71,7 @@ class SpeakerSpeak(CountdownControl, UpdateAction):
                     "list_of_speakers_couple_countdown",
                     "list_of_speakers_countdown_id",
                 ],
+                lock_result=False,
             )
             if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
                 "list_of_speakers_countdown_id"

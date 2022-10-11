@@ -27,9 +27,12 @@ class MotionCommentMixin(Action):
         user = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id),
             [f"group_${meeting_id}_ids"],
+            lock_result=False,
         )
         meeting = self.datastore.get(
-            fqid_from_collection_and_id("meeting", meeting_id), ["admin_group_id"]
+            fqid_from_collection_and_id("meeting", meeting_id),
+            ["admin_group_id"],
+            lock_result=False,
         )
 
         allowed_groups = set(section.get("write_group_ids", []))
@@ -52,11 +55,13 @@ class MotionCommentMixin(Action):
             comment = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["section_id"],
+                lock_result=False,
             )
             section_id = comment["section_id"]
         return self.datastore.get(
             fqid_from_collection_and_id("motion_comment_section", section_id),
             fields,
+            lock_result=False,
         )
 
     def get_history_information(self) -> Optional[List[str]]:

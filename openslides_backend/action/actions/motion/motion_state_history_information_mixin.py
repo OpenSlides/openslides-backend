@@ -15,6 +15,7 @@ class MotionStateHistoryInformationMixin(Action):
             instance = self.datastore.get(
                 fqid_from_collection_and_id("motion_state", single_id),
                 [name_field],
+                lock_result=False,
             )
             return [verbose_model + " set to {}", instance[name_field]]
         else:

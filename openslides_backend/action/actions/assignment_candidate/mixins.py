@@ -16,12 +16,14 @@ class PermissionMixin(Action):
             assignment_candidate = self.datastore.get(
                 fqid_from_collection_and_id("assignment_candidate", instance["id"]),
                 ["user_id", "assignment_id"],
+                lock_result=False,
             )
             user_id = assignment_candidate["user_id"]
             assignment_id = assignment_candidate["assignment_id"]
         assignment = self.datastore.get(
             fqid_from_collection_and_id("assignment", assignment_id),
             ["meeting_id", "phase"],
+            lock_result=False,
         )
         meeting_id = assignment["meeting_id"]
 

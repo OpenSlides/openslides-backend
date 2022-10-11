@@ -26,6 +26,7 @@ class PersonalNoteUpdateAction(UpdateAction, PermissionMixin):
         personal_note = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["user_id"],
+            lock_result=False,
         )
         if self.user_id != personal_note.get("user_id"):
             raise PermissionDenied("Cannot change not owned personal note.")

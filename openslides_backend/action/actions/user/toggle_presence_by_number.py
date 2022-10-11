@@ -98,6 +98,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["committee_id"],
+            lock_result=False,
         )
         if has_committee_management_level(
             self.datastore,

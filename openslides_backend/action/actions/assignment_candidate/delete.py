@@ -29,6 +29,7 @@ class AssignmentCandidateDelete(PermissionMixin, DeleteAction):
                 "assignment", assignment_candidate["assignment_id"]
             ),
             mapped_fields=["phase", "meeting_id"],
+            lock_result=False,
         )
         if assignment.get("phase") == "finished" and not self.is_meeting_deleted(
             assignment.get("meeting_id", 0)

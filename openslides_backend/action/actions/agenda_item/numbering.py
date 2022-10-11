@@ -36,6 +36,7 @@ class AgendaItemNumbering(SingularActionMixin, UpdateAction):
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),
             ["agenda_numeral_system", "agenda_number_prefix"],
+            lock_result=False,
         )
         numeral_system = meeting.get("agenda_numeral_system", "arabic")
         agenda_number_prefix = meeting.get("agenda_number_prefix")

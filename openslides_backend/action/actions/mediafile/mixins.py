@@ -141,7 +141,7 @@ class MediafileMixin(Action):
     ) -> None:
         if access_group_ids:
             gm_request = GetManyRequest("group", access_group_ids, ["meeting_id"])
-            gm_result = self.datastore.get_many([gm_request])
+            gm_result = self.datastore.get_many([gm_request], lock_result=False)
             groups = gm_result.get("group", {}).values()
             for group in groups:
                 if group.get("meeting_id") != meeting_id:

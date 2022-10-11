@@ -38,12 +38,14 @@ class ProjectorControlView(UpdateAction):
             projector = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 [field],
+                lock_result=False,
             )
             new_value = projector.get(field, 0) + step
         elif direction == "down":
             projector = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 [field],
+                lock_result=False,
             )
             new_value = projector.get(field, 0) - step
         else:

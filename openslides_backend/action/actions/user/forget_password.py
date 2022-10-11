@@ -61,7 +61,9 @@ For completeness your username: {username}"""
                 self.model.collection, filter_, ["id", "username"]
             )
 
-            organization = self.datastore.get(ONE_ORGANIZATION_FQID, ["url"])
+            organization = self.datastore.get(
+                ONE_ORGANIZATION_FQID, ["url"], lock_result=False
+            )
             url = organization.get("url", "")
 
             # try to send the mails.

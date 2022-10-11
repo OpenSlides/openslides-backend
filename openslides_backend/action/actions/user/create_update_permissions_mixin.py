@@ -36,6 +36,7 @@ class PermissionVarStore:
                 "committee_ids",
                 *self._cml_replacement_min_can_manage,
             ],
+            lock_result=False,
         )
         self.user_oml = OrganizationManagementLevel(
             self.user.get("organization_management_level")
@@ -235,7 +236,9 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             and scope_id not in permstore.user_meetings
         ):
             meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", scope_id), ["committee_id"]
+                fqid_from_collection_and_id("meeting", scope_id),
+                ["committee_id"],
+                lock_result=False,
             )
             raise MissingPermission(
                 {
@@ -310,6 +313,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", instance["id"]),
                 ["organization_management_level"],
+                lock_result=False,
             )
             if (
                 OrganizationManagementLevel(user.get("organization_management_level"))
@@ -377,6 +381,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", instance_user_id),
                 [*cml_fields],
+                lock_result=False,
             )
             committees_existing = get_set_from_dict_by_fieldlist(user, cml_fields)
             # Just changes with ^ symmetric_difference operat

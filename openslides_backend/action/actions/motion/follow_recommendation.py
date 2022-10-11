@@ -44,6 +44,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
         recommendation = self.datastore.get(
             fqid_from_collection_and_id("motion_state", recommendation_id),
             ["show_state_extension_field", "show_recommendation_extension_field"],
+            lock_result=False,
         )
         recommendation_extension = instance.pop("recommendation_extension", None)
         if (
