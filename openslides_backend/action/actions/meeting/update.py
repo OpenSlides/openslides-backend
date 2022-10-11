@@ -114,6 +114,7 @@ meeting_settings_keys = [
     "motion_poll_default_backend",
     "users_enable_presence_view",
     "users_enable_vote_weight",
+    "users_enable_vote_delegations",
     "users_allow_self_set_present",
     "users_pdf_welcometitle",
     "users_pdf_welcometext",

@@ -1239,6 +1239,9 @@ meeting:
 
       This email was generated automatically.
     restriction_mode: B
+  users_enable_vote_delegations:
+    type: boolean
+    restriction_mode: B
 
   # Assignments
   assignments_export_title:
