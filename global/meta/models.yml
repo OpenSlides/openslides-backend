@@ -112,6 +112,12 @@ organization:
     default: 0
     minimum: 0
 
+  vote_decrypt_public_main_key:
+    type: string
+    description: Public key from vote decrypt to validate cryptographic votes.
+    calculated: true
+    restriction_mode: A
+
   committee_ids:
     type: relation-list
     restriction_mode: B
