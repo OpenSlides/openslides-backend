@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from openslides_backend.locale.translator import Translator
 from openslides_backend.migrations import (
     assert_migration_index,
     get_backend_migration_index,
@@ -34,13 +35,24 @@ class OrganizationInitialImport(BaseActionTestCase):
         request_data = {"data": get_initial_data_file("global/data/example-data.json")}
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
+        Translator.set_translation_language("de")
         for collection in request_data["data"]:
             if collection == "_migration_index":
                 continue
             for id_ in request_data["data"][collection]:
                 entry = request_data["data"][collection][id_]
                 if collection == "organization":
-                    entry["login_text"] = "Guten Morgen!"
+                    for field in (
+                        "login_text",
+                        "legal_notice",
+                        "users_email_subject",
+                        "users_email_body",
+                    ):
+                        if entry.get(field):
+                            entry[field] = Translator.translate(entry[field])
+                if collection == "theme":
+                    if entry.get("name"):
+                        entry["name"] = Translator.translate(entry["name"])
                 self.assert_model_exists(f"{collection}/{id_}", entry)
 
     def test_initial_import_wrong_field(self) -> None:

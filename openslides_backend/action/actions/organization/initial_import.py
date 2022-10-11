@@ -65,7 +65,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             data = get_initial_data_file(INITIAL_DATA_FILE)
             instance["data"] = data
 
-        self.translate_organization(data)
+        self.translate_organization_and_theme(data)
         # check datavalidation
         checker = Checker(data=data, mode="all", migration_mode="permissive")
         try:
@@ -87,20 +87,23 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         ):
             raise ActionException("Datastore is not empty.")
 
-    def translate_organization(self, data: Dict[str, Any]) -> None:
-        if "organization" not in data or "1" not in data["organization"]:
-            return
-        organization = data["organization"]["1"]
-        Translator.set_translation_language(organization.get("default_language"))
-        translation_fields = (
-            "legal_notice",
-            "login_text",
-            "users_email_subject",
-            "users_email_body",
-        )
-        for field in translation_fields:
-            if organization.get(field):
-                organization[field] = _(organization[field])
+    def translate_organization_and_theme(self, data: Dict[str, Any]) -> None:
+        if "organization" in data and "1" in data["organization"]:
+            organization = data["organization"]["1"]
+            Translator.set_translation_language(organization.get("default_language"))
+            translation_fields = (
+                "legal_notice",
+                "login_text",
+                "users_email_subject",
+                "users_email_body",
+            )
+            for field in translation_fields:
+                if organization.get(field):
+                    organization[field] = _(organization[field])
+        if data.get("theme"):
+            for entry in data["theme"].values():
+                if entry.get("name"):
+                    entry["name"] = _(entry["name"])
 
     def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         json_data = instance["data"]
