@@ -338,7 +338,7 @@ class DatastoreAdapter(BaseDatastoreService):
         self.logger.debug(
             f"Start HISTORY_INFORMATION request to datastore with the following data: {request}"
         )
-        return self.reader.history_information(request)
+        return dict(self.reader.history_information(request))
 
     def lock_collection_fields_from_filter(
         self,
