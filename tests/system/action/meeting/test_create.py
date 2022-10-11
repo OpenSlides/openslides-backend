@@ -378,3 +378,64 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "You cannot create a new meeting, because you reached your limit of 1 active meetings.",
             response.json["message"],
         )
+
+    def test_create_organization_default_language(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                    "default_language": "de",
+                },
+                "committee/1": {
+                    "name": "test_committee",
+                    "user_ids": [2],
+                    "organization_id": 1,
+                },
+                "group/1": {},
+                "user/2": {},
+                "organization_tag/3": {},
+            }
+        )
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "organization_tag_ids": [3],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("group/2", {"name": "Standard"})
+
+    def test_create_language(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                    "default_language": "en",
+                },
+                "committee/1": {
+                    "name": "test_committee",
+                    "user_ids": [2],
+                    "organization_id": 1,
+                },
+                "group/1": {},
+                "user/2": {},
+                "organization_tag/3": {},
+            }
+        )
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "organization_tag_ids": [3],
+                "language": "de",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("group/2", {"name": "Standard"})

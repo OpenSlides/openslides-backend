@@ -35,3 +35,6 @@ msgstr "Zurücksetzen Ihres Openslides-Passworts"
 
 msgid "Good Morning!"
 msgstr "Guten Morgen!"
+
+msgid "Default"
+msgstr "Standard"

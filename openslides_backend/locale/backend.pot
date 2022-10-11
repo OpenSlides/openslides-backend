@@ -34,3 +34,6 @@ msgstr ""
 
 msgid "Good Morning!"
 msgstr ""
+
+msgid "Default"
+msgstr ""

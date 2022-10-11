@@ -2,10 +2,13 @@ from typing import Any, Dict, List, Type, cast
 
 from openslides_backend.models.models import Meeting
 
+from ....locale.translator import Translator
+from ....locale.translator import translate as _
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
 from ....shared.schema import id_list_schema
+from ....shared.util import ONE_ORGANIZATION_FQID
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -37,6 +40,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             "user_ids": id_list_schema,
             "admin_ids": id_list_schema,
             "set_as_template": {"type": "boolean"},
+            "language": {"type": "string"},
         },
     )
     dependencies = [
@@ -48,6 +52,13 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
+        # update Translator
+        if instance.get("language") is None:
+            organization = self.datastore.get(
+                ONE_ORGANIZATION_FQID, ["default_language"], lock_result=False
+            )
+            instance["language"] = organization.get("default_language")
+        Translator.set_translation_language(instance["language"])
         # handle set_as_template
         if instance.pop("set_as_template", None):
             instance["template_for_organization_id"] = 1
@@ -71,7 +82,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         self.apply_instance(instance)
         action_data = [
             {
-                "name": "Default",
+                "name": _("Default"),
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -85,11 +96,11 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                 ],
             },
             {
-                "name": "Admin",
+                "name": _("Admin"),
                 "meeting_id": instance["id"],
             },
             {
-                "name": "Delegates",
+                "name": _("Delegates"),
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -107,7 +118,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                 ],
             },
             {
-                "name": "Staff",
+                "name": _("Staff"),
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_MANAGE,
@@ -125,7 +136,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                 ],
             },
             {
-                "name": "Committees",
+                "name": _("Committees"),
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -146,11 +157,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         fqid_default_group = fqid_from_collection_and_id("group", action_results[0]["id"])  # type: ignore
         fqid_admin_group = fqid_from_collection_and_id("group", action_results[1]["id"])  # type: ignore
         fqid_delegates_group = fqid_from_collection_and_id("group", action_results[2]["id"])  # type: ignore
-        assert self.datastore.changed_models[fqid_default_group]["name"] == "Default"
-        assert self.datastore.changed_models[fqid_admin_group]["name"] == "Admin"
-        assert (
-            self.datastore.changed_models[fqid_delegates_group]["name"] == "Delegates"
-        )
 
         instance["default_group_id"] = id_from_fqid(fqid_default_group)
         instance["admin_group_id"] = id_from_fqid(fqid_admin_group)
@@ -190,11 +196,11 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
 
         action_data_countdowns = [
             {
-                "title": "Speaking time",
+                "title": _("Speaking time"),
                 "meeting_id": instance["id"],
             },
             {
-                "title": "Voting",
+                "title": _("Voting"),
                 "meeting_id": instance["id"],
             },
         ]
@@ -213,7 +219,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         if CreateActionClass == MotionWorkflowCreateSimpleWorkflowAction:
             return [
                 {
-                    "name": "Simple Workflow",
+                    "name": _("Simple Workflow"),
                     "default_workflow_meeting_id": instance["id"],
                     "default_amendment_workflow_meeting_id": instance["id"],
                     "default_statute_amendment_workflow_meeting_id": instance["id"],
@@ -223,14 +229,14 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         elif CreateActionClass == MotionWorkflowCreateComplexWorkflowAction:
             return [
                 {
-                    "name": "Complex Workflow",
+                    "name": _("Complex Workflow"),
                     "meeting_id": instance["id"],
                 }
             ]
         elif CreateActionClass == ProjectorCreateAction:
             return [
                 {
-                    "name": "Default projector",
+                    "name": _("Default projector"),
                     "meeting_id": instance["id"],
                     "used_as_reference_projector_meeting_id": instance["id"],
                     "used_as_default_$_in_meeting_id": {
