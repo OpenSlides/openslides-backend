@@ -51,7 +51,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
     skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance = super().update_instance(instance)
         # update Translator
         if instance.get("language") is None:
             organization = self.datastore.get(
@@ -59,6 +58,8 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             )
             instance["language"] = organization.get("default_language")
         Translator.set_translation_language(instance["language"])
+
+        instance = super().update_instance(instance)
         # handle set_as_template
         if instance.pop("set_as_template", None):
             instance["template_for_organization_id"] = 1

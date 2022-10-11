@@ -1,5 +1,7 @@
 from typing import Any, Dict, Iterable, List, cast
 
+from openslides_backend.locale.translator import Translator
+from openslides_backend.locale.translator import translate as _
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
@@ -407,7 +409,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("group/2", {"name": "Standard"})
+        Translator.set_translation_language("de")
+        self.assert_model_exists("group/2", {"name": _("Default")})
 
     def test_create_language(self) -> None:
         self.set_models(
@@ -438,4 +441,5 @@ class MeetingCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("group/2", {"name": "Standard"})
+        Translator.set_translation_language("de")
+        self.assert_model_exists("group/2", {"name": _("Default")})
