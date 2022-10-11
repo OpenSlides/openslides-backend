@@ -111,6 +111,12 @@ organization:
     restriction_mode: B
     default: 0
     minimum: 0
+  default_language:
+    type: string
+    restriction_mode: A
+    read_only: true
+    description: Filled at organization initial import.
+    default: en
 
   vote_decrypt_public_main_key:
     type: string
@@ -732,6 +738,11 @@ meeting:
   imported_at:
     type: timestamp
     restriction_mode: B
+  language:
+    type: string
+    restriction_mode: A
+    description: Filled at meeting creation.
+    read_only: true
 
   # Configuration (only for the server owner)
   jitsi_domain:

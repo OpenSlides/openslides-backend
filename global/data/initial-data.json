@@ -6,6 +6,7 @@
             "name": "[Your organization]",
             "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly. The event organizer is resposible for the content.",
             "login_text": "Welcome to OpenSlides. Please login.",
+            "default_language": "en",
             "enable_electronic_voting": true,
             "limit_of_meetings": 0,
             "limit_of_users": 0,

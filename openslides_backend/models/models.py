@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "80d7fc302612376567fed8973f83bc22"
+MODELS_YML_CHECKSUM = "5b99e53418d7a5caebfc4c7175723880"
 
 
 class Organization(Model):
@@ -32,6 +32,11 @@ class Organization(Model):
             "description": "Maximum of active users for the whole organization. 0 means no limitation at all",
             "minimum": 0,
         },
+    )
+    default_language = fields.CharField(
+        read_only=True,
+        default="en",
+        constraints={"description": "Filled at organization initial import."},
     )
     committee_ids = fields.RelationListField(to={"committee": "organization_id"})
     active_meeting_ids = fields.RelationListField(
@@ -341,6 +346,9 @@ class Meeting(Model):
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
     imported_at = fields.TimestampField()
+    language = fields.CharField(
+        read_only=True, constraints={"description": "Filled at meeting creation."}
+    )
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
     jitsi_room_password = fields.CharField()

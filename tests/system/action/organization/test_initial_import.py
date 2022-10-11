@@ -38,9 +38,10 @@ class OrganizationInitialImport(BaseActionTestCase):
             if collection == "_migration_index":
                 continue
             for id_ in request_data["data"][collection]:
-                self.assert_model_exists(
-                    f"{collection}/{id_}", request_data["data"][collection][id_]
-                )
+                entry = request_data["data"][collection][id_]
+                if collection == "organization":
+                    entry["login_text"] = "Guten Morgen!"
+                self.assert_model_exists(f"{collection}/{id_}", entry)
 
     def test_initial_import_wrong_field(self) -> None:
         self.datastore.truncate_db()

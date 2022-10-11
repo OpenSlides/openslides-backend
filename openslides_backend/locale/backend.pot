@@ -32,3 +32,5 @@ msgstr ""
 msgid "Reset your OpenSlides password"
 msgstr ""
 
+msgid "Good Morning!"
+msgstr ""
