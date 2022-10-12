@@ -8,7 +8,6 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
 from ....shared.schema import id_list_schema
-from ....shared.util import ONE_ORGANIZATION_FQID
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -40,6 +39,8 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             "user_ids": id_list_schema,
             "admin_ids": id_list_schema,
             "set_as_template": {"type": "boolean"},
+        },
+        additional_required_fields={
             "language": {"type": "string"},
         },
     )
@@ -51,14 +52,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
     skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        # update Translator
-        if instance.get("language") is None:
-            organization = self.datastore.get(
-                ONE_ORGANIZATION_FQID, ["default_language"], lock_result=False
-            )
-            instance["language"] = organization.get("default_language")
         Translator.set_translation_language(instance["language"])
-
         instance = super().update_instance(instance)
         # handle set_as_template
         if instance.pop("set_as_template", None):
