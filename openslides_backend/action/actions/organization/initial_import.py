@@ -65,7 +65,6 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             data = get_initial_data_file(INITIAL_DATA_FILE)
             instance["data"] = data
 
-        self.translate_organization_and_theme(data)
         # check datavalidation
         checker = Checker(data=data, mode="all", migration_mode="permissive")
         try:
@@ -73,6 +72,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         except CheckException as ce:
             raise ActionException(str(ce))
 
+        self.translate_organization_and_theme(data)
         self.data_migration_index = data["_migration_index"]
 
         return instance
@@ -88,18 +88,17 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             raise ActionException("Datastore is not empty.")
 
     def translate_organization_and_theme(self, data: Dict[str, Any]) -> None:
-        if "organization" in data and "1" in data["organization"]:
-            organization = data["organization"]["1"]
-            Translator.set_translation_language(organization.get("default_language"))
-            translation_fields = (
-                "legal_notice",
-                "login_text",
-                "users_email_subject",
-                "users_email_body",
-            )
-            for field in translation_fields:
-                if organization.get(field):
-                    organization[field] = _(organization[field])
+        organization = data["organization"]["1"]
+        Translator.set_translation_language(organization["default_language"])
+        translation_fields = (
+            "legal_notice",
+            "login_text",
+            "users_email_subject",
+            "users_email_body",
+        )
+        for field in translation_fields:
+            if organization.get(field):
+                organization[field] = _(organization[field])
         if data.get("theme"):
             for entry in data["theme"].values():
                 if entry.get("name"):

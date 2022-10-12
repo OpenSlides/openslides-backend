@@ -113,10 +113,11 @@ organization:
     minimum: 0
   default_language:
     type: string
-    restriction_mode: A
     read_only: true
     description: Filled at organization initial import.
     default: en
+    restriction_mode: A
+    required: true
 
   vote_decrypt_public_main_key:
     type: string

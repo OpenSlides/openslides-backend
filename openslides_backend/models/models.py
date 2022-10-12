@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "5b99e53418d7a5caebfc4c7175723880"
+MODELS_YML_CHECKSUM = "821fcb1a94641fcb075e7d33f23f9753"
 
 
 class Organization(Model):
@@ -34,6 +34,7 @@ class Organization(Model):
         },
     )
     default_language = fields.CharField(
+        required=True,
         read_only=True,
         default="en",
         constraints={"description": "Filled at organization initial import."},
