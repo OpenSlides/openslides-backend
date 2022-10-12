@@ -80,6 +80,7 @@ class MeetingActions(BaseActionTestCase):
             {
                 "name": "test_meeting",
                 "committee_id": 1,
+                "language": "en",
             },
         )
         self.assert_status_code(response, 200)
