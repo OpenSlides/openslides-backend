@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
+from tests.system.util import CountDatastoreCalls
 
 DEFAULT_PASSWORD = "password"
 
@@ -34,10 +35,12 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                 "assignment/111": {"title": "title_xTcEkItp", "meeting_id": 1333},
             }
         )
-        response = self.request(
-            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
-        )
+        with CountDatastoreCalls() as counter:
+            response = self.request(
+                "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+            )
         self.assert_status_code(response, 200)
+        assert counter.calls == 6
         model = self.get_model("assignment_candidate/1")
         assert model.get("user_id") == 110
         assert model.get("assignment_id") == 111
