@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
@@ -32,6 +33,24 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
         },
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
+
+    def prefetch(self, action_data: ActionData) -> None:
+        assign_item_ids = set()
+        for instance in action_data:
+            if instance.get("parent_id"):
+                assign_item_ids.add(instance["parent_id"])
+            if instance.get("ids"):
+                assign_item_ids.update(instance["ids"])
+
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "agenda_item",
+                    list(assign_item_ids),
+                    ["parent_id", "child_ids", "meeting_id", "weight", "level"],
+                )
+            ]
+        )
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)

@@ -1,5 +1,6 @@
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
+from tests.system.util import CountDatastoreCalls
 
 
 class AgendaItemAssignActionTest(BaseActionTestCase):
@@ -79,10 +80,12 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                 },
             }
         )
-        response = self.request(
-            "agenda_item.assign", {"meeting_id": 222, "ids": [8, 9], "parent_id": 7}
-        )
+        with CountDatastoreCalls() as counter:
+            response = self.request(
+                "agenda_item.assign", {"meeting_id": 222, "ids": [8, 9], "parent_id": 7}
+            )
         self.assert_status_code(response, 200)
+        assert counter.calls == 3
         agenda_item_7 = self.get_model("agenda_item/7")
         assert agenda_item_7.get("child_ids") == [8, 9]
         assert agenda_item_7.get("parent_id") is None
