@@ -4,10 +4,12 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from ..user.create import UserCreate
 from ..user.update import UserUpdate
 from .create_base import MotionCreateBase
@@ -26,6 +28,44 @@ class MotionCreateForwarded(MotionCreateBase):
         required_properties=["meeting_id", "title", "text", "origin_id"],
     )
     history_information = "Forwarding created"
+
+    def prefetch(self, action_data: ActionData) -> None:
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting",
+                    list({instance["meeting_id"] for instance in action_data}),
+                    [
+                        "id",
+                        "is_active_in_organization_id",
+                        "name",
+                        "motions_default_workflow_id",
+                        "committee_id",
+                        "default_group_id",
+                        "motion_submitter_ids",
+                        "motions_number_type",
+                        "motions_number_min_digits",
+                        "agenda_item_creation",
+                        "list_of_speakers_initially_closed",
+                        "list_of_speakers_ids",
+                        "motion_ids",
+                    ],
+                ),
+                GetManyRequest(
+                    "motion",
+                    list({instance["origin_id"] for instance in action_data}),
+                    [
+                        "meeting_id",
+                        "lead_motion_id",
+                        "statute_paragraph_id",
+                        "state_id",
+                        "all_origin_ids",
+                        "derived_motion_ids",
+                        "all_derived_motion_ids",
+                    ],
+                ),
+            ]
+        )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting = self.datastore.get(
