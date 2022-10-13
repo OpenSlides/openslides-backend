@@ -17,6 +17,7 @@ from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from .mixins import PermissionHelperMixin
 
 RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
@@ -50,6 +51,38 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             "workflow_id": optional_id_schema,
         },
     )
+
+    def prefetch(self, action_data: ActionData) -> None:
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "motion",
+                    list(
+                        {
+                            instance["id"]
+                            for instance in action_data
+                            if instance.get("id")
+                        }
+                    ),
+                    [
+                        "meeting_id",
+                        "is_active_in_organization_id",
+                        "name",
+                        "id",
+                        "category_id",
+                        "block_id",
+                        "supporter_ids",
+                        "tag_ids",
+                        "attachment_ids",
+                        "recommendation_extension_reference_ids",
+                        "state_id",
+                        "submitter_ids",
+                        "text",
+                        "amendment_paragraph_$",
+                    ],
+                )
+            ]
+        )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         timestamp = round(time.time())
