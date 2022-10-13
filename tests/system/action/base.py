@@ -362,9 +362,9 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         Asserts that the last history information for the given model is the given information.
         """
-        informations = self.datastore.history_information([fqid])[fqid]
+        informations = self.datastore.history_information([fqid]).get(fqid)
         if information is None:
-            assert information is None
+            assert informations is None
         else:
             assert informations
             self.assertEqual(informations[-1]["information"], information)
