@@ -37,15 +37,9 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         }
         self.set_models(
             {
-                "user/2": {
-                    **self.user2,
-                },
-                "user/3": {
-                    **self.user3,
-                },
-                "user/4": {
-                    **self.user4,
-                },
+                "user/2": self.user2,
+                "user/3": self.user3,
+                "user/4": self.user4,
             }
         )
 

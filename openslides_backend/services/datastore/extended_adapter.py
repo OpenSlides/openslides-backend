@@ -356,7 +356,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         # transform query into valid python code
         filter_code = sql_query.lower().replace("null", "None").replace(" = ", " == ")
         # regex for all FilterOperators which were translated by the SqlQueryHelper
-        regex = rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)|{MODEL_FIELD_NUMERIC_SQL}|lower\({MODEL_FIELD_NUMERIC_SQL}\)) (<|<=|>=|>|==|!=|is|is not) ({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|{COMPARISON_VALUE_TEXT_SQL}|lower\({COMPARISON_VALUE_TEXT_SQL}\)|None)"
+        regex = rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)|{MODEL_FIELD_NUMERIC_SQL}|lower\({MODEL_FIELD_NUMERIC_SQL}\)) (<|<=|>=|>|==|!=|is|is not|ilike) ({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|{COMPARISON_VALUE_TEXT_SQL}|lower\({COMPARISON_VALUE_TEXT_SQL}\)|None)"
         matches = re.findall(regex, filter_code)
         # this will hold all items from arguments, but correctly formatted for python and enhanced with validity checks
         formatted_args = []
@@ -372,6 +372,8 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 formatted_args.append(
                     f'self._comparable(model.get("{arguments[i]}"), {val_str}) and model.get("{arguments[i]}")'
                 )
+            elif match[0] == "ilike":
+                raise NotImplementedError("%= is not implemented for changed models")
             else:
                 formatted_args.append(f'model.get("{arguments[i]}")')
             i += 1

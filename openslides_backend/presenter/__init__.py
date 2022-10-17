@@ -10,6 +10,7 @@ from . import (  # noqa
     get_user_scope,
     get_users,
     number_of_users,
+    search_deleted_models,
     search_users_by_name_or_email,
     server_time,
 )

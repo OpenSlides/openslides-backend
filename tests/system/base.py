@@ -192,7 +192,9 @@ class BaseSystemTestCase(TestCase):
     def get_write_request(self, events: List[Event]) -> WriteRequest:
         return WriteRequest(events, user_id=0)
 
-    def set_models(self, models: Dict[str, Dict[str, Any]]) -> None:
+    def set_models(
+        self, models: Dict[str, Dict[str, Any]], deleted: bool = False
+    ) -> None:
         """
         Can be used to set multiple models at once, independent of create or update.
         Uses self.created_fqids to determine which models are already created. If you want to update
@@ -204,7 +206,7 @@ class BaseSystemTestCase(TestCase):
             if fqid in self.created_fqids:
                 events.extend(self.get_update_events(fqid, model))
             else:
-                events.extend(self.get_create_events(fqid, model))
+                events.extend(self.get_create_events(fqid, model, deleted))
         write_request = self.get_write_request(events)
         self.datastore.write(write_request)
 
