@@ -9,7 +9,7 @@ from typing import Any
 from datastore.reader.app import register_services
 from gunicorn.app.base import BaseApplication
 
-from .action.action_worker import gunicorn_post_request
+from .action.action_worker import gunicorn_post_request, gunicorn_worker_abort
 from .shared.env import Environment
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
@@ -58,12 +58,14 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             "workers": int(self.env.OPENSLIDES_BACKEND_NUM_WORKERS),
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
             "timeout": int(self.env.OPENSLIDES_BACKEND_WORKER_TIMEOUT),
+            "graceful_timeout": 30,  # time to finish after receiving restart signal
             "loglevel": self.env.get_loglevel().lower(),
             "reload": self.env.is_dev_mode(),
             "reload_engine": "auto",  # This is the default however.
             "worker_class": "gthread",  # async gthread with unlimite prolongation possibility
-            "threads": 5,  # Threads per Worker(process)
+            "threads": 3,  # Threads per Worker(process)
             "post_request": gunicorn_post_request,
+            "worker_abort": gunicorn_worker_abort,
         }
         for key, value in options.items():
             self.cfg.set(key, value)
