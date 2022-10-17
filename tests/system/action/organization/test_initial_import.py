@@ -67,6 +67,17 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_initial_import_missing_default_language(self) -> None:
+        self.datastore.truncate_db()
+        request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
+        del request_data["data"]["organization"]["1"]["default_language"]
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "organization/1: Missing fields default_language",
+            response.json["message"],
+        )
+
     def test_initial_import_wrong_type(self) -> None:
         self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
