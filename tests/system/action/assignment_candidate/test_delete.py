@@ -65,6 +65,31 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("assignment_candidate/111")
 
+    def test_delete_correct_empty_user(self) -> None:
+        self.set_models(
+            {
+                "meeting/1333": {
+                    "name": "name_JhlFOAfK",
+                    "assignment_candidate_ids": [111],
+                    "is_active_in_organization_id": 1,
+                },
+                "assignment/111": {
+                    "title": "title_xTcEkItp",
+                    "meeting_id": 1333,
+                    "candidate_ids": [111],
+                },
+                "assignment_candidate/111": {
+                    "user_id": None,
+                    "assignment_id": 111,
+                    "meeting_id": 1333,
+                },
+            }
+        )
+        response = self.request("assignment_candidate.delete", {"id": 111})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("assignment_candidate/111")
+
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
