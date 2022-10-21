@@ -13,6 +13,11 @@ class MotionCommentSectionUpdateAction(UpdateAction):
 
     model = MotionCommentSection()
     schema = DefaultSchema(MotionCommentSection()).get_update_schema(
-        optional_properties=["name", "read_group_ids", "write_group_ids"]
+        optional_properties=[
+            "name",
+            "read_group_ids",
+            "write_group_ids",
+            "submitter_can_write",
+        ]
     )
     permission = Permissions.Motion.CAN_MANAGE

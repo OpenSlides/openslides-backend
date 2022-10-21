@@ -139,3 +139,30 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
             "You are not in the write group of the section or in admin group."
             in response.json["message"]
         )
+
+    def test_create_permission_cause_submitter(self) -> None:
+        self.permission_test_models["motion_comment_section/78"]["write_group_ids"] = [
+            2
+        ]
+        self.permission_test_models["motion_comment_section/78"][
+            "submitter_can_write"
+        ] = True
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
+        self.permission_test_models["motion_submitter/1234"] = {
+            "user_id": self.user_id,
+            "motion_id": 357,
+        }
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion_comment.create",
+            {"comment": "test_Xcdfgee", "motion_id": 357, "section_id": 78},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion_comment/1",
+            {"comment": "test_Xcdfgee", "motion_id": 357, "section_id": 78},
+        )

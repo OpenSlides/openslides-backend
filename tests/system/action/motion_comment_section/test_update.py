@@ -36,6 +36,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
                 "name": "name_iuqAPRuD",
                 "read_group_ids": [23],
                 "write_group_ids": [23],
+                "submitter_can_write": False,
             },
         )
         self.assert_status_code(response, 200)
@@ -44,6 +45,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         assert model.get("meeting_id") == 222
         assert model.get("read_group_ids") == [23]
         assert model.get("write_group_ids") == [23]
+        assert model.get("submitter_can_write") is False
 
     def test_update_wrong_id(self) -> None:
         self.set_models(

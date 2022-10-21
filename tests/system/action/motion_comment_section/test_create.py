@@ -34,6 +34,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "read_group_ids": [23],
                 "write_group_ids": [23],
+                "submitter_can_write": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -43,6 +44,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         assert model.get("weight") == 10000
         assert model.get("read_group_ids") == [23]
         assert model.get("write_group_ids") == [23]
+        assert model.get("submitter_can_write") is True
 
     def test_create_empty_data(self) -> None:
         response = self.request("motion_comment_section.create", {})

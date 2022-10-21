@@ -2333,6 +2333,9 @@ motion_comment_section:
     read_only: true
     required: true
     restriction_mode: A
+  submitter_can_write:
+    type: boolean
+    restriction_mode: A
 
   comment_ids:
     type: relation-list
