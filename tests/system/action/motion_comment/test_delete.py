@@ -78,7 +78,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not in the write group of the section or in admin group."
+            "You are not in the write group of the section or in admin group and no submitter."
             in response.json["message"]
         )
 
