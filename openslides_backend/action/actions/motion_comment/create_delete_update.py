@@ -63,7 +63,10 @@ class MotionCommentMixin(Action):
 
         msg = f"You are not allowed to perform action {self.name}."
         msg += " You are not in the write group of the section or in admin group"
-        msg += " and no submitter."
+        if section.get("submitter_can_write"):
+            msg += " and no submitter"
+        msg += "."
+
         raise PermissionDenied(msg)
 
     def get_section(
