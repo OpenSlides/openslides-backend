@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "b314ac93c0250fd96d438686dea8c0eb"
+MODELS_YML_CHECKSUM = "8caab7cf05e1000b21f4b24d34685714"
 
 
 class Organization(Model):
@@ -1213,6 +1213,7 @@ class MotionCommentSection(Model):
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
         },
     )
+    submitter_can_write = fields.BooleanField()
     comment_ids = fields.RelationListField(
         to={"motion_comment": "section_id"},
         on_delete=fields.OnDelete.PROTECT,

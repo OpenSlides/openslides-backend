@@ -15,6 +15,10 @@ class MotionCommentSectionCreateAction(SequentialNumbersMixin, CreateAction):
     model = MotionCommentSection()
     schema = DefaultSchema(MotionCommentSection()).get_create_schema(
         required_properties=["name", "meeting_id"],
-        optional_properties=["read_group_ids", "write_group_ids"],
+        optional_properties=[
+            "read_group_ids",
+            "write_group_ids",
+            "submitter_can_write",
+        ],
     )
     permission = Permissions.Motion.CAN_MANAGE

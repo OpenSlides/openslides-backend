@@ -22,7 +22,9 @@ class MotionCommentMixin(Action):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         super().check_permissions(instance)
 
-        section = self.get_section(instance, ["write_group_ids", "meeting_id"])
+        section = self.get_section(
+            instance, ["write_group_ids", "meeting_id", "submitter_can_write"]
+        )
         meeting_id = section["meeting_id"]
         user = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id),
@@ -41,8 +43,30 @@ class MotionCommentMixin(Action):
         if allowed_groups.intersection(user_groups):
             return
 
+        if section.get("submitter_can_write"):
+            motion_id = instance.get("motion_id")
+            if not motion_id:
+                comment = self.datastore.get(
+                    fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                    ["motion_id"],
+                )
+                motion_id = comment.get("motion_id")
+
+            if motion_id and self.datastore.exists(
+                "motion_submitter",
+                And(
+                    FilterOperator("user_id", "=", self.user_id),
+                    FilterOperator("motion_id", "=", motion_id),
+                ),
+            ):
+                return
+
         msg = f"You are not allowed to perform action {self.name}."
-        msg += " You are not in the write group of the section or in admin group."
+        msg += " You are not in the write group of the section or in admin group"
+        if section.get("submitter_can_write"):
+            msg += " and no submitter"
+        msg += "."
+
         raise PermissionDenied(msg)
 
     def get_section(

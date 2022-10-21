@@ -107,3 +107,24 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
             {"comment": "test_Xcdfgee", "id": 111},
         )
         self.assert_status_code(response, 200)
+
+    def test_update_permission_cause_submitter(self) -> None:
+        self.test_models["motion_comment_section/78"]["write_group_ids"] = [2]
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
+        self.test_models["motion_comment_section/78"]["submitter_can_write"] = True
+        self.test_models["motion_submitter/777"] = {
+            "user_id": self.user_id,
+            "motion_id": 111,
+        }
+        self.test_models["motion/111"]["submitter_ids"] = [self.user_id]
+        self.set_models(self.test_models)
+        response = self.request(
+            "motion_comment.update",
+            {"comment": "test_Xcdfgee", "id": 111},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion_comment/111", {"comment": "test_Xcdfgee"})
