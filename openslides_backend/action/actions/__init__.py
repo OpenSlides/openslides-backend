@@ -40,6 +40,7 @@ def prepare_actions_map() -> None:
         theme,
         topic,
         user,
+        user_meeting,
         vote,
     )
 

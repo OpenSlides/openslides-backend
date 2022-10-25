@@ -302,6 +302,11 @@ user:
     to: committee/forwarding_user_id
     restriction_mode: E
 
+  user_meeting_ids:
+    type: relation-list
+    to: user_meeting/user_id
+    restriction_mode: TODO
+
   # Meeting specific personal data
   comment_$:
     type: template
@@ -451,6 +456,24 @@ user:
     to: organization/user_ids
     required: True
     restriction_mode: F
+
+user_meeting:
+  id:
+    type: number
+    required: true
+    restriction_mode: A
+    
+  user_id:
+    type: relation
+    to: user/user_meeting_ids
+    required: true
+    restriction_mode: TODO
+
+  meeting_id:
+    type: relation
+    to: meeting/user_meeting_ids
+    required: true
+    restriction_mode: TODO
 
 organization_tag:
   id:
@@ -1181,6 +1204,10 @@ meeting:
     restriction_mode: B
 
   # Users
+  user_meeting_ids:
+    type: relation-list
+    to: user_meeting/meeting_id
+    restriction_mode: TODO
   users_enable_presence_view:
     type: boolean
     default: False
