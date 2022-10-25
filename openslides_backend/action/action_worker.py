@@ -49,16 +49,17 @@ def handle_action_in_worker_thread(
     curr_thread.action_worker_thread = action_worker_thread
     action_worker_thread.start()
     while not action_worker_thread.started:
-        sleep(
-            0.001
-        )  # The action_worker_thread should gain the lock and NOT this one
+        sleep(0.001)  # The action_worker_thread should gain the lock and NOT this one
     if lock.acquire(timeout=THREAD_WATCH_TIMEOUT):
         lock.release()
         if hasattr(action_worker_thread, "exception"):
             raise action_worker_thread.exception
         if hasattr(action_worker_thread, "response"):
             return action_worker_thread.response
-        msg = "Action request ended with unknown reason, probably an unexpected timeout!"
+        msg = (
+            "Action request ended with unknown reason, "
+            "probably an unexpected timeout!"
+        )
         logger.error(msg)
         raise ActionException(msg)
 

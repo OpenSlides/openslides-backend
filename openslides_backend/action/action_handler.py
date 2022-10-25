@@ -55,7 +55,7 @@ payload_schema = fastjsonschema.compile(
                 "data": action_data_schema,
             },
             "required": ["action", "data"],
-            "additionalProperties": [False],
+            "additionalProperties": False,
         },
     }
 )

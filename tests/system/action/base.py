@@ -366,7 +366,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             self.set_models(models)
         response = self.request(action, action_data)
         if permission:
-            self.assertIn(response.status_code, (200, 202))
+            self.assert_status_code(response, 200)
         else:
             self.assert_status_code(response, 403)
             self.assertIn(
