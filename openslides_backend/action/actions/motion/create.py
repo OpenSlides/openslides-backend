@@ -4,11 +4,13 @@ from ....models.models import Motion
 from ....permissions.base_classes import Permission
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import POSITIVE_NUMBER_REGEX, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema, optional_id_schema
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create_base import MotionCreateBase
 
@@ -43,6 +45,38 @@ class MotionCreate(MotionCreateBase):
         },
     )
     history_information = "Motion created"
+
+    def prefetch(self, action_data: ActionData) -> None:
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting",
+                    list(
+                        {
+                            instance["meeting_id"]
+                            for instance in action_data
+                            if instance.get("meeting_id")
+                        }
+                    ),
+                    [
+                        "is_active_in_organization_id",
+                        "name",
+                        "id",
+                        "motions_default_workflow_id",
+                        "motions_default_amendment_workflow_id",
+                        "motions_default_statute_amendment_workflow_id",
+                        "motions_reason_required",
+                        "motion_submitter_ids",
+                        "motions_number_type",
+                        "agenda_item_creation",
+                        "agenda_item_ids",
+                        "list_of_speakers_initially_closed",
+                        "list_of_speakers_ids",
+                        "motion_ids",
+                    ],
+                )
+            ]
+        )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # special check logic

@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import AssignmentCandidate
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_inferred_meeting import (
@@ -8,6 +9,7 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from .mixins import PermissionMixin
 
 
@@ -24,6 +26,23 @@ class AssignmentCandidateCreate(PermissionMixin, CreateActionWithInferredMeeting
     )
 
     relation_field_for_meeting = "assignment_id"
+
+    def prefetch(self, action_data: ActionData) -> None:
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "assignment",
+                    list(
+                        {
+                            instance["assignment_id"]
+                            for instance in action_data
+                            if instance.get("assignment_id")
+                        }
+                    ),
+                    ["meeting_id", "phase", "candidate_ids"],
+                )
+            ]
+        )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

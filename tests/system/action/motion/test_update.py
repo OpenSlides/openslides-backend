@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
+from tests.system.util import CountDatastoreCalls
 
 
 class MotionUpdateActionTest(BaseActionTestCase):
@@ -44,19 +45,20 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 },
             }
         )
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "title": "title_bDFsWtKL",
-                "number": "124",
-                "text": "text_eNPkDVuq",
-                "reason": "reason_ukWqADfE",
-                "modified_final_version": "mfv_ilVvBsUi",
-                "amendment_paragraph_$": {3: "<html>test</html>"},
-                "start_line_number": 13,
-            },
-        )
+        with CountDatastoreCalls() as counter:
+            response = self.request(
+                "motion.update",
+                {
+                    "id": 111,
+                    "title": "title_bDFsWtKL",
+                    "number": "124",
+                    "text": "text_eNPkDVuq",
+                    "reason": "reason_ukWqADfE",
+                    "modified_final_version": "mfv_ilVvBsUi",
+                    "amendment_paragraph_$": {3: "<html>test</html>"},
+                    "start_line_number": 13,
+                },
+            )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/111")
         assert model.get("title") == "title_bDFsWtKL"
@@ -68,6 +70,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("amendment_paragraph_$") == ["3"]
         assert model.get("start_line_number") == 13
         self.assert_history_information("motion/111", ["Motion updated"])
+        assert counter.calls == 3
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
@@ -198,19 +201,20 @@ class MotionUpdateActionTest(BaseActionTestCase):
             }
         )
 
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "state_extension": "test_blablab_noon",
-                "recommendation_extension": "ext_sldennt [motion/112]",
-                "category_id": 4,
-                "block_id": 51,
-                "supporter_ids": [],
-                "tag_ids": [],
-                "attachment_ids": [],
-            },
-        )
+        with CountDatastoreCalls() as counter:
+            response = self.request(
+                "motion.update",
+                {
+                    "id": 111,
+                    "state_extension": "test_blablab_noon",
+                    "recommendation_extension": "ext_sldennt [motion/112]",
+                    "category_id": 4,
+                    "block_id": 51,
+                    "supporter_ids": [],
+                    "tag_ids": [],
+                    "attachment_ids": [],
+                },
+            )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/111")
         assert model.get("state_extension") == "test_blablab_noon"
@@ -232,6 +236,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "Motion updated",
             ],
         )
+        assert counter.calls == 12
 
     def test_update_workflow_id(self) -> None:
         self.set_models(
