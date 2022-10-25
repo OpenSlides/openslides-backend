@@ -57,10 +57,6 @@
                 "can_manage"
             ],
             "committee_$can_manage_management_level": [1],
-            "comment_$": [
-                "1"
-            ],
-            "comment_$1": "Test comment",
             "number_$": [
                 "1"
             ],
@@ -138,6 +134,7 @@
             "vote_delegated_vote_$1_ids": [
                 9
             ],
+            "meeting_user_ids": [1],
             "meeting_ids": [
                 1
             ],
@@ -157,10 +154,6 @@
             "committee_ids": [
                 1
             ],
-            "comment_$": [
-                "1"
-            ],
-            "comment_$1": "Test comment a",
             "number_$": [
                 "1"
             ],
@@ -208,6 +201,7 @@
                 9,
                 12
             ],
+            "meeting_user_ids": [2],
             "meeting_ids": [
                 1
             ],
@@ -224,10 +218,6 @@
             "can_change_own_password": true,
             "gender": "diverse",
             "default_vote_weight": "1.000000",
-            "comment_$": [
-                "1"
-            ],
-            "comment_$1": "Test comment b as guest",
             "number_$": [
                 "1"
             ],
@@ -278,6 +268,7 @@
                 8,
                 11
             ],
+            "meeting_user_ids": [3],
             "meeting_ids": [
                 1
             ],
@@ -285,6 +276,26 @@
             "committee_ids": [
                 1
             ]
+        }
+    },
+    "meeting_user": {
+        "1": {
+            "id": 1,
+            "user_id": 1,
+            "meeting_id": 1,
+            "comment": "Test comment"
+        },
+        "2": {
+            "id": 2,
+            "user_id": 2,
+            "meeting_id": 1,
+            "comment": "Test comment a"
+        },
+        "3": {
+            "id": 3,
+            "user_id": 3,
+            "meeting_id": 1,
+            "comment": "Test comment b as guest"
         }
     },
     "theme": {
@@ -441,6 +452,7 @@
                 3
             ],
             "motion_poll_default_backend": "fast",
+            "meeting_user_ids": [1, 2, 3],
             "users_enable_presence_view": true,
             "users_enable_vote_weight": false,
             "users_enable_vote_delegations": true,

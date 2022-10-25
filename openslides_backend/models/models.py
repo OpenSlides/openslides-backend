@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "2dea9b163c115aa0f9a6bd1f6166d08a"
+MODELS_YML_CHECKSUM = "05c1a3bc447ed805dc68b25d9136538e"
 
 
 class Organization(Model):
@@ -111,10 +111,6 @@ class User(Model):
         to={"committee": "forwarding_user_id"}
     )
     meeting_user_ids = fields.RelationListField(to={"meeting_user": "user_id"})
-    comment_ = fields.TemplateHTMLStrictField(
-        index=8,
-        replacement_collection="meeting",
-    )
     number_ = fields.TemplateCharField(
         index=7,
         replacement_collection="meeting",
@@ -224,6 +220,7 @@ class MeetingUser(Model):
     id = fields.IntegerField(required=True)
     user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
     meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
+    comment = fields.HTMLStrictField()
 
 
 class OrganizationTag(Model):

@@ -13,10 +13,6 @@ class MeetingUserUpdate(UpdateAction):
 
     model = MeetingUser()
     schema = DefaultSchema(MeetingUser()).get_update_schema(
-        optional_properties=[
-            "meeting_id",
-            "user_id",
-            # TODO: add moved fields here.
-        ],
+        optional_properties=["comment"],
     )
     permission = Permissions.User.CAN_MANAGE

@@ -48,7 +48,6 @@ class UserCreate(
             "group_$_ids",
             "vote_delegations_$_from_ids",
             "vote_delegated_$_to_id",
-            "comment_$",
             "number_$",
             "structure_level_$",
             "about_me_$",

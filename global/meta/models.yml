@@ -308,11 +308,6 @@ user:
     restriction_mode: B
 
   # Meeting specific personal data
-  comment_$:
-    type: template
-    replacement_collection: meeting
-    fields: HTMLStrict
-    restriction_mode: D
   number_$:
     type: template
     replacement_collection: meeting
@@ -462,18 +457,19 @@ meeting_user:
     type: number
     required: true
     restriction_mode: A
-    
   user_id:
     type: relation
     to: user/meeting_user_ids
     required: true
     restriction_mode: B
-
   meeting_id:
     type: relation
     to: meeting/meeting_user_ids
     required: true
     restriction_mode: B
+  comment:
+    type: HTMLStrict
+    restriction_mode: D
 
 organization_tag:
   id:

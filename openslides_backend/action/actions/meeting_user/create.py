@@ -14,6 +14,6 @@ class MeetingUserCreate(CreateAction):
     model = MeetingUser()
     schema = DefaultSchema(MeetingUser()).get_create_schema(
         required_properties=["user_id", "meeting_id"],
-        optional_properties=[],  # TODO add moved fields here
+        optional_properties=["comment"],
     )
     permission = Permissions.User.CAN_MANAGE
