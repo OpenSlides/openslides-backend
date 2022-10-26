@@ -16,6 +16,7 @@ def prepare_actions_map() -> None:
         list_of_speakers,
         mediafile,
         meeting,
+        meeting_user,
         motion,
         motion_block,
         motion_category,
@@ -40,7 +41,6 @@ def prepare_actions_map() -> None:
         theme,
         topic,
         user,
-        user_meeting,
         vote,
     )
 

@@ -1,20 +1,20 @@
 from typing import Any, Dict
 
-from ....models.models import UserMeeting
+from ....models.models import MeetingUser
 from ...generics.create import CreateAction
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("user_meeting.create", action_type=ActionType.STACK_INTERNAL)
-class UserMeetingCreateAction(CreateAction):
+@register_action("meeting_user.create", action_type=ActionType.STACK_INTERNAL)
+class MeetingUserCreateAction(CreateAction):
     """
-    Internal action to create a user meeting.
+    Internal action to create a meeting user.
     """
 
-    model = UserMeeting()
-    schema = DefaultSchema(UserMeeting()).get_create_schema(
+    model = MeetingUser()
+    schema = DefaultSchema(MeetingUser()).get_create_schema(
         required_properties=["user_id", "meeting_id"],
         optional_properties=[],  # TODO add moved fields here
     )

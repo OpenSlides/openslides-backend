@@ -1,20 +1,20 @@
 from typing import Any, Dict
 
-from ....models.models import UserMeeting
+from ....models.models import MeetingUser
 from ...generics.update import UpdateAction
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("user_meeting.update", action_type=ActionType.STACK_INTERNAL)
-class UserMeetingUpdateAction(UpdateAction):
+@register_action("meeting_user.update", action_type=ActionType.STACK_INTERNAL)
+class MeetingUserUpdateAction(UpdateAction):
     """
-    Internal action to update a user_meeting.
+    Internal action to update a meeting_user.
     """
 
-    model = UserMeeting()
-    schema = DefaultSchema(UserMeeting()).get_update_schema(
+    model = MeetingUser()
+    schema = DefaultSchema(MeetingUser()).get_update_schema(
         optional_properties=[
             "meeting_id",
             "user_id",
