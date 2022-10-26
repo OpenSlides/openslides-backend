@@ -1,16 +1,15 @@
-from typing import Any, Dict
 
 from ....models.models import MeetingUser
+from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
-from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("meeting_user.create", action_type=ActionType.STACK_INTERNAL)
-class MeetingUserCreateAction(CreateAction):
+@register_action("meeting_user.create")
+class MeetingUserCreate(CreateAction):
     """
-    Internal action to create a meeting user.
+    Action to create a meeting user.
     """
 
     model = MeetingUser()
@@ -18,6 +17,4 @@ class MeetingUserCreateAction(CreateAction):
         required_properties=["user_id", "meeting_id"],
         optional_properties=[],  # TODO add moved fields here
     )
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        pass
+    permission = Permissions.User.CAN_MANAGE

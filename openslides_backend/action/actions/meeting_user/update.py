@@ -1,16 +1,15 @@
-from typing import Any, Dict
 
 from ....models.models import MeetingUser
+from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
-from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("meeting_user.update", action_type=ActionType.STACK_INTERNAL)
-class MeetingUserUpdateAction(UpdateAction):
+@register_action("meeting_user.update")
+class MeetingUserUpdate(UpdateAction):
     """
-    Internal action to update a meeting_user.
+    Action to update a meeting_user.
     """
 
     model = MeetingUser()
@@ -21,6 +20,4 @@ class MeetingUserUpdateAction(UpdateAction):
             # TODO: add moved fields here.
         ],
     )
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        pass
+    permission = Permissions.User.CAN_MANAGE
