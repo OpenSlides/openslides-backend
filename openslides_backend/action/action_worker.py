@@ -4,7 +4,6 @@ from http import HTTPStatus
 from time import sleep, time
 from typing import Any, Dict, Optional, cast
 
-import psutil
 from gunicorn.http.message import Request
 from gunicorn.http.wsgi import Response
 from gunicorn.workers.gthread import ThreadWorker
@@ -27,6 +26,7 @@ def handle_action_in_worker_thread(
     user_id: int,
     is_atomic: bool,
     handler: ActionHandler,
+    internal: bool = False,
 ) -> ActionsResponse:
     logger = handler.logging.getLogger(__name__)
     lock = threading.Lock()
@@ -43,6 +43,7 @@ def handle_action_in_worker_thread(
         is_atomic,
         handler,
         lock,
+        internal,
     )
     curr_thread = cast(OSGunicornThread, threading.current_thread())
     curr_thread.action_worker_writing = action_worker_writing
@@ -131,19 +132,12 @@ class ActionWorkerWriting(object):
                 self.written = True
             except DatastoreException as e:
                 message = f"Action lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."
-        self.logger.debug(f"action_worker: {message}, written:{self.written}")
+        self.logger.info(f"action_worker: {message}")
         return message
 
     def continue_action_worker_write(self) -> None:
         current_time = round(time())
         with self.datastore.get_database_context():
-            ram = psutil.virtual_memory()
-            response = {
-                "success": False,
-                "message": f"Still running, percentage ram used {ram.percent} from total:{ram.total}.",
-                "action_error_index": 0,
-                "action_data_error_index": 0,
-            }
             self.datastore.write_action_worker(
                 WriteRequest(
                     events=[
@@ -152,7 +146,6 @@ class ActionWorkerWriting(object):
                             fqid=self.fqid,
                             fields={
                                 "timestamp": current_time,
-                                "result": response,
                             },
                         )
                     ],
@@ -169,22 +162,34 @@ class ActionWorkerWriting(object):
         with self.datastore.get_database_context():
             state = "end"
             if hasattr(action_worker_thread, "exception"):
+                message = str(action_worker_thread.exception)
                 response = {
                     "success": False,
-                    "message": str(action_worker_thread.exception),
+                    "message": message,
                     "action_error_index": 0,
                     "action_data_error_index": 0,
                 }
+                self.logger.error(
+                    f"finish action_worker '{self.fqid} {self.action_names}' {current_time} with exception: {message}"
+                )
             elif hasattr(action_worker_thread, "response"):
                 response = action_worker_thread.response
+                self.logger.debug(
+                    f"finish action_worker '{self.fqid} {self.action_names}': {current_time}"
+                )
             else:
+                message = "action_worker aborted without any specific message"
                 state = "aborted"
                 response = {
                     "success": False,
-                    "message": "action_worker aborted without any specific message",
+                    "message": message,
                     "action_error_index": 0,
                     "action_data_error_index": 0,
                 }
+                self.logger.error(
+                    f"aborted action_worker '{self.fqid} {self.action_names}' {current_time}: {message}"
+                )
+
             self.datastore.write_action_worker(
                 WriteRequest(
                     events=[
@@ -202,9 +207,6 @@ class ActionWorkerWriting(object):
                     locked_fields={},
                 )
             )
-            self.logger.debug(
-                f"finish action_worker '{self.fqid} {self.action_names}': {current_time}"
-            )
 
 
 class ActionWorker(threading.Thread):
@@ -215,6 +217,7 @@ class ActionWorker(threading.Thread):
         is_atomic: bool,
         handler: ActionHandler,
         lock: threading.Lock,
+        internal: bool,
     ) -> None:
         super().__init__(name="action_worker")
         self.handler = handler
@@ -222,6 +225,7 @@ class ActionWorker(threading.Thread):
         self.user_id = user_id
         self.is_atomic = is_atomic
         self.lock = lock
+        self.internal = internal
         self.started: bool = False
 
     def run(self):  # type: ignore
@@ -229,7 +233,7 @@ class ActionWorker(threading.Thread):
             self.started = True
             try:
                 self.response = self.handler.handle_request(
-                    self.payload, self.user_id, self.is_atomic
+                    self.payload, self.user_id, self.is_atomic, self.internal
                 )
             except Exception as exception:
                 self.exception = exception

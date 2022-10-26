@@ -62,8 +62,10 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             "loglevel": self.env.get_loglevel().lower(),
             "reload": self.env.is_dev_mode(),
             "reload_engine": "auto",  # This is the default however.
-            "worker_class": "gthread",  # async gthread with unlimite prolongation possibility
-            "threads": 3,  # Threads per Worker(process)
+            "worker_class": "gthread",  # async gthread with unlimited prolongation possibility
+            "threads": int(
+                self.env.OPENSLIDES_BACKEND_NUM_THREADS
+            ),  # Threads per Worker(process)
             "post_request": gunicorn_post_request,
             "worker_abort": gunicorn_worker_abort,
         }

@@ -58,7 +58,10 @@ class ActionView(BaseView):
         self.check_internal_auth_password(request)
 
         handler = ActionHandler(self.env, self.services, self.logging)
-        response = handler.handle_request(request.json, -1, internal=True)
+        is_atomic = True  # handle_separately not accepted as route
+        response = handle_action_in_worker_thread(
+            request.json, -1, is_atomic, handler, internal=True
+        )
         self.logger.debug("Internal action request finished successfully.")
         return response, None
 
