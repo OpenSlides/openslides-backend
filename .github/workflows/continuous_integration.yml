@@ -2,7 +2,9 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - 'feature_**'
 
 env:
   PYTHON_VERSION: 3.10.x
