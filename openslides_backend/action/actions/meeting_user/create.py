@@ -1,4 +1,3 @@
-
 from ....models.models import MeetingUser
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
