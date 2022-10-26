@@ -23,5 +23,10 @@ ActionsResponseResults = List[Union[Optional[ActionResults], ActionError]]
 
 ActionsResponse = TypedDict(
     "ActionsResponse",
-    {"success": bool, "message": str, "results": ActionsResponseResults},
+    {
+        "status_code": Optional[int],
+        "success": bool,
+        "message": str,
+        "results": ActionsResponseResults,
+    },
 )

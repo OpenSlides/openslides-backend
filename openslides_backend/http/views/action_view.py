@@ -2,6 +2,7 @@ from base64 import b64decode
 from typing import Optional, Tuple
 
 from ...action.action_handler import ActionHandler
+from ...action.action_worker import handle_action_in_worker_thread
 from ...locale.translator import Translator
 from ...migrations import assert_migration_index
 from ...migrations.migration_handler import MigrationHandler
@@ -42,9 +43,9 @@ class ActionView(BaseView):
         handler = ActionHandler(self.env, self.services, self.logging)
         Translator.set_translation_language(request.headers.get("Accept-Language"))
         is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
-        response = handler.handle_request(request.json, user_id, is_atomic)
-
-        self.logger.debug("Action request finished successfully.")
+        response = handle_action_in_worker_thread(
+            request.json, user_id, is_atomic, handler
+        )
         return response, access_token
 
     @route("handle_request", internal=True)
@@ -57,7 +58,10 @@ class ActionView(BaseView):
         self.check_internal_auth_password(request)
 
         handler = ActionHandler(self.env, self.services, self.logging)
-        response = handler.handle_request(request.json, -1, internal=True)
+        is_atomic = True  # handle_separately not accepted as route
+        response = handle_action_in_worker_thread(
+            request.json, -1, is_atomic, handler, internal=True
+        )
         self.logger.debug("Internal action request finished successfully.")
         return response, None
 

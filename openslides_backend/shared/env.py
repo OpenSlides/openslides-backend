@@ -40,6 +40,7 @@ class Environment:
         "MEDIA_PROTOCOL": "http",
         "OPENSLIDES_BACKEND_COMPONENT": "all",
         "OPENSLIDES_BACKEND_NUM_WORKERS": "1",
+        "OPENSLIDES_BACKEND_NUM_THREADS": "3",
         "OPENSLIDES_BACKEND_RAISE_4XX": "false",
         "OPENSLIDES_BACKEND_WORKER_TIMEOUT": "30",
         "OPENSLIDES_DEVELOPMENT": "false",

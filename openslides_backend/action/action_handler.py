@@ -1,4 +1,5 @@
 from copy import deepcopy
+from http import HTTPStatus
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
 
 import fastjsonschema
@@ -137,7 +138,10 @@ class ActionHandler(BaseHandler):
             # Return action result
             self.logger.info("Request was successful. Send response now.")
             return ActionsResponse(
-                success=True, message="Actions handled successfully", results=results
+                status_code=HTTPStatus.OK.value,
+                success=True,
+                message="Actions handled successfully",
+                results=results,
             )
 
     def execute_write_requests(

@@ -1,3 +1,4 @@
+import threading
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Set, Type, cast
 from unittest import TestCase
@@ -6,6 +7,7 @@ import simplejson as json
 from datastore.shared.util import DeletedModelsBehaviour
 from fastjsonschema.exceptions import JsonSchemaException
 
+from openslides_backend.action import action_worker
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import DatastoreService
@@ -55,6 +57,7 @@ class BaseSystemTestCase(TestCase):
         self.vote_service = cast(TestVoteService, self.services.vote())
         self.datastore = self.services.datastore()
         self.datastore.truncate_db()
+        self.set_thread_watch_timeout(-1)
 
         self.created_fqids = set()
         self.create_model(
@@ -85,6 +88,21 @@ class BaseSystemTestCase(TestCase):
             BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.vote_service.clear_all()
         self.anon_client = self.create_client()
+
+    def set_thread_watch_timeout(self, thread_watch_timeout: float) -> None:
+        action_worker.THREAD_WATCH_TIMEOUT = thread_watch_timeout
+
+    def tearDown(self) -> None:
+        if thread := self.__class__.get_thread_by_name("action_worker"):
+            thread.join()
+        super().tearDown()
+
+    @staticmethod
+    def get_thread_by_name(name: str) -> Optional[threading.Thread]:
+        for thread in threading.enumerate():
+            if thread.name == name:
+                return thread
+        return None
 
     def load_example_data(self) -> None:
         """

@@ -445,6 +445,14 @@ class DatastoreAdapter(BaseDatastoreService):
         )
         self.retrieve(command)
 
+    def write_action_worker(self, write_request: WriteRequest) -> None:
+        command = commands.WriteActionWorker(write_requests=[write_request])
+        self.logger.debug(
+            f"Start WRITE_ACTION_WORKER request to datastore with the following data: "
+            f"Write request: {write_request}"
+        )
+        self.retrieve(command)
+
     def truncate_db(self) -> None:
         command = commands.TruncateDb()
         self.logger.debug("Start TRUNCATE_DB request to datastore")
