@@ -457,7 +457,7 @@ meeting_user:
     type: relation-list
     to: personal_note/meeting_user_id
     on_delete: CASCADE
-    restriction_mode: B
+    restriction_mode: A
 
 organization_tag:
   id:
