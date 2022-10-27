@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "8caab7cf05e1000b21f4b24d34685714"
+MODELS_YML_CHECKSUM = "2dea9b163c115aa0f9a6bd1f6166d08a"
 
 
 class Organization(Model):
@@ -110,6 +110,7 @@ class User(Model):
     forwarding_committee_ids = fields.RelationListField(
         to={"committee": "forwarding_user_id"}
     )
+    meeting_user_ids = fields.RelationListField(to={"meeting_user": "user_id"})
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
         replacement_collection="meeting",
@@ -214,6 +215,15 @@ class User(Model):
     organization_id = fields.OrganizationField(
         to={"organization": "user_ids"}, required=True
     )
+
+
+class MeetingUser(Model):
+    collection = "meeting_user"
+    verbose_name = "meeting user"
+
+    id = fields.IntegerField(required=True)
+    user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
+    meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
 
 
 class OrganizationTag(Model):
@@ -508,6 +518,7 @@ class Meeting(Model):
     motion_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
     )
+    meeting_user_ids = fields.RelationListField(to={"meeting_user": "meeting_id"})
     users_enable_presence_view = fields.BooleanField(default=False)
     users_enable_vote_weight = fields.BooleanField(default=False)
     users_allow_self_set_present = fields.BooleanField(default=True)
