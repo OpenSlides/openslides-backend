@@ -13,7 +13,7 @@ from ....permissions.permission_helper import (
 )
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.filters import And, Filter, FilterOperator
+from ....shared.filters import Filter, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
