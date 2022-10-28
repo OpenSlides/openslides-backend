@@ -12,6 +12,10 @@ class MeetingUserCreate(BaseActionTestCase):
             "user_id": 1,
             "meeting_id": 10,
             "comment": "test blablaba",
+            "number": "XII",
+            "structure_level": "A",
+            "about_me": "A very long description.",
+            "vote_weight": "1.500000",
         }
         response = self.request("meeting_user.create", test_dict)
         self.assert_status_code(response, 200)

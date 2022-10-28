@@ -63,13 +63,17 @@ class PollVoteTest(BaseVoteTestCase):
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
                     "group_$_ids": ["113"],
-                    "vote_weight_$113": "2.000000",
-                    "vote_weight_$": ["113"],
+                    "meeting_user_ids": [1],
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
                     "group_$_ids": ["113"],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 113,
+                    "user_id": user_id,
+                    "vote_weight": "2.000000",
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -88,7 +92,10 @@ class PollVoteTest(BaseVoteTestCase):
                     "backend": "fast",
                     "type": "named",
                 },
-                "meeting/113": {"users_enable_vote_weight": True},
+                "meeting/113": {
+                    "users_enable_vote_weight": True,
+                    "meeting_user_ids": [1],
+                },
             }
         )
         response = self.request(
@@ -869,8 +876,12 @@ class PollVoteTest(BaseVoteTestCase):
                     "group_$113_ids": [1],
                     "group_$_ids": ["113"],
                     "default_vote_weight": "3.000000",
-                    "vote_weight_$113": "4.200000",
-                    "vote_weight_$": ["113"],
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 113,
+                    "user_id": 1,
+                    "vote_weight": "4.200000",
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -887,7 +898,10 @@ class PollVoteTest(BaseVoteTestCase):
                     "backend": "fast",
                     "type": "named",
                 },
-                "meeting/113": {"users_enable_vote_weight": False},
+                "meeting/113": {
+                    "users_enable_vote_weight": False,
+                    "meeting_user_ids": [1],
+                },
             }
         )
         response = self.request(
@@ -1020,6 +1034,11 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.set_models(
             {
                 "user/1": {"vote_weight_$113": "4.200000", "vote_weight_$": ["113"]},
+                "meeting_user/1": {
+                    "meeting_id": 113,
+                    "user_id": 1,
+                    "vote_weight": "4.200000",
+                },
                 "meeting/113": {"users_enable_vote_weight": True},
             }
         )

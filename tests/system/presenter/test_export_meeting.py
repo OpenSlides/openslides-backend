@@ -83,8 +83,6 @@ class TestExportMeeting(BasePresenterTestCase):
                 "user/1": {
                     "group_$_ids": ["1"],
                     "group_$1_ids": [11],
-                    "number_$": ["1"],
-                    "number_$1": "spamspamspam",
                     "is_present_in_meeting_ids": [1],
                 },
                 "group/11": {
@@ -103,8 +101,6 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["user"]["1"]["group_$1_ids"] == [11]
         assert data["user"]["1"]["meeting_ids"] == [1]
         assert data["user"]["1"]["is_present_in_meeting_ids"] == [1]
-        assert data["user"]["1"]["number_$"] == ["1"]
-        assert data["user"]["1"]["number_$1"] == "spamspamspam"
 
     def test_add_users_in_2_meetings(self) -> None:
         self.set_models(

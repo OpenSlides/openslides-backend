@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "b325dec98f4ef18cd0797ea804fe1f6c"
+MODELS_YML_CHECKSUM = "a1e52fc4d9c071c7afb2966b5a365c8e"
 
 
 class Organization(Model):
@@ -113,23 +113,6 @@ class User(Model):
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "user_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    number_ = fields.TemplateCharField(
-        index=7,
-        replacement_collection="meeting",
-    )
-    structure_level_ = fields.TemplateCharField(
-        index=16,
-        replacement_collection="meeting",
-    )
-    about_me_ = fields.TemplateHTMLStrictField(
-        index=9,
-        replacement_collection="meeting",
-    )
-    vote_weight_ = fields.TemplateDecimalField(
-        index=12,
-        replacement_collection="meeting",
-        constraints={"minimum": 0},
-    )
     group__ids = fields.TemplateRelationListField(
         index=6,
         replacement_collection="meeting",
@@ -223,6 +206,10 @@ class MeetingUser(Model):
     user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
     meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
     comment = fields.HTMLStrictField()
+    number = fields.CharField()
+    structure_level = fields.CharField()
+    about_me = fields.HTMLStrictField()
+    vote_weight = fields.DecimalField(constraints={"minimum": 0})
 
 
 class OrganizationTag(Model):
