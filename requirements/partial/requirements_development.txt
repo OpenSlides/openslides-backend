@@ -11,7 +11,8 @@ autoflake==1.4
 debugpy==1.5.1
 
 # fork of aiosmtpd for python 3.10
-git+https://github.com/foutrelis/aiosmtpd.git@e3321f474c0d8f63a17186a6e727f490d943f624
+git+https://github.com/r-peschke/aiosmtpd.git@aiosmtpd-customized
+#aiosmtpd==1.4.2 for better times
 
 # typing
 types-PyYAML==6.0.5
