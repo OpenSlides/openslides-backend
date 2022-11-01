@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "c3e6418b841d8a83737ac6512b3d0d77"
+MODELS_YML_CHECKSUM = "fa09f258347319e4db20d5837bab2a5b"
 
 
 class Organization(Model):
@@ -124,12 +124,6 @@ class User(Model):
         to={"speaker": "user_id"},
         on_delete=fields.OnDelete.CASCADE,
     )
-    personal_note__ids = fields.TemplateRelationListField(
-        index=14,
-        replacement_collection="meeting",
-        to={"personal_note": "user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-    )
     supported_motion__ids = fields.TemplateRelationListField(
         index=17,
         replacement_collection="meeting",
@@ -214,6 +208,9 @@ class MeetingUser(Model):
         }
     )
     vote_weight = fields.DecimalField(constraints={"minimum": 0})
+    personal_note_ids = fields.RelationListField(
+        to={"personal_note": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
+    )
 
 
 class OrganizationTag(Model):
@@ -850,7 +847,9 @@ class PersonalNote(Model):
     id = fields.IntegerField()
     note = fields.HTMLStrictField()
     star = fields.BooleanField()
-    user_id = fields.RelationField(to={"user": "personal_note_$_ids"}, required=True)
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "personal_note_ids"}, required=True
+    )
     content_object_id = fields.GenericRelationField(
         to={"motion": "personal_note_ids"}, equal_fields="meeting_id"
     )
