@@ -10,13 +10,16 @@ from requests.models import Response as RequestsResponse
 
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
+from openslides_backend.models.models import Poll
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
+from openslides_backend.services.datastore.with_database_context import with_database_context
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.env import Environment, is_truthy
 from openslides_backend.shared.exceptions import MediaServiceException
 from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 from tests.util import Response
 
@@ -33,14 +36,19 @@ def convert_to_test_response(response: RequestsResponse) -> Response:
 
 class TestVoteService(VoteService):
     url: str
+    datastore: DatastoreAdapter
 
     def vote(self, data: Dict[str, Any]) -> Response:
         ...
 
 
 class TestVoteAdapter(VoteAdapter, TestVoteService):
+    @with_database_context
     def vote(self, data: Dict[str, Any]) -> Response:
         data_copy = copy.deepcopy(data)
+        poll = self.datastore.get(fqid_from_collection_and_id("poll", data["id"]), mapped_fields=["type",], lock_result=False)
+        if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
+            self.encrypt_votes(data_copy)
         del data_copy["id"]
         response = self.make_request(
             self.url.replace("internal", "system") + f"?id={data['id']}",
@@ -48,6 +56,34 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         )
         return convert_to_test_response(response)
 
+    def encrypt_votes(self, data: Dict[str, Any]) -> None:
+        """
+        Keys:
+        - pMain: public main key: per calculated field vom autoupdate service, im testbetrieb direkt
+        - sMain  secret main key: Nur im vote-decrypt
+        - pPoll  Public poll key: Wird vom vote-decrypt beim poll.start erzeugt und zusammen mit dr Signatur zurückgegeben ans Backend
+        - sPoll  Secret poll key: Wird vom vote-decrypt beim poll.start erzeugt und bleibt auch dort
+
+
+        func encryptVote(vote string, mainKey, pollKey, keySig []byte) (string, error) {
+            // Check that the poll Key was signed with the public main key.
+            if !verify(mainKey, pollKey, keySig) {
+                return "", fmt.Errorf("poll key is invalid. It was not signed with the main key")
+            }
+
+            encrypted, err := encrypt(rand.Reader, pollKey, []byte(vote))
+            if err != nil {
+                return "", fmt.Errorf("encrypt vote: %w", err)
+            }
+
+            encoded, err := json.Marshal(encrypted)
+            if err != nil {
+                return "", fmt.Errorf("encode vote: %w", err)
+            }
+
+            return string(encoded), nil
+        """
+        pass
 
 def create_action_test_application() -> WSGIApplication:
     return create_test_application(ActionView)

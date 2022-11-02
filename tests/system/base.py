@@ -54,9 +54,10 @@ class BaseSystemTestCase(TestCase):
         self.services = self.app.services
         self.auth = self.services.authentication()
         self.media = self.services.media()
-        self.vote_service = cast(TestVoteService, self.services.vote())
         self.datastore = self.services.datastore()
         self.datastore.truncate_db()
+        self.vote_service = cast(TestVoteService, self.services.vote())
+        self.vote_service.datastore = self.datastore
         self.set_thread_watch_timeout(-1)
         remove_files_from_vote_decrypt_service()
 
