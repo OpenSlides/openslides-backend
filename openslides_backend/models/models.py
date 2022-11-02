@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "05c1a3bc447ed805dc68b25d9136538e"
+MODELS_YML_CHECKSUM = "7f73af1df17ca9112c3a05cba451bf78"
 
 
 class Organization(Model):
@@ -110,7 +110,9 @@ class User(Model):
     forwarding_committee_ids = fields.RelationListField(
         to={"committee": "forwarding_user_id"}
     )
-    meeting_user_ids = fields.RelationListField(to={"meeting_user": "user_id"})
+    meeting_user_ids = fields.RelationListField(
+        to={"meeting_user": "user_id"}, on_delete=fields.OnDelete.CASCADE
+    )
     number_ = fields.TemplateCharField(
         index=7,
         replacement_collection="meeting",
@@ -515,7 +517,9 @@ class Meeting(Model):
     motion_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
     )
-    meeting_user_ids = fields.RelationListField(to={"meeting_user": "meeting_id"})
+    meeting_user_ids = fields.RelationListField(
+        to={"meeting_user": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
     users_enable_presence_view = fields.BooleanField(default=False)
     users_enable_vote_weight = fields.BooleanField(default=False)
     users_allow_self_set_present = fields.BooleanField(default=True)

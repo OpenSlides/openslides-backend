@@ -305,7 +305,8 @@ user:
   meeting_user_ids:
     type: relation-list
     to: meeting_user/user_id
-    restriction_mode: B
+    restriction_mode: A
+    on_delete: CASCADE
 
   # Meeting specific personal data
   number_$:
@@ -461,15 +462,15 @@ meeting_user:
     type: relation
     to: user/meeting_user_ids
     required: true
-    restriction_mode: B
+    restriction_mode: A
   meeting_id:
     type: relation
     to: meeting/meeting_user_ids
     required: true
-    restriction_mode: B
+    restriction_mode: A
   comment:
     type: HTMLStrict
-    restriction_mode: D
+    restriction_mode: A
 
 organization_tag:
   id:
@@ -1204,6 +1205,7 @@ meeting:
     type: relation-list
     to: meeting_user/meeting_id
     restriction_mode: B
+    on_delete: CASCADE
   users_enable_presence_view:
     type: boolean
     default: False

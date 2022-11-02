@@ -8,16 +8,6 @@ class MeetingUserCreate(BaseActionTestCase):
                 "meeting/10": {"is_active_in_organization_id": 1},
             }
         )
-        response = self.request("meeting_user.create", {"user_id": 1, "meeting_id": 10})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting_user/1", {"user_id": 1, "meeting_id": 10})
-
-    def test_create_optional_fields(self) -> None:
-        self.set_models(
-            {
-                "meeting/10": {"is_active_in_organization_id": 1},
-            }
-        )
         test_dict = {
             "user_id": 1,
             "meeting_id": 10,
