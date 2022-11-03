@@ -6,6 +6,8 @@ class MeetingUserCreate(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/10": {"is_active_in_organization_id": 1},
+                "personal_note/11": {"star": True, "meeting_id": 10},
+                "speaker/12": {"meeting_id": 10},
             }
         )
         test_dict = {
@@ -16,6 +18,8 @@ class MeetingUserCreate(BaseActionTestCase):
             "structure_level": "A",
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
+            "personal_note_ids": [11],
+            "speaker_ids": [12],
         }
         response = self.request("meeting_user.create", test_dict)
         self.assert_status_code(response, 200)

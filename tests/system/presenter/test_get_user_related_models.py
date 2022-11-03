@@ -95,11 +95,16 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_user_related_models_meeting(self) -> None:
         self.set_models(
             {
-                "user/1": {"meeting_ids": [1]},
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [1],
+                },
                 "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
                 "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
-                "speaker/4": {"user_id": 1, "meeting_id": 1},
+                "speaker/4": {"meeting_user_id": 1, "meeting_id": 1},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1, "speaker_ids": [4]},
             }
         )
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
@@ -122,15 +127,17 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_user_related_models_meetings_more_user(self) -> None:
         self.set_models(
             {
-                "user/1": {"meeting_ids": [1]},
-                "user/2": {"meeting_ids": [1]},
+                "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
+                "user/2": {"meeting_ids": [1], "meeting_user_ids": [2]},
                 "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
                 "motion_submitter/3": {"user_id": 2, "meeting_id": 1},
                 "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
                 "assignment_candidate/4": {"user_id": 2, "meeting_id": 1},
-                "speaker/4": {"user_id": 1, "meeting_id": 1},
-                "speaker/5": {"user_id": 2, "meeting_id": 1},
+                "speaker/4": {"meeting_user_id": 1, "meeting_id": 1},
+                "speaker/5": {"meeting_user_id": 2, "meeting_id": 1},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1, "speaker_ids": [4]},
+                "meeting_user/2": {"meeting_id": 1, "user_id": 2, "speaker_ids": [5]},
             }
         )
         status_code, data = self.request(
