@@ -13,7 +13,7 @@ from ....permissions.permission_helper import (
 )
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.filters import Filter, FilterOperator
+from ....shared.filters import And, Filter, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
@@ -60,24 +60,33 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         return instance
 
     def find_user_to_number(self, meeting_id: int, number: str) -> int:
-        filter_: Filter = FilterOperator("number", "=", number)
+        filter_: Filter = And(
+            FilterOperator("number", "=", number),
+            FilterOperator("meeting_id", "=", meeting_id),
+        )
         result = self.datastore.filter("meeting_user", filter_, ["user_id"])
         if len(result.keys()) == 1:
             return list(result.values())[0]["user_id"]
         elif len(result.keys()) > 1:
             raise ActionException("Found more than one user with the number.")
 
-        filter_ = FilterOperator("number", "=", "")
-        result = self.datastore.filter("meeting_user", filter_, ["user_id"])
-        user_ids = {meeting_user["user_id"] for meeting_user in result.values()}
         filter_ = FilterOperator("default_number", "=", number)
         result = self.datastore.filter("user", filter_, ["id"])
         ids = {user["id"] for user in result.values()}
-        found_user_ids = user_ids & ids
-        if len(found_user_ids) == 1:
-            return list(found_user_ids)[0]
-        elif len(found_user_ids) > 1:
-            raise ActionException("Found more than one user with the default number.")
+        if len(ids) >= 1:
+            filter_ = And(
+                FilterOperator("number", "=", ""),
+                FilterOperator("meeting_id", "=", meeting_id),
+            )
+            result = self.datastore.filter("meeting_user", filter_, ["user_id"])
+            user_ids = {meeting_user["user_id"] for meeting_user in result.values()}
+            found_user_ids = user_ids & ids
+            if len(found_user_ids) == 1:
+                return list(found_user_ids)[0]
+            elif len(found_user_ids) > 1:
+                raise ActionException(
+                    "Found more than one user with the default number."
+                )
         raise ActionException("No user with this number found.")
 
     def create_action_result_element(
