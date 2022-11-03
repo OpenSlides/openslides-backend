@@ -363,7 +363,6 @@ class MeetingImport(BaseActionTestCase):
             "is_demo_user": False,
             "organization_management_level": None,
             "is_present_in_meeting_ids": [],
-            "speaker_$_ids": [],
             "supported_motion_$_ids": [],
             "submitted_motion_$_ids": [],
             "assignment_candidate_$_ids": [],

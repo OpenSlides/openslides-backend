@@ -155,7 +155,13 @@ class GetUserRelatedModels(BasePresenter):
             candidate_ids = self.datastore.filter(
                 "assignment_candidate", filter_, ["id"]
             )
-            speaker_ids = self.datastore.filter("speaker", filter_, ["id"])
+            meeting_users = self.datastore.filter(
+                "meeting_user", filter_, ["speaker_ids"]
+            )
+            speaker_ids = {}
+            if meeting_users:
+                for meeting_user in meeting_users.values():
+                    speaker_ids = meeting_user.get("speaker_ids", [])
             if submitter_ids or candidate_ids or speaker_ids:
                 meetings_data.append(
                     {
@@ -166,7 +172,7 @@ class GetUserRelatedModels(BasePresenter):
                         ),
                         "submitter_ids": list(submitter_ids),
                         "candidate_ids": list(candidate_ids),
-                        "speaker_ids": list(speaker_ids),
+                        "speaker_ids": speaker_ids,
                     }
                 )
         return meetings_data

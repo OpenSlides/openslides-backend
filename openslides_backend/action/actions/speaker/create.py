@@ -21,7 +21,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
     model = Speaker()
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
-        required_properties=["list_of_speakers_id", "user_id"],
+        required_properties=["list_of_speakers_id", "meeting_user_id"],
         optional_properties=["point_of_order", "note", "speech_state"],
     )
 

@@ -28,6 +28,7 @@ class MeetingUserUpdate(UpdateAction):
             "about_me",
             "vote_weight",
             "personal_note_ids",
+            "speaker_ids",
         ],
     )
     permission = Permissions.User.CAN_MANAGE

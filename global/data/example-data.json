@@ -63,15 +63,6 @@
             "group_$1_ids": [
                 2
             ],
-            "speaker_$_ids": [
-                "1"
-            ],
-            "speaker_$1_ids": [
-                1,
-                5,
-                6,
-                12
-            ],
             "submitted_motion_$_ids": [
                 "1"
             ],
@@ -138,17 +129,6 @@
             "group_$1_ids": [
                 5
             ],
-            "speaker_$_ids": [
-                "1"
-            ],
-            "speaker_$1_ids": [
-                2,
-                3,
-                7,
-                10,
-                11,
-                13
-            ],
             "assignment_candidate_$_ids": [
                 "1"
             ],
@@ -185,14 +165,6 @@
             ],
             "group_$1_ids": [
                 5
-            ],
-            "speaker_$_ids": [
-                "1"
-            ],
-            "speaker_$1_ids": [
-                4,
-                8,
-                9
             ],
             "supported_motion_$_ids": [
                 "1"
@@ -234,7 +206,8 @@
             "structure_level": "Test structure level",
             "about_me": "What I want to say about me.",
             "vote_weight": "1.000000",
-            "personal_note_ids": [1]
+            "personal_note_ids": [1],
+            "speaker_ids": [1, 5, 6, 12]
         },
         "2": {
             "id": 2,
@@ -244,7 +217,8 @@
             "number": "12345-67891",
             "structure_level": "Test structure level a",
             "about_me": "What I want to say about me with a",
-            "vote_weight": "1.000000"
+            "vote_weight": "1.000000",
+            "speaker_ids": [2, 3, 7, 10, 11, 13]
         },
         "3": {
             "id": 3,
@@ -254,7 +228,8 @@
             "number": "12345-67892",
             "structure_level": "Test structure level b",
             "about_me": "What I want to say about me. B",
-            "vote_weight": "1.000000"
+            "vote_weight": "1.000000",
+            "speaker_ids": [4, 8, 9]
         }
     },
     "theme": {
@@ -1176,91 +1151,91 @@
             "begin_time": 1584512636,
             "end_time": 1584512638,
             "list_of_speakers_id": 1,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "12": {
             "id": 12,
             "weight": 2,
             "list_of_speakers_id": 1,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "meeting_id": 1
         },
         "13": {
             "id": 13,
             "weight": 3,
             "list_of_speakers_id": 1,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "1": {
             "id": 1,
             "weight": 1,
             "list_of_speakers_id": 3,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "meeting_id": 1
         },
         "2": {
             "id": 2,
             "weight": 0,
             "list_of_speakers_id": 3,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "3": {
             "id": 3,
             "weight": 1,
             "list_of_speakers_id": 7,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "4": {
             "id": 4,
             "weight": 2,
             "list_of_speakers_id": 7,
-            "user_id": 3,
+            "meeting_user_id": 3,
             "meeting_id": 1
         },
         "5": {
             "id": 5,
             "weight": 1,
             "list_of_speakers_id": 8,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "meeting_id": 1
         },
         "6": {
             "id": 6,
             "weight": 1,
             "list_of_speakers_id": 11,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "meeting_id": 1
         },
         "7": {
             "id": 7,
             "weight": 2,
             "list_of_speakers_id": 11,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "8": {
             "id": 8,
             "weight": 3,
             "list_of_speakers_id": 11,
-            "user_id": 3,
+            "meeting_user_id": 3,
             "meeting_id": 1
         },
         "9": {
             "id": 9,
             "weight": 1,
             "list_of_speakers_id": 14,
-            "user_id": 3,
+            "meeting_user_id": 3,
             "meeting_id": 1
         },
         "10": {
             "id": 10,
             "weight": 2,
             "list_of_speakers_id": 14,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         }
     },
