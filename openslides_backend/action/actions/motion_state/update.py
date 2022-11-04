@@ -34,6 +34,7 @@ class MotionStateUpdateAction(UpdateAction):
             "previous_state_ids",
             "set_created_timestamp",
             "allow_motion_forwarding",
+            "submitter_withdraw_state_id",
         ]
     )
     permission = Permissions.Motion.CAN_MANAGE

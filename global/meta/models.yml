@@ -2583,6 +2583,20 @@ motion_state:
   set_created_timestamp:
     type: boolean
     restriction_mode: A
+  submitter_withdraw_state_id:
+    type: relation
+    to: motion_state/submitter_withdraw_back_ids
+    equal_fields:
+      - meeting_id
+      - workflow_id
+    restriction_mode: A
+  submitter_withdraw_back_ids:
+    type: relation-list
+    to: motion_state/submitter_withdraw_state_id
+    equal_fields:
+      - meeting_id
+      - workflow_id
+    restriction_mode: A
 
   next_state_ids:
     type: relation-list

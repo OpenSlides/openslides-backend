@@ -16,6 +16,9 @@ class PermissionHelperMixin(Action):
         )
         if not state.get("allow_submitter_edit"):
             return False
+        return self.is_submitter(submitter_ids, state_id)
+
+    def is_submitter(self, submitter_ids: List[int], state_id: int) -> bool:
         get_many_request = GetManyRequest(
             "motion_submitter", submitter_ids, ["user_id"]
         )

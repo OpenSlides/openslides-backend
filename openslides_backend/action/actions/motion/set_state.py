@@ -106,6 +106,22 @@ class MotionSetStateAction(
             self.check_state_in_graph = True
             return
 
+        if self.is_submitter(
+            motion.get("submitter_ids", []), motion["state_id"]
+        ) and has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.Motion.CAN_SEE,
+            motion["meeting_id"],
+        ):
+            state = self.datastore.get(
+                fqid_from_collection_and_id("motion_state", motion["state_id"]),
+                ["submitter_withdraw_state_id"],
+            )
+            if instance["state_id"] == state.get("submitter_withdraw_state_id"):
+                self.check_state_in_graph = True
+                return
+
         if self.is_allowed_and_submitter(
             motion.get("submitter_ids", []), motion["state_id"]
         ):
