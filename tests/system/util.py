@@ -1,5 +1,10 @@
+import base64
 import copy
 import cProfile
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.hazmat.primitives.asymmetric import x25519 
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 import os
 from typing import Any, Callable, Dict, List, Type
 from unittest.mock import MagicMock, Mock, patch
@@ -23,6 +28,8 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 from tests.util import Response
 
+with open("public_vote_main_key", "rb") as keyfile:
+    PUBLIC_MAIN_KEY = keyfile.read()
 
 def convert_to_test_response(response: RequestsResponse) -> Response:
     """Helper function to convert a requests Response to a TestResponse."""
@@ -46,9 +53,11 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
     @with_database_context
     def vote(self, data: Dict[str, Any]) -> Response:
         data_copy = copy.deepcopy(data)
-        poll = self.datastore.get(fqid_from_collection_and_id("poll", data["id"]), mapped_fields=["type",], lock_result=False)
+        poll = self.datastore.get(fqid_from_collection_and_id("poll", data["id"]), mapped_fields=["type", "crypt_key", "crypt_signature"], lock_result=False)
         if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
-            self.encrypt_votes(data_copy)
+            crypt_key = base64.b64decode(poll["crypt_key"])
+            crypt_signature = base64.b64decode(poll["crypt_signature"])
+            self.encrypt_votes(data_copy, crypt_key, crypt_signature)
         del data_copy["id"]
         response = self.make_request(
             self.url.replace("internal", "system") + f"?id={data['id']}",
@@ -56,34 +65,21 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         )
         return convert_to_test_response(response)
 
-    def encrypt_votes(self, data: Dict[str, Any]) -> None:
-        """
-        Keys:
-        - pMain: public main key: per calculated field vom autoupdate service, im testbetrieb direkt
-        - sMain  secret main key: Nur im vote-decrypt
-        - pPoll  Public poll key: Wird vom vote-decrypt beim poll.start erzeugt und zusammen mit dr Signatur zurückgegeben ans Backend
-        - sPoll  Secret poll key: Wird vom vote-decrypt beim poll.start erzeugt und bleibt auch dort
+    def encrypt_votes(self, data: Dict[str, Any], crypt_key:bytes, crypt_signature:bytes) -> None:
+        pubKeySize = 32
+        nonceSize = 12
+        public_main_key = ed25519.Ed25519PublicKey.from_public_bytes(PUBLIC_MAIN_KEY)
+        public_main_key.verify(crypt_signature, crypt_key)
 
-
-        func encryptVote(vote string, mainKey, pollKey, keySig []byte) (string, error) {
-            // Check that the poll Key was signed with the public main key.
-            if !verify(mainKey, pollKey, keySig) {
-                return "", fmt.Errorf("poll key is invalid. It was not signed with the main key")
-            }
-
-            encrypted, err := encrypt(rand.Reader, pollKey, []byte(vote))
-            if err != nil {
-                return "", fmt.Errorf("encrypt vote: %w", err)
-            }
-
-            encoded, err := json.Marshal(encrypted)
-            if err != nil {
-                return "", fmt.Errorf("encode vote: %w", err)
-            }
-
-            return string(encoded), nil
-        """
-        pass
+        private_key = x25519.X25519PrivateKey.generate()
+        public_poll_key = x25519.X25519PublicKey.from_public_bytes(crypt_key)
+        shared_key = private_key.exchange(public_poll_key)
+        derived_key = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=None,
+            info=b'handshake data',
+        ).derive(shared_key)
 
 def create_action_test_application() -> WSGIApplication:
     return create_test_application(ActionView)
