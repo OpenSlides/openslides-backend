@@ -1,10 +1,13 @@
+import simplejson as json
 import base64
 import copy
 import cProfile
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from cryptography.hazmat.primitives.asymmetric import x25519 
+from cryptography.hazmat.primitives.asymmetric import x25519
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import serialization
 import os
 from typing import Any, Callable, Dict, List, Type
 from unittest.mock import MagicMock, Mock, patch
@@ -54,11 +57,11 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
     def vote(self, data: Dict[str, Any]) -> Response:
         data_copy = copy.deepcopy(data)
         poll = self.datastore.get(fqid_from_collection_and_id("poll", data["id"]), mapped_fields=["type", "crypt_key", "crypt_signature"], lock_result=False)
+        del data_copy["id"]
         if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
             crypt_key = base64.b64decode(poll["crypt_key"])
             crypt_signature = base64.b64decode(poll["crypt_signature"])
             self.encrypt_votes(data_copy, crypt_key, crypt_signature)
-        del data_copy["id"]
         response = self.make_request(
             self.url.replace("internal", "system") + f"?id={data['id']}",
             data_copy,
@@ -72,14 +75,23 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         public_main_key.verify(crypt_signature, crypt_key)
 
         private_key = x25519.X25519PrivateKey.generate()
+        public_private_key = private_key.public_key().public_bytes(encoding=serialization.Encoding.Raw, format=serialization.PublicFormat.Raw)
         public_poll_key = x25519.X25519PublicKey.from_public_bytes(crypt_key)
         shared_key = private_key.exchange(public_poll_key)
         derived_key = HKDF(
             algorithm=hashes.SHA256(),
-            length=32,
+            length=pubKeySize,
             salt=None,
-            info=b'handshake data',
+            info=None,
         ).derive(shared_key)
+        nonce = os.urandom(nonceSize)
+        cipher = Cipher(algorithms.AES(derived_key), modes.GCM(nonce))
+        encryptor = cipher.encryptor()
+        encrypt_string  = bytes(f'{{"votes":{{"1": "Y"}},"token":"12345678"}}', encoding="utf-8")
+        encrypted = encryptor.update(encrypt_string)
+        encryptor.finalize()
+        base64_encoded = base64.encodebytes(b''.join([public_private_key, nonce, encrypted]))
+        data["value"] = base64_encoded
 
 def create_action_test_application() -> WSGIApplication:
     return create_test_application(ActionView)
