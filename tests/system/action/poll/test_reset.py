@@ -107,6 +107,8 @@ class PollResetActionTest(PollTestMixin):
                     "entitled_group_ids": [1],
                     "pollmethod": "Y",
                     "max_votes_per_option": 1,
+                    "type": "named",
+                    "backend": "long",
                 },
             }
         )

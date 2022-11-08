@@ -9,6 +9,9 @@ class PollPublishActionTest(BaseActionTestCase):
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
             "poll/1": {
+                "type": "named",
+                "pollmethod": "Y",
+                "backend": "long",
                 "state": "finished",
                 "meeting_id": 1,
                 "content_object_id": "topic/1",

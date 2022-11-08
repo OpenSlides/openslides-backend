@@ -47,6 +47,7 @@ class VotePollBaseTestClass(BaseActionTestCase):
                     "votesinvalid": "0.000000",
                     "votesvalid": "0.000000",
                     "votescast": "0.000000",
+                    "backend": "fast",
                     **self.get_poll_data(),
                 },
             }
