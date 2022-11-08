@@ -163,6 +163,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             "default_number",
             "default_structure_level",
             "default_vote_weight",
+            "presence",
         ],
         "B": [
             "number_$",
