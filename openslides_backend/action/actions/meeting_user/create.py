@@ -24,6 +24,7 @@ class MeetingUserCreate(CreateAction):
             "vote_weight",
             "personal_note_ids",
             "speaker_ids",
+            "chat_message_ids",
         ],
     )
     permission = Permissions.User.CAN_MANAGE
