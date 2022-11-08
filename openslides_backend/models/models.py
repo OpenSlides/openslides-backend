@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "8caab7cf05e1000b21f4b24d34685714"
+MODELS_YML_CHECKSUM = "d4b8906b5b85e446f5312c73b1c2061c"
 
 
 class Organization(Model):
@@ -1360,6 +1360,14 @@ class MotionState(Model):
     show_recommendation_extension_field = fields.BooleanField(default=False)
     allow_motion_forwarding = fields.BooleanField()
     set_created_timestamp = fields.BooleanField()
+    submitter_withdraw_state_id = fields.RelationField(
+        to={"motion_state": "submitter_withdraw_back_ids"},
+        equal_fields=["meeting_id", "workflow_id"],
+    )
+    submitter_withdraw_back_ids = fields.RelationListField(
+        to={"motion_state": "submitter_withdraw_state_id"},
+        equal_fields=["meeting_id", "workflow_id"],
+    )
     next_state_ids = fields.RelationListField(
         to={"motion_state": "previous_state_ids"},
         equal_fields=["meeting_id", "workflow_id"],

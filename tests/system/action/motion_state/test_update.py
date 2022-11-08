@@ -26,11 +26,16 @@ class MotionStateActionTest(BaseActionTestCase):
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_workflow/110": {
                     "name": "name_Ycefgee",
-                    "state_ids": [111],
+                    "state_ids": [111, 112],
                     "meeting_id": 1,
                 },
                 "motion_state/111": {
                     "name": "name_srtgb123",
+                    "workflow_id": 110,
+                    "meeting_id": 1,
+                },
+                "motion_state/112": {
+                    "name": "test",
                     "workflow_id": 110,
                     "meeting_id": 1,
                 },
@@ -43,6 +48,7 @@ class MotionStateActionTest(BaseActionTestCase):
                 "name": "name_Xcdfgee",
                 "allow_motion_forwarding": True,
                 "set_created_timestamp": True,
+                "submitter_withdraw_state_id": 112,
             },
         )
         self.assert_status_code(response, 200)
@@ -51,6 +57,7 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("name") == "name_Xcdfgee"
         assert model.get("allow_motion_forwarding") is True
         assert model.get("set_created_timestamp") is True
+        assert model.get("submitter_withdraw_state_id") == 112
 
     def test_update_correct_plus_next_previous(self) -> None:
         self.set_models(

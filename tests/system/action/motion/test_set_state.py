@@ -304,6 +304,22 @@ class MotionSetStateActionTest(BaseActionTestCase):
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
 
+    def test_set_state_permission_submitter_and_withdraw(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.permission_test_models["motion_submitter/12"]["user_id"] = self.user_id
+        self.permission_test_models["motion_state/76"]["allow_submitter_edit"] = False
+        self.permission_test_models["motion_state/77"]["allow_submitter_edit"] = False
+        self.permission_test_models["motion_state/77"][
+            "submitter_withdraw_state_id"
+        ] = 76
+        self.set_models(self.permission_test_models)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
+        response = self.request("motion.set_state", {"id": 22, "state_id": 76})
+        self.assert_status_code(response, 200)
+
     def test_set_state_parallel(self) -> None:
         count: int = 5
         self.sync_event = threading.Event()
