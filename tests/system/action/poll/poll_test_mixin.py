@@ -20,6 +20,7 @@ class PollTestMixin(BaseActionTestCase):
                     "content_object_id": "motion/1",
                     "type": Poll.TYPE_NAMED,
                     "pollmethod": "YNA",
+                    "backend": "fast",
                     "state": Poll.STATE_STARTED,
                     "option_ids": [1],
                     "meeting_id": 1,

@@ -85,6 +85,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
                     "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "meeting/113": {"users_enable_vote_weight": True},
             }
@@ -98,29 +100,29 @@ class PollVoteTest(BaseVoteTestCase):
             "poll.vote", {"id": 1, "value": {"11": 1}}, start_poll_before_vote=False
         )
         self.assert_status_code(response, 200)
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "Y"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
-        user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
-        vote = self.get_model("vote/2")
-        assert vote.get("value") == "Y"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "2.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 2
+        for i in range(1, 3):
+            vote = self.get_model(f"vote/{i}")
+            if vote.get("user_id") == 1:
+                assert vote.get("value") == "Y"
+                assert vote.get("option_id") == 11
+                assert vote.get("weight") == "1.000000"
+                assert vote.get("meeting_id") == 113
+                user = self.get_model("user/1")
+                assert user.get("vote_$_ids") == ["113"]
+                assert user.get("vote_$113_ids") == [vote.get("id")]
+            elif vote.get("user_id") == 2:
+                assert vote.get("value") == "Y"
+                assert vote.get("option_id") == 11
+                assert vote.get("weight") == "2.000000"
+                assert vote.get("meeting_id") == 113
+                user = self.get_model("user/2")
+                assert user.get("vote_$_ids") == ["113"]
+                assert user.get("vote_$113_ids") == [vote.get("id")]
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1, 2]
         assert option.get("yes") == "3.000000"
         assert option.get("no") == "0.000000"
         assert option.get("abstain") == "0.000000"
-        user = self.get_model("user/2")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [2]
 
     def test_value_check(self) -> None:
         self.set_models(
@@ -141,6 +143,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -185,6 +189,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
                     "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -252,6 +258,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
                     "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -291,6 +299,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -332,6 +342,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
                     "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -373,6 +385,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
                     "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -414,6 +428,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "min_votes_amount": 2,
                     "max_votes_amount": 2,
                     "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -468,6 +484,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
                     "pollmethod": "YNA",
+                    "backend": "fast",
+                    "type": "named",
                 },
             }
         )
@@ -516,6 +534,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "pollmethod": "YNA",
                     "state": Poll.STATE_STARTED,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -545,6 +565,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 113,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -583,6 +605,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "global_yes": True,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -616,6 +640,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "entitled_group_ids": [1],
                     "meeting_id": 113,
                     "state": Poll.STATE_STARTED,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -666,6 +692,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "entitled_group_ids": [1],
                     "pollmethod": "YN",
                     "state": Poll.STATE_STARTED,
+                    "backend": "fast",
+                    "type": "named",
                 },
             }
         )
@@ -713,6 +741,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [],
                     "state": Poll.STATE_STARTED,
+                    "backend": "fast",
+                    "type": "named",
                 },
             }
         )
@@ -740,6 +770,9 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
+                    "backend": "fast",
+                    "type": "named",
+                    "pollmethod": "YNA",
                 },
             }
         )
@@ -763,6 +796,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "entitled_group_ids": [1],
                     "pollmethod": "Y",
                     "state": Poll.STATE_STARTED,
+                    "backend": "fast",
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -799,6 +833,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
                     "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "meeting/113": {"users_enable_vote_weight": True},
             }
@@ -848,6 +884,8 @@ class PollVoteTest(BaseVoteTestCase):
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
                     "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "type": "named",
                 },
                 "meeting/113": {"users_enable_vote_weight": False},
             }
@@ -909,7 +947,7 @@ class VotePollBaseTestClass(BaseVoteTestCase):
                     "group_$_ids": ["113"],
                 },
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
-                "poll/1": {"global_option_id": 11},
+                "poll/1": {"global_option_id": 11, "backend": "fast"},
             }
         )
 

@@ -16,6 +16,9 @@ class PollStopActionTest(PollTestMixin):
                 "meeting_id": 1,
             },
             "poll/1": {
+                "type": "named",
+                "pollmethod": "Y",
+                "backend": "fast",
                 "content_object_id": "topic/1",
                 "state": Poll.STATE_STARTED,
                 "meeting_id": 1,
@@ -34,6 +37,7 @@ class PollStopActionTest(PollTestMixin):
                     "content_object_id": "motion/1",
                     "type": Poll.TYPE_NAMED,
                     "pollmethod": "YN",
+                    "backend": "fast",
                     "state": Poll.STATE_STARTED,
                     "option_ids": [1],
                     "meeting_id": 1,
@@ -104,6 +108,9 @@ class PollStopActionTest(PollTestMixin):
                     "meeting_id": 1,
                 },
                 "poll/1": {
+                    "type": "named",
+                    "pollmethod": "Y",
+                    "backend": "fast",
                     "content_object_id": "motion/1",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
@@ -135,6 +142,9 @@ class PollStopActionTest(PollTestMixin):
                     "meeting_id": 1,
                 },
                 "poll/1": {
+                    "type": "named",
+                    "pollmethod": "Y",
+                    "backend": "fast",
                     "content_object_id": "motion/1",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
