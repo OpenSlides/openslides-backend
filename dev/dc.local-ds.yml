@@ -34,3 +34,6 @@ services:
     vote:
         build:
             context: ../../openslides-vote-service
+    auth:
+        build:
+            context: ../../openslides-auth-service
