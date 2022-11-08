@@ -106,6 +106,10 @@ services:
             - VOTE_DATABASE_USER=openslides
             - VOTE_DATABASE_PASSWORD=openslides
             - VOTE_DATABASE_NAME=openslides
+            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
+            - DATASTORE_DATABASE_NAME=openslides
+            - DATASTORE_DATABASE_USER=openslides
+            - DATASTORE_DATABASE_HOST=postgresql
             - AUTH=ticket
             - AUTH_HOST=auth
         depends_on:
