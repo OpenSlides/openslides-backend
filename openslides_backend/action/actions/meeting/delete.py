@@ -30,7 +30,6 @@ class MeetingDelete(DeleteAction, MeetingPermissionMixin):
                 **{
                     field: {str(instance["id"]): None}
                     for field in (
-                        "comment_$",
                         "number_$",
                         "structure_level_$",
                         "about_me_$",

@@ -46,7 +46,6 @@ class UserUpdate(
             "structure_level_$",
             "vote_weight_$",
             "about_me_$",
-            "comment_$",
             "vote_delegated_$_to_id",
             "vote_delegations_$_from_ids",
             "group_$_ids",

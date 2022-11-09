@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "d4b8906b5b85e446f5312c73b1c2061c"
+MODELS_YML_CHECKSUM = "7f73af1df17ca9112c3a05cba451bf78"
 
 
 class Organization(Model):
@@ -110,9 +110,8 @@ class User(Model):
     forwarding_committee_ids = fields.RelationListField(
         to={"committee": "forwarding_user_id"}
     )
-    comment_ = fields.TemplateHTMLStrictField(
-        index=8,
-        replacement_collection="meeting",
+    meeting_user_ids = fields.RelationListField(
+        to={"meeting_user": "user_id"}, on_delete=fields.OnDelete.CASCADE
     )
     number_ = fields.TemplateCharField(
         index=7,
@@ -214,6 +213,16 @@ class User(Model):
     organization_id = fields.OrganizationField(
         to={"organization": "user_ids"}, required=True
     )
+
+
+class MeetingUser(Model):
+    collection = "meeting_user"
+    verbose_name = "meeting user"
+
+    id = fields.IntegerField(required=True)
+    user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
+    meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
+    comment = fields.HTMLStrictField()
 
 
 class OrganizationTag(Model):
@@ -507,6 +516,9 @@ class Meeting(Model):
     )
     motion_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
+    )
+    meeting_user_ids = fields.RelationListField(
+        to={"meeting_user": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     users_enable_presence_view = fields.BooleanField(default=False)
     users_enable_vote_weight = fields.BooleanField(default=False)
