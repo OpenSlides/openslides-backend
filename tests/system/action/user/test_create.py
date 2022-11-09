@@ -136,7 +136,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "test_Xcdfgee",
                 "group_$_ids": {1: [11], 2: [22]},
                 "vote_delegations_$_from_ids": {1: [222]},
-                "comment_$": {1: "comment<iframe></iframe>"},
                 "number_$": {2: "number"},
                 "structure_level_$": {1: "level_1", 2: "level_2"},
                 "about_me_$": {1: "<p>about</p><iframe></iframe>"},
@@ -159,8 +158,6 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assertCountEqual(user.get("group_$_ids", []), ["1", "2"])
         assert user.get("vote_delegations_$1_from_ids") == [222]
         assert user.get("vote_delegations_$_from_ids") == ["1"]
-        assert user.get("comment_$1") == "comment&lt;iframe&gt;&lt;/iframe&gt;"
-        assert user.get("comment_$") == ["1"]
         assert user.get("number_$2") == "number"
         assert user.get("number_$") == ["2"]
         assert user.get("structure_level_$1") == "level_1"
@@ -210,8 +207,8 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "comment_$": {2: "comment"},
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                "about_me_$": {"2": "comment"},
             },
         )
         self.assert_status_code(response, 400)
@@ -226,12 +223,12 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "comment_$": {"str": "comment"},
+                "about_me_$": {"str": "comment"},
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.comment_$ must not contain {'str'} properties",
+            "data.about_me_$ must not contain {'str'} properties",
             response.json["message"],
         )
 
@@ -588,7 +585,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "structure_level_$": {"1": "structure_level 1"},
                 "vote_weight_$": {"1": "12.002345"},
                 "about_me_$": {"1": "about me 1"},
-                "comment_$": {"1": "comment zu meeting/1"},
                 "vote_delegations_$_from_ids": {"1": [5, 6]},
                 "group_$_ids": {"1": [1]},
                 "is_present_in_meeting_ids": [1],
@@ -607,8 +603,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "vote_weight_$1": "12.002345",
                 "about_me_$": ["1"],
                 "about_me_$1": "about me 1",
-                "comment_$": ["1"],
-                "comment_$1": "comment zu meeting/1",
                 "vote_delegations_$_from_ids": ["1"],
                 "vote_delegations_$1_from_ids": [5, 6],
                 "meeting_ids": [1],
