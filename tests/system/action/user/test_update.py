@@ -90,7 +90,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "id": 223,
                 "group_$_ids": {1: [11], 2: [22]},
                 "vote_delegations_$_from_ids": {1: [222]},
-                "comment_$": {1: "comment<iframe></iframe>"},
                 "number_$": {2: "number"},
                 "structure_level_$": {1: "level_1", 2: "level_2"},
                 "about_me_$": {1: "<p>about</p><iframe></iframe>"},
@@ -110,8 +109,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "group_$2_ids": [22],
                 "vote_delegations_$1_from_ids": [222],
                 "vote_delegations_$_from_ids": ["1"],
-                "comment_$1": "comment&lt;iframe&gt;&lt;/iframe&gt;",
-                "comment_$": ["1"],
                 "number_$2": "number",
                 "number_$": ["2"],
                 "structure_level_$1": "level_1",
@@ -682,7 +679,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "structure_level_$": {"1": "structure_level 1"},
                 "vote_weight_$": {"1": "12.002345"},
                 "about_me_$": {"1": "about me 1"},
-                "comment_$": {"1": "comment zu meeting/1"},
                 "vote_delegated_$_to_id": {"1": self.user_id},
                 "vote_delegations_$_from_ids": {"4": [5, 6]},
             },
@@ -701,8 +697,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "vote_weight_$1": "12.002345",
                 "about_me_$": ["1"],
                 "about_me_$1": "about me 1",
-                "comment_$": ["1"],
-                "comment_$1": "comment zu meeting/1",
                 "vote_delegated_$_to_id": ["1"],
                 "vote_delegated_$1_to_id": self.user_id,
                 "vote_delegations_$_from_ids": ["4"],
@@ -1225,13 +1219,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "comment_$": {1: "test"},
+                "about_me_$": {1: "test"},
                 "group_$_ids": {1: [1]},
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/111", {"comment_$1": "test", "group_$1_ids": [1]}
+            "user/111", {"about_me_$1": "test", "group_$1_ids": [1]}
         )
 
     def test_update_hit_user_limit(self) -> None:

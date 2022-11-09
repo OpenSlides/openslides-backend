@@ -233,6 +233,7 @@ class Checker:
             self.allowed_collections = [
                 "organization",
                 "user",
+                "meeting_user",
                 "organization_tag",
                 "theme",
                 "committee",
@@ -241,6 +242,7 @@ class Checker:
             self.allowed_collections = meeting_collections
             # TODO: mediafile blob handling.
             self.allowed_collections.append("user")
+            self.allowed_collections.append("meeting_user")
 
         self.errors: List[str] = []
 
