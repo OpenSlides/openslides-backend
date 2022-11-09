@@ -150,6 +150,8 @@ class BaseDatastoreService(Protocol):
 
 
 class DatastoreService(BaseDatastoreService):
+    """The implementation of this interface is the ExtendedDatastoreAdapter"""
+
     changed_models: ModelMap
 
     def get(

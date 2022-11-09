@@ -34,6 +34,7 @@ COMPARISON_VALUE_SQL = "%s"
 class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     """
     Subclass of the datastore adapter to extend the functions with the usage of the changed_models.
+    This is the implementation of the interface DatastoreService
 
     Restrictions:
     -   get_deleted_models only works one way with the changed_models: if the model was not deleted

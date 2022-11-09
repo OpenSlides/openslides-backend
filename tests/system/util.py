@@ -17,6 +17,7 @@ from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
 from openslides_backend.models.models import Poll
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
+from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
@@ -46,7 +47,7 @@ def convert_to_test_response(response: RequestsResponse) -> Response:
 
 class TestVoteService(VoteService):
     url: str
-    datastore: DatastoreAdapter
+    datastore: DatastoreService
 
     def vote(self, data: Dict[str, Any]) -> Response:
         ...

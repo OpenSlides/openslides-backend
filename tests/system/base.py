@@ -10,7 +10,6 @@ from fastjsonschema.exceptions import JsonSchemaException
 from openslides_backend.action import action_worker
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
-from openslides_backend.services.datastore.adapter import DatastoreAdapter
 from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
@@ -58,7 +57,7 @@ class BaseSystemTestCase(TestCase):
         self.datastore = self.services.datastore()
         self.datastore.truncate_db()
         self.vote_service = cast(TestVoteService, self.services.vote())
-        self.vote_service.datastore = cast(DatastoreAdapter, self.datastore)
+        self.vote_service.datastore = self.datastore
         self.set_thread_watch_timeout(-1)
         remove_files_from_vote_decrypt_service()
 
