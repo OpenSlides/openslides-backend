@@ -93,19 +93,19 @@ run-tests:
 
 # Build and run development container with local datastore in use
 
-start-dev-local-ds:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml up --build --detach
+start-dev-local:
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build --detach
 
-start-dev-attach-local-ds start-dev-interactive-local-ds:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml up --build
+start-dev-attach-local start-dev-interactive-local:
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build
 
-stop-dev-local-ds:
-	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml down --volumes
+stop-dev-local:
+	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml down --volumes
 
-run-dev-attach-local-ds:
-	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
+run-dev-attach-local:
+	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
-run-dev-local-ds run-bash-local-ds: | start-dev-local-ds run-dev-attach-local-ds
+run-dev-local run-bash-local: | start-dev-local run-dev-attach-local
 
 
 # Build standalone development container (not usable inside the docker container)

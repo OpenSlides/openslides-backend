@@ -31,3 +31,9 @@ services:
         volumes:
             - ../../openslides-datastore-service/datastore:/app/datastore
             - ../../openslides-datastore-service/cli:/app/cli
+    vote:
+        build:
+            context: ../../openslides-vote-service
+    auth:
+        build:
+            context: ../../openslides-auth-service
