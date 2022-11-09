@@ -20,3 +20,43 @@ class MeetingUserCreate(BaseActionTestCase):
         response = self.request("meeting_user.create", test_dict)
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/1", test_dict)
+
+    def test_create_no_permission(self) -> None:
+        self.set_models(
+            {
+                "meeting/10": {"is_active_in_organization_id": 1},
+                "user/1": {"organization_management_level": None},
+            }
+        )
+        response = self.request("meeting_user.create", {"meeting_id": 10, "user_id": 1})
+        self.assert_status_code(response, 403)
+
+    def test_create_permission_self_change_about_me(self) -> None:
+        self.set_models(
+            {
+                "meeting/10": {"is_active_in_organization_id": 1},
+                "user/1": {"organization_management_level": None},
+            }
+        )
+        response = self.request(
+            "meeting_user.create", {"meeting_id": 10, "user_id": 1, "about_me": "test"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/1", {"meeting_id": 10, "user_id": 1, "about_me": "test"}
+        )
+        self.assert_model_exists("meeting/10", {"meeting_user_ids": [1]})
+        self.assert_model_exists("user/1", {"meeting_user_ids": [1]})
+
+    def test_create_no_permission_change_some_fields(self) -> None:
+        self.set_models(
+            {
+                "meeting/10": {"is_active_in_organization_id": 1},
+                "user/1": {"organization_management_level": None},
+            }
+        )
+        response = self.request(
+            "meeting_user.create",
+            {"meeting_id": 10, "user_id": 1, "about_me": "test", "number": "XXIII"},
+        )
+        self.assert_status_code(response, 403)
