@@ -65,7 +65,9 @@ def serve_files(file_id, file_type):
 
     block_size = app.config["MEDIA_BLOCK_SIZE"]
     response = Response(chunked(block_size, data), mimetype=mimetype)
-    response.headers["Content-Disposition"] = f'inline; filename="{filename}"'
+    # http headers can only be encoded using latin1
+    filename_latin1 = filename.encode('latin1',errors='replace').decode('latin1')
+    response.headers["Content-Disposition"] = f'inline; filename="{filename_latin1}"'
     if auth_header:
         response.headers[AUTH_HEADER] = auth_header
     return response
