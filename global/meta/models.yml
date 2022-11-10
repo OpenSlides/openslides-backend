@@ -456,6 +456,7 @@ meeting_user:
   about_me:
     type: HTMLStrict
     restriction_mode: B
+    description: "restriction_mode B is restriction_mode A or request user == user_id"
   vote_weight:
     type: decimal(6)
     minimum: 0

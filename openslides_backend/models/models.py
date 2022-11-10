@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "ec6f256e399870d2d9606aecab31a5ce"
+MODELS_YML_CHECKSUM = "c3e6418b841d8a83737ac6512b3d0d77"
 
 
 class Organization(Model):
@@ -208,7 +208,11 @@ class MeetingUser(Model):
     comment = fields.HTMLStrictField()
     number = fields.CharField()
     structure_level = fields.CharField()
-    about_me = fields.HTMLStrictField()
+    about_me = fields.HTMLStrictField(
+        constraints={
+            "description": "restriction_mode B is restriction_mode A or request user == user_id"
+        }
+    )
     vote_weight = fields.DecimalField(constraints={"minimum": 0})
 
 
