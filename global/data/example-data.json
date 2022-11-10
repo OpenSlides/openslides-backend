@@ -72,12 +72,6 @@
                 6,
                 12
             ],
-            "personal_note_$_ids": [
-                "1"
-            ],
-            "personal_note_$1_ids": [
-                1
-            ],
             "submitted_motion_$_ids": [
                 "1"
             ],
@@ -239,7 +233,8 @@
             "number": "12345-67890",
             "structure_level": "Test structure level",
             "about_me": "What I want to say about me.",
-            "vote_weight": "1.000000"
+            "vote_weight": "1.000000",
+            "personal_note_ids": [1]
         },
         "2": {
             "id": 2,
@@ -850,7 +845,7 @@
         "1": {
             "id": 1,
             "note": "<p>Some content..</p>",
-            "user_id": 1,
+            "meeting_user_id": 1,
             "content_object_id": "motion/2",
             "meeting_id": 1
         }
