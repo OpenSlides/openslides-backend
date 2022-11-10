@@ -57,22 +57,6 @@
                 "can_manage"
             ],
             "committee_$can_manage_management_level": [1],
-            "number_$": [
-                "1"
-            ],
-            "number_$1": "12345-67890",
-            "structure_level_$": [
-                "1"
-            ],
-            "structure_level_$1": "Test structure level",
-            "about_me_$": [
-                "1"
-            ],
-            "about_me_$1": "What I want to say about me.",
-            "vote_weight_$": [
-                "1"
-            ],
-            "vote_weight_$1": "1.000000",
             "group_$_ids": [
                 "1"
             ],
@@ -154,22 +138,6 @@
             "committee_ids": [
                 1
             ],
-            "number_$": [
-                "1"
-            ],
-            "number_$1": "12345-67891",
-            "structure_level_$": [
-                "1"
-            ],
-            "structure_level_$1": "Test structure level a",
-            "about_me_$": [
-                "1"
-            ],
-            "about_me_$1": "What I want to say about me with a",
-            "vote_weight_$": [
-                "1"
-            ],
-            "vote_weight_$1": "1.000000",
             "group_$_ids": [
                 "1"
             ],
@@ -218,22 +186,6 @@
             "can_change_own_password": true,
             "gender": "diverse",
             "default_vote_weight": "1.000000",
-            "number_$": [
-                "1"
-            ],
-            "number_$1": "12345-67892",
-            "structure_level_$": [
-                "1"
-            ],
-            "structure_level_$1": "Test structure level b",
-            "about_me_$": [
-                "1"
-            ],
-            "about_me_$1": "What I want to say about me. B",
-            "vote_weight_$": [
-                "1"
-            ],
-            "vote_weight_$1": "1.000000",
             "group_$_ids": [
                 "1"
             ],
@@ -283,19 +235,31 @@
             "id": 1,
             "user_id": 1,
             "meeting_id": 1,
-            "comment": "Test comment"
+            "comment": "Test comment",
+            "number": "12345-67890",
+            "structure_level": "Test structure level",
+            "about_me": "What I want to say about me.",
+            "vote_weight": "1.000000"
         },
         "2": {
             "id": 2,
             "user_id": 2,
             "meeting_id": 1,
-            "comment": "Test comment a"
+            "comment": "Test comment a",
+            "number": "12345-67891",
+            "structure_level": "Test structure level a",
+            "about_me": "What I want to say about me with a",
+            "vote_weight": "1.000000"
         },
         "3": {
             "id": 3,
             "user_id": 3,
             "meeting_id": 1,
-            "comment": "Test comment b as guest"
+            "comment": "Test comment b as guest",
+            "number": "12345-67892",
+            "structure_level": "Test structure level b",
+            "about_me": "What I want to say about me. B",
+            "vote_weight": "1.000000"
         }
     },
     "theme": {
