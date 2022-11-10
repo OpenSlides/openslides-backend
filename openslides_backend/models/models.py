@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "7f73af1df17ca9112c3a05cba451bf78"
+MODELS_YML_CHECKSUM = "c3e6418b841d8a83737ac6512b3d0d77"
 
 
 class Organization(Model):
@@ -113,23 +113,6 @@ class User(Model):
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "user_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    number_ = fields.TemplateCharField(
-        index=7,
-        replacement_collection="meeting",
-    )
-    structure_level_ = fields.TemplateCharField(
-        index=16,
-        replacement_collection="meeting",
-    )
-    about_me_ = fields.TemplateHTMLStrictField(
-        index=9,
-        replacement_collection="meeting",
-    )
-    vote_weight_ = fields.TemplateDecimalField(
-        index=12,
-        replacement_collection="meeting",
-        constraints={"minimum": 0},
-    )
     group__ids = fields.TemplateRelationListField(
         index=6,
         replacement_collection="meeting",
@@ -223,6 +206,14 @@ class MeetingUser(Model):
     user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
     meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
     comment = fields.HTMLStrictField()
+    number = fields.CharField()
+    structure_level = fields.CharField()
+    about_me = fields.HTMLStrictField(
+        constraints={
+            "description": "restriction_mode B is restriction_mode A or request user == user_id"
+        }
+    )
+    vote_weight = fields.DecimalField(constraints={"minimum": 0})
 
 
 class OrganizationTag(Model):
