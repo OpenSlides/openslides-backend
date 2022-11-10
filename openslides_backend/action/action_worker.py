@@ -4,6 +4,7 @@ from http import HTTPStatus
 from time import sleep, time
 from typing import Any, Dict, Optional, cast
 
+import psutil
 from gunicorn.http.message import Request
 from gunicorn.http.wsgi import Response
 from gunicorn.workers.gthread import ThreadWorker
@@ -19,6 +20,7 @@ from .action_handler import ActionHandler
 from .util.typing import ActionsResponse, Payload
 
 THREAD_WATCH_TIMEOUT = 1.0
+MEMORY_THRESHOLD = 90.0
 
 
 def handle_action_in_worker_thread(
@@ -102,9 +104,7 @@ class ActionWorkerWriting(object):
     def initial_action_worker_write(self) -> str:
         current_time = round(time())
         with self.datastore.get_database_context():
-            if not self.new_id:
-                self.new_id = self.datastore.reserve_id(collection="action_worker")
-                self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
+            self._get_id_and_fqid()
             try:
                 self.datastore.write_action_worker(
                     WriteRequest(
@@ -208,6 +208,47 @@ class ActionWorkerWriting(object):
                 )
             )
 
+    def abort_action_worker_write(self, message: str) -> None:
+        current_time = round(time())
+        self.logger.error(message)
+        with self.datastore.get_database_context():
+            self._get_id_and_fqid()
+            event_type: EventType = EventType.Update
+            fields = {
+                "state": "aborted",
+                "timestamp": current_time,
+                "result": {
+                    "success": False,
+                    "message": message,
+                    "action_error_index": 0,
+                    "action_data_error_index": 0,
+                },
+            }
+
+            if not self.written:
+                event_type = EventType.Create
+                fields["id"] = self.new_id
+                fields["name"] = self.action_names
+                fields["created"] = self.start_time
+            self.datastore.write_action_worker(
+                WriteRequest(
+                    events=[
+                        Event(
+                            type=event_type,
+                            fqid=self.fqid,
+                            fields=fields,
+                        )
+                    ],
+                    user_id=self.user_id,
+                    locked_fields={},
+                )
+            )
+
+    def _get_id_and_fqid(self) -> None:
+        if not self.new_id:
+            self.new_id = self.datastore.reserve_id(collection="action_worker")
+            self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
+
 
 class ActionWorker(threading.Thread):
     def __init__(
@@ -270,6 +311,16 @@ def gunicorn_post_request(
 
         while True:
             worker.tmp.notify()
+            mem = psutil.virtual_memory()
+            swap = psutil.swap_memory()
+            percent = (
+                (mem.total + swap.total - mem.available - swap.free)
+                / (mem.total + swap.total)
+                * 100
+            )
+            if percent > MEMORY_THRESHOLD:
+                mem_abort_msg = f"Abort {action_worker_writing.fqid} {action_worker_writing.action_names}: Memory usage over {MEMORY_THRESHOLD}%"
+                action_worker_writing.abort_action_worker_write(mem_abort_msg)
             if action_worker_writing.written:
                 if lock.acquire(timeout=10):
                     action_worker_writing.final_action_worker_write(action_worker)

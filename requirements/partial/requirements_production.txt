@@ -16,3 +16,4 @@ opentelemetry-instrumentation-requests
 opentelemetry-instrumentation-flask
 protobuf==3.20.1
 Babel==2.10.2
+psutil==5.9.4
