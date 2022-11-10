@@ -4,6 +4,7 @@ from ....models.models import ListOfSpeakers, Speaker
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -71,8 +72,14 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
                 and speaker["meeting_user_id"] == last_speaker["meeting_user_id"]
                 and not speaker.get("point_of_order")
             ):
+                meeting_user = self.datastore.get(
+                    fqid_from_collection_and_id(
+                        "meeting_user", last_speaker["meeting_user_id"]
+                    ),
+                    ["user_id"],
+                )
                 raise ActionException(
-                    f"Meeting User {last_speaker['meeting_user_id']} is already on the list of speakers."
+                    f"User {meeting_user['user_id']} is already on the list of speakers."
                 )
 
         # Return new instance to the generic part of the UpdateAction.
