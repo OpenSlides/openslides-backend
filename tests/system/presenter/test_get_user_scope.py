@@ -43,9 +43,15 @@ class TestGetUSerScope(BasePresenterTestCase):
                     ],
                     "committee_$can_manage_management_level": [2],
                 },
+                "user/5": {
+                    "username": "ngo",
+                    "first_name": "John",
+                    "last_name": "Freelancer",
+                    "meeting_ids": [],
+                },
             }
         )
-        status_code, data = self.request("get_user_scope", {"user_ids": [2, 3, 4]})
+        status_code, data = self.request("get_user_scope", {"user_ids": [2, 3, 4, 5]})
         self.assertEqual(status_code, 200)
         self.assertEqual(
             data,
@@ -53,5 +59,9 @@ class TestGetUSerScope(BasePresenterTestCase):
                 "2": {"collection": "organization", "id": 1},
                 "3": {"collection": "committee", "id": 1},
                 "4": {"collection": "meeting", "id": 1},
+                "5": {
+                    "collection": "organization",
+                    "id": 1,
+                },  # neither meeting nor committee => orga
             },
         )
