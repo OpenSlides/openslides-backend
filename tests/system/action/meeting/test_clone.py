@@ -523,6 +523,7 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_with_personal_note(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["personal_note_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["user_ids"] = [1]
         self.test_models["organization/1"]["user_ids"] = [1]
         self.set_models(
@@ -530,14 +531,18 @@ class MeetingClone(BaseActionTestCase):
                 "user/1": {
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
-                    "personal_note_$_ids": ["1"],
-                    "personal_note_$1_ids": [1],
+                    "meeting_user_ids": [1],
                     "organization_id": 1,
                 },
                 "personal_note/1": {
                     "note": "test note",
-                    "user_id": 1,
+                    "meeting_user_id": 1,
                     "meeting_id": 1,
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "personal_note_ids": [1],
                 },
             }
         )
@@ -547,9 +552,15 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists(
             "user/1",
             {
-                "personal_note_$_ids": ["1", "2"],
-                "personal_note_$1_ids": [1],
-                "personal_note_$2_ids": [2],
+                "meeting_user_ids": [1, 2],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "personal_note_ids": [2],
+                "user_id": 1,
+                "meeting_id": 2,
             },
         )
 
