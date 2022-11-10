@@ -27,10 +27,7 @@ class MeetingUserUpdate(UpdateAction):
     permission = Permissions.User.CAN_MANAGE
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if "about_me" in instance and not any(
-            field in instance
-            for field in ("comment", "number", "structure_level", "vote_weight")
-        ):
+        if "about_me" in instance and len(instance) == 2:
             meeting_user = self.datastore.get(
                 fqid_from_collection_and_id("meeting_user", instance["id"]),
                 ["user_id"],
