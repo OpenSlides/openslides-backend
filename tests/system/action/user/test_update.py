@@ -22,7 +22,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123"},
         )
-    response = self.request(
+        response = self.request(
             "user.update", {"id": 111, "username": " username Xcdfgee "}
         )
         self.assert_status_code(response, 200)
