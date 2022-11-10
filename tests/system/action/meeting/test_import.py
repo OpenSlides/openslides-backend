@@ -364,7 +364,6 @@ class MeetingImport(BaseActionTestCase):
             "organization_management_level": None,
             "is_present_in_meeting_ids": [],
             "speaker_$_ids": [],
-            "personal_note_$_ids": [],
             "supported_motion_$_ids": [],
             "submitted_motion_$_ids": [],
             "assignment_candidate_$_ids": [],
@@ -507,8 +506,16 @@ class MeetingImport(BaseActionTestCase):
                         "content_object_id": "motion/1",
                         "note": "<p>Some content..</p>",
                         "star": False,
-                        "user_id": 1,
+                        "meeting_user_id": 1,
                     }
+                },
+                "meeting_user": {
+                    "1": {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "user_id": 1,
+                        "personal_note_ids": [1],
+                    },
                 },
                 "motion": {
                     "1": self.get_motion_data(
@@ -541,8 +548,8 @@ class MeetingImport(BaseActionTestCase):
             }
         )
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1]
-        request_data["meeting"]["user"]["1"]["personal_note_$_ids"] = ["1"]
-        request_data["meeting"]["user"]["1"]["personal_note_$1_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [1]
+        request_data["meeting"]["user"]["1"]["meeting_user_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
@@ -571,7 +578,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists("group/2", {"user_ids": [1, 2]})
         self.assert_model_exists(
             "personal_note/1",
-            {"content_object_id": "motion/2", "user_id": 2, "meeting_id": 2},
+            {"content_object_id": "motion/2", "meeting_user_id": 1, "meeting_id": 2},
         )
         self.assert_model_exists(
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
@@ -790,8 +797,16 @@ class MeetingImport(BaseActionTestCase):
                         "content_object_id": "motion/1",
                         "note": "<p>Some content..</p>",
                         "star": False,
-                        "user_id": 1,
+                        "meeting_user_id": 1,
                     }
+                },
+                "meeting_user": {
+                    "1": {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "user_id": 1,
+                        "personal_note_ids": [1],
+                    },
                 },
                 "motion": {
                     "1": self.get_motion_data(
@@ -824,8 +839,8 @@ class MeetingImport(BaseActionTestCase):
             }
         )
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1]
-        request_data["meeting"]["user"]["1"]["personal_note_$_ids"] = ["1"]
-        request_data["meeting"]["user"]["1"]["personal_note_$1_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [1]
+        request_data["meeting"]["user"]["1"]["meeting_user_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
@@ -1627,21 +1642,26 @@ class MeetingImport(BaseActionTestCase):
                     "first_name": None,
                     "last_name": None,
                     "email": "test@example.de",
-                    "personal_note_$_ids": ["1"],  # Template Relation List
-                    "personal_note_$1_ids": [1],
+                    "meeting_user_ids": [14],
                     "vote_delegated_$_to_id": ["1"],  # Template Relation
                     "vote_delegated_$1_to_id": 1,
                     "organization_id": 1,
+                },
+                "meeting_user/14": {
+                    "meeting_id": 1,
+                    "user_id": 14,
+                    "personal_note_ids": [1],
                 },
                 "personal_note/1": {
                     "meeting_id": 1,
                     "content_object_id": None,
                     "note": "<p>Some content..</p>",
                     "star": False,
-                    "user_id": 12,
+                    "meeting_user_id": 14,
                 },
                 "meeting/1": {
                     "personal_note_ids": [1],
+                    "meeting_user_ids": [14],
                 },
             }
         )
@@ -1654,8 +1674,7 @@ class MeetingImport(BaseActionTestCase):
                         "first_name": None,
                         "last_name": None,
                         "email": "test@example.de",
-                        "personal_note_$_ids": ["1"],
-                        "personal_note_$1_ids": [1],
+                        "meeting_user_ids": [12],
                         "vote_delegated_$_to_id": ["1"],
                         "vote_delegated_$1_to_id": 13,
                         "organization_id": 1,
@@ -1666,8 +1685,7 @@ class MeetingImport(BaseActionTestCase):
                         "first_name": None,
                         "last_name": None,
                         "email": "test_new@example.de",
-                        "personal_note_$_ids": ["1"],
-                        "personal_note_$1_ids": [2],
+                        "meeting_user_ids": [13],
                         "vote_delegations_$_from_ids": ["1"],
                         "vote_delegations_$1_from_ids": [12],
                         "organization_id": 1,
@@ -1680,7 +1698,7 @@ class MeetingImport(BaseActionTestCase):
                         "content_object_id": None,
                         "note": "<p>Some content..</p>",
                         "star": False,
-                        "user_id": 12,
+                        "meeting_user_id": 12,
                     },
                     "2": {
                         "id": 2,
@@ -1688,34 +1706,58 @@ class MeetingImport(BaseActionTestCase):
                         "content_object_id": None,
                         "note": "blablabla",
                         "star": False,
+                        "meeting_user_id": 13,
+                    },
+                },
+                "meeting_user": {
+                    "12": {
+                        "id": 12,
+                        "meeting_id": 1,
+                        "user_id": 12,
+                        "personal_note_ids": [1],
+                    },
+                    "13": {
+                        "id": 13,
+                        "meeting_id": 1,
                         "user_id": 13,
+                        "personal_note_ids": [2],
                     },
                 },
             }
         )
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1, 2]
+        request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [12, 13]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/16",
             {
                 "username": "test_new_user",
-                "personal_note_$_ids": ["2"],
-                "personal_note_$2_ids": [3],
+                "meeting_user_ids": [16],
             },
+        )
+        self.assert_model_exists(
+            "meeting_user/16",
+            {"user_id": 16, "meeting_id": 2, "personal_note_ids": [3]},
         )
         self.assert_model_exists(
             "user/14",
             {
                 "username": "username_test",
-                "personal_note_$_ids": ["1", "2"],
-                "personal_note_$1_ids": [1],
-                "personal_note_$2_ids": [2],
                 "vote_delegated_$_to_id": ["1", "2"],
                 "vote_delegated_$1_to_id": 1,
                 "vote_delegated_$2_to_id": 16,
                 "organization_id": 1,
+                "meeting_user_ids": [14, 15],
             },
+        )
+        self.assert_model_exists(
+            "meeting_user/14",
+            {"user_id": 14, "meeting_id": 1, "personal_note_ids": [1]},
+        )
+        self.assert_model_exists(
+            "meeting_user/15",
+            {"user_id": 14, "meeting_id": 2, "personal_note_ids": [2]},
         )
 
     def test_check_forbidden_fields(self) -> None:
