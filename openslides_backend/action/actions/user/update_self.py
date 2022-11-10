@@ -17,7 +17,7 @@ class UserUpdateSelf(UpdateAction, UserMixin):
 
     model = User()
     schema = DefaultSchema(User()).get_default_schema(
-        optional_properties=["username", "pronoun", "gender", "email", "about_me_$"]
+        optional_properties=["username", "pronoun", "gender", "email"]
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

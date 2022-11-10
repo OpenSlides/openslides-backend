@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from ....models.models import MeetingUser
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
@@ -14,6 +16,18 @@ class MeetingUserCreate(CreateAction):
     model = MeetingUser()
     schema = DefaultSchema(MeetingUser()).get_create_schema(
         required_properties=["user_id", "meeting_id"],
-        optional_properties=["comment"],
+        optional_properties=[
+            "comment",
+            "number",
+            "structure_level",
+            "about_me",
+            "vote_weight",
+        ],
     )
     permission = Permissions.User.CAN_MANAGE
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        if "about_me" in instance and len(instance) == 3:
+            if self.user_id == instance["user_id"]:
+                return
+        super().check_permissions(instance)

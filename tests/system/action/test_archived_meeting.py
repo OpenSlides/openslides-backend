@@ -113,9 +113,6 @@ class MeetingActions(BaseActionTestCase):
                 "user/2": {
                     "username": "user2",
                     "is_active": True,
-                    "structure_level_$": ["1", "2"],
-                    "structure_level_$1": "Member M1",
-                    "structure_level_$2": "Member M2",
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
                     "speaker_$_ids": ["1"],
@@ -150,9 +147,6 @@ class MeetingActions(BaseActionTestCase):
                 "is_active": True,
                 "speaker_$1_ids": [],
                 "speaker_$_ids": [],
-                "structure_level_$": ["1", "2"],
-                "structure_level_$1": "Member M1",
-                "structure_level_$2": "Member M2",
             },
         )
         self.assert_model_deleted("group/1", {"user_ids": [2], "meeting_id": 1})
@@ -225,8 +219,6 @@ class OutMeetingActions(BaseActionTestCase):
                 "user/2": {
                     "username": "user2",
                     "is_active": True,
-                    "structure_level_$": ["1"],
-                    "structure_level_$1": "Member M1",
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
                 },
@@ -240,9 +232,7 @@ class OutMeetingActions(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "user/2", {"group_$1_ids": [1], "structure_level_$1": "Member M1"}
-        )
+        self.assert_model_deleted("user/2", {"group_$1_ids": [1]})
         self.assert_model_exists("group/1", {"user_ids": []})
         self.assert_model_exists("meeting/1", {"group_ids": [1], "user_ids": [1]})
 

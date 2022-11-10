@@ -2,7 +2,6 @@ from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
-from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -90,10 +89,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "id": 223,
                 "group_$_ids": {1: [11], 2: [22]},
                 "vote_delegations_$_from_ids": {1: [222]},
-                "number_$": {2: "number"},
-                "structure_level_$": {1: "level_1", 2: "level_2"},
-                "about_me_$": {1: "<p>about</p><iframe></iframe>"},
-                "vote_weight_$": {1: "1.000000", 2: "2.333333"},
                 "committee_$_management_level": {
                     CommitteeManagementLevel.CAN_MANAGE: [2],
                 },
@@ -109,20 +104,10 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "group_$2_ids": [22],
                 "vote_delegations_$1_from_ids": [222],
                 "vote_delegations_$_from_ids": ["1"],
-                "number_$2": "number",
-                "number_$": ["2"],
-                "structure_level_$1": "level_1",
-                "structure_level_$2": "level_2",
-                "about_me_$1": "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;",
-                "about_me_$": ["1"],
-                "vote_weight_$1": "1.000000",
-                "vote_weight_$2": "2.333333",
             },
         )
         self.assertCountEqual(user.get("committee_ids", []), [1, 2])
         self.assertCountEqual(user.get("group_$_ids", []), ["1", "2"])
-        self.assertCountEqual(user.get("structure_level_$", []), ["1", "2"])
-        self.assertCountEqual(user.get("vote_weight_$", []), ["1", "2"])
         self.assertCountEqual(user.get("meeting_ids", []), [1, 2])
 
         user = self.assert_model_exists(
@@ -362,7 +347,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "username": "username_Neu",
-                "vote_weight_$": {1: "1.000000"},
                 "group_$_ids": {1: [1]},
             },
         )
@@ -379,7 +363,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "username": "username_Neu",
-                "vote_weight_$": {1: "1.000000"},
                 "group_$_ids": {1: [1]},
             },
             anonymous=True,
@@ -409,7 +392,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "username": "username_new",
                 "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                "vote_weight_$": {1: "1.000000"},
                 "group_$_ids": {1: [1]},
             },
         )
@@ -419,8 +401,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "username": "username_new",
                 "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                "vote_weight_$": ["1"],
-                "vote_weight_$1": "1.000000",
                 "group_$_ids": ["1"],
                 "group_$1_ids": [1],
             },
@@ -698,10 +678,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "number_$": {"1": "number1", "4": "number1 in 4"},
-                "structure_level_$": {"1": "structure_level 1"},
-                "vote_weight_$": {"1": "12.002345"},
-                "about_me_$": {"1": "about me 1"},
                 "vote_delegated_$_to_id": {"1": self.user_id},
                 "vote_delegations_$_from_ids": {"4": [5, 6]},
             },
@@ -711,15 +687,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {
                 "username": "User 111",
-                "number_$": ["1", "4"],
-                "number_$1": "number1",
-                "number_$4": "number1 in 4",
-                "structure_level_$": ["1"],
-                "structure_level_$1": "structure_level 1",
-                "vote_weight_$": ["1"],
-                "vote_weight_$1": "12.002345",
-                "about_me_$": ["1"],
-                "about_me_$1": "about me 1",
                 "vote_delegated_$_to_id": ["1"],
                 "vote_delegated_$1_to_id": self.user_id,
                 "vote_delegations_$_from_ids": ["4"],
@@ -728,30 +695,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         user = self.get_model("user/111")
         self.assertCountEqual(user["meeting_ids"], [1, 4])
-
-    def test_perm_group_B_user_can_manage_no_permission(self) -> None:
-        """Group B fields needs explicit user.can_manage permission for meeting"""
-        self.permission_setup()
-        self.create_meeting(base=4)
-        self.set_organization_management_level(None, self.user_id)
-        self.set_user_groups(
-            self.user_id, [3, 6]
-        )  # Empty groups of meeting/1 and meeting/4
-        self.set_user_groups(111, [1, 4])  # Default groups of meeting/1 and meeting/4
-        self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
-
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "number_$": {"1": "number1", "4": "number1 in 4"},
-            },
-        )
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "You are not allowed to perform action user.update. Missing permission: Permission user.can_manage in meeting 4",
-            response.json["message"],
-        )
 
     def test_perm_group_C_oml_manager(self) -> None:
         """May update group C group_$_ids by OML permission"""
@@ -1242,14 +1185,11 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "about_me_$": {1: "test"},
                 "group_$_ids": {1: [1]},
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/111", {"about_me_$1": "test", "group_$1_ids": [1]}
-        )
+        self.assert_model_exists("user/111", {"group_$1_ids": [1]})
 
     def test_update_hit_user_limit(self) -> None:
         self.set_models(
@@ -1300,26 +1240,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "default_vote_weight must be bigger than or equal to 0.",
-            response.json["message"],
-        )
-
-    def test_update_negative_vote_weight(self) -> None:
-        self.set_models(
-            {
-                "user/111": {"username": "user111"},
-                "meeting/110": {"is_active_in_organization_id": 1},
-            }
-        )
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "vote_weight_$": {"110": "-6.000000"},
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "vote_weight_$ must be bigger than or equal to 0.",
             response.json["message"],
         )
 

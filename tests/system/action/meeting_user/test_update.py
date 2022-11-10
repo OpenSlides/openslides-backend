@@ -12,7 +12,59 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
             }
         )
-        test_dict = {"id": 5, "comment": "test bla"}
+        test_dict = {
+            "id": 5,
+            "comment": "test bla",
+            "number": "XII",
+            "structure_level": "A",
+            "about_me": "A very long description.",
+            "vote_weight": "1.500000",
+        }
         response = self.request("meeting_user.update", test_dict)
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting_user/5", test_dict)
+
+    def test_update_no_permission(self) -> None:
+        self.set_models(
+            {
+                "meeting/10": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [5],
+                },
+                "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "user/1": {"organization_management_level": None},
+            }
+        )
+        response = self.request("meeting_user.update", {"id": 5, "number": "XX"})
+        self.assert_status_code(response, 403)
+
+    def test_update_permission_change_own_about_me(self) -> None:
+        self.set_models(
+            {
+                "meeting/10": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [5],
+                },
+                "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "user/1": {"organization_management_level": None},
+            }
+        )
+        response = self.request("meeting_user.update", {"id": 5, "about_me": "test"})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting_user/5", {"about_me": "test"})
+
+    def test_update_no_permission_some_fields(self) -> None:
+        self.set_models(
+            {
+                "meeting/10": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [5],
+                },
+                "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "user/1": {"organization_management_level": None},
+            }
+        )
+        response = self.request(
+            "meeting_user.update", {"id": 5, "about_me": "test", "number": "XX"}
+        )
+        self.assert_status_code(response, 403)

@@ -136,10 +136,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "test_Xcdfgee",
                 "group_$_ids": {1: [11], 2: [22]},
                 "vote_delegations_$_from_ids": {1: [222]},
-                "number_$": {2: "number"},
-                "structure_level_$": {1: "level_1", 2: "level_2"},
-                "about_me_$": {1: "<p>about</p><iframe></iframe>"},
-                "vote_weight_$": {1: "1.000000", 2: "2.333333"},
                 "committee_$_management_level": {
                     CommitteeManagementLevel.CAN_MANAGE: [1],
                 },
@@ -158,16 +154,6 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assertCountEqual(user.get("group_$_ids", []), ["1", "2"])
         assert user.get("vote_delegations_$1_from_ids") == [222]
         assert user.get("vote_delegations_$_from_ids") == ["1"]
-        assert user.get("number_$2") == "number"
-        assert user.get("number_$") == ["2"]
-        assert user.get("structure_level_$1") == "level_1"
-        assert user.get("structure_level_$2") == "level_2"
-        self.assertCountEqual(user.get("structure_level_$", []), ["1", "2"])
-        assert user.get("about_me_$1") == "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;"
-        assert user.get("about_me_$") == ["1"]
-        assert user.get("vote_weight_$1") == "1.000000"
-        assert user.get("vote_weight_$2") == "2.333333"
-        self.assertCountEqual(user.get("vote_weight_$", []), ["1", "2"])
         self.assertCountEqual(user.get("meeting_ids", []), [1, 2])
         user = self.get_model("user/222")
         assert user.get("vote_delegated_$1_to_id") == 223
@@ -200,37 +186,6 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn("'committee/2' does not exist.", response.json["message"])
-
-    def test_invalid_template_field_replacement_invalid_meeting(self) -> None:
-        self.create_model("meeting/1")
-        response = self.request(
-            "user.create",
-            {
-                "username": "test_Xcdfgee",
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                "about_me_$": {"2": "comment"},
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "'meeting/2' does not exist",
-            response.json["message"],
-        )
-
-    def test_invalid_template_field_replacement_str(self) -> None:
-        self.create_model("meeting/1")
-        response = self.request(
-            "user.create",
-            {
-                "username": "test_Xcdfgee",
-                "about_me_$": {"str": "comment"},
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "data.about_me_$ must not contain {'str'} properties",
-            response.json["message"],
-        )
 
     def test_create_invalid_group_id(self) -> None:
         self.set_models(
@@ -369,7 +324,6 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "username",
-                "vote_weight_$": {1: "1.000000"},
                 "group_$_ids": {1: [1]},
             },
         )
@@ -385,7 +339,6 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "username_Neu",
-                "vote_weight_$": {1: "1.000000"},
                 "group_$_ids": {1: [1]},
             },
             anonymous=True,
@@ -411,7 +364,6 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "username_new",
                 "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                "vote_weight_$": {1: "1.000000"},
                 "group_$_ids": {1: [1]},
             },
         )
@@ -421,8 +373,6 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "username_new",
                 "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                "vote_weight_$": ["1"],
-                "vote_weight_$1": "1.000000",
                 "group_$_ids": ["1"],
                 "group_$1_ids": [1],
                 "meeting_ids": [1],
@@ -581,10 +531,6 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "username7",
-                "number_$": {"1": "number1"},
-                "structure_level_$": {"1": "structure_level 1"},
-                "vote_weight_$": {"1": "12.002345"},
-                "about_me_$": {"1": "about me 1"},
                 "vote_delegations_$_from_ids": {"1": [5, 6]},
                 "group_$_ids": {"1": [1]},
                 "is_present_in_meeting_ids": [1],
@@ -595,14 +541,6 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/7",
             {
                 "username": "username7",
-                "number_$": ["1"],
-                "number_$1": "number1",
-                "structure_level_$": ["1"],
-                "structure_level_$1": "structure_level 1",
-                "vote_weight_$": ["1"],
-                "vote_weight_$1": "12.002345",
-                "about_me_$": ["1"],
-                "about_me_$1": "about me 1",
                 "vote_delegations_$_from_ids": ["1"],
                 "vote_delegations_$1_from_ids": [5, 6],
                 "meeting_ids": [1],
@@ -617,13 +555,14 @@ class UserCreateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_user_groups(self.user_id, [3])  # Empty group of meeting/1
+        self.set_models({"user/2": {"username": "delegate"}})
 
         response = self.request(
             "user.create",
             {
                 "username": "usersname",
-                "number_$": {"1": "number1"},
                 "group_$_ids": {"1": [1]},
+                "vote_delegated_$_to_id": {"1": 2},
             },
         )
         self.assert_status_code(response, 403)
@@ -986,26 +925,6 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert "forwarding_committee_ids is not allowed." in response.json["message"]
-
-    def test_create_negative_vote_weight(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "meeting/2": {"is_active_in_organization_id": 1},
-            }
-        )
-        response = self.request(
-            "user.create",
-            {
-                "username": "test_Xcdfgee",
-                "vote_weight_$": {1: "-1.000000", 2: "-2.333333"},
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "vote_weight_$ must be bigger than or equal to 0.",
-            response.json["message"],
-        )
 
     def test_create_variant(self) -> None:
         """
