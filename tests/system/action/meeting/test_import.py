@@ -373,7 +373,6 @@ class MeetingImport(BaseActionTestCase):
             "vote_delegated_vote_$_ids": [],
             "vote_delegated_$_to_id": [],
             "vote_delegations_$_from_ids": [],
-            "chat_message_$_ids": [],
             "meeting_ids": [1],
             "organization_id": 1,
             **data,

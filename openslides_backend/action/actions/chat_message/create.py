@@ -5,12 +5,14 @@ from ....models.models import ChatMessage
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import PermissionDenied
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..meeting_user.create import MeetingUserCreate
 
 
 @register_action("chat_message.create")
@@ -27,7 +29,19 @@ class ChatMessageCreate(CreateActionWithInferredMeeting):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        instance["user_id"] = self.user_id
+        filter_ = And(
+            FilterOperator("meeting_id", "=", instance["meeting_id"]),
+            FilterOperator("user_id", "=", self.user_id),
+        )
+        result = self.datastore.filter("meeting_user", filter_, ["id"])
+        if result:
+            instance["meeting_user_id"] = int(list(result)[0])
+        else:
+            action_results = self.execute_other_action(
+                MeetingUserCreate,
+                [{"meeting_id": instance["meeting_id"], "user_id": self.user_id}],
+            )
+            instance["meeting_user_id"] = action_results[0]["id"]  # type: ignore
         instance["created"] = round(time())
         return instance
 
