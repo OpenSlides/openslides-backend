@@ -10,9 +10,10 @@ class SpeakerSpeakTester(BaseActionTestCase):
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "user/7": {"username": "test_username1"},
+            "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
             "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
             "speaker/890": {
-                "user_id": 7,
+                "meeting_user_id": 7,
                 "list_of_speakers_id": 23,
                 "meeting_id": 1,
             },
@@ -23,9 +24,10 @@ class SpeakerSpeakTester(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
                 },
@@ -41,9 +43,10 @@ class SpeakerSpeakTester(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
                 },
@@ -59,9 +62,10 @@ class SpeakerSpeakTester(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 100000,
                     "meeting_id": 1,
@@ -78,15 +82,20 @@ class SpeakerSpeakTester(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {
+                    "meeting_id": 1,
+                    "user_id": 7,
+                    "speaker_ids": [890, 891],
+                },
                 "list_of_speakers/23": {"speaker_ids": [890, 891], "meeting_id": 1},
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 100000,
                     "meeting_id": 1,
                 },
                 "speaker/891": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
                 },
@@ -105,13 +114,14 @@ class SpeakerSpeakTester(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {
                     "speaker_ids": [890],
                     "closed": True,
                     "meeting_id": 1,
                 },
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
                 },
@@ -137,10 +147,11 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {"meeting_id": 1, "speaker_ids": [890]},
                 "speaker/890": {
                     "meeting_id": 1,
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                 },
             }

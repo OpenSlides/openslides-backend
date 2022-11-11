@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "fa09f258347319e4db20d5837bab2a5b"
+MODELS_YML_CHECKSUM = "de89cf136b65e35546e22de4c81e21ba"
 
 
 class Organization(Model):
@@ -118,12 +118,6 @@ class User(Model):
         replacement_collection="meeting",
         to={"group": "user_ids"},
     )
-    speaker__ids = fields.TemplateRelationListField(
-        index=8,
-        replacement_collection="meeting",
-        to={"speaker": "user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-    )
     supported_motion__ids = fields.TemplateRelationListField(
         index=17,
         replacement_collection="meeting",
@@ -210,6 +204,9 @@ class MeetingUser(Model):
     vote_weight = fields.DecimalField(constraints={"minimum": 0})
     personal_note_ids = fields.RelationListField(
         to={"personal_note": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    speaker_ids = fields.RelationListField(
+        to={"speaker": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
     )
 
 
@@ -986,8 +983,8 @@ class Speaker(Model):
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "speaker_ids"}, required=True, equal_fields="meeting_id"
     )
-    user_id = fields.RelationField(
-        to={"user": "speaker_$_ids"}, required=True, equal_fields="meeting_id"
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "speaker_ids"}, required=True, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(to={"meeting": "speaker_ids"}, required=True)
 
