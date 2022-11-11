@@ -84,6 +84,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "tag/56": {"name": "name_56", "meeting_id": 1},
                 "mediafile/8": {"owner_id": "meeting/1"},
                 "meeting/1": {"mediafile_ids": [8]},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
 

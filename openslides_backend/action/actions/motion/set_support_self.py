@@ -2,11 +2,13 @@ from ....models.models import Motion
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
+from ....shared.filters import And, FilterOperator
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..meeting_user.create import MeetingUserCreate
 
 
 @register_action("motion.set_support_self")
@@ -68,14 +70,30 @@ class MotionSetSupportSelfAction(UpdateAction):
             changed = False
             motion_id = instance.pop("motion_id")
             support = instance.pop("support")
-
+            meeting_user = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("meeting_id", "=", motion.get("meeting_id")),
+                    FilterOperator("user_id", "=", self.user_id),
+                ),
+                ["id"],
+            )
+            meeting_user_id = None
+            if meeting_user:
+                meeting_user_id = int(list(meeting_user)[0])
+            else:
+                action_results = self.execute_other_action(
+                    MeetingUserCreate,
+                    [{"meeting_id": motion["meeting_id"], "user_id": self.user_id}],
+                )
+                meeting_user_id = action_results[0]["id"]  # type: ignore
             if support:
-                if self.user_id not in supporter_ids:
-                    supporter_ids.append(self.user_id)
+                if meeting_user_id not in supporter_ids:
+                    supporter_ids.append(meeting_user_id)
                     changed = True
             else:
-                if self.user_id in supporter_ids:
-                    supporter_ids.remove(self.user_id)
+                if meeting_user_id in supporter_ids:
+                    supporter_ids.remove(meeting_user_id)
                     changed = True
             instance["id"] = motion_id
             if changed:

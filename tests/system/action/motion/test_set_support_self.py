@@ -115,16 +115,18 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
         assert model.get("supporter_ids") == [1]
-        user_1 = self.get_model("user/1")
-        assert user_1.get("supported_motion_$1_ids") == [1]
-        assert user_1.get("supported_motion_$_ids") == ["1"]
+        self.assert_model_exists(
+            "meeting_user/1",
+            {"meeting_id": 1, "user_id": 1, "supported_motion_ids": [1]},
+        )
 
     def test_unsupport(self) -> None:
         self.set_models(
             {
-                "user/1": {
-                    "supported_motion_$_ids": ["1"],
-                    "supported_motion_$1_ids": [1],
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "supported_motion_ids": [1],
                 },
                 "motion/1": {
                     "title": "motion_1",
@@ -152,9 +154,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
         assert model.get("supporter_ids") == []
-        user_1 = self.get_model("user/1")
-        assert user_1.get("supported_motion_$1_ids") == []
-        assert user_1.get("supported_motion_$_ids") == []
+        self.assert_model_exists("meeting_user/1", {"supported_motion_ids": []})
 
     def test_unsupport_no_change(self) -> None:
         self.set_models(
