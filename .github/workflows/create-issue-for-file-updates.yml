@@ -43,16 +43,10 @@ jobs:
         with:
           filename: .github/workflows/announce-file-changes-template.md
       
-      - name: Send dispatch if models.yml was changed
-        if: contains(steps.changed-files.outputs.modified_files, 'global/meta/models.yml')
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          event-type: models-update
-          repository: OpenSlides/openslides-autoupdate-service
-          token: ${{ secrets.AUTOUPDATE_ACCESS_TOKEN }}
-
-      - name: Send dispatch if permission.yml was changed
-        if: contains(steps.changed-files.outputs.modified_files, 'global/meta/permission.yml')
+      - name: Send dispatch if models.yml or permission.yml was changed
+        if: |
+          contains(steps.changed-files.outputs.modified_files, 'global/meta/models.yml') ||
+          contains(steps.changed-files.outputs.modified_files, 'global/meta/permission.yml')
         uses: peter-evans/repository-dispatch@v2
         with:
           event-type: models-update
