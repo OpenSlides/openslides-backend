@@ -1,13 +1,17 @@
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, VoteServiceException
-from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
+from ....shared.patterns import (
+    KEYSEPARATOR,
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+)
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownControl
@@ -192,3 +196,30 @@ class StopControl(CountdownControl, Action):
             )
 
         return entitled_users
+
+
+class PollHistoryMixin(Action):
+    poll_history_information: str
+
+    def get_history_information(self) -> Optional[List[str]]:
+        # no datastore access necessary if information is in payload
+        if all(instance.get("content_object_id") for instance in self.instances):
+            polls = self.instances
+        else:
+            ids = [instance["id"] for instance in self.instances]
+            result = self.datastore.get_many(
+                [GetManyRequest(self.model.collection, ids, ["content_object_id"])],
+                use_changed_models=False,
+            )
+            polls = list(result.get(self.model.collection, {}).values())
+        return [f"{self.get_history_title(polls)} {self.poll_history_information}"]
+
+    def get_history_title(self, polls: List[Dict[str, Any]]) -> Optional[str]:
+        content_collections = set(
+            collection_from_fqid(poll["content_object_id"]) for poll in polls
+        )
+        if len(content_collections) == 1:
+            content_collection = content_collections.pop()
+            if content_collection == "assignment":
+                return "Ballot"
+        return "Poll"

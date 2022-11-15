@@ -12,7 +12,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.create import OptionCreateAction
 from .base import base_check_100_percent_base
-from .mixins import PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin
 
 options_schema = {
     "description": "A option inside a poll create schema",
@@ -29,7 +29,9 @@ options_schema = {
 
 
 @register_action("poll.create")
-class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin):
+class PollCreateAction(
+    SequentialNumbersMixin, CreateAction, PollPermissionMixin, PollHistoryMixin
+):
     """
     Action to create a poll.
     """
@@ -64,7 +66,7 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
             "publish_immediately": {"type": "boolean"},
         },
     )
-    history_information = "Poll created"
+    poll_history_information = "created"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

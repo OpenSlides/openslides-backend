@@ -28,7 +28,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
         meeting = self.get_model("meeting/1")
         assert meeting.get("present_user_ids") == [111]
         self.assert_history_information(
-            "user/111", ["Set present in meeting Test Meeting"]
+            "user/111", ["Set present in meeting {}", "meeting/1"]
         )
 
     def test_set_present_del_correct(self) -> None:
@@ -54,7 +54,9 @@ class UserSetPresentActionTest(BaseActionTestCase):
         assert model.get("is_present_in_meeting_ids") == []
         meeting = self.get_model("meeting/1")
         assert meeting.get("present_user_ids") == []
-        self.assert_history_information("user/111", ["Set not present in meeting 1"])
+        self.assert_history_information(
+            "user/111", ["Set not present in meeting {}", "meeting/1"]
+        )
 
     def test_set_present_null_action(self) -> None:
         self.set_models(

@@ -57,6 +57,7 @@ class UserCreate(
             "forwarding_committee_ids",
         ],
     )
+    history_information = "Participant created"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

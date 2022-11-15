@@ -49,5 +49,5 @@ class MotionSetRecommendationAction(UpdateAction, MotionStateHistoryInformationM
 
     def get_history_information(self) -> Optional[List[str]]:
         return self._get_state_history_information(
-            "recommendation_id", "recommendation_label", "Recommendation"
+            "recommendation_id", "Recommendation"
         )

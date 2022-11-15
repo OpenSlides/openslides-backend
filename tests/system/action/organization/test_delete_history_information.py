@@ -39,7 +39,7 @@ class OrganizationDeleteHistoryInformation(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("poll/1", ["Poll created"])
+        self.assert_history_information("poll/1", ["Ballot created"])
 
         response = self.request("organization.delete_history_information", {"id": 1})
         self.assert_status_code(response, 200)

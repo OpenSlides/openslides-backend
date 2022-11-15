@@ -1,6 +1,8 @@
 from collections import defaultdict
+from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
 
+from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....action.action import Action
@@ -253,22 +255,81 @@ class UpdateHistoryMixin(Action):
         info_active: Set[bool] = set()
 
         # Scan the instances and collect the info for the history information
-        for instance in self.instances:
-            instance_fields = set(instance.keys())
+        # Copy instances first since they are modified
+        for instance in deepcopy(self.instances):
+            instance_fields = set(instance.keys()) - {"id"}
 
-            update_fields = set(
-                [
-                    "title",
-                    "first_name",
-                    "last_name",
-                    "email",
-                    "username",
-                    "default_structure_level",
-                    "default_number",
-                    "default_vote_weight",
-                ]
+            # Fetch the current instance from the db to diff with the given instance
+            resolved_instance_fields = []
+            for field in instance_fields:
+                model_field = self.model.try_get_field(field)
+                if model_field:
+                    resolved_instance_fields.append(field)
+                    if (
+                        isinstance(model_field, BaseTemplateField)
+                        and model_field.is_template_field(field)
+                        and isinstance(instance[field], dict)
+                    ):
+                        for replacement in instance[field].keys():
+                            resolved_instance_fields.append(
+                                model_field.get_structured_field_name(replacement)
+                            )
+            db_instance = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                resolved_instance_fields,
+                use_changed_models=False,
             )
-            if instance_fields & update_fields:
+            # Compare db version with payload
+            for field in instance_fields:
+                model_field = self.model.try_get_field(field)
+                if model_field:
+                    # Template fields: remove equal structured fields and afterwards the whole field if necessary
+                    if (
+                        isinstance(model_field, BaseTemplateField)
+                        and model_field.is_template_field(field)
+                        and field in instance
+                        and isinstance(instance[field], dict)
+                    ):
+                        for replacement in list(instance[field].keys()):
+                            if (
+                                db_instance.get(
+                                    model_field.get_structured_field_name(replacement)
+                                )
+                                == instance[field][replacement]
+                            ):
+                                del instance[field][replacement]
+                        if not instance[field]:
+                            del instance[field]
+                    # Other fields except template fields: remove if equal
+                    elif not isinstance(
+                        model_field, BaseTemplateField
+                    ) or not model_field.is_template_field(field):
+                        if instance[field] == db_instance.get(field):
+                            del instance[field]
+                            if isinstance(model_field, BaseTemplateField):
+                                template_field_name = (
+                                    model_field.get_template_field_name()
+                                )
+                                replacement = model_field.get_replacement(field)
+                                if (
+                                    template_field_name in instance
+                                    and replacement in instance[template_field_name]
+                                ):
+                                    instance[template_field_name].remove(replacement)
+                                    if not instance[template_field_name]:
+                                        del instance[template_field_name]
+
+            update_fields = [
+                "title",
+                "first_name",
+                "last_name",
+                "email",
+                "username",
+                "default_structure_level",
+                "default_number",
+                "default_vote_weight",
+            ]
+            if any(field in instance for field in update_fields):
                 info_update = True
 
             meeting_ids: Set[str] = set()
@@ -294,42 +355,68 @@ class UpdateHistoryMixin(Action):
 
         # add the different history information
         if info_update:
-            informations.append("User updated")
+            informations.append("Personal data changed")
 
-        if any(all_meetings):
-            self.add_to_history(
-                informations,
-                all_meetings,
-                "User updated in meeting {}",
-                "User updated in multiple meetings",
-                "meeting",
+        if len(all_meetings) == 1:
+            meeting_id = all_meetings.pop()
+            informations.extend(
+                [
+                    "Participant data updated in meeting {}",
+                    fqid_from_collection_and_id("meeting", meeting_id),
+                ]
             )
+        elif len(all_meetings) > 1:
+            informations.append("Participant data updated in multiple meetings")
 
-        check_added = any(all_groups_added)
-        check_removed = any(all_groups_removed)
-        if check_added and check_removed:
+        # groups
+        if all_groups_added and all_groups_removed:
             informations.append("Groups changed")
-        elif check_added:
-            self.add_to_history(
-                informations,
-                all_groups_added,
-                "Group {} added",
-                "Groups changed",
-                "group",
+        elif changed_groups := (all_groups_added or all_groups_removed):
+            result = self.datastore.get_many(
+                [GetManyRequest("group", list(changed_groups), ["meeting_id"])]
             )
-        elif check_removed:
-            self.add_to_history(
-                informations,
-                all_groups_removed,
-                "Group {} removed",
-                "Groups changed",
-                "group",
-            )
+            groups = result.get("group", {})
+            if len(changed_groups) == 1:
+                if all_groups_added:
+                    informations.append("Participant added to group {} in meeting {}")
+                else:
+                    informations.append(
+                        "Participant removed from group {} in meeting {}"
+                    )
+                changed_group = changed_groups.pop()
+                informations.extend(
+                    (
+                        fqid_from_collection_and_id("group", changed_group),
+                        fqid_from_collection_and_id(
+                            "meeting", groups[changed_group]["meeting_id"]
+                        ),
+                    )
+                )
+            else:
+                meeting_ids = set(group["meeting_id"] for group in groups.values())
+                if len(meeting_ids) == 1:
+                    meeting_id = meeting_ids.pop()
+                    if all_groups_added:
+                        informations.append(
+                            "Participant added to multiple groups in meeting {}"
+                        )
+                    else:
+                        informations.append(
+                            "Participant removed from multiple groups in meeting {}"
+                        )
+                    informations.append(
+                        fqid_from_collection_and_id("meeting", meeting_id)
+                    )
+                else:
+                    if all_groups_added:
+                        informations.append("Participant added to multiple groups")
+                    else:
+                        informations.append("Participant removed from multiple groups")
 
         if info_oml:
-            informations.append("OML changed")
+            informations.append("Organization Management Level changed")
         if info_cml:
-            informations.append("CML changed")
+            informations.append("Committee Management Level changed")
 
         if info_active:
             if len(info_active) == 1:
@@ -342,26 +429,6 @@ class UpdateHistoryMixin(Action):
                 informations.append("Activation status changed")
 
         return informations
-
-    def add_to_history(
-        self,
-        informations: List[str],
-        data: Set[Any],
-        single_msg: str,
-        multi_msg: str,
-        collection: str,
-    ) -> None:
-        # assert data not empty
-        if len(data) == 1:
-            entry_id = data.pop()
-            name = self.datastore.get(
-                fqid_from_collection_and_id(collection, entry_id), ["name"]
-            ).get("name")
-            if not name:
-                name = entry_id
-            informations.append(single_msg.format(name))
-        else:
-            informations.append(multi_msg)
 
     def get_group_ids_from_db(self, instance: Dict[str, Any]) -> Set[int]:
         user_fqid = fqid_from_collection_and_id("user", instance["id"])

@@ -115,6 +115,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     instances: List[Dict[str, Any]]
     events: List[Event]
     results: ActionResults
+    cascaded_actions_history: List[str]
 
     def __init__(
         self,
@@ -143,6 +144,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             )
         self.events = []
         self.results = []
+        self.cascaded_actions_history = []
 
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
@@ -427,7 +429,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for event in self.events:
                 self.apply_event(event)
                 events_by_type[event["type"]].append(event)
-            write_request.information = self.get_history_information()
+            write_request.information = self.get_full_history_information()
             write_request.user_id = self.user_id
             write_request.events.extend(events_by_type[EventType.Create])
             write_request.events.extend(
@@ -436,6 +438,17 @@ class Action(BaseAction, metaclass=SchemaProvider):
             write_request.events.extend(events_by_type[EventType.Delete])
             return write_request
         return None
+
+    def get_full_history_information(self) -> Optional[List[str]]:
+        """
+        Get history information for this action and all cascading ones. Should only be overridden if
+        the order should be changed.
+        """
+        information = self.get_history_information()
+        if self.cascaded_actions_history or information:
+            return self.cascaded_actions_history + (information or [])
+        else:
+            return None
 
     def get_history_information(self) -> Optional[List[str]]:
         """
@@ -637,6 +650,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         ActionClass: Type["Action"],
         action_data: ActionData,
         skip_archived_meeting_check: bool = False,
+        skip_history: bool = False,
     ) -> Optional[ActionResults]:
         """
         Executes the given action class as a dependent action with the given action
@@ -644,7 +658,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         relation models into it.
         The action is fully executed and created WriteRequests are appended to
         this action.
-        The attribute skip_archived_meeting_check" from the calling class is inherited
+        The attribute skip_archived_meeting_check from the calling class is inherited
         to the called class if set. Usually this is needed for cascading deletes from
         outside of meeting.
         """
@@ -665,6 +679,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
             )
             if write_request:
                 self.events.extend(write_request.events)
+                if not skip_history and write_request.information:
+                    self.cascaded_actions_history.extend(write_request.information)
             return action_results
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:

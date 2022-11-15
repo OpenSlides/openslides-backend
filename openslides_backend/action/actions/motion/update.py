@@ -229,14 +229,13 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 "category_id",
                 "motion_category",
                 "Category",
-                "name",
             )
         )
 
         # block changed
         informations.extend(
             self.create_history_information_for_field(
-                all_instance_fields, "block_id", "motion_block", "Motion block", "title"
+                all_instance_fields, "block_id", "motion_block", "Motion block"
             )
         )
 
@@ -264,7 +263,6 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         field: str,
         collection: Collection,
         verbose_collection: str,
-        name_field: str,
     ) -> List[str]:
         if field in all_instance_fields:
             all_instance_fields.remove(field)
@@ -276,12 +274,10 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 if single_value is None:
                     return [verbose_collection + " removed"]
                 else:
-                    instance = self.datastore.get(
+                    return [
+                        verbose_collection + " set to {}",
                         fqid_from_collection_and_id(collection, single_value),
-                        [name_field],
-                        lock_result=False,
-                    )
-                    return [verbose_collection + " set to {}", instance[name_field]]
+                    ]
             else:
                 return [verbose_collection + " changed"]
         return []

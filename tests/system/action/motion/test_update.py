@@ -232,13 +232,13 @@ class MotionUpdateActionTest(BaseActionTestCase):
             [
                 "Supporters changed",
                 "Category set to {}",
-                "name_GdPzDztT",
+                "motion_category/4",
                 "Motion block set to {}",
-                "title_ddyvpXch",
+                "motion_block/51",
                 "Motion updated",
             ],
         )
-        assert counter.calls == 16
+        assert counter.calls == 14
 
     def test_update_workflow_id(self) -> None:
         self.set_models(

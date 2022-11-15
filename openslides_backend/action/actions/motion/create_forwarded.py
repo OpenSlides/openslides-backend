@@ -103,7 +103,9 @@ class MotionCreateForwarded(MotionCreateBase):
                         },
                     }
                 ]
-                self.execute_other_action(UserUpdate, user_update_payload)
+                self.execute_other_action(
+                    UserUpdate, user_update_payload, skip_history=True
+                )
         else:
             username = committee.get("name", "Committee User")
             committee_user_create_payload = {
@@ -116,7 +118,7 @@ class MotionCreateForwarded(MotionCreateBase):
                 "forwarding_committee_ids": [committee["id"]],
             }
             action_result = self.execute_other_action(
-                UserCreate, [committee_user_create_payload]
+                UserCreate, [committee_user_create_payload], skip_history=True
             )
             assert action_result and action_result[0]
             forwarding_user_id = action_result[0]["id"]

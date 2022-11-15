@@ -22,7 +22,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         assert model.get("email") == "email1@example.com"
         assert model.get("pronoun") == "Test"
         assert model.get("gender") == "male"
-        self.assert_history_information("user/1", ["User updated"])
+        self.assert_history_information("user/1", ["Personal data changed"])
 
     def test_username_already_given(self) -> None:
         self.create_model("user/222", {"username": "user"})

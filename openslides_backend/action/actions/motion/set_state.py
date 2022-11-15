@@ -130,4 +130,4 @@ class MotionSetStateAction(
         raise MissingPermission(Permissions.Motion.CAN_MANAGE_METADATA)
 
     def get_history_information(self) -> Optional[List[str]]:
-        return self._get_state_history_information("state_id", "name", "State")
+        return self._get_state_history_information("state_id", "State")

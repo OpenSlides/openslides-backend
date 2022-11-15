@@ -91,8 +91,12 @@ class MotionCommentMixin(Action):
     def get_history_information(self) -> Optional[List[str]]:
         _, action = self.name.split(".")
         if len(self.instances) == 1:
-            section = self.get_section(self.instances[0], ["name"])
-            return ["Comment {} " + action + "d", section["name"]]
+            return [
+                "Comment {} " + action + "d",
+                fqid_from_collection_and_id(
+                    self.model.collection, self.instances[0]["id"]
+                ),
+            ]
         return ["Comment " + action + "d"]
 
 

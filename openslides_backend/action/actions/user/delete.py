@@ -17,6 +17,7 @@ class UserDelete(UserScopePermissionCheckMixin, DeleteAction):
     model = User()
     schema = DefaultSchema(User()).get_delete_schema()
     skip_archived_meeting_check = True
+    history_information = "Participant deleted"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance["id"] == self.user_id:
