@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "d4b8906b5b85e446f5312c73b1c2061c"
+MODELS_YML_CHECKSUM = "2c3193ec7061dd606b83076e6b4f8521"
 
 
 class Organization(Model):
@@ -1935,3 +1935,10 @@ class ActionWorker(Model):
     created = fields.TimestampField(required=True)
     timestamp = fields.TimestampField(required=True)
     result = fields.JSONField()
+
+
+class DummyCollection(Model):
+    collection = "dummy_collection"
+    verbose_name = "dummy collection"
+
+    id = fields.IntegerField()

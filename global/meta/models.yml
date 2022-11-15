@@ -3565,3 +3565,8 @@ action_worker:
   result:
     type: JSON
     restriction_mode: A
+
+dummy_collection:
+  id:
+    type: number
+    restriction_mode: A
