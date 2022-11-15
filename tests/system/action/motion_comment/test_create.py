@@ -153,8 +153,13 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
         self.permission_test_models["motion_submitter/1234"] = {
-            "user_id": self.user_id,
+            "meeting_user_id": 2,
             "motion_id": 357,
+        }
+        self.permission_test_models["meeting_user/2"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "submitted_motion_ids": [1234],
         }
         self.set_models(self.permission_test_models)
         response = self.request(

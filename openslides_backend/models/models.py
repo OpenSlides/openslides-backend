@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "d4538e1717b4c11846aa43e7206be800"
+MODELS_YML_CHECKSUM = "f8fd69e29b0f480678e1e9222c034614"
 
 
 class Organization(Model):
@@ -118,12 +118,6 @@ class User(Model):
         replacement_collection="meeting",
         to={"group": "user_ids"},
     )
-    submitted_motion__ids = fields.TemplateRelationListField(
-        index=17,
-        replacement_collection="meeting",
-        to={"motion_submitter": "user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-    )
     poll_voted__ids = fields.TemplateRelationListField(
         index=11,
         replacement_collection="meeting",
@@ -199,6 +193,9 @@ class MeetingUser(Model):
         to={"speaker": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
     )
     supported_motion_ids = fields.RelationListField(to={"motion": "supporter_ids"})
+    submitted_motion_ids = fields.RelationListField(
+        to={"motion_submitter": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
+    )
     chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
 
 
@@ -1164,7 +1161,9 @@ class MotionSubmitter(Model):
 
     id = fields.IntegerField()
     weight = fields.IntegerField()
-    user_id = fields.RelationField(to={"user": "submitted_motion_$_ids"}, required=True)
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "submitted_motion_ids"}, required=True
+    )
     motion_id = fields.RelationField(
         to={"motion": "submitter_ids"}, required=True, equal_fields="meeting_id"
     )

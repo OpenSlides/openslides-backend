@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
@@ -12,6 +13,7 @@ from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
+from ..meeting_user.create import MeetingUserCreate
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from .set_number_mixin import SetNumberMixin
 
@@ -58,7 +60,28 @@ class MotionCreateBase(
         self.apply_instance(instance)
         weight = 1
         for user_id in submitter_ids:
-            data = {"motion_id": instance["id"], "user_id": user_id, "weight": weight}
+            meeting_user = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("meeting_id", "=", instance.get("meeting_id")),
+                    FilterOperator("user_id", "=", user_id),
+                ),
+                ["id"],
+            )
+            if meeting_user:
+                meeting_user_id = int(list(meeting_user)[0])
+            else:
+                action_results = self.execute_other_action(
+                    MeetingUserCreate,
+                    [{"meeting_id": instance["meeting_id"], "user_id": user_id}],
+                )
+                meeting_user_id = action_results[0]["id"]  # type: ignore
+
+            data = {
+                "motion_id": instance["id"],
+                "meeting_user_id": meeting_user_id,
+                "weight": weight,
+            }
             weight += 1
             self.execute_other_action(MotionSubmitterCreateAction, [data])
 

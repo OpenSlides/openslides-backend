@@ -125,11 +125,15 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "user/111": {
                     "username": "username_srtgb123",
-                    "submitted_motion_$_ids": ["1"],
-                    "submitted_motion_$1_ids": [34],
+                    "meeting_user_ids": [111],
                 },
                 "meeting/1": {},
-                "motion_submitter/34": {"user_id": 111, "motion_id": 50},
+                "motion_submitter/34": {"meeting_user_id": 111, "motion_id": 50},
+                "meeting_user/111": {
+                    "meeting_id": 1,
+                    "user_id": 111,
+                    "submitted_motion_ids": [34],
+                },
                 "motion/50": {"submitter_ids": [34]},
             }
         )
@@ -137,11 +141,14 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted(
-            "user/111",
-            {"submitted_motion_$1_ids": [34], "submitted_motion_$_ids": ["1"]},
+            "user/111", {"username": "username_srtgb123", "meeting_user_ids": [111]}
         )
         self.assert_model_deleted(
-            "motion_submitter/34", {"user_id": 111, "motion_id": 50}
+            "meeting_user/111",
+            {"meeting_id": 1, "user_id": 111, "submitted_motion_ids": [34]},
+        )
+        self.assert_model_deleted(
+            "motion_submitter/34", {"meeting_user_id": 111, "motion_id": 50}
         )
         self.assert_model_exists("motion/50", {"submitter_ids": []})
 
@@ -192,6 +199,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "group_ids": [1],
                     "default_group_id": 1,
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [2],
                 },
                 "group/1": {
                     "meeting_id": 1,
@@ -203,15 +211,19 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "group_$1_ids": [1],
                     "poll_voted_$_ids": ["1"],
                     "poll_voted_$1_ids": [1],
-                    "submitted_motion_$_ids": ["1"],
-                    "submitted_motion_$1_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "submitted_motion_ids": [1],
                 },
                 "poll/1": {
                     "meeting_id": 1,
                     "voted_ids": [2],
                 },
                 "motion_submitter/1": {
-                    "user_id": 2,
+                    "meeting_user_id": 2,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
@@ -225,6 +237,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
 
         self.assert_model_deleted("user/2")
+        self.assert_model_deleted("meeting_user/2")
         self.assert_model_exists("poll/1", {"voted_ids": []})
         self.assert_model_exists("group/1", {"user_ids": []})
         self.assert_model_deleted("motion_submitter/1")

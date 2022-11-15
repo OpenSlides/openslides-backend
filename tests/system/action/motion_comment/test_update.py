@@ -117,10 +117,15 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
         self.test_models["motion_comment_section/78"]["submitter_can_write"] = True
         self.test_models["motion_submitter/777"] = {
-            "user_id": self.user_id,
+            "meeting_user_id": 78,
             "motion_id": 111,
         }
         self.test_models["motion/111"]["submitter_ids"] = [self.user_id]
+        self.test_models["meeting_user/78"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "submitted_motion_ids": [777],
+        }
         self.set_models(self.test_models)
         response = self.request(
             "motion_comment.update",

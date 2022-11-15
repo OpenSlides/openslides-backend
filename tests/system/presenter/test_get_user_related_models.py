@@ -101,10 +101,15 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1],
                 },
-                "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
+                "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
                 "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
                 "speaker/4": {"meeting_user_id": 1, "meeting_id": 1},
-                "meeting_user/1": {"meeting_id": 1, "user_id": 1, "speaker_ids": [4]},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "speaker_ids": [4],
+                    "submitted_motion_ids": [2],
+                },
             }
         )
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
@@ -130,14 +135,24 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
                 "user/2": {"meeting_ids": [1], "meeting_user_ids": [2]},
                 "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
-                "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
-                "motion_submitter/3": {"user_id": 2, "meeting_id": 1},
+                "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
+                "motion_submitter/3": {"meeting_user_id": 2, "meeting_id": 1},
                 "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
                 "assignment_candidate/4": {"user_id": 2, "meeting_id": 1},
                 "speaker/4": {"meeting_user_id": 1, "meeting_id": 1},
                 "speaker/5": {"meeting_user_id": 2, "meeting_id": 1},
-                "meeting_user/1": {"meeting_id": 1, "user_id": 1, "speaker_ids": [4]},
-                "meeting_user/2": {"meeting_id": 1, "user_id": 2, "speaker_ids": [5]},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "speaker_ids": [4],
+                    "submitted_motion_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "speaker_ids": [5],
+                    "submitted_motion_ids": [3],
+                },
             }
         )
         status_code, data = self.request(
@@ -181,7 +196,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             {
                 "user/1": {"organization_management_level": None, "meeting_ids": [1]},
                 "meeting/1": {"name": "test"},
-                "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
+                "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "submitted_motion_ids": [2],
+                },
             }
         )
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})

@@ -37,8 +37,15 @@ class MotionSetStateActionTest(BaseActionTestCase):
             "motion_submitter/12": {
                 "meeting_id": 1,
                 "motion_id": 22,
-                "user_id": 1,
+                "meeting_user_id": 1,
             },
+            "meeting_user/1": {
+                "meeting_id": 1,
+                "user_id": 1,
+                "submitted_motion_ids": [12],
+            },
+            "meeting/1": {"meeting_user_ids": [1]},
+            "user/1": {"meeting_user_ids": [1]},
         }
 
     def test_set_state_correct_previous_state(self) -> None:
@@ -127,6 +134,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
                     "name": "name_SNLGsvIV",
                     "is_active_in_organization_id": 1,
                     "motion_submitter_ids": [12],
+                    "meeting_user_ids": [1],
                 },
                 "motion_state/76": {
                     "meeting_id": 222,
@@ -154,12 +162,16 @@ class MotionSetStateActionTest(BaseActionTestCase):
                 "motion_submitter/12": {
                     "meeting_id": 222,
                     "motion_id": 22,
-                    "user_id": 1,
+                    "meeting_user_id": 1,
                 },
                 "user/1": {
                     "organization_management_level": None,
-                    "submitted_motion_$_ids": ["222"],
-                    "submitted_motion_$222_ids": [12],
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 222,
+                    "user_id": 1,
+                    "submitted_motion_ids": [12],
                 },
             }
         )
@@ -298,7 +310,13 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
-        self.permission_test_models["motion_submitter/12"]["user_id"] = self.user_id
+        self.permission_test_models["motion_submitter/12"]["meeting_user_id"] = 2
+        self.permission_test_models["meeting_user/2"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "submitted_motion_ids": [12],
+        }
+        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [2]}
         self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
@@ -308,7 +326,13 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
-        self.permission_test_models["motion_submitter/12"]["user_id"] = self.user_id
+        self.permission_test_models["motion_submitter/12"]["meeting_user_id"] = 2
+        self.permission_test_models["meeting_user/2"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "submitted_motion_ids": [12],
+        }
+        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [2]}
         self.permission_test_models["motion_state/76"]["allow_submitter_edit"] = False
         self.permission_test_models["motion_state/77"]["allow_submitter_edit"] = False
         self.permission_test_models["motion_state/77"][

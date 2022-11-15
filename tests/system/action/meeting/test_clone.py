@@ -184,9 +184,8 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "user/11": {
                     "username": "exuser1",
-                    "submitted_motion_$_ids": ["1"],
-                    "submitted_motion_$1_ids": [1],
                     "organization_id": 1,
+                    "meeting_user_ids": [11],
                 },
                 "user/12": {
                     "username": "admin_ids_user",
@@ -205,7 +204,7 @@ class MeetingClone(BaseActionTestCase):
                     "title": "dummy",
                 },
                 "motion_submitter/1": {
-                    "user_id": 11,
+                    "meeting_user_id": 11,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
@@ -213,6 +212,7 @@ class MeetingClone(BaseActionTestCase):
                     "motion_submitter_ids": [1],
                     "motion_ids": [1],
                     "list_of_speakers_ids": [1],
+                    "meeting_user_ids": [11],
                 },
                 "list_of_speakers/1": {
                     "content_object_id": "motion/1",
@@ -221,6 +221,11 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "motion_state/1": {
                     "motion_ids": [1],
+                },
+                "meeting_user/11": {
+                    "user_id": 11,
+                    "meeting_id": 1,
+                    "submitted_motion_ids": [1],
                 },
             }
         )
@@ -239,14 +244,13 @@ class MeetingClone(BaseActionTestCase):
         )
         assert sorted(meeting2.get("user_ids", [])) == [1, 12, 13]
         self.assert_model_exists(
-            "motion_submitter/2", {"user_id": 11, "meeting_id": 2, "motion_id": 2}
+            "motion_submitter/2",
+            {"meeting_user_id": 12, "meeting_id": 2, "motion_id": 2},
         )
         self.assert_model_exists(
             "user/11",
             {
-                "submitted_motion_$_ids": ["1", "2"],
-                "submitted_motion_$1_ids": [1],
-                "submitted_motion_$2_ids": [2],
+                "meeting_user_ids": [11, 12],
                 "organization_id": 1,
             },
         )
@@ -274,6 +278,10 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 2,
                 "submitter_ids": [2],
             },
+        )
+        self.assert_model_exists(
+            "meeting_user/12",
+            {"meeting_id": 2, "user_id": 11, "submitted_motion_ids": [2]},
         )
 
     def test_clone_with_set_fields(self) -> None:
@@ -996,9 +1004,11 @@ class MeetingClone(BaseActionTestCase):
                 "agenda_duration": None,
             },
         )
-        self.assert_model_exists("motion_submitter/1", {"user_id": 1})
+        self.assert_model_exists("motion_submitter/1", {"meeting_user_id": 1})
+        self.assert_model_exists("user/1", {"meeting_user_ids": [1]})
         self.assert_model_exists(
-            "user/1", {"submitted_motion_$1_ids": [1], "submitted_motion_$_ids": ["1"]}
+            "meeting_user/1",
+            {"meeting_id": 1, "user_id": 1, "submitted_motion_ids": [1]},
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)

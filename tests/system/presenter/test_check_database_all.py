@@ -339,6 +339,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "logo_$web_header_id": 1,
                     "font_$_id": ["bold"],
                     "font_$bold_id": 2,
+                    "meeting_user_ids": [3],
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -371,8 +372,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 "user/3": self.get_new_user(
                     "submitter_user",
                     {
-                        "submitted_motion_$_ids": ["1"],
-                        "submitted_motion_$1_ids": [5],
+                        "meeting_user_ids": [3],
                     },
                 ),
                 "user/4": self.get_new_user(
@@ -396,6 +396,11 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                         "assignment_candidate_$1_ids": [9],
                     },
                 ),
+                "meeting_user/3": {
+                    "meeting_id": 1,
+                    "user_id": 3,
+                    "submitted_motion_ids": [5],
+                },
                 "motion_workflow/1": {
                     "meeting_id": 1,
                     "name": "blup",
@@ -471,7 +476,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "list_of_speakers_id": 6,
                 },
                 "motion_submitter/5": {
-                    "user_id": 3,
+                    "meeting_user_id": 3,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
