@@ -44,13 +44,13 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_$can_manage_management_level": [2],
                 },
                 "user/5": {
-                    "username": "no_organisatio",
+                    "username": "no_organisation",
                     "first_name": "John",
                     "last_name": "Freelancer",
                     "meeting_ids": [],
                 },
                 "user/6": {
-                    "username": "onl_and_meeting",
+                    "username": "oml_and_meeting",
                     "first_name": "Florian",
                     "last_name": "Freiheit",
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN,

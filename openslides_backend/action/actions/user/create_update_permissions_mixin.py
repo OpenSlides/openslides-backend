@@ -202,9 +202,9 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             self.apply_instance(instance)
 
         (
-            self.req_user_scope,
-            self.req_user_scope_id,
-            self.req_user_oml_permission,
+            self.instance_user_scop,
+            self.instance_user_scop_id,
+            self.instance_user_oml_permission,
         ) = self.get_user_scope(uid, None if uid else instance)
 
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
@@ -231,22 +231,22 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         ):
             return
 
-        if self.req_user_scope == UserScope.Organization:
+        if self.instance_user_scop == UserScope.Organization:
             raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
-        if self.req_user_scope == UserScope.Committee:
-            if self.req_user_scope_id not in permstore.user_committees:
+        if self.instance_user_scop == UserScope.Committee:
+            if self.instance_user_scop_id not in permstore.user_committees:
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: self.req_user_scope_id,
+                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scop_id,
                     }
                 )
         elif (
-            self.req_user_scope_id not in permstore.user_committees_meetings
-            and self.req_user_scope_id not in permstore.user_meetings
+            self.instance_user_scop_id not in permstore.user_committees_meetings
+            and self.instance_user_scop_id not in permstore.user_meetings
         ):
             meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", self.req_user_scope_id),
+                fqid_from_collection_and_id("meeting", self.instance_user_scop_id),
                 ["committee_id"],
                 lock_result=False,
             )
@@ -254,7 +254,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
                 {
                     OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                     CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                    Permissions.User.CAN_MANAGE: self.req_user_scope_id,
+                    Permissions.User.CAN_MANAGE: self.instance_user_scop_id,
                 }
             )
 
@@ -321,18 +321,18 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         permstore: PermissionVarStore,
         fields: List[str],
     ) -> None:
-        """Check F common fields: scoped permissions necessary, but if requested user has
+        """Check F common fields: scoped permissions necessary, but if instance user has
         an oml-permission, that of the request user must be higher"""
         if not fields:
             return
 
         if (
-            self.req_user_oml_permission
-            or self.req_user_scope == UserScope.Organization
+            self.instance_user_oml_permission
+            or self.instance_user_scop == UserScope.Organization
         ):
-            if self.req_user_oml_permission:
+            if self.instance_user_oml_permission:
                 expected_oml_permission = OrganizationManagementLevel(
-                    self.req_user_oml_permission
+                    self.instance_user_oml_permission
                 )
             else:
                 expected_oml_permission = OrganizationManagementLevel.CAN_MANAGE_USERS
@@ -343,20 +343,20 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         else:
             if permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS:
                 return
-        if self.req_user_scope == UserScope.Committee:
-            if self.req_user_scope_id not in permstore.user_committees:
+        if self.instance_user_scop == UserScope.Committee:
+            if self.instance_user_scop_id not in permstore.user_committees:
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: self.req_user_scope_id,
+                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scop_id,
                     }
                 )
         elif (
-            self.req_user_scope_id not in permstore.user_committees_meetings
-            and self.req_user_scope_id not in permstore.user_meetings
+            self.instance_user_scop_id not in permstore.user_committees_meetings
+            and self.instance_user_scop_id not in permstore.user_meetings
         ):
             meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", self.req_user_scope_id),
+                fqid_from_collection_and_id("meeting", self.instance_user_scop_id),
                 ["committee_id"],
                 lock_result=False,
             )
@@ -364,7 +364,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
                 {
                     OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                     CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                    Permissions.User.CAN_MANAGE: self.req_user_scope_id,
+                    Permissions.User.CAN_MANAGE: self.instance_user_scop_id,
                 }
             )
 
@@ -384,11 +384,11 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             fields[group] for group in fields.keys() if group not in ["B", "C"]
         ):
             if (
-                OrganizationManagementLevel(self.req_user_oml_permission)
+                OrganizationManagementLevel(self.instance_user_oml_permission)
                 > permstore.user_oml
             ):
                 raise PermissionDenied(
-                    f"Your organization management level is not high enough to change a user with a Level of {self.req_user_oml_permission}!"
+                    f"Your organization management level is not high enough to change a user with a Level of {self.instance_user_oml_permission}!"
                 )
 
     def _get_actual_grouping_from_instance(
@@ -402,7 +402,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         """
         act_grouping: Dict[str, List[str]] = defaultdict(list)
         for key, _ in instance.items():
-            for group in "ABCDEFG":
+            for group in self.field_rights.keys():
                 if key in self.field_rights[group]:
                     act_grouping[group].append(key)
                     break
