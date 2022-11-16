@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "7738f9aa987eb21693e8108186355d48"
+MODELS_YML_CHECKSUM = "44eea0cd5778e79c250069d600dca20f"
 
 
 class Organization(Model):
@@ -138,12 +138,6 @@ class User(Model):
         replacement_collection="meeting",
         to={"vote": "delegated_user_id"},
     )
-    projection__ids = fields.TemplateRelationListField(
-        index=11,
-        replacement_collection="meeting",
-        to={"projection": "content_object_id"},
-        on_delete=fields.OnDelete.CASCADE,
-    )
     vote_delegated__to_id = fields.TemplateRelationField(
         index=15,
         replacement_collection="meeting",
@@ -193,6 +187,9 @@ class MeetingUser(Model):
     )
     assignment_candidate_ids = fields.RelationListField(
         to={"assignment_candidate": "meeting_user_id"}
+    )
+    projection_ids = fields.RelationListField(
+        to={"projection": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
     )
     chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
 
@@ -1817,7 +1814,7 @@ class Projection(Model):
     )
     content_object_id = fields.GenericRelationField(
         to={
-            "user": "projection_$_ids",
+            "meeting_user": "projection_ids",
             "projector_countdown": "projection_ids",
             "projector_message": "projection_ids",
             "poll": "projection_ids",

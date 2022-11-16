@@ -120,11 +120,13 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
             if isinstance(user_field, GenericRelationField):
                 for entry in export[collection].values():
                     field_name = user_field.get_own_field_name()
-                    if (
-                        entry.get(field_name)
-                        and collection_from_fqid(entry[field_name]) == "user"
-                    ):
+                    if not entry.get(field_name):
+                        continue
+                    if collection_from_fqid(entry[field_name]) == "user":
                         user_ids.add(id_from_fqid(entry[field_name]))
+                    if collection_from_fqid(entry[field_name]) == "meeting_user":
+                        id_ = id_from_fqid(entry[field_name])
+                        user_ids.add(results["meeting_user"][id_]["user_id"])
     add_users(list(user_ids), export, meeting_id, datastore)
     return export
 

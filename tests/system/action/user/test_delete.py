@@ -436,11 +436,15 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "user/111": {
                     "username": "u111",
-                    "projection_$_ids": ["1"],
-                    "projection_$1_ids": [1],
+                    "meeting_user_ids": [111],
+                },
+                "meeting_user/111": {
+                    "meeting_id": 1,
+                    "user_id": 111,
+                    "projection_ids": [1],
                 },
                 "projection/1": {
-                    "content_object_id": "user/111",
+                    "content_object_id": "meeting_user/111",
                     "current_projector_id": 1,
                     "preview_projector_id": 1,
                     "history_projector_id": 1,
@@ -458,7 +462,11 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "history_projection_ids": [1, 2],
                     "meeting_id": 1,
                 },
-                "meeting/1": {"all_projection_ids": [1, 2], "projection_ids": [2]},
+                "meeting/1": {
+                    "all_projection_ids": [1, 2],
+                    "projection_ids": [2],
+                    "meeting_user_ids": [111],
+                },
             },
         )
         response = self.request("user.delete", {"id": 111})
@@ -466,13 +474,13 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted(
             "user/111",
-            {"meta_deleted": True, "projection_$_ids": ["1"], "projection_$1_ids": [1]},
+            {"meta_deleted": True, "meeting_user_ids": [111]},
         )
         self.assert_model_deleted(
             "projection/1",
             {
                 "meta_deleted": True,
-                "content_object_id": "user/111",
+                "content_object_id": "meeting_user/111",
                 "current_projector_id": 1,
                 "preview_projector_id": 1,
                 "history_projector_id": 1,
