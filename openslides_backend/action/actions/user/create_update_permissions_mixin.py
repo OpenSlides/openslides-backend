@@ -202,8 +202,8 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             self.apply_instance(instance)
 
         (
-            self.instance_user_scop,
-            self.instance_user_scop_id,
+            self.instance_user_scope,
+            self.instance_user_scope_id,
             self.instance_user_oml_permission,
         ) = self.get_user_scope(uid, None if uid else instance)
 
@@ -231,22 +231,22 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         ):
             return
 
-        if self.instance_user_scop == UserScope.Organization:
+        if self.instance_user_scope == UserScope.Organization:
             raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
-        if self.instance_user_scop == UserScope.Committee:
-            if self.instance_user_scop_id not in permstore.user_committees:
+        if self.instance_user_scope == UserScope.Committee:
+            if self.instance_user_scope_id not in permstore.user_committees:
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scop_id,
+                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
                     }
                 )
         elif (
-            self.instance_user_scop_id not in permstore.user_committees_meetings
-            and self.instance_user_scop_id not in permstore.user_meetings
+            self.instance_user_scope_id not in permstore.user_committees_meetings
+            and self.instance_user_scope_id not in permstore.user_meetings
         ):
             meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", self.instance_user_scop_id),
+                fqid_from_collection_and_id("meeting", self.instance_user_scope_id),
                 ["committee_id"],
                 lock_result=False,
             )
@@ -254,7 +254,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
                 {
                     OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                     CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                    Permissions.User.CAN_MANAGE: self.instance_user_scop_id,
+                    Permissions.User.CAN_MANAGE: self.instance_user_scope_id,
                 }
             )
 
@@ -328,7 +328,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
 
         if (
             self.instance_user_oml_permission
-            or self.instance_user_scop == UserScope.Organization
+            or self.instance_user_scope == UserScope.Organization
         ):
             if self.instance_user_oml_permission:
                 expected_oml_permission = OrganizationManagementLevel(
@@ -343,20 +343,20 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         else:
             if permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS:
                 return
-        if self.instance_user_scop == UserScope.Committee:
-            if self.instance_user_scop_id not in permstore.user_committees:
+        if self.instance_user_scope == UserScope.Committee:
+            if self.instance_user_scope_id not in permstore.user_committees:
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scop_id,
+                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
                     }
                 )
         elif (
-            self.instance_user_scop_id not in permstore.user_committees_meetings
-            and self.instance_user_scop_id not in permstore.user_meetings
+            self.instance_user_scope_id not in permstore.user_committees_meetings
+            and self.instance_user_scope_id not in permstore.user_meetings
         ):
             meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", self.instance_user_scop_id),
+                fqid_from_collection_and_id("meeting", self.instance_user_scope_id),
                 ["committee_id"],
                 lock_result=False,
             )
@@ -364,7 +364,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
                 {
                     OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                     CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                    Permissions.User.CAN_MANAGE: self.instance_user_scop_id,
+                    Permissions.User.CAN_MANAGE: self.instance_user_scope_id,
                 }
             )
 

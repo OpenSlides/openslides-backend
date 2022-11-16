@@ -44,7 +44,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_$can_manage_management_level": [2],
                 },
                 "user/5": {
-                    "username": "no_organisation",
+                    "username": "no_organization",
                     "first_name": "John",
                     "last_name": "Freelancer",
                     "meeting_ids": [],
