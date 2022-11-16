@@ -166,12 +166,6 @@
             "group_$1_ids": [
                 5
             ],
-            "supported_motion_$_ids": [
-                "1"
-            ],
-            "supported_motion_$1_ids": [
-                3
-            ],
             "assignment_candidate_$_ids": [
                 "1"
             ],
@@ -229,7 +223,8 @@
             "structure_level": "Test structure level b",
             "about_me": "What I want to say about me. B",
             "vote_weight": "1.000000",
-            "speaker_ids": [4, 8, 9]
+            "speaker_ids": [4, 8, 9],
+            "supported_motion_ids": [3]
         }
     },
     "theme": {

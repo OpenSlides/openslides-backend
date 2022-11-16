@@ -24,6 +24,7 @@ class MeetingUserUpdate(UpdateAction):
             "vote_weight",
             "personal_note_ids",
             "speaker_ids",
+            "supported_motion_ids",
             "chat_message_ids",
         ],
     )
