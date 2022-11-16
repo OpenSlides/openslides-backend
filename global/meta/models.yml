@@ -349,13 +349,6 @@ user:
       type: relation-list
       to: vote/delegated_user_id
     restriction_mode: A
-  assignment_candidate_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: assignment_candidate/user_id
-    restriction_mode: A
   projection_$_ids:
     type: template
     replacement_collection: meeting
@@ -441,6 +434,10 @@ meeting_user:
     type: relation-list
     to: motion_submitter/meeting_user_id
     on_delete: CASCADE
+    restriction_mode: A
+  assignment_candidate_ids:
+    type: relation-list
+    to: assignment_candidate/meeting_user_id
     restriction_mode: A
   chat_message_ids:
     type: relation-list
@@ -3091,9 +3088,9 @@ assignment_candidate:
     equal_fields: meeting_id
     restriction_mode: A
     required: true
-  user_id:
+  meeting_user_id:
     type: relation
-    to: user/assignment_candidate_$_ids
+    to: meeting_user/assignment_candidate_ids
     restriction_mode: A
   meeting_id:
     type: relation

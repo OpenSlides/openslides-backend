@@ -102,13 +102,14 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "meeting_user_ids": [1],
                 },
                 "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
-                "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
+                "assignment_candidate/3": {"meeting_user_id": 1, "meeting_id": 1},
                 "speaker/4": {"meeting_user_id": 1, "meeting_id": 1},
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
                     "speaker_ids": [4],
                     "submitted_motion_ids": [2],
+                    "assignment_candidate_ids": [3],
                 },
             }
         )
@@ -137,8 +138,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
                 "motion_submitter/3": {"meeting_user_id": 2, "meeting_id": 1},
-                "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
-                "assignment_candidate/4": {"user_id": 2, "meeting_id": 1},
+                "assignment_candidate/3": {"meeting_user_id": 1, "meeting_id": 1},
+                "assignment_candidate/4": {"meeting_user_id": 2, "meeting_id": 1},
                 "speaker/4": {"meeting_user_id": 1, "meeting_id": 1},
                 "speaker/5": {"meeting_user_id": 2, "meeting_id": 1},
                 "meeting_user/1": {
@@ -146,12 +147,14 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "user_id": 1,
                     "speaker_ids": [4],
                     "submitted_motion_ids": [2],
+                    "assignment_candidate_ids": [3],
                 },
                 "meeting_user/2": {
                     "meeting_id": 1,
                     "user_id": 2,
                     "speaker_ids": [5],
                     "submitted_motion_ids": [3],
+                    "assignment_candidate_ids": [4],
                 },
             }
         )

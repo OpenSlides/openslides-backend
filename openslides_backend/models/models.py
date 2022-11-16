@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "b718fb868a3cccf72a46a19e45975aff"
+MODELS_YML_CHECKSUM = "7738f9aa987eb21693e8108186355d48"
 
 
 class Organization(Model):
@@ -138,11 +138,6 @@ class User(Model):
         replacement_collection="meeting",
         to={"vote": "delegated_user_id"},
     )
-    assignment_candidate__ids = fields.TemplateRelationListField(
-        index=21,
-        replacement_collection="meeting",
-        to={"assignment_candidate": "user_id"},
-    )
     projection__ids = fields.TemplateRelationListField(
         index=11,
         replacement_collection="meeting",
@@ -195,6 +190,9 @@ class MeetingUser(Model):
     supported_motion_ids = fields.RelationListField(to={"motion": "supporter_ids"})
     submitted_motion_ids = fields.RelationListField(
         to={"motion_submitter": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    assignment_candidate_ids = fields.RelationListField(
+        to={"assignment_candidate": "meeting_user_id"}
     )
     chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
 
@@ -1649,7 +1647,9 @@ class AssignmentCandidate(Model):
     assignment_id = fields.RelationField(
         to={"assignment": "candidate_ids"}, required=True, equal_fields="meeting_id"
     )
-    user_id = fields.RelationField(to={"user": "assignment_candidate_$_ids"})
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "assignment_candidate_ids"}
+    )
     meeting_id = fields.RelationField(
         to={"meeting": "assignment_candidate_ids"}, required=True
     )
