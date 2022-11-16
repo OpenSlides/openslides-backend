@@ -283,29 +283,13 @@ class UpdateHistoryMixin(Action):
             for field in instance_fields:
                 model_field = self.model.try_get_field(field)
                 if model_field:
-                    # Template fields: remove equal structured fields and afterwards the whole field if necessary
-                    if (
-                        isinstance(model_field, BaseTemplateField)
-                        and model_field.is_template_field(field)
-                        and field in instance
-                        and isinstance(instance[field], dict)
-                    ):
-                        for replacement in list(instance[field].keys()):
-                            if (
-                                db_instance.get(
-                                    model_field.get_structured_field_name(replacement)
-                                )
-                                == instance[field][replacement]
-                            ):
-                                del instance[field][replacement]
-                        if not instance[field]:
-                            del instance[field]
-                    # Other fields except template fields: remove if equal
-                    elif not isinstance(
+                    # Remove fields if equal
+                    if not isinstance(
                         model_field, BaseTemplateField
                     ) or not model_field.is_template_field(field):
                         if instance[field] == db_instance.get(field):
                             del instance[field]
+                            # Also remove from template field, if necessary
                             if isinstance(model_field, BaseTemplateField):
                                 template_field_name = (
                                     model_field.get_template_field_name()
@@ -316,8 +300,8 @@ class UpdateHistoryMixin(Action):
                                     and replacement in instance[template_field_name]
                                 ):
                                     instance[template_field_name].remove(replacement)
-                                    if not instance[template_field_name]:
-                                        del instance[template_field_name]
+                                if not instance[template_field_name]:
+                                    del instance[template_field_name]
 
             update_fields = [
                 "title",

@@ -192,6 +192,24 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_history_information("user/111", None)
 
+    def test_update_empty_cml_no_history(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "committee_$_management_level": [],
+                },
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "committee_$_management_level": {"can_manage": []},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information("user/111", None)
+
     def test_committee_manager_without_committee_ids(self) -> None:
         """Giving committee management level requires committee_ids"""
         self.set_models(
