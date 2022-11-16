@@ -224,7 +224,7 @@ user:
     restriction_mode: G
   default_password:
     type: string
-    restriction_mode: D
+    restriction_mode: H
   can_change_own_password:
     type: boolean
     default: true

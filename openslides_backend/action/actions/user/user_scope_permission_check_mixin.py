@@ -17,16 +17,32 @@ from ...action import Action
 
 
 class UserScopePermissionCheckMixin(UserScopeMixin, Action):
-    def check_permissions_for_scope(self, instance: Dict[str, Any]) -> None:
+    def check_permissions_for_scope(
+        self, instance: Dict[str, Any], check_user_oml_always: bool
+    ) -> None:
         """
         Checks the permissions for user-altering actions depending on the user scope.
+        With check_user_oml_always = True it will be checked, whether the request user
+        has at minimum the same OML-level than the requested user to pass.
+        Reason: A user with OML-level-permission has scope meeting or committee, if
+        he belongs to only 1 meeting or 1 committee.
         """
+        scope, scope_id, user_oml = self.get_user_scope(instance["id"])
+        if (
+            check_user_oml_always
+            and user_oml
+            and not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                perm := OrganizationManagementLevel(user_oml),
+            )
+        ):
+            raise MissingPermission({perm: 1})
         if has_organization_management_level(
             self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return
 
-        scope, scope_id = self.get_user_scope(instance["id"])
         if scope == UserScope.Committee:
             if not has_committee_management_level(
                 self.datastore,

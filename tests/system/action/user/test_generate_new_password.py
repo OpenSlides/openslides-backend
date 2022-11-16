@@ -1,3 +1,4 @@
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
@@ -119,5 +120,22 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action user.generate_new_password. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            response.json["message"],
+        )
+
+    def test_scope_superadmin_with_oml_usermanager(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Organization)
+        self.setup_scoped_user(UserScope.Meeting)
+        self.set_models(
+            {
+                "user/111": {
+                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN
+                }
+            }
+        )
+        response = self.request("user.generate_new_password", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.generate_new_password. Missing permission: OrganizationManagementLevel superadmin in organization 1",
             response.json["message"],
         )

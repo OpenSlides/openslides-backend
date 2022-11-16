@@ -18,13 +18,13 @@ class TestGetUSerScope(BasePresenterTestCase):
                 "committee/1": {},
                 "committee/2": {"meeting_ids": [1]},
                 "user/2": {
-                    "username": "florian",
+                    "username": "only_oml_level",
                     "first_name": "Florian",
                     "last_name": "Freiheit",
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 },
                 "user/3": {
-                    "username": "goofi",
+                    "username": "only_cml_level",
                     "first_name": "Testy",
                     "last_name": "Tester",
                     "committee_$_management_level": [
@@ -34,7 +34,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "meeting_ids": [],
                 },
                 "user/4": {
-                    "username": "john",
+                    "username": "cml_and_meeting",
                     "first_name": "John",
                     "last_name": "Xylon",
                     "meeting_ids": [1],
@@ -44,24 +44,39 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_$can_manage_management_level": [2],
                 },
                 "user/5": {
-                    "username": "ngo",
+                    "username": "no_organization",
                     "first_name": "John",
                     "last_name": "Freelancer",
                     "meeting_ids": [],
                 },
+                "user/6": {
+                    "username": "oml_and_meeting",
+                    "first_name": "Florian",
+                    "last_name": "Freiheit",
+                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
+                    "meeting_ids": [1],
+                },
             }
         )
-        status_code, data = self.request("get_user_scope", {"user_ids": [2, 3, 4, 5]})
+        status_code, data = self.request(
+            "get_user_scope", {"user_ids": [2, 3, 4, 5, 6]}
+        )
         self.assertEqual(status_code, 200)
         self.assertEqual(
             data,
             {
-                "2": {"collection": "organization", "id": 1},
-                "3": {"collection": "committee", "id": 1},
-                "4": {"collection": "meeting", "id": 1},
-                "5": {
+                "2": {
                     "collection": "organization",
                     "id": 1,
-                },  # neither meeting nor committee => orga
+                    "user_oml": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                },
+                "3": {"collection": "committee", "id": 1, "user_oml": ""},
+                "4": {"collection": "meeting", "id": 1, "user_oml": ""},
+                "5": {"collection": "organization", "id": 1, "user_oml": ""},
+                "6": {
+                    "collection": "meeting",
+                    "id": 1,
+                    "user_oml": OrganizationManagementLevel.SUPERADMIN,
+                },
             },
         )
