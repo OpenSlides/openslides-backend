@@ -37,12 +37,16 @@ class GetUserScope(UserScopeMixin, BasePresenter):
         result: Dict["str", Any] = {}
         user_ids = self.data["user_ids"]
         for user_id in user_ids:
-            scope, scope_id = self.get_user_scope(user_id)
+            scope, scope_id, user_oml = self.get_user_scope(user_id)
             if scope == UserScope.Committee:
                 scope_str = "committee"
             elif scope == UserScope.Organization:
                 scope_str = "organization"
             else:
                 scope_str = "meeting"
-            result[str(user_id)] = {"collection": scope_str, "id": scope_id}
+            result[str(user_id)] = {
+                "collection": scope_str,
+                "id": scope_id,
+                "user_oml": user_oml,
+            }
         return result

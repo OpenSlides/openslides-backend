@@ -1,4 +1,7 @@
-from openslides_backend.permissions.management_levels import CommitteeManagementLevel
+from openslides_backend.permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -383,6 +386,23 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action user.delete. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            response.json["message"],
+        )
+
+    def test_delete_superadmin_with_1_meeting_by_oml_usermanager(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Organization)
+        self.setup_scoped_user(UserScope.Meeting)
+        self.set_models(
+            {
+                "user/111": {
+                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN
+                }
+            }
+        )
+        response = self.request("user.delete", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.delete. Missing permission: OrganizationManagementLevel superadmin in organization 1",
             response.json["message"],
         )
 

@@ -867,7 +867,7 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_group_F_demo_user_no_permission(self) -> None:
+    def test_create_permission_group_F_demo_user_no_permission(self) -> None:
         """demo_user only editable by Superadmin"""
         self.permission_setup()
         self.set_organization_management_level(

@@ -1,3 +1,4 @@
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
@@ -123,5 +124,22 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action user.reset_password_to_default. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            response.json["message"],
+        )
+
+    def test_scope_superadmin_with_oml_usermanager(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Organization)
+        self.setup_scoped_user(UserScope.Organization)
+        self.set_models(
+            {
+                "user/111": {
+                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN
+                }
+            }
+        )
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permission: OrganizationManagementLevel superadmin in organization 1",
             response.json["message"],
         )

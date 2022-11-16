@@ -19,9 +19,10 @@ class UserScopeMixin:
 
     def get_user_scope(
         self, id_: Optional[int] = None, instance: Optional[Dict[str, Any]] = None
-    ) -> Tuple[UserScope, int]:
+    ) -> Tuple[UserScope, int, str]:
         """
         Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
+        and the oml-level of the user as string (Empty string, if no)
         """
         meetings: Set[int] = set()
         committees_manager: Set[int] = set()
@@ -36,13 +37,15 @@ class UserScopeMixin:
             committees_manager.update(
                 get_set_from_dict_from_dict(instance, "committee_$_management_level")
             )
+            oml_right = instance.get("organization_management_level", "")
         if id_:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_),
-                ["meeting_ids", *cml_fields],
+                ["meeting_ids", "organization_management_level", *cml_fields],
             )
             meetings.update(user.get("meeting_ids", []))
             committees_manager.update(get_set_from_dict_by_fieldlist(user, cml_fields))
+            oml_right = user.get("organization_management_level", "")
         result = self.datastore.get_many(
             [
                 GetManyRequest(
@@ -64,7 +67,7 @@ class UserScopeMixin:
             if meeting_data.get("is_active_in_organization_id")
         }
         if len(meetings_committee) == 1 and len(committees) == 1:
-            return UserScope.Meeting, next(iter(meetings_committee))
+            return UserScope.Meeting, next(iter(meetings_committee)), oml_right
         elif len(committees) == 1:
-            return UserScope.Committee, cast(int, committees[0])
-        return UserScope.Organization, 1
+            return UserScope.Committee, cast(int, committees[0]), oml_right
+        return UserScope.Organization, 1, oml_right

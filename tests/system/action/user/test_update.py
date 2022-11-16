@@ -657,6 +657,29 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_perm_group_F_default_password_for_superadmin_no_permission(self) -> None:
+        """May not update the default_password for superadmin without having permission oml.SUPERADMIN"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        )
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, 111
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "new_one",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Your organization management level is not high enough to change a user with a Level of superadmin!",
+            response.json["message"],
+        )
+
     def test_perm_group_B_user_can_manage(self) -> None:
         """update group B fields for 2 meetings with simple user.can_manage permissions"""
         self.permission_setup()
@@ -1078,7 +1101,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of can_manage_organization!",
+            "Your organization management level is not high enough to change a user with a Level of can_manage_organization!",
             response.json["message"],
         )
 

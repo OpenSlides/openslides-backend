@@ -40,4 +40,4 @@ class UserResetPasswordToDefaultAction(
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.check_permissions_for_scope(instance)
+        self.check_permissions_for_scope(instance, check_user_oml_always=True)
