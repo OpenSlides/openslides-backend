@@ -57,7 +57,6 @@ class MotionSubmitterCreateAction(
                 meeting_id,
             )
 
-        # check, if (user_id, motion_id) already in the datastore.
         filter = And(
             FilterOperator("meeting_user_id", "=", instance["meeting_user_id"]),
             FilterOperator("motion_id", "=", instance["motion_id"]),
