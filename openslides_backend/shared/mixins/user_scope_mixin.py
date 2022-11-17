@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from ...models.models import Committee
 from ...services.datastore.interface import DatastoreService, GetManyRequest
+from ..exceptions import ServiceException
 from ..patterns import fqid_from_collection_and_id
 from ..util_dict_sets import get_set_from_dict_by_fieldlist, get_set_from_dict_from_dict
 
@@ -32,6 +33,8 @@ class UserScopeMixin:
                 List[str], Committee.user__management_level.replacement_enum
             )
         ]
+        if not instance and not id_:
+            raise ServiceException("There is no user_id given to get the user_scope!")
         if instance:
             meetings.update(map(int, instance.get("group_$_ids", {}).keys()))
             committees_manager.update(
