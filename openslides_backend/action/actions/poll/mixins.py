@@ -85,8 +85,8 @@ class StopControl(CountdownControl, Action):
             vote_weight = Decimal(ballot["weight"])
             votesvalid += vote_weight
             vote_template = {"user_token": user_token}
-            if "vote_user_id" in ballot:
-                vote_template["user_id"] = ballot["vote_user_id"]
+            if "vote_meeting_user_id" in ballot:
+                vote_template["meeting_user_id"] = ballot["vote_meeting_user_id"]
             if "request_user_id" in ballot:
                 vote_template["delegated_user_id"] = ballot["request_user_id"]
 

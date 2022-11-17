@@ -575,16 +575,21 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_with_option(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["option_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["user_ids"] = [1]
         self.set_models(
             {
                 "user/1": {
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
-                    "option_$_ids": ["1"],
-                    "option_$1_ids": [1],
+                    "meeting_user_ids": [1],
                 },
-                "option/1": {"content_object_id": "user/1", "meeting_id": 1},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "option_ids": [1],
+                },
+                "option/1": {"content_object_id": "meeting_user/1", "meeting_id": 1},
             }
         )
         self.set_models(self.test_models)
@@ -593,11 +598,11 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists(
             "user/1",
             {
-                "option_$_ids": ["1", "2"],
-                "option_$1_ids": [1],
-                "option_$2_ids": [2],
+                "meeting_user_ids": [1, 2],
             },
         )
+        self.assert_model_exists("meeting_user/1", {"option_ids": [1]})
+        self.assert_model_exists("meeting_user/2", {"option_ids": [2]})
 
     def test_clone_with_mediafile(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]

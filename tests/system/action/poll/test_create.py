@@ -583,6 +583,7 @@ class CreatePoll(BaseActionTestCase):
 
     def test_unique_no_error_mixed_text_content_object_id_options(self) -> None:
         self.create_meeting()
+        self.set_models({"meeting_user/1": {"meeting_id": 1, "user_id": 1}})
         self.set_user_groups(1, [1])
         response = self.request(
             "poll.create",
@@ -592,7 +593,11 @@ class CreatePoll(BaseActionTestCase):
                 "pollmethod": "YN",
                 "onehundred_percent_base": "valid",
                 "options": [
-                    {"content_object_id": "user/1", "Y": "10.000000", "N": "5.000000"},
+                    {
+                        "content_object_id": "meeting_user/1",
+                        "Y": "10.000000",
+                        "N": "5.000000",
+                    },
                     {"text": "text", "Y": "10.000000"},
                 ],
                 "meeting_id": 1,
@@ -669,6 +674,10 @@ class CreatePoll(BaseActionTestCase):
                     "group_$_ids": ["42"],
                     "meeting_ids": [42],
                 },
+                "meeting_user/1": {
+                    "meeting_id": 42,
+                    "user_id": 1,
+                },
                 "assignment/2": {
                     "meeting_id": 42,
                 },
@@ -681,7 +690,7 @@ class CreatePoll(BaseActionTestCase):
                 "type": "analog",
                 "pollmethod": "YNA",
                 "options": [
-                    {"content_object_id": "user/1"},
+                    {"content_object_id": "meeting_user/1"},
                 ],
                 "meeting_id": 42,
                 "onehundred_percent_base": "YN",
@@ -697,7 +706,8 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "option/1", {"content_object_id": "user/1", "poll_id": 1, "meeting_id": 42}
+            "option/1",
+            {"content_object_id": "meeting_user/1", "poll_id": 1, "meeting_id": 42},
         )
 
     def test_create_user_option_invalid(self) -> None:

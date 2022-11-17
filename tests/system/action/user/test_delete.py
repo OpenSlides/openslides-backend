@@ -182,12 +182,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "user/2": {
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
-                    "poll_voted_$_ids": ["1"],
-                    "poll_voted_$1_ids": [1],
-                },
-                "poll/1": {
-                    "meeting_id": 1,
-                    "voted_ids": [2],
                 },
             }
         )
@@ -195,7 +189,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
 
         self.assert_model_deleted("user/2")
-        self.assert_model_exists("poll/1", {"voted_ids": []})
         self.assert_model_exists("group/1", {"user_ids": []})
 
     def test_delete_with_multiple_template_fields(self) -> None:
@@ -219,18 +212,12 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "user/2": {
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
-                    "poll_voted_$_ids": ["1"],
-                    "poll_voted_$1_ids": [1],
                     "meeting_user_ids": [2],
                 },
                 "meeting_user/2": {
                     "meeting_id": 1,
                     "user_id": 2,
                     "submitted_motion_ids": [1],
-                },
-                "poll/1": {
-                    "meeting_id": 1,
-                    "voted_ids": [2],
                 },
                 "motion_submitter/1": {
                     "meeting_user_id": 2,
@@ -248,7 +235,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
         self.assert_model_deleted("user/2")
         self.assert_model_deleted("meeting_user/2")
-        self.assert_model_exists("poll/1", {"voted_ids": []})
         self.assert_model_exists("group/1", {"user_ids": []})
         self.assert_model_deleted("motion_submitter/1")
         self.assert_model_exists("motion/1", {"submitter_ids": []})

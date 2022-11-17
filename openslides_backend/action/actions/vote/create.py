@@ -26,7 +26,7 @@ class VoteCreate(CreateActionWithInferredMeeting):
             "option_id",
             "user_token",
         ],
-        optional_properties=["delegated_user_id", "user_id"],
+        optional_properties=["delegated_user_id", "meeting_user_id"],
     )
 
     relation_field_for_meeting = "option_id"
@@ -43,15 +43,12 @@ class VoteCreate(CreateActionWithInferredMeeting):
             use_changed_models=False,
         )
         fields = [
-            "vote_$_ids",
-            "poll_voted_$_ids",
             "vote_delegated_vote_$_ids",
         ]
         fields_set: Set[str] = set()
         for option in result["option"].values():
             fields_set.update(
                 (
-                    f"vote_${option['meeting_id']}_ids",
                     f"poll_voted_${option['meeting_id']}_ids",
                     f"vote_delegated_vote_${option['meeting_id']}_ids",
                 )

@@ -28,6 +28,9 @@ class MeetingUserUpdate(UpdateAction):
             "submitted_motion_ids",
             "assignment_candidate_ids",
             "projection_ids",
+            "poll_voted_ids",
+            "option_ids",
+            "vote_ids",
             "chat_message_ids",
         ],
     )

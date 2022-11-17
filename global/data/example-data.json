@@ -63,25 +63,6 @@
             "group_$1_ids": [
                 2
             ],
-            "poll_voted_$_ids": [
-                "1"
-            ],
-            "poll_voted_$1_ids": [
-                5
-            ],
-            "option_$_ids": [
-                "1"
-            ],
-            "option_$1_ids": [
-                5,
-                7
-            ],
-            "vote_$_ids": [
-                "1"
-            ],
-            "vote_$1_ids": [
-                9
-            ],
             "vote_delegated_vote_$_ids": [
                 "1"
             ],
@@ -114,13 +95,6 @@
             "group_$1_ids": [
                 5
             ],
-            "option_$_ids": [
-                "1"
-            ],
-            "option_$1_ids": [
-                9,
-                12
-            ],
             "meeting_user_ids": [2],
             "meeting_ids": [
                 1
@@ -143,13 +117,6 @@
             ],
             "group_$1_ids": [
                 5
-            ],
-            "option_$_ids": [
-                "1"
-            ],
-            "option_$1_ids": [
-                8,
-                11
             ],
             "meeting_user_ids": [3],
             "meeting_ids": [
@@ -174,7 +141,10 @@
             "personal_note_ids": [1],
             "speaker_ids": [1, 5, 6, 12],
             "submitted_motion_ids": [1, 2, 3, 4],
-            "assignment_candidate_ids": [1]
+            "assignment_candidate_ids": [1],
+            "poll_voted_ids": [5],
+            "option_ids": [5, 7],
+            "vote_ids": [9]
         },
         "2": {
             "id": 2,
@@ -186,7 +156,8 @@
             "about_me": "What I want to say about me with a",
             "vote_weight": "1.000000",
             "speaker_ids": [2, 3, 7, 10, 11, 13],
-            "assignment_candidate_ids": [3, 5] 
+            "assignment_candidate_ids": [3, 5],
+            "option_ids": [9, 12]
         },
         "3": {
             "id": 3,
@@ -199,7 +170,8 @@
             "vote_weight": "1.000000",
             "speaker_ids": [4, 8, 9],
             "supported_motion_ids": [3],
-            "assignment_candidate_ids": [2, 4]
+            "assignment_candidate_ids": [2, 4],
+            "option_ids": [8, 11]
         }
     },
     "theme": {
@@ -2098,7 +2070,7 @@
             "abstain": "0.000000",
             "weight": 1,
             "poll_id": 3,
-            "content_object_id": "user/1",
+            "content_object_id": "meeting_user/1",
             "meeting_id": 1
         },
         "6": {
@@ -2117,7 +2089,7 @@
             "abstain": "0.000000",
             "weight": 1,
             "poll_id": 4,
-            "content_object_id": "user/1",
+            "content_object_id": "meeting_user/1",
             "vote_ids": [
                 4
             ],
@@ -2130,7 +2102,7 @@
             "abstain": "0.000000",
             "weight": 2,
             "poll_id": 4,
-            "content_object_id": "user/3",
+            "content_object_id": "meeting_user/3",
             "vote_ids": [
                 5
             ],
@@ -2143,7 +2115,7 @@
             "abstain": "0.000000",
             "weight": 3,
             "poll_id": 4,
-            "content_object_id": "user/2",
+            "content_object_id": "meeting_user/2",
             "vote_ids": [
                 6
             ],
@@ -2169,7 +2141,7 @@
             "abstain": "0.000000",
             "weight": 1,
             "poll_id": 5,
-            "content_object_id": "user/3",
+            "content_object_id": "meeting_user/3",
             "meeting_id": 1
         },
         "12": {
@@ -2179,7 +2151,7 @@
             "abstain": "0.000000",
             "weight": 2,
             "poll_id": 5,
-            "content_object_id": "user/2",
+            "content_object_id": "meeting_user/2",
             "vote_ids": [
                 9
             ],
@@ -2265,7 +2237,7 @@
             "value": "Y",
             "weight": "1.000000",
             "user_token": "ivgipZ18D9Xac8pd",
-            "user_id": 1,
+            "meeting_user_id": 1,
             "delegated_user_id": 1,
             "option_id": 12,
             "meeting_id": 1

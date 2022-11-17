@@ -18,6 +18,9 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "motion_submitter/15": {"meeting_id": 10},
                 "assignment_candidate/16": {"meeting_id": 10},
                 "projection/17": {"meeting_id": 10},
+                "poll/18": {"meeting_id": 10},
+                "option/19": {"meeting_id": 10},
+                "vote/20": {"meeting_id": 10},
                 "chat_message/13": {"meeting_id": 10},
             }
         )
@@ -34,6 +37,9 @@ class MeetingUserUpdate(BaseActionTestCase):
             "submitted_motion_ids": [15],
             "assignment_candidate_ids": [16],
             "projection_ids": [17],
+            "poll_voted_ids": [18],
+            "option_ids": [19],
+            "vote_ids": [20],
             "chat_message_ids": [13],
         }
         response = self.request("meeting_user.update", test_dict)

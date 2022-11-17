@@ -321,27 +321,6 @@ user:
       type: relation-list
       to: group/user_ids
     restriction_mode: A
-  poll_voted_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: poll/voted_ids
-    restriction_mode: A
-  option_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: option/content_object_id
-    restriction_mode: A
-  vote_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: vote/user_id
-    restriction_mode: A
   vote_delegated_vote_$_ids:
     type: template
     replacement_collection: meeting
@@ -435,6 +414,18 @@ meeting_user:
     type: relation-list
     to: projection/content_object_id
     on_delete: CASCADE
+    restriction_mode: A
+  poll_voted_ids:
+    type: relation-list
+    to: poll/voted_ids
+    restriction_mode: A
+  option_ids:
+    type: relation-list
+    to: option/content_object_id
+    restriction_mode: A
+  vote_ids:
+    type: relation-list
+    to: vote/meeting_user_id
     restriction_mode: A
   chat_message_ids:
     type: relation-list
@@ -2876,7 +2867,7 @@ poll:
     required: false
   voted_ids:
     type: relation-list
-    to: user/poll_voted_$_ids
+    to: meeting_user/poll_voted_ids
     restriction_mode: A
   entitled_group_ids:
     type: relation-list
@@ -2938,7 +2929,7 @@ option:
     type: generic-relation
     to:
       - motion/option_ids
-      - user/option_$_ids
+      - meeting_user/option_ids
     equal_fields: meeting_id
     restriction_mode: A
     required: false
@@ -2969,9 +2960,9 @@ vote:
     equal_fields: meeting_id
     required: true
     restriction_mode: A
-  user_id:
+  meeting_user_id:
     type: relation
-    to: user/vote_$_ids
+    to: meeting_user/vote_ids
     restriction_mode: A
     required: false
   delegated_user_id:
