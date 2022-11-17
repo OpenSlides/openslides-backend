@@ -80,3 +80,15 @@ class TestGetUSerScope(BasePresenterTestCase):
                 },
             },
         )
+
+    def test_without_user_None(self) -> None:
+        status_code, data = self.request("get_user_scope", {"user_ids": [None]})
+        self.assertEqual(status_code, 400)
+        self.assertIn(
+            "There is no user_id given to get the user_scope!", data["message"]
+        )
+
+    def test_without_user_empty_list(self) -> None:
+        status_code, data = self.request("get_user_scope", {"user_ids": []})
+        self.assertEqual(status_code, 200)
+        assert data == {}
