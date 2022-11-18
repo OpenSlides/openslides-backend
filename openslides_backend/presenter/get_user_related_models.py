@@ -160,10 +160,10 @@ class GetUserRelatedModels(BasePresenter):
             submitter_ids = []
             candidate_ids = []
             if meeting_users:
-                for meeting_user in meeting_users.values():
-                    speaker_ids = meeting_user.get("speaker_ids", [])
-                    submitter_ids = meeting_user.get("submitted_motion_ids", [])
-                    candidate_ids = meeting_user.get("assignment_candidate_ids", [])
+                meeting_user = list(meeting_users.values())[0]
+                speaker_ids = meeting_user.get("speaker_ids", [])
+                submitter_ids = meeting_user.get("submitted_motion_ids", [])
+                candidate_ids = meeting_user.get("assignment_candidate_ids", [])
             if submitter_ids or candidate_ids or speaker_ids:
                 meetings_data.append(
                     {
