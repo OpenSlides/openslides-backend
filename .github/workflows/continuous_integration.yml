@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 env:
-  PYTHON_VERSION: 3.10.3
+  PYTHON_VERSION: 3.10.x
 
 jobs:
   build-production-image:
