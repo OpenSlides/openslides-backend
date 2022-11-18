@@ -124,7 +124,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
                         continue
                     if collection_from_fqid(entry[field_name]) == "user":
                         user_ids.add(id_from_fqid(entry[field_name]))
-                    if collection_from_fqid(entry[field_name]) == "meeting_user":
+                    elif collection_from_fqid(entry[field_name]) == "meeting_user":
                         id_ = id_from_fqid(entry[field_name])
                         user_ids.add(results["meeting_user"][id_]["user_id"])
     add_users(list(user_ids), export, meeting_id, datastore)
