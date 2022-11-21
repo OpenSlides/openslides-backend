@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "da6f213c728cf9df8da7cc9bba1c0580"
+MODELS_YML_CHECKSUM = "a7cb6fd39373f6595c1a1b5b682bd88f"
 
 
 class Organization(Model):
@@ -170,11 +170,6 @@ class User(Model):
         replacement_collection="meeting",
         to={"user": "vote_delegated_$_to_id"},
     )
-    chat_message__ids = fields.TemplateRelationListField(
-        index=13,
-        replacement_collection="meeting",
-        to={"chat_message": "user_id"},
-    )
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -208,6 +203,7 @@ class MeetingUser(Model):
     speaker_ids = fields.RelationListField(
         to={"speaker": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
     )
+    chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
 
 
 class OrganizationTag(Model):
@@ -1915,7 +1911,9 @@ class ChatMessage(Model):
     id = fields.IntegerField()
     content = fields.HTMLStrictField(required=True)
     created = fields.TimestampField(required=True)
-    user_id = fields.RelationField(to={"user": "chat_message_$_ids"}, required=True)
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "chat_message_ids"}, required=True
+    )
     chat_group_id = fields.RelationField(
         to={"chat_group": "chat_message_ids"}, required=True
     )

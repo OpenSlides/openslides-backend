@@ -22,8 +22,15 @@ class ChatMessageUpdate(UpdateAction):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         chat_message = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            ["meeting_user_id"],
+            lock_result=False,
+        )
+        meeting_user = self.datastore.get(
+            fqid_from_collection_and_id(
+                "meeting_user", chat_message["meeting_user_id"]
+            ),
             ["user_id"],
             lock_result=False,
         )
-        if chat_message.get("user_id") != self.user_id:
+        if meeting_user.get("user_id") != self.user_id:
             raise PermissionDenied("You must be creator of a chat message to edit it.")

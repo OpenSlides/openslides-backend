@@ -394,13 +394,6 @@ user:
       type: relation-list
       to: user/vote_delegated_$_to_id
     restriction_mode: A
-  chat_message_$_ids:
-    type: template
-    replacement_collection: meeting
-    restriction_mode: A
-    fields:
-      type: relation-list
-      to: chat_message/user_id
 
   meeting_ids:
     type: number[]
@@ -454,6 +447,10 @@ meeting_user:
     type: relation-list
     to: speaker/meeting_user_id
     on_delete: CASCADE
+    restriction_mode: A
+  chat_message_ids:
+    type: relation-list
+    to: chat_message/meeting_user_id
     restriction_mode: A
 
 organization_tag:
@@ -3531,9 +3528,9 @@ chat_message:
     type: timestamp
     required: true
     restriction_mode: A
-  user_id:
+  meeting_user_id:
     type: relation
-    to: user/chat_message_$_ids
+    to: meeting_user/chat_message_ids
     restriction_mode: A
     required: true
   chat_group_id:
