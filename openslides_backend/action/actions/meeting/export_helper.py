@@ -97,6 +97,26 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
                                 or []
                             )
                         )
+            if (
+                isinstance(user_field, RelationField)
+                and user_field.get_target_collection() == "meeting_user"
+            ):
+                id_ = entry.get(user_field.get_own_field_name())
+                if id_:
+                    user_ids.add(results["meeting_user"][id_]["user_id"])
+
+            if (
+                isinstance(user_field, RelationListField)
+                and user_field.get_target_collection() == "meeting_user"
+            ):
+                for entry in export[collection].values():
+                    if entry.get(user_field.get_own_field_name()):
+                        user_ids.update(
+                            set(
+                                results["meeting_user"][id_]["user_id"]
+                                for id_ in entry.get(user_field.get_own_field_name())
+                            )
+                        )
             if isinstance(user_field, GenericRelationField):
                 for entry in export[collection].values():
                     field_name = user_field.get_own_field_name()

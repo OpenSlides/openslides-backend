@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "a7cb6fd39373f6595c1a1b5b682bd88f"
+MODELS_YML_CHECKSUM = "f7ed75fb8037533aacadf6c02993cd49"
 
 
 class Organization(Model):
@@ -118,11 +118,6 @@ class User(Model):
         replacement_collection="meeting",
         to={"group": "user_ids"},
     )
-    supported_motion__ids = fields.TemplateRelationListField(
-        index=17,
-        replacement_collection="meeting",
-        to={"motion": "supporter_ids"},
-    )
     submitted_motion__ids = fields.TemplateRelationListField(
         index=17,
         replacement_collection="meeting",
@@ -203,6 +198,7 @@ class MeetingUser(Model):
     speaker_ids = fields.RelationListField(
         to={"speaker": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
     )
+    supported_motion_ids = fields.RelationListField(to={"motion": "supporter_ids"})
     chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
 
 
@@ -1106,7 +1102,9 @@ class Motion(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    supporter_ids = fields.RelationListField(to={"user": "supported_motion_$_ids"})
+    supporter_ids = fields.RelationListField(
+        to={"meeting_user": "supported_motion_ids"}
+    )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,

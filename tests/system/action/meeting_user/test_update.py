@@ -14,6 +14,7 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
                 "personal_note/11": {"star": True, "meeting_id": 10},
                 "speaker/12": {"meeting_id": 10},
+                "motion/14": {"meeting_id": 10},
                 "chat_message/13": {"meeting_id": 10},
             }
         )
@@ -26,6 +27,7 @@ class MeetingUserUpdate(BaseActionTestCase):
             "vote_weight": "1.500000",
             "personal_note_ids": [11],
             "speaker_ids": [12],
+            "supported_motion_ids": [14],
             "chat_message_ids": [13],
         }
         response = self.request("meeting_user.update", test_dict)
