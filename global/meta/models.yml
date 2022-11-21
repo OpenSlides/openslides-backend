@@ -321,14 +321,6 @@ user:
       type: relation-list
       to: group/user_ids
     restriction_mode: A
-  speaker_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: speaker/user_id
-      on_delete: CASCADE
-    restriction_mode: A
   supported_motion_$_ids:
     type: template
     replacement_collection: meeting
@@ -458,6 +450,11 @@ meeting_user:
     to: personal_note/meeting_user_id
     on_delete: CASCADE
     restriction_mode: B
+  speaker_ids:
+    type: relation-list
+    to: speaker/meeting_user_id
+    on_delete: CASCADE
+    restriction_mode: A
 
 organization_tag:
   id:
@@ -1976,9 +1973,9 @@ speaker:
     required: true
     equal_fields: meeting_id
     restriction_mode: A
-  user_id:
+  meeting_user_id:
     type: relation
-    to: user/speaker_$_ids
+    to: meeting_user/speaker_ids
     required: true
     equal_fields: meeting_id
     restriction_mode: A

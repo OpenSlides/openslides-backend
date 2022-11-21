@@ -17,9 +17,14 @@ class SpeakerDeleteAction(DeleteAction):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         speaker = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["user_id"],
+            ["meeting_user_id"],
             lock_result=False,
         )
-        if speaker.get("user_id") == self.user_id:
+        meeting_user = self.datastore.get(
+            fqid_from_collection_and_id("meeting_user", speaker["meeting_user_id"]),
+            ["user_id"],
+        )
+
+        if meeting_user.get("user_id") == self.user_id:
             return
         super().check_permissions(instance)

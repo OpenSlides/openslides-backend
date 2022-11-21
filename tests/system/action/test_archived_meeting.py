@@ -108,6 +108,7 @@ class MeetingActions(BaseActionTestCase):
                     "list_of_speakers_ids": [11, 12],
                     "speaker_ids": [1, 2, 3],
                     "group_ids": [1],
+                    "meeting_user_ids": [3, 4],
                 },
                 "group/1": {"user_ids": [2], "meeting_id": 1},
                 "user/2": {
@@ -115,14 +116,38 @@ class MeetingActions(BaseActionTestCase):
                     "is_active": True,
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
-                    "speaker_$_ids": ["1"],
-                    "speaker_$1_ids": [2, 3],
+                    "meeting_user_ids": [3],
+                },
+                "user/1": {
+                    "meeting_user_ids": [4],
+                },
+                "meeting_user/3": {
+                    "user_id": 2,
+                    "meeting_id": 1,
+                    "speaker_ids": [2, 3],
+                },
+                "meeting_user/4": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "speaker_ids": [1],
                 },
                 "list_of_speakers/11": {"meeting_id": 1, "speaker_ids": [1, 2]},
-                "speaker/1": {"meeting_id": 1, "list_of_speakers_id": 11, "user_id": 1},
-                "speaker/2": {"meeting_id": 1, "list_of_speakers_id": 11, "user_id": 2},
+                "speaker/1": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 11,
+                    "meeting_user_id": 4,
+                },
+                "speaker/2": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 11,
+                    "meeting_user_id": 3,
+                },
                 "list_of_speakers/12": {"meeting_id": 1, "speaker_ids": [3]},
-                "speaker/3": {"meeting_id": 1, "list_of_speakers_id": 12, "user_id": 2},
+                "speaker/3": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 12,
+                    "meeting_user_id": 3,
+                },
             }
         )
         response = self.request("meeting.delete", {"id": 1})
@@ -137,6 +162,7 @@ class MeetingActions(BaseActionTestCase):
                 "list_of_speakers_ids": [11, 12],
                 "motion_ids": [1],
                 "speaker_ids": [1, 2, 3],
+                "meeting_user_ids": [3, 4],
             },
         )
         self.assert_model_exists(
@@ -145,10 +171,9 @@ class MeetingActions(BaseActionTestCase):
                 "group_$1_ids": [],
                 "group_$_ids": [],
                 "is_active": True,
-                "speaker_$1_ids": [],
-                "speaker_$_ids": [],
             },
         )
+        self.assert_model_deleted("meeting_user/3")
         self.assert_model_deleted("group/1", {"user_ids": [2], "meeting_id": 1})
         self.assert_model_deleted(
             "list_of_speakers/11",
@@ -157,7 +182,7 @@ class MeetingActions(BaseActionTestCase):
         self.assert_model_deleted(
             "speaker/2",
             {
-                "user_id": 2,
+                "meeting_user_id": 3,
                 "list_of_speakers_id": 11,
                 "meeting_id": 1,
             },
