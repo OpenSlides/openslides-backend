@@ -105,6 +105,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         )
         # test history
         self.assert_history_information("motion/12", ["Forwarding created"])
+        self.assert_history_information("motion/13", ["Forwarding created"])
 
     def test_correct_existing_registered_forward_user(self) -> None:
         self.set_models(self.test_model)
@@ -365,7 +366,7 @@ class MotionCreateForwarded(BaseActionTestCase):
             },
         )
         self.assert_history_information("motion/11", ["Forwarding created"])
-        self.assert_history_information("motion/6", ["Forwarding created"])
+        self.assert_history_information("motion/6", None)
 
     def test_forward_with_deleted_motion_in_all_origin_ids(self) -> None:
         self.set_models(

@@ -1,5 +1,7 @@
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
+
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
@@ -129,5 +131,5 @@ class MotionSetStateAction(
 
         raise MissingPermission(Permissions.Motion.CAN_MANAGE_METADATA)
 
-    def get_history_information(self) -> Optional[List[str]]:
+    def get_history_information(self) -> Optional[HistoryInformation]:
         return self._get_state_history_information("state_id", "State")

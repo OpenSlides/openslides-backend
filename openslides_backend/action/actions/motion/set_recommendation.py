@@ -1,5 +1,7 @@
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
+
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -42,12 +44,12 @@ class MotionSetRecommendationAction(UpdateAction, MotionStateHistoryInformationM
             )
         if recommendation_state.get("recommendation_label") is None:
             raise ActionException(
-                "Recommendation_label of a recommendation must be set."
+                "Recommendation label of a recommendation must be set."
             )
         instance["last_modified"] = round(time.time())
         return instance
 
-    def get_history_information(self) -> Optional[List[str]]:
+    def get_history_information(self) -> Optional[HistoryInformation]:
         return self._get_state_history_information(
             "recommendation_id", "Recommendation"
         )

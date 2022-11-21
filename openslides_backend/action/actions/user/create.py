@@ -1,5 +1,8 @@
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -57,7 +60,6 @@ class UserCreate(
             "forwarding_committee_ids",
         ],
     )
-    history_information = "Participant created"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
@@ -89,3 +91,18 @@ class UserCreate(
                 )
             ]
         )[0]
+
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        information = {}
+        for instance in self.instances:
+            meeting_ids = list(instance.get("group_$_ids", []))
+            instance_information = ["Participant created"]
+            if len(meeting_ids) == 1:
+                instance_information[0] += " in meeting {}"
+                instance_information.append(
+                    fqid_from_collection_and_id("meeting", meeting_ids.pop())
+                )
+            information[
+                fqid_from_collection_and_id(self.model.collection, instance["id"])
+            ] = instance_information
+        return information

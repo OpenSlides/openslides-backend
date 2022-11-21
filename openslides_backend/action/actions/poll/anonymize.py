@@ -11,18 +11,20 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..vote.anonymize import VoteAnonymize
-from .mixins import PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin
 
 
 @register_action("poll.anonymize")
-class PollAnonymize(ExtendHistoryMixin, UpdateAction, PollPermissionMixin):
+class PollAnonymize(
+    ExtendHistoryMixin, UpdateAction, PollPermissionMixin, PollHistoryMixin
+):
     """
     Action to anonymize a poll.
     """
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
-    history_information = "Voting anonymized"
+    poll_history_information = "anonymized"
     extend_history_to = "content_object_id"
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:

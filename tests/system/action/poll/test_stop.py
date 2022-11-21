@@ -101,6 +101,28 @@ class PollStopActionTest(PollTestMixin):
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
 
+    def test_stop_assignment_poll(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "assignment/1": {
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "content_object_id": "assignment/1",
+                    "type": Poll.TYPE_NAMED,
+                    "pollmethod": "YN",
+                    "backend": "fast",
+                    "state": Poll.STATE_STARTED,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        self.start_poll(1)
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_history_information("assignment/1", ["Ballot stopped"])
+
     def test_stop_entitled_users_at_stop_user_only_once(self) -> None:
         self.set_models(
             {

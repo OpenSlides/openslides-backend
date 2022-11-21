@@ -640,7 +640,7 @@ class CreatePoll(BaseActionTestCase):
                 "weight": 1,
             },
         )
-        self.assert_history_information("motion/3", ["Poll created"])
+        self.assert_history_information("motion/3", ["Voting created"])
 
     def test_not_state_change(self) -> None:
         response = self.request(

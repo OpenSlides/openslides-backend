@@ -2,6 +2,8 @@ from collections import defaultdict
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
+from openslides_backend.shared.typing import HistoryInformation
+
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -201,25 +203,18 @@ class StopControl(CountdownControl, Action):
 class PollHistoryMixin(Action):
     poll_history_information: str
 
-    def get_history_information(self) -> Optional[List[str]]:
+    def get_history_information(self) -> Optional[HistoryInformation]:
         # no datastore access necessary if information is in payload
-        if all(instance.get("content_object_id") for instance in self.instances):
-            polls = self.instances
-        else:
-            ids = [instance["id"] for instance in self.instances]
-            result = self.datastore.get_many(
-                [GetManyRequest(self.model.collection, ids, ["content_object_id"])],
-                use_changed_models=False,
-            )
-            polls = list(result.get(self.model.collection, {}).values())
-        return [f"{self.get_history_title(polls)} {self.poll_history_information}"]
+        polls = self.get_instances_with_fields(["content_object_id"])
+        return {
+            poll["content_object_id"]: [
+                f"{self.get_history_title(poll)} {self.poll_history_information}"
+            ]
+            for poll in polls
+        }
 
-    def get_history_title(self, polls: List[Dict[str, Any]]) -> Optional[str]:
-        content_collections = set(
-            collection_from_fqid(poll["content_object_id"]) for poll in polls
-        )
-        if len(content_collections) == 1:
-            content_collection = content_collections.pop()
-            if content_collection == "assignment":
-                return "Ballot"
-        return "Poll"
+    def get_history_title(self, poll: Dict[str, Any]) -> str:
+        content_collection = collection_from_fqid(poll["content_object_id"])
+        if content_collection == "assignment":
+            return "Ballot"
+        return "Voting"

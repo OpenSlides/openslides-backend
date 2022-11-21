@@ -10,7 +10,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .mixins import PollPermissionMixin, StopControl
+from .mixins import PollHistoryMixin, PollPermissionMixin, StopControl
 
 
 @register_action("poll.stop")
@@ -19,6 +19,7 @@ class PollStopAction(
     StopControl,
     UpdateAction,
     PollPermissionMixin,
+    PollHistoryMixin,
 ):
     """
     Action to stop a poll.
@@ -26,7 +27,7 @@ class PollStopAction(
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
-    history_information = "Voting stopped"
+    poll_history_information = "stopped"
     extend_history_to = "content_object_id"
 
     def prefetch(self, action_data: ActionData) -> None:

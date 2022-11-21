@@ -148,67 +148,10 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/223",
             [
                 "Participant data updated in multiple meetings",
-                "Participant added to multiple groups",
+                "Participant added to multiple groups in multiple meetings",
                 "Committee Management Level changed",
             ],
         )
-
-    def test_update_fields_with_equal_value_no_history(self) -> None:
-        self.set_models(
-            {
-                "user/111": {
-                    "username": "username_srtgb123",
-                    "title": "test",
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
-                    "is_active": True,
-                    "structure_level_$": ["1"],
-                    "structure_level_$1": "level",
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                    "committee_$_management_level": ["can_manage"],
-                    "committee_$can_manage_management_level": [78],
-                },
-                "group/1": {"user_ids": [111], "meeting_id": 1},
-                "meeting/1": {
-                    "group_ids": [1],
-                    "is_active_in_organization_id": 1,
-                    "committee_id": 78,
-                },
-                "committee/78": {"meeting_ids": [1]},
-            }
-        )
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "title": "test",
-                "group_$_ids": {1: [1]},
-                "is_active": True,
-                "structure_level_$": {1: "level"},
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                "committee_$_management_level": {"can_manage": [78]},
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_history_information("user/111", None)
-
-    def test_update_empty_cml_no_history(self) -> None:
-        self.set_models(
-            {
-                "user/111": {
-                    "committee_$_management_level": [],
-                },
-            }
-        )
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "committee_$_management_level": {"can_manage": []},
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_history_information("user/111", None)
 
     def test_committee_manager_without_committee_ids(self) -> None:
         """Giving committee management level requires committee_ids"""
@@ -1621,13 +1564,30 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": user_id,
-                "group_$_ids": {"1": [1, 2]},
+                "group_$_ids": {"1": [2, 3]},
             },
         )
         self.assert_status_code(response, 200)
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant added to multiple groups in meeting {}", "meeting/1"],
+        )
+
+    def test_update_history_add_multiple_groups_with_default_group(self) -> None:
+        self.create_meeting()
+        user_id = self.create_user(username="test")
+
+        response = self.request(
+            "user.update",
+            {
+                "id": user_id,
+                "group_$_ids": {"1": [1, 2]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information(
+            f"user/{user_id}",
+            ["Participant added to group {} in meeting {}", "group/2", "meeting/1"],
         )
 
     def test_update_history_remove_group(self) -> None:
@@ -1649,4 +1609,140 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             f"user/{user_id}",
             ["Participant removed from group {} in meeting {}", "group/1", "meeting/1"],
+        )
+
+    def test_update_groups_changed_multiple_meetings(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "committee/1": {"meeting_ids": [1]},
+                "user/222": {"group_$1_ids": [11], "group_$_ids": ["1"]},
+                "group/11": {"meeting_id": 1},
+                "group/22": {"meeting_id": 2},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 222,
+                "group_$_ids": {1: [], 2: [22]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information(
+            "user/222",
+            [
+                "Groups changed in multiple meetings",
+            ],
+        )
+
+    def test_update_fields_with_equal_value_no_history(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "username_srtgb123",
+                    "title": "test",
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "is_active": True,
+                    "structure_level_$": ["1"],
+                    "structure_level_$1": "level",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                    "committee_$_management_level": ["can_manage"],
+                    "committee_$can_manage_management_level": [78],
+                },
+                "group/1": {"user_ids": [111], "meeting_id": 1},
+                "meeting/1": {
+                    "group_ids": [1],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 78,
+                },
+                "committee/78": {"meeting_ids": [1]},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "title": "test",
+                "group_$_ids": {1: [1]},
+                "is_active": True,
+                "structure_level_$": {1: "level"},
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                "committee_$_management_level": {"can_manage": [78]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information("user/111", None)
+
+    def test_update_empty_cml_no_history(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "committee_$_management_level": [],
+                },
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "committee_$_management_level": {"can_manage": []},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information("user/111", None)
+
+    def test_update_participant_data_with_existing_meetings(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "committee/1": {"meeting_ids": [1]},
+                "user/222": {"structure_level_$": ["1"], "structure_level_$1": "level"},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 222,
+                "structure_level_$": {2: "level2"},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information(
+            "user/222",
+            [
+                "Participant data updated in meeting {}",
+                "meeting/2",
+            ],
+        )
+
+    def test_update_participant_data_in_multiple_meetings_with_existing_meetings(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "meeting/3": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "committee/1": {"meeting_ids": [1]},
+                "user/222": {"structure_level_$": ["1"], "structure_level_$1": "level"},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 222,
+                "structure_level_$": {2: "level2"},
+                "vote_weight_$": {3: "1.000000"},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information(
+            "user/222",
+            [
+                "Participant data updated in multiple meetings",
+            ],
         )

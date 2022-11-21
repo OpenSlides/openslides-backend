@@ -1,4 +1,5 @@
 from collections import defaultdict
+from copy import deepcopy
 from typing import (
     Any,
     Callable,
@@ -16,7 +17,11 @@ from typing import (
 import fastjsonschema
 
 from ..models.base import Model, model_registry
-from ..models.fields import BaseTemplateField, BaseTemplateRelationField
+from ..models.fields import (
+    BaseRelationField,
+    BaseTemplateField,
+    BaseTemplateRelationField,
+)
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -49,7 +54,7 @@ from ..shared.patterns import (
     fqid_from_fqfield,
     transform_to_fqids,
 )
-from ..shared.typing import DeletedModel
+from ..shared.typing import DeletedModel, HistoryInformation
 from .relations.relation_manager import RelationManager, RelationUpdates
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
@@ -109,13 +114,16 @@ class Action(BaseAction, metaclass=SchemaProvider):
     skip_archived_meeting_check: bool = False
     use_meeting_ids_for_archived_meeting_check: bool = False
     history_information: Optional[str] = None
+    history_relation_field: Optional[str] = None
+    add_self_history_information: bool = False
 
     relation_manager: RelationManager
 
+    action_data: ActionData
     instances: List[Dict[str, Any]]
     events: List[Event]
     results: ActionResults
-    cascaded_actions_history: List[str]
+    cascaded_actions_history: HistoryInformation
 
     def __init__(
         self,
@@ -144,7 +152,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             )
         self.events = []
         self.results = []
-        self.cascaded_actions_history = []
+        self.cascaded_actions_history = {}
 
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
@@ -173,6 +181,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.index = -1
 
         action_data = self.prepare_action_data(action_data)
+        self.action_data = deepcopy(action_data)
         self.instances = list(self.get_updated_instances(action_data))
         is_original_instances = hasattr(
             self.get_updated_instances, "_original_instances"
@@ -439,23 +448,75 @@ class Action(BaseAction, metaclass=SchemaProvider):
             return write_request
         return None
 
-    def get_full_history_information(self) -> Optional[List[str]]:
+    def get_full_history_information(self) -> Optional[HistoryInformation]:
         """
         Get history information for this action and all cascading ones. Should only be overridden if
         the order should be changed.
         """
         information = self.get_history_information()
         if self.cascaded_actions_history or information:
-            return self.cascaded_actions_history + (information or [])
+            merge_history_informations(self.cascaded_actions_history, information or {})
+            return self.cascaded_actions_history
         else:
             return None
 
-    def get_history_information(self) -> Optional[List[str]]:
+    def get_history_information(self) -> Optional[HistoryInformation]:
         """
         Get the history information for this action. Can be overridden to get
         context-dependent information.
         """
-        return [self.history_information] if self.history_information else None
+        if self.history_information is None:
+            return None
+
+        information = {}
+        instances = (
+            self.get_instances_with_fields(["id", self.history_relation_field])
+            if self.history_relation_field
+            else self.instances
+        )
+        for instance in instances:
+            fqids = []
+            if self.history_relation_field:
+                field = self.model.get_field(self.history_relation_field)
+                assert isinstance(field, BaseRelationField)
+                fqids = transform_to_fqids(
+                    instance[self.history_relation_field], field.get_target_collection()
+                )
+            if not self.history_relation_field or self.add_self_history_information:
+                fqids.append(
+                    fqid_from_collection_and_id(self.model.collection, instance["id"])
+                )
+            for fqid in fqids:
+                information[fqid] = [self.history_information]
+        return information
+
+    def get_instances_with_fields(
+        self, fields: List[str], instances: Optional[List[Dict[str, Any]]] = None
+    ) -> List[Dict[str, Any]]:
+        if not instances:
+            instances = self.instances
+        # if any field is missing in any instance, we need to access the datastore
+        if any(
+            any(not instance.get(field) for field in fields) for instance in instances
+        ):
+            result = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        self.model.collection,
+                        [instance["id"] for instance in instances],
+                        fields,
+                    )
+                ],
+                lock_result=False,
+                use_changed_models=False,
+            )
+            return list(result.get(self.model.collection, {}).values())
+        else:
+            return instances
+
+    def get_field_from_instance(self, field: str, instance: Dict[str, Any]) -> Any:
+        _instance = self.get_instances_with_fields([field], [instance])[0]
+        return _instance.get(field)
 
     def merge_update_events(self, update_events: List[Event]) -> List[Event]:
         """
@@ -680,7 +741,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
             if write_request:
                 self.events.extend(write_request.events)
                 if not skip_history and write_request.information:
-                    self.cascaded_actions_history.extend(write_request.information)
+                    merge_history_informations(
+                        self.cascaded_actions_history, write_request.information
+                    )
             return action_results
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
@@ -694,3 +757,14 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Can be overridden by actions to return a cleanup method to execute
         after an error appeared in an action.
         """
+
+
+def merge_history_informations(a: HistoryInformation, b: HistoryInformation) -> None:
+    """
+    Merges two history informations. The second one is merged into the first one.
+    """
+    for fqid, information in b.items():
+        if fqid in a:
+            a[fqid].extend(information)
+        else:
+            a[fqid] = information

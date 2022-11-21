@@ -38,7 +38,7 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         model = self.get_model("motion_comment/111")
         assert model.get("comment") == "comment_Xcdfgee"
         self.assert_history_information(
-            "motion/111", ["Comment {} updated", "motion_comment/111"]
+            "motion/111", ["Comment {} updated", "motion_comment_section/78"]
         )
 
     def test_update_wrong_id(self) -> None:

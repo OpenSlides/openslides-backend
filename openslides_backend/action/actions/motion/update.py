@@ -1,6 +1,9 @@
 import re
 import time
-from typing import Any, Dict, List, Optional, Set
+from copy import deepcopy
+from typing import Any, Dict, List, Optional
+
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
@@ -211,36 +214,34 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
             raise PermissionDenied(msg)
 
-    def get_history_information(self) -> Optional[List[str]]:
-        informations: List[str] = []
-        all_instance_fields = set(
-            field for instance in self.instances for field in instance
-        )
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        information = {}
+        for instance in deepcopy(self.instances):
+            instance_information = []
 
-        # supporters changed
-        if "supporter_ids" in all_instance_fields:
-            all_instance_fields.remove("supporter_ids")
-            informations.append("Supporters changed")
+            # supporters changed
+            if "supporter_ids" in instance:
+                instance.pop("supporter_ids")
+                instance_information.append("Supporters changed")
 
-        # category changed
-        informations.extend(
-            self.create_history_information_for_field(
-                all_instance_fields,
-                "category_id",
-                "motion_category",
-                "Category",
+            # category changed
+            instance_information.extend(
+                self.create_history_information_for_field(
+                    instance,
+                    "category_id",
+                    "motion_category",
+                    "Category",
+                )
             )
-        )
 
-        # block changed
-        informations.extend(
-            self.create_history_information_for_field(
-                all_instance_fields, "block_id", "motion_block", "Motion block"
+            # block changed
+            instance_information.extend(
+                self.create_history_information_for_field(
+                    instance, "block_id", "motion_block", "Motion block"
+                )
             )
-        )
 
-        generic_update_fields = set(
-            [
+            generic_update_fields = [
                 "title",
                 "text",
                 "reason",
@@ -250,34 +251,31 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 "start_line_number",
                 "state_extension",
             ]
-        )
-        if all_instance_fields & generic_update_fields:
-            # still other fields given, so we also add the generic "updated" message
-            informations.append("Motion updated")
+            if any(field in instance for field in generic_update_fields):
+                # still other fields given, so we also add the generic "updated" message
+                instance_information.append("Motion updated")
 
-        return informations
+            if instance_information:
+                information[
+                    fqid_from_collection_and_id(self.model.collection, instance["id"])
+                ] = instance_information
+
+        return information
 
     def create_history_information_for_field(
         self,
-        all_instance_fields: Set[str],
+        instance: Dict[str, Any],
         field: str,
         collection: Collection,
         verbose_collection: str,
     ) -> List[str]:
-        if field in all_instance_fields:
-            all_instance_fields.remove(field)
-            all_values = set(
-                instance[field] for instance in self.instances if field in instance
-            )
-            if len(all_values) == 1:
-                single_value = all_values.pop()
-                if single_value is None:
-                    return [verbose_collection + " removed"]
-                else:
-                    return [
-                        verbose_collection + " set to {}",
-                        fqid_from_collection_and_id(collection, single_value),
-                    ]
+        if field in instance:
+            value = instance.pop(field)
+            if value is None:
+                return [verbose_collection + " removed"]
             else:
-                return [verbose_collection + " changed"]
+                return [
+                    verbose_collection + " set to {}",
+                    fqid_from_collection_and_id(collection, value),
+                ]
         return []

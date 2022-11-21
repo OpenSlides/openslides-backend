@@ -1,4 +1,6 @@
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Optional
+
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
@@ -41,13 +43,9 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
         add meeting_id if present is True.
         remove meeting_id if present is False.
         """
-        self.meeting_ids: Set[int] = set()
-        self.present_values: Set[bool] = set()
         for instance in action_data:
             meeting_id = instance.pop("meeting_id")
-            self.meeting_ids.add(meeting_id)
             present = instance.pop("present")
-            self.present_values.add(present)
             user = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["is_present_in_meeting_ids"],
@@ -95,22 +93,11 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
             return
         raise PermissionDenied("You are not allowed to set present.")
 
-    def get_history_information(self) -> Optional[List[str]]:
-        # use present_values to get present_str
-        msg = "Changed presence"
-        if len(self.present_values) == 1:
-            present = self.present_values.pop()
-            if present:
-                msg = "Set present"
-            else:
-                msg = "Set not present"
-
-        # use meeting_ids and present_str to get the history info.
-        if len(self.meeting_ids) == 1:
-            meeting_id = self.meeting_ids.pop()
-            return [
-                msg + " in meeting {}",
-                fqid_from_collection_and_id("meeting", meeting_id),
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        return {
+            fqid_from_collection_and_id(self.model.collection, instance["id"]): [
+                f"Set {'not ' if not instance['present'] else ''}present in meeting {{}}",
+                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ]
-        else:
-            return [msg + " in multiple meetings"]
+            for instance in self.action_data
+        }

@@ -8,7 +8,8 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "motion_comment/111": {"meeting_id": 1, "section_id": 78},
+            "motion/1": {"meeting_id": 1, "comment_ids": [111]},
+            "motion_comment/111": {"meeting_id": 1, "section_id": 78, "motion_id": 1},
             "motion_comment_section/78": {
                 "meeting_id": 1,
                 "write_group_ids": [3],
@@ -40,7 +41,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion_comment/111")
         self.assert_history_information(
-            "motion/1", ["Comment {} deleted", "motion_comment/111"]
+            "motion/1", ["Comment {} deleted", "motion_comment_section/78"]
         )
 
     def test_delete_wrong_id(self) -> None:

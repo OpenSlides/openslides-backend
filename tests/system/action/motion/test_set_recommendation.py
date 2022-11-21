@@ -77,7 +77,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
             "motion.set_recommendation", {"id": 22, "recommendation_id": 77}
         )
         self.assert_status_code(response, 400)
-        assert "Recommendation_label of a recommendation must be set." in str(
+        assert "Recommendation label of a recommendation must be set." in str(
             response.json["message"]
         )
 
@@ -170,8 +170,12 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
             [{"id": 22, "recommendation_id": 77}, {"id": 23, "recommendation_id": 66}],
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/22", ["Recommendation changed"])
-        self.assert_history_information("motion/22", ["Recommendation changed"])
+        self.assert_history_information(
+            "motion/22", ["Recommendation set to {}", "motion_state/77"]
+        )
+        self.assert_history_information(
+            "motion/23", ["Recommendation set to {}", "motion_state/66"]
+        )
 
     def test_set_recommendation_no_permission(self) -> None:
         self.base_permission_test(

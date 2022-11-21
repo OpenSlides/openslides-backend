@@ -282,8 +282,12 @@ class MotionSetStateActionTest(BaseActionTestCase):
             "motion.set_state", [{"id": 22, "state_id": 76}, {"id": 23, "state_id": 77}]
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/22", ["State changed"])
-        self.assert_history_information("motion/22", ["State changed"])
+        self.assert_history_information(
+            "motion/22", ["State set to {}", "motion_state/76"]
+        )
+        self.assert_history_information(
+            "motion/23", ["State set to {}", "motion_state/77"]
+        )
 
     def test_set_state_no_permission(self) -> None:
         self.base_permission_test(

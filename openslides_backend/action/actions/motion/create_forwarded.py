@@ -28,6 +28,8 @@ class MotionCreateForwarded(MotionCreateBase):
         required_properties=["meeting_id", "title", "text", "origin_id"],
     )
     history_information = "Forwarding created"
+    history_relation_field = "origin_id"
+    add_self_history_information = True
 
     def prefetch(self, action_data: ActionData) -> None:
         self.datastore.get_many(
