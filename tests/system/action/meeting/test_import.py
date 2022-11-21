@@ -363,7 +363,6 @@ class MeetingImport(BaseActionTestCase):
             "is_demo_user": False,
             "organization_management_level": None,
             "is_present_in_meeting_ids": [],
-            "submitted_motion_$_ids": [],
             "assignment_candidate_$_ids": [],
             "poll_voted_$_ids": [],
             "option_$_ids": [],
@@ -512,6 +511,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "user_id": 1,
                         "personal_note_ids": [1],
+                        "submitted_motion_ids": [],
                     },
                 },
                 "motion": {
@@ -803,6 +803,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "user_id": 1,
                         "personal_note_ids": [1],
+                        "submitted_motion_ids": [],
                     },
                 },
                 "motion": {
@@ -1648,6 +1649,7 @@ class MeetingImport(BaseActionTestCase):
                     "meeting_id": 1,
                     "user_id": 14,
                     "personal_note_ids": [1],
+                    "submitted_motion_ids": [],
                 },
                 "personal_note/1": {
                     "meeting_id": 1,
@@ -1712,12 +1714,14 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "user_id": 12,
                         "personal_note_ids": [1],
+                        "submitted_motion_ids": [],
                     },
                     "13": {
                         "id": 13,
                         "meeting_id": 1,
                         "user_id": 13,
                         "personal_note_ids": [2],
+                        "submitted_motion_ids": [],
                     },
                 },
             }

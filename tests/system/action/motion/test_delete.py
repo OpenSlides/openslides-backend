@@ -8,7 +8,12 @@ class MotionDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"motion_ids": [111], "is_active_in_organization_id": 1},
+            "meeting/1": {
+                "motion_ids": [111],
+                "is_active_in_organization_id": 1,
+                "meeting_user_ids": [1],
+            },
+            "user/1": {"meeting_user_ids": [1]},
             "motion/111": {
                 "title": "title_srtgb123",
                 "meeting_id": 1,
@@ -23,7 +28,12 @@ class MotionDeleteActionTest(BaseActionTestCase):
             "motion_submitter/12": {
                 "meeting_id": 1,
                 "motion_id": 111,
+                "meeting_user_id": 1,
+            },
+            "meeting_user/1": {
+                "meeting_id": 1,
                 "user_id": 1,
+                "submitted_motion_ids": [12],
             },
         }
 
@@ -108,7 +118,13 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
-        self.permission_test_models["motion_submitter/12"]["user_id"] = self.user_id
+        self.permission_test_models["meeting_user/2"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "submitted_motion_ids": [12],
+        }
+        self.permission_test_models["motion_submitter/12"]["meeting_user_id"] = 2
+        self.set_models({f"user/{self.user_id}": {"meeting_user_ids": [2]}})
         self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         response = self.request("motion.delete", {"id": 111})

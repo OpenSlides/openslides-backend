@@ -19,9 +19,15 @@ class PermissionHelperMixin(Action):
         return self.is_submitter(submitter_ids, state_id)
 
     def is_submitter(self, submitter_ids: List[int], state_id: int) -> bool:
+        user = self.datastore.get(
+            fqid_from_collection_and_id("user", self.user_id), ["meeting_user_ids"]
+        )
         get_many_request = GetManyRequest(
-            "motion_submitter", submitter_ids, ["user_id"]
+            "motion_submitter", submitter_ids, ["meeting_user_id"]
         )
         result = self.datastore.get_many([get_many_request])
         submitters = result.get("motion_submitter", {}).values()
-        return any(self.user_id == s.get("user_id") for s in submitters)
+        return any(
+            s.get("meeting_user_id") in (user.get("meeting_user_ids") or [])
+            for s in submitters
+        )

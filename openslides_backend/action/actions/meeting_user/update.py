@@ -25,6 +25,7 @@ class MeetingUserUpdate(UpdateAction):
             "personal_note_ids",
             "speaker_ids",
             "supported_motion_ids",
+            "submitted_motion_ids",
             "chat_message_ids",
         ],
     )

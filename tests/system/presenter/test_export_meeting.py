@@ -155,16 +155,20 @@ class TestExportMeeting(BasePresenterTestCase):
                     "motion_ids": [1],
                     "list_of_speakers_ids": [1],
                     "personal_note_ids": [34],
-                    "meeting_user_ids": [12],
+                    "meeting_user_ids": [11, 12],
                 },
                 "user/11": {
                     "username": "exuser11",
-                    "submitted_motion_$_ids": ["1"],
-                    "submitted_motion_$1_ids": [1],
+                    "meeting_user_ids": [11],
                 },
                 "user/12": {
                     "username": "exuser12",
                     "meeting_user_ids": [12],
+                },
+                "meeting_user/11": {
+                    "meeting_id": 1,
+                    "user_id": 11,
+                    "submitted_motion_ids": [1],
                 },
                 "meeting_user/12": {
                     "meeting_id": 1,
@@ -180,7 +184,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "title": "dummy",
                 },
                 "motion_submitter/1": {
-                    "user_id": 11,
+                    "meeting_user_id": 11,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
@@ -204,8 +208,8 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["meeting"]["1"].get("user_ids") is None
         user11 = data["user"]["11"]
         assert user11.get("username") == "exuser11"
-        assert user11.get("submitted_motion_$_ids") == ["1"]
-        assert user11.get("submitted_motion_$1_ids") == [1]
+        assert user11.get("meeting_user_ids") == [11]
+        self.assert_model_exists("meeting_user/11", {"submitted_motion_ids": [1]})
         user12 = data["user"]["12"]
         assert user12.get("username") == "exuser12"
         meeting_user_12 = data["meeting_user"]["12"]

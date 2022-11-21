@@ -96,8 +96,13 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
             {
                 "motion/1": {"meeting_id": 1, "comment_ids": [111]},
                 "motion_comment/111": {"motion_id": 1},
-                "motion_submitter/12": {"user_id": self.user_id, "motion_id": 1},
+                "motion_submitter/12": {"meeting_user_id": 2, "motion_id": 1},
                 "motion_comment_section/78": {"submitter_can_write": True},
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": self.user_id,
+                    "submitted_motion_ids": [12],
+                },
             }
         )
 

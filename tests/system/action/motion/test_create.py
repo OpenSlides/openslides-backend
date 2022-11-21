@@ -55,9 +55,13 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert model.get("submitter_ids") == [1]
         assert "agenda_create" not in model
         submitter = self.get_model("motion_submitter/1")
-        assert submitter.get("user_id") == 1
+        assert submitter.get("meeting_user_id") == 1
         assert submitter.get("meeting_id") == 222
         assert submitter.get("motion_id") == 1
+        self.assert_model_exists(
+            "meeting_user/1",
+            {"meeting_id": 222, "user_id": 1, "submitted_motion_ids": [1]},
+        )
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 222)
         self.assertEqual(agenda_item.get("content_object_id"), "motion/1")
@@ -284,7 +288,12 @@ class MotionCreateActionTest(BaseActionTestCase):
             }
         )
         self.set_models(
-            {"user/56": {"meeting_ids": [222]}, "user/57": {"meeting_ids": [222]}}
+            {
+                "user/56": {"meeting_ids": [222]},
+                "user/57": {"meeting_ids": [222]},
+                "meeting_user/56": {"meeting_id": 222, "user_id": 56},
+                "meeting_user/57": {"meeting_id": 222, "user_id": 57},
+            }
         )
         response = self.request(
             "motion.create",
@@ -301,12 +310,12 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert motion.get("submitter_ids") == [1, 2]
         submitter_1 = self.get_model("motion_submitter/1")
         assert submitter_1.get("meeting_id") == 222
-        assert submitter_1.get("user_id") == 56
+        assert submitter_1.get("meeting_user_id") == 56
         assert submitter_1.get("motion_id") == 1
         assert submitter_1.get("weight") == 1
         submitter_2 = self.get_model("motion_submitter/2")
         assert submitter_2.get("meeting_id") == 222
-        assert submitter_2.get("user_id") == 57
+        assert submitter_2.get("meeting_user_id") == 57
         assert submitter_2.get("motion_id") == 1
         assert submitter_2.get("weight") == 2
 

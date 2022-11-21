@@ -52,10 +52,21 @@ class MotionCommentMixin(Action):
                 )
                 motion_id = comment.get("motion_id")
 
+            meeting_user = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("user_id", "=", self.user_id),
+                    FilterOperator("meeting_id", "=", meeting_id),
+                ),
+                ["id"],
+            )
+            meeting_user_id = None
+            if meeting_user:
+                meeting_user_id = int(list(meeting_user)[0])
             if motion_id and self.datastore.exists(
                 "motion_submitter",
                 And(
-                    FilterOperator("user_id", "=", self.user_id),
+                    FilterOperator("meeting_user_id", "=", meeting_user_id),
                     FilterOperator("motion_id", "=", motion_id),
                 ),
             ):

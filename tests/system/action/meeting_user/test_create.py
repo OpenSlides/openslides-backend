@@ -10,6 +10,7 @@ class MeetingUserCreate(BaseActionTestCase):
                 "speaker/12": {"meeting_id": 10},
                 "chat_message/13": {"meeting_id": 10},
                 "motion/14": {"meeting_id": 10},
+                "motion_submitter/15": {"meeting_id": 10},
             }
         )
         test_dict = {
@@ -23,6 +24,7 @@ class MeetingUserCreate(BaseActionTestCase):
             "personal_note_ids": [11],
             "speaker_ids": [12],
             "supported_motion_ids": [14],
+            "submitted_motion_ids": [15],
             "chat_message_ids": [13],
         }
         response = self.request("meeting_user.create", test_dict)

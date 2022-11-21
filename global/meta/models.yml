@@ -321,14 +321,6 @@ user:
       type: relation-list
       to: group/user_ids
     restriction_mode: A
-  submitted_motion_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: motion_submitter/user_id
-      on_delete: CASCADE
-    restriction_mode: A
   poll_voted_$_ids:
     type: template
     replacement_collection: meeting
@@ -435,7 +427,7 @@ meeting_user:
     type: relation-list
     to: personal_note/meeting_user_id
     on_delete: CASCADE
-    restriction_mode: B
+    restriction_mode: A
   speaker_ids:
     type: relation-list
     to: speaker/meeting_user_id
@@ -444,6 +436,11 @@ meeting_user:
   supported_motion_ids:
     type: relation-list
     to: motion/supporter_ids
+    restriction_mode: A
+  submitted_motion_ids:
+    type: relation-list
+    to: motion_submitter/meeting_user_id
+    on_delete: CASCADE
     restriction_mode: A
   chat_message_ids:
     type: relation-list
@@ -2275,9 +2272,9 @@ motion_submitter:
   weight:
     type: number
     restriction_mode: A
-  user_id:
+  meeting_user_id:
     type: relation
-    to: user/submitted_motion_$_ids
+    to: meeting_user/submitted_motion_ids
     restriction_mode: A
     required: true
   motion_id:

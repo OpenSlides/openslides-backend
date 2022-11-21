@@ -21,7 +21,17 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "submitter_ids": [1],
                 "state_id": 1,
             },
-            "motion_submitter/1": {"meeting_id": 1, "motion_id": 111, "user_id": 1},
+            "motion_submitter/1": {
+                "meeting_id": 1,
+                "motion_id": 111,
+                "meeting_user_id": 1,
+            },
+            "meeting_user/1": {
+                "meeting_id": 1,
+                "user_id": 1,
+                "submitted_motion_ids": [1],
+            },
+            "user/1": {"meeting_user_ids": [1]},
             "motion_state/1": {
                 "meeting_id": 1,
                 "motion_ids": [111],
@@ -469,7 +479,13 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
-        self.permission_test_models["motion_submitter/1"]["user_id"] = self.user_id
+        self.permission_test_models["motion_submitter/1"]["meeting_user_id"] = 2
+        self.permission_test_models["meeting_user/2"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "submitted_motion_ids": [1],
+        }
+        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [2]}
         self.set_models(self.permission_test_models)
         response = self.request(
             "motion.update",
@@ -488,7 +504,13 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
-        self.permission_test_models["motion_submitter/1"]["user_id"] = self.user_id
+        self.permission_test_models["motion_submitter/1"]["meeting_user_id"] = 2
+        self.permission_test_models["meeting_user/2"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "submitted_motion_ids": [1],
+        }
+        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [2]}
         self.set_models(self.permission_test_models)
         self.set_models({"motion_category/2": {"meeting_id": 1, "name": "test"}})
         response = self.request(
