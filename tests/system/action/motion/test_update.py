@@ -206,8 +206,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "motion.update",
                 {
                     "id": 111,
-                    "state_extension": "test_blablab_noon",
-                    "recommendation_extension": "ext_sldennt [motion/112]",
+                    "state_extension": "ext [motion/112] [motion/113]",
+                    "recommendation_extension": "ext [motion/112] [motion/113]",
                     "category_id": 4,
                     "block_id": 51,
                     "supporter_ids": [],
@@ -217,13 +217,14 @@ class MotionUpdateActionTest(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/111")
-        assert model.get("state_extension") == "test_blablab_noon"
-        assert model.get("recommendation_extension") == "ext_sldennt [motion/112]"
+        assert model.get("state_extension") == "ext [motion/112] [motion/113]"
+        assert model.get("recommendation_extension") == "ext [motion/112] [motion/113]"
         assert model.get("category_id") == 4
         assert model.get("block_id") == 51
         assert model.get("supporter_ids") == []
         assert model.get("tag_ids") == []
         assert model.get("attachment_ids") == []
+        assert model.get("state_extension_reference_ids") == ["motion/112"]
         assert model.get("recommendation_extension_reference_ids") == ["motion/112"]
         self.assert_history_information(
             "motion/111",
@@ -236,7 +237,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "Motion updated",
             ],
         )
-        assert counter.calls == 12
+        assert counter.calls == 16
 
     def test_update_workflow_id(self) -> None:
         self.set_models(

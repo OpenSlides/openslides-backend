@@ -94,7 +94,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "workflow_id": 12,
                 "number": "001",
-                "state_extension": "test_EhbkOWqd",
                 "sort_parent_id": 1,
                 "category_id": 124,
                 "block_id": 78,
@@ -110,7 +109,6 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert model.get("title") == "test_Xcdfgee"
         assert model.get("meeting_id") == 1
         assert model.get("number") == "001"
-        assert model.get("state_extension") == "test_EhbkOWqd"
         assert model.get("sort_parent_id") == 1
         assert model.get("category_id") == 124
         assert model.get("block_id") == 78
