@@ -204,7 +204,7 @@ class ProjectorProject(BaseActionTestCase):
             "projector.project",
             {
                 "ids": [23],
-                "content_object_id": "user/0",
+                "content_object_id": "meeting_user/0",
                 "meeting_id": 1,
                 "stable": False,
             },
@@ -360,23 +360,27 @@ class ProjectorProject(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_user_as_content_object_okay(self) -> None:
-        self.create_model(
-            "user/2",
+        self.set_models(
             {
-                "username": "normal user",
-                "group_$1_ids": [1],
-                "group_$_ids": ["1"],
-                "meeting_ids": [1],
-            },
+                "user/2": {
+                    "username": "normal user",
+                    "group_$1_ids": [1],
+                    "group_$_ids": ["1"],
+                    "meeting_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                },
+            }
         )
         response = self.request(
             "projector.project",
-            {"ids": [75], "content_object_id": "user/2", "meeting_id": 1},
+            {"ids": [75], "content_object_id": "meeting_user/2", "meeting_id": 1},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/2", {"projection_$1_ids": [112], "projection_$_ids": ["1"]}
-        )
+        self.assert_model_exists("user/2", {"meeting_user_ids": [2]})
         self.assert_model_exists(
             "projector/75",
             {
@@ -388,7 +392,7 @@ class ProjectorProject(BaseActionTestCase):
         self.assert_model_exists(
             "projection/112",
             {
-                "content_object_id": "user/2",
+                "content_object_id": "meeting_user/2",
                 "current_projector_id": 75,
                 "stable": False,
             },
