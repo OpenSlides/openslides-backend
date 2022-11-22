@@ -13,6 +13,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from dependency_injector import providers
 from requests.models import Response as RequestsResponse
 
+from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
 from openslides_backend.models.models import Poll
@@ -97,8 +98,9 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         cipher = Cipher(algorithms.AES(derived_key), modes.GCM(nonce))
         encryptor = cipher.encryptor()
         value_string = str(data.get("value")).replace("'", '"')
+        user_token = get_random_string(8)
         encrypt_string = bytes(
-            f'{{"votes":{value_string},"token":"12345678"}}', encoding="utf-8"
+            f'{{"votes":{value_string},"token":"{user_token}"}}', encoding="utf-8"
         )
         encrypted = encryptor.update(encrypt_string)
         encryptor.finalize()

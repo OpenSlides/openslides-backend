@@ -113,6 +113,7 @@ class PollStopActionTest(PollTestMixin):
                     "type": Poll.TYPE_PSEUDOANONYMOUS,
                     "pollmethod": "YN",
                     "state": Poll.STATE_CREATED,
+                    "backend": Poll.BACKEND_FAST,
                     "option_ids": [1],
                     "meeting_id": 1,
                     "entitled_group_ids": [1],
@@ -187,6 +188,7 @@ class PollStopActionTest(PollTestMixin):
                     "type": Poll.TYPE_CRYPTOGRAPHIC,
                     "pollmethod": "YN",
                     "state": Poll.STATE_CREATED,
+                    "backend": Poll.BACKEND_LONG,
                     "option_ids": [1],
                     "meeting_id": 1,
                     "entitled_group_ids": [1],
@@ -194,18 +196,11 @@ class PollStopActionTest(PollTestMixin):
                 "option/1": {"meeting_id": 1, "poll_id": 1},
                 "group/1": {"meeting_id": 1},
                 "meeting/1": {
+                    "users_enable_vote_delegations": True,
                     "users_enable_vote_weight": True,
                     "default_group_id": 1,
-                    "poll_couple_countdown": True,
-                    "poll_countdown_id": 1,
                     "is_active_in_organization_id": 1,
                     "group_ids": [1],
-                },
-                "projector_countdown/1": {
-                    "running": True,
-                    "default_time": 60,
-                    "countdown_time": 30.0,
-                    "meeting_id": 1,
                 },
             }
         )
@@ -221,30 +216,44 @@ class PollStopActionTest(PollTestMixin):
                 f"user/{user2}": {
                     "vote_weight_$1": "3.000000",
                     "is_present_in_meeting_ids": [1],
+                    "vote_delegations_$_from_ids": ["1"],
+                    "vote_delegations_$1_from_ids": [user3],
                 },
-                f"user/{user3}": {"vote_delegated_$1_to_id": user2},
+                f"user/{user3}": {
+                    "vote_weight_$1": "4.000000",
+                    "vote_delegated_$1_to_id": user2,
+                    "vote_delegated_$_to_id": ["1"],
+                },
             }
         )
         self.start_poll(1)
-        for user_id in (user1, user2):
+        for user_id, value, vote_for_user_id in (
+            (user1, "Y", None),
+            (user2, "N", None),
+            (user2, "Y", user3),
+        ):
             self.login(user_id)
-            response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
+            data = {"id": 1, "value": {"1": value}}
+            if vote_for_user_id:
+                data["user_id"] = vote_for_user_id
+            response = self.vote_service.vote(data)
             self.assert_status_code(response, 200)
         self.login(1)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)
-        countdown = self.get_model("projector_countdown/1")
-        assert countdown.get("running") is False
-        assert countdown.get("countdown_time") == 60
-        poll = self.get_model("poll/1")
-        assert poll.get("state") == Poll.STATE_FINISHED
-        assert poll.get("votescast") == "2.000000"
-        assert poll.get("votesinvalid") == "0.000000"
-        assert poll.get("votesvalid") == "5.000000"
+        poll = self.assert_model_exists(
+            "poll/1",
+            {
+                "state": Poll.STATE_FINISHED,
+                "votescast": "3.000000",
+                "votesinvalid": "0.000000",
+                "votesvalid": "3.000000",
+            },
+        )
         assert poll.get("entitled_users_at_stop") == [
             {"voted": True, "user_id": user1, "vote_delegated_to_id": None},
             {"voted": True, "user_id": user2, "vote_delegated_to_id": None},
-            {"voted": False, "user_id": user3, "vote_delegated_to_id": user2},
+            {"voted": True, "user_id": user3, "vote_delegated_to_id": user2},
         ]
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])

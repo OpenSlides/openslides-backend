@@ -137,7 +137,26 @@ class StopControl(CountdownControl, Action):
                     }
                 )
             elif poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
-                pass
+                for option_id_str, value in ballot["votes"].items():
+                    option_id = int(option_id_str)
+
+                    vote_value = value
+                    vote_weighted = vote_weight  # use new variable vote_weighted because pollmethod=Y/N does not imply anymore that only one loop is done (see max_votes_per_option)
+                    if poll["pollmethod"] in ("Y", "N"):
+                        if value == 0:
+                            continue
+                        vote_value = poll["pollmethod"]
+                        vote_weighted *= value
+
+                    option_results[option_id][vote_value] += vote_weighted
+                    action_data.append(
+                        {
+                            "value": vote_value,
+                            "option_id": option_id,
+                            "weight": str(vote_weighted),
+                            **vote_template,
+                        }
+                    )
             else:
                 raise VoteServiceException("Invalid response from vote service")
         self.execute_other_action(VoteCreate, action_data)

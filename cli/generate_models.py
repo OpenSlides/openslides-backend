@@ -191,6 +191,9 @@ class Model(Node):
             TYPE_NAMED = "named"
             TYPE_PSEUDOANONYMOUS = "pseudoanonymous"
             TYPE_CRYPTOGRAPHIC = "cryptographic"
+
+            BACKEND_FAST = "fast"
+            BACKEND_LONG = "long"
             """
         ),
     }
