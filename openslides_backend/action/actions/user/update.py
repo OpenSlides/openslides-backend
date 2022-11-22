@@ -42,8 +42,6 @@ class UserUpdate(
             "default_vote_weight",
             "organization_management_level",
             "committee_$_management_level",
-            "vote_delegated_$_to_id",
-            "vote_delegations_$_from_ids",
             "group_$_ids",
             "is_demo_user",
         ],

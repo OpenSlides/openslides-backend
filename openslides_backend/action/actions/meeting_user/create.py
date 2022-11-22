@@ -5,10 +5,11 @@ from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixin import MeetingUserMixin
 
 
 @register_action("meeting_user.create")
-class MeetingUserCreate(CreateAction):
+class MeetingUserCreate(MeetingUserMixin, CreateAction):
     """
     Action to create a meeting user.
     """
@@ -28,6 +29,9 @@ class MeetingUserCreate(CreateAction):
             "submitted_motion_ids",
             "assignment_candidate_ids",
             "projection_ids",
+            "vote_delegated_vote_ids",
+            "vote_delegated_to_id",
+            "vote_delegations_from_ids",
             "chat_message_ids",
         ],
     )

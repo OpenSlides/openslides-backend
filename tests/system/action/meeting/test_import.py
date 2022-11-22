@@ -363,9 +363,6 @@ class MeetingImport(BaseActionTestCase):
             "is_demo_user": False,
             "organization_management_level": None,
             "is_present_in_meeting_ids": [],
-            "vote_delegated_vote_$_ids": [],
-            "vote_delegated_$_to_id": [],
-            "vote_delegations_$_from_ids": [],
             "meeting_ids": [1],
             "organization_id": 1,
             **data,
@@ -1636,8 +1633,6 @@ class MeetingImport(BaseActionTestCase):
                     "last_name": None,
                     "email": "test@example.de",
                     "meeting_user_ids": [14],
-                    "vote_delegated_$_to_id": ["1"],  # Template Relation
-                    "vote_delegated_$1_to_id": 1,
                     "organization_id": 1,
                 },
                 "meeting_user/14": {
@@ -1645,6 +1640,7 @@ class MeetingImport(BaseActionTestCase):
                     "user_id": 14,
                     "personal_note_ids": [1],
                     "submitted_motion_ids": [],
+                    "vote_delegated_to_id": 1,
                 },
                 "personal_note/1": {
                     "meeting_id": 1,
@@ -1669,8 +1665,6 @@ class MeetingImport(BaseActionTestCase):
                         "last_name": None,
                         "email": "test@example.de",
                         "meeting_user_ids": [12],
-                        "vote_delegated_$_to_id": ["1"],
-                        "vote_delegated_$1_to_id": 13,
                         "organization_id": 1,
                     },
                     "13": {
@@ -1680,8 +1674,6 @@ class MeetingImport(BaseActionTestCase):
                         "last_name": None,
                         "email": "test_new@example.de",
                         "meeting_user_ids": [13],
-                        "vote_delegations_$_from_ids": ["1"],
-                        "vote_delegations_$1_from_ids": [12],
                         "organization_id": 1,
                     },
                 },
@@ -1710,6 +1702,7 @@ class MeetingImport(BaseActionTestCase):
                         "user_id": 12,
                         "personal_note_ids": [1],
                         "submitted_motion_ids": [],
+                        "vote_delegated_to_id": 13,
                     },
                     "13": {
                         "id": 13,
@@ -1717,6 +1710,7 @@ class MeetingImport(BaseActionTestCase):
                         "user_id": 13,
                         "personal_note_ids": [2],
                         "submitted_motion_ids": [],
+                        "vote_delegations_from_ids": [12],
                     },
                 },
             }
@@ -1740,9 +1734,6 @@ class MeetingImport(BaseActionTestCase):
             "user/14",
             {
                 "username": "username_test",
-                "vote_delegated_$_to_id": ["1", "2"],
-                "vote_delegated_$1_to_id": 1,
-                "vote_delegated_$2_to_id": 16,
                 "organization_id": 1,
                 "meeting_user_ids": [14, 15],
             },

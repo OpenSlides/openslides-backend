@@ -166,8 +166,6 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             "presence",
         ],
         "B": [
-            "vote_delegated_$_to_id",
-            "vote_delegations_$_from_ids",
             "is_present_in_meeting_ids",
         ],
         "C": ["group_$_ids"],
@@ -447,6 +445,5 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         """
         meetings: Set[int] = set()
         for field in fields_to_search_for:
-            if "_$" in field:
-                meetings.update(map(int, instance.get(field, dict()).keys()))
+            meetings.update(set(instance.get(field, [])))
         return meetings

@@ -88,7 +88,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 223,
                 "group_$_ids": {1: [11], 2: [22]},
-                "vote_delegations_$_from_ids": {1: [222]},
                 "committee_$_management_level": {
                     CommitteeManagementLevel.CAN_MANAGE: [2],
                 },
@@ -102,21 +101,12 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
                 "group_$1_ids": [11],
                 "group_$2_ids": [22],
-                "vote_delegations_$1_from_ids": [222],
-                "vote_delegations_$_from_ids": ["1"],
             },
         )
         self.assertCountEqual(user.get("committee_ids", []), [1, 2])
         self.assertCountEqual(user.get("group_$_ids", []), ["1", "2"])
         self.assertCountEqual(user.get("meeting_ids", []), [1, 2])
 
-        user = self.assert_model_exists(
-            "user/222",
-            {
-                "vote_delegated_$1_to_id": 223,
-                "vote_delegated_$_to_id": ["1"],
-            },
-        )
         group1 = self.get_model("group/11")
         self.assertCountEqual(group1.get("user_ids", []), [223])
         group2 = self.get_model("group/22")

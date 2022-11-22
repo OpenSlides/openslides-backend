@@ -135,7 +135,6 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "test_Xcdfgee",
                 "group_$_ids": {1: [11], 2: [22]},
-                "vote_delegations_$_from_ids": {1: [222]},
                 "committee_$_management_level": {
                     CommitteeManagementLevel.CAN_MANAGE: [1],
                 },
@@ -152,12 +151,8 @@ class UserCreateActionTest(BaseActionTestCase):
         assert user.get("group_$1_ids") == [11]
         assert user.get("group_$2_ids") == [22]
         self.assertCountEqual(user.get("group_$_ids", []), ["1", "2"])
-        assert user.get("vote_delegations_$1_from_ids") == [222]
-        assert user.get("vote_delegations_$_from_ids") == ["1"]
         self.assertCountEqual(user.get("meeting_ids", []), [1, 2])
         user = self.get_model("user/222")
-        assert user.get("vote_delegated_$1_to_id") == 223
-        assert user.get("vote_delegated_$_to_id") == ["1"]
         group1 = self.get_model("group/11")
         assert group1.get("user_ids") == [223]
         group2 = self.get_model("group/22")
@@ -230,20 +225,6 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"] == "A user with the username admin already exists."
-        )
-
-    def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
-        response = self.request(
-            "user.create",
-            {
-                "username": "testname",
-                "vote_delegations_$_from_ids": {},
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/2", {"username": "testname", "vote_delegations_$_from_ids": []}
         )
 
     def test_create_committee_manager_without_committee_ids(self) -> None:
@@ -451,7 +432,6 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "usersname",
                 "group_$_ids": {"1": [1], "4": [4]},
-                "is_present_in_meeting_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -520,29 +500,19 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_organization_management_level(None, self.user_id)
         self.set_user_groups(self.user_id, [2])  # Admin groups of meeting/1
 
-        self.set_models(
-            {
-                "user/5": {"username": "user5", "meeting_ids": [1]},
-                "user/6": {"username": "user6", "meeting_ids": [1]},
-            }
-        )
-
         response = self.request(
             "user.create",
             {
                 "username": "username7",
-                "vote_delegations_$_from_ids": {"1": [5, 6]},
                 "group_$_ids": {"1": [1]},
                 "is_present_in_meeting_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/7",
+            "user/3",
             {
                 "username": "username7",
-                "vote_delegations_$_from_ids": ["1"],
-                "vote_delegations_$1_from_ids": [5, 6],
                 "meeting_ids": [1],
                 "is_present_in_meeting_ids": [1],
             },
@@ -555,14 +525,13 @@ class UserCreateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_user_groups(self.user_id, [3])  # Empty group of meeting/1
-        self.set_models({"user/2": {"username": "delegate"}})
 
         response = self.request(
             "user.create",
             {
                 "username": "usersname",
                 "group_$_ids": {"1": [1]},
-                "vote_delegated_$_to_id": {"1": 2},
+                "is_present_in_meeting_ids": [1],
             },
         )
         self.assert_status_code(response, 403)

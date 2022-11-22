@@ -46,8 +46,6 @@ class UserCreate(
             "is_present_in_meeting_ids",
             "committee_$_management_level",
             "group_$_ids",
-            "vote_delegations_$_from_ids",
-            "vote_delegated_$_to_id",
             "is_demo_user",
             "forwarding_committee_ids",
         ],

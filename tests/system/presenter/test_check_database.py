@@ -322,7 +322,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "logo_$web_header_id": 1,
                     "font_$_id": ["bold"],
                     "font_$bold_id": 2,
-                    "meeting_user_ids": [3, 6],
+                    "meeting_user_ids": [3, 5, 6],
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -367,8 +367,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "user/5": self.get_new_user(
                     "delegated_user",
                     {
-                        "vote_delegated_vote_$_ids": ["1"],
-                        "vote_delegated_vote_$1_ids": [7],
+                        "meeting_user_ids": [5],
                     },
                 ),
                 "user/6": self.get_new_user(
@@ -381,6 +380,11 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "user_id": 3,
                     "meeting_id": 1,
                     "submitted_motion_ids": [5],
+                },
+                "meeting_user/5": {
+                    "user_id": 5,
+                    "meeting_id": 1,
+                    "vote_delegated_vote_ids": [7],
                 },
                 "meeting_user/6": {
                     "user_id": 6,
