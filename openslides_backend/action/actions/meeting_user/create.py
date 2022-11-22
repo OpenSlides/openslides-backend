@@ -26,6 +26,7 @@ class MeetingUserCreate(CreateAction):
             "speaker_ids",
             "supported_motion_ids",
             "submitted_motion_ids",
+            "assignment_candidate_ids",
             "chat_message_ids",
         ],
     )

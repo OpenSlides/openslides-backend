@@ -151,18 +151,19 @@ class GetUserRelatedModels(BasePresenter):
                 FilterOperator("meeting_id", "=", meeting["id"]),
                 FilterOperator("user_id", "=", user_id),
             )
-            candidate_ids = self.datastore.filter(
-                "assignment_candidate", filter_, ["id"]
-            )
             meeting_users = self.datastore.filter(
-                "meeting_user", filter_, ["speaker_ids", "submitted_motion_ids"]
+                "meeting_user",
+                filter_,
+                ["speaker_ids", "submitted_motion_ids", "assignment_candidate_ids"],
             )
             speaker_ids = []
             submitter_ids = []
+            candidate_ids = []
             if meeting_users:
-                for meeting_user in meeting_users.values():
-                    speaker_ids = meeting_user.get("speaker_ids", [])
-                    submitter_ids = meeting_user.get("submitted_motion_ids", [])
+                meeting_user = list(meeting_users.values())[0]
+                speaker_ids = meeting_user.get("speaker_ids", [])
+                submitter_ids = meeting_user.get("submitted_motion_ids", [])
+                candidate_ids = meeting_user.get("assignment_candidate_ids", [])
             if submitter_ids or candidate_ids or speaker_ids:
                 meetings_data.append(
                     {
@@ -172,7 +173,7 @@ class GetUserRelatedModels(BasePresenter):
                             "is_active_in_organization_id"
                         ),
                         "submitter_ids": submitter_ids,
-                        "candidate_ids": list(candidate_ids),
+                        "candidate_ids": candidate_ids,
                         "speaker_ids": speaker_ids,
                     }
                 )

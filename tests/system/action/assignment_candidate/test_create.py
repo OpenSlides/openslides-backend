@@ -16,6 +16,11 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "default_password": DEFAULT_PASSWORD,
                 "password": self.auth.hash(DEFAULT_PASSWORD),
+                "meeting_user_ids": [110],
+            },
+            "meeting_user/110": {
+                "meeting_id": 1,
+                "user_id": 110,
             },
             "assignment/111": {
                 "title": "title_xTcEkItp",
@@ -32,17 +37,22 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                 },
                 "user/110": {"username": "test_Xcdfgee"},
+                "meeting_user/110": {
+                    "meeting_id": 1133,
+                    "user_id": 110,
+                },
                 "assignment/111": {"title": "title_xTcEkItp", "meeting_id": 1333},
             }
         )
         with CountDatastoreCalls() as counter:
             response = self.request(
-                "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+                "assignment_candidate.create",
+                {"assignment_id": 111, "meeting_user_id": 110},
             )
         self.assert_status_code(response, 200)
         assert counter.calls == 6
         model = self.get_model("assignment_candidate/1")
-        assert model.get("user_id") == 110
+        assert model.get("meeting_user_id") == 110
         assert model.get("assignment_id") == 111
         assert model.get("weight") == 10000
 
@@ -50,7 +60,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         response = self.request("assignment_candidate.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['assignment_id', 'user_id'] properties",
+            "data must contain ['assignment_id', 'meeting_user_id'] properties",
             response.json["message"],
         )
 
@@ -59,6 +69,10 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             {
                 "user/110": {"username": "test_Xcdfgee"},
                 "assignment/111": {"title": "title_xTcEkItp"},
+                "meeting_user/110": {
+                    "meeting_id": 1133,
+                    "user_id": 110,
+                },
             }
         )
         response = self.request(
@@ -66,7 +80,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             {
                 "wrong_field": "text_AefohteiF8",
                 "assignment_id": 111,
-                "user_id": 110,
+                "meeting_user_id": 110,
             },
         )
         self.assert_status_code(response, 400)
@@ -83,6 +97,10 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                 },
                 "user/110": {"username": "test_Xcdfgee"},
+                "meeting_user/110": {
+                    "meeting_id": 1133,
+                    "user_id": 110,
+                },
                 "assignment/111": {
                     "title": "title_xTcEkItp",
                     "meeting_id": 1333,
@@ -91,7 +109,8 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+            "assignment_candidate.create",
+            {"assignment_id": 111, "meeting_user_id": 110},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -106,7 +125,8 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         self.set_models(self.permission_test_models)
         response = self.request(
-            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+            "assignment_candidate.create",
+            {"assignment_id": 111, "meeting_user_id": 110},
         )
         self.assert_status_code(response, 403)
         assert "Missing Permission: assignment.can_manage" in response.json["message"]
@@ -125,7 +145,8 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         )
         self.set_models(self.permission_test_models)
         response = self.request(
-            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+            "assignment_candidate.create",
+            {"assignment_id": 111, "meeting_user_id": 110},
         )
         self.assert_status_code(response, 200)
 
@@ -143,7 +164,8 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         )
         self.login(self.user_id)
         response = self.request(
-            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+            "assignment_candidate.create",
+            {"assignment_id": 111, "meeting_user_id": 110},
         )
         self.assert_status_code(response, 200)
 
@@ -154,7 +176,8 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         self.login(self.user_id)
         response = self.request(
-            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+            "assignment_candidate.create",
+            {"assignment_id": 111, "meeting_user_id": 110},
         )
         self.assert_status_code(response, 403)
         assert "Missing Permission: assignment.can_manage" in response.json["message"]
@@ -173,6 +196,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         )
         self.login(self.user_id)
         response = self.request(
-            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+            "assignment_candidate.create",
+            {"assignment_id": 111, "meeting_user_id": 110},
         )
         self.assert_status_code(response, 200)
