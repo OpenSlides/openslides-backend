@@ -34,9 +34,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting/222", {"logo_$_id": ["web_header"], "logo_$web_header_id": 17}
-        )
+        self.assert_model_exists("meeting/222", {"logo_web_header_id": 17})
 
     def test_set_logo_wrong_place(self) -> None:
         self.set_models(
@@ -57,7 +55,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Replacement broken does not exist in field logo__id´s replacement_enum."
+            "logo_broken_id is not a valid field for model meeting."
             == response.json["message"]
         )
 

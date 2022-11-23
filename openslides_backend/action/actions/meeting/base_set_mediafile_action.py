@@ -48,7 +48,8 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
             raise ActionException(
                 f"Invalid mimetype: {mediafile.get('mimetype')}, allowed are {self.allowed_mimetypes}"
             )
-        instance[self.field] = {instance.pop("place"): instance.pop("mediafile_id")}
+        place = instance.pop("place")
+        instance[self.field.replace("$", place)] = instance.pop("mediafile_id")
         return instance
 
     def check_owner(self, mediafile: Dict[str, Any], instance: Dict[str, Any]) -> None:

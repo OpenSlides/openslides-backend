@@ -38,8 +38,6 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [1, 2],
                 "motion_state_ids": [1],
                 "motion_workflow_ids": [1],
-                "logo_$_id": None,
-                "font_$_id": [],
                 "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                 **{
                     f"default_projector_${name}_id": 1
@@ -120,8 +118,6 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [3, 4],
                 "motion_state_ids": [2],
                 "motion_workflow_ids": [2],
-                "logo_$_id": None,
-                "font_$_id": [],
                 "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                 "template_for_organization_id": ONE_ORGANIZATION_ID,
             },
@@ -606,8 +602,6 @@ class MeetingClone(BaseActionTestCase):
                 "mediafile/1": {
                     "owner_id": "meeting/1",
                     "attachment_ids": [],
-                    "used_as_font_$_in_meeting_id": [],
-                    "used_as_logo_$_in_meeting_id": [],
                     "mimetype": "text/plain",
                     "is_public": True,
                 },

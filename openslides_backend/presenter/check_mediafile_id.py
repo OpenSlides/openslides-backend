@@ -54,8 +54,22 @@ class CheckMediafileId(BasePresenter):
                     "owner_id",
                     "token",
                     "mimetype",
-                    "used_as_logo_$_in_meeting_id",
-                    "used_as_font_$_in_meeting_id",
+                    "used_as_logo_projector_main_in_meeting_id",
+                    "used_as_logo_projector_header_in_meeting_id",
+                    "used_as_logo_web_header_in_meeting_id",
+                    "used_as_logo_pdf_header_l_in_meeting_id",
+                    "used_as_logo_pdf_header_r_in_meeting_id",
+                    "used_as_logo_pdf_footer_l_in_meeting_id",
+                    "used_as_logo_pdf_footer_r_in_meeting_id",
+                    "used_as_logo_pdf_ballot_paper_in_meeting_id",
+                    "used_as_font_regular_in_meeting_id",
+                    "used_as_font_italic_in_meeting_id",
+                    "used_as_font_bold_in_meeting_id",
+                    "used_as_font_bold_italic_in_meeting_id",
+                    "used_as_font_monospace_in_meeting_id",
+                    "used_as_font_chyron_speaker_name_in_meeting_id",
+                    "used_as_font_projector_h1_in_meeting_id",
+                    "used_as_font_projector_h2_in_meeting_id",
                     "projection_ids",
                     "is_public",
                     "inherited_access_group_ids",
@@ -104,10 +118,30 @@ class CheckMediafileId(BasePresenter):
         #    or used_as_font_$_in_meeting_id is not empty)
         can_see_meeting = self.check_can_see_meeting(meeting)
         if can_see_meeting:
-            if mediafile.get("used_as_logo_$_in_meeting_id") or mediafile.get(
-                "used_as_font_$_in_meeting_id"
+            for field_part in (
+                "projector_main",
+                "projector_header",
+                "web_header",
+                "pdf_header_l",
+                "pdf_header_r",
+                "pdf_footer_l",
+                "pdf_footer_r",
+                "pdf_ballot_paper",
             ):
-                return
+                if mediafile.get(f"used_as_logo_{field_part}_in_meeting_id"):
+                    return
+            for field_part in (
+                "egular",
+                "italic",
+                "bold",
+                "bold_italic",
+                "monospace",
+                "chyron_speaker_name",
+                "projector_h1",
+                "projector_h2",
+            ):
+                if mediafile.get(f"used_as_font_{field_part}_in_meeting_id"):
+                    return
         # The user has projector.can_see
         # and there exists a mediafile/projection_ids with
         # projection/current_projector_id set
