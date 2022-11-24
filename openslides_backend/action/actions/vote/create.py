@@ -43,7 +43,8 @@ class VoteCreate(CreateActionWithInferredMeeting):
             use_changed_models=False,
         )
         fields = [
-            "vote_delegated_vote_$_ids",
+            "vote_ids",
+            "poll_voted_ids" "vote_delegated_vote_$_ids",
         ]
         fields_set: Set[str] = set()
         for option in result["option"].values():
