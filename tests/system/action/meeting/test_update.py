@@ -292,6 +292,14 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_update_motions_block_slide_columns(self) -> None:
+        self.basic_test(
+            {
+                "motions_block_slide_columns": 2,
+            },
+        )
+        self.assert_model_exists("meeting/1", {"motions_block_slide_columns": 2})
+
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}

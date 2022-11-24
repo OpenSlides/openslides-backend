@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "eda7d8f125256c7be1a4d8ce7b009c7f"
+MODELS_YML_CHECKSUM = "790a2472f4817c0dd77c5d5dcbc2e157"
 
 
 class Organization(Model):
@@ -459,6 +459,7 @@ class Meeting(Model):
     motions_show_referring_motions = fields.BooleanField(default=True)
     motions_show_sequential_number = fields.BooleanField(default=True)
     motions_recommendations_by = fields.CharField()
+    motions_block_slide_columns = fields.IntegerField(constraints={"minimum": 1})
     motions_statute_recommendations_by = fields.CharField()
     motions_recommendation_text_mode = fields.CharField(
         default="diff", constraints={"enum": ["original", "changed", "diff", "agreed"]}
