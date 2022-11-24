@@ -17,6 +17,6 @@ class VoteAnonymize(UpdateAction):
     schema = DefaultSchema(Vote()).get_update_schema()
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["meeting_user_id"] = None
+        instance["user_id"] = None
         instance["delegated_user_id"] = None
         return instance

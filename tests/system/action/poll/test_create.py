@@ -594,7 +594,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "valid",
                 "options": [
                     {
-                        "content_object_id": "meeting_user/1",
+                        "content_object_id": "user/1",
                         "Y": "10.000000",
                         "N": "5.000000",
                     },
@@ -674,10 +674,6 @@ class CreatePoll(BaseActionTestCase):
                     "group_$_ids": ["42"],
                     "meeting_ids": [42],
                 },
-                "meeting_user/1": {
-                    "meeting_id": 42,
-                    "user_id": 1,
-                },
                 "assignment/2": {
                     "meeting_id": 42,
                 },
@@ -690,7 +686,7 @@ class CreatePoll(BaseActionTestCase):
                 "type": "analog",
                 "pollmethod": "YNA",
                 "options": [
-                    {"content_object_id": "meeting_user/1"},
+                    {"content_object_id": "user/1"},
                 ],
                 "meeting_id": 42,
                 "onehundred_percent_base": "YN",
@@ -707,7 +703,7 @@ class CreatePoll(BaseActionTestCase):
         )
         self.assert_model_exists(
             "option/1",
-            {"content_object_id": "meeting_user/1", "poll_id": 1, "meeting_id": 42},
+            {"content_object_id": "user/1", "poll_id": 1, "meeting_id": 42},
         )
 
     def test_create_user_option_invalid(self) -> None:

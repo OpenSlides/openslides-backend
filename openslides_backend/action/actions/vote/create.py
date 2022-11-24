@@ -26,7 +26,7 @@ class VoteCreate(CreateActionWithInferredMeeting):
             "option_id",
             "user_token",
         ],
-        optional_properties=["delegated_user_id", "meeting_user_id"],
+        optional_properties=["delegated_user_id", "user_id"],
     )
 
     relation_field_for_meeting = "option_id"
