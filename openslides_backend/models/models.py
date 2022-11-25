@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "a0ec46342ab623799c34f00807d390fc"
+MODELS_YML_CHECKSUM = "b41567297646c771b592abccb7dbe782"
 
 
 class Organization(Model):
@@ -121,21 +121,6 @@ class User(Model):
         replacement_collection="meeting",
         to={"group": "user_ids"},
     )
-    vote_delegated_vote__ids = fields.TemplateRelationListField(
-        index=20,
-        replacement_collection="meeting",
-        to={"vote": "delegated_user_id"},
-    )
-    vote_delegated__to_id = fields.TemplateRelationField(
-        index=15,
-        replacement_collection="meeting",
-        to={"user": "vote_delegations_$_from_ids"},
-    )
-    vote_delegations__from_ids = fields.TemplateRelationListField(
-        index=17,
-        replacement_collection="meeting",
-        to={"user": "vote_delegated_$_to_id"},
-    )
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -178,6 +163,13 @@ class MeetingUser(Model):
     )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    vote_delegated_vote_ids = fields.RelationListField(to={"vote": "delegated_user_id"})
+    vote_delegated_to_id = fields.RelationField(
+        to={"meeting_user": "vote_delegations_from_ids"}
+    )
+    vote_delegations_from_ids = fields.RelationListField(
+        to={"meeting_user": "vote_delegated_to_id"}
     )
     chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
 
@@ -1564,7 +1556,9 @@ class Vote(Model):
         to={"option": "vote_ids"}, required=True, equal_fields="meeting_id"
     )
     user_id = fields.RelationField(to={"user": "vote_ids"})
-    delegated_user_id = fields.RelationField(to={"user": "vote_delegated_vote_$_ids"})
+    delegated_user_id = fields.RelationField(
+        to={"meeting_user": "vote_delegated_vote_ids"}
+    )
     meeting_id = fields.RelationField(to={"meeting": "vote_ids"}, required=True)
 
 

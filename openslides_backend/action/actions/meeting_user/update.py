@@ -6,10 +6,11 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixin import MeetingUserMixin
 
 
 @register_action("meeting_user.update")
-class MeetingUserUpdate(UpdateAction):
+class MeetingUserUpdate(MeetingUserMixin, UpdateAction):
     """
     Action to update a meeting_user.
     """
@@ -28,6 +29,9 @@ class MeetingUserUpdate(UpdateAction):
             "submitted_motion_ids",
             "assignment_candidate_ids",
             "projection_ids",
+            "vote_delegated_vote_ids",
+            "vote_delegated_to_id",
+            "vote_delegations_from_ids",
             "chat_message_ids",
         ],
     )

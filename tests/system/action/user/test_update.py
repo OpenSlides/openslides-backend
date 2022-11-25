@@ -88,7 +88,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 223,
                 "group_$_ids": {1: [11], 2: [22]},
-                "vote_delegations_$_from_ids": {1: [222]},
                 "committee_$_management_level": {
                     CommitteeManagementLevel.CAN_MANAGE: [2],
                 },
@@ -102,21 +101,12 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
                 "group_$1_ids": [11],
                 "group_$2_ids": [22],
-                "vote_delegations_$1_from_ids": [222],
-                "vote_delegations_$_from_ids": ["1"],
             },
         )
         self.assertCountEqual(user.get("committee_ids", []), [1, 2])
         self.assertCountEqual(user.get("group_$_ids", []), ["1", "2"])
         self.assertCountEqual(user.get("meeting_ids", []), [1, 2])
 
-        user = self.assert_model_exists(
-            "user/222",
-            {
-                "vote_delegated_$1_to_id": 223,
-                "vote_delegated_$_to_id": ["1"],
-            },
-        )
         group1 = self.get_model("group/11")
         self.assertCountEqual(group1.get("user_ids", []), [223])
         group2 = self.get_model("group/22")
@@ -656,45 +646,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             "Your organization management level is not high enough to change a user with a Level of superadmin!",
             response.json["message"],
         )
-
-    def test_perm_group_B_user_can_manage(self) -> None:
-        """update group B fields for 2 meetings with simple user.can_manage permissions"""
-        self.permission_setup()
-        self.create_meeting(base=4)
-        self.set_organization_management_level(None, self.user_id)
-        self.set_user_groups(
-            self.user_id, [2, 5]
-        )  # Admin groups of meeting/1 and meeting/4
-        self.set_user_groups(111, [1, 6])
-
-        self.set_models(
-            {
-                "user/5": {"username": "user5", "meeting_ids": [4]},
-                "user/6": {"username": "user6", "meeting_ids": [4]},
-            }
-        )
-
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "vote_delegated_$_to_id": {"1": self.user_id},
-                "vote_delegations_$_from_ids": {"4": [5, 6]},
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/111",
-            {
-                "username": "User 111",
-                "vote_delegated_$_to_id": ["1"],
-                "vote_delegated_$1_to_id": self.user_id,
-                "vote_delegations_$_from_ids": ["4"],
-                "vote_delegations_$4_from_ids": [5, 6],
-            },
-        )
-        user = self.get_model("user/111")
-        self.assertCountEqual(user["meeting_ids"], [1, 4])
 
     def test_perm_group_C_oml_manager(self) -> None:
         """May update group C group_$_ids by OML permission"""

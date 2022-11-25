@@ -1073,6 +1073,7 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_vote_delegation(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1, 2]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1, 2]
         self.test_models["group/1"]["user_ids"] = [1, 2]
         self.test_models["organization/1"]["user_ids"] = [1, 2]
         self.set_models(
@@ -1081,8 +1082,7 @@ class MeetingClone(BaseActionTestCase):
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
                     "meeting_ids": [1],
-                    "vote_delegated_$_to_id": ["1"],
-                    "vote_delegated_$1_to_id": 2,
+                    "meeting_user_ids": [1],
                     "organization_id": 1,
                 },
                 "user/2": {
@@ -1090,9 +1090,18 @@ class MeetingClone(BaseActionTestCase):
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
                     "meeting_ids": [1],
-                    "vote_delegations_$_from_ids": ["1"],
-                    "vote_delegations_$1_from_ids": [1],
+                    "meeting_user_ids": [2],
                     "organization_id": 1,
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "vote_delegated_to_id": 2,
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "vote_delegations_from_ids": [1],
                 },
             }
         )
@@ -1115,9 +1124,7 @@ class MeetingClone(BaseActionTestCase):
                 "group_$1_ids": [1],
                 "group_$2_ids": [3],
                 "meeting_ids": [1, 2],
-                "vote_delegated_$_to_id": ["1", "2"],
-                "vote_delegated_$1_to_id": 2,
-                "vote_delegated_$2_to_id": 2,
+                "meeting_user_ids": [1, 3],
             },
         )
         self.assert_model_exists(
@@ -1127,9 +1134,7 @@ class MeetingClone(BaseActionTestCase):
                 "group_$1_ids": [1],
                 "group_$2_ids": [3],
                 "meeting_ids": [1, 2],
-                "vote_delegations_$_from_ids": ["1", "2"],
-                "vote_delegations_$1_from_ids": [1],
-                "vote_delegations_$2_from_ids": [1],
+                "meeting_user_ids": [2, 4],
             },
         )
 
@@ -1137,14 +1142,23 @@ class MeetingClone(BaseActionTestCase):
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["vote_ids"] = [1]
         self.test_models["meeting/1"]["option_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.set_models(
             {
-                "meeting/2": {"vote_ids": [2]},
+                "meeting/2": {"vote_ids": [2], "meeting_user_ids": [2]},
                 "user/1": {
                     "meeting_ids": [1, 2],
-                    "vote_delegated_vote_$_ids": ["1", "2"],
-                    "vote_delegated_vote_$1_ids": [1],
-                    "vote_delegated_vote_$2_ids": [2],
+                    "meeting_user_ids": [1, 2],
+                },
+                "meeting_user/1": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "vote_delegated_vote_ids": [1],
+                },
+                "meeting_user/2": {
+                    "user_id": 1,
+                    "meeting_id": 2,
+                    "vote_delegated_vote_ids": [2],
                 },
                 "vote/1": {
                     "delegated_user_id": 1,
@@ -1153,7 +1167,7 @@ class MeetingClone(BaseActionTestCase):
                     "user_token": "asdfgh",
                 },
                 "vote/2": {
-                    "delegated_user_id": 1,
+                    "delegated_user_id": 2,
                     "meeting_id": 2,
                 },
                 "option/1": {
@@ -1166,17 +1180,15 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "vote/3", {"delegated_user_id": 1, "option_id": 2, "meeting_id": 3}
+            "vote/3", {"delegated_user_id": 3, "option_id": 2, "meeting_id": 3}
         )
         self.assert_model_exists(
             "user/1",
             {
-                "vote_delegated_vote_$_ids": ["1", "2", "3"],
-                "vote_delegated_vote_$1_ids": [1],
-                "vote_delegated_vote_$2_ids": [2],
-                "vote_delegated_vote_$3_ids": [3],
+                "meeting_user_ids": [1, 2, 3],
             },
         )
+        self.assert_model_exists("meeting_user/3", {"vote_delegated_vote_ids": [3]})
 
     def test_clone_with_2_existing_meetings(self) -> None:
         self.test_models[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [1, 2]
@@ -1271,7 +1283,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 18
+        assert counter.calls == 20
 
     @performance
     def test_clone_performance(self) -> None:

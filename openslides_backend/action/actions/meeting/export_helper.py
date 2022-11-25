@@ -184,6 +184,11 @@ def add_users(
             user["is_present_in_meeting_ids"] = [meeting_id]
         else:
             user["is_present_in_meeting_ids"] = None
+        user["meeting_user_ids"] = [
+            id_
+            for id_ in user.get("meeting_user_ids", [])
+            if export_data.get("meeting_user", {}).get(str(id_))
+        ]
 
     export_data["user"] = users
 

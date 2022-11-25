@@ -33,9 +33,13 @@ class PollAnonymize(BaseActionTestCase):
                     "delegated_user_id": 1,
                 },
                 "user/1": {
-                    "vote_delegated_vote_$_ids": ["1"],
-                    "vote_delegated_vote_$1_ids": [1, 2],
+                    "meeting_user_ids": [1],
                     "vote_ids": [1, 2],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "vote_delegated_vote_ids": [1, 2],
                 },
             }
         )
@@ -48,10 +52,8 @@ class PollAnonymize(BaseActionTestCase):
             vote = self.get_model(fqid)
             assert vote.get("user_id") is None
             assert vote.get("delegated_user_is") is None
-        user = self.get_model("user/1")
-        assert user.get("vote_delegated_vote_$_ids") == []
-        assert user.get("vote_delegated_vote_$1_ids") == []
         self.assert_model_exists("user/1", {"vote_ids": []})
+        self.assert_model_exists("meeting_user/1", {"vote_delegated_vote_ids": []})
 
     def test_anonymize(self) -> None:
         response = self.request("poll.anonymize", {"id": 1})
