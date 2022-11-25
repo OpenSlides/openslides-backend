@@ -248,8 +248,7 @@ class TestExportMeeting(BasePresenterTestCase):
                 },
                 "user/13": {
                     "username": "exuser13",
-                    "poll_voted_$_ids": ["1"],
-                    "poll_voted_$1_ids": [80],
+                    "poll_voted_ids": [80],
                 },
                 "user/14": {
                     "username": "exuser14",

@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "44eea0cd5778e79c250069d600dca20f"
+MODELS_YML_CHECKSUM = "a0ec46342ab623799c34f00807d390fc"
 
 
 class Organization(Model):
@@ -113,25 +113,13 @@ class User(Model):
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "user_id"}, on_delete=fields.OnDelete.CASCADE
     )
+    poll_voted_ids = fields.RelationListField(to={"poll": "voted_ids"})
+    option_ids = fields.RelationListField(to={"option": "content_object_id"})
+    vote_ids = fields.RelationListField(to={"vote": "user_id"})
     group__ids = fields.TemplateRelationListField(
         index=6,
         replacement_collection="meeting",
         to={"group": "user_ids"},
-    )
-    poll_voted__ids = fields.TemplateRelationListField(
-        index=11,
-        replacement_collection="meeting",
-        to={"poll": "voted_ids"},
-    )
-    option__ids = fields.TemplateRelationListField(
-        index=7,
-        replacement_collection="meeting",
-        to={"option": "content_object_id"},
-    )
-    vote__ids = fields.TemplateRelationListField(
-        index=5,
-        replacement_collection="meeting",
-        to={"vote": "user_id"},
     )
     vote_delegated_vote__ids = fields.TemplateRelationListField(
         index=20,
@@ -1518,7 +1506,7 @@ class Poll(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    voted_ids = fields.RelationListField(to={"user": "poll_voted_$_ids"})
+    voted_ids = fields.RelationListField(to={"user": "poll_voted_ids"})
     entitled_group_ids = fields.RelationListField(
         to={"group": "poll_ids"}, equal_fields="meeting_id"
     )
@@ -1559,7 +1547,7 @@ class Option(Model):
         equal_fields="meeting_id",
     )
     content_object_id = fields.GenericRelationField(
-        to={"user": "option_$_ids", "motion": "option_ids"}, equal_fields="meeting_id"
+        to={"user": "option_ids", "motion": "option_ids"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(to={"meeting": "option_ids"}, required=True)
 
@@ -1575,7 +1563,7 @@ class Vote(Model):
     option_id = fields.RelationField(
         to={"option": "vote_ids"}, required=True, equal_fields="meeting_id"
     )
-    user_id = fields.RelationField(to={"user": "vote_$_ids"})
+    user_id = fields.RelationField(to={"user": "vote_ids"})
     delegated_user_id = fields.RelationField(to={"user": "vote_delegated_vote_$_ids"})
     meeting_id = fields.RelationField(to={"meeting": "vote_ids"}, required=True)
 

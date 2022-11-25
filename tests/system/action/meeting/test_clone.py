@@ -581,8 +581,7 @@ class MeetingClone(BaseActionTestCase):
                 "user/1": {
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
-                    "option_$_ids": ["1"],
-                    "option_$1_ids": [1],
+                    "option_ids": [1],
                 },
                 "option/1": {"content_object_id": "user/1", "meeting_id": 1},
             }
@@ -590,14 +589,7 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/1",
-            {
-                "option_$_ids": ["1", "2"],
-                "option_$1_ids": [1],
-                "option_$2_ids": [2],
-            },
-        )
+        self.assert_model_exists("user/1", {"option_ids": [1, 2]})
 
     def test_clone_with_mediafile(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]

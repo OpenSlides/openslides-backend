@@ -361,8 +361,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "user/4": self.get_new_user(
                     "vote_user",
                     {
-                        "vote_$_ids": ["1"],
-                        "vote_$1_ids": [7],
+                        "vote_ids": [7],
                     },
                 ),
                 "user/5": self.get_new_user(
