@@ -13,6 +13,7 @@ class MeetingUserCreate(BaseActionTestCase):
                 "motion_submitter/15": {"meeting_id": 10},
                 "assignment_candidate/16": {"meeting_id": 10},
                 "projection/17": {"meeting_id": 10},
+                "vote/20": {"meeting_id": 10},
             }
         )
         test_dict = {

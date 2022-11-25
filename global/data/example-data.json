@@ -66,12 +66,6 @@
             "poll_voted_ids": [5],
             "option_ids": [5, 7],
             "vote_ids": [9],
-            "vote_delegated_vote_$_ids": [
-                "1"
-            ],
-            "vote_delegated_vote_$1_ids": [
-                9
-            ],
             "meeting_user_ids": [1],
             "meeting_ids": [
                 1
@@ -146,7 +140,8 @@
             "personal_note_ids": [1],
             "speaker_ids": [1, 5, 6, 12],
             "submitted_motion_ids": [1, 2, 3, 4],
-            "assignment_candidate_ids": [1]
+            "assignment_candidate_ids": [1],
+            "vote_delegated_vote_ids": [9]
         },
         "2": {
             "id": 2,

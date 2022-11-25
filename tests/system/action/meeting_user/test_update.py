@@ -19,6 +19,7 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "assignment_candidate/16": {"meeting_id": 10},
                 "projection/17": {"meeting_id": 10},
                 "chat_message/13": {"meeting_id": 10},
+                "vote/20": {"meeting_id": 10},
             }
         )
         test_dict = {
