@@ -1,4 +1,3 @@
-import re
 import time
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
@@ -11,6 +10,7 @@ from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import (
+    EXTENSION_REFERENCE_IDS_PATTERN,
     POSITIVE_NUMBER_REGEX,
     Collection,
     collection_and_id_from_fqid,
@@ -23,8 +23,6 @@ from ...util.register import register_action
 from ...util.typing import ActionData
 from .mixins import PermissionHelperMixin
 from .set_number_mixin import SetNumberMixin
-
-EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
 
 
 @register_action("motion.update")

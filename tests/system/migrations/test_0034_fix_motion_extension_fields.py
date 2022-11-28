@@ -47,12 +47,20 @@ def test_migration(write, finalize, assert_model):
             "fqid": "motion/1",
         }
     )
-    # remove motion/1 from extension to satisfy the checker
+    # test with non-existent motion
     write(
         {
             "type": "update",
             "fqid": "motion/3",
-            "fields": {"recommendation_extension": "test"},
+            "fields": {"recommendation_extension": "test [motion:42]"},
+        }
+    )
+    # remove motion/42 from extensions to satisfy the checker
+    write(
+        {
+            "type": "update",
+            "fqid": "motion/3",
+            "fields": {"state_extension": "test", "recommendation_extension": "test"},
         }
     )
 
@@ -124,4 +132,14 @@ def test_migration(write, finalize, assert_model):
             "recommendation_extension_reference_ids": [],
         },
         position=6,
+    )
+    assert_model(
+        "motion/3",
+        {
+            "state_extension": "test [motion/1]",
+            "state_extension_reference_ids": [],
+            "recommendation_extension": "test [motion/42]",
+            "recommendation_extension_reference_ids": [],
+        },
+        position=7,
     )

@@ -94,7 +94,8 @@ class Migration(BaseMigration):
             motion_fqids = [
                 fqid
                 for fqid in motion_fqids
-                if self.new_accessor.get_model_ignore_deleted(fqid)[1] is False
+                if self.new_accessor.model_exists(fqid)
+                and self.new_accessor.get_model_ignore_deleted(fqid)[1] is False
             ]
             event.data[f"{prefix}_extension"] = replaced_value
             event.data[f"{prefix}_extension_reference_ids"] = motion_fqids
