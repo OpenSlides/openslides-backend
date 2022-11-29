@@ -1059,6 +1059,10 @@ meeting:
   motions_recommendations_by:
     type: string
     restriction_mode: B
+  motions_block_slide_columns:
+    type: number
+    minimum: 1
+    restriction_mode: B
   motions_statute_recommendations_by:
     type: string
     restriction_mode: B
