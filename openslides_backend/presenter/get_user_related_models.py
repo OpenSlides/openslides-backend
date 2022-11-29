@@ -62,6 +62,19 @@ class GetUserRelatedModels(BasePresenter):
 
     def check_permissions(self, result: Any) -> None:
         """It first collects the meetings which are included and checks them."""
+        for user_id in result:
+            user = self.datastore.get(
+                fqid_from_collection_and_id("user", user_id),
+                ["organization_management_level"],
+            )
+            user_oml = user.get("organization_management_level", "")
+            if user_oml and not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                perm := OrganizationManagementLevel(user_oml),
+            ):
+                raise MissingPermission({perm: 1})
+
         if has_organization_management_level(
             self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):

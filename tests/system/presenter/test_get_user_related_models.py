@@ -258,3 +258,17 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             data["message"]
             == "Data error: user has rights for committee 2, but faultily is no member of committee."
         )
+
+    def test_get_user_related_models_no_permissions_higher_oml(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                },
+                "user/2": {
+                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN
+                },
+            }
+        )
+        status_code, data = self.request("get_user_related_models", {"user_ids": [2]})
+        self.assertEqual(status_code, 403)
