@@ -26,7 +26,7 @@ from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.env import Environment, is_truthy
-from openslides_backend.shared.exceptions import MediaServiceException
+from openslides_backend.shared.exceptions import ActionException, MediaServiceException
 from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
@@ -60,13 +60,15 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         data_copy = copy.deepcopy(data)
         poll = self.datastore.get(
             fqid_from_collection_and_id("poll", data["id"]),
-            mapped_fields=["type", "crypt_key", "crypt_signature"],
+            mapped_fields=["type", "crypt_key", "crypt_signature", "state"],
             lock_result=False,
         )
+        if poll["state"] != Poll.STATE_STARTED:
+            raise ActionException("Backendtest: Poll not started!")
         del data_copy["id"]
         if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
-            crypt_key = base64.b64decode(poll["crypt_key"])
-            crypt_signature = base64.b64decode(poll["crypt_signature"])
+            crypt_key = base64.b64decode(poll.get("crypt_key", ""))
+            crypt_signature = base64.b64decode(poll.get("crypt_signature", ""))
             self.encrypt_votes(data_copy, crypt_key, crypt_signature)
         response = self.make_request(
             self.url.replace("internal", "system") + f"?id={data['id']}",

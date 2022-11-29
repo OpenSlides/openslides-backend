@@ -1,11 +1,12 @@
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import simplejson as json
 
 from openslides_backend.models.models import Poll
 
+from ....action.util.typing import ActionResultElement
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -54,6 +55,8 @@ def check_poll_or_option_perms(
 
 
 class StopControl(CountdownControl, Action):
+    invalid_votes: List[Dict[str, str]]
+
     def on_stop(self, instance: Dict[str, Any]) -> None:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
@@ -81,6 +84,7 @@ class StopControl(CountdownControl, Action):
         # stop poll in vote service and create vote objects
         results = self.vote_service.stop(instance["id"])
         votes_raw = results["votes"]
+        invalid = results.get("invalid", {})
         votes = json.loads(votes_raw)
         if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
             votes = votes["votes"]
@@ -88,10 +92,20 @@ class StopControl(CountdownControl, Action):
             instance["votes_signature"] = results.get("signature")
         action_data = []
         votesvalid = Decimal("0.000000")
+        self.invalid_votes: List[Dict[str, str]] = []
         option_results: Dict[int, Dict[str, Decimal]] = defaultdict(
             lambda: defaultdict(lambda: Decimal("0.000000"))
         )  # maps options to their respective YNA sums
-        for ballot in votes:
+        for i, ballot in enumerate(votes):
+            if msg := invalid.get(str(i)):
+                self.invalid_votes.append(
+                    {
+                        "msg": msg,
+                        "ballot": json.dumps(ballot),
+                    }
+                )
+                continue
+
             user_token = get_user_token()
             vote_weight = Decimal(ballot.get("weight", "1.000000")) or Decimal(
                 "1.000000"
@@ -180,7 +194,9 @@ class StopControl(CountdownControl, Action):
         # set votescast, votesvalid, votesinvalid
         instance["votesvalid"] = str(votesvalid)
         instance["votescast"] = str(Decimal("0.000000") + Decimal(len(voted_ids)))
-        instance["votesinvalid"] = "0.000000"
+        instance["votesinvalid"] = str(
+            Decimal("0.000000") + Decimal(len(self.invalid_votes))
+        )
 
         # set entitled users at stop.
         instance["entitled_users_at_stop"] = self.get_entitled_users(
@@ -226,3 +242,8 @@ class StopControl(CountdownControl, Action):
             )
 
         return entitled_users
+
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        return {"invalid_votes": self.invalid_votes}
