@@ -55,7 +55,7 @@ def check_poll_or_option_perms(
 
 
 class StopControl(CountdownControl, Action):
-    invalid_votes: List[Dict[str, str]]
+    invalid_votes: List[Dict[str, str]] = []
 
     def on_stop(self, instance: Dict[str, Any]) -> None:
         poll = self.datastore.get(

@@ -123,7 +123,8 @@ class PollResetActionTest(PollTestMixin):
                 },
             }
         )
-        self.vote_service.start(1)
+        response = self.request("poll.start", {"id": 1})
+        self.assert_status_code(response, 200)
         response = self.vote_service.vote({"id": 1, "value": {"1": 1}})
         self.assert_status_code(response, 200)
         response = self.request("poll.reset", {"id": 1})
