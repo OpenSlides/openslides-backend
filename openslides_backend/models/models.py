@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "18258f0ffafec0fcbda6a0a9eec186e5"
+MODELS_YML_CHECKSUM = "36333e96bbc599e9053d498ee33ab5b6"
 
 
 class Organization(Model):
@@ -172,52 +172,6 @@ class MeetingUser(Model):
         to={"meeting_user": "vote_delegated_to_id"}
     )
     chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
-
-
-class MeetingLogoMediafile(Model):
-    collection = "meeting_logo_mediafile"
-    verbose_name = "meeting logo mediafile"
-
-    id = fields.IntegerField()
-    meeting_id = fields.RelationField(to={"meeting": "logo_ids"})
-    mediafile_id = fields.RelationField(to={"mediafile": "meeting_logo_mediafile_ids"})
-    type = fields.CharField(
-        constraints={
-            "enum": [
-                "projector_main",
-                "projector_header",
-                "web_header",
-                "pdf_header_l",
-                "pdf_header_r",
-                "pdf_footer_l",
-                "pdf_footer_r",
-                "pdf_ballot_paper",
-            ]
-        }
-    )
-
-
-class MeetingFontMediafile(Model):
-    collection = "meeting_font_mediafile"
-    verbose_name = "meeting font mediafile"
-
-    id = fields.IntegerField()
-    meeting_id = fields.RelationField(to={"meeting": "font_ids"})
-    mediafile_id = fields.RelationField(to={"mediafile": "meeting_font_mediafile_ids"})
-    type = fields.CharField(
-        constraints={
-            "enum": [
-                "regular",
-                "italic",
-                "bold",
-                "bold_italic",
-                "monospace",
-                "chyron_speaker_name",
-                "projector_h1",
-                "projector_h2",
-            ]
-        }
-    )
 
 
 class OrganizationTag(Model):
@@ -673,8 +627,54 @@ class Meeting(Model):
     chat_message_ids = fields.RelationListField(
         to={"chat_message": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    logo_ids = fields.RelationField(to={"meeting_logo_mediafile": "meeting_id"})
-    font_ids = fields.RelationField(to={"meeting_font_mediafile": "meeting_id"})
+    logo_projector_main_id = fields.RelationField(
+        to={"mediafile": "used_as_logo_projector_main_in_meeting_id"}
+    )
+    logo_projector_header_id = fields.RelationField(
+        to={"mediafile": "used_as_logo_projector_header_in_meeting_id"}
+    )
+    logo_web_header_id = fields.RelationField(
+        to={"mediafile": "used_as_logo_web_header_in_meeting_id"}
+    )
+    logo_pdf_header_l_id = fields.RelationField(
+        to={"mediafile": "used_as_logo_pdf_header_l_in_meeting_id"}
+    )
+    logo_pdf_header_r_id = fields.RelationField(
+        to={"mediafile": "used_as_logo_pdf_header_r_in_meeting_id"}
+    )
+    logo_pdf_footer_l_id = fields.RelationField(
+        to={"mediafile": "used_as_logo_pdf_footer_l_in_meeting_id"}
+    )
+    logo_pdf_footer_r_id = fields.RelationField(
+        to={"mediafile": "used_as_logo_pdf_footer_r_in_meeting_id"}
+    )
+    logo_pdf_ballot_paper_id = fields.RelationField(
+        to={"mediafile": "used_as_logo_pdf_ballot_paper_in_meeting_id"}
+    )
+    font_regular_id = fields.RelationField(
+        to={"mediafile": "used_as_font_regular_in_meeting_id"}
+    )
+    font_italic_id = fields.RelationField(
+        to={"mediafile": "used_as_font_italic_in_meeting_id"}
+    )
+    font_bold_id = fields.RelationField(
+        to={"mediafile": "used_as_font_bold_in_meeting_id"}
+    )
+    font_bold_italic_id = fields.RelationField(
+        to={"mediafile": "used_as_font_bold_italic_in_meeting_id"}
+    )
+    font_monospace_id = fields.RelationField(
+        to={"mediafile": "used_as_font_monospace_in_meeting_id"}
+    )
+    font_chyron_speaker_name_id = fields.RelationField(
+        to={"mediafile": "used_as_font_chyron_speaker_name_in_meeting_id"}
+    )
+    font_projector_h1_id = fields.RelationField(
+        to={"mediafile": "used_as_font_projector_h1_in_meeting_id"}
+    )
+    font_projector_h2_id = fields.RelationField(
+        to={"mediafile": "used_as_font_projector_h2_in_meeting_id"}
+    )
     committee_id = fields.RelationField(to={"committee": "meeting_ids"}, required=True)
     default_meeting_for_committee_id = fields.RelationField(
         to={"committee": "default_meeting_id"}
@@ -1713,11 +1713,53 @@ class Mediafile(Model):
     owner_id = fields.GenericRelationField(
         to={"organization": "mediafile_ids", "meeting": "mediafile_ids"}, required=True
     )
-    meeting_logo_mediafile_ids = fields.RelationListField(
-        to={"meeting_logo_mediafile": "mediafile_id"}
+    used_as_logo_projector_main_in_meeting_id = fields.RelationField(
+        to={"meeting": "logo_projector_main_id"}
     )
-    meeting_font_mediafile_ids = fields.RelationListField(
-        to={"meeting_font_mediafile": "mediafile_id"}
+    used_as_logo_projector_header_in_meeting_id = fields.RelationField(
+        to={"meeting": "logo_projector_header_id"}
+    )
+    used_as_logo_web_header_in_meeting_id = fields.RelationField(
+        to={"meeting": "logo_web_header_id"}
+    )
+    used_as_logo_pdf_header_l_in_meeting_id = fields.RelationField(
+        to={"meeting": "logo_pdf_header_l_id"}
+    )
+    used_as_logo_pdf_header_r_in_meeting_id = fields.RelationField(
+        to={"meeting": "logo_pdf_header_r_id"}
+    )
+    used_as_logo_pdf_footer_l_in_meeting_id = fields.RelationField(
+        to={"meeting": "logo_pdf_footer_l_id"}
+    )
+    used_as_logo_pdf_footer_r_in_meeting_id = fields.RelationField(
+        to={"meeting": "logo_pdf_footer_r_id"}
+    )
+    used_as_logo_pdf_ballot_paper_in_meeting_id = fields.RelationField(
+        to={"meeting": "logo_pdf_ballot_paper_id"}
+    )
+    used_as_font_regular_in_meeting_id = fields.RelationField(
+        to={"meeting": "font_regular_id"}
+    )
+    used_as_font_italic_in_meeting_id = fields.RelationField(
+        to={"meeting": "font_italic_id"}
+    )
+    used_as_font_bold_in_meeting_id = fields.RelationField(
+        to={"meeting": "font_bold_id"}
+    )
+    used_as_font_bold_italic_in_meeting_id = fields.RelationField(
+        to={"meeting": "font_bold_italic_id"}
+    )
+    used_as_font_monospace_in_meeting_id = fields.RelationField(
+        to={"meeting": "font_monospace_id"}
+    )
+    used_as_font_chyron_speaker_name_in_meeting_id = fields.RelationField(
+        to={"meeting": "font_chyron_speaker_name_id"}
+    )
+    used_as_font_projector_h1_in_meeting_id = fields.RelationField(
+        to={"meeting": "font_projector_h1_id"}
+    )
+    used_as_font_projector_h2_in_meeting_id = fields.RelationField(
+        to={"meeting": "font_projector_h2_id"}
     )
 
 
