@@ -1081,6 +1081,27 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists("mediafile/1")
         self.assert_model_exists("meeting/2", {"logo_web_header_id": 1})
 
+    def test_font_italic_id(self) -> None:
+        # Template Relation Field
+        request_data = self.create_request_data(
+            {
+                "mediafile": {
+                    "3": self.get_mediafile_data(
+                        3,
+                        {
+                            "used_as_font_italic_in_meeting_id": 1,
+                        },
+                    )
+                }
+            }
+        )
+        request_data["meeting"]["meeting"]["1"]["font_italic_id"] = 3
+        request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [3]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("mediafile/1")
+        self.assert_model_exists("meeting/2", {"font_italic_id": 1})
+
     def test_logo_dollar_id_wrong_replacement(self) -> None:
         # Template Relation Field
         request_data = self.create_request_data(
