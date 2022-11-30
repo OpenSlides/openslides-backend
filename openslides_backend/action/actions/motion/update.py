@@ -145,7 +145,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                         instance["created"] = timestamp
 
         for prefix in ("recommendation", "state"):
-            if instance.get(f"{prefix}_extension"):
+            if f"{prefix}_extension" in instance:
                 self.set_extension_reference_ids(prefix, instance)
 
         if instance.get("number"):
@@ -170,12 +170,13 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
             if collection != "motion":
                 raise ActionException(f"Found {fqid} but only motion is allowed.")
             motion_ids.append(int(id_))
-        gm_request = GetManyRequest("motion", motion_ids, ["id"])
-        gm_result = self.datastore.get_many([gm_request]).get("motion", {})
-        for motion_id in gm_result:
-            extension_reference_ids.append(
-                fqid_from_collection_and_id("motion", motion_id)
-            )
+        if motion_ids:
+            gm_request = GetManyRequest("motion", motion_ids, ["id"])
+            gm_result = self.datastore.get_many([gm_request]).get("motion", {})
+            for motion_id in gm_result:
+                extension_reference_ids.append(
+                    fqid_from_collection_and_id("motion", motion_id)
+                )
         instance[f"{prefix}_extension_reference_ids"] = extension_reference_ids
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
