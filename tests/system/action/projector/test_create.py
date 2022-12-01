@@ -85,20 +85,19 @@ class ProjectorCreateActionTest(BaseActionTestCase):
             {
                 "name": "Test",
                 "meeting_id": 222,
-                "used_as_default_$_in_meeting_id": {"topics": 222},
+                "used_as_default_topics_in_meeting_id": 222,
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "projector/1",
             {
-                "used_as_default_$_in_meeting_id": ["topics"],
-                "used_as_default_$topics_in_meeting_id": 222,
+                "used_as_default_topics_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(
             "meeting/222",
-            {"default_projector_$_id": ["topics"], "default_projector_$topics_id": 1},
+            {"default_projector_topics_id": 1},
         )
 
     def test_create_set_wrong_used_as_default__in_meeting_id(self) -> None:
@@ -107,12 +106,12 @@ class ProjectorCreateActionTest(BaseActionTestCase):
             {
                 "name": "Test",
                 "meeting_id": 222,
-                "used_as_default_$_in_meeting_id": {"xxxtopics": 222},
+                "used_as_default_xxxtopics_in_meeting_id": 222,
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.used_as_default_$_in_meeting_id must not contain {'xxxtopics'} properties",
+            "data must not contain {'used_as_default_xxxtopics_in_meeting_id'} properties",
             response.json["message"],
         )
 

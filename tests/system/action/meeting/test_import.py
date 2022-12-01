@@ -1,6 +1,6 @@
 import base64
 import time
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Optional
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
@@ -220,13 +220,9 @@ class MeetingImport(BaseActionTestCase):
                         "present_user_ids": [],
                         "list_of_speakers_countdown_id": None,
                         "poll_countdown_id": None,
-                        "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                         **{
-                            f"default_projector_${name}_id": 1
-                            for name in cast(
-                                List[str],
-                                Meeting.default_projector__id.replacement_enum,
-                            )
+                            f"default_projector_{name}_id": 1
+                            for name in Meeting.DEFAULT_PROJECTOR_ENUM
                         },
                         "projection_ids": [],
                     }
@@ -314,13 +310,9 @@ class MeetingImport(BaseActionTestCase):
                         "current_projection_ids": [],
                         "preview_projection_ids": [],
                         "history_projection_ids": [],
-                        "used_as_default_$_in_meeting_id": Meeting.default_projector__id.replacement_enum,
                         **{
-                            f"used_as_default_${name}_in_meeting_id": 1
-                            for name in cast(
-                                List[str],
-                                Meeting.default_projector__id.replacement_enum,
-                            )
+                            f"used_as_default_{name}_in_meeting_id": 1
+                            for name in Meeting.DEFAULT_PROJECTOR_ENUM
                         },
                         "sequential_number": 1,
                     }

@@ -1596,35 +1596,87 @@ meeting:
     to: projector_countdown/used_as_poll_countdown_meeting_id
     restriction_mode: B
     required: false
-  default_projector_$_id:
-    type: template
-    fields:
-      type: relation
-      to: projector/used_as_default_$_in_meeting_id
-      required: true
-    restriction_mode: B
-    replacement_enum:
-      - agenda_all_items
-      - topics
-      - list_of_speakers
-      - current_list_of_speakers
-      - motion
-      - amendment
-      - motion_block
-      - assignment
-      - user
-      - mediafile
-      - projector_message
-      - projector_countdowns
-      - assignment_poll
-      - motion_poll
-      - poll
+
   projection_ids:
     type: relation-list
     to: projection/content_object_id
     on_delete: CASCADE
     restriction_mode: B
-
+  default_projector_agenda_all_items_id:
+    type: relation
+    to: projector/used_as_default_agenda_all_items_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_topics_id:
+    type: relation
+    to: projector/used_as_default_topics_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_list_of_speakers_id:
+    type: relation
+    to: projector/used_as_default_list_of_speakers_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_current_list_of_speakers_id:
+    type: relation
+    to: projector/used_as_default_current_list_of_speakers_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_motion_id:
+    type: relation
+    to: projector/used_as_default_motion_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_amendment_id:
+    type: relation
+    to: projector/used_as_default_amendment_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_motion_block_id:
+    type: relation
+    to: projector/used_as_default_motion_block_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_assignment_id:
+    type: relation
+    to: projector/used_as_default_assignment_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_user_id:
+    type: relation
+    to: projector/used_as_default_user_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_mediafile_id:
+    type: relation
+    to: projector/used_as_default_mediafile_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_projector_message_id:
+    type: relation
+    to: projector/used_as_default_projector_message_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_projector_countdowns_id:
+    type: relation
+    to: projector/used_as_default_projector_countdowns_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_assignment_poll_id:
+    type: relation
+    to: projector/used_as_default_assignment_poll_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_motion_poll_id:
+    type: relation
+    to: projector/used_as_default_motion_poll_in_meeting_id
+    restriction_mode: B
+    required: true
+  default_projector_poll_id:
+    type: relation
+    to: projector/used_as_default_poll_in_meeting_id
+    restriction_mode: B
+    required: true
   default_group_id:
     type: relation
     to: group/default_group_for_meeting_id
@@ -3400,28 +3452,80 @@ projector:
     to: meeting/reference_projector_id
     restriction_mode: A
     required: false
-  used_as_default_$_in_meeting_id:
-    type: template
-    fields:
-      type: relation
-      to: meeting/default_projector_$_id
-      required: false
-    replacement_enum:
-      - agenda_all_items
-      - topics
-      - list_of_speakers
-      - current_list_of_speakers
-      - motion
-      - amendment
-      - motion_block
-      - assignment
-      - user
-      - mediafile
-      - projector_message
-      - projector_countdowns
-      - assignment_poll
-      - motion_poll
-      - poll
+  used_as_default_agenda_all_items_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_agenda_all_items_id
+    required: false
+    restriction_mode: A
+  used_as_default_topics_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_topics_id
+    required: false
+    restriction_mode: A
+  used_as_default_list_of_speakers_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_list_of_speakers_id
+    required: false
+    restriction_mode: A
+  used_as_default_current_list_of_speakers_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_current_list_of_speakers_id
+    required: false
+    restriction_mode: A
+  used_as_default_motion_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_motion_id
+    required: false
+    restriction_mode: A
+  used_as_default_amendment_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_amendment_id
+    required: false
+    restriction_mode: A
+  used_as_default_motion_block_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_motion_block_id
+    required: false
+    restriction_mode: A
+  used_as_default_assignment_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_assignment_id
+    required: false
+    restriction_mode: A
+  used_as_default_user_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_user_id
+    required: false
+    restriction_mode: A
+  used_as_default_mediafile_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_mediafile_id
+    required: false
+    restriction_mode: A
+  used_as_default_projector_message_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_projector_message_id
+    required: false
+    restriction_mode: A
+  used_as_default_projector_countdowns_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_projector_countdowns_id
+    required: false
+    restriction_mode: A
+  used_as_default_assignment_poll_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_assignment_poll_id
+    required: false
+    restriction_mode: A
+  used_as_default_motion_poll_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_motion_poll_id
+    required: false
+    restriction_mode: A
+  used_as_default_poll_in_meeting_id:
+    type: relation
+    to: meeting/default_projector_poll_id
+    required: false
     restriction_mode: A
   meeting_id:
     type: relation

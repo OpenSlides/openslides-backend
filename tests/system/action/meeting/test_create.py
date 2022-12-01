@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, cast
+from typing import Any, Dict
 
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import (
@@ -41,11 +41,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         return self.get_model("meeting/1")
 
     def test_create_simple_and_complex_workflow(self) -> None:
-        meeting = self.basic_test(dict())
-        self.assertCountEqual(
-            cast(Iterable[Any], meeting.get("default_projector_$_id")),
-            cast(List[str], Meeting.default_projector__id.replacement_enum),
-        )
+        self.basic_test(dict())
         self.assert_model_exists(
             "meeting/1",
             {
@@ -67,10 +63,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "assignment_poll_default_group_ids": [4],
                 "motion_poll_default_group_ids": [4],
                 **{
-                    f"default_projector_${name}_id": 1
-                    for name in cast(
-                        List[str], Meeting.default_projector__id.replacement_enum
-                    )
+                    f"default_projector_{name}_id": 1
+                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
                 },
             },
         )
@@ -154,11 +148,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "motion_state/15",
             {"name": "rejected (not authorized)", "previous_state_ids": [6]},
         )
-        projector1 = self.get_model("projector/1")
-        self.assertCountEqual(
-            cast(Iterable[Any], projector1.get("used_as_default_$_in_meeting_id")),
-            cast(List[str], Meeting.default_projector__id.replacement_enum),
-        )
         self.assert_model_exists(
             "projector/1",
             {
@@ -166,10 +155,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
                 **{
-                    f"used_as_default_${name}_in_meeting_id": 1
-                    for name in cast(
-                        List[str], Meeting.default_projector__id.replacement_enum
-                    )
+                    f"used_as_default_{name}_in_meeting_id": 1
+                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
                 },
             },
         )

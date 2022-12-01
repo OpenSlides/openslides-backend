@@ -214,6 +214,24 @@ class Model(Node):
                 "projector_h1",
                 "projector_h2",
             )
+            DEFAULT_PROJECTOR_ENUM = (
+                "agenda_all_items",
+                "topics",
+                "list_of_speakers",
+                "current_list_of_speakers",
+                "motion",
+                "amendment",
+                "motion_block",
+                "assignment",
+                "user",
+                "mediafile",
+                "projector_message",
+                "projector_countdowns",
+                "assignment_poll",
+                "motion_poll",
+                "poll",
+            )
+
             """
         ),
     }
