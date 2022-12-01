@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 import fastjsonschema
 
-from ..models.models import Mediafile
+from ..models.models import Mediafile, Meeting
 from ..permissions.management_levels import CommitteeManagementLevel
 from ..permissions.permission_helper import (
     has_committee_management_level,
@@ -54,8 +54,14 @@ class CheckMediafileId(BasePresenter):
                     "owner_id",
                     "token",
                     "mimetype",
-                    "used_as_logo_$_in_meeting_id",
-                    "used_as_font_$_in_meeting_id",
+                    *(
+                        f"used_as_logo_{part}_in_meeting_id"
+                        for part in Meeting.LOGO_ENUM
+                    ),
+                    *(
+                        f"used_as_font_{part}_in_meeting_id"
+                        for part in Meeting.FONT_ENUM
+                    ),
                     "projection_ids",
                     "is_public",
                     "inherited_access_group_ids",
@@ -104,10 +110,12 @@ class CheckMediafileId(BasePresenter):
         #    or used_as_font_$_in_meeting_id is not empty)
         can_see_meeting = self.check_can_see_meeting(meeting)
         if can_see_meeting:
-            if mediafile.get("used_as_logo_$_in_meeting_id") or mediafile.get(
-                "used_as_font_$_in_meeting_id"
-            ):
-                return
+            for field_part in Meeting.LOGO_ENUM:
+                if mediafile.get(f"used_as_logo_{field_part}_in_meeting_id"):
+                    return
+            for field_part in Meeting.FONT_ENUM:
+                if mediafile.get(f"used_as_font_{field_part}_in_meeting_id"):
+                    return
         # The user has projector.can_see
         # and there exists a mediafile/projection_ids with
         # projection/current_projector_id set

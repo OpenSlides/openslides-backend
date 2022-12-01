@@ -34,9 +34,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "bold"}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting/222", {"font_$_id": ["bold"], "font_$bold_id": 17}
-        )
+        self.assert_model_exists("meeting/222", {"font_bold_id": 17})
 
     def test_set_font_wrong_place(self) -> None:
         self.set_models(
@@ -57,7 +55,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Replacement broken does not exist in field font__id´s replacement_enum."
+            "font_broken_id is not a valid field for model meeting."
             == response.json["message"]
         )
 

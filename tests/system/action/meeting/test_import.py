@@ -212,8 +212,6 @@ class MeetingImport(BaseActionTestCase):
                         "personal_note_ids": [],
                         "chat_group_ids": [],
                         "chat_message_ids": [],
-                        "logo_$_id": [],
-                        "font_$_id": [],
                         "committee_id": None,
                         "is_active_in_organization_id": None,
                         "is_archived_in_organization_id": None,
@@ -438,8 +436,6 @@ class MeetingImport(BaseActionTestCase):
             "list_of_speakers_id": None,
             "projection_ids": [],
             "attachment_ids": [],
-            "used_as_logo_$_in_meeting_id": [],
-            "used_as_font_$_in_meeting_id": [],
             **data,
         }
 
@@ -1072,22 +1068,39 @@ class MeetingImport(BaseActionTestCase):
                     "3": self.get_mediafile_data(
                         3,
                         {
-                            "used_as_logo_$_in_meeting_id": ["web_header"],
-                            "used_as_logo_$web_header_in_meeting_id": 1,
+                            "used_as_logo_web_header_in_meeting_id": 1,
                         },
                     )
                 }
             }
         )
-        request_data["meeting"]["meeting"]["1"]["logo_$_id"] = ["web_header"]
-        request_data["meeting"]["meeting"]["1"]["logo_$web_header_id"] = 3
+        request_data["meeting"]["meeting"]["1"]["logo_web_header_id"] = 3
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [3]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("mediafile/1")
-        self.assert_model_exists(
-            "meeting/2", {"logo_$_id": ["web_header"], "logo_$web_header_id": 1}
+        self.assert_model_exists("meeting/2", {"logo_web_header_id": 1})
+
+    def test_font_italic_id(self) -> None:
+        # Template Relation Field
+        request_data = self.create_request_data(
+            {
+                "mediafile": {
+                    "3": self.get_mediafile_data(
+                        3,
+                        {
+                            "used_as_font_italic_in_meeting_id": 1,
+                        },
+                    )
+                }
+            }
         )
+        request_data["meeting"]["meeting"]["1"]["font_italic_id"] = 3
+        request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [3]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("mediafile/1")
+        self.assert_model_exists("meeting/2", {"font_italic_id": 1})
 
     def test_logo_dollar_id_wrong_replacement(self) -> None:
         # Template Relation Field
@@ -1097,20 +1110,18 @@ class MeetingImport(BaseActionTestCase):
                     "3": self.get_mediafile_data(
                         3,
                         {
-                            "used_as_logo_$_in_meeting_id": ["web"],
-                            "used_as_logo_$web_in_meeting_id": 1,
+                            "used_as_logo_web_in_meeting_id": 1,
                         },
                     )
                 }
             }
         )
-        request_data["meeting"]["meeting"]["1"]["logo_$_id"] = ["web"]
-        request_data["meeting"]["meeting"]["1"]["logo_$web_id"] = 3
+        request_data["meeting"]["meeting"]["1"]["logo_web_id"] = 3
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [3]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert (
-            "meeting/1/logo_$_id: Replacement web does not match replacement_enum ['projector_main', 'projector_header', 'web_header', 'pdf_header_l', 'pdf_header_r', 'pdf_footer_l', 'pdf_footer_r', 'pdf_ballot_paper']"
+            "\tmeeting/1: Invalid fields logo_web_id (value: 3)\n\tmediafile/3: Invalid fields used_as_logo_web_in_meeting_id (value: 1)"
             in response.json["message"]
         )
 
@@ -1121,8 +1132,7 @@ class MeetingImport(BaseActionTestCase):
                     "3": self.get_mediafile_data(
                         3,
                         {
-                            "used_as_logo_$_in_meeting_id": ["web_header"],
-                            "used_as_logo_$web_header_in_meeting_id": 1,
+                            "used_as_logo_web_header_in_meeting_id": 1,
                             "parent_id": 2,
                         },
                     ),
@@ -1141,8 +1151,7 @@ class MeetingImport(BaseActionTestCase):
                 }
             }
         )
-        request_data["meeting"]["meeting"]["1"]["logo_$_id"] = ["web_header"]
-        request_data["meeting"]["meeting"]["1"]["logo_$web_header_id"] = 3
+        request_data["meeting"]["meeting"]["1"]["logo_web_header_id"] = 3
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [2, 3]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)

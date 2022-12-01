@@ -38,8 +38,6 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [1, 2],
                 "motion_state_ids": [1],
                 "motion_workflow_ids": [1],
-                "logo_$_id": None,
-                "font_$_id": [],
                 "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                 **{
                     f"default_projector_${name}_id": 1
@@ -120,8 +118,6 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [3, 4],
                 "motion_state_ids": [2],
                 "motion_workflow_ids": [2],
-                "logo_$_id": None,
-                "font_$_id": [],
                 "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                 "template_for_organization_id": ONE_ORGANIZATION_ID,
             },
@@ -593,11 +589,12 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_with_mediafile(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
-        self.test_models["meeting/1"]["mediafile_ids"] = [1]
+        self.test_models["meeting/1"]["mediafile_ids"] = [1, 2]
         self.test_models["group/1"]["user_ids"] = [1]
         self.set_models(self.test_models)
         self.set_models(
             {
+                "meeting/1": {"logo_web_header_id": 1, "font_bold_id": 2},
                 "user/1": {
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
@@ -606,17 +603,38 @@ class MeetingClone(BaseActionTestCase):
                 "mediafile/1": {
                     "owner_id": "meeting/1",
                     "attachment_ids": [],
-                    "used_as_font_$_in_meeting_id": [],
-                    "used_as_logo_$_in_meeting_id": [],
                     "mimetype": "text/plain",
                     "is_public": True,
+                    "used_as_logo_web_header_in_meeting_id": 1,
+                },
+                "mediafile/2": {
+                    "owner_id": "meeting/1",
+                    "attachment_ids": [],
+                    "mimetype": "text/plain",
+                    "is_public": True,
+                    "used_as_font_bold_in_meeting_id": 1,
                 },
             }
         )
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.duplicate_mediafile.assert_called_with(1, 2)
+        self.media.duplicate_mediafile.assert_called_with(2, 4)
+        self.assert_model_exists(
+            "mediafile/3",
+            {
+                "used_as_logo_web_header_in_meeting_id": 2,
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/4",
+            {
+                "used_as_font_bold_in_meeting_id": 2,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/2", {"logo_web_header_id": 3, "font_bold_id": 4}
+        )
 
     def test_clone_with_mediafile_directory(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]

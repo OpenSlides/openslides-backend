@@ -1477,38 +1477,86 @@ meeting:
     restriction_mode: B
 
   # Logos and Fonts
-  logo_$_id:
-    type: template
-    fields:
-      type: relation
-      to: mediafile/used_as_logo_$_in_meeting_id
-      required: false
+  logo_projector_main_id:
+    type: relation
+    to: mediafile/used_as_logo_projector_main_in_meeting_id
+    required: false
     restriction_mode: B
-    replacement_enum:
-      - projector_main
-      - projector_header
-      - web_header
-      - pdf_header_l
-      - pdf_header_r
-      - pdf_footer_l
-      - pdf_footer_r
-      - pdf_ballot_paper
-  font_$_id:
-    type: template
-    fields:
-      type: relation
-      to: mediafile/used_as_font_$_in_meeting_id
-      required: false
+  logo_projector_header_id:
+    type: relation
+    to: mediafile/used_as_logo_projector_header_in_meeting_id
+    required: false
     restriction_mode: B
-    replacement_enum:
-      - regular
-      - italic
-      - bold
-      - bold_italic
-      - monospace
-      - chyron_speaker_name
-      - projector_h1
-      - projector_h2
+  logo_web_header_id:
+    type: relation
+    to: mediafile/used_as_logo_web_header_in_meeting_id
+    required: false
+    restriction_mode: B
+  logo_pdf_header_l_id:
+    type: relation
+    to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
+    required: false
+    restriction_mode: B
+  logo_pdf_header_r_id:
+    type: relation
+    to: mediafile/used_as_logo_pdf_header_r_in_meeting_id
+    required: false
+    restriction_mode: B
+  logo_pdf_footer_l_id:
+    type: relation
+    to: mediafile/used_as_logo_pdf_footer_l_in_meeting_id
+    required: false
+    restriction_mode: B
+  logo_pdf_footer_r_id:
+    type: relation
+    to: mediafile/used_as_logo_pdf_footer_r_in_meeting_id
+    required: false
+    restriction_mode: B
+  logo_pdf_ballot_paper_id:
+    type: relation
+    to: mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id
+    required: false
+    restriction_mode: B
+  font_regular_id:
+    type: relation
+    to: mediafile/used_as_font_regular_in_meeting_id
+    required: false
+    restriction_mode: B
+  font_italic_id:
+    type: relation
+    to: mediafile/used_as_font_italic_in_meeting_id
+    required: false
+    restriction_mode: B
+  font_bold_id:
+    type: relation
+    to: mediafile/used_as_font_bold_in_meeting_id
+    required: false
+    restriction_mode: B
+  font_bold_italic_id:
+    type: relation
+    to: mediafile/used_as_font_bold_italic_in_meeting_id
+    required: false
+    restriction_mode: B
+  font_monospace_id:
+    type: relation
+    to: mediafile/used_as_font_monospace_in_meeting_id
+    required: false
+    restriction_mode: B
+  font_chyron_speaker_name_id:
+    type: relation
+    to: mediafile/used_as_font_chyron_speaker_name_in_meeting_id
+    required: false
+    restriction_mode: B
+  font_projector_h1_id:
+    type: relation
+    to: mediafile/used_as_font_projector_h1_in_meeting_id
+    required: false
+    restriction_mode: B
+  font_projector_h2_id:
+    type: relation
+    to: mediafile/used_as_font_projector_h2_in_meeting_id
+    required: false
+    restriction_mode: B
   # Other relations
   committee_id:
     type: relation
@@ -3167,19 +3215,85 @@ mediafile:
     required: true
 
   # Reverse relations for meetings, if a mediafile is used as a special resource
-  used_as_logo_$_in_meeting_id:
-    type: template
-    fields:
-      type: relation
-      to: meeting/logo_$_id
-      required: false
+  used_as_logo_projector_main_in_meeting_id:
+    type: relation
+    to: meeting/logo_projector_main_id
+    required: false
     restriction_mode: A
-  used_as_font_$_in_meeting_id:
-    type: template
-    fields:
-      type: relation
-      to: meeting/font_$_id
-      required: false
+  used_as_logo_projector_header_in_meeting_id:
+    type: relation
+    to: meeting/logo_projector_header_id
+    required: false
+    restriction_mode: A
+  used_as_logo_web_header_in_meeting_id:
+    type: relation
+    to: meeting/logo_web_header_id
+    required: false
+    restriction_mode: A
+  used_as_logo_pdf_header_l_in_meeting_id:
+    type: relation
+    to: meeting/logo_pdf_header_l_id
+    required: false
+    restriction_mode: A
+  used_as_logo_pdf_header_r_in_meeting_id:
+    type: relation
+    to: meeting/logo_pdf_header_r_id
+    required: false
+    restriction_mode: A
+  used_as_logo_pdf_footer_l_in_meeting_id:
+    type: relation
+    to: meeting/logo_pdf_footer_l_id
+    required: false
+    restriction_mode: A
+  used_as_logo_pdf_footer_r_in_meeting_id:
+    type: relation
+    to: meeting/logo_pdf_footer_r_id
+    required: false
+    restriction_mode: A
+  used_as_logo_pdf_ballot_paper_in_meeting_id:
+    type: relation
+    to: meeting/logo_pdf_ballot_paper_id
+    required: false
+    restriction_mode: A
+  used_as_font_regular_in_meeting_id:
+    type: relation
+    to: meeting/font_regular_id
+    required: false
+    restriction_mode: A
+  used_as_font_italic_in_meeting_id:
+    type: relation
+    to: meeting/font_italic_id
+    required: false
+    restriction_mode: A
+  used_as_font_bold_in_meeting_id:
+    type: relation
+    to: meeting/font_bold_id
+    required: false
+    restriction_mode: A
+  used_as_font_bold_italic_in_meeting_id:
+    type: relation
+    to: meeting/font_bold_italic_id
+    required: false
+    restriction_mode: A
+  used_as_font_monospace_in_meeting_id:
+    type: relation
+    to: meeting/font_monospace_id
+    required: false
+    restriction_mode: A
+  used_as_font_chyron_speaker_name_in_meeting_id:
+    type: relation
+    to: meeting/font_chyron_speaker_name_id
+    required: false
+    restriction_mode: A
+  used_as_font_projector_h1_in_meeting_id:
+    type: relation
+    to: meeting/font_projector_h1_id
+    required: false
+    restriction_mode: A
+  used_as_font_projector_h2_in_meeting_id:
+    type: relation
+    to: meeting/font_projector_h2_id
+    required: false
     restriction_mode: A
 
 projector:
