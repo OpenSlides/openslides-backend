@@ -54,22 +54,14 @@ class CheckMediafileId(BasePresenter):
                     "owner_id",
                     "token",
                     "mimetype",
-                    "used_as_logo_projector_main_in_meeting_id",
-                    "used_as_logo_projector_header_in_meeting_id",
-                    "used_as_logo_web_header_in_meeting_id",
-                    "used_as_logo_pdf_header_l_in_meeting_id",
-                    "used_as_logo_pdf_header_r_in_meeting_id",
-                    "used_as_logo_pdf_footer_l_in_meeting_id",
-                    "used_as_logo_pdf_footer_r_in_meeting_id",
-                    "used_as_logo_pdf_ballot_paper_in_meeting_id",
-                    "used_as_font_regular_in_meeting_id",
-                    "used_as_font_italic_in_meeting_id",
-                    "used_as_font_bold_in_meeting_id",
-                    "used_as_font_bold_italic_in_meeting_id",
-                    "used_as_font_monospace_in_meeting_id",
-                    "used_as_font_chyron_speaker_name_in_meeting_id",
-                    "used_as_font_projector_h1_in_meeting_id",
-                    "used_as_font_projector_h2_in_meeting_id",
+                    *(
+                        f"used_as_logo_{part}_in_meeting_id"
+                        for part in Meeting.LOGO_ENUM
+                    ),
+                    *(
+                        f"used_as_font_{part}_in_meeting_id"
+                        for part in Meeting.FONT_ENUM
+                    ),
                     "projection_ids",
                     "is_public",
                     "inherited_access_group_ids",
