@@ -4,7 +4,6 @@ from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 from datastore.migrations import BaseEvent, CreateEvent
-from datastore.shared.util import collection_and_id_from_fqid, collection_from_fqid
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.migrations.migrate import MigrationWrapper
@@ -33,7 +32,12 @@ from openslides_backend.shared.exceptions import ActionException, MissingPermiss
 from openslides_backend.shared.filters import FilterOperator, Or
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
+from openslides_backend.shared.patterns import (
+    KEYSEPARATOR,
+    collection_and_id_from_fqid,
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+)
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....shared.interfaces.event import Event, ListFields
@@ -44,7 +48,7 @@ from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
-from ..motion.update import RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN
+from ..motion.update import EXTENSION_REFERENCE_IDS_PATTERN
 from ..user.user_mixin import LimitOfUserMixin, UsernameMixin
 
 
@@ -408,29 +412,21 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             entry[field] = None
         elif collection == "user" and field == "meeting_ids":
             entry[field] = None
-        elif collection == "motion" and field == "recommendation_extension":
+        elif collection == "motion" and field in (
+            "recommendation_extension",
+            "state_extension",
+        ):
             if entry[field]:
-                fqids_str = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
-                    entry[field]
+
+                def replace_fn(match: re.Match[str]) -> str:
+                    # replace the reference patterns in the extension fields with the new ids
+                    collection, id = collection_and_id_from_fqid(match.group("fqid"))
+                    new_id = self.replace_map[collection][id]
+                    return f"[{fqid_from_collection_and_id(collection, new_id)}]"
+
+                entry[field] = EXTENSION_REFERENCE_IDS_PATTERN.sub(
+                    replace_fn, entry[field]
                 )
-                entry_str = entry[field]
-                entry_list = []
-                for fqid in fqids_str:
-                    search_str = "[" + fqid + "]"
-                    idx = entry_str.find(search_str)
-                    entry_list.append(entry_str[:idx])
-                    col, id_ = fqid.split(KEYSEPARATOR)
-                    replace_str = (
-                        "["
-                        + col
-                        + KEYSEPARATOR
-                        + str(self.replace_map[col][int(id_)])
-                        + "]"
-                    )
-                    entry_list.append(replace_str)
-                    entry_str = entry_str[idx + len(replace_str) :]
-                entry_list.append(entry_str)
-                entry[field] = "".join(entry_list)
         else:
             if (
                 isinstance(model_field, BaseTemplateField)

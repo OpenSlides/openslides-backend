@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "790a2472f4817c0dd77c5d5dcbc2e157"
+MODELS_YML_CHECKSUM = "88610320cb276b94e2ea387ec2ea167f"
 
 
 class Organization(Model):
@@ -1093,6 +1093,13 @@ class Motion(Model):
     recommendation_id = fields.RelationField(
         to={"motion_state": "motion_recommendation_ids"}, equal_fields="meeting_id"
     )
+    state_extension_reference_ids = fields.GenericRelationListField(
+        to={"motion": "referenced_in_motion_state_extension_ids"},
+        equal_fields="meeting_id",
+    )
+    referenced_in_motion_state_extension_ids = fields.RelationListField(
+        to={"motion": "state_extension_reference_ids"}, equal_fields="meeting_id"
+    )
     recommendation_extension_reference_ids = fields.GenericRelationListField(
         to={"motion": "referenced_in_motion_recommendation_extension_ids"},
         equal_fields="meeting_id",
@@ -1354,11 +1361,11 @@ class MotionState(Model):
     allow_submitter_edit = fields.BooleanField(default=False)
     set_number = fields.BooleanField(default=True)
     show_state_extension_field = fields.BooleanField(default=False)
+    show_recommendation_extension_field = fields.BooleanField(default=False)
     merge_amendment_into_final = fields.CharField(
         default="undefined",
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
-    show_recommendation_extension_field = fields.BooleanField(default=False)
     allow_motion_forwarding = fields.BooleanField()
     set_created_timestamp = fields.BooleanField()
     submitter_withdraw_state_id = fields.RelationField(
