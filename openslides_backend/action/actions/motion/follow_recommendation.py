@@ -61,10 +61,9 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
             and recommendation.get("show_recommendation_extension_field")
         ):
             instance["state_extension"] = recommendation_extension
-            if recommendation_extension_reference_ids:
-                instance[
-                    "state_extension_reference_ids"
-                ] = recommendation_extension_reference_ids
+            instance["state_extension_reference_ids"] = (
+                recommendation_extension_reference_ids or []
+            )
         instance["last_modified"] = round(time.time())
         return instance
 

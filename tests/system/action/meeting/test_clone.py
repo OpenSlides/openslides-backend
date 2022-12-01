@@ -312,6 +312,51 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/2"]})
 
+    def test_clone_with_recommendation_extension(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "motion/22": {
+                    "meeting_id": 1,
+                    "state_id": 1,
+                    "state_extension": "[motion/23]",
+                    "state_extension_reference_ids": ["motion/23"],
+                    "recommendation_extension": "[motion/23]",
+                    "recommendation_extension_reference_ids": ["motion/23"],
+                },
+                "motion/23": {
+                    "meeting_id": 1,
+                    "referenced_in_motion_state_extension_ids": [22],
+                    "referenced_in_motion_recommendation_extension_ids": [22],
+                },
+            }
+        )
+
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("organization/1", {"template_meeting_ids": None})
+        self.assert_model_exists(
+            "motion/22",
+            {
+                "state_extension": "[motion/23]",
+                "state_extension_reference_ids": ["motion/23"],
+                "recommendation_extension": "[motion/23]",
+                "recommendation_extension_reference_ids": ["motion/23"],
+            },
+        )
+        self.assert_model_exists(
+            "motion/23",
+            {
+                "referenced_in_motion_state_extension_ids": [22],
+                "referenced_in_motion_recommendation_extension_ids": [22],
+            },
+        )
+
     def test_clone_user_ids_and_admin_ids(self) -> None:
         self.test_models["meeting/1"]["template_for_organization_id"] = None
         self.test_models["organization/1"]["user_ids"] = [1, 13, 14, 15, 16]

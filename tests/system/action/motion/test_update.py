@@ -224,6 +224,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("supporter_ids") == []
         assert model.get("tag_ids") == []
         assert model.get("attachment_ids") == []
+        # motion/113 does not exist and should therefore not be present in the relations
         assert model.get("state_extension_reference_ids") == ["motion/112"]
         assert model.get("recommendation_extension_reference_ids") == ["motion/112"]
         self.assert_history_information(
