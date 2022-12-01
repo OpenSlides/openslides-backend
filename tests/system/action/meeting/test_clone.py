@@ -316,8 +316,16 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(self.test_models)
         self.set_models(
             {
+                "meeting/1": {
+                    "motion_ids": [22, 23],
+                    "list_of_speakers_ids": [1, 2],
+                },
                 "motion/22": {
+                    "id": 22,
+                    "title": "test",
+                    "sequential_number": 1,
                     "meeting_id": 1,
+                    "list_of_speakers_id": 1,
                     "state_id": 1,
                     "state_extension": "[motion/23]",
                     "state_extension_reference_ids": ["motion/23"],
@@ -325,9 +333,27 @@ class MeetingClone(BaseActionTestCase):
                     "recommendation_extension_reference_ids": ["motion/23"],
                 },
                 "motion/23": {
+                    "id": 23,
+                    "title": "test",
+                    "sequential_number": 2,
                     "meeting_id": 1,
+                    "list_of_speakers_id": 2,
+                    "state_id": 1,
                     "referenced_in_motion_state_extension_ids": [22],
                     "referenced_in_motion_recommendation_extension_ids": [22],
+                },
+                "motion_state/1": {
+                    "motion_ids": [22, 23],
+                },
+                "list_of_speakers/1": {
+                    "meeting_id": 1,
+                    "content_object_id": "motion/22",
+                    "sequential_number": 1,
+                },
+                "list_of_speakers/2": {
+                    "meeting_id": 1,
+                    "content_object_id": "motion/23",
+                    "sequential_number": 2,
                 },
             }
         )
@@ -339,21 +365,20 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("organization/1", {"template_meeting_ids": None})
         self.assert_model_exists(
-            "motion/22",
+            "motion/24",
             {
-                "state_extension": "[motion/23]",
-                "state_extension_reference_ids": ["motion/23"],
-                "recommendation_extension": "[motion/23]",
-                "recommendation_extension_reference_ids": ["motion/23"],
+                "state_extension": "[motion/25]",
+                "state_extension_reference_ids": ["motion/25"],
+                "recommendation_extension": "[motion/25]",
+                "recommendation_extension_reference_ids": ["motion/25"],
             },
         )
         self.assert_model_exists(
-            "motion/23",
+            "motion/25",
             {
-                "referenced_in_motion_state_extension_ids": [22],
-                "referenced_in_motion_recommendation_extension_ids": [22],
+                "referenced_in_motion_state_extension_ids": [24],
+                "referenced_in_motion_recommendation_extension_ids": [24],
             },
         )
 
