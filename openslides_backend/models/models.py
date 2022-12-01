@@ -730,6 +730,27 @@ class Meeting(Model):
     )
     admin_group_id = fields.RelationField(to={"group": "admin_group_for_meeting_id"})
 
+    LOGO_ENUM = (
+        "projector_main",
+        "projector_header",
+        "web_header",
+        "pdf_header_l",
+        "pdf_header_r",
+        "pdf_footer_l",
+        "pdf_footer_r",
+        "pdf_ballot_paper",
+    )
+    FONT_ENUM = (
+        "regular",
+        "italic",
+        "bold",
+        "bold_italic",
+        "monospace",
+        "chyron_speaker_name",
+        "projector_h1",
+        "projector_h2",
+    )
+
 
 class Group(Model):
     collection = "group"

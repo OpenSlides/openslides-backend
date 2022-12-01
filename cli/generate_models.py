@@ -192,6 +192,30 @@ class Model(Node):
             TYPE_PSEUDOANONYMOUS = "pseudoanonymous"
             """
         ),
+        "meeting": dedent(
+            """
+            LOGO_ENUM = (
+                "projector_main",
+                "projector_header",
+                "web_header",
+                "pdf_header_l",
+                "pdf_header_r",
+                "pdf_footer_l",
+                "pdf_footer_r",
+                "pdf_ballot_paper",
+            )
+            FONT_ENUM = (
+                "regular",
+                "italic",
+                "bold",
+                "bold_italic",
+                "monospace",
+                "chyron_speaker_name",
+                "projector_h1",
+                "projector_h2",
+            )
+            """
+        ),
     }
 
     def __init__(self, collection: str, fields: Dict[str, Dict[str, Any]]) -> None:
