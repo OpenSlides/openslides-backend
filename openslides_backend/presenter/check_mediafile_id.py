@@ -106,8 +106,8 @@ class CheckMediafileId(BasePresenter):
         if is_admin(self.datastore, self.user_id, owner_id):
             return
 
-        # The user can see the meeting and (used_as_logo_$_in_meeting_id
-        #    or used_as_font_$_in_meeting_id is not empty)
+        # The user can see the meeting and (used_as_logo_xxx_in_meeting_id
+        #    or used_as_font_xxx_in_meeting_id is not empty)
         can_see_meeting = self.check_can_see_meeting(meeting)
         if can_see_meeting:
             for field_part in Meeting.LOGO_ENUM:

@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock
 
-from openslides_backend.models.models import AgendaItem, Meeting, Projector
+from openslides_backend.models.models import AgendaItem, Meeting
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
@@ -38,12 +38,9 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [1, 2],
                 "motion_state_ids": [1],
                 "motion_workflow_ids": [1],
-                "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                 **{
-                    f"default_projector_${name}_id": 1
-                    for name in cast(
-                        List[str], Meeting.default_projector__id.replacement_enum
-                    )
+                    f"default_projector_{name}_id": 1
+                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
                 },
                 "is_active_in_organization_id": 1,
             },
@@ -83,13 +80,9 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
                 "name": "Default projector",
-                "used_as_default_$_in_meeting_id": Projector.used_as_default__in_meeting_id.replacement_enum,
                 **{
-                    f"used_as_default_${name}_in_meeting_id": 1
-                    for name in cast(
-                        List[str],
-                        Projector.used_as_default__in_meeting_id.replacement_enum,
-                    )
+                    f"used_as_default_{name}_in_meeting_id": 1
+                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
                 },
             },
         }
@@ -118,7 +111,6 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [3, 4],
                 "motion_state_ids": [2],
                 "motion_workflow_ids": [2],
-                "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                 "template_for_organization_id": ONE_ORGANIZATION_ID,
             },
         )

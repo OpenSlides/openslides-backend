@@ -155,7 +155,21 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
-            "default_projector_$_id",
+            "default_projector_agenda_all_items_id",
+            "default_projector_topics_id",
+            "default_projector_list_of_speakers_id",
+            "default_projector_current_list_of_speakers_id",
+            "default_projector_motion_id",
+            "default_projector_amendment_id",
+            "default_projector_motion_block_id",
+            "default_projector_assignment_id",
+            "default_projector_user_id",
+            "default_projector_mediafile_id",
+            "default_projector_projector_message_id",
+            "default_projector_projector_countdowns_id",
+            "default_projector_assignment_poll_id",
+            "default_projector_motion_poll_id",
+            "default_projector_poll_id",
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
@@ -178,14 +192,16 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
                 meeting_check.append(
                     fqid_from_collection_and_id("projector", reference_projector_id)
                 )
-        if "default_projector_$_id" in instance:
-            meeting_check.extend(
-                [
-                    fqid_from_collection_and_id("projector", projector_id)
-                    for projector_id in instance["default_projector_$_id"].values()
-                    if projector_id
-                ]
-            )
+        meeting_check.extend(
+            [
+                fqid_from_collection_and_id("projector", projector_id)
+                for projector_id in (
+                    instance.get(f"default_projector_{part}_id")
+                    for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                )
+                if projector_id
+            ]
+        )
 
         if meeting_check:
             assert_belongs_to_meeting(self.datastore, meeting_check, instance["id"])
@@ -217,7 +233,11 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
 
         # group C check
         if (
-            "reference_projector_id" in instance or "default_projector_$_id" in instance
+            "reference_projector_id" in instance
+            or any(
+                "default_projector_{part}_id" in instance
+                for part in Meeting.DEFAULT_PROJECTOR_ENUM
+            )
         ) and not has_perm(
             self.datastore,
             self.user_id,

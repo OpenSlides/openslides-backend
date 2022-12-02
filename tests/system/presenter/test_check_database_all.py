@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
@@ -177,8 +178,11 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "group_ids": [1, 2],
                     "motion_state_ids": [1],
                     "motion_workflow_ids": [1],
-                    "default_projector_$_id": [],
                     "is_active_in_organization_id": 1,
+                    **{
+                        f"default_projector_{part}_id": 1
+                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -225,7 +229,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
-                    "used_as_default_$_in_meeting_id": [],
                     "scale": 0,
                     "scroll": 0,
                     "width": 1200,
@@ -242,6 +245,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                    **{
+                        f"used_as_default_{part}_in_meeting_id": 1
+                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
                 },
             }
         )
@@ -317,7 +324,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "group_ids": [1, 2],
                     "motion_state_ids": [1],
                     "motion_workflow_ids": [1],
-                    "default_projector_$_id": [],
                     "motion_ids": [1],
                     "motion_submitter_ids": [5],
                     "list_of_speakers_ids": [6, 11],
@@ -336,6 +342,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "logo_web_header_id": 1,
                     "font_bold_id": 2,
                     "meeting_user_ids": [3, 5, 6],
+                    **{
+                        f"default_projector_{part}_id": 1
+                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -437,7 +447,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
-                    "used_as_default_$_in_meeting_id": [],
                     "scale": 0,
                     "scroll": 0,
                     "width": 1200,
@@ -454,6 +463,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                    **{
+                        f"used_as_default_{part}_in_meeting_id": 1
+                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
                 },
                 "mediafile/1": {
                     "is_public": True,
@@ -586,10 +599,13 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "group_ids": [1, 2],
                     "motion_state_ids": [1],
                     "motion_workflow_ids": [1],
-                    "default_projector_$_id": [],
                     "is_active_in_organization_id": 1,
                     "motion_ids": [1],
                     "list_of_speakers_ids": [3],
+                    **{
+                        f"default_projector_{part}_id": 1
+                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -637,7 +653,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
-                    "used_as_default_$_in_meeting_id": [],
                     "scale": 0,
                     "scroll": 0,
                     "width": 1200,
@@ -654,6 +669,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                    **{
+                        f"used_as_default_{part}_in_meeting_id": 1
+                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
                 },
                 "meeting/2": {
                     "committee_id": 1,
@@ -671,10 +690,13 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "group_ids": [3, 4],
                     "motion_state_ids": [2],
                     "motion_workflow_ids": [2],
-                    "default_projector_$_id": [],
                     "is_active_in_organization_id": 1,
                     "list_of_speakers_ids": [4],
                     "motion_ids": [2],
+                    **{
+                        f"default_projector_{part}_id": 2
+                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
                     **self.get_meeting_defaults(),
                 },
                 "group/3": {
@@ -721,7 +743,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 2,
                     "used_as_reference_projector_meeting_id": 2,
                     "name": "Default projector",
-                    "used_as_default_$_in_meeting_id": [],
                     "scale": 0,
                     "scroll": 0,
                     "width": 1200,
@@ -738,6 +759,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                    **{
+                        f"used_as_default_{part}_in_meeting_id": 2
+                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
                 },
                 "motion/1": {
                     "meeting_id": 1,

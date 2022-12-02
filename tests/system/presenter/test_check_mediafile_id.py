@@ -94,6 +94,22 @@ class TestCheckMediafileId(BasePresenterTestCase):
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)
 
+    def test_no_permission_check_committee(self) -> None:
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "filename": "the filename",
+                    "is_directory": False,
+                    "owner_id": "meeting/1",
+                },
+                "meeting/1": {"enable_anonymous": False, "committee_id": 1},
+                "user/1": {"organization_management_level": None},
+                "committee/1": {"name": "test"},
+            }
+        )
+        status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
+        self.assertEqual(status_code, 403)
+
     def test_permission_font(self) -> None:
         self.set_models(
             {
@@ -244,3 +260,49 @@ class TestCheckMediafileId(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         data = response.json[0]
         self.assertEqual(data, {"ok": True, "filename": "web_logo.txt"})
+
+    def test_anonymize_organization_with_token_no_committee_no_minetype(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "is_directory": False,
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "token": "web_logo",
+                    "mimetype": "",
+                },
+            }
+        )
+
+        response = self.anon_client.post(
+            PRESENTER_URL,
+            json=[{"presenter": "check_mediafile_id", "data": {"mediafile_id": 1}}],
+        )
+        status_code = response.status_code
+        data = response.json[0]
+        assert status_code == 200
+        assert data["ok"] is False
+
+    def test_anonymize_organization_with_token_no_committee_wrong_minetype(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "is_directory": False,
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                    "token": "web_logo",
+                    "mimetype": "xxx",
+                },
+            }
+        )
+
+        response = self.anon_client.post(
+            PRESENTER_URL,
+            json=[{"presenter": "check_mediafile_id", "data": {"mediafile_id": 1}}],
+        )
+        status_code = response.status_code
+        data = response.json[0]
+        assert status_code == 200
+        assert data["ok"] is False
