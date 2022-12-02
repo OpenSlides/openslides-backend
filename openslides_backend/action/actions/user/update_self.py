@@ -1,8 +1,6 @@
 from typing import Any, Dict
 
 from ....models.models import User
-from ....shared.exceptions import ActionException
-from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
