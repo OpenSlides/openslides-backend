@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, cast
 
 from datastore.shared.flask_frontend import handle_internal_errors
 from datastore.shared.postgresql_backend import DatabaseError
@@ -34,31 +34,39 @@ def raise_datastore_error(
     env: Env = None,
 ) -> None:
     error_message = error_message_prefix
+    type_verbose: str = ""
     additional_error_message = error.get("error") if isinstance(error, dict) else None
     if additional_error_message is not None:
-        type_verbose = additional_error_message.get("type_verbose")
-        if type_verbose == "MODEL_LOCKED":
-            broken_locks = (
-                "'" + "', '".join(sorted(additional_error_message.get("keys"))) + "'"
-            )
-            error_message = " ".join(
-                (
-                    error_message,
-                    f"The following locks were broken: {broken_locks}",
+        if isinstance(additional_error_message, dict):
+            type_verbose = additional_error_message.get("type_verbose", "")
+            if type_verbose == "MODEL_LOCKED":
+                broken_locks = (
+                    "'"
+                    + "', '".join(
+                        sorted(cast(str, additional_error_message.get("keys")))
+                    )
+                    + "'"
                 )
-            )
-            if logger:
-                logger.debug(error_message)
-            if env and not env.is_dev_mode():
-                error_message = "Datastore Error"
-            raise DatastoreLockedException(error_message)
-        elif type_verbose == "MODEL_DOES_NOT_EXIST":
-            error_message = " ".join(
-                (
-                    error_message,
-                    f"Model '{additional_error_message.get('fqid')}' does not exist.",
+                error_message = " ".join(
+                    (
+                        error_message,
+                        f"The following locks were broken: {broken_locks}",
+                    )
                 )
-            )
+                if logger:
+                    logger.debug(error_message)
+                if env and not env.is_dev_mode():
+                    error_message = "Datastore Error"
+                raise DatastoreLockedException(error_message)
+            elif type_verbose == "MODEL_DOES_NOT_EXIST":
+                error_message = " ".join(
+                    (
+                        error_message,
+                        f"Model '{additional_error_message.get('fqid')}' does not exist.",
+                    )
+                )
+            else:
+                error_message = " ".join((error_message, str(additional_error_message)))
         else:
             error_message = " ".join((error_message, str(additional_error_message)))
     if logger:
