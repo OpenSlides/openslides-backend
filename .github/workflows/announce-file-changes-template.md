@@ -1,6 +1,6 @@
 ---
 title: '{{ env.OS_ISSUE_TITLE }}'
-assignees: ostcar, luisa-beerboom
+assignees: luisa-beerboom
 labels: documentation
 ---
 
