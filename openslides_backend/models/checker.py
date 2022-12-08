@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from decimal import InvalidOperation
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, cast
 
 import fastjsonschema
@@ -405,7 +406,9 @@ class Checker:
                     error = f"{collection}/{model['id']}/{fieldname}: {str(e)}"
                     self.errors.append(error)
                     errors = True
-
+                except InvalidOperation:
+                    # invalide decimal json, will be checked at check_types
+                    pass
         return errors
 
     def fix_missing_default_values(
