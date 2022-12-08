@@ -1,11 +1,9 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, Optional, Set, Tuple, cast
 
-from ...models.models import Committee
 from ...services.datastore.interface import DatastoreService, GetManyRequest
 from ..exceptions import ServiceException
 from ..patterns import fqid_from_collection_and_id
-from ..util_dict_sets import get_set_from_dict_by_fieldlist, get_set_from_dict_from_dict
 
 
 class UserScope(int, Enum):
@@ -27,27 +25,23 @@ class UserScopeMixin:
         """
         meetings: Set[int] = set()
         committees_manager: Set[int] = set()
-        cml_fields = [
-            f"committee_${cml_field}_management_level"
-            for cml_field in cast(
-                List[str], Committee.user__management_level.replacement_enum
-            )
-        ]
         if not instance and not id_:
             raise ServiceException("There is no user_id given to get the user_scope!")
         if instance:
             meetings.update(map(int, instance.get("group_$_ids", {}).keys()))
-            committees_manager.update(
-                get_set_from_dict_from_dict(instance, "committee_$_management_level")
-            )
+            committees_manager.update(set(instance.get("committee_management_ids", [])))
             oml_right = instance.get("organization_management_level", "")
         if id_:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_),
-                ["meeting_ids", "organization_management_level", *cml_fields],
+                [
+                    "meeting_ids",
+                    "organization_management_level",
+                    "committee_management_ids",
+                ],
             )
             meetings.update(user.get("meeting_ids", []))
-            committees_manager.update(get_set_from_dict_by_fieldlist(user, cml_fields))
+            committees_manager.update(set(user.get("committee_management_ids") or []))
             oml_right = user.get("organization_management_level", "")
         result = self.datastore.get_many(
             [

@@ -24,7 +24,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                 "user/1",
                 {
                     "organization_management_level": None,
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 },
             )
         elif scope == UserScope.Meeting:
@@ -95,6 +95,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         elif scope == UserScope.Meeting:
             self.set_models(
                 {
+                    "committee/1": {"meeting_ids": [1]},
                     "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                     "user/111": {"meeting_ids": [1], "committee_ids": [1]},
                 }

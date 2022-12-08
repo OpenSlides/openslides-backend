@@ -1,7 +1,4 @@
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -45,9 +42,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "username": "username_Xcdfgee",
                 "default_vote_weight": "1.700000",
                 "organization_management_level": "can_manage_users",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [78],
-                },
+                "committee_management_ids": [78],
             },
         )
         self.assert_status_code(response, 200)
@@ -58,8 +53,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "pronoun": "Test",
                 "default_vote_weight": "1.700000",
                 "committee_ids": [78],
-                "committee_$_management_level": ["can_manage"],
-                "committee_$can_manage_management_level": [78],
+                "committee_management_ids": [78],
                 "organization_management_level": "can_manage_users",
             },
         )
@@ -74,10 +68,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "user/222": {"meeting_ids": [1]},
                 "user/223": {
                     "committee_ids": [1],
-                    "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
+                    "committee_management_ids": [1],
                 },
                 "group/11": {"meeting_id": 1},
                 "group/22": {"meeting_id": 2},
@@ -88,17 +79,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 223,
                 "group_$_ids": {1: [11], 2: [22]},
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [2],
-                },
+                "committee_management_ids": [2],
             },
         )
         self.assert_status_code(response, 200)
         user = self.assert_model_exists(
             "user/223",
             {
-                "committee_$can_manage_management_level": [2],
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                "committee_management_ids": [2],
                 "group_$1_ids": [11],
                 "group_$2_ids": [22],
             },
@@ -147,21 +135,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "username": "usersname",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60, 61],
-                },
+                "committee_management_ids": [60, 61],
                 "group_$_ids": {"600": []},
             },
         )
         self.assert_status_code(response, 200)
-        user = self.assert_model_exists(
-            "user/111",
-            {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-            },
-        )
+        user = self.assert_model_exists("user/111")
         self.assertCountEqual(user["committee_ids"], [60, 61])
-        self.assertCountEqual(user["committee_$can_manage_management_level"], [60, 61])
+        self.assertCountEqual(user["committee_management_ids"], [60, 61])
 
     def test_committee_manager_remove_committee_ids(self) -> None:
         self.set_models(
@@ -169,10 +150,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "committee/1": {"name": "C1", "user_ids": [111]},
                 "user/111": {
                     "committee_ids": [1],
-                    "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
+                    "committee_management_ids": [1],
                 },
             }
         )
@@ -181,12 +159,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "committee_$_management_level": {"can_manage": []},
+                "committee_management_ids": [],
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/111", {"committee_$_management_level": [], "committee_ids": []}
+            "user/111", {"committee_management_ids": [], "committee_ids": []}
         )
         self.assert_model_exists("committee/1", {"user_ids": []})
 
@@ -229,10 +207,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "user/111": {
                     "meeting_ids": [11, 22],
                     "committee_ids": [1, 2],
-                    "committee_$can_manage_management_level": [1, 2],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
+                    "committee_management_ids": [1, 2],
                     "group_$_ids": ["11", "22"],
                     "group_$11_ids": [111],
                     "group_$22_ids": [222],
@@ -244,15 +219,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [4],
-                },
+                "committee_management_ids": [4],
                 "group_$_ids": {"11": [], "33": [333]},
             },
         )
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
-        self.assertCountEqual(user["committee_$can_manage_management_level"], [4])
+        self.assertCountEqual(user["committee_management_ids"], [4])
         self.assertCountEqual(user["committee_ids"], [2, 3, 4])
         self.assertCountEqual(user["meeting_ids"], [22, 33])
         self.assert_model_exists("committee/1", {"user_ids": []})
@@ -828,16 +801,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60],
-                },
+                "committee_management_ids": [60],
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "committee_$can_manage_management_level": [60],
+                "committee_management_ids": [60],
                 "committee_ids": [60],
             },
         )
@@ -852,21 +823,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60, 63],
-                },
+                "committee_management_ids": [60, 63],
             },
         )
         self.assert_status_code(response, 200)
-        user111 = self.assert_model_exists(
-            "user/111",
-            {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-            },
-        )
-        self.assertCountEqual(
-            user111.get("committee_$can_manage_management_level", []), [60, 63]
-        )
+        user111 = self.assert_model_exists("user/111")
+        self.assertCountEqual(user111.get("committee_management_ids", []), [60, 63])
         self.assertCountEqual(user111.get("committee_ids", []), [60, 63])
 
     def test_perm_group_D_no_permission(self) -> None:
@@ -880,9 +842,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [63],
-                },
+                "committee_management_ids": [63],
             },
         )
         self.assert_status_code(response, 403)
@@ -908,22 +868,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60, 63],
-                },
+                "committee_management_ids": [60, 63],
             },
         )
         self.assert_status_code(response, 200)
-        user111 = self.assert_model_exists(
-            "user/111",
-            {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-            },
-        )
+        user111 = self.assert_model_exists("user/111")
         self.assertCountEqual(user111.get("committee_ids", []), [60, 63])
-        self.assertCountEqual(
-            user111.get("committee_$can_manage_management_level", []), [60, 63]
-        )
+        self.assertCountEqual(user111.get("committee_management_ids", []), [60, 63])
 
     def test_perm_group_D_permission_with_CML_missing_permission(
         self,
@@ -940,9 +891,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60],
-                },
+                "committee_management_ids": [60],
             },
         )
         self.assert_status_code(response, 403)
@@ -1025,8 +974,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.update_model(
             f"user/{self.user_id}",
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [60],
+                "committee_management_ids": [60],
             },
         )
         self.set_user_groups(self.user_id, [1, 2, 3])  # All including admin group
@@ -1241,10 +1189,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "user/223": {
                     "meeting_ids": [1, 3],
                     "committee_ids": [1, 3],
-                    "committee_$can_manage_management_level": [1, 3],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
+                    "committee_management_ids": [1, 3],
                     "group_$_ids": ["1", "3"],
                     "group_$1_ids": [11],
                     "group_$3_ids": [33],
@@ -1256,25 +1201,20 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 223,
                 "group_$_ids": {1: [], 2: [22]},
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [2, 3],
-                },
+                "committee_management_ids": [2, 3],
             },
         )
         self.assert_status_code(response, 200)
         user = self.assert_model_exists(
             "user/223",
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
                 "group_$1_ids": None,
                 "group_$2_ids": [22],
                 "group_$3_ids": [33],
             },
         )
         self.assertCountEqual(user.get("committee_ids", []), [2, 3])
-        self.assertCountEqual(
-            user.get("committee_$can_manage_management_level", []), [2, 3]
-        )
+        self.assertCountEqual(user.get("committee_management_ids", []), [2, 3])
         self.assertCountEqual(user.get("group_$_ids", []), ["2", "3"])
         self.assertCountEqual(user.get("meeting_ids", []), [2, 3])
 

@@ -15,7 +15,7 @@ handler_to_field_map: Dict[Type[CalculatedFieldHandler], List[Field]] = {
     UserMeetingIdsHandler: [User.group__ids],  # calcs user.meeting_ids
     UserCommitteeCalculateHandler: [
         User.group__ids,
-        User.committee__management_level,
+        User.committee_management_ids,
     ],  # calcs user.committee_ids and committee.user_ids
 }
 calculated_field_handlers_map: Dict[

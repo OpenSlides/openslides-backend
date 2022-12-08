@@ -9,10 +9,7 @@ from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import ActionResults, Payload
 from openslides_backend.http.views.action_view import ActionView
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.with_database_context import (
@@ -183,8 +180,7 @@ class BaseActionTestCase(BaseSystemTestCase):
     ) -> None:
         d1 = {
             "committee_ids": committee_ids,
-            "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-            "committee_$can_manage_management_level": committee_ids,
+            "committee_management_ids": committee_ids,
         }
 
         self.set_models({f"user/{user_id}": d1})

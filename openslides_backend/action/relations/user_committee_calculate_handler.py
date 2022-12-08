@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Set, cast
 
-from openslides_backend.models.models import User
 from openslides_backend.services.datastore.commands import GetManyRequest
 
 from ...models.fields import Field
@@ -23,10 +22,11 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
-        cml_fields = get_field_list_from_template(
-            cast(List[str], User.committee__management_level.replacement_enum),
-            "committee_$%s_management_level",
-        )
+        # cml_fields = get_field_list_from_template(
+        #    cast(List[str], User.committee__management_level.replacement_enum),
+        #    "committee_$%s_management_level",
+        # )
+        cml_fields = ["committee_management_ids"]
         if (
             field.own_collection != "user"
             or field_name not in ["group_$_ids", *cml_fields]
@@ -113,19 +113,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         return relation_update
 
 
-def get_field_list_from_template(
-    management_levels: List[str], template: str
-) -> List[str]:
-    return [template % management_level for management_level in management_levels]
-
-
 def get_set_of_values_from_dict(
-    instance: Dict[str, Any], management_levels: List[str], template: str = None
+    instance: Dict[str, Any], cml_fields: List[str]
 ) -> Set[int]:
-    if template:
-        cml_fields = get_field_list_from_template(management_levels, template)
-    else:
-        cml_fields = management_levels
     return set(
         [
             committee_id

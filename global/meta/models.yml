@@ -275,9 +275,6 @@ user:
     to: meeting/present_user_ids
     restriction_mode: A
 
-  # Calculates all committee's where the user has
-  # - committee_$management_level rights or
-  # - is member (= has group-rights) of a meeting in the committee
   committee_ids:
     type: relation-list
     to: committee/user_ids
@@ -286,14 +283,9 @@ user:
     description: "Calculated field."
 
   # committee specific permissions
-  committee_$_management_level:
-    type: template
-    replacement_enum:
-      - can_manage
-    description: Hierarchical permission level for the each committee organization.
-    fields:
-      type: relation-list
-      to: committee/user_$_management_level
+  committee_management_ids:
+    type: relation-list
+    to: committee/manager_ids
     restriction_mode: E
 
   # for the motion forwarding
@@ -626,16 +618,10 @@ committee:
     restriction_mode: A
     read_only: true
     description: "Calculated field."
-
-  user_$_management_level:
-    type: template
+  manager_ids:
+    type: relation-list
+    to: user/committee_management_ids
     restriction_mode: B
-    replacement_enum:
-      - can_manage
-    description: Hierarchical permission level for the users.
-    fields:
-      type: relation-list
-      to: user/committee_$_management_level
 
   forward_to_committee_ids:
     type: relation-list

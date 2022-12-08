@@ -56,8 +56,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": ["can_manage"],
+                    "committee_management_ids": [1],
                     "organization_management_level": "can_manage_users",
                 }
             }
@@ -223,12 +222,10 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             {
                 "committee/1": {
                     "user_ids": [1, 2],
-                    "user_$can_manage_management_level": [1],
-                    "user_$_management_level": ["can_manage"],
+                    "manager_ids": [1],
                 },
                 "user/1": {
-                    "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": ["can_manage"],
+                    "committee_management_ids": [1],
                     "organization_management_level": "can_manage_users",
                     "committee_ids": [1],
                 },
@@ -264,8 +261,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             {
                 "user_ids": [1],
                 "meeting_ids": [],
-                "user_$can_manage_management_level": [1],
-                "user_$_management_level": ["can_manage"],
+                "manager_ids": [1],
             },
         )
         self.assert_model_deleted("group/11", {"user_ids": [2], "meeting_id": 1})
@@ -273,8 +269,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             "user/1",
             {
                 "committee_ids": [1],
-                "committee_$_management_level": ["can_manage"],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
         self.assert_model_exists("user/2", {"group_$_ids": [], "committee_ids": []})
@@ -285,12 +280,10 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {"active_meeting_ids": []},
                 "committee/1": {
                     "user_ids": [1, 2],
-                    "user_$can_manage_management_level": [1],
-                    "user_$_management_level": ["can_manage"],
+                    "manager_ids": [1],
                 },
                 "user/1": {
-                    "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": ["can_manage"],
+                    "committee_management_ids": [1],
                     "organization_management_level": "can_manage_users",
                     "committee_ids": [1],
                 },

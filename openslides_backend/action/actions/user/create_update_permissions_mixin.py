@@ -1,8 +1,7 @@
 from collections import defaultdict
 from functools import reduce
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from ....models.models import User
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -13,7 +12,6 @@ from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, PermissionDenied
 from ....shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.util_dict_sets import get_set_from_dict_by_fieldlist
 from ...action import Action
 
 
@@ -21,21 +19,13 @@ class PermissionVarStore:
     def __init__(self, datastore: DatastoreService, user_id: int) -> None:
         self.datastore = datastore
         self.user_id = user_id
-        self._cml_replacement_min_can_manage = [
-            f"committee_${replacement}_management_level"
-            for replacement in cast(
-                List[str], User.committee__management_level.replacement_enum
-            )
-            if CommitteeManagementLevel(replacement)
-            >= CommitteeManagementLevel.CAN_MANAGE
-        ]
         self.user = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id),
             [
                 "organization_management_level",
                 "group_$_ids",
                 "committee_ids",
-                *self._cml_replacement_min_can_manage,
+                "committee_management_ids",
             ],
             lock_result=False,
         )
@@ -80,9 +70,7 @@ class PermissionVarStore:
         belonging to those committees, where the request user has minimum
         CommitteeManagementLevel.CAN_MANAGE and is member of committee_id,
         """
-        user_committees = get_set_from_dict_by_fieldlist(
-            self.user, self._cml_replacement_min_can_manage
-        )
+        user_committees = set(self.user.get("committee_management_ids") or [])
         if user_committees:
             committees_d = (
                 self.datastore.get_many(
@@ -169,7 +157,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             "is_present_in_meeting_ids",
         ],
         "C": ["group_$_ids"],
-        "D": ["committee_ids", "committee_$_management_level"],
+        "D": ["committee_ids", "committee_management_ids"],
         "E": ["organization_management_level"],
         "F": ["default_password"],
         "G": ["is_demo_user"],
@@ -411,30 +399,18 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         Gets a Set of all committees from the instance regarding committees from group D.
         To get committees, that should be removed from cml, the user must be read.
         """
-        right_list = instance.get("committee_$_management_level", {}).keys()
-        committees = set(
-            [
-                committee_id
-                for committees in instance.get(
-                    "committee_$_management_level", {}
-                ).values()
-                for committee_id in committees
-            ]
-        )
-        # In case of create there is no id, in case of update the user can remove committees only with the committee right
+        committees = set(instance.get("committee_management_ids") or [])
         if instance_user_id := instance.get("id"):
-            cml_fields = [
-                f"committee_${replacement}_management_level"
-                for replacement in right_list
-            ]
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", instance_user_id),
-                [*cml_fields],
+                ["committee_management_ids"],
                 lock_result=False,
+                use_changed_models=False,
             )
-            committees_existing = get_set_from_dict_by_fieldlist(user, cml_fields)
+            committees_existing = set(user.get("committee_management_ids") or [])
             # Just changes with ^ symmetric_difference operat
             committees = committees ^ committees_existing
+
         return committees
 
     def _meetings_from_group_B_fields_from_instance(
