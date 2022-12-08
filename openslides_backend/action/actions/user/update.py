@@ -9,7 +9,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .set_present import UserSetPresentAction
-from .user_mixin import LimitOfUserMixin, UserMixin
+from .user_mixin import LimitOfUserMixin, UpdateHistoryMixin, UserMixin
 
 
 @register_action("user.update")
@@ -18,6 +18,7 @@ class UserUpdate(
     CreateUpdatePermissionsMixin,
     UpdateAction,
     LimitOfUserMixin,
+    UpdateHistoryMixin,
 ):
     """
     Action to update a user.

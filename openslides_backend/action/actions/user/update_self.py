@@ -6,11 +6,11 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_mixin import UserMixin
+from .user_mixin import UpdateHistoryMixin, UserMixin
 
 
 @register_action("user.update_self")
-class UserUpdateSelf(UpdateAction, UserMixin):
+class UserUpdateSelf(UpdateAction, UserMixin, UpdateHistoryMixin):
     """
     Action to self update a user.
     """

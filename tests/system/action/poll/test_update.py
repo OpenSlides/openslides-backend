@@ -82,7 +82,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         assert poll.get("global_yes") is False
         assert poll.get("global_no") is True
         assert poll.get("global_abstain") is True
-        self.assert_history_information("assignment/1", ["Poll updated"])
+        self.assert_history_information("assignment/1", ["Ballot updated"])
 
     def test_not_allowed_for_analog(self) -> None:
         self.update_model("poll/1", {"type": "analog"})
@@ -361,7 +361,7 @@ class UpdatePollTestCase(BaseActionTestCase):
             {"id": 1, "title": "test"},
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/1", ["Poll updated"])
+        self.assert_history_information("motion/1", ["Voting updated"])
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(

@@ -16,7 +16,7 @@ class PollDeleteTest(PollTestMixin):
         response = self.request("poll.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("poll/111")
-        self.assert_history_information("motion/1", ["Poll deleted"])
+        self.assert_history_information("motion/1", ["Voting deleted"])
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(

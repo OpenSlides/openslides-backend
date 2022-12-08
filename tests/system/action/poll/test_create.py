@@ -66,7 +66,7 @@ class CreatePoll(BaseActionTestCase):
         assert global_option.get("text") == "global option"
         assert global_option.get("used_as_global_option_in_poll_id") == 1
         assert global_option.get("meeting_id") == 1
-        self.assert_history_information("assignment/1", ["Poll created"])
+        self.assert_history_information("assignment/1", ["Ballot created"])
 
     def test_create_correct_publish_immediately(self) -> None:
         response = self.request(
@@ -640,7 +640,7 @@ class CreatePoll(BaseActionTestCase):
                 "weight": 1,
             },
         )
-        self.assert_history_information("motion/3", ["Poll created"])
+        self.assert_history_information("motion/3", ["Voting created"])
 
     def test_not_state_change(self) -> None:
         response = self.request(

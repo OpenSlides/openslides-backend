@@ -25,4 +25,5 @@ class MotionChangeRecommendationUpdateAction(ExtendHistoryMixin, UpdateAction):
     )
     permission = Permissions.Motion.CAN_MANAGE
     history_information = "Motion change recommendation updated"
+    history_relation_field = "motion_id"
     extend_history_to = "motion_id"

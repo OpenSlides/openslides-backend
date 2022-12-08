@@ -80,7 +80,9 @@ class MotionSetStateActionTest(BaseActionTestCase):
         assert model.get("number_value") == 23
         assert model.get("last_modified", 0) >= check_time
         assert model.get("created", 0) >= check_time
-        self.assert_history_information("motion/22", ["State set to {}", "test0"])
+        self.assert_history_information(
+            "motion/22", ["State set to {}", "motion_state/76"]
+        )
 
     def test_set_state_correct_next_state(self) -> None:
         self.set_models(
@@ -236,8 +238,12 @@ class MotionSetStateActionTest(BaseActionTestCase):
             "motion.set_state", [{"id": 22, "state_id": 76}, {"id": 23, "state_id": 76}]
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/22", ["State set to {}", "test0"])
-        self.assert_history_information("motion/22", ["State set to {}", "test0"])
+        self.assert_history_information(
+            "motion/22", ["State set to {}", "motion_state/76"]
+        )
+        self.assert_history_information(
+            "motion/23", ["State set to {}", "motion_state/76"]
+        )
 
     def test_history_multiple_actions_different_states(self) -> None:
         self.set_models(
@@ -276,8 +282,12 @@ class MotionSetStateActionTest(BaseActionTestCase):
             "motion.set_state", [{"id": 22, "state_id": 76}, {"id": 23, "state_id": 77}]
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/22", ["State changed"])
-        self.assert_history_information("motion/22", ["State changed"])
+        self.assert_history_information(
+            "motion/22", ["State set to {}", "motion_state/76"]
+        )
+        self.assert_history_information(
+            "motion/23", ["State set to {}", "motion_state/77"]
+        )
 
     def test_set_state_no_permission(self) -> None:
         self.base_permission_test(

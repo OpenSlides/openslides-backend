@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
@@ -12,14 +12,14 @@ class TestCheckMediafileId(BasePresenterTestCase):
         self,
         fqid: str,
         data: Dict[str, Any],
-        information: List[str],
+        information: Optional[List[str]] = None,
         user_id: int = 1,
     ) -> None:
         data["id"] = id_from_fqid(fqid)
         self.validate_fields(fqid, data)
         request = WriteRequest(
             events=[Event(type=EventType.Create, fqid=fqid, fields=data)],
-            information=information,
+            information={fqid: information} if information else None,
             user_id=user_id,
             locked_fields={},
         )
@@ -45,7 +45,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
             data,
             [
                 {
-                    "information": ["Created"],
+                    "information": {"motion/1": ["Created"]},
                     "position": 4,
                     "user": "admin",
                 }
@@ -69,7 +69,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
             data,
             [
                 {
-                    "information": ["Created"],
+                    "information": {"motion/1": ["Created"]},
                     "position": 4,
                     "user": "unknown user",
                 }

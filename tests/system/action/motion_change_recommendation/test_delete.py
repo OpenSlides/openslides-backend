@@ -8,7 +8,8 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "motion_change_recommendation/111": {"meeting_id": 1}
+            "motion_change_recommendation/111": {"meeting_id": 1, "motion_id": 1},
+            "motion/1": {"meeting_id": 1, "change_recommendation_ids": [111]},
         }
 
     def test_delete_correct(self) -> None:

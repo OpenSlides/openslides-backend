@@ -9,11 +9,13 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .base import base_check_100_percent_base
-from .mixins import PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin
 
 
 @register_action("poll.update")
-class PollUpdateAction(ExtendHistoryMixin, UpdateAction, PollPermissionMixin):
+class PollUpdateAction(
+    ExtendHistoryMixin, UpdateAction, PollPermissionMixin, PollHistoryMixin
+):
     """
     Action to update a poll.
     """
@@ -41,7 +43,7 @@ class PollUpdateAction(ExtendHistoryMixin, UpdateAction, PollPermissionMixin):
             "publish_immediately": {"type": "boolean"},
         },
     )
-    history_information = "Poll updated"
+    poll_history_information = "updated"
     extend_history_to = "content_object_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
