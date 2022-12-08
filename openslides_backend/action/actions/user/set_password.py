@@ -39,6 +39,7 @@ class UserSetPasswordAction(
         required_properties=["password"],
         additional_optional_fields={"set_as_default": {"type": "boolean"}},
     )
+    history_information = "Password changed"
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

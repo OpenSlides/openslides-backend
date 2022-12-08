@@ -1,5 +1,7 @@
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
@@ -22,14 +24,9 @@ class MotionCreateForwarded(MotionCreateBase):
     """
 
     schema = DefaultSchema(Motion()).get_create_schema(
-        optional_properties=[
-            "reason",
-        ],
         required_properties=["meeting_id", "title", "text", "origin_id"],
+        optional_properties=["reason"],
     )
-    history_information = "Forwarding created"
-    history_relation_field = "origin_id"
-    add_self_history_information = True
 
     def prefetch(self, action_data: ActionData) -> None:
         self.datastore.get_many(
@@ -205,3 +202,17 @@ class MotionCreateForwarded(MotionCreateBase):
         )
         if not state.get("allow_motion_forwarding"):
             raise ActionException("State doesn't allow to forward motion.")
+
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        return {
+            fqid_from_collection_and_id("motion", instance["origin_id"]): [
+                "Forwarded to {}",
+                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
+            ]
+            for instance in self.instances
+        } | {
+            fqid_from_collection_and_id("motion", instance["id"]): [
+                "Motion created (forwarded)"
+            ]
+            for instance in self.instances
+        }

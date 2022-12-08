@@ -455,8 +455,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         information = self.get_history_information()
         if self.cascaded_actions_history or information:
-            merge_history_informations(self.cascaded_actions_history, information or {})
-            return self.cascaded_actions_history
+            return merge_history_informations(
+                self.cascaded_actions_history, information or {}
+            )
         else:
             return None
 
@@ -759,12 +760,16 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
 
 
-def merge_history_informations(a: HistoryInformation, b: HistoryInformation) -> None:
+def merge_history_informations(
+    a: HistoryInformation, *other: HistoryInformation
+) -> HistoryInformation:
     """
-    Merges two history informations. The second one is merged into the first one.
+    Merges multiple history informations. All latter ones are merged into the first one.
     """
-    for fqid, information in b.items():
-        if fqid in a:
-            a[fqid].extend(information)
-        else:
-            a[fqid] = information
+    for b in other:
+        for fqid, information in b.items():
+            if fqid in a:
+                a[fqid].extend(information)
+            else:
+                a[fqid] = information
+    return a

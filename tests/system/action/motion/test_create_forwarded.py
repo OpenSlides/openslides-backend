@@ -4,7 +4,7 @@ from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
-class MotionCreateForwarded(BaseActionTestCase):
+class MotionCreateForwardedTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_model: Dict[str, Dict[str, Any]] = {
@@ -104,8 +104,8 @@ class MotionCreateForwarded(BaseActionTestCase):
             "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
         )
         # test history
-        self.assert_history_information("motion/12", ["Forwarding created"])
-        self.assert_history_information("motion/13", ["Forwarding created"])
+        self.assert_history_information("motion/12", ["Forwarded to {}", "meeting/2"])
+        self.assert_history_information("motion/13", ["Motion created (forwarded)"])
 
     def test_correct_existing_registered_forward_user(self) -> None:
         self.set_models(self.test_model)
@@ -365,7 +365,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "all_derived_motion_ids": [11, 12, 13, 14],
             },
         )
-        self.assert_history_information("motion/11", ["Forwarding created"])
+        self.assert_history_information("motion/11", ["Forwarded to {}", "meeting/2"])
         self.assert_history_information("motion/6", None)
 
     def test_forward_with_deleted_motion_in_all_origin_ids(self) -> None:

@@ -1,4 +1,7 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from openslides_backend.action.action import merge_history_informations
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
@@ -46,3 +49,25 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
             return
 
         raise MissingPermission(Permissions.Motion.CAN_MANAGE)
+
+    def get_full_history_information(self) -> Optional[HistoryInformation]:
+        """
+        Discard history informations from cascaded delete actions.
+        """
+        information = self.get_history_information()
+        instances = self.get_instances_with_fields(
+            ["all_origin_ids", "all_derived_motion_ids"]
+        )
+        return merge_history_informations(
+            information or {},
+            {
+                fqid_from_collection_and_id("motion", id): ["Forwarded motion deleted"]
+                for instance in instances
+                for id in instance.get("all_origin_ids", [])
+            },
+            {
+                fqid_from_collection_and_id("motion", id): ["Origin motion deleted"]
+                for instance in instances
+                for id in instance.get("all_derived_motion_ids", [])
+            },
+        )
