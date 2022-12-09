@@ -18,10 +18,7 @@ from openslides_backend.models.fields import (
     GenericRelationListField,
     RelationField,
     RelationListField,
-    TemplateCharField,
-    TemplateDecimalField,
     TemplateHTMLStrictField,
-    TemplateRelationField,
 )
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
@@ -535,12 +532,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                             list_fields["add"][field] = value
                         elif isinstance(model_field, BaseTemplateField) and isinstance(
                             model_field,
-                            (
-                                TemplateHTMLStrictField,
-                                TemplateCharField,
-                                TemplateDecimalField,
-                                TemplateRelationField,
-                            ),
+                            (TemplateHTMLStrictField,),
                         ):
                             if model_field.is_template_field(field):
                                 list_fields["add"][field] = value

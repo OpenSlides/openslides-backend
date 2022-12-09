@@ -14,8 +14,6 @@ from ..shared.schema import (
     id_list_schema,
     optional_fqid_schema,
     optional_id_schema,
-    optional_str_list_schema,
-    optional_str_schema,
     required_fqid_schema,
     required_id_schema,
 )
@@ -378,20 +376,12 @@ class BaseTemplateField(Field):
             "additionalProperties": False,
         }
 
-        if self.replacement_enum:
-            subschema: Schema = self.get_schema()
-            schema.update(
-                {"properties": {name: subschema for name in self.replacement_enum}}
-            )
-        else:
-            if not replacement_pattern:
-                if self.replacement_collection:
-                    replacement_pattern = ID_REGEX
-                else:
-                    replacement_pattern = ".*"
-            schema.update(
-                {"patternProperties": {replacement_pattern: self.get_schema()}}
-            )
+        if not replacement_pattern:
+            if self.replacement_collection:
+                replacement_pattern = ID_REGEX
+            else:
+                replacement_pattern = ".*"
+        schema.update({"patternProperties": {replacement_pattern: self.get_schema()}})
         return schema
 
     def get_regex(self) -> str:
@@ -461,36 +451,7 @@ class BaseTemplateField(Field):
 
 
 class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
-    def check_required_not_fulfilled(
-        self, instance: Dict[str, Any], is_create: bool
-    ) -> bool:
-        own_field_name = self.get_own_field_name()
-        assert hasattr(
-            self, "replacement_enum"
-        ), f"field {own_field_name} required is only implemented with replacement_enum"
-        if own_field_name not in instance:
-            return is_create
-        if is_create and set(instance.get(own_field_name, ())) != set(
-            cast(List[str], self.replacement_enum)
-        ):
-            return True
-        parts = own_field_name.split("$")
-        template = parts[0] + "$%s" + parts[1]
-        return any(
-            # Check every structure field and return True (=Error) if any structure field is empty.
-            # If structure-field doesn't exist, it will not try to set anything empty and return True.
-            not instance.get(template % replace_text, True)
-            for replace_text in instance[own_field_name]
-        )
-
-
-class TemplateRelationField(BaseTemplateRelationField, RelationField):
-    def get_schema(self) -> Schema:
-        if self.constraints and self.constraints.get("enum"):
-            return self.extend_schema(super().get_schema(), **optional_str_schema)
-        else:
-            id_schema = required_id_schema if self.required else optional_id_schema
-            return self.extend_schema(super().get_schema(), **id_schema)
+    pass
 
 
 class TemplateRelationListField(BaseTemplateRelationField, RelationListField):
@@ -499,50 +460,12 @@ class TemplateRelationListField(BaseTemplateRelationField, RelationListField):
         if self.constraints:
             for key in self.constraints.keys():
                 del schema[key]
-        if self.constraints and self.constraints.get("enum"):
-            schema = self.extend_schema(schema, **optional_str_list_schema)
-        else:
-            schema = self.extend_schema(schema, **id_list_schema)
+        schema = self.extend_schema(schema, **id_list_schema)
         if self.constraints:
             schema["items"].update(self.constraints)
         if not hasattr(self, "required") or not self.required:
             schema["type"] = ["array", "null"]
         return schema
-
-
-class TemplateCharField(BaseTemplateField, CharField):
-    pass
-
-
-class TemplateDecimalField(BaseTemplateField, DecimalField):
-    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
-        if (min := self.constraints.get("minimum")) is not None:
-            if type(value) == dict:
-                assert all(
-                    (Decimal(v) >= Decimal(min))
-                    for v in value.values()
-                    if v is not None
-                ), f"{self.get_own_field_name()} must be bigger than or equal to {min}."
-            elif type(value) == list:
-                assert all(
-                    (
-                        Decimal(
-                            cast(
-                                Union[Decimal, float, str],
-                                payload.get(
-                                    self.get_structured_field_name(replacement)
-                                ),
-                            )
-                        )
-                        >= Decimal(min)
-                    )
-                    for replacement in value
-                ), f"{self.get_own_field_name()} must be bigger than or equal to {min}."
-            else:
-                raise NotImplementedError(
-                    f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"
-                )
-        return value
 
 
 class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
