@@ -77,10 +77,6 @@ def collectionfield_from_collection_and_field(collection: str, field: str) -> st
     return f"{collection}{KEYSEPARATOR}{field}"
 
 
-def collectionfield_from_fqid_and_field(fqid: str, field: str) -> str:
-    return f"{collection_from_fqid(fqid)}{KEYSEPARATOR}{field}"
-
-
 def fqfield_from_collection_and_id_and_field(
     collection: Collection, id: int, field: str
 ) -> FullQualifiedField:
@@ -105,10 +101,6 @@ def field_from_fqfield(fqfield: str) -> str:
     return fqfield.split(KEYSEPARATOR)[2]
 
 
-def field_from_collectionfield(collectionfield: str) -> str:
-    return collectionfield.split(KEYSEPARATOR)[1]
-
-
 def id_from_fqid(fqid: str) -> int:
     return int(fqid.split(KEYSEPARATOR)[1])
 
@@ -129,10 +121,6 @@ def collection_from_fqid(fqid: str) -> str:
 def collection_and_id_from_fqid(fqid: str) -> Tuple[str, int]:
     s = fqid.split(KEYSEPARATOR)
     return s[0], int(s[1])
-
-
-def collection_from_collectionfield(collectionfield: str) -> str:
-    return collectionfield.split(KEYSEPARATOR)[0]
 
 
 def fqid_from_collection_and_id(collection: str, id: Union[str, int]) -> str:
