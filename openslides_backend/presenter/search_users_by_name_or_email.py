@@ -64,7 +64,7 @@ class SearchUsersByNameEmail(BasePresenter):
 
     def get_result(self) -> Any:
         self.check_permissions(self.data["permission_type"], self.data["permission_id"])
-        result: Dict[str, List[Dict[str, Union[str, int]]]] = defaultdict(list)
+        result: Dict[str, List[Dict[str, Union[str, int]]]] = {}
         filter_bulk_tuples: Set[Tuple[str, str]] = set()
         for search in self.data["search"]:
             if username := search.get("username", "").strip():
