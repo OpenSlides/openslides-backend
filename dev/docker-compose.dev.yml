@@ -91,7 +91,7 @@ services:
             - cache
     vote:
         build:
-            context: "https://github.com/ostcar/openslides-vote-service.git#crypto-preperation"
+            context: "https://github.com/openslides/openslides-vote-service.git#vote-decrypt"
         image: openslides-vote-dev
         ports:
             - "9013:9013"
