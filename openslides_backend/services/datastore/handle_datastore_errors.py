@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, cast
+from typing import Any, Callable, Dict, Iterable, Optional, cast
 
 from datastore.shared.flask_frontend import handle_internal_errors
 from datastore.shared.postgresql_backend import DatabaseError
@@ -43,7 +43,9 @@ def raise_datastore_error(
                 broken_locks = (
                     "'"
                     + "', '".join(
-                        sorted(cast(str, additional_error_message.get("keys")))
+                        sorted(
+                            cast(Iterable[str], additional_error_message.get("keys"))
+                        )
                     )
                     + "'"
                 )
