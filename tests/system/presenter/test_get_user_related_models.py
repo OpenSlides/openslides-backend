@@ -272,3 +272,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         )
         status_code, data = self.request("get_user_related_models", {"user_ids": [2]})
         self.assertEqual(status_code, 403)
+        assert (
+            data["message"]
+            == "Missing permission: OrganizationManagementLevel superadmin in organization 1"
+        )
