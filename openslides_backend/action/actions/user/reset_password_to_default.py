@@ -3,11 +3,11 @@ from typing import Any, Dict
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
 class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin):
@@ -29,7 +29,7 @@ class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin
 @register_action("user.reset_password_to_default")
 class UserResetPasswordToDefaultAction(
     UserResetPasswordToDefaultMixin,
-    UserScopePermissionCheckMixin,
+    UserScopeMixin,
 ):
     """
     Action to reset a password to default of a user.
@@ -40,4 +40,4 @@ class UserResetPasswordToDefaultAction(
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.check_permissions_for_scope(instance, check_user_oml_always=True)
+        self.check_permissions_for_scope(instance["id"])

@@ -16,6 +16,8 @@ from typing import (
 
 import fastjsonschema
 
+from openslides_backend.shared.base_service_provider import BaseServiceProvider
+
 from ..models.base import Model, model_registry
 from ..models.fields import (
     BaseRelationField,
@@ -28,11 +30,8 @@ from ..permissions.management_levels import (
 )
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
-from ..services.auth.interface import AuthenticationService
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
-from ..services.media.interface import MediaService
-from ..services.vote.interface import VoteService
 from ..shared.exceptions import (
     ActionException,
     AnonymousNotAllowed,
@@ -79,30 +78,16 @@ def original_instances(method: Callable) -> Callable:
     return method
 
 
-class BaseAction:  # pragma: no cover
-    """
-    Abstract base class for an action.
-    """
-
-    services: Services
-    datastore: DatastoreService
-    auth: AuthenticationService
-    media: MediaService
-    vote: VoteService
-
-    name: str
-    model: Model
-    user_id: int
-
-
 T = TypeVar("T", bound=WriteRequest)
 
 
-class Action(BaseAction, metaclass=SchemaProvider):
+class Action(BaseServiceProvider, metaclass=SchemaProvider):
     """
     Base class for an action.
     """
 
+    name: str
+    model: Model
     schema: Dict
     schema_validator: Callable[[Dict[str, Any]], None]
 
@@ -135,13 +120,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
         skip_archived_meeting_check: Optional[bool] = None,
         use_meeting_ids_for_archived_meeting_check: bool = None,
     ) -> None:
-        self.services = services
-        self.auth = services.authentication()
-        self.media = services.media()
-        self.vote_service = services.vote()
-        self.datastore = datastore
+        super().__init__(services, datastore, logging)
         self.relation_manager = relation_manager
-        self.logging = logging
         self.logger = logging.getLogger(__name__)
         self.env = env
         if skip_archived_meeting_check is not None:

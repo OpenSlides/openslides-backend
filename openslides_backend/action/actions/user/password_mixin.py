@@ -1,10 +1,10 @@
 from typing import Any, Dict
 
-from ...action import BaseAction
+from ...action import Action
 from ...util.crypto import get_random_string
 
 
-class PasswordCreateMixin(BaseAction):
+class PasswordCreateMixin(Action):
     def set_password(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         password = instance.get("default_password", "")
         hashed_password = self.auth.hash(password)

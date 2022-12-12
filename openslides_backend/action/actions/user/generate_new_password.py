@@ -3,11 +3,11 @@ from typing import Any, Dict
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .password_mixin import PasswordCreateMixin
 from .set_password import UserSetPasswordMixin
-from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
 class UserGenerateNewPasswordMixin(UserSetPasswordMixin, CheckForArchivedMeetingMixin):
@@ -24,11 +24,11 @@ class UserGenerateNewPasswordMixin(UserSetPasswordMixin, CheckForArchivedMeeting
 @register_action("user.generate_new_password")
 class UserGenerateNewPassword(
     UserGenerateNewPasswordMixin,
-    UserScopePermissionCheckMixin,
+    UserScopeMixin,
 ):
     model = User()
     schema = DefaultSchema(User()).get_update_schema()
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.check_permissions_for_scope(instance, check_user_oml_always=True)
+        self.check_permissions_for_scope(instance["id"])

@@ -5,14 +5,14 @@ from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
+from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
 @register_action("user.delete")
-class UserDelete(UserScopePermissionCheckMixin, DeleteAction):
+class UserDelete(UserScopeMixin, DeleteAction):
     """
     Action to delete a user.
     """
@@ -27,7 +27,7 @@ class UserDelete(UserScopePermissionCheckMixin, DeleteAction):
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.check_permissions_for_scope(instance, check_user_oml_always=True)
+        self.check_permissions_for_scope(instance["id"])
 
     def get_history_information(self) -> Optional[HistoryInformation]:
         users = self.get_instances_with_fields(["id", "group_$_ids"])
