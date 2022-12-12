@@ -106,7 +106,10 @@ class StopControl(CountdownControl, Action):
                 )
                 continue
 
-            user_token = get_user_token()
+            if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
+                user_token = ballot.get("token")
+            else:
+                user_token = get_user_token()
             vote_weight = Decimal(ballot.get("weight", "1.000000")) or Decimal(
                 "1.000000"
             )
