@@ -16,8 +16,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "text": "<i>test</i>",
                 "reason": "<b>test2</b>",
                 "modified_final_version": "blablabla",
-                "amendment_paragraph_$": ["3"],
-                "amendment_paragraph_$3": "testtesttest",
+                "amendment_paragraph": {"3": "testtesttest"},
                 "submitter_ids": [1],
                 "state_id": 1,
             },
@@ -50,8 +49,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "text": "<i>test</i>",
                     "reason": "<b>test2</b>",
                     "modified_final_version": "blablabla",
-                    "amendment_paragraph_$": ["3"],
-                    "amendment_paragraph_$3": "testtesttest",
+                    "amendment_paragraph": {"3": "testtesttest"},
                 },
             }
         )
@@ -65,7 +63,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "text": "text_eNPkDVuq",
                     "reason": "reason_ukWqADfE",
                     "modified_final_version": "mfv_ilVvBsUi",
-                    "amendment_paragraph_$": {3: "<html>test</html>"},
+                    "amendment_paragraph": {3: "<html>test</html>"},
                     "start_line_number": 13,
                 },
             )
@@ -76,11 +74,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("text") == "text_eNPkDVuq"
         assert model.get("reason") == "reason_ukWqADfE"
         assert model.get("modified_final_version") == "mfv_ilVvBsUi"
-        assert model.get("amendment_paragraph_$3") == "&lt;html&gt;test&lt;/html&gt;"
-        assert model.get("amendment_paragraph_$") == ["3"]
+        assert model.get("amendment_paragraph") == {
+            "3": "&lt;html&gt;test&lt;/html&gt;"
+        }
         assert model.get("start_line_number") == 13
         self.assert_history_information("motion/111", ["Motion updated"])
-        assert counter.calls == 3
+        assert counter.calls == 4
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
@@ -147,12 +146,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "title": "title_bDFsWtKL",
                 "number": "124",
-                "amendment_paragraph_$": {3: "<html>test</html>"},
+                "amendment_paragraph": {3: "<html>test</html>"},
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot update amendment_paragraph_$, because it was not set in the old values.",
+            "Cannot update amendment_paragraph, because it was not set in the old values.",
             response.json["message"],
         )
 

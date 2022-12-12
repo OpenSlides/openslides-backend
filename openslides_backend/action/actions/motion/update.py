@@ -7,24 +7,19 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.patterns import (
-    KEYSEPARATOR,
-    POSITIVE_NUMBER_REGEX,
-    Collection,
-    fqid_from_collection_and_id,
-)
+from ....shared.patterns import KEYSEPARATOR, Collection, fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .mixins import PermissionHelperMixin
+from .mixins import AmendmentParagraphHelper, PermissionHelperMixin
 
 RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
 
 
 @register_action("motion.update")
-class MotionUpdate(UpdateAction, PermissionHelperMixin):
+class MotionUpdate(UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin):
     """
     Action to update motions.
     """
@@ -45,9 +40,9 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             "supporter_ids",
             "tag_ids",
             "attachment_ids",
+            "amendment_paragraph",
         ],
         additional_optional_fields={
-            **Motion().get_property("amendment_paragraph_$", POSITIVE_NUMBER_REGEX),
             "workflow_id": optional_id_schema,
         },
     )
@@ -89,12 +84,12 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         instance["last_modified"] = timestamp
         if (
             instance.get("text")
-            or instance.get("amendment_paragraph_$")
+            or instance.get("amendment_paragraph")
             or instance.get("reason") == ""
         ):
             motion = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["text", "amendment_paragraph_$", "meeting_id"],
+                ["text", "amendment_paragraph", "meeting_id"],
             )
 
         if instance.get("text"):
@@ -102,11 +97,12 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 raise ActionException(
                     "Cannot update text, because it was not set in the old values."
                 )
-        if instance.get("amendment_paragraph_$"):
-            if not motion.get("amendment_paragraph_$"):
+        if instance.get("amendment_paragraph"):
+            if not motion.get("amendment_paragraph"):
                 raise ActionException(
-                    "Cannot update amendment_paragraph_$, because it was not set in the old values."
+                    "Cannot update amendment_paragraph, because it was not set in the old values."
                 )
+            self.validate_amendment_paragraph(instance)
         if instance.get("reason") == "":
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", motion["meeting_id"]),
@@ -247,7 +243,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 "text",
                 "reason",
                 "attachment_ids",
-                "amendment_paragraph_$",
+                "amendment_paragraph",
                 "workflow_id",
                 "start_line_number",
                 "state_extension",

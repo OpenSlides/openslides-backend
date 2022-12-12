@@ -2126,9 +2126,8 @@ motion:
   text:
     type: HTMLStrict
     restriction_mode: C
-  amendment_paragraph_$:
-    type: template
-    fields: HTMLStrict
+  amendment_paragraph:
+    type: JSON
     restriction_mode: C
   modified_final_version:
     type: HTMLStrict

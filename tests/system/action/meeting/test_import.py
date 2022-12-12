@@ -392,7 +392,7 @@ class MeetingImport(BaseActionTestCase):
             "number_value": 1,
             "sequential_number": 2,
             "text": "<p>l&ouml;mk</p>",
-            "amendment_paragraph_$": [],
+            "amendment_paragraph": {},
             "modified_final_version": "",
             "reason": "",
             "category_weight": 10000,
