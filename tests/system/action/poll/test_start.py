@@ -91,6 +91,8 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertEqual(poll.get("votesvalid"), "0.000000")
         self.assertEqual(poll.get("votesinvalid"), "0.000000")
         self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assertNotIn("crypt_key", poll)
+        self.assertNotIn("crypt_signature", poll)
         self.assert_model_not_exists("vote/1")
         # test history
         self.assert_history_information("assignment/1", ["Voting started"])
@@ -114,6 +116,8 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assertEqual(poll.get("votesvalid"), "0.000000")
         self.assertEqual(poll.get("votesinvalid"), "0.000000")
         self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assertNotIn("crypt_key", poll)
+        self.assertNotIn("crypt_signature", poll)
         self.assert_model_not_exists("vote/1")
 
 
@@ -132,6 +136,8 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assertEqual(poll.get("votesvalid"), "0.000000")
         self.assertEqual(poll.get("votesinvalid"), "0.000000")
         self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assertNotIn("crypt_key", poll)
+        self.assertNotIn("crypt_signature", poll)
         self.assert_model_not_exists("vote/1")
 
 
@@ -150,6 +156,8 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assertEqual(poll.get("votesvalid"), "0.000000")
         self.assertEqual(poll.get("votesinvalid"), "0.000000")
         self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assertNotIn("crypt_key", poll)
+        self.assertNotIn("crypt_signature", poll)
         self.assert_model_not_exists("vote/1")
 
 
@@ -168,6 +176,8 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assertEqual(poll.get("votesvalid"), "0.000000")
         self.assertEqual(poll.get("votesinvalid"), "0.000000")
         self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assertNotIn("crypt_key", poll)
+        self.assertNotIn("crypt_signature", poll)
         self.assert_model_not_exists("vote/1")
 
 
@@ -186,4 +196,66 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
         self.assertEqual(poll.get("votesvalid"), "0.000000")
         self.assertEqual(poll.get("votesinvalid"), "0.000000")
         self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assertNotIn("crypt_key", poll)
+        self.assertNotIn("crypt_signature", poll)
+        self.assert_model_not_exists("vote/1")
+
+
+class VotePollCryptographicYNA(VotePollBaseTestClass):
+    def get_poll_data(self) -> Dict[str, Any]:
+        return {
+            "pollmethod": "YNA",
+            "type": Poll.TYPE_CRYPTOGRAPHIC,
+        }
+
+    def test_start_poll(self) -> None:
+        response = self.request("poll.start", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("state"), Poll.STATE_STARTED)
+        self.assertEqual(poll.get("votesvalid"), "0.000000")
+        self.assertEqual(poll.get("votesinvalid"), "0.000000")
+        self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assertIn("crypt_key", poll)
+        self.assertIn("crypt_signature", poll)
+        self.assert_model_not_exists("vote/1")
+
+
+class VotePollCryptographicY(VotePollBaseTestClass):
+    def get_poll_data(self) -> Dict[str, Any]:
+        return {
+            "pollmethod": "Y",
+            "type": Poll.TYPE_CRYPTOGRAPHIC,
+        }
+
+    def test_start_poll(self) -> None:
+        response = self.request("poll.start", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("state"), Poll.STATE_STARTED)
+        self.assertEqual(poll.get("votesvalid"), "0.000000")
+        self.assertEqual(poll.get("votesinvalid"), "0.000000")
+        self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assertIn("crypt_key", poll)
+        self.assertIn("crypt_signature", poll)
+        self.assert_model_not_exists("vote/1")
+
+
+class VotePollCryptographicN(VotePollBaseTestClass):
+    def get_poll_data(self) -> Dict[str, Any]:
+        return {
+            "pollmethod": "N",
+            "type": Poll.TYPE_CRYPTOGRAPHIC,
+        }
+
+    def test_start_poll(self) -> None:
+        response = self.request("poll.start", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("state"), Poll.STATE_STARTED)
+        self.assertEqual(poll.get("votesvalid"), "0.000000")
+        self.assertEqual(poll.get("votesinvalid"), "0.000000")
+        self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assertIn("crypt_key", poll)
+        self.assertIn("crypt_signature", poll)
         self.assert_model_not_exists("vote/1")

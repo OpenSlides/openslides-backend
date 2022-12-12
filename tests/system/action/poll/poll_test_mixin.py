@@ -7,7 +7,8 @@ from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME
 
 class PollTestMixin(BaseActionTestCase):
     def start_poll(self, id: int) -> None:
-        self.vote_service.start(id)
+        response = self.request("poll.start", {"id": id})
+        self.assert_status_code(response, 200)
 
     def prepare_users_and_poll(self, user_count: int) -> List[int]:
         user_ids = list(range(2, user_count + 2))
@@ -21,7 +22,7 @@ class PollTestMixin(BaseActionTestCase):
                     "type": Poll.TYPE_NAMED,
                     "pollmethod": "YNA",
                     "backend": "fast",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "option_ids": [1],
                     "meeting_id": 1,
                     "entitled_group_ids": [3],

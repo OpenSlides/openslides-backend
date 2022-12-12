@@ -15,11 +15,16 @@ class PollResetActionTest(PollTestMixin):
                 "meeting_id": 1,
             },
             "poll/1": {
+                "type": Poll.TYPE_NAMED,
                 "state": Poll.STATE_STARTED,
                 "option_ids": [1],
                 "global_option_id": 2,
                 "meeting_id": 1,
                 "content_object_id": "topic/1",
+                "crypt_key": "crypt_key",
+                "crypt_signature": "crypt_signature",
+                "votes_raw": "votes_raw",
+                "votes_signature": "votes_signature",
             },
             "option/1": {"vote_ids": [1, 2], "poll_id": 1, "meeting_id": 1},
             "option/2": {
@@ -79,6 +84,12 @@ class PollResetActionTest(PollTestMixin):
         assert option_2.get("no") == "0.000000"
         assert option_2.get("abstain") == "0.000000"
 
+        # check if the cryptographic fileds are cleared
+        assert poll.get("crypt_key") is None
+        assert poll.get("crypt_signature") is None
+        assert poll.get("votes_raw") is None
+        assert poll.get("votes_signature") is None
+
         # test history
         self.assert_history_information("topic/1", ["Voting reset"])
 
@@ -100,7 +111,7 @@ class PollResetActionTest(PollTestMixin):
                 "group/1": {"user_ids": [1]},
                 "user/1": {"group_$1_ids": [1], "is_present_in_meeting_ids": [1]},
                 "poll/1": {
-                    "state": "started",
+                    "state": "created",
                     "option_ids": [1],
                     "global_option_id": 2,
                     "meeting_id": 1,
@@ -112,7 +123,8 @@ class PollResetActionTest(PollTestMixin):
                 },
             }
         )
-        self.vote_service.start(1)
+        response = self.request("poll.start", {"id": 1})
+        self.assert_status_code(response, 200)
         response = self.vote_service.vote({"id": 1, "value": {"1": 1}})
         self.assert_status_code(response, 200)
         response = self.request("poll.reset", {"id": 1})

@@ -62,9 +62,9 @@ class VoteAdapter(VoteService):
         self.access_token = access_token
         self.refresh_id = refresh_id
 
-    def start(self, id: int) -> None:
+    def start(self, id: int) -> Dict[str, Any]:
         endpoint = self.get_endpoint("start", id)
-        self.retrieve(endpoint)
+        return self.retrieve(endpoint)
 
     def stop(self, id: int) -> Dict[str, Any]:
         endpoint = self.get_endpoint("stop", id)

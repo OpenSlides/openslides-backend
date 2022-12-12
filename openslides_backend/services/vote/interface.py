@@ -6,7 +6,7 @@ class VoteService(Protocol):
     Interface of the vote service.
     """
 
-    def start(self, id: int) -> None:
+    def start(self, id: int) -> Dict[str, Any]:
         ...
 
     def stop(self, id: int) -> Dict[str, Any]:

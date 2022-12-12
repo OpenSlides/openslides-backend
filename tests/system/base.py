@@ -28,7 +28,7 @@ from openslides_backend.shared.util import (
 )
 from tests.util import AuthData, Client, Response
 
-from .util import TestVoteService
+from .util import TestVoteService, remove_files_from_vote_decrypt_service
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
@@ -54,10 +54,12 @@ class BaseSystemTestCase(TestCase):
         self.services = self.app.services
         self.auth = self.services.authentication()
         self.media = self.services.media()
-        self.vote_service = cast(TestVoteService, self.services.vote())
         self.datastore = self.services.datastore()
         self.datastore.truncate_db()
+        self.vote_service = cast(TestVoteService, self.services.vote())
+        self.vote_service.datastore = self.datastore
         self.set_thread_watch_timeout(-1)
+        remove_files_from_vote_decrypt_service()
 
         self.created_fqids = set()
         self.create_model(

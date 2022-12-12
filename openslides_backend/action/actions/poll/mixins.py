@@ -1,7 +1,12 @@
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+import simplejson as json
+
+from openslides_backend.models.models import Poll
+
+from ....action.util.typing import ActionResultElement
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -50,10 +55,13 @@ def check_poll_or_option_perms(
 
 
 class StopControl(CountdownControl, Action):
+    invalid_votes: List[Dict[str, str]] = []
+
     def on_stop(self, instance: Dict[str, Any]) -> None:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [
+                "type",
                 "state",
                 "meeting_id",
                 "pollmethod",
@@ -75,14 +83,36 @@ class StopControl(CountdownControl, Action):
 
         # stop poll in vote service and create vote objects
         results = self.vote_service.stop(instance["id"])
+        votes_raw = results["votes"]
+        invalid = results.get("invalid", {})
+        votes = json.loads(votes_raw)
+        if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
+            votes = votes["votes"]
+            instance["votes_raw"] = votes_raw
+            instance["votes_signature"] = results.get("signature")
         action_data = []
         votesvalid = Decimal("0.000000")
+        self.invalid_votes: List[Dict[str, str]] = []
         option_results: Dict[int, Dict[str, Decimal]] = defaultdict(
             lambda: defaultdict(lambda: Decimal("0.000000"))
         )  # maps options to their respective YNA sums
-        for ballot in results["votes"]:
-            user_token = get_user_token()
-            vote_weight = Decimal(ballot["weight"])
+        for i, ballot in enumerate(votes):
+            if msg := invalid.get(str(i)):
+                self.invalid_votes.append(
+                    {
+                        "msg": msg,
+                        "ballot": json.dumps(ballot),
+                    }
+                )
+                continue
+
+            if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
+                user_token = ballot.get("token")
+            else:
+                user_token = get_user_token()
+            vote_weight = Decimal(ballot.get("weight", "1.000000")) or Decimal(
+                "1.000000"
+            )
             votesvalid += vote_weight
             vote_template = {"user_token": user_token}
             if "vote_user_id" in ballot:
@@ -90,7 +120,7 @@ class StopControl(CountdownControl, Action):
             if "request_user_id" in ballot:
                 vote_template["delegated_user_id"] = ballot["request_user_id"]
 
-            if isinstance(ballot["value"], dict):
+            if isinstance(ballot.get("value"), dict):
                 for option_id_str, value in ballot["value"].items():
                     option_id = int(option_id_str)
 
@@ -111,7 +141,7 @@ class StopControl(CountdownControl, Action):
                             **vote_template,
                         }
                     )
-            elif isinstance(ballot["value"], str):
+            elif isinstance(ballot.get("value"), str):
                 vote_value = ballot["value"]
                 option_id = poll["global_option_id"]
                 option_results[option_id][vote_value] += vote_weight
@@ -123,6 +153,27 @@ class StopControl(CountdownControl, Action):
                         **vote_template,
                     }
                 )
+            elif poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
+                for option_id_str, value in ballot["votes"].items():
+                    option_id = int(option_id_str)
+
+                    vote_value = value
+                    vote_weighted = vote_weight  # use new variable vote_weighted because pollmethod=Y/N does not imply anymore that only one loop is done (see max_votes_per_option)
+                    if poll["pollmethod"] in ("Y", "N"):
+                        if value == 0:
+                            continue
+                        vote_value = poll["pollmethod"]
+                        vote_weighted *= value
+
+                    option_results[option_id][vote_value] += vote_weighted
+                    action_data.append(
+                        {
+                            "value": vote_value,
+                            "option_id": option_id,
+                            "weight": str(vote_weighted),
+                            **vote_template,
+                        }
+                    )
             else:
                 raise VoteServiceException("Invalid response from vote service")
         self.execute_other_action(VoteCreate, action_data)
@@ -146,7 +197,9 @@ class StopControl(CountdownControl, Action):
         # set votescast, votesvalid, votesinvalid
         instance["votesvalid"] = str(votesvalid)
         instance["votescast"] = str(Decimal("0.000000") + Decimal(len(voted_ids)))
-        instance["votesinvalid"] = "0.000000"
+        instance["votesinvalid"] = str(
+            Decimal("0.000000") + Decimal(len(self.invalid_votes))
+        )
 
         # set entitled users at stop.
         instance["entitled_users_at_stop"] = self.get_entitled_users(
@@ -192,3 +245,8 @@ class StopControl(CountdownControl, Action):
             )
 
         return entitled_users
+
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        return {"invalid_votes": self.invalid_votes}

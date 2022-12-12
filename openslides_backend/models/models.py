@@ -1558,6 +1558,10 @@ class Poll(Model):
     TYPE_ANALOG = "analog"
     TYPE_NAMED = "named"
     TYPE_PSEUDOANONYMOUS = "pseudoanonymous"
+    TYPE_CRYPTOGRAPHIC = "cryptographic"
+
+    BACKEND_FAST = "fast"
+    BACKEND_LONG = "long"
 
 
 class Option(Model):

@@ -1,3 +1,4 @@
+import base64
 import copy
 import cProfile
 import os
@@ -5,20 +6,34 @@ from typing import Any, Callable, Dict, List, Type
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ed25519, x25519
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from dependency_injector import providers
 from requests.models import Response as RequestsResponse
 
+from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
+from openslides_backend.models.models import Poll
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
+from openslides_backend.services.datastore.interface import DatastoreService
+from openslides_backend.services.datastore.with_database_context import (
+    with_database_context,
+)
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.env import Environment, is_truthy
-from openslides_backend.shared.exceptions import MediaServiceException
+from openslides_backend.shared.exceptions import ActionException, MediaServiceException
 from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 from tests.util import Response
+
+with open("public_vote_main_key", "rb") as keyfile:
+    PUBLIC_MAIN_KEY = keyfile.read()
 
 
 def convert_to_test_response(response: RequestsResponse) -> Response:
@@ -33,20 +48,69 @@ def convert_to_test_response(response: RequestsResponse) -> Response:
 
 class TestVoteService(VoteService):
     url: str
+    datastore: DatastoreService
 
     def vote(self, data: Dict[str, Any]) -> Response:
         ...
 
 
 class TestVoteAdapter(VoteAdapter, TestVoteService):
+    @with_database_context
     def vote(self, data: Dict[str, Any]) -> Response:
         data_copy = copy.deepcopy(data)
+        poll = self.datastore.get(
+            fqid_from_collection_and_id("poll", data["id"]),
+            mapped_fields=["type", "crypt_key", "crypt_signature", "state"],
+            lock_result=False,
+        )
+        if poll["state"] != Poll.STATE_STARTED:
+            raise ActionException("Backendtest: Poll not started!")
         del data_copy["id"]
+        if poll["type"] == Poll.TYPE_CRYPTOGRAPHIC:
+            crypt_key = base64.b64decode(poll.get("crypt_key", ""))
+            crypt_signature = base64.b64decode(poll.get("crypt_signature", ""))
+            self.encrypt_votes(data_copy, crypt_key, crypt_signature)
         response = self.make_request(
             self.url.replace("internal", "system") + f"?id={data['id']}",
             data_copy,
         )
         return convert_to_test_response(response)
+
+    def encrypt_votes(
+        self, data: Dict[str, Any], crypt_key: bytes, crypt_signature: bytes
+    ) -> None:
+        pubKeySize = 32
+        nonceSize = 12
+        public_main_key = ed25519.Ed25519PublicKey.from_public_bytes(PUBLIC_MAIN_KEY)
+        public_main_key.verify(crypt_signature, crypt_key)
+
+        private_key = x25519.X25519PrivateKey.generate()
+        public_private_key = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw, format=serialization.PublicFormat.Raw
+        )
+        public_poll_key = x25519.X25519PublicKey.from_public_bytes(crypt_key)
+        shared_key = private_key.exchange(public_poll_key)
+        derived_key = HKDF(
+            algorithm=hashes.SHA256(),
+            length=pubKeySize,
+            salt=None,
+            info=None,
+        ).derive(shared_key)
+        nonce = os.urandom(nonceSize)
+        cipher = Cipher(algorithms.AES(derived_key), modes.GCM(nonce))
+        encryptor = cipher.encryptor()
+        value_string = str(data.get("value")).replace("'", '"')
+        user_token = get_random_string(8)
+        encrypt_string = bytes(
+            f'{{"votes":{value_string},"token":"{user_token}"}}', encoding="utf-8"
+        )
+        encrypted = encryptor.update(encrypt_string)
+        encryptor.finalize()
+        encrypted += encryptor.tag
+        base64_encoded = base64.encodebytes(
+            b"".join([public_private_key, nonce, encrypted])
+        )
+        data["value"] = base64_encoded
 
 
 def create_action_test_application() -> WSGIApplication:
@@ -155,3 +219,10 @@ class CountDatastoreCalls:
     @property
     def calls(self) -> int:
         return sum(mock.call_count for mock in self.mocks)
+
+
+def remove_files_from_vote_decrypt_service() -> None:
+    path = "tests/system/action/poll/vote_decrypt_clear_data"
+    files = os.listdir(path)
+    for file in files:
+        os.remove(os.path.join(path, file))
