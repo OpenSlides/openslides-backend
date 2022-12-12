@@ -1871,3 +1871,13 @@ class MeetingImport(BaseActionTestCase):
         with Profiler("test_meeting_import.prof"):
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
+
+    def test_import_with_wrong_decimal(self) -> None:
+        data = self.create_request_data({})
+        data["meeting"]["user"]["1"]["default_vote_weight"] = "1A0"
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 400)
+        assert (
+            "user/1/default_vote_weight: Type error: Type is not <openslides_backend.models.fields.DecimalField"
+            in response.json["message"]
+        )
