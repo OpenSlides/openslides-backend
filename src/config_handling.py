@@ -1,7 +1,7 @@
 import os
 import sys
 
-MEDIA_DEV_MODE_ENVIRONMENT_VAR = "MEDIA_ENABLE_DEV_ENVIRONMENT"
+DEV_MODE_ENVIRONMENT_VAR = "OPENSLIDES_DEVELOPMENT"
 DEV_SECRET = "openslides"
 
 
@@ -21,10 +21,7 @@ def get_default_for(config_value):
 
 
 def init_config(app):
-    file_configs = (
-        "MEDIA_DATABASE_USER",
-        "MEDIA_DATABASE_PASSWORD",
-    )
+    file_configs = ("MEDIA_DATABASE_PASSWORD",)
 
     all_configs = (
         "MEDIA_DATABASE_HOST",
@@ -39,7 +36,7 @@ def init_config(app):
 
     for config in all_configs:
         if config in file_configs:
-            value = get_config_from(app, config)
+            value = get_config_from(config)
         else:
             value = os.environ.get(config, get_default_for(config))
         if not value:
@@ -57,17 +54,13 @@ def init_config(app):
 
 
 def is_dev_mode() -> bool:
-    value = os.environ.get(MEDIA_DEV_MODE_ENVIRONMENT_VAR, None)
-    return value is not None and value.lower() in ("1", "on", "yes", "true")
+    value = os.environ.get(DEV_MODE_ENVIRONMENT_VAR)
+    return value is not None and value.lower() in ("1", "on", "true")
 
 
-def get_config_from(app, config):
-    path = os.environ.get(config + "_FILE", None)
+def get_config_from(config):
+    path = os.environ.get(config + "_FILE")
     if is_dev_mode():
-        value = DEV_SECRET
-    elif path is not None:
-        with open(path) as file_:
-            value = file_.read()
-    else:
-        value = os.environ.get(config, get_default_for(config))
-    return value
+        return DEV_SECRET
+    with open(path) as file_:
+        return file_.read()
