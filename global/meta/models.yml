@@ -275,6 +275,9 @@ user:
     to: meeting/present_user_ids
     restriction_mode: A
 
+  # Calculates all committee's where the user is
+  # - committee-manager (= committees in committee_management_ids)
+  # - is member (= has group-rights) of a meeting in the committee
   committee_ids:
     type: relation-list
     to: committee/user_ids

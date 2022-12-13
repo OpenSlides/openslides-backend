@@ -95,10 +95,9 @@ class GetUserRelatedModels(BasePresenter):
 
     def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
         committees_data = []
-        cml_fields = ["committee_management_ids"]
         user = self.datastore.get(
             fqid_from_collection_and_id("user", user_id),
-            ["committee_ids", *cml_fields],
+            ["committee_ids", "committee_management_ids"],
         )
         if not user.get("committee_ids"):
             return []

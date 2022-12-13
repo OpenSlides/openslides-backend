@@ -119,13 +119,8 @@ def has_committee_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         ):
             return True
-        return any(
-            [
-                CommitteeManagementLevel(management_level) >= expected_level
-                for management_level in ["can_manage"]
-                if committee_id in user.get("committee_management_ids", [])
-            ]
-        )
+        if committee_id in user.get("committee_management_ids", []):
+            return True
     return False
 
 
