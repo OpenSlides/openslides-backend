@@ -177,7 +177,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
             }
         )
-        status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
+        status_code, _ = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 403)
 
     def test_get_user_related_models_permission_because_no_meeting_included(
@@ -185,11 +185,11 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     ) -> None:
         self.set_models(
             {
-                "user/1": {"organization_management_level": None, "meeting_ids": [1]},
+                "user/2": {"organization_management_level": None, "meeting_ids": [1]},
                 "meeting/1": {"name": "test"},
             }
         )
-        status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
+        status_code, _ = self.request("get_user_related_models", {"user_ids": [2]})
         self.assertEqual(status_code, 200)
 
     def test_get_user_related_models_permissions_user_can_manage(self) -> None:
@@ -200,7 +200,14 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "meeting_ids": [1],
                     "group_$1_ids": [3],
                 },
-                "meeting/1": {"name": "test", "default_group_id": 3, "group_ids": [3]},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "default_group_id": 3,
+                    "group_ids": [3],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
                 "group/3": {
                     "meeting_id": 1,
                     "default_group_for_meeting_id": 1,
@@ -219,7 +226,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 }
             }
         )
-        status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
+        status_code, _ = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 200)
 
     def test_get_user_related_models_no_committee_permissions(self) -> None:
@@ -234,7 +241,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 },
             }
         )
-        status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
+        status_code, _ = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 403)
 
     def test_get_user_related_models_missing_committee(self) -> None:
@@ -257,4 +264,22 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         assert (
             data["message"]
             == "Data error: user has rights for committee 2, but faultily is no member of committee."
+        )
+
+    def test_get_user_related_models_no_permissions_higher_oml(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                },
+                "user/2": {
+                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN
+                },
+            }
+        )
+        status_code, data = self.request("get_user_related_models", {"user_ids": [2]})
+        self.assertEqual(status_code, 403)
+        assert (
+            data["message"]
+            == "Missing permission: OrganizationManagementLevel superadmin in organization 1"
         )

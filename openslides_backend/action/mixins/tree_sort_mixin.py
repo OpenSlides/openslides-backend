@@ -4,14 +4,14 @@ import fastjsonschema
 
 from ...shared.exceptions import ActionException
 from ...shared.filters import FilterOperator
-from ..action import BaseAction
+from ..action import Action
 from ..util.default_schema import sort_node_schema
 from ..util.typing import ActionData
 
 validate_sort_node = fastjsonschema.compile(sort_node_schema)
 
 
-class TreeSortMixin(BaseAction):
+class TreeSortMixin(Action):
     """
     Provides an action mixin for sorting a model tree.
     """

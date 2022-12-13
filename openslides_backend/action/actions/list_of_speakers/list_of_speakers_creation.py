@@ -2,10 +2,10 @@ from typing import Any, Dict, List, Type
 
 from ....models.base import Model
 from ....shared.patterns import KEYSEPARATOR
-from ...action import Action, BaseAction
+from ...action import Action
 
 
-class CreateActionWithListOfSpeakersMixin(BaseAction):
+class CreateActionWithListOfSpeakersMixin(Action):
     """
     Mixin that can be used to create a list of speakers as a dependency.
     Just call the functions in the corresponding base functions.

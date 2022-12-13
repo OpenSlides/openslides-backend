@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Set, Tuple, Union
 
 import fastjsonschema
 
-from ..action.actions.user.user_scope_permission_check_mixin import UserScope
+from openslides_backend.shared.mixins.user_scope_mixin import UserScope
+
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,

@@ -4,11 +4,11 @@ from ....models.helper import calculate_inherited_groups_helper
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.patterns import fqid_from_collection_and_id
-from ...action import BaseAction
+from ...action import Action
 from ...util.typing import ActionData
 
 
-class MediafileCalculatedFieldsMixin(BaseAction):
+class MediafileCalculatedFieldsMixin(Action):
     """
     provides calculate_inherited_groups(id)
     """

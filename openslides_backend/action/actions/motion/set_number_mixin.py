@@ -3,10 +3,10 @@ from typing import Any, Dict, Optional, Union
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
-from ...action import BaseAction
+from ...action import Action
 
 
-class SetNumberMixin(BaseAction):
+class SetNumberMixin(Action):
     def set_number(
         self,
         instance: Dict[str, Any],
