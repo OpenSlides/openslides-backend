@@ -140,9 +140,7 @@ def add_users(
     for field in User().get_fields():
         if isinstance(
             field,
-            (
-                TemplateRelationListField,
-            ),
+            (TemplateRelationListField,),
         ):
             template_fields.append(
                 (

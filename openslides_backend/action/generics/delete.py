@@ -57,9 +57,7 @@ class DeleteAction(Action):
                 # Extract all foreign keys as fqids from the model
                 foreign_fqids: List[FullQualifiedId] = []
                 value = db_instance.get(field.get_own_field_name(), [])
-                foreign_fqids = transform_to_fqids(
-                    value, field.get_target_collection()
-                )
+                foreign_fqids = transform_to_fqids(value, field.get_target_collection())
 
                 if field.on_delete == OnDelete.PROTECT:
                     protected_fqids = [
