@@ -41,7 +41,7 @@ class UserUpdate(
             "default_structure_level",
             "default_vote_weight",
             "organization_management_level",
-            "committee_$_management_level",
+            "committee_management_ids",
             "group_$_ids",
             "is_demo_user",
         ],

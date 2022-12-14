@@ -1,7 +1,4 @@
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -87,9 +84,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_vote_weight": "1.500000",
                 "organization_management_level": "can_manage_users",
                 "default_password": "password",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [78],
-                },
+                "committee_management_ids": [78],
                 "group_$_ids": {111: [111]},
             },
         )
@@ -104,7 +99,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_password": "password",
                 "group_$_ids": ["111"],
                 "group_$111_ids": [111],
-                "committee_$can_manage_management_level": [78],
+                "committee_management_ids": [78],
             },
         )
         self.assertCountEqual(user2.get("committee_ids", []), [78, 79])
@@ -135,16 +130,14 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "test_Xcdfgee",
                 "group_$_ids": {1: [11], 2: [22]},
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [1],
-                },
+                "committee_management_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
         user = self.assert_model_exists(
             "user/223",
             {
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
         assert user.get("committee_ids") == [1, 2]
@@ -174,9 +167,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [2],
-                },
+                "committee_management_ids": [2],
             },
         )
         self.assert_status_code(response, 400)
@@ -240,25 +231,15 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "usersname",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60, 63],
-                },
+                "committee_management_ids": [60, 63],
             },
         )
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
         self.assertCountEqual((60, 63), user["committee_ids"])
-        self.assertCountEqual((60, 63), user["committee_$can_manage_management_level"])
-        assert [
-            CommitteeManagementLevel(cml)
-            for cml in user["committee_$_management_level"]
-        ] == [CommitteeManagementLevel.CAN_MANAGE]
-        self.assert_model_exists(
-            "committee/60", {"user_$can_manage_management_level": [2], "user_ids": [2]}
-        )
-        self.assert_model_exists(
-            "committee/63", {"user_$can_manage_management_level": [2], "user_ids": [2]}
-        )
+        self.assertCountEqual((60, 63), user["committee_management_ids"])
+        self.assert_model_exists("committee/60", {"manager_ids": [2], "user_ids": [2]})
+        self.assert_model_exists("committee/63", {"manager_ids": [2], "user_ids": [2]})
 
     def test_create_empty_username(self) -> None:
         response = self.request("user.create", {"username": ""})
@@ -276,7 +257,6 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "meeting_ids": None,
                 "organization_management_level": None,
-                "committee_$_management_level": None,
             },
         )
 
@@ -416,10 +396,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 f"user/{self.user_id}": {
-                    "committee_$can_manage_management_level": [60],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
+                    "committee_management_ids": [60],
                     "committee_ids": [60],
                 },
                 "meeting/4": {"committee_id": 60, "is_active_in_organization_id": 1},
@@ -472,8 +449,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.update_model(
             f"user/{self.user_id}",
             {
-                "committee_$can_manage_management_level": [60, 63],
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                "committee_management_ids": [60, 63],
                 "committee_ids": [60, 63],
             },
         )
@@ -482,9 +458,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "new username",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60],
-                },
+                "committee_management_ids": [60],
                 "group_$_ids": {"4": [4]},
             },
         )
@@ -631,9 +605,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "usersname",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60, 63],
-                },
+                "committee_management_ids": [60, 63],
                 "organization_management_level": None,
             },
         )
@@ -643,13 +615,10 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "committee_ids": [60, 63],
                 "organization_management_level": None,
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
                 "username": "usersname",
             },
         )
-        self.assertCountEqual(
-            user3.get("committee_$can_manage_management_level", []), [60, 63]
-        )
+        self.assertCountEqual(user3.get("committee_management_ids", []), [60, 63])
 
     def test_create_permission_group_D_permission_with_CML(self) -> None:
         """
@@ -666,9 +635,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "usersname",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60],
-                },
+                "committee_management_ids": [60],
             },
         )
         self.assert_status_code(response, 200)
@@ -676,7 +643,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/3",
             {
                 "committee_ids": [60],
-                "committee_$can_manage_management_level": [60],
+                "committee_management_ids": [60],
                 "username": "usersname",
             },
         )
@@ -691,9 +658,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "usersname",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [60, 63],
-                },
+                "committee_management_ids": [60, 63],
             },
         )
         self.assert_status_code(response, 403)
@@ -906,21 +871,18 @@ class UserCreateActionTest(BaseActionTestCase):
                     "name": "C1",
                     "meeting_ids": [1],
                     "user_ids": [222],
-                    "user_$_management_level": ["can_manage"],
-                    "user_$can_manage_management_level": [222],
+                    "manager_ids": [222],
                 },
                 "committee/2": {
                     "name": "C2",
                     "meeting_ids": [2],
                     "user_ids": [222],
-                    "user_$_management_level": ["can_manage"],
-                    "user_$can_manage_management_level": [222],
+                    "manager_ids": [222],
                 },
                 "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "meeting/2": {"committee_id": 2, "is_active_in_organization_id": 1},
                 "user/222": {
-                    "committee_$_management_level": ["can_manage"],
-                    "committee_$can_manage_management_level": [1, 2],
+                    "committee_management_ids": [1, 2],
                 },
                 "group/22": {"meeting_id": 2},
             }
@@ -929,20 +891,15 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "committee_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [1],
-                },
                 "group_$_ids": {2: [22]},
+                "committee_management_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
         user = self.assert_model_exists(
             "user/223",
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                f"committee_${CommitteeManagementLevel.CAN_MANAGE}_management_level": [
-                    1
-                ],
+                "committee_management_ids": [1],
                 "group_$2_ids": [
                     22,
                 ],

@@ -1,7 +1,7 @@
 import re
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from datastore.migrations import BaseEvent, CreateEvent
 from datastore.shared.util import collection_and_id_from_fqid, collection_from_fqid
@@ -18,12 +18,9 @@ from openslides_backend.models.fields import (
     GenericRelationListField,
     RelationField,
     RelationListField,
-    TemplateCharField,
-    TemplateDecimalField,
     TemplateHTMLStrictField,
-    TemplateRelationField,
 )
-from openslides_backend.models.models import Meeting, User
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from openslides_backend.permissions.permission_helper import (
     has_committee_management_level,
@@ -111,12 +108,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             ),
         ]
         if self.user_id:
-            cml_fields = [
-                f"committee_${management_level}_management_level"
-                for management_level in cast(
-                    List[str], User.committee__management_level.replacement_enum
-                )
-            ]
+            cml_fields = ["committee_management_ids"]
             requests.append(
                 GetManyRequest(
                     "user",
@@ -540,12 +532,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                             list_fields["add"][field] = value
                         elif isinstance(model_field, BaseTemplateField) and isinstance(
                             model_field,
-                            (
-                                TemplateHTMLStrictField,
-                                TemplateCharField,
-                                TemplateDecimalField,
-                                TemplateRelationField,
-                            ),
+                            (TemplateHTMLStrictField,),
                         ):
                             if model_field.is_template_field(field):
                                 list_fields["add"][field] = value

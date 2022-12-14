@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -68,7 +67,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": committee_name,
                 "organization_id": 1,
-                "user_$_management_level": {CommitteeManagementLevel.CAN_MANAGE: [13]},
+                "manager_ids": [13],
             },
         )
         self.assert_status_code(response, 200)
@@ -77,15 +76,13 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": committee_name,
                 "user_ids": [13],
-                "user_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "user_$can_manage_management_level": [13],
+                "manager_ids": [13],
             },
         )
         self.assert_model_exists(
             "user/13",
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
                 "committee_ids": [1],
             },
         )
@@ -96,8 +93,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "username": "test",
                 "committee_ids": [3],
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [3],
+                "committee_management_ids": [3],
             },
         )
         self.create_model("committee/3", {"name": "test_committee2", "user_ids": [13]})
@@ -108,7 +104,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": committee_name,
                 "organization_id": 1,
-                "user_$_management_level": {CommitteeManagementLevel.CAN_MANAGE: [13]},
+                "manager_ids": [13],
             },
         )
         self.assert_status_code(response, 200)
@@ -119,8 +115,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/13",
             {
-                "committee_$can_manage_management_level": [3, 4],
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                "committee_management_ids": [3, 4],
                 "committee_ids": [3, 4],
             },
         )
@@ -163,9 +158,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_committee1",
                 "organization_id": 1,
-                "user_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [20, 21]
-                },
+                "manager_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 400)
@@ -280,9 +273,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_committee",
                 "organization_id": 1,
-                "user_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [20, 21]
-                },
+                "manager_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 403)
@@ -302,9 +293,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_committee",
                 "organization_id": 1,
-                "user_$_management_level": {
-                    CommitteeManagementLevel.CAN_MANAGE: [20, 21]
-                },
+                "manager_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 200)
@@ -321,14 +310,10 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                     "receive_forwardings_from_committee_ids": [3],
                     "user_ids": [1],
                     "organization_id": 1,
-                    "user_$can_manage_management_level": [1],
-                    "user_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "manager_ids": [1],
                 },
                 "user/1": {
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                     "committee_ids": [1],
                 },
                 ONE_ORGANIZATION_FQID: {"committee_ids": [1]},
@@ -336,31 +321,27 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
         response = self.request("committee.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "committee/1", {"user_ids": [1], "user_$can_manage_management_level": [1]}
-        )
+        self.assert_model_deleted("committee/1", {"user_ids": [1], "manager_ids": [1]})
 
         response = self.request(
             "committee.create",
             {
                 "name": "committee2",
                 "organization_id": 1,
-                "user_$_management_level": {CommitteeManagementLevel.CAN_MANAGE: [1]},
+                "manager_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "committee/1", {"user_ids": [1], "user_$can_manage_management_level": [1]}
-        )
+        self.assert_model_deleted("committee/1", {"user_ids": [1], "manager_ids": [1]})
         self.assert_model_exists(
             "committee/2",
             {
                 "name": "committee2",
                 "user_ids": [1],
-                "user_$can_manage_management_level": [1],
+                "manager_ids": [1],
             },
         )
         self.assert_model_exists(
             "user/1",
-            {"committee_$can_manage_management_level": [2], "committee_ids": [2]},
+            {"committee_management_ids": [2], "committee_ids": [2]},
         )

@@ -32,7 +32,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
             "organization_tag_ids",
-            "user_$_management_level",
+            "manager_ids",
         ],
     )
 
@@ -69,7 +69,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 for field in [
                     "forward_to_committee_ids",
                     "receive_forwardings_from_committee_ids",
-                    "user_$_management_level",
+                    "manager_ids",
                 ]
             ]
         ):

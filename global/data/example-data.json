@@ -53,10 +53,7 @@
             "committee_ids": [
                 1
             ],
-            "committee_$_management_level": [
-                "can_manage"
-            ],
-            "committee_$can_manage_management_level": [1],
+            "committee_management_ids": [1],
             "group_$_ids": [
                 "1"
             ],
@@ -222,8 +219,7 @@
                 2,
                 3
             ],
-            "user_$_management_level": ["can_manage"],
-            "user_$can_manage_management_level": [1],
+            "manager_ids": [1],
             "organization_tag_ids": [
                 1
             ],

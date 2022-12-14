@@ -1,7 +1,4 @@
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -31,10 +28,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "group_$_ids": ["42"],
                     "group_$42_ids": [456],
                     "committee_ids": [1],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 },
                 "group/456": {"meeting_id": 42, "user_ids": [111, 222]},
                 "meeting/42": {
@@ -45,8 +39,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "committee/1": {
                     "meeting_ids": [456],
                     "user_ids": [111, 222],
-                    "user_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                    "user_$can_manage_management_level": [111],
+                    "manager_ids": [111],
                 },
             }
         )
@@ -58,14 +51,12 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "group_$42_ids": [456],
                 "committee_ids": [1],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
         self.assert_model_exists("group/456", {"user_ids": [222]})
         self.assert_model_exists("meeting/42", {"user_ids": [222]})
-        self.assert_model_exists(
-            "committee/1", {"user_ids": [222], "user_$can_manage_management_level": []}
-        )
+        self.assert_model_exists("committee/1", {"user_ids": [222], "manager_ids": []})
 
     def test_delete_with_speaker(self) -> None:
         self.set_models(

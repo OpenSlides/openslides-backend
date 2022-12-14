@@ -2,7 +2,6 @@ from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock
 
 from openslides_backend.models.models import AgendaItem, Meeting
-from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
@@ -873,8 +872,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "committee/2": {"organization_id": 1},
                 "user/1": {
-                    "committee_$_management_level": ["can_manage"],
-                    "committee_$can_manage_management_level": [1, 2],
+                    "committee_management_ids": [1, 2],
                     "committee_ids": [1, 2],
                     "organization_management_level": None,
                 },
@@ -914,10 +912,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "committee/2": {"organization_id": 1},
                 "user/1": {
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                     "committee_ids": [1],
                     "organization_management_level": None,
                 },
@@ -936,10 +931,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "committee/2": {"organization_id": 1},
                 "user/1": {
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [2],
+                    "committee_management_ids": [2],
                     "committee_ids": [2],
                     "organization_management_level": None,
                 },

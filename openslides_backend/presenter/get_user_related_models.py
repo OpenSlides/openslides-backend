@@ -1,8 +1,7 @@
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List
 
 import fastjsonschema
 
-from ..models.models import Committee
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -96,15 +95,9 @@ class GetUserRelatedModels(BasePresenter):
 
     def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
         committees_data = []
-        cml_fields = [
-            f"committee_${cml_field}_management_level"
-            for cml_field in cast(
-                List[str], Committee.user__management_level.replacement_enum
-            )
-        ]
         user = self.datastore.get(
             fqid_from_collection_and_id("user", user_id),
-            ["committee_ids", "committee_$_management_level", *cml_fields],
+            ["committee_ids", "committee_management_ids"],
         )
         if not user.get("committee_ids"):
             return []
@@ -115,14 +108,13 @@ class GetUserRelatedModels(BasePresenter):
             .get("committee", {})
             .values()
         }
-        for level in user.get("committee_$_management_level", []):
-            for committee_nr in user.get(f"committee_${level}_management_level", []):
-                if committee_nr in committees:
-                    committees[committee_nr]["cml"].append(level)
-                else:
-                    raise PresenterException(
-                        f"Data error: user has rights for committee {committee_nr}, but faultily is no member of committee."
-                    )
+        for committee_nr in user.get("committee_management_ids", []):
+            if committee_nr in committees:
+                committees[committee_nr]["cml"].append("can_manage")
+            else:
+                raise PresenterException(
+                    f"Data error: user has rights for committee {committee_nr}, but faultily is no member of committee."
+                )
         for committee_id, committee in committees.items():
             committees_data.append(
                 {

@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "ce5ed36d321c9655bad0872bf7b022a6"
+MODELS_YML_CHECKSUM = "aa85dcdda41f44adda5d6315b95a9e6b"
 
 
 class Organization(Model):
@@ -102,11 +102,7 @@ class User(Model):
         read_only=True,
         constraints={"description": "Calculated field."},
     )
-    committee__management_level = fields.TemplateRelationListField(
-        index=10,
-        to={"committee": "user_$_management_level"},
-        replacement_enum=["can_manage"],
-    )
+    committee_management_ids = fields.RelationListField(to={"committee": "manager_ids"})
     forwarding_committee_ids = fields.RelationListField(
         to={"committee": "forwarding_user_id"}
     )
@@ -261,11 +257,7 @@ class Committee(Model):
         read_only=True,
         constraints={"description": "Calculated field."},
     )
-    user__management_level = fields.TemplateRelationListField(
-        index=5,
-        to={"user": "committee_$_management_level"},
-        replacement_enum=["can_manage"],
-    )
+    manager_ids = fields.RelationListField(to={"user": "committee_management_ids"})
     forward_to_committee_ids = fields.RelationListField(
         to={"committee": "receive_forwardings_from_committee_ids"}
     )

@@ -1,10 +1,7 @@
 from typing import Any, Dict
 
 from openslides_backend.models.models import Meeting
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -299,10 +296,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 }
             }
         )
@@ -313,10 +307,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 }
             }
         )
@@ -332,7 +323,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-                    "committee_$can_manage_management_level": [],
+                    "committee_management_ids": [],
                 }
             }
         )
