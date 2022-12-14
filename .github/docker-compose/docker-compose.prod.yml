@@ -42,7 +42,7 @@ services:
         ports:
             - "9010:9010"
         depends_on:
-            - postgresql
+            - postgres
         secrets:
             - postgres_password
     writer:
@@ -55,11 +55,11 @@ services:
         ports:
             - "9011:9011"
         depends_on:
-            - postgresql
+            - postgres
             - redis
         secrets:
             - postgres_password
-    postgresql:
+    postgres:
         image: postgres:11
         environment:
             - POSTGRES_USER=openslides

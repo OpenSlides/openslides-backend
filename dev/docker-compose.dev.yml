@@ -77,7 +77,7 @@ services:
             - "9004:9004"
         environment:
             - MESSAGE_BUS_HOST=redis
-            - CACHE_HOST=cache
+            - CACHE_HOST=redis
             - DATASTORE_READER_HOST=datastore-reader
             - DATASTORE_READER_PORT=9010
             - DATASTORE_WRITER_HOST=datastore-writer
@@ -86,12 +86,10 @@ services:
             - datastore-reader
             - datastore-writer
             - redis
-            - cache
         networks:
             - datastore
             - auth
             - redis
-            - cache
     vote:
         build:
             context: "https://github.com/OpenSlides/openslides-vote-service.git#main"
@@ -104,27 +102,20 @@ services:
             - DATASTORE_READER_HOST=datastore-reader
             - MESSAGING=redis
             - MESSAGE_BUS_HOST=redis
-            - VOTE_REDIS_HOST=cache
+            - VOTE_REDIS_HOST=redis
             - VOTE_DATABASE_HOST=postgres-test
             - VOTE_DATABASE_USER=openslides
-            - VOTE_DATABASE_PASSWORD=openslides
-            - VOTE_DATABASE_NAME=openslides-test
-            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
-            - DATASTORE_DATABASE_NAME=openslides
-            - DATASTORE_DATABASE_USER=openslides
-            - DATASTORE_DATABASE_HOST=postgresql
-            - AUTH=ticket
+            - VOTE_DATABASE_NAME=openslides
+            - DATASTORE_DATABASE_HOST=postgres-test
             - AUTH_HOST=auth
         depends_on:
             - datastore-reader
             - redis
             - auth
-            - cache
         networks:
             - datastore
             - redis
             - auth
-            - cache
             - postgres
     postgres-test:
         image: postgres:11
@@ -140,15 +131,8 @@ services:
             - "6379:6379"
         networks:
             - redis
-    cache:
-        image: redis:alpine
-        expose:
-            - 6379
-        networks:
-            - cache
 networks:
     datastore:
     postgres:
     redis:
-    cache:
     auth:
