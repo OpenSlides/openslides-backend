@@ -112,12 +112,6 @@ class User(Model):
     poll_voted_ids = fields.RelationListField(to={"poll": "voted_ids"})
     option_ids = fields.RelationListField(to={"option": "content_object_id"})
     vote_ids = fields.RelationListField(to={"vote": "user_id"})
-    group__ids = fields.TemplateRelationListField(
-        index=6,
-        replacement_collection="meeting",
-        to={"group": "user_ids"},
-    )
-    poll_candidate_ids = fields.RelationListField(to={"poll_candidate": "user_id"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -164,6 +158,7 @@ class MeetingUser(Model):
         to={"meeting_user": "vote_delegated_to_id"}
     )
     chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
+    group_ids = fields.RelationListField(to={"group": "meeting_user_ids"})
 
 
 class OrganizationTag(Model):
@@ -834,7 +829,7 @@ class Group(Model):
         }
     )
     weight = fields.IntegerField()
-    user_ids = fields.RelationListField(to={"user": "group_$_ids"})
+    meeting_user_ids = fields.RelationListField(to={"meeting_user": "group_ids"})
     default_group_for_meeting_id = fields.RelationField(
         to={"meeting": "default_group_id"}, on_delete=fields.OnDelete.PROTECT
     )

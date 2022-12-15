@@ -10,7 +10,7 @@ class ChatMessageCreate(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "chat_group/2": {"meeting_id": 1, "write_group_ids": [3]},
-                "group/3": {"meeting_id": 1, "user_ids": []},
+                "group/3": {"meeting_id": 1, "meeting_user_ids": []},
                 "user/1": {"organization_management_level": None},
             }
         )
@@ -27,10 +27,18 @@ class ChatMessageCreate(BaseActionTestCase):
         start_time = int(time())
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [1],
+                },
                 "chat_group/2": {"meeting_id": 1, "write_group_ids": [3]},
-                "group/3": {"meeting_id": 1, "user_ids": [1]},
-                "user/1": {"group_$_ids": ["1"], "group_$1_ids": [3]},
+                "group/3": {"meeting_id": 1, "meeting_user_ids": [1]},
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [3],
+                },
             }
         )
         response = self.request(
@@ -46,17 +54,24 @@ class ChatMessageCreate(BaseActionTestCase):
     def test_create_correct_other_perm(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [1],
+                },
                 "chat_group/2": {"meeting_id": 1, "write_group_ids": []},
                 "group/3": {
                     "meeting_id": 1,
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                     "permissions": [Permissions.Chat.CAN_MANAGE],
                 },
                 "user/1": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [3],
+                    "meeting_user_ids": [1],
                     "organization_management_level": None,
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [3],
                 },
             }
         )

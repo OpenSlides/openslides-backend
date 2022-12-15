@@ -15,9 +15,13 @@ from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
-from openslides_backend.shared.exceptions import DatastoreException
+from openslides_backend.shared.filters import And, FilterOperator
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
-from openslides_backend.shared.patterns import FullQualifiedId, collection_from_fqid
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+)
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.base import BaseSystemTestCase
@@ -245,14 +249,14 @@ class BaseActionTestCase(BaseSystemTestCase):
             "is_active": True,
             "default_password": DEFAULT_PASSWORD,
             "password": self.auth.hash(DEFAULT_PASSWORD),
-            "group_$_ids": list(
-                str(meeting_id) for meeting_id in partitioned_groups.keys()
-            ),
+            # "group_$_ids": list(
+            #     str(meeting_id) for meeting_id in partitioned_groups.keys()
+            # ),
             "meeting_ids": list(partitioned_groups.keys()),
-            **{
-                f"group_${meeting_id}_ids": [group["id"] for group in groups]
-                for meeting_id, groups in partitioned_groups.items()
-            },
+            # **{
+            #     f"group_${meeting_id}_ids": [group["id"] for group in groups]
+            #     for meeting_id, groups in partitioned_groups.items()
+            # },
         }
 
     def create_user_for_meeting(self, meeting_id: int) -> int:
@@ -282,41 +286,92 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     def set_user_groups(self, user_id: int, group_ids: List[int]) -> None:
         assert isinstance(group_ids, list)
-        partitioned_groups = self._fetch_groups(group_ids)
-        try:
-            user = self.get_model(f"user/{user_id}")
-        except DatastoreException:
-            user = {}
-        new_group_ids = list(
-            set(
-                user.get("group_$_ids", [])
-                + [str(meeting_id) for meeting_id in partitioned_groups.keys()]
-            )
+        for group_id in group_ids:
+            self.add_user_group(user_id, group_id)
+
+    @with_database_context
+    def add_user_group(self, user_id: int, group_id: int) -> None:
+        group = self.datastore.get(
+            fqid_from_collection_and_id("group", group_id),
+            ["id", "meeting_user_ids", "meeting_id"],
         )
-        self.set_models(
-            {
-                f"user/{user_id}": {
-                    "group_$_ids": new_group_ids,
-                    "meeting_ids": [int(group_id) for group_id in new_group_ids],
-                    **{
-                        f"group_${meeting_id}_ids": list(
-                            set(
-                                [group["id"] for group in groups]
-                                + user.get(f"group_${meeting_id}_ids", []),
-                            )
-                        )
-                        for meeting_id, groups in partitioned_groups.items()
-                    },
-                },
-                **{
-                    f"group/{group['id']}": {
-                        "user_ids": list(set(group.get("user_ids", []) + [user_id]))
+        if not group.get("meeting_id"):
+            raise ValueError(f"Missing meeting_id in group {group_id}")
+        meeting_id = group["meeting_id"]
+        filtered_result = self.datastore.filter(
+            "meeting_user",
+            And(
+                FilterOperator("meeting_id", "=", meeting_id),
+                FilterOperator("user_id", "=", user_id),
+            ),
+            ["id", "group_ids"],
+        )
+        meeting_user = list(filtered_result.values())[0] if filtered_result else {}
+        if meeting_user:
+            self.set_models(
+                {
+                    f"meeting_user/{meeting_user['id']}": {
+                        "group_ids": (meeting_user.get("group_ids") or []) + [group_id]
                     }
-                    for groups in partitioned_groups.values()
-                    for group in groups
-                },
-            }
-        )
+                }
+            )
+        else:
+            id = 1
+            while f"meeting_user/{id}" in self.created_fqids:
+                id += 1
+            self.set_models(
+                {
+                    f"meeting_user/{id}": {
+                        "meeting_id": meeting_id,
+                        "user_id": user_id,
+                        "group_ids": [group_id],
+                    }
+                }
+            )
+            user = self.datastore.get(
+                fqid_from_collection_and_id("user", user_id),
+                ["meeting_user_ids", "meeting_ids"],
+            )
+            if id not in user.get("meeting_user_ids", []):
+                self.set_models(
+                    {
+                        f"user/{user_id}": {
+                            "meeting_user_ids": (user.get("meeting_user_ids") or [])
+                            + [id]
+                        }
+                    }
+                )
+            if meeting_id not in user.get("meeting_ids", []):
+                self.set_models(
+                    {
+                        f"user/{user_id}": {
+                            "meeting_ids": (user.get("meeting_ids") or [])
+                            + [meeting_id]
+                        }
+                    }
+                )
+
+            meeting = self.datastore.get(
+                fqid_from_collection_and_id("meeting", meeting_id),
+                ["meeting_user_ids", "meeting_ids"],
+            )
+            if id not in meeting.get("meeting_user_ids", []):
+                self.set_models(
+                    {
+                        f"meeting/{meeting_id}": {
+                            "meeting_user_ids": (meeting.get("meeting_user_ids") or [])
+                            + [id]
+                        }
+                    }
+                )
+            if user_id not in meeting.get("user_ids", []):
+                self.set_models(
+                    {
+                        f"meeting/{meeting_id}": {
+                            "user_ids": (meeting.get("user_ids") or []) + [user_id]
+                        }
+                    }
+                )
 
     @with_database_context
     def _fetch_groups(self, group_ids: List[int]) -> Dict[int, List[Dict[str, Any]]]:

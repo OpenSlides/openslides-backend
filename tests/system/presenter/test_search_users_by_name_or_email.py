@@ -230,21 +230,24 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "group/1": {
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                     "meeting_id": 1,
                     "permissions": [Permissions.User.CAN_MANAGE],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
                 },
             }
         )
         self.update_model(
             "user/1",
             {
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
                 "organization_management_level": None,
             },
         )
-        status_code, _ = self.request(
+        status_code, data = self.request(
             "search_users_by_name_or_email",
             {
                 "permission_type": UserScope.Meeting.value,
@@ -254,6 +257,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
                 ],
             },
         )
+        print(data)
         self.assertEqual(status_code, 200)
 
     def test_permission_meeting_error(self) -> None:

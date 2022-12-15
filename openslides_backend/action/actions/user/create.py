@@ -51,7 +51,6 @@ class UserCreate(
             "organization_management_level",
             "is_present_in_meeting_ids",
             "committee_management_ids",
-            "group_$_ids",
             "is_demo_user",
             "forwarding_committee_ids",
         ],

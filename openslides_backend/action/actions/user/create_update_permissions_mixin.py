@@ -23,7 +23,6 @@ class PermissionVarStore:
             fqid_from_collection_and_id("user", self.user_id),
             [
                 "organization_management_level",
-                "group_$_ids",
                 "committee_ids",
                 "committee_management_ids",
             ],
@@ -156,7 +155,6 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         "B": [
             "is_present_in_meeting_ids",
         ],
-        "C": ["group_$_ids"],
         "D": ["committee_ids", "committee_management_ids"],
         "E": ["organization_management_level"],
         "F": ["default_password"],
@@ -194,7 +192,6 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         # Ordered by supposed velocity advantages. Changing order only can effect the sequence of detected errors for tests
         self.check_group_E(permstore, actual_group_fields["E"], instance)
         self.check_group_D(permstore, actual_group_fields["D"], instance)
-        self.check_group_C(permstore, actual_group_fields["C"], instance)
         self.check_group_B(permstore, actual_group_fields["B"], instance)
         self.check_group_A(permstore, actual_group_fields["A"])
         self.check_group_F(permstore, actual_group_fields["F"])
@@ -251,21 +248,6 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
                 raise MissingPermission(
                     {Permissions.User.CAN_MANAGE: meeting_id for meeting_id in diff}
                 )
-
-    def check_group_C(
-        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
-    ) -> None:
-        """Check Group C group_$_ids: OML, CML or meeting.permissions for each meeting"""
-        if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
-            touch_meeting_ids: Set[int] = set(
-                map(int, instance.get("group_$_ids", dict()).keys())
-            )
-            # Check permission for each change operation/meeting
-            if diff := touch_meeting_ids - permstore.user_committees_meetings:
-                if diff := diff - permstore.user_meetings:
-                    raise PermissionDenied(
-                        f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {diff}"
-                    )
 
     def check_group_D(
         self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]

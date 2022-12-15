@@ -9,6 +9,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
+            "meeting/1": {"meeting_user_ids": [1]},
             "motion/111": {
                 "meeting_id": 1,
                 "title": "title_srtgb123",
@@ -454,6 +455,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
+        self.permission_test_models["motion_state/1"]["allow_submitter_edit"] = False
         self.set_models(self.permission_test_models)
         response = self.request(
             "motion.update",
@@ -484,9 +486,9 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
+        self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
-        self.set_models(self.permission_test_models)
         response = self.request(
             "motion.update",
             {
@@ -498,6 +500,9 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert "Forbidden fields:" in response.json["message"]
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 1, "user_id": 2, "group_ids": [3]}
+        )
 
     def test_update_permission_metadata_and_wl(self) -> None:
         self.create_meeting()
@@ -506,7 +511,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.set_models(self.permission_test_models)
-        self.set_models({"motion_category/2": {"meeting_id": 1, "name": "test"}})
+        self.set_models(
+            {
+                "motion_category/2": {"meeting_id": 1, "name": "test"},
+                "meeting_user/1": {"user_id": 2},
+            }
+        )
         response = self.request(
             "motion.update",
             {
@@ -546,13 +556,13 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
-        self.permission_test_models["motion_submitter/1"]["meeting_user_id"] = 2
-        self.permission_test_models["meeting_user/2"] = {
+        self.permission_test_models["motion_submitter/1"]["meeting_user_id"] = 1
+        self.permission_test_models["meeting_user/1"] = {
             "meeting_id": 1,
             "user_id": self.user_id,
             "submitted_motion_ids": [1],
         }
-        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [2]}
+        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [1]}
         self.set_models(self.permission_test_models)
         self.set_models({"motion_category/2": {"meeting_id": 1, "name": "test"}})
         response = self.request(

@@ -70,9 +70,17 @@ class TestCheckMediafileId(BasePresenterTestCase):
                     "is_directory": False,
                     "owner_id": "meeting/1",
                 },
-                "meeting/1": {"admin_group_id": 2},
-                "group/2": {"user_ids": [1]},
-                "user/1": {"organization_management_level": None, "group_$1_ids": [2]},
+                "meeting/1": {"admin_group_id": 2, "meeting_user_ids": [1]},
+                "group/2": {"meeting_user_ids": [1]},
+                "user/1": {
+                    "organization_management_level": None,
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
             }
         )
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
@@ -135,12 +143,20 @@ class TestCheckMediafileId(BasePresenterTestCase):
                     "owner_id": "meeting/1",
                     "projection_ids": [1],
                 },
-                "meeting/1": {"default_group_id": 2},
+                "meeting/1": {"default_group_id": 2, "meeting_user_ids": [1]},
                 "group/2": {
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                     "permissions": [Permissions.Projector.CAN_SEE],
                 },
-                "user/1": {"organization_management_level": None, "group_$1_ids": [2]},
+                "user/1": {
+                    "organization_management_level": None,
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
                 "projection/1": {"meeting_id": 1, "current_projector_id": 1},
                 "projector/1": {"meeting_id": 1, "current_projection_ids": [1]},
             }
@@ -157,12 +173,20 @@ class TestCheckMediafileId(BasePresenterTestCase):
                     "owner_id": "meeting/1",
                     "is_public": True,
                 },
-                "meeting/1": {"default_group_id": 2},
+                "meeting/1": {"default_group_id": 2, "meeting_user_ids": [1]},
                 "group/2": {
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                     "permissions": [Permissions.Mediafile.CAN_SEE],
                 },
-                "user/1": {"organization_management_level": None, "group_$1_ids": [2]},
+                "user/1": {
+                    "organization_management_level": None,
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
             }
         )
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
@@ -177,12 +201,20 @@ class TestCheckMediafileId(BasePresenterTestCase):
                     "owner_id": "meeting/1",
                     "inherited_access_group_ids": [2],
                 },
-                "meeting/1": {"default_group_id": 2},
+                "meeting/1": {"default_group_id": 2, "meeting_user_ids": [1]},
                 "group/2": {
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                     "permissions": [Permissions.Mediafile.CAN_SEE],
                 },
-                "user/1": {"organization_management_level": None, "group_$1_ids": [2]},
+                "user/1": {
+                    "organization_management_level": None,
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
             }
         )
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})

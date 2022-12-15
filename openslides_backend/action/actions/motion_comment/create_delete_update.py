@@ -16,10 +16,11 @@ from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
 from ...util.default_schema import DefaultSchema
+from ...util.group_mixins import GroupHelper
 from ...util.register import register_action_set
 
 
-class MotionCommentMixin(Action):
+class MotionCommentMixin(GroupHelper, Action):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         super().check_permissions(instance)
 
@@ -27,11 +28,6 @@ class MotionCommentMixin(Action):
             instance, ["write_group_ids", "meeting_id", "submitter_can_write"]
         )
         meeting_id = section["meeting_id"]
-        user = self.datastore.get(
-            fqid_from_collection_and_id("user", self.user_id),
-            [f"group_${meeting_id}_ids"],
-            lock_result=False,
-        )
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),
             ["admin_group_id"],
@@ -40,7 +36,7 @@ class MotionCommentMixin(Action):
 
         allowed_groups = set(section.get("write_group_ids", []))
         allowed_groups.add(meeting["admin_group_id"])
-        user_groups = set(user.get(f"group_${meeting_id}_ids", []))
+        user_groups = self.get_groups_from_meeting_user(meeting_id, self.user_id)
         if allowed_groups.intersection(user_groups):
             return
 

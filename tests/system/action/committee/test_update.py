@@ -34,25 +34,34 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "user_ids": [20, 21],
                     "group_ids": [2001],
+                    "meeting_user_ids": [20, 21],
                 },
                 "meeting/201": {
                     "committee_id": self.COMMITTEE_ID,
                     "is_active_in_organization_id": 1,
                     "group_ids": [2011],
                 },
-                "group/2001": {"user_ids": [20, 21], "meeting_id": 200},
+                "group/2001": {"meeting_user_ids": [20, 21], "meeting_id": 200},
                 "group/2011": {"meeting_id": 201},
                 "user/20": {
-                    "group_$_ids": ["200"],
-                    "group_$200_ids": [2001],
+                    "meeting_user_ids": [20],
                     "committee_ids": [1],
                     "meeting_ids": [200],
                 },
                 "user/21": {
-                    "group_$_ids": ["200"],
-                    "group_$200_ids": [2001],
+                    "meeting_user_ids": [21],
                     "committee_ids": [1],
                     "meeting_ids": [200],
+                },
+                "meeting_user/20": {
+                    "meeting_id": 200,
+                    "user_id": 20,
+                    "group_ids": [2001],
+                },
+                "meeting_user/21": {
+                    "meeting_id": 200,
+                    "user_id": 21,
+                    "group_ids": [2001],
                 },
             }
         )

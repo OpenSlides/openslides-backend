@@ -16,6 +16,7 @@ from ..shared.exceptions import (
     DatastoreException,
     PermissionDenied,
 )
+from ..shared.filters import And, FilterOperator
 from ..shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
@@ -140,11 +141,19 @@ class CheckMediafileId(BasePresenter):
             inherited_access_group_ids = set(
                 mediafile.get("inherited_access_group_ids", [])
             )
-            user = self.datastore.get(
-                fqid_from_collection_and_id("user", self.user_id),
-                [f"group_${owner_id}_ids"],
+            filter_result = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("meeting_id", "=", owner_id),
+                    FilterOperator("user_id", "=", self.user_id),
+                ),
+                ["group_ids"],
             )
-            user_groups = set(user.get(f"group_${owner_id}_ids", []))
+            if len(filter_result) == 1:
+                user_groups = set(list(filter_result.values())[0].get("group_ids", []))
+            else:
+                user_groups = set()
+
             if inherited_access_group_ids & user_groups:
                 return
         raise PermissionDenied("You are not allowed to see this mediafile.")

@@ -65,14 +65,12 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/42": {
-                    "group_$22_ids": [111],
-                    "group_$_ids": ["22"],
+                    "meeting_user_ids": [42],
                     "meeting_ids": [22],
                     "committee_ids": [3],
                 },
                 "user/43": {
-                    "group_$22_ids": [111],
-                    "group_$_ids": ["22"],
+                    "meeting_user_ids": [43],
                     "meeting_ids": [22],
                     "committee_ids": [3],
                 },
@@ -83,36 +81,47 @@ class GroupDeleteActionTest(BaseActionTestCase):
                     "group_ids": [111],
                     "user_ids": [42, 43],
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [42, 43],
                 },
                 "group/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 22,
-                    "user_ids": [42, 43],
+                    "meeting_user_ids": [42, 43],
+                },
+                "meeting_user/42": {
+                    "meeting_id": 22,
+                    "user_id": 42,
+                    "group_ids": [111],
+                },
+                "meeting_user/43": {
+                    "meeting_id": 22,
+                    "user_id": 43,
+                    "group_ids": [111],
                 },
             }
         )
         response = self.request("group.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("group/111", {"user_ids": [42, 43]})
+        self.assert_model_deleted("group/111", {"meeting_user_ids": [42, 43]})
         self.assert_model_exists(
             "user/42",
             {
-                "group_$22_ids": [],
-                "group_$_ids": [],
                 "meeting_ids": [],
                 "committee_ids": [],
+                "meeting_user_ids": [42],
             },
         )
+        self.assert_model_exists("meeting_user/42", {"group_ids": []})
         self.assert_model_exists(
             "user/43",
             {
-                "group_$22_ids": [],
-                "group_$_ids": [],
+                "meeting_user_ids": [43],
                 "meeting_ids": [],
                 "committee_ids": [],
             },
         )
+        self.assert_model_exists("meeting_user/42", {"group_ids": [43]})
         self.assert_model_exists("meeting/22", {"user_ids": [], "group_ids": []})
         self.assert_model_exists("committee/3", {"user_ids": []})
 

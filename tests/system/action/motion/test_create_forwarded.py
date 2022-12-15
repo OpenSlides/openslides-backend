@@ -498,9 +498,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
+        self.set_models(self.test_model)
         self.set_models({"group/4": {"meeting_id": 2}})
         self.set_user_groups(self.user_id, [3, 4])
-        self.set_models(self.test_model)
         response = self.request(
             "motion.create_forwarded",
             {
@@ -517,9 +517,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
+        self.set_models(self.test_model)
         self.set_models({"group/4": {"meeting_id": 2}})
         self.set_user_groups(self.user_id, [3, 4])
-        self.set_models(self.test_model)
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
         self.set_group_permissions(4, [Permissions.Motion.CAN_FORWARD])
         response = self.request(
