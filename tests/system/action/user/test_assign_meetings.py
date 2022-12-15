@@ -5,23 +5,37 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_correct(self) -> None:
         self.set_models(
             {
-                "group/11": {"name": "to_find", "meeting_id": 1, "user_ids": [1]},
-                "group/22": {"name": "nothing", "meeting_id": 2, "user_ids": [1]},
+                "group/11": {
+                    "name": "to_find",
+                    "meeting_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "group/22": {
+                    "name": "nothing",
+                    "meeting_id": 2,
+                    "meeting_user_ids": [2],
+                },
                 "group/31": {"name": "to_find", "meeting_id": 3},
                 "group/43": {"name": "standard", "meeting_id": 4},
                 "group/51": {"name": "to_find", "meeting_id": 5},
-                "group/52": {"name": "nothing", "meeting_id": 5, "user_ids": [1]},
+                "group/52": {
+                    "name": "nothing",
+                    "meeting_id": 5,
+                    "meeting_user_ids": [5],
+                },
                 "meeting/1": {
                     "name": "success(existing)",
                     "group_ids": [11],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
+                    "meeting_user_ids": [1],
                 },
                 "meeting/2": {
                     "name": "nothing",
                     "group_ids": [22],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
+                    "meeting_user_ids": [2],
                 },
                 "meeting/3": {
                     "name": "success(added)",
@@ -41,13 +55,26 @@ class UserAssignMeetings(BaseActionTestCase):
                     "group_ids": [51, 52],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
+                    "meeting_user_ids": [5],
                 },
                 "user/1": {
-                    "group_$_ids": ["1", "2", "5"],
-                    "group_$1_ids": [11],
-                    "group_$2_ids": [22],
-                    "group_$5_ids": [52],
+                    "meeting_user_ids": [1, 2, 5],
                     "meeting_ids": [1, 2, 5],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [11],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 2,
+                    "user_id": 1,
+                    "group_ids": [22],
+                },
+                "meeting_user/5": {
+                    "meeting_id": 5,
+                    "user_id": 1,
+                    "group_ids": [52],
                 },
                 "committee/2": {"meeting_ids": [1, 2, 3, 4, 5]},
             }

@@ -139,7 +139,6 @@ class MotionCreateForwarded(GroupHelper, MotionCreateBase):
                     }
                 ],
             )
-            print("XXX", forwarding_user_id, meeting_id)
         instance["submitter_ids"] = [forwarding_user_id]
 
         self.create_submitters(instance)
