@@ -157,7 +157,30 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "amendment_paragraph a4 not allowed." in str(response.json["message"])
+        assert (
+            "data.amendment_paragraph must be named by propertyName definition"
+            in str(response.json["message"])
+        )
+
+    def test_create_with_amendment_paragraphs_invalid_2(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "lead_motion_id": 1,
+                "amendment_paragraph": ["test"],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "data.amendment_paragraph must be object" in response.json["message"]
 
     def test_create_missing_text(self) -> None:
         self.set_models(

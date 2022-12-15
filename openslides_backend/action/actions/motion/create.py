@@ -6,7 +6,7 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
-from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.patterns import POSITIVE_NUMBER_REGEX, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema, optional_id_schema
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -42,6 +42,10 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
         additional_optional_fields={
             "workflow_id": optional_id_schema,
             "submitter_ids": id_list_schema,
+            "amendment_paragraph": {
+                "type": "object",
+                "propertyNames": {"pattern": POSITIVE_NUMBER_REGEX},
+            },
             **agenda_creation_properties,
         },
     )
