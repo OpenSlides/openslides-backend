@@ -182,6 +182,37 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "data.amendment_paragraph must be object" in response.json["message"]
 
+    def test_create_with_amendment_paragraphs_html(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "lead_motion_id": 1,
+                "amendment_paragraph": {
+                    "0": "<it>test</it>",
+                    "1": "</><</>broken>",
+                },
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/2",
+            {
+                "amendment_paragraph": {
+                    "0": "&lt;it&gt;test&lt;/it&gt;",
+                    "1": "&lt;broken&gt;",
+                }
+            },
+        )
+
     def test_create_missing_text(self) -> None:
         self.set_models(
             {

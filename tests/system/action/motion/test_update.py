@@ -63,7 +63,10 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "text": "text_eNPkDVuq",
                     "reason": "reason_ukWqADfE",
                     "modified_final_version": "mfv_ilVvBsUi",
-                    "amendment_paragraph": {3: "<html>test</html>"},
+                    "amendment_paragraph": {
+                        3: "<html>test</html>",
+                        4: "</><</>broken>",
+                    },
                     "start_line_number": 13,
                 },
             )
@@ -75,7 +78,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("reason") == "reason_ukWqADfE"
         assert model.get("modified_final_version") == "mfv_ilVvBsUi"
         assert model.get("amendment_paragraph") == {
-            "3": "&lt;html&gt;test&lt;/html&gt;"
+            "3": "&lt;html&gt;test&lt;/html&gt;",
+            "4": "&lt;broken&gt;",
         }
         assert model.get("start_line_number") == 13
         self.assert_history_information("motion/111", ["Motion updated"])
