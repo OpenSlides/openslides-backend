@@ -3,7 +3,7 @@ import time
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
-from datastore.migrations import BaseEvent, CreateEvent
+from datastore.migrations import BaseEvent, CreateEvent, UpdateEvent
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.migrations.migrate import MigrationWrapper
@@ -781,6 +781,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             collection, id_ = collection_and_id_from_fqid(event.fqid)
             if event.type == CreateEvent.type:
                 data[collection].update({str(id_): event.data})
+            elif event.type == UpdateEvent.type:
+                data[collection][str(id_)].update(event.data)
             elif collection_from_fqid(event.fqid) in (
                 "organization",
                 "committee",
