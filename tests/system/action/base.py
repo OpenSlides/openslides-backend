@@ -226,15 +226,9 @@ class BaseActionTestCase(BaseSystemTestCase):
                 f"user/{id}": self._get_user_data(
                     username, partitioned_groups, organization_management_level
                 ),
-                **{
-                    f"group/{group['id']}": {
-                        "user_ids": list(set(group.get("user_ids", []) + [id]))
-                    }
-                    for groups in partitioned_groups.values()
-                    for group in groups
-                },
             }
         )
+        self.set_user_groups(id, group_ids)
         return id
 
     def _get_user_data(

@@ -249,16 +249,20 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
                     "meeting_user_ids": [34],
                 },
                 "group/1": {
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                     "permissions": [Permissions.User.CAN_MANAGE],
                 },
                 "user/1": {
                     "organization_management_level": None,
-                    "group_$1_ids": [1],
                     "meeting_user_ids": [34],
                     "default_number": "test",
                 },
-                "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": ""},
+                "meeting_user/34": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "number": "",
+                    "group_ids": [1],
+                },
                 "committee/1": {},
             }
         )
