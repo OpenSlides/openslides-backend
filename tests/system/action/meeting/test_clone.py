@@ -1293,3 +1293,44 @@ class MeetingClone(BaseActionTestCase):
         with Profiler("test_meeting_clone_performance.prof"):
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
+
+    def test_clone_amendment_paragraph(self) -> None:
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["group/1"]["user_ids"] = [1]
+        self.set_models(
+            {
+                "motion/1": {
+                    "list_of_speakers_id": 1,
+                    "meeting_id": 1,
+                    "sequential_number": 1,
+                    "state_id": 1,
+                    "submitter_ids": [1],
+                    "title": "dummy",
+                    "amendment_paragraph": {
+                        "1": "<it>test</it>",
+                        "2": "</>broken",
+                    },
+                },
+                "meeting/1": {
+                    "motion_ids": [1],
+                    "list_of_speakers_ids": [1],
+                },
+                "list_of_speakers/1": {
+                    "content_object_id": "motion/1",
+                    "meeting_id": 1,
+                    "sequential_number": 1,
+                },
+                "motion_state/1": {
+                    "motion_ids": [1],
+                },
+            }
+        )
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "admin_ids": [12], "user_ids": [13]}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "motion/1/amendment_paragraph error: Invalid html in 1\n\tmotion/1/amendment_paragraph error: Invalid html in 2"
+            in response.json["message"]
+        )

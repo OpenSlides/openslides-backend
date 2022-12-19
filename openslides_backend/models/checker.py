@@ -31,6 +31,7 @@ from openslides_backend.models.fields import (
 from openslides_backend.models.helper import calculate_inherited_groups_helper
 from openslides_backend.models.models import Meeting, Model
 from openslides_backend.shared.patterns import KEYSEPARATOR
+from openslides_backend.shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
 
 SCHEMA = fastjsonschema.compile(
     {
@@ -368,6 +369,7 @@ class Checker:
 
         if not errors:
             self.check_types(model, collection)
+            self.check_amendment_paragraph(model, collection)
             self.check_relations(model, collection)
             self.check_calculated_fields(model, collection)
 
@@ -561,6 +563,21 @@ class Checker:
 
         field_type = self.get_model(collection).get_field(field)
         return field_type.constraints.get("enum")
+
+    def check_amendment_paragraph(self, model: Dict[str, Any], collection: str) -> None:
+        if collection != "motion":
+            return
+        if "amendment_paragraph" in model:
+            msg = f"{collection}/{model['id']}/amendment_paragraph error: "
+            if not isinstance(model["amendment_paragraph"], dict):
+                self.errors.append(msg + "Not a dict.")
+            for key, html in model["amendment_paragraph"].items():
+                if not str.isdigit(key):
+                    self.errors.append(msg + f"{key} is not a number.")
+                if model["amendment_paragraph"][key] != validate_html(
+                    html, ALLOWED_HTML_TAGS_STRICT
+                ):
+                    self.errors.append(msg + f"Invalid html in {key}")
 
     def check_relations(self, model: Dict[str, Any], collection: str) -> None:
         for field in model.keys():

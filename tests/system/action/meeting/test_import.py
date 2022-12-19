@@ -1859,3 +1859,40 @@ class MeetingImport(BaseActionTestCase):
         with Profiler("test_meeting_import.prof"):
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
+
+    def test_import_amendment_paragraph(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "motion": {
+                    "1": self.get_motion_data(
+                        1,
+                        {},
+                    )
+                },
+                "list_of_speakers": {
+                    "1": {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/1",
+                        "closed": False,
+                        "sequential_number": 1,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    }
+                },
+            }
+        )
+        request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1]
+        request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
+        request_data["meeting"]["motion"]["1"]["amendment_paragraph"] = {
+            "0": None,
+            "1": "<it>test</it>",
+            "2": "</>broken",
+        }
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/2",
+            {"amendment_paragraph": {"1": "&lt;it&gt;test&lt;/it&gt;", "2": "broken"}},
+        )
