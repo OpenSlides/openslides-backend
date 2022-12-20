@@ -157,9 +157,8 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "data.amendment_paragraph must be named by propertyName definition"
-            in str(response.json["message"])
+        assert "data.amendment_paragraph must not contain {'a4'} properties" in str(
+            response.json["message"]
         )
 
     def test_create_with_amendment_paragraphs_invalid_2(self) -> None:

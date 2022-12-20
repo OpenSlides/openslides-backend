@@ -7,13 +7,8 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.patterns import (
-    KEYSEPARATOR,
-    POSITIVE_NUMBER_REGEX,
-    Collection,
-    fqid_from_collection_and_id,
-)
-from ....shared.schema import optional_id_schema
+from ....shared.patterns import KEYSEPARATOR, Collection, fqid_from_collection_and_id
+from ....shared.schema import number_string_json_schema, optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -48,10 +43,7 @@ class MotionUpdate(UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin
         ],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
-            "amendment_paragraph": {
-                "type": "object",
-                "propertyNames": {"pattern": POSITIVE_NUMBER_REGEX},
-            },
+            "amendment_paragraph": number_string_json_schema,
         },
     )
 
