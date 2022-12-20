@@ -24,9 +24,9 @@ services:
         environment:
             - OPENSLIDES_DEVELOPMENT=1
             - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
-            - DATASTORE_DATABASE_NAME=openslides-test
+            - DATASTORE_DATABASE_NAME=openslides
             - DATASTORE_DATABASE_USER=openslides
-            - DATASTORE_DATABASE_HOST=postgres-test
+            - DATASTORE_DATABASE_HOST=postgres
             - MESSAGE_BUS_HOST=redis
         volumes:
             - ../../openslides-datastore-service/datastore:/app/datastore
