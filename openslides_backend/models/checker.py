@@ -31,6 +31,8 @@ from openslides_backend.models.fields import (
 from openslides_backend.models.helper import calculate_inherited_groups_helper
 from openslides_backend.models.models import Meeting, Model
 from openslides_backend.shared.patterns import KEYSEPARATOR
+from openslides_backend.shared.schema import number_string_json_schema
+from openslides_backend.shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
 
 SCHEMA = fastjsonschema.compile(
     {
@@ -56,6 +58,13 @@ SCHEMA = fastjsonschema.compile(
         },
         "required": ["_migration_index"],
         "additionalProperties": False,
+    }
+)
+NUMBER_STRING_JSON_SCHEMA = fastjsonschema.compile(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Schema for amendment paragraph",
+        **number_string_json_schema,
     }
 )
 
@@ -368,6 +377,7 @@ class Checker:
 
         if not errors:
             self.check_types(model, collection)
+            self.check_special_fields(model, collection)
             self.check_relations(model, collection)
             self.check_calculated_fields(model, collection)
 
@@ -562,6 +572,49 @@ class Checker:
         field_type = self.get_model(collection).get_field(field)
         return field_type.constraints.get("enum")
 
+    def check_special_fields(self, model: Dict[str, Any], collection: str) -> None:
+        if collection != "motion":
+            return
+        if "amendment_paragraph" in model:
+            msg = f"{collection}/{model['id']}/amendment_paragraph error: "
+            try:
+                NUMBER_STRING_JSON_SCHEMA(model["amendment_paragraph"])
+            except fastjsonschema.exceptions.JsonSchemaException as e:
+                self.errors.append(
+                    msg + str(e),
+                )
+                return
+            for key, html in model["amendment_paragraph"].items():
+                if model["amendment_paragraph"][key] != validate_html(
+                    html, ALLOWED_HTML_TAGS_STRICT
+                ):
+                    self.errors.append(msg + f"Invalid html in {key}")
+        if "recommendation_extension" in model:
+            basemsg = (
+                f"{collection}/{model['id']}/recommendation_extension: Relation Error: "
+            )
+            RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(
+                r"\[(?P<fqid>\w+/\d+)\]"
+            )
+            recommendation_extension = model["recommendation_extension"]
+            if recommendation_extension is None:
+                recommendation_extension = ""
+
+            possible_rerids = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
+                recommendation_extension
+            )
+            for fqid_str in possible_rerids:
+                re_collection, re_id_ = fqid_str.split(KEYSEPARATOR)
+                if re_collection != "motion":
+                    self.errors.append(
+                        basemsg + f"Found {fqid_str} but only motion is allowed."
+                    )
+                if not self.find_model(re_collection, int(re_id_)):
+                    self.errors.append(
+                        basemsg
+                        + f"Found {fqid_str} in recommendation_extension but not in models."
+                    )
+
     def check_relations(self, model: Dict[str, Any], collection: str) -> None:
         for field in model.keys():
             try:
@@ -678,29 +731,6 @@ class Checker:
                 elif self.mode == "external":
                     self.errors.append(
                         f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
-                    )
-
-        elif collection == "motion" and field == "recommendation_extension":
-            RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(
-                r"\[(?P<fqid>\w+/\d+)\]"
-            )
-            recommendation_extension = model["recommendation_extension"]
-            if recommendation_extension is None:
-                recommendation_extension = ""
-
-            possible_rerids = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
-                recommendation_extension
-            )
-            for fqid_str in possible_rerids:
-                re_collection, re_id_ = fqid_str.split(KEYSEPARATOR)
-                if re_collection != "motion":
-                    self.errors.append(
-                        basemsg + f"Found {fqid_str} but only motion is allowed."
-                    )
-                if not self.find_model(re_collection, int(re_id_)):
-                    self.errors.append(
-                        basemsg
-                        + f"Found {fqid_str} in recommendation_extension but not in models."
                     )
 
     def get_to(self, field: str, collection: str) -> Tuple[str, Optional[str]]:

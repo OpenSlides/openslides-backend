@@ -1,7 +1,8 @@
-from typing import List
+from typing import Any, Dict, List
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
 from ...action import Action
 
 
@@ -31,3 +32,11 @@ class PermissionHelperMixin(Action):
             s.get("meeting_user_id") in (user.get("meeting_user_ids") or [])
             for s in submitters
         )
+
+
+class AmendmentParagraphHelper:
+    def validate_amendment_paragraph(self, instance: Dict[str, Any]) -> None:
+        for key, html in instance["amendment_paragraph"].items():
+            instance["amendment_paragraph"][key] = validate_html(
+                html, ALLOWED_HTML_TAGS_STRICT
+            )

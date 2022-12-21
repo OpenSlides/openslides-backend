@@ -56,19 +56,8 @@ class DeleteAction(Action):
             if field.on_delete != OnDelete.SET_NULL:
                 # Extract all foreign keys as fqids from the model
                 foreign_fqids: List[FullQualifiedId] = []
-                if isinstance(field, BaseTemplateRelationField):
-                    for structured_field_name in self.get_all_structured_fields(
-                        field, db_instance
-                    ):
-                        foreign_fqids += transform_to_fqids(
-                            db_instance[structured_field_name],
-                            field.get_target_collection(),
-                        )
-                else:
-                    value = db_instance.get(field.get_own_field_name(), [])
-                    foreign_fqids = transform_to_fqids(
-                        value, field.get_target_collection()
-                    )
+                value = db_instance.get(field.get_own_field_name(), [])
+                foreign_fqids = transform_to_fqids(value, field.get_target_collection())
 
                 if field.on_delete == OnDelete.PROTECT:
                     protected_fqids = [

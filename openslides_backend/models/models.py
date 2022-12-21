@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "aa85dcdda41f44adda5d6315b95a9e6b"
+MODELS_YML_CHECKSUM = "42886acf3c9363696709b2147e27c573"
 
 
 class Organization(Model):
@@ -1097,9 +1097,7 @@ class Motion(Model):
     )
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
-    amendment_paragraph_ = fields.TemplateHTMLStrictField(
-        index=20,
-    )
+    amendment_paragraph = fields.JSONField()
     modified_final_version = fields.HTMLStrictField()
     reason = fields.HTMLStrictField()
     category_weight = fields.IntegerField(default=10000)

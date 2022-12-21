@@ -18,7 +18,6 @@ from openslides_backend.models.fields import (
     GenericRelationListField,
     RelationField,
     RelationListField,
-    TemplateHTMLStrictField,
 )
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
@@ -34,7 +33,7 @@ from openslides_backend.shared.patterns import KEYSEPARATOR, fqid_from_collectio
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....shared.interfaces.event import Event, ListFields
-from ....shared.util import ONE_ORGANIZATION_ID
+from ....shared.util import ALLOWED_HTML_TAGS_STRICT, ONE_ORGANIZATION_ID, validate_html
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
@@ -172,16 +171,18 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             if blob := entry.pop("blob", None):
                 self.mediadata.append((blob, entry["id"], entry["mimetype"]))
 
+        # remove None values from amendment paragraph, os3 exports have those.
+        # and validate the html.
         for entry in meeting_json.get("motion", {}).values():
-            to_remove = set()
-            for paragraph in entry.get("amendment_paragraph_$") or []:
-                if (entry.get(fname := "amendment_paragraph_$" + paragraph)) is None:
-                    to_remove.add(paragraph)
-                    entry.pop(fname, None)
-            if to_remove:
-                entry["amendment_paragraph_$"] = list(
-                    set(entry["amendment_paragraph_$"]) - to_remove
-                )
+            if "amendment_paragraph" in entry and isinstance(
+                entry["amendment_paragraph"], dict
+            ):
+                res = {}
+                for key, html in entry["amendment_paragraph"].items():
+                    if html is None:
+                        continue
+                    res[key] = validate_html(html, ALLOWED_HTML_TAGS_STRICT)
+                entry["amendment_paragraph"] = res
 
         # check datavalidation
         checker = Checker(
@@ -530,18 +531,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                             and isinstance(model_field, RelationListField)
                         ):
                             list_fields["add"][field] = value
-                        elif isinstance(model_field, BaseTemplateField) and isinstance(
-                            model_field,
-                            (TemplateHTMLStrictField,),
-                        ):
-                            if model_field.is_template_field(field):
-                                list_fields["add"][field] = value
-                            else:
-                                fields[field] = value
                         elif isinstance(model_field, RelationListField):
                             list_fields["add"][field] = value
-                        elif isinstance(model_field, RelationField):
-                            fields[field] = value
                     fqid = fqid_from_collection_and_id(collection, entry["id"])
                     if fields or list_fields["add"]:
                         update_events.append(

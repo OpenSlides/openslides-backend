@@ -466,17 +466,3 @@ class TemplateRelationListField(BaseTemplateRelationField, RelationListField):
         if not hasattr(self, "required") or not self.required:
             schema["type"] = ["array", "null"]
         return schema
-
-
-class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
-    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
-        if type(value) == dict:
-            sup: Any = super()
-            return {key: sup.validate(struc) for key, struc in value.items()}
-        elif type(value) == list:
-            return value
-        elif value is None:
-            return None
-        raise NotImplementedError(
-            f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"
-        )

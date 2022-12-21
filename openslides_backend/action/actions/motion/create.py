@@ -6,17 +6,22 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
-from ....shared.patterns import POSITIVE_NUMBER_REGEX, fqid_from_collection_and_id
-from ....shared.schema import id_list_schema, optional_id_schema
+from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.schema import (
+    id_list_schema,
+    number_string_json_schema,
+    optional_id_schema,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create_base import MotionCreateBase
+from .mixins import AmendmentParagraphHelper
 
 
 @register_action("motion.create")
-class MotionCreate(MotionCreateBase):
+class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
     """
     Create Action for motions.
     """
@@ -35,12 +40,13 @@ class MotionCreate(MotionCreateBase):
             "lead_motion_id",
             "statute_paragraph_id",
             "reason",
+            "amendment_paragraph",
         ],
         required_properties=["meeting_id", "title"],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
             "submitter_ids": id_list_schema,
-            **Motion().get_property("amendment_paragraph_$", POSITIVE_NUMBER_REGEX),
+            "amendment_paragraph": number_string_json_schema,
             **agenda_creation_properties,
         },
     )
@@ -85,25 +91,27 @@ class MotionCreate(MotionCreateBase):
                 raise ActionException(
                     "You can't give both of lead_motion_id and statute_paragraph_id."
                 )
-            if not instance.get("text") and not instance.get("amendment_paragraph_$"):
+            if not instance.get("text") and not instance.get("amendment_paragraph"):
                 raise ActionException(
-                    "Text or amendment_paragraph_$ is required in this context."
+                    "Text or amendment_paragraph is required in this context."
                 )
-            if instance.get("text") and instance.get("amendment_paragraph_$"):
+            if instance.get("text") and instance.get("amendment_paragraph"):
                 raise ActionException(
-                    "You can't give both of text and amendment_paragraph_$"
+                    "You can't give both of text and amendment_paragraph"
                 )
-            if instance.get("text") and "amendment_paragraph_$" in instance:
-                del instance["amendment_paragraph_$"]
-            if instance.get("amendment_paragraph_$") and "text" in instance:
+            if instance.get("text") and "amendment_paragraph" in instance:
+                del instance["amendment_paragraph"]
+            if instance.get("amendment_paragraph") and "text" in instance:
                 del instance["text"]
         else:
             if not instance.get("text"):
                 raise ActionException("Text is required")
-            if instance.get("amendment_paragraph_$"):
+            if instance.get("amendment_paragraph"):
                 raise ActionException(
-                    "You can't give amendment_paragraph_$ in this context"
+                    "You can't give amendment_paragraph in this context"
                 )
+        if instance.get("amendment_paragraph"):
+            self.validate_amendment_paragraph(instance)
         # if lead_motion and not has perm motion.can_manage
         # use category_id and block_id from the lead_motion
         if instance.get("lead_motion_id") and not has_perm(
@@ -169,7 +177,7 @@ class MotionCreate(MotionCreateBase):
                 "text",
                 "reason",
                 "lead_motion_id",
-                "amendment_paragraph_$",
+                "amendment_paragraph",
                 "category_id",
                 "statute_paragraph_id",
                 "workflow_id",

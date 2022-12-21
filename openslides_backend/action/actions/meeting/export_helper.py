@@ -11,7 +11,6 @@ from ....models.fields import (
     OnDelete,
     RelationField,
     RelationListField,
-    TemplateHTMLStrictField,
     TemplateRelationListField,
 )
 from ....models.models import Meeting, User
@@ -141,10 +140,7 @@ def add_users(
     for field in User().get_fields():
         if isinstance(
             field,
-            (
-                TemplateHTMLStrictField,
-                TemplateRelationListField,
-            ),
+            (TemplateRelationListField,),
         ):
             template_fields.append(
                 (
