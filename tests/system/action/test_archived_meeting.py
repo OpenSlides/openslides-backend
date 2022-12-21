@@ -110,12 +110,10 @@ class MeetingActions(BaseActionTestCase):
                     "group_ids": [1],
                     "meeting_user_ids": [3, 4],
                 },
-                "group/1": {"user_ids": [2], "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [2], "meeting_id": 1},
                 "user/2": {
                     "username": "user2",
                     "is_active": True,
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
                     "meeting_user_ids": [3],
                 },
                 "user/1": {
@@ -125,6 +123,7 @@ class MeetingActions(BaseActionTestCase):
                     "user_id": 2,
                     "meeting_id": 1,
                     "speaker_ids": [2, 3],
+                    "group_ids": [1],
                 },
                 "meeting_user/4": {
                     "user_id": 1,
@@ -168,13 +167,11 @@ class MeetingActions(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "group_$1_ids": [],
-                "group_$_ids": [],
                 "is_active": True,
             },
         )
         self.assert_model_deleted("meeting_user/3")
-        self.assert_model_deleted("group/1", {"user_ids": [2], "meeting_id": 1})
+        self.assert_model_deleted("group/1", {"meeting_user_ids": [2], "meeting_id": 1})
         self.assert_model_deleted(
             "list_of_speakers/11",
             {"speaker_ids": [1, 2], "meeting_id": 1},
@@ -213,26 +210,30 @@ class OutMeetingActions(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"group_ids": [1, 2]},
-                "group/1": {"user_ids": [2], "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [2], "meeting_id": 1},
                 "group/2": {"meeting_id": 1},
                 "user/2": {
                     "username": "user2",
                     "is_active": True,
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [1],
                 },
             }
         )
         response = self.request(
-            "user.update",
+            "meeting_user.update",
             {
                 "id": 2,
-                "group_$_ids": {1: [2]},
+                "group_ids": [2],
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meetings 1 cannot be changed, because they are archived.",
+            "Meeting test/1 cannot be changed, because it is archived.",
             response.json["message"],
         )
 
@@ -240,12 +241,16 @@ class OutMeetingActions(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"group_ids": [1], "user_ids": [1, 2]},
-                "group/1": {"user_ids": [2], "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [2], "meeting_id": 1},
                 "user/2": {
                     "username": "user2",
                     "is_active": True,
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [1],
                 },
             }
         )
@@ -257,8 +262,8 @@ class OutMeetingActions(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("user/2", {"group_$1_ids": [1]})
-        self.assert_model_exists("group/1", {"user_ids": []})
+        self.assert_model_deleted("user/2", {"meeting_user_ids": [2]})
+        self.assert_model_exists("group/1", {"meeting_user_ids": []})
         self.assert_model_exists("meeting/1", {"group_ids": [1], "user_ids": [1]})
 
     def test_delete_organization_tag(self) -> None:
