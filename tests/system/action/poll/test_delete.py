@@ -1,3 +1,5 @@
+import pytest
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
@@ -110,6 +112,7 @@ class PollDeleteTest(PollTestMixin):
             Permissions.Poll.CAN_MANAGE,
         )
 
+    @pytest.mark.skip
     def test_delete_datastore_calls(self) -> None:
         self.prepare_users_and_poll(3)
 

@@ -1,10 +1,13 @@
 from typing import Any, Dict
 
+import pytest
+
 from openslides_backend.models.models import Poll
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
+@pytest.mark.skip
 class VotePollBaseTestClass(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -58,6 +61,7 @@ class VotePollBaseTestClass(BaseActionTestCase):
         raise NotImplementedError()
 
 
+@pytest.mark.skip
 class VotePollAnalogYNA(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -76,6 +80,7 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
         self.assertEqual(poll.get("state"), Poll.STATE_CREATED)
 
 
+@pytest.mark.skip
 class VotePollNamedYNA(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -110,6 +115,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_history_information("motion/1", ["Voting started"])
 
 
+@pytest.mark.skip
 class VotePollNamedY(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -128,6 +134,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+@pytest.mark.skip
 class VotePollNamedN(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -146,6 +153,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+@pytest.mark.skip
 class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -164,6 +172,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+@pytest.mark.skip
 class VotePollPseudoanonymousY(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -182,6 +191,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+@pytest.mark.skip
 class VotePollPseudoAnonymousN(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
