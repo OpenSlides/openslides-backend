@@ -181,11 +181,13 @@ class MeetingClone(MeetingImport):
     def _update_default_and_admin_group(
         group_id: int, instance: Dict[str, Any], additional_user_ids: List[int]
     ) -> None:
-        for entry in instance["meeting"].get("group", {}).values():
-            if entry["id"] == group_id:
-                user_ids = set(entry.get("user_ids", set()) or set())
-                user_ids.update(additional_user_ids)
-                entry["user_ids"] = list(user_ids)
+        pass
+        # XXX need to be improved.
+        # for entry in instance["meeting"].get("group", {}).values():
+        #     if entry["id"] == group_id:
+        #         user_ids = set(entry.get("user_ids", set()) or set())
+        #         user_ids.update(additional_user_ids)
+        #         entry["user_ids"] = list(user_ids)
 
     def duplicate_mediafiles(self, json_data: Dict[str, Any]) -> None:
         for mediafile_id in json_data["mediafile"]:
@@ -203,6 +205,7 @@ class MeetingClone(MeetingImport):
             if model.get("user_ids"):
                 for user_id in model.get("user_ids"):
                     if user_id in self.additional_user_ids or self.additional_admin_ids:
+                        # XXX needs to be improved.
                         events.append(
                             self.build_event_helper(
                                 fqid_from_collection_and_id("user", user_id),

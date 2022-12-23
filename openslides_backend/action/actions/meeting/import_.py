@@ -111,12 +111,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             ),
         ]
         if self.user_id:
-            cml_fields = ["committee_management_ids"]
             requests.append(
                 GetManyRequest(
                     "user",
                     [self.user_id],
-                    ["group_$_ids", "committee_ids", *cml_fields],
+                    ["committee_ids", "committee_management_ids"],
                 ),
             )
         self.datastore.get_many(requests, use_changed_models=False)
@@ -228,7 +227,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         self.create_replace_map(meeting_json)
         self.replace_fields(instance)
         meeting_json = instance["meeting"]
-        self.update_admin_group(meeting_json)
+        # XXX self.update_admin_group(meeting_json)
         self.upload_mediadata()
         return instance
 

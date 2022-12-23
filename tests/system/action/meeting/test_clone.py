@@ -174,6 +174,7 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_with_ex_users(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1, 11]
         self.test_models["group/1"]["meeting_user_ids"] = [1]
         self.test_models["organization/1"]["user_ids"] = [1, 11, 12, 13]
         self.set_models(
@@ -212,7 +213,7 @@ class MeetingClone(BaseActionTestCase):
                     "motion_submitter_ids": [1],
                     "motion_ids": [1],
                     "list_of_speakers_ids": [1],
-                    "meeting_user_ids": [11],
+                    "meeting_user_ids": [1, 11],
                 },
                 "list_of_speakers/1": {
                     "content_object_id": "motion/1",
@@ -401,6 +402,7 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_user_ids_and_admin_ids(self) -> None:
         self.test_models["meeting/1"]["template_for_organization_id"] = None
+        self.test_models["meeting/1"]["meeting_user_ids"] = [15, 16]
         self.test_models["organization/1"]["user_ids"] = [1, 13, 14, 15, 16]
         self.set_models(self.test_models)
         self.set_models(
@@ -429,7 +431,7 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "meeting_user/16": {
                     "meeting_id": 1,
-                    "user_id": 15,
+                    "user_id": 16,
                     "group_ids": [2],
                 },
             }
@@ -518,13 +520,13 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_ids": [1],
                     "organization_id": 1,
                 },
-                "group/1": {"user_ids": [13]},
+                "group/1": {"meeting_user_ids": [1]},
                 "committee/2": {"organization_id": 1},
                 "organization/1": {"committee_ids": [1, 2]},
-                "meeting/1": {"user_ids": [13]},
+                "meeting/1": {"user_ids": [13], "meeting_user_ids": [1]},
                 "meeting_user/1": {
                     "meeting_id": 1,
-                    "user_id": 1,
+                    "user_id": 13,
                     "group_ids": [1],
                 },
             }
@@ -700,6 +702,7 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_with_option(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["option_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["meeting_user_ids"] = [1]
         self.set_models(
             {
@@ -723,11 +726,16 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_with_mediafile(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["mediafile_ids"] = [1, 2]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["meeting_user_ids"] = [1]
         self.set_models(self.test_models)
         self.set_models(
             {
-                "meeting/1": {"logo_web_header_id": 1, "font_bold_id": 2},
+                "meeting/1": {
+                    "logo_web_header_id": 1,
+                    "font_bold_id": 2,
+                    "meeting_user_ids": [1],
+                },
                 "user/1": {
                     "meeting_user_ids": [1],
                     "meeting_ids": [1],
@@ -775,6 +783,7 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_with_mediafile_directory(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["meeting_user_ids"] = [1]
         self.set_models(
             {
@@ -1386,6 +1395,7 @@ class MeetingClone(BaseActionTestCase):
         self.test_models[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [1, 2]
         self.test_models["committee/1"]["meeting_ids"] = [1, 2]
         self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["meeting_user_ids"] = [1]
         self.set_models(self.test_models)
         self.set_models(
@@ -1403,6 +1413,7 @@ class MeetingClone(BaseActionTestCase):
                     "group_ids": [3],
                     "user_ids": [1],
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [2],
                 },
                 "group/3": {
                     "meeting_id": 2,
@@ -1515,7 +1526,9 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_amendment_paragraph(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
-        self.test_models["group/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_id"] = [1]
+        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.test_models["user/1"]["meeting_user_ids"] = [1]
         self.set_models(
             {
                 "motion/1": {
@@ -1542,12 +1555,15 @@ class MeetingClone(BaseActionTestCase):
                 "motion_state/1": {
                     "motion_ids": [1],
                 },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
+                },
             }
         )
         self.set_models(self.test_models)
-        response = self.request(
-            "meeting.clone", {"meeting_id": 1, "admin_ids": [12], "user_ids": [13]}
-        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
         assert (
             "motion/1/amendment_paragraph error: Invalid html in 1\n\tmotion/1/amendment_paragraph error: Invalid html in 2"
