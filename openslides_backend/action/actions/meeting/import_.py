@@ -324,7 +324,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         # generate passwords
         for entry in json_data["user"].values():
             if entry["id"] not in self.merge_user_map:
-                entry["password"] = self.auth.hash(get_random_string(10))
+                if not entry.get("default_password"):
+                    entry["default_password"] = get_random_string(10)
+                entry["password"] = self.auth.hash(entry["default_password"])
 
         # set enable_anonymous
         meeting["enable_anonymous"] = False
