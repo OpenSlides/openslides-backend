@@ -1611,7 +1611,7 @@
             "rejected": false,
             "internal": false,
             "line_from": 1,
-            "line_to": 2,
+            "line_to": 1,
             "text": "<p>skp</p>",
             "creation_time": 1584512667,
             "motion_id": 3,
