@@ -11,7 +11,7 @@ def reset_db():
 
 def get_connection():
     return psycopg2.connect(
-        host="media-postgresql",
+        host="postgres",
         port=5432,
         database="openslides",
         user="openslides",

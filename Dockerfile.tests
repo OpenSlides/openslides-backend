@@ -9,6 +9,7 @@ WORKDIR /app
 COPY requirements_tests.txt .
 RUN pip install -r requirements_tests.txt
 
+COPY src/* src/
 COPY scripts/entrypoint.sh .
 COPY scripts/service_env.sh scripts/
 

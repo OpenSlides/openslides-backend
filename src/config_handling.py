@@ -4,53 +4,40 @@ import sys
 DEV_MODE_ENVIRONMENT_VAR = "OPENSLIDES_DEVELOPMENT"
 DEV_SECRET = "openslides"
 
+CONFIG_DEFAULTS = {
+    "MEDIA_DATABASE_HOST": "postgres",
+    "MEDIA_DATABASE_PORT": 5432,
+    "MEDIA_DATABASE_NAME": "openslides",
+    "MEDIA_DATABASE_USER": "openslides",
+    "MEDIA_DATABASE_PASSWORD_FILE": "/run/secrets/postgres_password",
+    "MEDIA_BLOCK_SIZE": 4096,
+    "PRESENTER_HOST": "backend",
+    "PRESENTER_PORT": 9003,
+}
+
 
 def get_type_for(config_value):
-    if config_value in (
-        "MEDIA_DATABASE_PORT",
-        "MEDIA_BLOCK_SIZE",
-        "PRESENTER_PORT",
-    ):
-        return int
-    return str
-
-
-def get_default_for(config_value):
-    if config_value == "MEDIA_BLOCK_SIZE":
-        return 4096
+    return type(CONFIG_DEFAULTS[config_value])
 
 
 def init_config(app):
-    file_configs = ("MEDIA_DATABASE_PASSWORD",)
-
-    all_configs = (
-        "MEDIA_DATABASE_HOST",
-        "MEDIA_DATABASE_PORT",
-        "MEDIA_DATABASE_NAME",
-        "MEDIA_DATABASE_USER",
-        "MEDIA_DATABASE_PASSWORD",
-        "MEDIA_BLOCK_SIZE",
-        "PRESENTER_HOST",
-        "PRESENTER_PORT",
-    )
-
-    for config in all_configs:
-        if config in file_configs:
+    for config, default in CONFIG_DEFAULTS.items():
+        if config.endswith("_FILE"):
             value = get_config_from(config)
         else:
-            value = os.environ.get(config, get_default_for(config))
+            value = os.environ.get(config, default)
         if not value:
             app.logger.critical(f"Did not find an environment variable for '{config}'")
             sys.exit(1)
+        config_type = type(default)
         try:
-            value = get_type_for(config)(value)
+            value = config_type(value)
         except Exception:  # noqa
             app.logger.critical(
-                f"Environment variable for '{config}' does not have the "
-                f"type {str(get_type_for(config))}"
+                f"Environment variable '{config}' does not have the type {str(config_type)}"
             )
             sys.exit(1)
-        app.config[config] = value
+        app.config[config.replace("_FILE", "")] = value
 
 
 def is_dev_mode() -> bool:
@@ -59,7 +46,7 @@ def is_dev_mode() -> bool:
 
 
 def get_config_from(config):
-    path = os.environ.get(config + "_FILE")
+    path = os.environ.get(config, CONFIG_DEFAULTS[config])
     if is_dev_mode():
         return DEV_SECRET
     with open(path) as file_:

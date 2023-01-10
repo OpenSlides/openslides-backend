@@ -1,29 +1,25 @@
 version: "3.4"
 services:
-    media-postgresql:
-        image: postgres:11
-        environment:
-            - POSTGRES_USER=openslides
-            - POSTGRES_PASSWORD=openslides
-            - POSTGRES_DB=openslides
     media:
         image: openslides-media-dev
         environment:
-            - MEDIA_DATABASE_HOST=media-postgresql
+            - MEDIA_DATABASE_HOST=postgres
             - MEDIA_DATABASE_PORT=5432
             - MEDIA_DATABASE_NAME=openslides
-            - MEDIA_DATABASE_USER_FILE=/run/secrets/media_database_user
-            - MEDIA_DATABASE_PASSWORD_FILE=/run/secrets/media_database_password
+            - MEDIA_DATABASE_PASSWORD_FILE=/run/secrets/postgres_password
         volumes:
             - ./src:/app/src
         ports:
             - 9006:9006
         secrets:
-            - media_database_user
-            - media_database_password
+            - postgres_password
+    postgres:
+        image: postgres:11
+        environment:
+            - POSTGRES_USER=openslides
+            - POSTGRES_PASSWORD=openslides
+            - POSTGRES_DB=openslides
 
 secrets:
-    media_database_user:
-        file: ./secrets/media_database_user
-    media_database_password:
-        file: ./secrets/media_database_password
+    postgres_password:
+        file: ./secrets/postgres_password

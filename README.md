@@ -5,27 +5,21 @@ Delivers media files and resources for OpenSlides. It stores the data in the
 database.
 
 ## Configuration
-See `config_handling.py`:
-```
-"MEDIA_DATABASE_HOST": Host of the database (media-postgresql),
-"MEDIA_DATABASE_PORT": Port of the database (5432),
-"MEDIA_DATABASE_NAME": Name of the database (openslides),
-"MEDIA_DATABASE_USER_FILE": Path to the (secret) file, which contains the
-username (/run/secrets/media_database_user),
-"MEDIA_DATABASE_PASSWORD_FILE": Path to the (secret) file, which contains the
-password (/run/secrets/media_database_password),
-"BLOCK_SIZE": The size of the blocks, the file is chunked into.
-              Default 4096, 4096 seems to be a good default,
-"PRESENTER_HOST": Host of the presenter service,
-"PRESENTER_PORT": Port of the presenter service,
-```
-Some configs have a default (in brackets defaults from docker-compose.yml).
+- `MEDIA_DATABASE_HOST`: Host of the database (default: `postgres`)
+- `MEDIA_DATABASE_PORT`: Port of the database (default: `5432`)
+- `MEDIA_DATABASE_NAME`: Name of the database (default: `openslides`)
+- `MEDIA_DATABASE_USER`: Name of the database user (default: `openslides`)
+- `MEDIA_DATABASE_PASSWORD_FILE`: Path to the (secret) file, which contains the
+password (default: `/run/secrets/postgres_password`; in dev mode the password is always assumed to be `openslides`)
+- `BLOCK_SIZE`: The size of the blocks, the file is chunked into (default: `4096`)
+- `PRESENTER_HOST`: Host of the presenter service (default: `backend`)
+- `PRESENTER_PORT`: Port of the presenter service (default: `9003`)
 
-## Production setup:
+## Production setup
 Use the provided Dockerfile. It creates the tables in Postgresql, if they don't
 exist before startup.
 
-## Development:
+## Development
 We use docker to run the code.
 
 The command `make run-tests` runs the tests.

@@ -1,15 +1,9 @@
 version: "3.4"
 services:
-    media-postgresql:
-        image: postgres:11
-        environment:
-            - POSTGRES_USER=openslides
-            - POSTGRES_PASSWORD=openslides
-            - POSTGRES_DB=openslides
     media:
         image: openslides-media-dev
         environment:
-            - MEDIA_DATABASE_HOST=media-postgresql
+            - MEDIA_DATABASE_HOST=postgres
             - MEDIA_DATABASE_PORT=5432
             - MEDIA_DATABASE_NAME=openslides
             - PRESENTER_HOST=dummy_presenter
@@ -26,9 +20,17 @@ services:
             - ./tests/dummy_presenter:/app/dummy_presenter
     tests:
         image: openslides-media-tests
+        environment:
+            - OPENSLIDES_DEVELOPMENT=1
         depends_on:
             - media
-            - media-postgresql
+            - postgres
             - dummy_presenter
         volumes:
             - ./tests:/app/tests
+    postgres:
+        image: postgres:11
+        environment:
+            - POSTGRES_USER=openslides
+            - POSTGRES_PASSWORD=openslides
+            - POSTGRES_DB=openslides
