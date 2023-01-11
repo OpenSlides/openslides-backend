@@ -206,7 +206,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                     "derived_motion_ids",
                     "all_origin_id",
                     "all_derived_motion_ids",
-                ]
+                ],
+                "user": [
+                    "password",
+                    "default_password",
+                    "last_email_send",
+                    "last_login",
+                ],
             },
         )
         try:
@@ -324,8 +330,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         # generate passwords
         for entry in json_data["user"].values():
             if entry["id"] not in self.merge_user_map:
-                if not entry.get("default_password"):
-                    entry["default_password"] = get_random_string(10)
+                entry["default_password"] = get_random_string(10)
                 entry["password"] = self.auth.hash(entry["default_password"])
 
         # set enable_anonymous
