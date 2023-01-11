@@ -1654,6 +1654,27 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_model_exists("meeting/2", {"present_user_ids": [15]})
 
+    def test_with_default_password(self) -> None:
+        request_data = self.create_request_data()
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/2")
+        assert user["default_password"] != "admin"
+        assert self.auth.is_equals(user["default_password"], user["password"])
+
+    def test_without_default_password(self) -> None:
+        request_data = self.create_request_data()
+        request_data["meeting"]["user"]["1"]["default_password"] = ""
+        request_data["meeting"]["user"]["1"]["last_email_send"] = int(time.time())
+        request_data["meeting"]["user"]["1"]["last_login"] = int(time.time())
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/2")
+        assert len(user["default_password"]) == 10
+        assert self.auth.is_equals(user["default_password"], user["password"])
+        assert "last_email_send" not in user
+        assert "last_login" not in user
+
     def test_merge_users_template_fields(self) -> None:
         self.set_models(
             {
