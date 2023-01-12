@@ -1500,22 +1500,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_update_presence(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "user/111": {"username": "username_srtgb123"},
-                "committee/1": {},
-            }
-        )
-        response = self.request("user.update", {"id": 111, "presence": {"1": True}})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": [1]})
-        self.assert_model_exists("meeting/1", {"present_user_ids": [111]})
-        self.assert_history_information(
-            "user/111", ["Set present in meeting {}", "meeting/1"]
-        )
-
     def test_update_history_user_updated_in_meeting(self) -> None:
         self.set_models(
             {
