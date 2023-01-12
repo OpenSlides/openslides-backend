@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Set, cast
 from openslides_backend.services.datastore.commands import GetManyRequest
 
 from ...models.fields import Field
+from ...shared.filters import FilterOperator
 from ...shared.patterns import (
     fqfield_from_collection_and_id_and_field,
     fqid_from_collection_and_id,
@@ -22,22 +23,18 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
-        # cml_fields = get_field_list_from_template(
-        #    cast(List[str], User.committee__management_level.replacement_enum),
-        #    "committee_$%s_management_level",
-        # )
         cml_fields = ["committee_management_ids"]
         if (
-            field.own_collection != "user"
-            or field_name not in ["group_$_ids", *cml_fields]
-            or ("group_$_ids" in instance and field_name != "group_$_ids")
+            (field.own_collection != "user" and field.own_collection != "meeting_user")
+            or field_name not in ["group_ids", *cml_fields]
+            or ("group_ids" in instance and field_name != "group_ids")
         ):
             return {}
         user_id = instance["id"]
         fqid = fqid_from_collection_and_id(field.own_collection, instance["id"])
         db_user = self.datastore.get(
             fqid,
-            ["committee_ids", "group_$_ids", *cml_fields],
+            ["committee_ids", *cml_fields],
             use_changed_models=False,
             raise_exception=False,
         )
@@ -46,10 +43,12 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             new_committees_ids = get_set_of_values_from_dict(instance, cml_fields)
         else:
             new_committees_ids = get_set_of_values_from_dict(db_user, cml_fields)
-        if "group_$_ids" in instance:
-            meeting_ids = list(map(int, instance.get("group_$_ids", []))) or []
+        if "group_ids" in instance:
+            meeting_ids = self.get_meetings(
+                user_id, instance["id"], instance["group_ids"]
+            )
         else:
-            meeting_ids = list(map(int, db_user.get("group_$_ids", []))) or []
+            meeting_ids = self.get_meetings(user_id, -1, [])
         meeting_collection = "meeting"
         committee_ids: Set[int] = set(
             map(
@@ -111,6 +110,33 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             add_relation(True, added_ids)
             add_relation(False, removed_ids)
         return relation_update
+
+    def get_meeting_users_by_user_id(self, user_id: int) -> List[Dict[str, Any]]:
+        """Get a user_id, filters all meeting_user for it, and returns the
+        dicts with id, meeting_id and group_ids."""
+        filter_ = FilterOperator("user_id", "=", user_id)
+        res = self.datastore.filter(
+            "meeting_user",
+            filter_,
+            ["id", "meeting_id", "group_ids"],
+        )
+        return list(res.values())
+
+    def replace_changed_meeting_user(
+        self, replace_id: int, group_ids: List[int], meeting_users: List[Dict[str, Any]]
+    ) -> None:
+        """Replace the meeting user which group ids has been changed."""
+        for meeting_user in meeting_users:
+            if meeting_user["id"] == replace_id:
+                meeting_user["group_ids"] = group_ids
+
+    def get_meetings(
+        self, user_id: int, replace_id: int, group_ids: List[int]
+    ) -> Set[int]:
+        meeting_users = self.get_meeting_users_by_user_id(user_id)
+        self.replace_changed_meeting_user(replace_id, group_ids, meeting_users)
+        meeting_ids = [mu["meeting_id"] for mu in meeting_users if mu.get("group_ids")]
+        return set(meeting_ids)
 
 
 def get_set_of_values_from_dict(
