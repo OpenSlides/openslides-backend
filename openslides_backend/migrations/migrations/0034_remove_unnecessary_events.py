@@ -21,20 +21,27 @@ class Migration(BaseMigration):
             if self.new_accessor.model_exists(event.fqid)
             else {}
         )
-        new_data = {}
         if isinstance(event, UpdateEvent):
+            new_data = {}
             for field, value in event.data.items():
                 if value != old.get(field):
                     new_data[field] = value
+            if new_data:
+                event.data = new_data
+                return [event]
         elif isinstance(event, ListUpdateEvent):
             new_add = {}
             new_remove = {}
             for field, value in event.add.items():
-                new_value = [el for el in value if el not in old.get(field, [])]
+                old_value = old.get(field, [])
+                assert isinstance(old_value, list)
+                new_value = [el for el in value if el not in old_value]
                 if new_value:
                     new_add[field] = new_value
             for field, value in event.remove.items():
-                new_value = [el for el in value if el in old.get(field, [])]
+                old_value = old.get(field, [])
+                assert isinstance(old_value, list)
+                new_value = [el for el in value if el in old_value]
                 if new_value:
                     new_remove[field] = new_value
             if new_add or new_remove:
@@ -44,15 +51,13 @@ class Migration(BaseMigration):
                     event.remove = new_remove
                 return [event]
         elif isinstance(event, DeleteFieldsEvent):
-            new_data = []
+            new_fields = []
             for field in event.data:
                 if field in old:
-                    new_data.append(field)
+                    new_fields.append(field)
+            if new_fields:
+                event.data = new_fields
+                return [event]
         else:
             return None
-
-        if new_data:
-            event.data = new_data
-            return [event]
-        else:
-            return []
+        return []
