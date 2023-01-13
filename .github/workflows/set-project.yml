@@ -1,5 +1,5 @@
 ---
-name: Create issues if global files change
+name: Set project
 on:
   issues:
     types: [opened]
@@ -18,9 +18,3 @@ jobs:
         with:
           project-url: https://github.com/orgs/OpenSlides/projects/2
           github-token: ${{ secrets.ISSUE_AND_PR_PAT }}
-
-      - name: Set milestone
-        uses: zoispag/action-assign-milestone@v2
-        with:
-          repo-token: ${{ secrets.ISSUE_AND_PR_PAT }}
-          milestone: 4.1
