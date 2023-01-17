@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      - vote-decrypt
+      - 'feature/**'
 
 env:
   PYTHON_VERSION: 3.10.x
