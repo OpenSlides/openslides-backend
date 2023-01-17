@@ -37,7 +37,7 @@ class MotionUpdate(UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin
             "start_line_number",
             "category_id",
             "block_id",
-            "supporter_ids",
+            "supporter_meeting_user_ids",
             "tag_ids",
             "attachment_ids",
         ],
@@ -66,7 +66,7 @@ class MotionUpdate(UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin
                         "id",
                         "category_id",
                         "block_id",
-                        "supporter_ids",
+                        "supporter_meeting_user_ids",
                         "tag_ids",
                         "attachment_ids",
                         "recommendation_extension_reference_ids",
@@ -215,8 +215,8 @@ class MotionUpdate(UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin
         )
 
         # supporters changed
-        if "supporter_ids" in all_instance_fields:
-            all_instance_fields.remove("supporter_ids")
+        if "supporter_meeting_user_ids" in all_instance_fields:
+            all_instance_fields.remove("supporter_meeting_user_ids")
             informations.append("Supporters changed")
 
         # category changed

@@ -384,7 +384,7 @@ meeting_user:
     restriction_mode: A
   supported_motion_ids:
     type: relation-list
-    to: motion/supporter_ids
+    to: motion/supporter_meeting_user_ids
     restriction_mode: A
   submitted_motion_ids:
     type: relation-list
@@ -2253,7 +2253,7 @@ motion:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: C
-  supporter_ids:
+  supporter_meeting_user_ids:
     type: relation-list
     to: meeting_user/supported_motion_ids
     restriction_mode: C

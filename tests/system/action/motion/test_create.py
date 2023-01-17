@@ -103,7 +103,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "sort_parent_id": 1,
                 "category_id": 124,
                 "block_id": 78,
-                "supporter_ids": [1],
+                "supporter_meeting_user_ids": [1],
                 "tag_ids": [56],
                 "attachment_ids": [8],
                 "text": "test",
@@ -119,7 +119,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert model.get("sort_parent_id") == 1
         assert model.get("category_id") == 124
         assert model.get("block_id") == 78
-        assert model.get("supporter_ids") == [1]
+        assert model.get("supporter_meeting_user_ids") == [1]
         assert model.get("tag_ids") == [56]
         assert model.get("attachment_ids") == [8]
 

@@ -12,7 +12,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                 "title": "motion_1",
                 "meeting_id": 1,
                 "state_id": 1,
-                "supporter_ids": [],
+                "supporter_meeting_user_ids": [],
             },
             "meeting/1": {
                 "name": "name_meeting_1",
@@ -93,7 +93,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "title": "motion_1",
                     "meeting_id": 1,
                     "state_id": 1,
-                    "supporter_ids": [],
+                    "supporter_meeting_user_ids": [],
                 },
                 "meeting/1": {
                     "name": "name_meeting_1",
@@ -114,7 +114,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
-        assert model.get("supporter_ids") == [1]
+        assert model.get("supporter_meeting_user_ids") == [1]
         self.assert_model_exists(
             "meeting_user/1",
             {"meeting_id": 1, "user_id": 1, "supported_motion_ids": [1]},
@@ -132,7 +132,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "title": "motion_1",
                     "meeting_id": 1,
                     "state_id": 1,
-                    "supporter_ids": [1],
+                    "supporter_meeting_user_ids": [1],
                 },
                 "meeting/1": {
                     "name": "name_meeting_1",
@@ -153,7 +153,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
-        assert model.get("supporter_ids") == []
+        assert model.get("supporter_meeting_user_ids") == []
         self.assert_model_exists("meeting_user/1", {"supported_motion_ids": []})
 
     def test_unsupport_no_change(self) -> None:
@@ -163,7 +163,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "title": "motion_1",
                     "meeting_id": 1,
                     "state_id": 1,
-                    "supporter_ids": [],
+                    "supporter_meeting_user_ids": [],
                 },
                 "meeting/1": {
                     "name": "name_meeting_1",
@@ -184,7 +184,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
-        assert model.get("supporter_ids") == []
+        assert model.get("supporter_meeting_user_ids") == []
 
     def test_set_support_self_no_permission(self) -> None:
         self.base_permission_test(

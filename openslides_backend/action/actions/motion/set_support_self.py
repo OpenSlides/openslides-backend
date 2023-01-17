@@ -32,7 +32,7 @@ class MotionSetSupportSelfAction(MeetingUserHelper, UpdateAction):
         motion_get_many_request = GetManyRequest(
             self.model.collection,
             [instance["motion_id"] for instance in action_data],
-            ["meeting_id", "state_id", "supporter_ids"],
+            ["meeting_id", "state_id", "supporter_meeting_user_ids"],
         )
         gm_motion_result = self.datastore.get_many([motion_get_many_request])
         motions = gm_motion_result.get(self.model.collection, {})
@@ -65,7 +65,7 @@ class MotionSetSupportSelfAction(MeetingUserHelper, UpdateAction):
             if state.get("allow_support") is False:
                 raise ActionException("The state does not allow support.")
 
-            supporter_ids = motion.get("supporter_ids", [])
+            supporter_meeting_user_ids = motion.get("supporter_meeting_user_ids", [])
             changed = False
             motion_id = instance.pop("motion_id")
             support = instance.pop("support")
@@ -73,14 +73,14 @@ class MotionSetSupportSelfAction(MeetingUserHelper, UpdateAction):
                 motion["meeting_id"], self.user_id
             )
             if support:
-                if meeting_user_id not in supporter_ids:
-                    supporter_ids.append(meeting_user_id)
+                if meeting_user_id not in supporter_meeting_user_ids:
+                    supporter_meeting_user_ids.append(meeting_user_id)
                     changed = True
             else:
-                if meeting_user_id in supporter_ids:
-                    supporter_ids.remove(meeting_user_id)
+                if meeting_user_id in supporter_meeting_user_ids:
+                    supporter_meeting_user_ids.remove(meeting_user_id)
                     changed = True
             instance["id"] = motion_id
             if changed:
-                instance["supporter_ids"] = supporter_ids
+                instance["supporter_meeting_user_ids"] = supporter_meeting_user_ids
                 yield instance

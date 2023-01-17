@@ -221,7 +221,7 @@ class TestExportMeeting(BasePresenterTestCase):
         """Find users in:
         Collection | Field
         meeting    | present_user_ids
-        motion     | supporter_ids
+        motion     | supporter_meeting_user_ids
         poll       | voted_ids
         vote       | delegated_user_id
         projection | content_object_id
@@ -260,7 +260,7 @@ class TestExportMeeting(BasePresenterTestCase):
                 },
                 "motion/30": {
                     "meeting_id": 1,
-                    "supporter_ids": [12],
+                    "supporter_meeting_user_ids": [12],
                 },
                 "poll/80": {
                     "meeting_id": 1,
