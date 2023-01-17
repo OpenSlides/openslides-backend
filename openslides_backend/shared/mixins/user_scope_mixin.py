@@ -37,7 +37,15 @@ class UserScopeMixin(BaseServiceProvider):
         if not instance and not id_:
             raise ServiceException("There is no user_id given to get the user_scope!")
         if instance:
-            meetings.update(map(int, instance.get("group_$_ids", {}).keys()))
+            if "group_ids" in instance:
+                if "meeting_id" in instance:
+                    meetings.add(instance["meeting_id"])
+                else:
+                    meeting_user = self.datastore.get(
+                        fqid_from_collection_and_id("meeting_user", instance["id"]),
+                        ["meeting_id"],
+                    )
+                    meetings.add(meeting_user["meeting_id"])
             committees_manager.update(set(instance.get("committee_management_ids", [])))
             oml_right = instance.get("organization_management_level", "")
         if id_:

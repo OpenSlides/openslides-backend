@@ -25,6 +25,7 @@ class PermissionVarStore:
                 "organization_management_level",
                 "committee_ids",
                 "committee_management_ids",
+                "meeting_user_ids",
             ],
             lock_result=False,
         )
@@ -59,7 +60,7 @@ class PermissionVarStore:
         """Set of meetings where the request user has user.can_manage permissions"""
         if self._user_meetings is None:
             self._user_meetings = self._get_user_meetings_with_user_can_manage(
-                self.user.get("group_$_ids", [])
+                self.user.get("meeting_user_ids", [])
             )
         return self._user_meetings
 
@@ -96,21 +97,27 @@ class PermissionVarStore:
         return user_committees, user_meetings
 
     def _get_user_meetings_with_user_can_manage(
-        self, meeting_ids: List[str] = []
+        self, meeting_user_ids: List[str] = []
     ) -> Set[int]:
         """
         Returns a set of meetings, where the request user has user.can_manage permissions
         """
         user_meetings = set()
-        if meeting_ids:
-            user = self.datastore.get(
-                fqid_from_collection_and_id("user", self.user_id),
-                [f"group_${meeting_id}_ids" for meeting_id in meeting_ids],
-            )
+        if meeting_user_ids:
+            # fetch all group_ids
             all_groups: List[int] = []
-            for groups in user.values():
-                if type(groups) == list:
-                    all_groups.extend(groups)
+            for meeting_user_id in meeting_user_ids:
+                meeting_user = self.datastore.get(
+                    fqid_from_collection_and_id("meeting_user", meeting_user_id),
+                    ["group_ids"],
+                )
+                group_ids = meeting_user.get("group_ids")
+                if group_ids:
+                    for group_id in group_ids:
+                        if group_id not in all_groups:
+                            all_groups.append(group_id)
+
+            # fetch the groups for permissions
             groups = (
                 self.datastore.get_many(
                     [
@@ -125,11 +132,13 @@ class PermissionVarStore:
                 .values()
             )
 
+            # use permissions to add the meetings to user_meeting
             for group in groups:
                 if Permissions.User.CAN_MANAGE in group.get(
                     "permissions", []
                 ) or group.get("admin_group_for_meeting_id"):
-                    user_meetings.add(group.get("meeting_id"))
+                    if group.get("meeting_id"):
+                        user_meetings.add(group["meeting_id"])
 
         return user_meetings
 

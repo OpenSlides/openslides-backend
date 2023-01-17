@@ -578,7 +578,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting(base=4)
         self.set_user_groups(self.user_id, [2])
         self.set_user_groups(111, [1, 4])
-        self.set_models({"meeting/4": {"is_active_in_organization_id": None}})
+        self.set_models(
+            {
+                "meeting/4": {"is_active_in_organization_id": None},
+                "group/2": {"permissions": ["user.can_manage"]},
+            }
+        )
         response = self.request(
             "user.update",
             {
@@ -601,9 +606,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         """May not update group A fields on organsisation scope, although having both committee permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_committee_management_level([60, 63], self.user_id)
+        self.set_committee_management_level([60, 63], 111)
         self.set_user_groups(111, [1, 6])
-
         response = self.request(
             "user.update",
             {

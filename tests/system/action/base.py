@@ -243,14 +243,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             "is_active": True,
             "default_password": DEFAULT_PASSWORD,
             "password": self.auth.hash(DEFAULT_PASSWORD),
-            # "group_$_ids": list(
-            #     str(meeting_id) for meeting_id in partitioned_groups.keys()
-            # ),
             "meeting_ids": list(partitioned_groups.keys()),
-            # **{
-            #     f"group_${meeting_id}_ids": [group["id"] for group in groups]
-            #     for meeting_id, groups in partitioned_groups.items()
-            # },
         }
 
     def create_user_for_meeting(self, meeting_id: int) -> int:
@@ -300,7 +293,8 @@ class BaseActionTestCase(BaseSystemTestCase):
             ),
             ["id", "group_ids"],
         )
-        meeting_user = list(filtered_result.values())[0] if filtered_result else {}
+        meeting_user = next(iter(filtered_result.values())) if filtered_result else {}
+
         if meeting_user:
             self.set_models(
                 {
