@@ -223,7 +223,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "recommendation_extension": "ext_sldennt [motion/112]",
                     "category_id": 4,
                     "block_id": 51,
-                    "supporter_ids": [],
+                    "supporter_meeting_user_ids": [],
                     "tag_ids": [],
                     "attachment_ids": [],
                 },
@@ -234,7 +234,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("recommendation_extension") == "ext_sldennt [motion/112]"
         assert model.get("category_id") == 4
         assert model.get("block_id") == 51
-        assert model.get("supporter_ids") == []
+        assert model.get("supporter_meeting_user_ids") == []
         assert model.get("tag_ids") == []
         assert model.get("attachment_ids") == []
         assert model.get("recommendation_extension_reference_ids") == ["motion/112"]
@@ -351,7 +351,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "recommendation_extension": "ext_sldennt [motion/112]",
                 "category_id": 4,
                 "block_id": 51,
-                "supporter_ids": [],
+                "supporter_meeting_user_ids": [],
                 "tag_ids": [],
                 "attachment_ids": [],
             },

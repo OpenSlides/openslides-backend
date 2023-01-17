@@ -33,7 +33,7 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
             "sort_parent_id",
             "category_id",
             "block_id",
-            "supporter_ids",
+            "supporter_meeting_user_ids",
             "tag_ids",
             "attachment_ids",
             "text",

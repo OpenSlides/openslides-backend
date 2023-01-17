@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "42886acf3c9363696709b2147e27c573"
+MODELS_YML_CHECKSUM = "56c8d40624caaadd65fc7dd6850333b5"
 
 
 class Organization(Model):
@@ -150,7 +150,9 @@ class MeetingUser(Model):
     speaker_ids = fields.RelationListField(
         to={"speaker": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    supported_motion_ids = fields.RelationListField(to={"motion": "supporter_ids"})
+    supported_motion_ids = fields.RelationListField(
+        to={"motion": "supporter_meeting_user_ids"}
+    )
     submitted_motion_ids = fields.RelationListField(
         to={"motion_submitter": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -1150,7 +1152,7 @@ class Motion(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    supporter_ids = fields.RelationListField(
+    supporter_meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "supported_motion_ids"}
     )
     poll_ids = fields.RelationListField(
