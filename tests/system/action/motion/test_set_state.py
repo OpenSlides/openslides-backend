@@ -8,44 +8,44 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSetStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models(
-            {
-                "meeting/1": {
-                    "is_active_in_organization_id": 1,
-                    "motion_submitter_ids": [12],
-                    "meeting_user_ids": [1],
-                },
-                "motion_state/76": {
-                    "meeting_id": 1,
-                    "next_state_ids": [77],
-                    "allow_submitter_edit": True,
-                },
-                "motion_state/77": {
-                    "meeting_id": 1,
-                    "motion_ids": [22],
-                    "first_state_of_workflow_id": 76,
-                    "previous_state_ids": [76],
-                    "allow_submitter_edit": True,
-                },
-                "motion/22": {
-                    "meeting_id": 1,
-                    "state_id": 77,
-                    "number_value": 23,
-                    "submitter_ids": [12],
-                },
-                "motion_submitter/12": {
-                    "meeting_id": 1,
-                    "motion_id": 22,
-                    "meeting_user_id": 1,
-                },
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 1,
-                    "submitted_motion_ids": [12],
-                },
-                "user/1": {"meeting_user_ids": [1]},
-            }
-        )
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+            "motion_state/76": {
+                "meeting_id": 1,
+                "name": "test0",
+                "motion_ids": [],
+                "next_state_ids": [77],
+                "previous_state_ids": [],
+                "allow_submitter_edit": True,
+            },
+            "motion_state/77": {
+                "meeting_id": 1,
+                "name": "test1",
+                "motion_ids": [22],
+                "first_state_of_workflow_id": 76,
+                "next_state_ids": [],
+                "previous_state_ids": [76],
+                "allow_submitter_edit": True,
+            },
+            "motion/22": {
+                "meeting_id": 1,
+                "title": "test1",
+                "state_id": 77,
+                "number_value": 23,
+                "submitter_ids": [12],
+            },
+            "motion_submitter/12": {
+                "meeting_id": 1,
+                "motion_id": 22,
+                "meeting_user_id": 5,
+            },
+            "meeting_user/5": {
+                "meeting_id": 1,
+                "user_id": 1,
+                "submitted_motion_ids": [12],
+            },
+            "meeting/1": {"meeting_user_ids": [5]},
+            "user/1": {"meeting_user_ids": [5]},
+        }
 
     def test_set_state_correct_previous_state(self) -> None:
         check_time = round(time.time())
