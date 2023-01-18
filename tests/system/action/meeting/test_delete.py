@@ -243,6 +243,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 },
                 "meeting/1": {
                     "user_ids": [2],
+                    "meeting_user_ids": [2],
                 },
             }
         )
@@ -263,7 +264,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "committee/1",
             {
-                "user_ids": [1],
+                "user_ids": [1, 2],
                 "meeting_ids": [],
                 "manager_ids": [1],
             },
@@ -279,7 +280,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "user/2", {"meeting_user_ids": [], "committee_ids": []}
+            "user/2", {"meeting_user_ids": [], "committee_ids": [1]}
         )
         self.assert_model_deleted(
             "meeting_user/2", {"meeting_id": 1, "user_id": 2, "group_ids": [11]}
