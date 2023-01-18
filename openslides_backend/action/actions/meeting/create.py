@@ -11,13 +11,13 @@ from ...mixins.create_action_with_dependencies import CreateActionWithDependenci
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..group.create import GroupCreate
+from ..meeting_user.create import MeetingUserCreate
 from ..motion_workflow.create import (
     MotionWorkflowCreateComplexWorkflowAction,
     MotionWorkflowCreateSimpleWorkflowAction,
 )
 from ..projector.create import ProjectorCreateAction
 from ..projector_countdown.create import ProjectorCountdownCreate
-from ..user.update import UserUpdate
 from .mixins import MeetingPermissionMixin
 
 
@@ -163,29 +163,26 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         if admin_ids := instance.pop("admin_ids", []):
             action_data = [
                 {
-                    "id": user_id,
-                    "group_$_ids": {
-                        str(instance["id"]): [id_from_fqid(fqid_admin_group)]
-                    },
+                    "meeting_id": instance["id"],
+                    "user_id": user_id,
+                    "group_ids": [id_from_fqid(fqid_admin_group)],
                 }
                 for user_id in admin_ids
             ]
-            self.execute_other_action(UserUpdate, action_data)
+            self.execute_other_action(MeetingUserCreate, action_data)
 
         # Add users to default group
         if user_ids := instance.pop("user_ids", []):
             action_data = [
                 {
-                    "id": user_id,
-                    "group_$_ids": {
-                        str(instance["id"]): [id_from_fqid(fqid_default_group)]
-                    },
+                    "meeting_id": instance["id"],
+                    "user_id": user_id,
+                    "group_ids": [id_from_fqid(fqid_default_group)],
                 }
                 for user_id in user_ids
                 if user_id not in admin_ids
             ]
-
-            self.execute_other_action(UserUpdate, action_data)
+            self.execute_other_action(MeetingUserCreate, action_data)
         self.apply_instance(instance)
 
         action_data_countdowns = [

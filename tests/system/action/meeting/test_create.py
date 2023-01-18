@@ -254,27 +254,27 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
         default_group_id = meeting.get("default_group_id")
+        admin_group_id = meeting.get("admin_group_id")
         self.assert_model_exists(
-            "user/2", {"meeting_user_ids": [1], "committee_ids": [1]}
+            "user/2", {"meeting_user_ids": [2], "committee_ids": [1]}
         )
         self.assert_model_exists(
             "meeting_user/1",
-            {"meeting_id": 1, "user_id": 2, "group_ids": [default_group_id]},
+            {"meeting_id": 1, "user_id": 1, "group_ids": [admin_group_id]},
         )
         self.assert_model_exists(
-            "user/3", {"meeting_user_ids": [2], "committee_ids": [1]}
+            "user/3", {"meeting_user_ids": [3], "committee_ids": [1]}
         )
         self.assert_model_exists(
             "meeting_user/2",
-            {"meeting_id": 1, "user_id": 3, "group_ids": [default_group_id]},
+            {"meeting_id": 1, "user_id": 2, "group_ids": [default_group_id]},
         )
-        admin_group_id = meeting.get("admin_group_id")
         self.assert_model_exists(
-            "user/1", {"meeting_user_ids": [3], "committee_ids": [1]}
+            "user/1", {"meeting_user_ids": [1], "committee_ids": [1]}
         )
         self.assert_model_exists(
             "meeting_user/3",
-            {"meeting_id": 1, "user_id": 1, "group_ids": [admin_group_id]},
+            {"meeting_id": 1, "user_id": 3, "group_ids": [default_group_id]},
         )
         self.assertCountEqual(meeting.get("user_ids", []), [1, 2, 3])
         committee = self.get_model("committee/1")
