@@ -110,7 +110,7 @@ class MeetingActions(BaseActionTestCase):
                     "group_ids": [1],
                     "meeting_user_ids": [3, 4],
                 },
-                "group/1": {"meeting_user_ids": [2], "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [3], "meeting_id": 1},
                 "user/2": {
                     "username": "user2",
                     "is_active": True,
@@ -171,7 +171,7 @@ class MeetingActions(BaseActionTestCase):
             },
         )
         self.assert_model_deleted("meeting_user/3")
-        self.assert_model_deleted("group/1", {"meeting_user_ids": [2], "meeting_id": 1})
+        self.assert_model_deleted("group/1", {"meeting_user_ids": [3], "meeting_id": 1})
         self.assert_model_deleted(
             "list_of_speakers/11",
             {"speaker_ids": [1, 2], "meeting_id": 1},
