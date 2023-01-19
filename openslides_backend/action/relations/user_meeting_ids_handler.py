@@ -30,8 +30,10 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         meeting_id = (
             instance["meeting_id"]
             if instance.get("meeting_id")
-            else db_instance["meeting_id"]
+            else db_instance.get("meeting_id")
         )
+        if not meeting_id:
+            return {}
         user_id = (
             instance["user_id"] if instance.get("user_id") else db_instance["user_id"]
         )
