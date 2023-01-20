@@ -1,3 +1,5 @@
+import pytest
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
@@ -54,6 +56,8 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/4", {"username": "John2"})
 
+    # Rm template fields makes this test useless.
+    @pytest.mark.skip
     def test_create_some_more_fields(self) -> None:
         """
         Also checks if the correct password is stored from the given default_password
@@ -85,6 +89,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "organization_management_level": "can_manage_users",
                 "default_password": "password",
                 "committee_management_ids": [78],
+                # "group_$_ids": {111: [111]},
             },
         )
         self.assert_status_code(response, 200)
@@ -97,6 +102,8 @@ class UserCreateActionTest(BaseActionTestCase):
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "default_password": "password",
                 "committee_management_ids": [78],
+                # "group_$_ids": ["111"],
+                # "group_$111_ids": [111],
             },
         )
         self.assertCountEqual(user2.get("committee_ids", []), [78, 79])
@@ -318,12 +325,16 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
+    # Rm template fields makes this test useless.
+    @pytest.mark.skip
     def test_create_permission_nothing(self) -> None:
         self.permission_setup()
         response = self.request(
             "user.create",
             {
                 "username": "username",
+                # "vote_weight_$": {1: "1.000000"},
+                # "group_$_ids": {1: [1]},
             },
         )
         self.assert_status_code(response, 403)
@@ -370,7 +381,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "username_new",
                 "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                "meeting_ids": [1],
+                #    "meeting_ids": [1],
             },
         )
 
@@ -420,6 +431,8 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
+    # Rm template fields makes this test useless.
+    @pytest.mark.skip
     def test_create_permission_group_A_cml_manage_user(self) -> None:
         """May create group A fields on cml scope"""
         self.permission_setup()
@@ -439,6 +452,8 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "usersname",
+                # "group_$_ids": {"1": [1], "4": [4]},
+                # "is_present_in_meeting_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -446,10 +461,14 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/3",
             {
                 "username": "usersname",
+                # "group_$1_ids": [1],
+                # "group_$4_ids": [4],
                 "committee_ids": [60],
             },
         )
 
+    # Rm template fields makes this test useless.
+    @pytest.mark.skip
     def test_create_permission_group_A_user_can_manage(self) -> None:
         """May create group A fields on meeting scope"""
         self.permission_setup()
@@ -458,6 +477,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "usersname",
+                # "group_$_ids": {"1": [1]},
             },
         )
         self.assert_status_code(response, 200)
@@ -465,9 +485,12 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/3",
             {
                 "username": "usersname",
+                # group_$1_ids": [1],
             },
         )
 
+    # Rm template fields makes this test useless.
+    @pytest.mark.skip
     def test_create_permission_group_A_no_permission(self) -> None:
         """May not create group A fields on organsisation scope, although having both committee permissions"""
         self.permission_setup()
@@ -485,6 +508,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "new username",
                 "committee_management_ids": [60],
+                # "group_$_ids": {"4": [4]},
             },
         )
         self.assert_status_code(response, 403)
@@ -493,6 +517,8 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    # Rm template fields makes this test useless.
+    @pytest.mark.skip
     def test_create_permission_group_B_user_can_manage(self) -> None:
         """create group B fields with simple user.can_manage permissions"""
         self.permission_setup()
@@ -516,6 +542,8 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
+    # Rm template fields makes this test useless.
+    @pytest.mark.skip
     def test_create_permission_group_B_user_can_manage_no_permission(self) -> None:
         """Group B fields needs explicit user.can_manage permission for meeting"""
         self.permission_setup()
@@ -528,7 +556,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "usersname",
-                "group_$_ids": {"1": [1]},
+                # "group_$_ids": {"1": [1]},
                 "is_present_in_meeting_ids": [1],
             },
         )
@@ -805,6 +833,8 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 403)
         assert "forwarding_committee_ids is not allowed." in response.json["message"]
 
+    # Rm template fields makes this test useless.
+    @pytest.mark.skip
     def test_create_variant(self) -> None:
         """
         The replacement on both sides user and committe is the committee_management_level,
@@ -837,6 +867,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "test_Xcdfgee",
                 "committee_management_ids": [1],
+                # "group_$_ids": {2: [22]},
             },
         )
         self.assert_status_code(response, 200)
@@ -845,6 +876,12 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "committee_management_ids": [1],
                 "meeting_ids": [2],
+                # "group_$2_ids": [
+                #    22,
+                # ],
+                # "group_$_ids": [
+                #     "2",
+                # ],
             },
         )
         assert user.get("committee_ids") == [1, 2]
