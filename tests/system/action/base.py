@@ -15,12 +15,11 @@ from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
-from openslides_backend.shared.filters import And, FilterOperator
+from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
-    fqid_from_collection_and_id,
 )
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -271,95 +270,93 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         return user_id
 
+    @with_database_context
     def set_user_groups(self, user_id: int, group_ids: List[int]) -> None:
         assert isinstance(group_ids, list)
-        for group_id in group_ids:
-            self.add_user_group(user_id, group_id)
-
-    @with_database_context
-    def add_user_group(self, user_id: int, group_id: int) -> None:
-        group = self.datastore.get(
-            fqid_from_collection_and_id("group", group_id),
-            ["id", "meeting_user_ids", "meeting_id"],
-        )
-        if not group.get("meeting_id"):
-            raise ValueError(f"Missing meeting_id in group {group_id}")
-        meeting_id = group["meeting_id"]
+        groups = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "group",
+                    group_ids,
+                    ["id", "meeting_id", "user_ids", "meeting_user_ids"],
+                )
+            ],
+            lock_result=False,
+        )["group"]
+        meeting_ids: List[int] = list(set((v["meeting_id"] for v in groups.values())))
         filtered_result = self.datastore.filter(
             "meeting_user",
-            And(
-                FilterOperator("meeting_id", "=", meeting_id),
-                FilterOperator("user_id", "=", user_id),
-            ),
-            ["id", "group_ids"],
+            FilterOperator("user_id", "=", user_id),
+            ["id", "user_id", "meeting_id", "group_ids"],
+            lock_result=False,
         )
-        meeting_user = next(iter(filtered_result.values())) if filtered_result else {}
+        meeting_users: dict[int, dict[str, Any]] = {
+            data["meeting_id"]: dict(data)
+            for data in filtered_result.values()
+            if data["meeting_id"] in meeting_ids
+        }
+        last_meeting_user_id = max(
+            [
+                int(k[1])
+                for key in self.created_fqids
+                if (k := key.split("/"))[0] == "meeting_user"
+            ]
+            or [0]
+        )
+        meeting_users_new = {
+            meeting_id: {
+                "id": (last_meeting_user_id := last_meeting_user_id + 1),
+                "user_id": user_id,
+                "meeting_id": meeting_id,
+                "group_ids": [],
+            }
+            for meeting_id in meeting_ids
+            if meeting_id not in meeting_users
+        }
+        meeting_users.update(meeting_users_new)
+        meetings = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting",
+                    meeting_ids,
+                    ["id", "meeting_user_ids", "user_ids"],
+                )
+            ],
+            lock_result=False,
+        )["meeting"]
+        user = self.datastore.get(
+            f"user/{user_id}",
+            ["user_meeting_ids", "meeting_ids"],
+            lock_result=False,
+            use_changed_models=False,
+        )
 
-        if meeting_user:
-            self.set_models(
-                {
-                    f"meeting_user/{meeting_user['id']}": {
-                        "group_ids": (meeting_user.get("group_ids") or []) + [group_id]
-                    }
-                }
-            )
-        else:
-            id = 1
-            while f"meeting_user/{id}" in self.created_fqids:
-                id += 1
-            self.set_models(
-                {
-                    f"meeting_user/{id}": {
-                        "meeting_id": meeting_id,
-                        "user_id": user_id,
-                        "group_ids": [group_id],
-                    }
-                }
-            )
-            user = self.datastore.get(
-                fqid_from_collection_and_id("user", user_id),
-                ["meeting_user_ids", "meeting_ids"],
-            )
-            if id not in user.get("meeting_user_ids", []):
-                self.set_models(
-                    {
-                        f"user/{user_id}": {
-                            "meeting_user_ids": (user.get("meeting_user_ids") or [])
-                            + [id]
-                        }
-                    }
-                )
-            if meeting_id not in user.get("meeting_ids", []):
-                self.set_models(
-                    {
-                        f"user/{user_id}": {
-                            "meeting_ids": (user.get("meeting_ids") or [])
-                            + [meeting_id]
-                        }
-                    }
-                )
+        def add_to_list(where: dict[str, Any], key: str, what: int) -> None:
+            if key in where and where.get(key):
+                if what not in where[key]:
+                    where[key].append(what)
+            else:
+                where[key] = [what]
 
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", meeting_id),
-                ["meeting_user_ids", "meeting_ids"],
-            )
-            if id not in meeting.get("meeting_user_ids", []):
-                self.set_models(
-                    {
-                        f"meeting/{meeting_id}": {
-                            "meeting_user_ids": (meeting.get("meeting_user_ids") or [])
-                            + [id]
-                        }
-                    }
-                )
-            if user_id not in meeting.get("user_ids", []):
-                self.set_models(
-                    {
-                        f"meeting/{meeting_id}": {
-                            "user_ids": (meeting.get("user_ids") or []) + [user_id]
-                        }
-                    }
-                )
+        for group in groups.values():
+            meeting_id = group["meeting_id"]
+            meeting_user_id = meeting_users[meeting_id]["id"]
+            add_to_list(meeting_users[meeting_id], "group_ids", group["id"])
+            add_to_list(group, "meeting_user_ids", meeting_user_id)
+            add_to_list(meetings[meeting_id], "meeting_user_ids", meeting_user_id)
+            add_to_list(meetings[meeting_id], "user_ids", user_id)
+            add_to_list(user, "meeting_user_ids", meeting_user_id)
+            add_to_list(user, "meeting_ids", meeting_id)
+        self.set_models(
+            {
+                f"user/{user_id}": user,
+                **{f"meeting_user/{mu['id']}": mu for mu in meeting_users.values()},
+                **{f"group/{group['id']}": group for group in groups.values()},
+                **{
+                    f"meeting/{meeting['id']}": meeting for meeting in meetings.values()
+                },
+            }
+        )
 
     @with_database_context
     def _fetch_groups(self, group_ids: List[int]) -> Dict[int, List[Dict[str, Any]]]:
