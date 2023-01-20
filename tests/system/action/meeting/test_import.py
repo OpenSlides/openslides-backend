@@ -342,7 +342,7 @@ class MeetingImport(BaseActionTestCase):
             "password": "",
             "username": "test",
             "committee_ids": [],
-            "committee_$_management_level": [],
+            "committee_management_ids": [],
             "title": "",
             "pronoun": "",
             "first_name": "",
@@ -638,12 +638,6 @@ class MeetingImport(BaseActionTestCase):
         organization = self.assert_model_exists(ONE_ORGANIZATION_FQID)
         self.assertCountEqual(organization["active_meeting_ids"], [1, 2])
 
-        committee1 = self.assert_model_exists(
-            "committee/1",
-        )
-        self.assertCountEqual(committee1["user_ids"], [1, 2])
-        self.assertCountEqual(committee1["meeting_ids"], [1, 2])
-
         imported_meeting = self.assert_model_exists(
             "meeting/2",
             {
@@ -723,11 +717,10 @@ class MeetingImport(BaseActionTestCase):
             {
                 "username": "admin",
                 "last_name": None,
-                "meeting_ids": [2],
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 2, "user_id": 1, "group_ids": [2]}
+            "meeting_user/1", {"meeting_id": 2, "user_id": 2, "group_ids": [2]}
         )
         self.assert_model_exists(
             "user/2", {"username": "admin1", "last_name": "admin0"}
@@ -735,7 +728,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "user/3", {"username": "admin11", "last_name": "admin1"}
         )
-        self.assert_model_exists("group/2", {"user_ids": [1, 2], "meeting_id": 2})
+        self.assert_model_exists("group/2", {"meeting_user_ids": [1], "meeting_id": 2})
 
     def test_check_usernames_new_and_twice(self) -> None:
         request_data = self.create_request_data(
@@ -1878,8 +1871,7 @@ class MeetingImport(BaseActionTestCase):
                         "id": 14,
                         "username": "user14",
                         "organization_management_level": "superadmin",
-                        "committee_$_management_level": ["can_manage"],
-                        "committee_$can_manage_management_level": [1],
+                        "committee_management_ids": [1],
                         "organization_id": 1,
                     }
                 },
@@ -1895,7 +1887,7 @@ class MeetingImport(BaseActionTestCase):
                 "id": 3,
                 "username": "user14",
                 "organization_management_level": None,
-                "committee_$_management_level": None,
+                "committee_management_ids": None,
                 "organization_id": 1,
             },
         )
@@ -1955,8 +1947,7 @@ class MeetingImport(BaseActionTestCase):
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
-        assert counter.calls == 7
-        self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
+        assert counter.calls == 6
         meeting = self.assert_model_exists(
             "meeting/2", {"assignment_poll_enable_max_votes_per_option": False}
         )  # checker repair
