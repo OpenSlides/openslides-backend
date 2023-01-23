@@ -631,7 +631,7 @@ class Checker:
                     )
             elif self.mode == "external":
                 self.errors.append(
-                    f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
+                    f"{basemsg} points to {foreign_collection} and {foreign_ids}, which is not allowed in an external import."
                 )
 
         elif isinstance(field_type, GenericRelationField) and model[field] is not None:
