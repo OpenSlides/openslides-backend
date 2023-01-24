@@ -226,7 +226,6 @@ class TestExportMeeting(BasePresenterTestCase):
         motion     | supporter_ids
         poll       | voted_ids
         vote       | delegated_user_id
-        projection | content_object_id
         """
 
         self.set_models(
@@ -237,7 +236,6 @@ class TestExportMeeting(BasePresenterTestCase):
                     "motion_ids": [30],
                     "poll_ids": [80],
                     "vote_ids": [120],
-                    "projection_ids": [200],
                 },
                 "user/11": {
                     "username": "exuser11",
@@ -258,11 +256,6 @@ class TestExportMeeting(BasePresenterTestCase):
                     "vote_delegated_vote_$_ids": ["1"],
                     "vote_delegated_vote_$1_ids": [120],
                 },
-                "user/15": {
-                    "username": "exuser15",
-                    "projection_$_ids": ["1"],
-                    "projection_$1_ids": [200],
-                },
                 "motion/30": {
                     "meeting_id": 1,
                     "supporter_ids": [12],
@@ -275,14 +268,10 @@ class TestExportMeeting(BasePresenterTestCase):
                     "meeting_id": 1,
                     "delegated_user_id": 14,
                 },
-                "projection/200": {
-                    "meeting_id": 1,
-                    "content_object_id": "user/15",
-                },
             }
         )
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 200
         assert data["meeting"]["1"].get("user_ids") is None
-        for id_ in ("11", "12", "13", "14", "15"):
+        for id_ in ("11", "12", "13", "14"):
             assert data["user"][id_]
