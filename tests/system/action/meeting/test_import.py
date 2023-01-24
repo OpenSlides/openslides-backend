@@ -1,6 +1,9 @@
 import base64
 import time
+import tracemalloc
 from typing import Any, Dict, List, Optional, cast
+
+import pytest
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
@@ -1902,3 +1905,16 @@ class MeetingImport(BaseActionTestCase):
             "user/1/default_vote_weight: Type error: Type is not <openslides_backend.models.fields.DecimalField"
             in response.json["message"]
         )
+
+    @pytest.mark.skip()
+    def test_file_memory(self) -> None:
+        tracemalloc.start()
+        first_size, first_peak = tracemalloc.get_traced_memory()
+        tracemalloc.reset_peak()
+        data = {}
+        data["meeting"] = get_initial_data_file("put your data file here")
+        data["committee_id"] = 1
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        second_size, second_peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()

@@ -237,6 +237,8 @@ class ActionWorker(threading.Thread):
                 )
             except Exception as exception:
                 self.exception = exception
+            finally:
+                self.payload = None  # release memory
 
 
 class OSGunicornThread(threading.Thread):
