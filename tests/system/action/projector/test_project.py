@@ -343,6 +343,26 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
+    def test_user_as_content_object_okay(self) -> None:
+        self.create_model(
+            "user/2",
+            {
+                "username": "normal user",
+                "group_$1_ids": [1],
+                "group_$_ids": ["1"],
+                "meeting_ids": [1],
+            },
+        )
+        response = self.request(
+            "projector.project",
+            {"ids": [75], "content_object_id": "user/2", "meeting_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "he collection 'user' is not available for field 'content_object_id' in collection 'projection'."
+            in response.json["message"]
+        )
+
     def test_project_without_meeting_id(self) -> None:
         response = self.request(
             "projector.project",
