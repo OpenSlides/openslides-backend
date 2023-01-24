@@ -2081,7 +2081,7 @@ motion:
     restriction_mode: C
   state_extension:
     type: string
-    restriction_mode: C
+    restriction_mode: A
   recommendation_extension:
     type: string
     restriction_mode: C
