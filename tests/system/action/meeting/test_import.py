@@ -381,7 +381,6 @@ class MeetingImport(BaseActionTestCase):
             "poll_voted_$_ids": [],
             "option_$_ids": [],
             "vote_$_ids": [],
-            "projection_$_ids": [],
             "vote_delegated_vote_$_ids": [],
             "vote_delegated_$_to_id": [],
             "vote_delegations_$_from_ids": [],
