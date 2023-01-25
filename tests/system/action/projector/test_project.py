@@ -359,7 +359,7 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "he collection 'user' is not available for field 'content_object_id' in collection 'projection'."
+            "The collection 'user' is not available for field 'content_object_id' in collection 'projection'."
             in response.json["message"]
         )
 
