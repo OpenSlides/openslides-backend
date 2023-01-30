@@ -54,6 +54,6 @@ class MotionWorkflowDeleteAction(DeleteAction):
 
             workflow_ids = cast(List[int], meeting.get("motion_workflow_ids"))
             if len(workflow_ids) == 1:
-                raise ActionException("Cannot delete the last workflow of a meeting.")
+                raise ActionException("You cannot delete the last workflow of a meeting.")
 
         return instance
