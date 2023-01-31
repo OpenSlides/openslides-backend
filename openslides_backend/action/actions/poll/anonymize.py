@@ -48,10 +48,10 @@ class PollAnonymize(
 
         if not poll.get("state") in (Poll.STATE_FINISHED, Poll.STATE_PUBLISHED):
             raise ActionException(
-                "Anonymize only in state finished or published allowed."
+                "Anonymizing can only be done after finishing a poll."
             )
-        if poll.get("type") == Poll.TYPE_ANALOG:
-            raise ActionException("Anonymize is not allowed for type analog.")
+        if poll.get("type") != Poll.TYPE_NAMED:
+            raise ActionException("You can only anonymize named polls.")
 
     def _get_option_ids(self, poll_id: int) -> List[int]:
         poll = self.datastore.get(
