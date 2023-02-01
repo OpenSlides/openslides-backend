@@ -1,3 +1,5 @@
+from time import time
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
@@ -70,6 +72,23 @@ class TestExportMeeting(BasePresenterTestCase):
         assert status_code == 200
         assert "organization_tag" not in data
         assert data["meeting"]["1"].get("organization_tag_ids") is None
+
+    def test_action_worker_exclusion(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"name": "name_foo"},
+                "action_worker/1": {
+                    "id": 1,
+                    "name": "testcase",
+                    "state": "end",
+                    "created": round(time() - 3),
+                    "timestamp": round(time()),
+                },
+            }
+        )
+        status_code, data = self.request("export_meeting", {"meeting_id": 1})
+        assert status_code == 200
+        assert "action_worker" not in data
 
     def test_add_users(self) -> None:
         self.set_models(
