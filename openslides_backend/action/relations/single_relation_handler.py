@@ -77,7 +77,9 @@ class SingleRelationHandler:
         """
         Returns one of the following types: 1:1, 1:m, m:1 or m:n
         """
-        if isinstance(self.field, GenericRelationField) and (value:=self.instance.get(self.field_name)):
+        if isinstance(self.field, GenericRelationField) and (
+            value := self.instance.get(self.field_name)
+        ):
             collection = collection_from_fqid(value)
             if collection not in self.field.to:
                 raise ActionException(
