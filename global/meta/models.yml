@@ -3146,8 +3146,9 @@ poll_candidate_list:
     equal_fields: meeting_id
     required: true
     restriction_mode: A
+
 poll_candidate:
-  id: 
+  id:
     type: number
     restriction_mode: A
   poll_candidate_list_id:
