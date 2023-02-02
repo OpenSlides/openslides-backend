@@ -5,7 +5,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
 from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_id
-from ....shared.schema import decimal_schema, optional_fqid_schema
+from ....shared.schema import decimal_schema, id_list_schema, optional_fqid_schema
 from ...generics.create import CreateAction
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
@@ -20,6 +20,7 @@ options_schema = {
     "properties": {
         "text": {"type": "string", "description": "the text of an option"},
         "content_object_id": optional_fqid_schema,
+        "poll_candidate_user_ids": id_list_schema,
         "Y": decimal_schema,
         "N": decimal_schema,
         "A": decimal_schema,

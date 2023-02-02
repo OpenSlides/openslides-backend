@@ -914,3 +914,44 @@ class CreatePoll(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("poll/1")
+
+    def test_create_poll_candidate_list(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "pollmethod": "Y",
+                "options": [{"poll_candidate_user_ids": [1, 3]}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+                "min_votes_amount": 5,
+                "max_votes_amount": 10,
+                "max_votes_per_option": 1,
+                "backend": "long",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("poll/1", {"title": "test"})
+        self.assert_model_exists(
+            "option/1", {"content_object_id": "poll_candidate_list/1"}
+        )
+        self.assert_model_exists(
+            "poll_candidate_list/1",
+            {"option_id": 1, "meeting_id": 1, "poll_candidate_ids": [1, 2]},
+        )
+        self.assert_model_exists(
+            "poll_candidate/1",
+            {"user_id": 1, "weight": 1, "poll_candidate_list_id": 1, "meeting_id": 1},
+        )
+        self.assert_model_exists(
+            "poll_candidate/2",
+            {"user_id": 3, "weight": 2, "poll_candidate_list_id": 1, "meeting_id": 1},
+        )
+        self.assert_model_exists(
+            "meeting/1", {"poll_candidate_list_ids": [1], "poll_candidate_ids": [1, 2]}
+        )
