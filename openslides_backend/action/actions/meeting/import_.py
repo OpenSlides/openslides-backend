@@ -162,6 +162,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             user.pop("committee_ids", None)
             remove_from_collection(user, regex_cml)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
+        json_data.pop("action_worker", None)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = instance["meeting"]

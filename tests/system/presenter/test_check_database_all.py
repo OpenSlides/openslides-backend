@@ -1,3 +1,4 @@
+from time import time
 from typing import Any, Dict
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -244,6 +245,12 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                },
+                "action_worker/1": {
+                    "name": "testcase",
+                    "state": "end",
+                    "created": round(time() - 3),
+                    "timestamp": round(time()),
                 },
             }
         )

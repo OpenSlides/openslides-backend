@@ -1330,6 +1330,24 @@ class MeetingImport(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_dont_import_action_worker(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "action_worker": {
+                    "1": {
+                        "id": 1,
+                        "name": "testcase",
+                        "state": "end",
+                        "created": round(time.time() - 3),
+                        "timestamp": round(time.time()),
+                    }
+                }
+            }
+        )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("action_worker/1")
+
     def test_bad_format_invalid_id_key(self) -> None:
         request_data = self.create_request_data({"tag": {"1": {"id": 2}}})
         response = self.request("meeting.import", request_data)
