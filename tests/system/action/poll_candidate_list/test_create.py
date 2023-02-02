@@ -24,6 +24,7 @@ class PollCandidateList(BaseActionTestCase):
             "poll_candidate_list.create",
             {
                 "option_id": 4,
+                "meeting_id": 1,
                 "entries": [{"user_id": 2, "weight": 1}, {"user_id": 3, "weight": 2}],
             },
         )

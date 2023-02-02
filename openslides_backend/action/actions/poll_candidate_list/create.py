@@ -2,9 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import PollCandidateList
 from ....shared.schema import required_id_schema
-from ...mixins.create_action_with_inferred_meeting import (
-    CreateActionWithInferredMeeting,
-)
+from ...generics.create import CreateAction
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -22,19 +20,18 @@ entry_schema = {
 
 
 @register_action("poll_candidate_list.create", action_type=ActionType.BACKEND_INTERNAL)
-class PollCandidateListCreate(CreateActionWithInferredMeeting):
+class PollCandidateListCreate(CreateAction):
     """
     Internal action to create a poll_candidate_list.
     """
 
     model = PollCandidateList()
     schema = DefaultSchema(PollCandidateList()).get_create_schema(
-        required_properties=["option_id"],
+        required_properties=["option_id", "meeting_id"],
         additional_required_fields={
             "entries": {"type": "array", "items": entry_schema, "minItems": 1}
         },
     )
-    relation_field_for_meeting = "option_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
@@ -47,6 +44,7 @@ class PollCandidateListCreate(CreateActionWithInferredMeeting):
                     "user_id": entry["user_id"],
                     "weight": entry["weight"],
                     "poll_candidate_list_id": instance["id"],
+                    "meeting_id": instance["meeting_id"],
                 }
                 for entry in entries
             ],

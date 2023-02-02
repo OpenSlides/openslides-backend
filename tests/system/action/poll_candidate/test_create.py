@@ -15,7 +15,7 @@ class PollCandidateTest(BaseActionTestCase):
         )
         response = self.request(
             "poll_candidate.create",
-            {"user_id": 1, "poll_candidate_list_id": 2, "weight": 12},
+            {"user_id": 1, "poll_candidate_list_id": 2, "weight": 12, "meeting_id": 1},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(

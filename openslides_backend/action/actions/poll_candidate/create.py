@@ -1,14 +1,12 @@
 from ....models.models import PollCandidate
-from ...mixins.create_action_with_inferred_meeting import (
-    CreateActionWithInferredMeeting,
-)
+from ...generics.create import CreateAction
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("poll_candidate.create", action_type=ActionType.BACKEND_INTERNAL)
-class PollCandidateCreate(CreateActionWithInferredMeeting):
+class PollCandidateCreate(CreateAction):
     """
     Internal action to create a poll candiate. It gets the meeting_id from
     its poll candidate list,
@@ -16,6 +14,10 @@ class PollCandidateCreate(CreateActionWithInferredMeeting):
 
     model = PollCandidate()
     schema = DefaultSchema(PollCandidate()).get_create_schema(
-        required_properties=["user_id", "poll_candidate_list_id", "weight"]
+        required_properties=[
+            "user_id",
+            "poll_candidate_list_id",
+            "weight",
+            "meeting_id",
+        ]
     )
-    relation_field_for_meeting = "poll_candidate_list_id"

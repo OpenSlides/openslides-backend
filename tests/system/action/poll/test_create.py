@@ -292,7 +292,10 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("Need text xor content_object_id.", response.json["message"])
+        self.assertIn(
+            "Need one of text, content_object_id or poll_candidate_user_ids.",
+            response.json["message"],
+        )
         self.assert_model_not_exists("poll/1")
 
     def test_missing_keys(self) -> None:
@@ -920,25 +923,22 @@ class CreatePoll(BaseActionTestCase):
             "poll.create",
             {
                 "title": "test",
-                "type": "analog",
+                "type": Poll.TYPE_NAMED,
                 "content_object_id": "assignment/1",
-                "pollmethod": "Y",
+                "pollmethod": "YNA",
                 "options": [{"poll_candidate_user_ids": [1, 3]}],
                 "meeting_id": 1,
-                "global_yes": True,
-                "global_no": True,
-                "global_abstain": True,
-                "onehundred_percent_base": "Y",
-                "min_votes_amount": 5,
-                "max_votes_amount": 10,
-                "max_votes_per_option": 1,
                 "backend": "long",
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("poll/1", {"title": "test"})
+        self.assert_model_exists("assignment/1", {"poll_ids": [1]})
         self.assert_model_exists(
-            "option/1", {"content_object_id": "poll_candidate_list/1"}
+            "poll/1",
+            {"title": "test", "option_ids": [1], "content_object_id": "assignment/1"},
+        )
+        self.assert_model_exists(
+            "option/1", {"content_object_id": "poll_candidate_list/1", "poll_id": 1}
         )
         self.assert_model_exists(
             "poll_candidate_list/1",
@@ -954,4 +954,59 @@ class CreatePoll(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting/1", {"poll_candidate_list_ids": [1], "poll_candidate_ids": [1, 2]}
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "poll_ids": [1],
+                "option_ids": [1, 2],
+                "poll_candidate_ids": [1, 2],
+                "poll_candidate_list_ids": [1],
+            },
+        )
+
+    def test_create_poll_candidate_lists(self) -> None:
+        self.set_models(
+            {
+                "user/2": {"username": "User2"},
+                "user/4": {"username": "User4"},
+            }
+        )
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": Poll.TYPE_PSEUDOANONYMOUS,
+                "content_object_id": "assignment/1",
+                "pollmethod": "YNA",
+                "options": [
+                    {"poll_candidate_user_ids": [1, 3]},
+                    {"poll_candidate_user_ids": [2, 4]},
+                ],
+                "meeting_id": 1,
+                "backend": "long",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "title": "test",
+                "option_ids": [1, 2],
+                "content_object_id": "assignment/1",
+            },
+        )
+        self.assert_model_exists(
+            "option/1", {"content_object_id": "poll_candidate_list/1", "poll_id": 1}
+        )
+        self.assert_model_exists(
+            "option/2", {"content_object_id": "poll_candidate_list/2", "poll_id": 1}
+        )
+        self.assert_model_exists(
+            "poll_candidate_list/1",
+            {"option_id": 1, "meeting_id": 1, "poll_candidate_ids": [1, 2]},
+        )
+        self.assert_model_exists(
+            "poll_candidate_list/2",
+            {"option_id": 2, "meeting_id": 1, "poll_candidate_ids": [3, 4]},
         )
