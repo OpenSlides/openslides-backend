@@ -1738,7 +1738,6 @@
             "weight": 6,
             "css_class": "lightblue",
             "set_number": false,
-            "allow_support": true,
             "merge_amendment_into_final": "undefined",
             "next_state_ids": [
                 7,
@@ -1754,7 +1753,7 @@
             "show_recommendation_extension_field": false,
             "allow_submitter_edit": false,
             "allow_create_poll": false,
-            "allow_support": false,
+            "allow_support": true,
             "allow_motion_forwarding": true,
             "meeting_id": 1
         },
@@ -1764,7 +1763,6 @@
             "weight": 7,
             "recommendation_label": "Permission",
             "css_class": "lightblue",
-            "allow_create_poll": true,
             "set_number": true,
             "merge_amendment_into_final": "undefined",
             "next_state_ids": [
@@ -1787,7 +1785,7 @@
             "show_state_extension_field": false,
             "show_recommendation_extension_field": false,
             "allow_submitter_edit": false,
-            "allow_create_poll": false,
+            "allow_create_poll": true,
             "allow_support": false,
             "allow_motion_forwarding": true,
             "meeting_id": 1
