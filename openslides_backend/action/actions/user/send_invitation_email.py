@@ -148,19 +148,17 @@ class UserSendInvitationMail(UpdateAction):
             ],
         )
         if not (to_email := user.get("email")):
-            result["message"] = f"User/{user_id} has no email-address."
+            result["message"] = f"'{user['username']}' has no email address."
             return instance
         if not EmailUtils.check_email(to_email):
-            result[
-                "message"
-            ] = f"The email-address {to_email} of User/{user_id} is not valid."
+            result["message"] = f"'{user['username']}' has no valid email address."
             return instance
         result["recipient"] = to_email
 
         if meeting_id and meeting_id not in user["meeting_ids"]:
             result[
                 "message"
-            ] = f"User/{user_id} does not belong to meeting/{meeting_id}"
+            ] = f"'{user['username']}' does not belong to meeting/{meeting_id}"
             return instance
 
         mail_data = self.get_data_from_meeting_or_organization(meeting_id)
@@ -168,11 +166,7 @@ class UserSendInvitationMail(UpdateAction):
         if users_email_sender := mail_data.get("users_email_sender", "").strip():
             blacklist = ("[", "]", "\\")
             if any(x in users_email_sender for x in blacklist):
-                result["message"] = (
-                    f'Invalid characters in the sender name configuration of meeting_id "{meeting_id}". Not allowed chars: "'
-                    + '", "'.join(blacklist)
-                    + '"'
-                )
+                result["message"] = ("Invalid characters in the sender name configuration.")
                 return instance
             from_email = Address(
                 users_email_sender, addr_spec=EmailSettings.default_from_email
