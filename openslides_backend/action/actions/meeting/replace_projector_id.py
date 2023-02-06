@@ -29,9 +29,9 @@ class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
         for instance in payload:
             projector_id = instance.pop("projector_id")
             fields = [
-                "default_projector_${}_id".format(replacement)
+                "default_projector_${}_ids".format(replacement)
                 for replacement in cast(
-                    List[str], Meeting.default_projector__id.replacement_enum
+                    List[str], Meeting.default_projector__ids.replacement_enum
                 )
             ]
             meeting = self.datastore.get(
@@ -40,8 +40,11 @@ class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
             )
             changed = False
             for field in fields:
-                if meeting.get(field) == projector_id:
-                    instance[field] = meeting["reference_projector_id"]
+                change_list = meeting.get(field)
+                if change_list and projector_id in change_list:
+                    change_list.remove(projector_id)
+                    change_list.append(meeting["reference_projector_id"])
+                    instance[field] = change_list
                     changed = True
             if changed:
                 yield instance

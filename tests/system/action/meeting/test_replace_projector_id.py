@@ -7,8 +7,8 @@ class MeetingReplaceProjectorIdTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {
-                    "default_projector_$_id": ["motion"],
-                    "default_projector_$motion_id": 11,
+                    "default_projector_$_ids": ["motion"],
+                    "default_projector_$motion_ids": [11],
                     "reference_projector_id": 20,
                     "is_active_in_organization_id": 1,
                 },
@@ -28,8 +28,8 @@ class MeetingReplaceProjectorIdTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
-        assert meeting.get("default_projector_$_id") == ["motion"]
-        assert meeting.get("default_projector_$motion_id") == 20
+        assert meeting.get("default_projector_$_ids") == ["motion"]
+        assert meeting.get("default_projector_$motion_ids") == [20]
         assert meeting.get("reference_projector_id") == 20
 
         projector_11 = self.get_model("projector/11")
@@ -46,8 +46,8 @@ class MeetingReplaceProjectorIdTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
-        assert meeting.get("default_projector_$_id") == ["motion"]
-        assert meeting.get("default_projector_$motion_id") == 11
+        assert meeting.get("default_projector_$_ids") == ["motion"]
+        assert meeting.get("default_projector_$motion_ids") == [11]
         assert meeting.get("reference_projector_id") == 20
 
         projector_11 = self.get_model("projector/11")

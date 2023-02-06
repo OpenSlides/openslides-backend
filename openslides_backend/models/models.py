@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "92c737b563cacd912e13cc95d457b6fb"
+MODELS_YML_CHECKSUM = "80d7fc302612376567fed8973f83bc22"
 
 
 class Organization(Model):
@@ -719,7 +719,7 @@ class Meeting(Model):
     poll_countdown_id = fields.RelationField(
         to={"projector_countdown": "used_as_poll_countdown_meeting_id"}
     )
-    default_projector__id = fields.TemplateRelationField(
+    default_projector__ids = fields.TemplateRelationListField(
         index=18,
         to={"projector": "used_as_default_$_in_meeting_id"},
         required=True,
@@ -1829,7 +1829,7 @@ class Projector(Model):
     )
     used_as_default__in_meeting_id = fields.TemplateRelationField(
         index=16,
-        to={"meeting": "default_projector_$_id"},
+        to={"meeting": "default_projector_$_ids"},
         replacement_enum=[
             "agenda_all_items",
             "topics",
