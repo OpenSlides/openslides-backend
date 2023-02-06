@@ -166,7 +166,9 @@ class UserSendInvitationMail(UpdateAction):
         if users_email_sender := mail_data.get("users_email_sender", "").strip():
             blacklist = ("[", "]", "\\")
             if any(x in users_email_sender for x in blacklist):
-                result["message"] = ("Invalid characters in the sender name configuration.")
+                result[
+                    "message"
+                ] = "Invalid characters in the sender name configuration."
                 return instance
             from_email = Address(
                 users_email_sender, addr_spec=EmailSettings.default_from_email
