@@ -77,8 +77,16 @@ class SingleRelationHandler:
         """
         Returns one of the following types: 1:1, 1:m, m:1 or m:n
         """
-        # we can just use any collection here since all have the same type
-        collection = self.field.get_target_collection()
+        if isinstance(self.field, GenericRelationField) and (
+            value := self.instance.get(self.field_name)
+        ):
+            collection = collection_from_fqid(value)
+            if collection not in self.field.to:
+                raise ActionException(
+                    f"The collection '{collection}' is not available for field '{self.field.own_field_name}' in collection '{self.field.own_collection}'."
+                )
+        else:
+            collection = self.field.get_target_collection()
         reverse_field = self.get_reverse_field(collection)
         if isinstance(self.field, RelationField) or isinstance(
             self.field, GenericRelationField

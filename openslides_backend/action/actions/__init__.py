@@ -31,6 +31,8 @@ def prepare_actions_map() -> None:
         organization_tag,
         personal_note,
         poll,
+        poll_candidate,
+        poll_candidate_list,
         projection,
         projector,
         projector_countdown,
