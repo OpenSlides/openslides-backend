@@ -30,7 +30,7 @@ class CreateEventsHelper(BaseActionTestCase):
         """
         Remove the skip decorator and adjust the payload and datastore content for your needs to
         create events from actions on the basis of the example data. Call pytest with the -s flag to
-        see the output. 
+        see the output.
         """
         self.load_example_data()
         if ADDITIONAL_MODELS:
