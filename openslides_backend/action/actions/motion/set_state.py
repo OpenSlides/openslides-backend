@@ -34,8 +34,9 @@ class MotionSetStateAction(
         """
         Check if the state_id is from a previous or next state.
         """
+        fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         motion = self.datastore.get(
-            fqid_from_collection_and_id("motion", instance["id"]),
+            fqid,
             [
                 "state_id",
                 "meeting_id",
@@ -47,6 +48,7 @@ class MotionSetStateAction(
             ],
             lock_result=["state_id"],
         )
+        self.apply_instance(motion, fqid)
         state_id = motion["state_id"]
 
         motion_state = self.datastore.get(
