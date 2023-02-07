@@ -62,7 +62,7 @@ class MotionSetStateAction(
         is_in_previous_state_ids = instance["state_id"] in motion_state.get(
             "previous_state_ids", []
         )
-        if not self.check_state_in_graph and not (
+        if not self.skip_state_graph_check and not (
             is_in_next_state_ids or is_in_previous_state_ids
         ):
             raise ActionException(
@@ -91,7 +91,7 @@ class MotionSetStateAction(
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.check_state_in_graph = False
+        self.skip_state_graph_check = False
         motion = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["id"]),
             [
@@ -107,12 +107,10 @@ class MotionSetStateAction(
             Permissions.Motion.CAN_MANAGE_METADATA,
             motion["meeting_id"],
         ):
-            self.check_state_in_graph = True
+            self.skip_state_graph_check = True
             return
 
-        if self.is_submitter(
-            motion.get("submitter_ids", []), motion["state_id"]
-        ) and has_perm(
+        if self.is_submitter(motion.get("submitter_ids", [])) and has_perm(
             self.datastore,
             self.user_id,
             Permissions.Motion.CAN_SEE,
@@ -123,7 +121,7 @@ class MotionSetStateAction(
                 ["submitter_withdraw_state_id"],
             )
             if instance["state_id"] == state.get("submitter_withdraw_state_id"):
-                self.check_state_in_graph = True
+                self.skip_state_graph_check = True
                 return
 
         if self.is_allowed_and_submitter(
