@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 from datastore.migrations import (
     BaseEvent,
@@ -9,8 +9,6 @@ from datastore.migrations import (
     UpdateEvent,
 )
 from datastore.shared.util import collection_from_fqid
-
-from openslides_backend.models.models import Meeting
 
 
 class Migration(BaseMigration):
@@ -23,15 +21,16 @@ class Migration(BaseMigration):
     collection = "meeting"
 
     def modify(self, object: Dict[str, Any]) -> None:
-        if "default_projector_$_id" in object:
-            object["default_projector_$_ids"] = object["default_projector_$_id"]
-            del object["default_projector_$_id"]
-        for name in cast(List[str], Meeting.default_projector__ids.replacement_enum):
-            old_field = f"default_projector_${name}_id"
-            new_field = f"default_projector_${name}_ids"
-            if old_field in object:
-                object[new_field] = [object[old_field]]
-                del object[old_field]
+        for field in list(object.keys()):
+            if field == "default_projector_$_id":
+                object[field + "s"] = object[field]
+                del object["default_projector_$_id"]
+            elif field.startswith("default_projector_$") and field.endswith("_id"):
+                old_field = field
+                new_field = field + "s"
+                if old_field in object:
+                    object[new_field] = [object[old_field]]
+                    del object[old_field]
 
     def migrate_event(
         self,
@@ -45,17 +44,8 @@ class Migration(BaseMigration):
             self.modify(event.data)
 
         elif isinstance(event, DeleteFieldsEvent):
-            for field in (
-                "default_projector_$_id",
-                *[
-                    f"default_projector_${name}_id"
-                    for name in cast(
-                        List[str], Meeting.default_projector__ids.replacement_enum
-                    )
-                ],
-            ):
-
-                if field in event.data:
+            for field in list(event.data):
+                if field.startswith("default_projector_$") and field.endswith("_id"):
                     event.data.remove(field)
                     event.data.append(field + "s")
 

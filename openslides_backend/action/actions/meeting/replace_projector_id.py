@@ -43,7 +43,8 @@ class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
                 change_list = meeting.get(field)
                 if change_list and projector_id in change_list:
                     change_list.remove(projector_id)
-                    change_list.append(meeting["reference_projector_id"])
+                    if not change_list:
+                        change_list.append(meeting["reference_projector_id"])
                     instance[field] = change_list
                     changed = True
             if changed:
