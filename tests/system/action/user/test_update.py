@@ -348,6 +348,15 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_update_broken_email(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request("user.update", {"id": 111, "email": "broken@@"})
+        self.assert_status_code(response, 400)
+        assert "email must be valid email." in response.json["message"]
+
     def test_wrong_id(self) -> None:
         self.create_model(
             "user/111",

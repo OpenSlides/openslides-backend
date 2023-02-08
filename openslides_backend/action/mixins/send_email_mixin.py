@@ -14,6 +14,7 @@ from lxml.html.clean import clean_html  # type: ignore
 
 from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
+from ..action import Action
 
 SendErrors = Dict[str, Tuple[int, bytes]]
 
@@ -186,3 +187,16 @@ class EmailMixin:
             logger.error(f"SMTPDataError: {str(e)}")
             return False, {}
         return True, {}
+
+
+class EmailCheckMixin(EmailMixin, Action):
+
+    check_email_field: str = ""
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if instance.get(self.check_email_field):
+            instance[self.check_email_field] = instance[self.check_email_field].strip()
+            if not self.check_email(instance[self.check_email_field]):
+                raise ActionException(f"{self.check_email_field} must be valid email.")
+        instance = super().update_instance(instance)
+        return instance
