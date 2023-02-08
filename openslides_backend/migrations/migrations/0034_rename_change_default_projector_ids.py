@@ -24,13 +24,10 @@ class Migration(BaseMigration):
         for field in list(object.keys()):
             if field == "default_projector_$_id":
                 object[field + "s"] = object[field]
-                del object["default_projector_$_id"]
+                del object[field]
             elif field.startswith("default_projector_$") and field.endswith("_id"):
-                old_field = field
-                new_field = field + "s"
-                if old_field in object:
-                    object[new_field] = [object[old_field]]
-                    del object[old_field]
+                object[field + "s"] = [object[field]]
+                del object[field]
 
     def migrate_event(
         self,
