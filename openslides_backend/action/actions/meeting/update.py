@@ -15,6 +15,7 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
+from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -143,7 +144,7 @@ meeting_settings_keys = [
 
 
 @register_action("meeting.update")
-class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
+class MeetingUpdate(EmailCheckMixin, UpdateAction, GetMeetingIdFromIdMixin):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
@@ -162,6 +163,7 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             "set_as_template": {"type": "boolean"},
         },
     )
+    check_email_field = "users_email_replyto"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # handle set_as_template
@@ -197,7 +199,7 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
                 )
             if instance["jitsi_domain"].strip().endswith("/"):
                 raise ActionException("It is not allowed to end jitsi_domain with '/'.")
-
+        instance = super().update_instance(instance)
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

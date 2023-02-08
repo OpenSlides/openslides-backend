@@ -15,8 +15,8 @@ from aiosmtpd.smtp import (  # type: ignore
 
 from openslides_backend.action.mixins.send_email_mixin import (
     ConnectionSecurity,
-    EmailMixin,
     EmailSettings,
+    EmailUtils,
 )
 
 # Create certificate if they don't exist
@@ -40,7 +40,7 @@ class AIOHandler:
         address: str,
         rcpt_options: List[Any],
     ) -> Any:
-        if not EmailMixin.check_email(address):
+        if not EmailUtils.check_email(address):
             self.ret_status = "550 invalid eMail address"
             return self.ret_status
         if "create_error551" in address:

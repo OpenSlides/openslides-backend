@@ -113,7 +113,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         meeting, _ = self.basic_test(
             {
                 "users_email_sender": "test@example.com",
-                "users_email_replyto": "test2@example.com",
+                "users_email_replyto": "  test2@example.com  ",
                 "users_email_subject": "blablabla",
                 "users_email_body": "testtesttest",
             }
@@ -122,6 +122,11 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         assert meeting.get("users_email_replyto") == "test2@example.com"
         assert meeting.get("users_email_subject") == "blablabla"
         assert meeting.get("users_email_body") == "testtesttest"
+
+    def test_update_broken_email(self) -> None:
+        meeting, response = self.basic_test({"users_email_replyto": "broken@@"}, False)
+        self.assert_status_code(response, 400)
+        assert "users_email_replyto must be valid email." in response.json["message"]
 
     def test_update_projector_related_fields(self) -> None:
         self.set_models(

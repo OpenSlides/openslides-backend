@@ -28,7 +28,7 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.update import UpdateAction
-from ...mixins.send_email_mixin import EmailMixin, EmailSettings
+from ...mixins.send_email_mixin import EmailSettings, EmailUtils
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
@@ -36,7 +36,7 @@ from .helper import get_user_name
 
 
 @register_action("user.send_invitation_email")
-class UserSendInvitationMail(EmailMixin, UpdateAction):
+class UserSendInvitationMail(UpdateAction):
     """
     Action send an invitation mail to a user.
     """
@@ -51,7 +51,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
     ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
         self.user_id = user_id
         self.index = 0
-        if not EmailMixin.check_email(EmailSettings.default_from_email):
+        if not EmailUtils.check_email(EmailSettings.default_from_email):
             result = {
                 "sent": False,
                 "message": f"email {EmailSettings.default_from_email} is not a valid sender email address.",
@@ -60,7 +60,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
             return (None, self.results)
 
         try:
-            with EmailMixin.get_mail_connection() as mail_client:
+            with EmailUtils.get_mail_connection() as mail_client:
                 self.index = -1
                 self.mail_client = mail_client
                 for instance in action_data:
@@ -150,7 +150,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
         if not (to_email := user.get("email")):
             result["message"] = f"User/{user_id} has no email-address."
             return instance
-        if not self.check_email(to_email):
+        if not EmailUtils.check_email(to_email):
             result[
                 "message"
             ] = f"The email-address {to_email} of User/{user_id} is not valid."
@@ -182,7 +182,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
 
         if (
             reply_to := mail_data.get("users_email_replyto", "")
-        ) and not self.check_email(reply_to):
+        ) and not EmailUtils.check_email(reply_to):
             result["message"] = f"The given reply_to address '{reply_to}' is not valid."
             return instance
 
@@ -206,7 +206,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
 
         body_format = format_dict(None, body_dict)
 
-        self.send_email(
+        EmailUtils.send_email(
             self.mail_client,
             from_email,
             to_email,
