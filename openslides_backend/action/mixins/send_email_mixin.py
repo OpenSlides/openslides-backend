@@ -58,7 +58,7 @@ class EmailSettings:
 EmailSettings.check_settings()
 
 
-class EmailMixin:
+class EmailUtils:
     @staticmethod
     def check_email(email: str) -> bool:
         """returns True with valid email, else False"""
@@ -84,7 +84,7 @@ class EmailMixin:
                 connection = smtplib.SMTP_SSL(
                     EmailSettings.host,
                     EmailSettings.port,
-                    context=EmailMixin.get_ssl_default_context(),
+                    context=EmailUtils.get_ssl_default_context(),
                     timeout=EmailSettings.timeout,
                 )
             elif EmailSettings.connection_security == ConnectionSecurity.STARTTLS:
@@ -93,7 +93,7 @@ class EmailMixin:
                     EmailSettings.port,
                     timeout=EmailSettings.timeout,
                 )
-                connection.starttls(context=EmailMixin.get_ssl_default_context())
+                connection.starttls(context=EmailUtils.get_ssl_default_context())
             else:
                 connection = smtplib.SMTP(  # type: ignore
                     EmailSettings.host,
@@ -174,7 +174,7 @@ class EmailMixin:
         html: bool = True,
     ) -> Tuple[bool, SendErrors]:
         try:
-            return True, EmailMixin.send_email(
+            return True, EmailUtils.send_email(
                 client, from_, to, subject, content, contentplain, reply_to, html
             )
         except smtplib.SMTPRecipientsRefused as e:
@@ -189,14 +189,14 @@ class EmailMixin:
         return True, {}
 
 
-class EmailCheckMixin(EmailMixin, Action):
+class EmailCheckMixin(Action):
 
     check_email_field: str = ""
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance.get(self.check_email_field):
             instance[self.check_email_field] = instance[self.check_email_field].strip()
-            if not self.check_email(instance[self.check_email_field]):
+            if not EmailUtils.check_email(instance[self.check_email_field]):
                 raise ActionException(f"{self.check_email_field} must be valid email.")
         instance = super().update_instance(instance)
         return instance
