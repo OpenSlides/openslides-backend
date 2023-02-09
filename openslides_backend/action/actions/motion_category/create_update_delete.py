@@ -3,8 +3,7 @@ from typing import Any, Dict
 from ....models.models import MotionCategory
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.filters import And, FilterOperator, Not
-from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.filters import And, FilterOperator
 from ...action import Action
 from ...action_set import ActionSet
 from ...generics.update import UpdateAction
@@ -17,18 +16,12 @@ class PrefixUniqueMixin(Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         if instance.get("prefix"):
-            meeting_id = instance.get("meeting_id")
-            if meeting_id is None:
-                workflow = self.datastore.get(
-                    fqid_from_collection_and_id("motion_category", instance["id"]),
-                    ["meeting_id"],
-                )
-                meeting_id = workflow.get("meeting_id")
+            meeting_id = self.get_meeting_id(instance)
             if self.datastore.exists(
                 "motion_category",
                 And(
                     FilterOperator("prefix", "=", instance["prefix"]),
-                    Not(FilterOperator("id", "=", instance["id"])),
+                    FilterOperator("id", "!=", instance["id"]),
                     FilterOperator("meeting_id", "=", meeting_id),
                 ),
             ):
