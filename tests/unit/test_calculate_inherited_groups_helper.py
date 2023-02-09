@@ -41,7 +41,6 @@ class CalculateInheritedGroupsHelperTest(TestCase):
             result_is_public,
             result_inherited_access_groups,
         ) in data:
-
             result = calculate_inherited_groups_helper(
                 access_group_ids,
                 parent_is_public,

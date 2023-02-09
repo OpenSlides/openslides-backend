@@ -23,7 +23,6 @@ class MotionCreateBase(
     SetNumberMixin,
     CreateActionWithListOfSpeakersMixin,
 ):
-
     model = Motion()
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 

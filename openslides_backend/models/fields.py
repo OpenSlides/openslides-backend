@@ -1,7 +1,7 @@
 import re
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Set, Union, cast
 
 import fastjsonschema
 
@@ -166,7 +166,7 @@ class HTMLStrictField(TextField):
             return validate_html(html, self.get_allowed_tags())
         return None
 
-    def get_allowed_tags(self) -> List[str]:
+    def get_allowed_tags(self) -> Set[str]:
         return ALLOWED_HTML_TAGS_STRICT
 
 
@@ -175,7 +175,7 @@ class HTMLPermissiveField(HTMLStrictField):
     HTML field which can also contain video tags.
     """
 
-    def get_allowed_tags(self) -> List[str]:
+    def get_allowed_tags(self) -> Set[str]:
         return ALLOWED_HTML_TAGS_PERMISSIVE
 
 
@@ -356,7 +356,6 @@ class OrganizationField(RelationField):
 
 
 class BaseTemplateField(Field):
-
     replacement_collection: Optional[Collection]
     replacement_enum: Optional[List[str]]
     index: int

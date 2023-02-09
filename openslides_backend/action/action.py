@@ -727,17 +727,19 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     )
             return action_results
 
-    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
+    def get_on_success(self, action_data: ActionData) -> Optional[Callable[[], None]]:
         """
         Can be overridden by actions to return a cleanup method to execute
         after the result was successfully written to the DS.
         """
+        return None
 
-    def get_on_failure(self, action_data: ActionData) -> Callable[[], None]:
+    def get_on_failure(self, action_data: ActionData) -> Optional[Callable[[], None]]:
         """
         Can be overridden by actions to return a cleanup method to execute
         after an error appeared in an action.
         """
+        return None
 
 
 def merge_history_informations(

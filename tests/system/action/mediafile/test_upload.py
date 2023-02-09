@@ -194,7 +194,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         mediafile = self.get_model("mediafile/1")
-        # PyPDF assumes the file is encrypted since it is not valid
+        # pypdf assumes the file is encrypted since it is not valid
         assert mediafile.get("pdf_information") == {"pages": 0, "encrypted": True}
         self.media.upload_mediafile.assert_called_with(
             file_content, 1, "application/pdf"
