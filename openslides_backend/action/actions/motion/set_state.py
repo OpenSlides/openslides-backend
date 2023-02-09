@@ -51,23 +51,19 @@ class MotionSetStateAction(
         self.apply_instance(motion, fqid)
         state_id = motion["state_id"]
 
-        motion_state = self.datastore.get(
-            fqid_from_collection_and_id("motion_state", state_id),
-            ["next_state_ids", "previous_state_ids"],
-            lock_result=False,
-        )
-        is_in_next_state_ids = instance["state_id"] in motion_state.get(
-            "next_state_ids", []
-        )
-        is_in_previous_state_ids = instance["state_id"] in motion_state.get(
-            "previous_state_ids", []
-        )
-        if not self.skip_state_graph_check and not (
-            is_in_next_state_ids or is_in_previous_state_ids
-        ):
-            raise ActionException(
-                f"State '{instance['state_id']}' is not in next or previous states of the state '{state_id}'."
+        if not self.skip_state_graph_check:
+            motion_state = self.datastore.get(
+                fqid_from_collection_and_id("motion_state", state_id),
+                ["next_state_ids", "previous_state_ids"],
+                lock_result=False,
             )
+            if instance["state_id"] not in (
+                motion_state.get("next_state_ids", [])
+                + motion_state.get("previous_state_ids", [])
+            ):
+                raise ActionException(
+                    f"State '{instance['state_id']}' is not in next or previous states of the state '{state_id}'."
+                )
 
         self.set_number(
             instance,
