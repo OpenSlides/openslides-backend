@@ -118,7 +118,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         logging: LoggingModule,
         env: Env,
         skip_archived_meeting_check: Optional[bool] = None,
-        use_meeting_ids_for_archived_meeting_check: bool = None,
+        use_meeting_ids_for_archived_meeting_check: Optional[bool] = None,
     ) -> None:
         super().__init__(services, datastore, logging)
         self.relation_manager = relation_manager

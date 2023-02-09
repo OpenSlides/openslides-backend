@@ -53,8 +53,8 @@ class Field:
         self,
         required: bool = False,
         read_only: bool = False,
-        default: Any = None,
-        constraints: Dict[str, Any] = None,
+        default: Optional[Any] = None,
+        constraints: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.required = required
         self.read_only = read_only
@@ -236,7 +236,9 @@ class ArrayField(Field):
     Used for arbitrary arrays.
     """
 
-    def __init__(self, in_array_constraints: Dict = None, **kwargs: Any) -> None:
+    def __init__(
+        self, in_array_constraints: Optional[Dict] = None, **kwargs: Any
+    ) -> None:
         self.in_array_constraints = in_array_constraints
         super().__init__(**kwargs)
 

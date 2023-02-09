@@ -1,4 +1,5 @@
 import threading
+from typing import Optional
 
 import pytest
 
@@ -220,7 +221,7 @@ def thread_method(
     motion_title: str,
     testlock: threading.Lock,
     name: str,
-    sync_event: threading.Event = None,
+    sync_event: Optional[threading.Event] = None,
 ) -> None:
     if testlock:
         pytest_thread_local.testlock = testlock

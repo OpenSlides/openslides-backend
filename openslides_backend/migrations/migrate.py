@@ -2,7 +2,7 @@ import pkgutil
 import sys
 from argparse import ArgumentParser
 from importlib import import_module
-from typing import Any, Dict, List, Type, cast
+from typing import Any, Dict, List, Optional, Type, cast
 
 from datastore.migrations import (
     BaseEvent,
@@ -40,7 +40,7 @@ class MigrationWrapper:
 
     @staticmethod
     def load_migrations(
-        base_migration_module_pypath: str = None,
+        base_migration_module_pypath: Optional[str] = None,
     ) -> List[Type[BaseMigration]]:
         if not base_migration_module_pypath:
             base_module = __name__.rsplit(".", 1)[0]
