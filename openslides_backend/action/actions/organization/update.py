@@ -9,12 +9,13 @@ from ....permissions.permission_helper import has_organization_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
+from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("organization.update")
-class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
+class OrganizationUpdate(EmailCheckMixin, UpdateAction, CheckForArchivedMeetingMixin):
     """
     Action to update a organization.
     """
@@ -40,6 +41,7 @@ class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
             "users_email_body",
         ]
     )
+    check_email_field = "users_email_replyto"
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         # check group A fields

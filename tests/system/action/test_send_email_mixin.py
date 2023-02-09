@@ -4,7 +4,7 @@ from email.headerregistry import Address
 
 import pytest
 
-from openslides_backend.action.mixins.send_email_mixin import EmailMixin, EmailSettings
+from openslides_backend.action.mixins.send_email_mixin import EmailSettings, EmailUtils
 from tests.system.action.base import BaseActionTestCase
 from tests.system.action.mail_base import AIOHandler, AiosmtpdServerManager
 
@@ -29,8 +29,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
-            with EmailMixin.get_mail_connection() as mail_client:
-                EmailMixin.send_email(
+            with EmailUtils.get_mail_connection() as mail_client:
+                EmailUtils.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -53,8 +53,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
-            with EmailMixin.get_mail_connection() as mail_client:
-                response = EmailMixin.send_email(
+            with EmailUtils.get_mail_connection() as mail_client:
+                response = EmailUtils.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -77,8 +77,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
-            with EmailMixin.get_mail_connection() as mail_client:
-                response = EmailMixin.send_email(
+            with EmailUtils.get_mail_connection() as mail_client:
+                response = EmailUtils.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -106,8 +106,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler, auth=True):
-            with EmailMixin.get_mail_connection() as mail_client:
-                EmailMixin.send_email(
+            with EmailUtils.get_mail_connection() as mail_client:
+                EmailUtils.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -127,8 +127,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler, auth=True):
-            with EmailMixin.get_mail_connection() as mail_client:
-                response = EmailMixin.send_email(
+            with EmailUtils.get_mail_connection() as mail_client:
+                response = EmailUtils.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -148,8 +148,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler, auth=True):
-            with EmailMixin.get_mail_connection() as mail_client:
-                response = EmailMixin.send_email(
+            with EmailUtils.get_mail_connection() as mail_client:
+                response = EmailUtils.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -171,7 +171,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         handler = AIOHandler()
         with AiosmtpdServerManager(handler, auth=True):
             with pytest.raises(smtplib.SMTPAuthenticationError) as e:
-                with EmailMixin.get_mail_connection():
+                with EmailUtils.get_mail_connection():
                     pass
 
         self.assertEqual(e.value.smtp_code, 535)
@@ -186,9 +186,9 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler, auth=True):
-            with EmailMixin.get_mail_connection() as mail_client:
+            with EmailUtils.get_mail_connection() as mail_client:
                 with pytest.raises(smtplib.SMTPSenderRefused) as e:
-                    EmailMixin.send_email(
+                    EmailUtils.send_email(
                         mail_client,
                         self.sender,
                         self.receivers,
@@ -209,8 +209,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
-            with EmailMixin.get_mail_connection() as mail_client:
-                response = EmailMixin.send_email(
+            with EmailUtils.get_mail_connection() as mail_client:
+                response = EmailUtils.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -245,8 +245,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
-            with EmailMixin.get_mail_connection() as mail_client:
-                response = EmailMixin.send_email(
+            with EmailUtils.get_mail_connection() as mail_client:
+                response = EmailUtils.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -278,16 +278,16 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         with AiosmtpdServerManager(handler):
             EmailSettings.port = 26
             with pytest.raises(ConnectionRefusedError):
-                EmailMixin.get_mail_connection().__enter__()
+                EmailUtils.get_mail_connection().__enter__()
 
     def test_connection_interrupted(self) -> None:
         EmailSettings.connection_security = "NONE"
         handler = AIOHandler()
         with AiosmtpdServerManager(handler) as server:
-            with EmailMixin.get_mail_connection() as mail_client:
+            with EmailUtils.get_mail_connection() as mail_client:
                 with pytest.raises(smtplib.SMTPServerDisconnected):
                     server.stop()
-                    EmailMixin.send_email(
+                    EmailUtils.send_email(
                         mail_client,
                         self.sender,
                         self.receivers,
@@ -306,7 +306,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
                 ssl.SSLCertVerificationError,
                 match="certificate verify failed: self signed certificate",
             ):
-                EmailMixin.get_mail_connection().__enter__()
+                EmailUtils.get_mail_connection().__enter__()
 
     # test invalid receivers
     def test_invalid_receiver_all(self) -> None:
@@ -316,9 +316,9 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
-            with EmailMixin.get_mail_connection() as mail_client:
+            with EmailUtils.get_mail_connection() as mail_client:
                 with pytest.raises(smtplib.SMTPRecipientsRefused) as e:
-                    EmailMixin.send_email(
+                    EmailUtils.send_email(
                         mail_client,
                         self.sender,
                         "invalidQexample1.com",
@@ -340,9 +340,9 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
-            with EmailMixin.get_mail_connection() as mail_client:
+            with EmailUtils.get_mail_connection() as mail_client:
                 receivers = self.receivers + ["invalidQexample1.com"]
-                response = EmailMixin.send_email(
+                response = EmailUtils.send_email(
                     mail_client,
                     self.sender,
                     receivers,
@@ -368,8 +368,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         sender = Address("Name of sender", addr_spec=self.sender)
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
-            with EmailMixin.get_mail_connection() as mail_client:
-                response = EmailMixin.send_email(
+            with EmailUtils.get_mail_connection() as mail_client:
+                response = EmailUtils.send_email(
                     mail_client,
                     sender,
                     self.receivers,
@@ -403,7 +403,7 @@ class CheckValidEmailAddress(BaseActionTestCase):
 
         for email in emails:
             self.assertTrue(
-                EmailMixin.check_email(email),
+                EmailUtils.check_email(email),
                 f"Email-address {email} recognized as False",
             )
 
@@ -418,6 +418,6 @@ class CheckValidEmailAddress(BaseActionTestCase):
 
         for email in emails:
             self.assertFalse(
-                EmailMixin.check_email(email),
+                EmailUtils.check_email(email),
                 f"Email-address {email} recognized as True",
             )
