@@ -22,12 +22,13 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .mixins import PermissionHelperMixin
+from .set_number_mixin import SetNumberMixin
 
 EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
 
 
 @register_action("motion.update")
-class MotionUpdate(UpdateAction, PermissionHelperMixin):
+class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
     """
     Action to update motions.
     """
@@ -148,6 +149,13 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         for prefix in ("recommendation", "state"):
             if instance.get(f"{prefix}_extension"):
                 self.set_extension_reference_ids(prefix, instance)
+
+        if instance.get("number"):
+            meeting_id = self.get_meeting_id(instance)
+            if not self._check_if_unique(
+                instance["number"], meeting_id, instance["id"]
+            ):
+                raise ActionException("Number is not unique.")
 
         return instance
 
