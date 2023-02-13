@@ -112,6 +112,7 @@ class User(Model):
     poll_voted_ids = fields.RelationListField(to={"poll": "voted_ids"})
     option_ids = fields.RelationListField(to={"option": "content_object_id"})
     vote_ids = fields.RelationListField(to={"vote": "user_id"})
+    poll_candidate_ids = fields.RelationListField(to={"poll_candidate": "user_id"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={

@@ -314,6 +314,10 @@ user:
     type: relation-list
     to: vote/user_id
     restriction_mode: A
+  poll_candidate_ids:
+    type: relation-list
+    to: poll_candidate/user_id
+    restriction_mode: A
 
   poll_candidate_ids:
     type: relation-list
