@@ -1,15 +1,21 @@
-from typing import Any, List
+from typing import Any, List, Set
 
 import bleach
 import simplejson as json
+from bleach.css_sanitizer import CSSSanitizer
 
-ALLOWED_HTML_TAGS_STRICT = [
+from .patterns import fqid_from_collection_and_id
+
+ALLOWED_HTML_TAGS_STRICT = {
+    # links and images
     "a",
-    "img",  # links and images
+    "img",
+    # text layout
     "br",
     "p",
     "span",
-    "blockquote",  # text layout
+    "blockquote",
+    # text formating
     "strike",
     "del",
     "ins",
@@ -18,27 +24,30 @@ ALLOWED_HTML_TAGS_STRICT = [
     "em",
     "sup",
     "sub",
-    "pre",  # text formating
+    "pre",
+    # headings
     "h1",
     "h2",
     "h3",
     "h4",
     "h5",
-    "h6",  # headings
+    "h6",
+    # lists
     "ol",
     "ul",
-    "li",  # lists
+    "li",
+    # tables
     "table",
     "caption",
     "thead",
     "tbody",
     "th",
     "tr",
-    "td",  # tables
+    "td",
     "div",
-]
+}
 
-ALLOWED_HTML_TAGS_PERMISSIVE = ALLOWED_HTML_TAGS_STRICT + ["video"]
+ALLOWED_HTML_TAGS_PERMISSIVE = ALLOWED_HTML_TAGS_STRICT | {"video"}
 
 ALLOWED_STYLES = [
     "color",
@@ -64,12 +73,12 @@ ALLOWED_STYLES = [
 INITIAL_DATA_FILE = "global/data/initial-data.json"
 EXAMPLE_DATA_FILE = "global/data/example-data.json"
 ONE_ORGANIZATION_ID = 1
-ONE_ORGANIZATION_FQID = "organization/1"
+ONE_ORGANIZATION_FQID = fqid_from_collection_and_id("organization", ONE_ORGANIZATION_ID)
 
 
 def validate_html(
     html: str,
-    allowed_tags: List[str] = ALLOWED_HTML_TAGS_STRICT,
+    allowed_tags: Set[str] = ALLOWED_HTML_TAGS_STRICT,
     allowed_styles: List[str] = ALLOWED_STYLES,
 ) -> str:
     def allow_all(tag: str, name: str, value: str) -> bool:
@@ -80,7 +89,7 @@ def validate_html(
         html,
         tags=allowed_tags,
         attributes=allow_all,
-        styles=allowed_styles,
+        css_sanitizer=CSSSanitizer(allowed_css_properties=allowed_styles),
     )
 
 

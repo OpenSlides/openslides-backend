@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Any, Callable, Optional
 
 from fastjsonschema import JsonSchemaException
@@ -46,6 +47,7 @@ class BasePresenter(BaseServiceProvider):
             if self.data is not None:
                 raise PresenterException("This presenter does not take data.")
 
+    @abstractmethod
     def get_result(self) -> Any:
         """Does the actual work and returns the result depending on the data."""
         ...

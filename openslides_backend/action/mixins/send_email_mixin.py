@@ -75,9 +75,9 @@ class EmailUtils:
 
     @staticmethod
     @contextmanager
-    def get_mail_connection() -> Generator[
-        Union[smtplib.SMTP, smtplib.SMTP_SSL], None, None
-    ]:
+    def get_mail_connection() -> (
+        Generator[Union[smtplib.SMTP, smtplib.SMTP_SSL], None, None]
+    ):
         connection: Optional[Union[smtplib.SMTP, smtplib.SMTP_SSL]] = None
         try:
             if EmailSettings.connection_security == ConnectionSecurity.SSLTLS:
@@ -190,7 +190,6 @@ class EmailUtils:
 
 
 class EmailCheckMixin(Action):
-
     check_email_field: str = ""
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

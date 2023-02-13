@@ -60,11 +60,11 @@ def test_migration(write, finalize, assert_model):
     )
     assert_model(
         "group/1",
-        {"permissions": [], "meta_deleted": False, "meta_position": 4},
+        {"permissions": [], "meta_deleted": False, "meta_position": 3},
         position=4,
     )
     assert_model(
         "group/1",
-        {"permissions": [], "meta_deleted": False, "meta_position": 5},
+        {"permissions": [], "meta_deleted": False, "meta_position": 3},
         position=5,
     )

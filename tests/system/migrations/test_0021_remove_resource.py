@@ -60,7 +60,7 @@ def test_migration(write, finalize, assert_model, read_model):
         read_model("resource/8", position=2)
     assert_model(
         ONE_ORGANIZATION_FQID,
-        {"id": 1, "meta_deleted": False, "meta_position": 3},
+        {"id": 1, "meta_deleted": False, "meta_position": 1},
         position=3,
     )
     with pytest.raises(ModelDoesNotExist):

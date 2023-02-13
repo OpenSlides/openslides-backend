@@ -89,7 +89,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         self,
         fqid: FullQualifiedId,
         mapped_fields: List[str],
-        position: int = None,
+        position: Optional[int] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
@@ -154,7 +154,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     def get_many(
         self,
         get_many_requests: List[GetManyRequest],
-        position: int = None,
+        position: Optional[int] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
         use_changed_models: bool = True,

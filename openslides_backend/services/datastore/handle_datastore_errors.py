@@ -31,7 +31,7 @@ def raise_datastore_error(
     error: Optional[Dict[str, Any]],
     error_message_prefix: str = "",
     logger: Optional[Logger] = None,
-    env: Env = None,
+    env: Optional[Env] = None,
 ) -> None:
     error_message = error_message_prefix
     type_verbose: str = ""

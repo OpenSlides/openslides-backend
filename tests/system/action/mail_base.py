@@ -4,14 +4,8 @@ import subprocess
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Type, cast
 
-from aiosmtpd.controller import Controller  # type: ignore
-from aiosmtpd.smtp import (  # type: ignore
-    SMTP,
-    AuthResult,
-    Envelope,
-    LoginPassword,
-    Session,
-)
+from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import SMTP, AuthResult, Envelope, LoginPassword, Session
 
 from openslides_backend.action.mixins.send_email_mixin import (
     ConnectionSecurity,

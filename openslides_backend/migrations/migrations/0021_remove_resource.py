@@ -21,7 +21,6 @@ class Migration(BaseMigration):
         self,
         event: BaseEvent,
     ) -> Optional[List[BaseEvent]]:
-
         collection = collection_from_fqid(event.fqid)
         if collection == "resource":
             return []

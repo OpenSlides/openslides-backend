@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Any, Callable, Dict, Iterable, Optional, Protocol, Text, Tuple
 
 from openslides_backend.http.request import Request
@@ -20,9 +21,11 @@ class View(Protocol):  # pragma: no cover
     Interface for views of this service.
     """
 
+    @abstractmethod
     def __init__(self, logging: LoggingModule, services: Services) -> None:
         ...
 
+    @abstractmethod
     def dispatch(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         ...
 
@@ -34,9 +37,11 @@ class WSGIApplication(Protocol):  # pragma: no cover
 
     services: Services
 
+    @abstractmethod
     def __init__(self, logging: LoggingModule, view: View, services: Services) -> None:
         ...
 
+    @abstractmethod
     def __call__(
         self, environ: WSGIEnvironment, start_response: StartResponse
     ) -> Iterable[bytes]:

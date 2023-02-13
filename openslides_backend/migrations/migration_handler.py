@@ -30,7 +30,6 @@ class MigrationState(str, Enum):
 
 
 class MigrationHandler(BaseHandler):
-
     lock = Lock()
     migration_running = False
     migrate_thread_stream: Optional[StringIO] = None

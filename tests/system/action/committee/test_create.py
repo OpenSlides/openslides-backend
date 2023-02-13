@@ -157,7 +157,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("committee/1")
 
     def test_not_existing_user(self) -> None:
-
         response = self.request(
             "committee.create",
             {
