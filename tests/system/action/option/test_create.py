@@ -23,7 +23,10 @@ class OptionCreateActionTest(BaseActionTestCase):
         )
         response = self.request("option.create", {"meeting_id": 111, "weight": 10})
         self.assert_status_code(response, 400)
-        assert "Need text xor content_object_id." in response.json["message"]
+        assert (
+            "Need one of text, content_object_id or poll_candidate_user_ids."
+            in response.json["message"]
+        )
 
     def test_create_with_both_text_and_content_object_id(self) -> None:
         self.set_models(
@@ -45,7 +48,10 @@ class OptionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Need text xor content_object_id." in response.json["message"]
+        assert (
+            "Need one of text, content_object_id or poll_candidate_user_ids."
+            in response.json["message"]
+        )
 
     def test_create_yna_votes(self) -> None:
         self.create_model(

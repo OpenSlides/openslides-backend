@@ -11,7 +11,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             "user.update_self",
             {
                 "username": "username_Xcdfgee",
-                "email": "email1@example.com",
+                "email": " email1@example.com   ",
                 "pronoun": "Test",
                 "gender": "male",
             },
@@ -115,3 +115,17 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
                 "username": "username test",
             },
         )
+
+    def test_update_broken_email(self) -> None:
+        self.update_model(
+            "user/1",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request(
+            "user.update_self",
+            {
+                "email": "broken@@",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "email must be valid email." in response.json["message"]

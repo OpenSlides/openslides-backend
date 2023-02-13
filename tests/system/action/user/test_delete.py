@@ -406,65 +406,6 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_delete_with_projection(self) -> None:
-        self.set_models(
-            {
-                "user/111": {
-                    "username": "u111",
-                    "projection_$_ids": ["1"],
-                    "projection_$1_ids": [1],
-                },
-                "projection/1": {
-                    "content_object_id": "user/111",
-                    "current_projector_id": 1,
-                    "preview_projector_id": 1,
-                    "history_projector_id": 1,
-                    "meeting_id": 1,
-                },
-                "projection/2": {
-                    "current_projector_id": 1,
-                    "preview_projector_id": 1,
-                    "history_projector_id": 1,
-                    "meeting_id": 1,
-                },
-                "projector/1": {
-                    "current_projection_ids": [1, 2],
-                    "preview_projection_ids": [1, 2],
-                    "history_projection_ids": [1, 2],
-                    "meeting_id": 1,
-                },
-                "meeting/1": {"all_projection_ids": [1, 2], "projection_ids": [2]},
-            },
-        )
-        response = self.request("user.delete", {"id": 111})
-
-        self.assert_status_code(response, 200)
-        self.assert_model_deleted(
-            "user/111",
-            {"meta_deleted": True, "projection_$_ids": ["1"], "projection_$1_ids": [1]},
-        )
-        self.assert_model_deleted(
-            "projection/1",
-            {
-                "meta_deleted": True,
-                "content_object_id": "user/111",
-                "current_projector_id": 1,
-                "preview_projector_id": 1,
-                "history_projector_id": 1,
-            },
-        )
-        self.assert_model_exists(
-            "projector/1",
-            {
-                "current_projection_ids": [2],
-                "preview_projection_ids": [2],
-                "history_projection_ids": [2],
-            },
-        )
-        self.assert_model_exists(
-            "meeting/1", {"all_projection_ids": [2], "projection_ids": [2]}
-        )
-
     def test_delete_prevent_delete_oneself(self) -> None:
         response = self.request("user.delete", {"id": 1})
         self.assert_status_code(response, 400)

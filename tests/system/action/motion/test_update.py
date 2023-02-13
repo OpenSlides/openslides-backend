@@ -504,3 +504,24 @@ class MotionUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+
+    def test_update_check_not_unique_number(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_uZXBoHMp",
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {"meeting_id": 1, "number": "T001"},
+                "motion/2": {"meeting_id": 1, "number": "A001"},
+            }
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 1,
+                "number": "A001",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Number is not unique." in response.json["message"]

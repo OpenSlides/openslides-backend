@@ -5,6 +5,7 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import PermissionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
+from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
@@ -13,6 +14,7 @@ from .user_mixin import LimitOfUserMixin, UpdateHistoryMixin, UserMixin
 
 @register_action("user.update")
 class UserUpdate(
+    EmailCheckMixin,
     UserMixin,
     CreateUpdatePermissionsMixin,
     UpdateAction,
@@ -53,6 +55,7 @@ class UserUpdate(
             "is_demo_user",
         ],
     )
+    check_email_field = "email"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

@@ -133,7 +133,7 @@ class BaseSystemTestCase(TestCase):
         self.set_models(data)
 
     def create_client(
-        self, on_auth_data_changed: Callable[[AuthData], None] = None
+        self, on_auth_data_changed: Optional[Callable[[AuthData], None]] = None
     ) -> Client:
         return Client(self.app, on_auth_data_changed)
 
@@ -232,7 +232,7 @@ class BaseSystemTestCase(TestCase):
         return model
 
     def assert_model_exists(
-        self, fqid: str, fields: Dict[str, Any] = None
+        self, fqid: str, fields: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         model = self.get_model(fqid)
         self.assertFalse(model.get("meta_deleted"))
@@ -250,7 +250,7 @@ class BaseSystemTestCase(TestCase):
             self.get_model(fqid)
 
     def assert_model_deleted(
-        self, fqid: str, fields: Dict[str, Any] = None
+        self, fqid: str, fields: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         model = self.get_model(fqid)
         self.assertTrue(model.get("meta_deleted"), f"Model '{fqid}' was not deleted.")

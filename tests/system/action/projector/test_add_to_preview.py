@@ -117,14 +117,11 @@ class ProjectorAddToPreview(BaseActionTestCase):
                 "meeting_id": 1,
             },
         )
-        self.assert_status_code(response, 200)
-        projector = self.get_model("projector/1")
-        assert projector.get("preview_projection_ids") == [10, 13]
-        projection = self.get_model("projection/13")
-        assert projection.get("preview_projector_id") == 1
-        assert projection.get("content_object_id") == f"user/{user_id}"
-        assert projection.get("meeting_id") == 1
-        assert projection.get("weight") == 11
+        self.assert_status_code(response, 400)
+        assert (
+            "The collection 'user' is not available for field 'content_object_id' in collection 'projection'."
+            in response.json["message"]
+        )
 
     def test_add_to_preview_non_existent_content_object(self) -> None:
         response = self.request(

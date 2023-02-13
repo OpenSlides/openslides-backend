@@ -14,7 +14,6 @@ ONE_ORGANIZATION_FQID = "organization/1"
 
 
 class Migration(BaseMigration):
-
     target_migration_index = 30
 
     def position_init(self) -> None:

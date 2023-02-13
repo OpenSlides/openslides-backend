@@ -4,19 +4,13 @@ import subprocess
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Type, cast
 
-from aiosmtpd.controller import Controller  # type: ignore
-from aiosmtpd.smtp import (  # type: ignore
-    SMTP,
-    AuthResult,
-    Envelope,
-    LoginPassword,
-    Session,
-)
+from aiosmtpd.controller import Controller
+from aiosmtpd.smtp import SMTP, AuthResult, Envelope, LoginPassword, Session
 
 from openslides_backend.action.mixins.send_email_mixin import (
     ConnectionSecurity,
-    EmailMixin,
     EmailSettings,
+    EmailUtils,
 )
 
 # Create certificate if they don't exist
@@ -40,7 +34,7 @@ class AIOHandler:
         address: str,
         rcpt_options: List[Any],
     ) -> Any:
-        if not EmailMixin.check_email(address):
+        if not EmailUtils.check_email(address):
             self.ret_status = "550 invalid eMail address"
             return self.ret_status
         if "create_error551" in address:

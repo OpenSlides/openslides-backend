@@ -410,14 +410,6 @@ user:
       type: relation-list
       to: assignment_candidate/user_id
     restriction_mode: A
-  projection_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: projection/content_object_id
-      on_delete: CASCADE
-    restriction_mode: A
   vote_delegated_$_to_id:
     type: template
     replacement_collection: meeting
@@ -440,6 +432,10 @@ user:
     fields:
       type: relation-list
       to: chat_message/user_id
+  poll_candidate_ids:
+    type: relation-list
+    to: poll_candidate/user_id
+    restriction_mode: A
 
   meeting_ids:
     type: number[]
@@ -1184,6 +1180,16 @@ meeting:
       - fast
     restriction_mode: B
 
+  # poll list election
+  poll_candidate_list_ids:
+    type: relation-list
+    to: poll_candidate_list/meeting_id
+    restriction_mode: B
+  poll_candidate_ids:
+    type: relation-list
+    to: poll_candidate/meeting_id
+    restriction_mode: B
+
   # Users
   users_enable_presence_view:
     type: boolean
@@ -1592,7 +1598,6 @@ meeting:
       - amendment
       - motion_block
       - assignment
-      - user
       - mediafile
       - projector_message
       - projector_countdowns
@@ -2081,7 +2086,7 @@ motion:
     restriction_mode: C
   state_extension:
     type: string
-    restriction_mode: C
+    restriction_mode: A
   recommendation_extension:
     type: string
     restriction_mode: C
@@ -2155,7 +2160,7 @@ motion:
     to: motion_state/motion_ids
     required: true
     equal_fields: meeting_id
-    restriction_mode: A
+    restriction_mode: C
   recommendation_id:
     type: relation
     to: motion_state/motion_recommendation_ids
@@ -2962,6 +2967,7 @@ option:
     to:
       - motion/option_ids
       - user/option_$_ids
+      - poll_candidate_list/option_id
     equal_fields: meeting_id
     restriction_mode: A
     required: false
@@ -3115,6 +3121,54 @@ assignment_candidate:
   meeting_id:
     type: relation
     to: meeting/assignment_candidate_ids
+    required: true
+    restriction_mode: A
+
+# models for the poll list election
+poll_candidate_list:
+  id:
+    type: number
+    restriction_mode: A
+  poll_candidate_ids:
+    type: relation-list
+    to: poll_candidate/poll_candidate_list_id
+    on_delete: CASCADE
+    restriction_mode: A
+    equal_fields: meeting_id
+  meeting_id:
+    type: relation
+    to: meeting/poll_candidate_list_ids
+    required: true
+    restriction_mode: A
+  option_id:
+    type: relation
+    to: option/content_object_id
+    equal_fields: meeting_id
+    required: true
+    restriction_mode: A
+
+poll_candidate:
+  id:
+    type: number
+    restriction_mode: A
+  poll_candidate_list_id:
+    type: relation
+    to: poll_candidate_list/poll_candidate_ids
+    equal_fields: meeting_id
+    restriction_mode: A
+    required: true
+  user_id:
+    type: relation
+    to: user/poll_candidate_ids
+    required: true
+    restriction_mode: A
+  weight:
+    type: number
+    required: true
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    to: meeting/poll_candidate_ids
     required: true
     restriction_mode: A
 
@@ -3342,7 +3396,6 @@ projector:
       - amendment
       - motion_block
       - assignment
-      - user
       - mediafile
       - projector_message
       - projector_countdowns
@@ -3416,7 +3469,6 @@ projection:
       - poll/projection_ids
       - projector_message/projection_ids
       - projector_countdown/projection_ids
-      - user/projection_$_ids
     equal_fields: meeting_id
     restriction_mode: A
     required: true

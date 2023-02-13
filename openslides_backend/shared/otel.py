@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -37,7 +37,7 @@ def instrument_requests() -> None:
     RequestsInstrumentor().instrument()
 
 
-def make_span(env: Env, name: str, attributes: Dict[str, str] = None) -> Any:
+def make_span(env: Env, name: str, attributes: Optional[Dict[str, str]] = None) -> Any:
     """
     Returns a new child span to the currently active span.
     If OPENTELEMETRY_ENABLED is not truthy a nullcontext will be returned instead.

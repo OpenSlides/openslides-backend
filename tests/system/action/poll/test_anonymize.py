@@ -10,11 +10,11 @@ class PollAnonymize(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "poll/1": {
-                    "description": "test",
                     "option_ids": [1],
                     "global_option_id": 2,
                     "meeting_id": 1,
                     "state": Poll.STATE_FINISHED,
+                    "type": Poll.TYPE_NAMED,
                     "content_object_id": "topic/1",
                 },
                 "topic/1": {"meeting_id": 1},
@@ -33,7 +33,6 @@ class PollAnonymize(BaseActionTestCase):
 
     def assert_anonymize(self) -> None:
         poll = self.get_model("poll/1")
-        assert poll.get("description") == "test"
         assert poll.get("is_pseudoanonymized") is True
         for fqid in ("vote/1", "vote/2"):
             vote = self.get_model(fqid)

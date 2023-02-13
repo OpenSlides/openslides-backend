@@ -294,8 +294,8 @@ class UpdateHistoryMixin(Action):
                                         instance[template_field_name].remove(
                                             replacement
                                         )
-                                if not instance[template_field_name]:
-                                    del instance[template_field_name]
+                                    if not instance[template_field_name]:
+                                        del instance[template_field_name]
                     else:
                         # clean up template fields
                         for replacement in list(instance.get(field, [])):

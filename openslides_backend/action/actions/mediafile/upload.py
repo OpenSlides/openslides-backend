@@ -4,8 +4,8 @@ from io import BytesIO
 from time import time
 from typing import Any, Dict, List, TypedDict
 
-from PyPDF2 import PdfFileReader
-from PyPDF2.utils import PdfReadError
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
@@ -114,10 +114,10 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
     def get_pdf_information(self, file_bytes: bytes) -> PDFInformation:
         bytes_io = BytesIO(file_bytes)
         try:
-            pdf = PdfFileReader(bytes_io)
-            return {"pages": pdf.getNumPages()}
+            pdf = PdfReader(bytes_io)
+            return {"pages": len(pdf.pages)}
         except PdfReadError:
-            # File could be encrypted but not be detected by PyPDF.
+            # File could be encrypted but not be detected by pypdf.
             return {
                 "pages": 0,
                 "encrypted": True,

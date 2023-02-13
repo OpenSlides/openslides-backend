@@ -6,7 +6,6 @@ ONE_ORGANIZATION_FQID = "organization/1"
 
 
 class Migration(BaseMigration):
-
     target_migration_index = 7
 
     def position_init(self) -> None:
@@ -16,7 +15,6 @@ class Migration(BaseMigration):
         self,
         event: BaseEvent,
     ) -> Optional[List[BaseEvent]]:
-
         if event.fqid != ONE_ORGANIZATION_FQID:
             return None
 
