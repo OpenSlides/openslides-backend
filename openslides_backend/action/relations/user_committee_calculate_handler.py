@@ -15,7 +15,7 @@ from .typing import ListUpdateElement, RelationUpdates
 class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     """
     CalculatedFieldHandler to fill the user.committee_ids and the related committee.user_ids
-    by catching modifications of User.group_$_ids and User.committee__management_level.
+    by catching modifications of UserMeeting.group_ids and User.committee_management_ids.
     A user belongs to a committee, if he is member of a meeting in the committee via group or
     he has rights on CommitteeManagementLevel.
     """
@@ -23,10 +23,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
-        cml_fields = ["committee_management_ids"]
         if (
             (field.own_collection != "user" and field.own_collection != "meeting_user")
-            or field_name not in ["group_ids", *cml_fields]
+            or field_name not in ["group_ids", "committee_management_ids"]
             or ("group_ids" in instance and field_name != "group_ids")
         ):
             return {}
@@ -34,15 +33,15 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         fqid = fqid_from_collection_and_id(field.own_collection, instance["id"])
         db_user = self.datastore.get(
             fqid,
-            ["committee_ids", *cml_fields],
+            ["committee_ids", "committee_management_ids"],
             use_changed_models=False,
             raise_exception=False,
         )
         db_committee_ids = set(db_user.get("committee_ids", []) or [])
-        if any(cml_field in instance for cml_field in cml_fields):
-            new_committees_ids = get_set_of_values_from_dict(instance, cml_fields)
+        if "committee_management_ids" in instance:
+            new_committees_ids = set(instance["committee_management_ids"])
         else:
-            new_committees_ids = get_set_of_values_from_dict(db_user, cml_fields)
+            new_committees_ids = set(db_user.get("committee_management_ids", []))
         if "group_ids" in instance:
             meeting_ids = self.get_meetings(
                 user_id, instance["id"], instance["group_ids"]
@@ -137,15 +136,3 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         self.replace_changed_meeting_user(replace_id, group_ids, meeting_users)
         meeting_ids = [mu["meeting_id"] for mu in meeting_users if mu.get("group_ids")]
         return set(meeting_ids)
-
-
-def get_set_of_values_from_dict(
-    instance: Dict[str, Any], cml_fields: List[str]
-) -> Set[int]:
-    return set(
-        [
-            committee_id
-            for cml_field in cml_fields
-            for committee_id in (instance.get(cml_field, []) or [])
-        ]
-    )

@@ -1515,7 +1515,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 20
+        assert counter.calls == 16
 
     @performance
     def test_clone_performance(self) -> None:
@@ -1526,9 +1526,8 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_amendment_paragraph(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
-        self.test_models["meeting/1"]["meeting_user_id"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["meeting_user_ids"] = [1]
-        self.test_models["user/1"]["meeting_user_ids"] = [1]
         self.set_models(
             {
                 "motion/1": {
@@ -1554,6 +1553,10 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "motion_state/1": {
                     "motion_ids": [1],
+                },
+                "user/1": {
+                    "meeting_user_ids": [1],
+                    "meeting_ids": [1],
                 },
                 "meeting_user/1": {
                     "meeting_id": 1,

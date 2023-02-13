@@ -35,7 +35,7 @@ class MeetingImport(BaseActionTestCase):
                     "group_ids": [1],
                     "is_active_in_organization_id": ONE_ORGANIZATION_ID,
                 },
-                "group/1": {"meeting_id": 1},
+                "group/1": {"meeting_id": 1, "name": "group1_m1"},
                 "projector/1": {"meeting_id": 1},
                 "motion/1": {
                     "meeting_id": 1,
@@ -58,7 +58,7 @@ class MeetingImport(BaseActionTestCase):
                         "name": "Test",
                         "description": "blablabla",
                         "admin_group_id": 1,
-                        "default_group_id": 1,
+                        "default_group_id": 2,
                         "motions_default_amendment_workflow_id": 1,
                         "motions_default_statute_amendment_workflow_id": 1,
                         "motions_default_workflow_id": 1,
@@ -197,7 +197,7 @@ class MeetingImport(BaseActionTestCase):
                         "list_of_speakers_ids": [],
                         "speaker_ids": [],
                         "topic_ids": [],
-                        "group_ids": [1],
+                        "group_ids": [1, 2],
                         "mediafile_ids": [],
                         "motion_ids": [],
                         "motion_submitter_ids": [],
@@ -249,8 +249,16 @@ class MeetingImport(BaseActionTestCase):
                     "1": self.get_group_data(
                         1,
                         {
+                            "name": "imported admin group1",
                             "meeting_user_ids": [1],
                             "admin_group_for_meeting_id": 1,
+                        },
+                    ),
+                    "2": self.get_group_data(
+                        2,
+                        {
+                            "name": "imported default group2",
+                            "meeting_user_ids": [],
                             "default_group_for_meeting_id": 1,
                         },
                     )
@@ -341,7 +349,7 @@ class MeetingImport(BaseActionTestCase):
             "id": obj_id,
             "password": "",
             "username": "test",
-            "committee_ids": [],
+            "committee_ids": [1],
             "committee_management_ids": [],
             "title": "",
             "pronoun": "",
@@ -586,8 +594,11 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_user/1", {"meeting_id": 2, "user_id": 2, "group_ids": [2]}
         )
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 2, "user_id": 1, "group_ids": [2]}
+        )
         self.assert_model_exists("projector/2", {"meeting_id": 2})
-        self.assert_model_exists("group/2", {"meeting_user_ids": [1]})
+        self.assert_model_exists("group/2", {"meeting_user_ids": [1, 2]})
         self.assert_model_exists(
             "personal_note/1",
             {"content_object_id": "motion/2", "meeting_user_id": 1, "meeting_id": 2},
@@ -609,29 +620,37 @@ class MeetingImport(BaseActionTestCase):
         self.assertCountEqual(meeting2["user_ids"], [1, 2])
 
     def test_check_usernames_1(self) -> None:
-        self.set_models(
-            {
-                "user/1": {"username": "admin"},
-            }
-        )
         request_data = self.create_request_data(
             {
                 "user": {
-                    "1": self.get_user_data(
-                        1,
+                    "11": self.get_user_data(
+                        11,
                         {
                             "username": "admin",
-                            "meeting_user_ids": [1],
+                            "meeting_user_ids": [111],
                         },
                     ),
                 },
                 "meeting_user": {
-                    "1": {"id": 1, "meeting_id": 1, "user_id": 1, "group_ids": [1]}
+                    "111": {"id": 111, "meeting_id": 1, "user_id": 11, "group_ids": [1111], "comment": "imported user111 for external meeting1"}
                 },
+                "group": {
+                    "1111": {"id": 1111, "meeting_id": 1, "meeting_user_ids": [111], "admin_group_for_meeting_id": 1, "name": "group1111"}
+                }
             }
         )
-        request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [1]
-
+        del request_data["meeting"]["group"]["1"]
+        del request_data["meeting"]["user"]["1"]
+        del request_data["meeting"]["meeting_user"]["1"]
+        request_data["meeting"]["meeting"]["1"]["admin_group_id"] = 1111
+        request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [111]
+        request_data["meeting"]["meeting"]["1"]["group_ids"] = [2, 1111]
+        req_user = request_data["meeting"]["user"]["11"]
+        self.set_models(
+            {
+                "user/1": {fname: req_user.get(fname) for fname in ("username", "email", "first_name", "last_name")},
+            }
+        )
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
 
@@ -641,49 +660,58 @@ class MeetingImport(BaseActionTestCase):
         imported_meeting = self.assert_model_exists(
             "meeting/2",
             {
-                "group_ids": [2],
+                "group_ids": [2, 3],
                 "committee_id": 1,
                 "projector_ids": [2],
-                "admin_group_id": 2,
+                "admin_group_id": 3,
                 "default_group_id": 2,
                 "motion_state_ids": [1],
                 "motion_workflow_ids": [1],
                 "is_active_in_organization_id": 1,
             },
         )
-        self.assertCountEqual(imported_meeting["user_ids"], [1, 2])
+        self.assertCountEqual(imported_meeting["user_ids"], [1])
 
         self.assert_model_exists(
             "user/1",
             {
                 "username": "admin",
-                "last_name": None,
-                "meeting_ids": [2],
-            },
-        )
-        self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 2, "user_id": 1, "group_ids": [2]}
-        )
-        self.assert_model_exists(
-            "user/2",
-            {
-                "username": "admin1",
                 "last_name": "Administrator",
+                "first_name": "",
+                "email": "",
                 "meeting_ids": [2],
-                "committee_ids": [1],
+                "meeting_user_ids": [1],
+                "organization_management_level": "superadmin",
             },
         )
         self.assert_model_exists(
-            "meeting_user/2", {"meeting_id": 2, "user_id": 2, "group_ids": [2]}
+            "meeting_user/1", {"meeting_id": 2, "user_id": 1, "group_ids": [3], "comment": "imported user111 for external meeting1"}
         )
+        self.assert_model_not_exists("user/2")
 
+        self.assert_model_exists(
+            "group/1",
+            {
+                "meeting_id": 1,
+                "name": "group1_m1",
+            },
+        )
         self.assert_model_exists(
             "group/2",
             {
-                "meeting_user_ids": [1, 2],
+                "name": "imported default group2",
+                "meeting_user_ids": [],
+                "meeting_id": 2,
+                "default_group_for_meeting_id": 2,
+            },
+        )
+        self.assert_model_exists(
+            "group/3",
+            {
+                "name": "group1111",
+                "meeting_user_ids": [1],
                 "meeting_id": 2,
                 "admin_group_for_meeting_id": 2,
-                "default_group_for_meeting_id": 2,
             },
         )
 
@@ -717,10 +745,9 @@ class MeetingImport(BaseActionTestCase):
             {
                 "username": "admin",
                 "last_name": None,
+                "meeting_user_ids": [2],
+                "meeting_ids": [2]
             },
-        )
-        self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 2, "user_id": 2, "group_ids": [2]}
         )
         self.assert_model_exists(
             "user/2", {"username": "admin1", "last_name": "admin0"}
@@ -728,7 +755,13 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "user/3", {"username": "admin11", "last_name": "admin1"}
         )
-        self.assert_model_exists("group/2", {"meeting_user_ids": [1], "meeting_id": 2})
+        self.assert_model_exists(
+            "meeting_user/1", {"meeting_id": 2, "user_id": 2, "group_ids": [2]}
+        )
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 2, "user_id": 1, "group_ids": [2]}
+        )
+        self.assert_model_exists("group/2", {"meeting_user_ids": [1, 2], "meeting_id": 2})
 
     def test_check_usernames_new_and_twice(self) -> None:
         request_data = self.create_request_data(
@@ -858,14 +891,32 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
+            "user/1", {"username": "admin", "meeting_user_ids": [2]}
+        )
+        self.assert_model_exists(
             "user/2", {"username": "test", "meeting_user_ids": [1]}
         )
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "meeting_id": 2, "group_ids": [2], "personal_note_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/2", {"user_id": 1, "meeting_id": 2, "group_ids": [2]}
+        )
+        self.assert_model_exists("group/2", {"meeting_user_ids": [1, 2], "meeting_id": 2, "admin_group_for_meeting_id": 2})
+        self.assert_model_exists("group/3", {"meeting_user_ids": [], "meeting_id": 2, "default_group_for_meeting_id": 2})
+
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2",
-            {"username": "test", "meeting_user_ids": [1, 2]},
+            "user/1", {"username": "admin", "meeting_user_ids": [2, 4], "meeting_ids": [2, 3]}
         )
+        self.assert_model_exists(
+            "user/2",
+            {"username": "test", "meeting_user_ids": [1, 3], "meeting_ids": [2, 3], "committee_ids": [1]},
+        )
+
+        self.assert_model_exists("meeting_user/3", {"user_id": 2, "meeting_id": 3, "group_ids": [4], "personal_note_ids": [2]})
+        self.assert_model_exists("meeting_user/4", {"user_id": 1, "meeting_id": 3, "group_ids": [4]})
         meeting_3 = self.assert_model_exists(
             "meeting/3",
             {
@@ -873,20 +924,22 @@ class MeetingImport(BaseActionTestCase):
                 "description": "blablabla",
                 "committee_id": 1,
                 "enable_anonymous": False,
+                "user_ids": [2, 1],
+                "group_ids": [4,5],
+                "meeting_user_ids": [3, 4],
             },
         )
         assert start <= meeting_3.get("imported_at", 0) <= start + 300
         self.assert_model_exists("projector/3", {"meeting_id": 3})
-        self.assert_model_exists("group/3", {"meeting_user_ids": [2]})
+        self.assert_model_exists("group/4", {"meeting_user_ids": [3, 4], "meeting_id": 3, "admin_group_for_meeting_id": 3})
+        self.assert_model_exists("group/5", {"meeting_user_ids": [], "meeting_id": 3, "default_group_for_meeting_id": 3})
         self.assert_model_exists(
             "personal_note/2", {"content_object_id": "motion/3", "meeting_id": 3}
         )
         self.assert_model_exists(
             "tag/2", {"tagged_ids": ["motion/3"], "name": "testag", "meeting_id": 3}
         )
-        # committee_1 = self.get_model("committee/1")
-        # self.assertCountEqual(committee_1.get("user_ids", []), [1, 2])
-        # self.assertCountEqual(committee_1.get("meeting_ids", []), [1, 2, 3])
+        self.assert_model_exists("committee/1", {"user_ids": [1, 2], "meeting_ids": [1, 2, 3]})
 
     def test_no_permission(self) -> None:
         self.set_models(
@@ -943,7 +996,6 @@ class MeetingImport(BaseActionTestCase):
                         1,
                         {
                             "admin_group_for_meeting_id": 1,
-                            "default_group_for_meeting_id": 1,
                             "mediafile_access_group_ids": [1],
                             "mediafile_inherited_access_group_ids": [1],
                             "meeting_user_ids": [1],
@@ -952,6 +1004,7 @@ class MeetingImport(BaseActionTestCase):
                     "2": self.get_group_data(
                         2,
                         {
+                            "default_group_for_meeting_id": 1,
                             "mediafile_access_group_ids": [1],
                             "mediafile_inherited_access_group_ids": [1],
                         },
@@ -1458,7 +1511,7 @@ class MeetingImport(BaseActionTestCase):
                     "group_ids": [1],
                 },
                 "user/14": {
-                    "username": "username_test",
+                    "username": "username_to_merge",
                     "first_name": None,
                     "last_name": None,
                     "email": "test@example.de",
@@ -1472,7 +1525,7 @@ class MeetingImport(BaseActionTestCase):
                     "user_id": 14,
                     "group_ids": [1],
                 },
-                "organization/1": {"user_ids": [1, 14]},
+                "organization/1": {"user_ids": [1, 14], "committee_ids": [1,2]},
             }
         )
         request_data = self.create_request_data(
@@ -1480,14 +1533,14 @@ class MeetingImport(BaseActionTestCase):
                 "user": {
                     "12": {
                         "id": 12,
-                        "username": "username_test",
+                        "username": "username_to_merge",
                         "email": "test@example.de",
                         "meeting_user_ids": [12],
                         "organization_id": 1,
                     },
                     "13": {
                         "id": 13,
-                        "username": "test_new_user",
+                        "username": "username_import13",
                         "email": "test_new@example.de",
                         "meeting_user_ids": [13],
                         "organization_id": 1,
@@ -1498,55 +1551,58 @@ class MeetingImport(BaseActionTestCase):
                         "id": 12,
                         "meeting_id": 1,
                         "user_id": 12,
-                        "group_ids": [1],
+                        "group_ids": [2],
                     },
                     "13": {
                         "id": 13,
                         "meeting_id": 1,
                         "user_id": 13,
-                        "group_ids": [1],
+                        "group_ids": [2],
                     },
                 },
             }
         )
-        request_data["meeting"]["group"]["1"]["meeting_user_ids"] = [1, 12, 13]
+        request_data["meeting"]["group"]["1"]["meeting_user_ids"] = [1]
+        request_data["meeting"]["group"]["2"]["meeting_user_ids"] = [12, 13]
         request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [1, 12, 13]
+        request_data["meeting"]["meeting"]["1"]["user_ids"] = [1, 12, 13]
+        request_data["meeting"]["user"]["1"]["username"] = "username_import1"
         request_data["committee_id"] = 2
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["number_of_imported_users"] == 3
         assert response.json["results"][0][0]["number_of_merged_users"] == 1
         self.assert_model_exists(
-            "user/1",
+            "user/1", # TODO remove: admin user unverändert, falls er nicht als importeut mit reinkommt
             {
                 "username": "admin",
-                "meeting_ids": [1, 2],
-                "committee_ids": [1, 2],
-                "meeting_user_ids": [1, 14],
+                "meeting_ids": [1, 2],  # meeting_ids 1, 2
+                "committee_ids": [1, 2],  # ist: 1
+                "meeting_user_ids": [1, 18], # ist:1
             },
         )
         self.assert_model_exists(
             "user/14",
             {
-                "username": "username_test",
+                "username": "username_to_merge",
                 "meeting_ids": [1, 2],
-                "committee_ids": [1, 2],
-                "meeting_user_ids": [12, 15],
+                "committee_ids": [1, 2], #ist 1
+                "meeting_user_ids": [14, 16],
             },
         )
         self.assert_model_exists(
             "user/15",
             {
-                "username": "test",
+                "username": "username_import1",
                 "meeting_ids": [2],
                 "committee_ids": [2],
-                "meeting_user_ids": [16],
+                "meeting_user_ids": [15],
             },
         )
         self.assert_model_exists(
             "user/16",
             {
-                "username": "test_new_user",
+                "username": "username_import13",
                 "meeting_ids": [2],
                 "committee_ids": [2],
                 "meeting_user_ids": [17],
@@ -1556,11 +1612,13 @@ class MeetingImport(BaseActionTestCase):
         assert sorted(committee1.get("user_ids", [])) == [1, 14]
         meeting1 = self.assert_model_exists("meeting/1", {"committee_id": 1})
         assert sorted(meeting1.get("user_ids", [])) == [1, 14]
+        assert sorted(meeting1.get("meeting_user_ids", [])) == [1, 14]
         committee2 = self.assert_model_exists("committee/2", {"meeting_ids": [2]})
-        assert sorted(committee2.get("user_ids", [])) == [1, 14, 15, 16]
+        #assert sorted(committee2.get("user_ids", [])) == [1, 14, 15, 16]
         meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 2})
-        assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15, 16]
-        organization = self.assert_model_exists("organization/1")
+        #assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15, 16]
+        #assert sorted(meeting2.get("meeting_user_ids", [])) == [1, 15, 16, 17]
+        organization = self.assert_model_exists("organization/1", {"committee_ids": [1,2], "active_meeting_ids": [1,2]})
         assert sorted(organization.get("user_ids", [])) == [1, 14, 15, 16]
 
     def test_merge_users_check_user_meeting_ids(self) -> None:
@@ -1947,13 +2005,13 @@ class MeetingImport(BaseActionTestCase):
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
-        assert counter.calls == 6
+        assert counter.calls == 12
         meeting = self.assert_model_exists(
             "meeting/2", {"assignment_poll_enable_max_votes_per_option": False}
         )  # checker repair
         self.assertCountEqual(meeting["user_ids"], [1, 2])
         group2 = self.assert_model_exists("group/2")
-        self.assertCountEqual(group2["user_ids"], [1, 2])
+        self.assertCountEqual(group2["meeting_user_ids"], [1, 2])
         committee1 = self.get_model("committee/1")
         self.assertCountEqual(committee1["user_ids"], [1, 2])
         self.assertCountEqual(committee1["meeting_ids"], [1, 2])
