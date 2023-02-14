@@ -15,7 +15,7 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
-from ...mixins.send_email_mixin import EmailCheckMixin
+from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -144,7 +144,9 @@ meeting_settings_keys = [
 
 
 @register_action("meeting.update")
-class MeetingUpdate(EmailCheckMixin, UpdateAction, GetMeetingIdFromIdMixin):
+class MeetingUpdate(
+    EmailCheckMixin, EmailSenderCheckMixin, UpdateAction, GetMeetingIdFromIdMixin
+):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[

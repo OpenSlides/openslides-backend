@@ -128,6 +128,15 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "users_email_replyto must be valid email." in response.json["message"]
 
+    def test_update_broken_sender(self) -> None:
+        meeting, response = self.basic_test(
+            {"users_email_sender": "Openslides[Test"}, False
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "users_email_sender must not contain [, ], \\." in response.json["message"]
+        )
+
     def test_update_projector_related_fields(self) -> None:
         self.set_models(
             {
