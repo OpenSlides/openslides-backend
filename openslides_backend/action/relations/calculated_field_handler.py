@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Any, Dict, TypedDict
 
 from ...models.fields import Field
@@ -12,13 +13,14 @@ class CalculatedFieldHandlerCall(TypedDict):
     action: str
 
 
-class CalculatedFieldHandler:
+class CalculatedFieldHandler(ABC):
     datastore: DatastoreService
 
     def __init__(self, datastore: DatastoreService) -> None:
         self.datastore = datastore
 
+    @abstractmethod
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
-        pass
+        ...

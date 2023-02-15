@@ -15,7 +15,6 @@ from .set_state import MotionSetStateAction
 
 @register_action("motion.follow_recommendation")
 class MotionFollowRecommendationAction(MotionSetStateAction):
-
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema()
     permission = Permissions.Motion.CAN_MANAGE

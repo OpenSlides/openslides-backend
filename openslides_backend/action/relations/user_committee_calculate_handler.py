@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set, cast
+from typing import Any, Dict, List, Optional, Set, cast
 
 from openslides_backend.models.models import User
 from openslides_backend.services.datastore.commands import GetManyRequest
@@ -120,7 +120,9 @@ def get_field_list_from_template(
 
 
 def get_set_of_values_from_dict(
-    instance: Dict[str, Any], management_levels: List[str], template: str = None
+    instance: Dict[str, Any],
+    management_levels: List[str],
+    template: Optional[str] = None,
 ) -> Set[int]:
     if template:
         cml_fields = get_field_list_from_template(management_levels, template)

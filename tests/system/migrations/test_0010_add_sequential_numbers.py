@@ -15,7 +15,6 @@ COLLECTIONS = (
 
 
 def test_migration_all(clear_datastore, write, finalize, assert_model):
-
     for collection in COLLECTIONS:
         write(
             {

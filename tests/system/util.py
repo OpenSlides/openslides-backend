@@ -1,6 +1,7 @@
 import copy
 import cProfile
 import os
+from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Type
 from unittest.mock import MagicMock, Mock, patch
 
@@ -34,6 +35,7 @@ def convert_to_test_response(response: RequestsResponse) -> Response:
 class TestVoteService(VoteService):
     url: str
 
+    @abstractmethod
     def vote(self, data: Dict[str, Any]) -> Response:
         ...
 

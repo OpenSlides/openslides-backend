@@ -1,3 +1,2 @@
--r partial/requirements_datastore_as_package.txt
--r partial/requirements_production.txt
+-r requirements_production.txt
 -r partial/requirements_development.txt

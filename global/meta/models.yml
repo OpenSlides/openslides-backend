@@ -2160,7 +2160,7 @@ motion:
     to: motion_state/motion_ids
     required: true
     equal_fields: meeting_id
-    restriction_mode: A
+    restriction_mode: C
   recommendation_id:
     type: relation
     to: motion_state/motion_recommendation_ids

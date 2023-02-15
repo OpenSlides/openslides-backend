@@ -271,7 +271,6 @@ class MeetingUpdate(EmailCheckMixin, UpdateAction, GetMeetingIdFromIdMixin):
                 ]
             ]
         ):
-
             is_superadmin = has_organization_management_level(
                 self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
             )

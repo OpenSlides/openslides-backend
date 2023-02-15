@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Any, Dict, List, Protocol, TypedDict
 
 PresenterBlob = TypedDict(
@@ -14,5 +15,6 @@ class Presenter(Protocol):  # pragma: no cover
     The handle_request method raises PresenterException if the request fails.
     """
 
+    @abstractmethod
     def handle_request(self, payload: Payload, user_id: int) -> PresenterResponse:
         ...
