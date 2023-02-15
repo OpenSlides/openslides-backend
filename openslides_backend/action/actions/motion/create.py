@@ -29,7 +29,6 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
     schema = DefaultSchema(Motion()).get_create_schema(
         optional_properties=[
             "number",
-            "state_extension",
             "sort_parent_id",
             "category_id",
             "block_id",

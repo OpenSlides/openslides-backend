@@ -23,7 +23,12 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
         get_many_request = GetManyRequest(
             self.model.collection,
             ids,
-            ["id", "recommendation_id", "recommendation_extension"],
+            [
+                "id",
+                "recommendation_id",
+                "recommendation_extension",
+                "recommendation_extension_reference_ids",
+            ],
         )
         gm_result = self.datastore.get_many([get_many_request])
         motions = gm_result.get(self.model.collection, {})
@@ -47,12 +52,18 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
             lock_result=False,
         )
         recommendation_extension = instance.pop("recommendation_extension", None)
+        recommendation_extension_reference_ids = instance.pop(
+            "recommendation_extension_reference_ids", None
+        )
         if (
             recommendation_extension is not None
             and recommendation.get("show_state_extension_field")
             and recommendation.get("show_recommendation_extension_field")
         ):
             instance["state_extension"] = recommendation_extension
+            instance["state_extension_reference_ids"] = (
+                recommendation_extension_reference_ids or []
+            )
         instance["last_modified"] = round(time.time())
         return instance
 

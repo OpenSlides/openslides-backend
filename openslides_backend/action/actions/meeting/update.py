@@ -88,6 +88,7 @@ meeting_settings_keys = [
     "motions_show_referring_motions",
     "motions_show_sequential_number",
     "motions_recommendations_by",
+    "motions_block_slide_columns",
     "motions_statute_recommendations_by",
     "motions_recommendation_text_mode",
     "motions_default_sorting",

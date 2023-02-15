@@ -24,6 +24,11 @@ class MeetingImport(BaseActionTestCase):
                     "active_meeting_ids": [1],
                     "committee_ids": [1],
                 },
+                "user/1": {
+                    "default_structure_level": "admin in meeting1",
+                    "structure_level_$": ["1"],
+                    "structure_level_$1": "story teller",
+                },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
                 "meeting/1": {
                     "committee_id": 1,
@@ -527,6 +532,11 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [1]
         request_data["meeting"]["user"]["1"]["meeting_user_ids"] = [1]
+        request_data["meeting"]["user"]["1"]["personal_note_$_ids"] = ["1"]
+        request_data["meeting"]["user"]["1"]["personal_note_$1_ids"] = [1]
+        request_data["meeting"]["user"]["1"]["default_structure_level"] = "default boss"
+        request_data["meeting"]["user"]["1"]["structure_level_$"] = ["1"]
+        request_data["meeting"]["user"]["1"]["structure_level_$1"] = "meeting freak"
         request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
@@ -548,7 +558,15 @@ class MeetingImport(BaseActionTestCase):
         )
         assert start <= meeting_2.get("imported_at", 0) <= end
         user_2 = self.assert_model_exists(
-            "user/2", {"username": "test", "group_$2_ids": [2], "group_$_ids": ["2"]}
+            "user/2",
+            {
+                "username": "test",
+                "group_$2_ids": [2],
+                "group_$_ids": ["2"],
+                "default_structure_level": "default boss",
+                "structure_level_$": ["2"],
+                "structure_level_$2": "meeting freak",
+            },
         )
         assert user_2.get("password", "")
         self.assert_model_exists("projector/2", {"meeting_id": 2})
@@ -964,13 +982,21 @@ class MeetingImport(BaseActionTestCase):
         request_data = self.create_request_data(
             {
                 "motion": {
-                    "1": self.get_motion_data(1),
+                    "1": self.get_motion_data(
+                        1,
+                        {
+                            "referenced_in_motion_state_extension_ids": [2],
+                            "referenced_in_motion_recommendation_extension_ids": [2],
+                        },
+                    ),
                     "2": self.get_motion_data(
                         2,
                         {
-                            "id": 2,
                             "list_of_speakers_id": 2,
+                            "state_extension": "bla[motion/1]bla",
+                            "state_extension_reference_ids": ["motion/1"],
                             "recommendation_extension": "bla[motion/1]bla",
+                            "recommendation_extension_reference_ids": ["motion/1"],
                         },
                     ),
                 },
@@ -1003,7 +1029,13 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion/3", {"recommendation_extension": "bla[motion/2]bla"}
+            "motion/3",
+            {
+                "state_extension": "bla[motion/2]bla",
+                "state_extension_reference_ids": ["motion/2"],
+                "recommendation_extension": "bla[motion/2]bla",
+                "recommendation_extension_reference_ids": ["motion/2"],
+            },
         )
 
     def test_motion_recommendation_extension_missing_model(self) -> None:

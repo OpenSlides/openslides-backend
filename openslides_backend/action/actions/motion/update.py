@@ -7,7 +7,11 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.patterns import KEYSEPARATOR, Collection, fqid_from_collection_and_id
+from ....shared.patterns import (
+    Collection,
+    collection_and_id_from_fqid,
+    fqid_from_collection_and_id,
+)
 from ....shared.schema import number_string_json_schema, optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -15,7 +19,7 @@ from ...util.register import register_action
 from ...util.typing import ActionData
 from .mixins import AmendmentParagraphHelper, PermissionHelperMixin
 
-RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
+EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
 
 
 @register_action("motion.update")
@@ -138,33 +142,32 @@ class MotionUpdate(UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin
                     if first_state.get("set_created_timestamp"):
                         instance["created"] = timestamp
 
-        if instance.get("recommendation_extension"):
-            self.set_recommendation_extension_reference_ids(instance)
+        for prefix in ("recommendation", "state"):
+            if instance.get(f"{prefix}_extension"):
+                self.set_extension_reference_ids(prefix, instance)
 
         return instance
 
-    def set_recommendation_extension_reference_ids(
-        self, instance: Dict[str, Any]
+    def set_extension_reference_ids(
+        self, prefix: str, instance: Dict[str, Any]
     ) -> None:
-        recommendation_extension_reference_ids = []
-        possible_rerids = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
-            instance["recommendation_extension"]
+        extension_reference_ids = []
+        possible_rerids = EXTENSION_REFERENCE_IDS_PATTERN.findall(
+            instance[f"{prefix}_extension"]
         )
         motion_ids = []
-        for fqid_str in possible_rerids:
-            collection, id_ = fqid_str.split(KEYSEPARATOR)
+        for fqid in possible_rerids:
+            collection, id_ = collection_and_id_from_fqid(fqid)
             if collection != "motion":
-                raise ActionException(f"Found {fqid_str} but only motion is allowed.")
+                raise ActionException(f"Found {fqid} but only motion is allowed.")
             motion_ids.append(int(id_))
         gm_request = GetManyRequest("motion", motion_ids, ["id"])
         gm_result = self.datastore.get_many([gm_request]).get("motion", {})
         for motion_id in gm_result:
-            recommendation_extension_reference_ids.append(
+            extension_reference_ids.append(
                 fqid_from_collection_and_id("motion", motion_id)
             )
-        instance[
-            "recommendation_extension_reference_ids"
-        ] = recommendation_extension_reference_ids
+        instance[f"{prefix}_extension_reference_ids"] = extension_reference_ids
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         motion = self.datastore.get(

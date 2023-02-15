@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "56c8d40624caaadd65fc7dd6850333b5"
+MODELS_YML_CHECKSUM = "4a81dbc2bff8772492a0186d729ad1ed"
 
 
 class Organization(Model):
@@ -411,6 +411,7 @@ class Meeting(Model):
     motions_show_referring_motions = fields.BooleanField(default=True)
     motions_show_sequential_number = fields.BooleanField(default=True)
     motions_recommendations_by = fields.CharField()
+    motions_block_slide_columns = fields.IntegerField(constraints={"minimum": 1})
     motions_statute_recommendations_by = fields.CharField()
     motions_recommendation_text_mode = fields.CharField(
         default="diff", constraints={"enum": ["original", "changed", "diff", "agreed"]}
@@ -1133,6 +1134,13 @@ class Motion(Model):
     recommendation_id = fields.RelationField(
         to={"motion_state": "motion_recommendation_ids"}, equal_fields="meeting_id"
     )
+    state_extension_reference_ids = fields.GenericRelationListField(
+        to={"motion": "referenced_in_motion_state_extension_ids"},
+        equal_fields="meeting_id",
+    )
+    referenced_in_motion_state_extension_ids = fields.RelationListField(
+        to={"motion": "state_extension_reference_ids"}, equal_fields="meeting_id"
+    )
     recommendation_extension_reference_ids = fields.GenericRelationListField(
         to={"motion": "referenced_in_motion_recommendation_extension_ids"},
         equal_fields="meeting_id",
@@ -1398,11 +1406,11 @@ class MotionState(Model):
     allow_submitter_edit = fields.BooleanField(default=False)
     set_number = fields.BooleanField(default=True)
     show_state_extension_field = fields.BooleanField(default=False)
+    show_recommendation_extension_field = fields.BooleanField(default=False)
     merge_amendment_into_final = fields.CharField(
         default="undefined",
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
-    show_recommendation_extension_field = fields.BooleanField(default=False)
     allow_motion_forwarding = fields.BooleanField()
     set_created_timestamp = fields.BooleanField()
     submitter_withdraw_state_id = fields.RelationField(

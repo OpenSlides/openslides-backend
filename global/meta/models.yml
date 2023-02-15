@@ -1019,6 +1019,10 @@ meeting:
   motions_recommendations_by:
     type: string
     restriction_mode: B
+  motions_block_slide_columns:
+    type: number
+    minimum: 1
+    restriction_mode: B
   motions_statute_recommendations_by:
     type: string
     restriction_mode: B
@@ -2222,6 +2226,19 @@ motion:
     equal_fields: meeting_id
     restriction_mode: C
     required: false
+  state_extension_reference_ids:
+    type: generic-relation-list
+    to:
+      collections:
+        - motion
+      field: referenced_in_motion_state_extension_ids
+    equal_fields: meeting_id
+    restriction_mode: C
+  referenced_in_motion_state_extension_ids:
+    type: relation-list
+    to: motion/state_extension_reference_ids
+    equal_fields: meeting_id
+    restriction_mode: C
   recommendation_extension_reference_ids:
     type: generic-relation-list
     to:
@@ -2629,6 +2646,10 @@ motion_state:
     type: boolean
     default: false
     restriction_mode: A
+  show_recommendation_extension_field:
+    type: boolean
+    default: false
+    restriction_mode: A
   merge_amendment_into_final:
     type: string
     enum:
@@ -2636,10 +2657,6 @@ motion_state:
       - undefined
       - do_merge
     default: undefined
-    restriction_mode: A
-  show_recommendation_extension_field:
-    type: boolean
-    default: false
     restriction_mode: A
   allow_motion_forwarding:
     type: boolean

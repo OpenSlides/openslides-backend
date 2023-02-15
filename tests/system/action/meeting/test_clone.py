@@ -307,6 +307,76 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/2"]})
 
+    def test_clone_with_recommendation_extension(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "motion_ids": [22, 23],
+                    "list_of_speakers_ids": [1, 2],
+                },
+                "motion/22": {
+                    "id": 22,
+                    "title": "test",
+                    "sequential_number": 1,
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 1,
+                    "state_id": 1,
+                    "state_extension": "[motion/23]",
+                    "state_extension_reference_ids": ["motion/23"],
+                    "recommendation_extension": "[motion/23]",
+                    "recommendation_extension_reference_ids": ["motion/23"],
+                },
+                "motion/23": {
+                    "id": 23,
+                    "title": "test",
+                    "sequential_number": 2,
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 2,
+                    "state_id": 1,
+                    "referenced_in_motion_state_extension_ids": [22],
+                    "referenced_in_motion_recommendation_extension_ids": [22],
+                },
+                "motion_state/1": {
+                    "motion_ids": [22, 23],
+                },
+                "list_of_speakers/1": {
+                    "meeting_id": 1,
+                    "content_object_id": "motion/22",
+                    "sequential_number": 1,
+                },
+                "list_of_speakers/2": {
+                    "meeting_id": 1,
+                    "content_object_id": "motion/23",
+                    "sequential_number": 2,
+                },
+            }
+        )
+
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/24",
+            {
+                "state_extension": "[motion/25]",
+                "state_extension_reference_ids": ["motion/25"],
+                "recommendation_extension": "[motion/25]",
+                "recommendation_extension_reference_ids": ["motion/25"],
+            },
+        )
+        self.assert_model_exists(
+            "motion/25",
+            {
+                "referenced_in_motion_state_extension_ids": [24],
+                "referenced_in_motion_recommendation_extension_ids": [24],
+            },
+        )
+
     def test_clone_user_ids_and_admin_ids(self) -> None:
         self.test_models["meeting/1"]["template_for_organization_id"] = None
         self.test_models["organization/1"]["user_ids"] = [1, 13, 14, 15, 16]

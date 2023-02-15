@@ -177,6 +177,85 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
         assert model.get("state_id") == 76
         assert model.get("state_extension") is None
 
+    def test_follow_recommendation_with_references(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "motion_state/76": {
+                    "meeting_id": 222,
+                    "next_state_ids": [77],
+                    "show_state_extension_field": True,
+                    "show_recommendation_extension_field": True,
+                    "name": "test",
+                },
+                "motion_state/77": {
+                    "meeting_id": 222,
+                    "motion_ids": [22],
+                    "first_state_of_workflow_id": 76,
+                    "previous_state_ids": [76],
+                },
+                "motion/22": {
+                    "meeting_id": 222,
+                    "state_id": 77,
+                    "recommendation_id": 76,
+                    "recommendation_extension": "[motion/23]",
+                    "recommendation_extension_reference_ids": ["motion/23"],
+                },
+                "motion/23": {
+                    "meeting_id": 222,
+                    "referenced_in_motion_recommendation_extension_ids": [22],
+                },
+            }
+        )
+        response = self.request("motion.follow_recommendation", {"id": 22})
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion/22")
+        assert model.get("state_id") == 76
+        assert model.get("state_extension") == "[motion/23]"
+        assert model.get("state_extension_reference_ids") == ["motion/23"]
+        model = self.get_model("motion/23")
+        assert model.get("referenced_in_motion_state_extension_ids") == [22]
+
+    def test_follow_recommendation_without_references(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "motion_state/76": {
+                    "meeting_id": 222,
+                    "next_state_ids": [77],
+                    "show_state_extension_field": True,
+                    "show_recommendation_extension_field": True,
+                    "name": "test",
+                },
+                "motion_state/77": {
+                    "meeting_id": 222,
+                    "motion_ids": [22],
+                    "first_state_of_workflow_id": 76,
+                    "previous_state_ids": [76],
+                },
+                "motion/22": {
+                    "meeting_id": 222,
+                    "state_id": 77,
+                    "state_extension": "[motion/23]",
+                    "state_extension_reference_ids": ["motion/23"],
+                    "recommendation_id": 76,
+                    "recommendation_extension": "test",
+                },
+                "motion/23": {
+                    "meeting_id": 222,
+                    "referenced_in_motion_state_extension_ids": [22],
+                },
+            }
+        )
+        response = self.request("motion.follow_recommendation", {"id": 22})
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion/22")
+        assert model.get("state_id") == 76
+        assert model.get("state_extension") == "test"
+        assert model.get("state_extension_reference_ids") == []
+        model = self.get_model("motion/23")
+        assert model.get("referenced_in_motion_state_extension_ids") == []
+
     def test_follow_recommendation_no_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_models,
