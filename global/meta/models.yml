@@ -357,7 +357,7 @@ meeting_user:
     restriction_mode: A
   comment:
     type: HTMLStrict
-    restriction_mode: A
+    restriction_mode: D
   number:
     type: string
     restriction_mode: A
@@ -366,8 +366,7 @@ meeting_user:
     restriction_mode: A
   about_me:
     type: HTMLStrict
-    restriction_mode: B
-    description: "restriction_mode B is restriction_mode A or request user == user_id"
+    restriction_mode: A
   vote_weight:
     type: decimal(6)
     minimum: 0
@@ -376,7 +375,7 @@ meeting_user:
     type: relation-list
     to: personal_note/meeting_user_id
     on_delete: CASCADE
-    restriction_mode: A
+    restriction_mode: B
   speaker_ids:
     type: relation-list
     to: speaker/meeting_user_id

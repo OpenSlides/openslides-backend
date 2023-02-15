@@ -565,7 +565,16 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         assert user_2.get("password")
-        self.assert_model_exists("meeting_user/1", {"meeting_id": 2, "user_id": 2, "structure_level": "meeting freak", "personal_note_ids": [1], "submitted_motion_ids": []})
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "meeting_id": 2,
+                "user_id": 2,
+                "structure_level": "meeting freak",
+                "personal_note_ids": [1],
+                "submitted_motion_ids": [],
+            },
+        )
         self.assert_model_exists("projector/2", {"meeting_id": 2})
         self.assert_model_exists("group/2", {"user_ids": [1, 2]})
         self.assert_model_exists(
