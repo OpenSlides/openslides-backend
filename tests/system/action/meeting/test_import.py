@@ -26,8 +26,6 @@ class MeetingImport(BaseActionTestCase):
                 },
                 "user/1": {
                     "default_structure_level": "admin in meeting1",
-                    "structure_level_$": ["1"],
-                    "structure_level_$1": "story teller",
                 },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
                 "meeting/1": {
@@ -497,6 +495,7 @@ class MeetingImport(BaseActionTestCase):
                         "user_id": 1,
                         "personal_note_ids": [1],
                         "submitted_motion_ids": [],
+                        "structure_level": "meeting freak",
                     },
                 },
                 "motion": {
@@ -532,11 +531,7 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [1]
         request_data["meeting"]["user"]["1"]["meeting_user_ids"] = [1]
-        request_data["meeting"]["user"]["1"]["personal_note_$_ids"] = ["1"]
-        request_data["meeting"]["user"]["1"]["personal_note_$1_ids"] = [1]
         request_data["meeting"]["user"]["1"]["default_structure_level"] = "default boss"
-        request_data["meeting"]["user"]["1"]["structure_level_$"] = ["1"]
-        request_data["meeting"]["user"]["1"]["structure_level_$1"] = "meeting freak"
         request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
@@ -564,11 +559,13 @@ class MeetingImport(BaseActionTestCase):
                 "group_$2_ids": [2],
                 "group_$_ids": ["2"],
                 "default_structure_level": "default boss",
-                "structure_level_$": ["2"],
-                "structure_level_$2": "meeting freak",
+                "meeting_ids": [2],
+                "committee_ids": [1],
+                "meeting_user_ids": [1],
             },
         )
-        assert user_2.get("password", "")
+        assert user_2.get("password")
+        self.assert_model_exists("meeting_user/1", {"meeting_id": 2, "user_id": 2, "structure_level": "meeting freak", "personal_note_ids": [1], "submitted_motion_ids": []})
         self.assert_model_exists("projector/2", {"meeting_id": 2})
         self.assert_model_exists("group/2", {"user_ids": [1, 2]})
         self.assert_model_exists(
