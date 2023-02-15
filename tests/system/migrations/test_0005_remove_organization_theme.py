@@ -47,7 +47,7 @@ def test_migration(write, finalize, assert_model):
     )
     assert_model(
         ONE_ORGANIZATION_FQID,
-        {"id": 42, "f": 2, "meta_deleted": False, "meta_position": 3},
+        {"id": 42, "f": 2, "meta_deleted": False, "meta_position": 2},
         position=3,
     )
     assert_model(

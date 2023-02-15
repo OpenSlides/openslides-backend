@@ -10,7 +10,6 @@ from ..util.typing import ActionResultElement
 
 
 class SequentialNumbersMixin(CreateAction):
-
     datastore: DatastoreService
     model: Model
 

@@ -227,12 +227,12 @@ class MeetingImport(BaseActionTestCase):
                         "present_user_ids": [],
                         "list_of_speakers_countdown_id": None,
                         "poll_countdown_id": None,
-                        "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
+                        "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
                         **{
-                            f"default_projector_${name}_id": 1
+                            f"default_projector_${name}_ids": [1]
                             for name in cast(
                                 List[str],
-                                Meeting.default_projector__id.replacement_enum,
+                                Meeting.default_projector__ids.replacement_enum,
                             )
                         },
                         "projection_ids": [],
@@ -321,12 +321,12 @@ class MeetingImport(BaseActionTestCase):
                         "current_projection_ids": [],
                         "preview_projection_ids": [],
                         "history_projection_ids": [],
-                        "used_as_default_$_in_meeting_id": Meeting.default_projector__id.replacement_enum,
+                        "used_as_default_$_in_meeting_id": Meeting.default_projector__ids.replacement_enum,
                         **{
                             f"used_as_default_${name}_in_meeting_id": 1
                             for name in cast(
                                 List[str],
-                                Meeting.default_projector__id.replacement_enum,
+                                Meeting.default_projector__ids.replacement_enum,
                             )
                         },
                         "sequential_number": 1,
@@ -1329,6 +1329,24 @@ class MeetingImport(BaseActionTestCase):
             "mediafile/1: Invalid fields foobar (value: test this)"
             in response.json["message"]
         )
+
+    def test_dont_import_action_worker(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "action_worker": {
+                    "1": {
+                        "id": 1,
+                        "name": "testcase",
+                        "state": "end",
+                        "created": round(time.time() - 3),
+                        "timestamp": round(time.time()),
+                    }
+                }
+            }
+        )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("action_worker/1")
 
     def test_bad_format_invalid_id_key(self) -> None:
         request_data = self.create_request_data({"tag": {"1": {"id": 2}}})

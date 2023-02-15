@@ -15,6 +15,7 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
+from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -143,7 +144,7 @@ meeting_settings_keys = [
 
 
 @register_action("meeting.update")
-class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
+class MeetingUpdate(EmailCheckMixin, UpdateAction, GetMeetingIdFromIdMixin):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
@@ -156,12 +157,13 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
-            "default_projector_$_id",
+            "default_projector_$_ids",
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
         },
     )
+    check_email_field = "users_email_replyto"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # handle set_as_template
@@ -179,11 +181,12 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
                 meeting_check.append(
                     fqid_from_collection_and_id("projector", reference_projector_id)
                 )
-        if "default_projector_$_id" in instance:
+        if "default_projector_$_ids" in instance:
             meeting_check.extend(
                 [
                     fqid_from_collection_and_id("projector", projector_id)
-                    for projector_id in instance["default_projector_$_id"].values()
+                    for projectors in instance["default_projector_$_ids"].values()
+                    for projector_id in projectors
                     if projector_id
                 ]
             )
@@ -197,7 +200,7 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
                 )
             if instance["jitsi_domain"].strip().endswith("/"):
                 raise ActionException("It is not allowed to end jitsi_domain with '/'.")
-
+        instance = super().update_instance(instance)
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
@@ -218,7 +221,8 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
 
         # group C check
         if (
-            "reference_projector_id" in instance or "default_projector_$_id" in instance
+            "reference_projector_id" in instance
+            or "default_projector_$_ids" in instance
         ) and not has_perm(
             self.datastore,
             self.user_id,
@@ -269,7 +273,6 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
                 ]
             ]
         ):
-
             is_superadmin = has_organization_management_level(
                 self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
             )

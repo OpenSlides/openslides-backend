@@ -199,6 +199,19 @@ class ProjectorProject(BaseActionTestCase):
             {"current_projector_id": 75, "history_projector_id": None, "stable": True},
         )
 
+    def test_try_to_project_anonymous(self) -> None:
+        response = self.request(
+            "projector.project",
+            {
+                "ids": [23],
+                "content_object_id": "user/0",
+                "meeting_id": 1,
+                "stable": False,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "data.content_object_id must match pattern" in response.json["message"]
+
     def test_try_to_store_second_unstable_projection_1(self) -> None:
         response = self.request(
             "projector.project",

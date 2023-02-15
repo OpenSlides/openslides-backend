@@ -252,6 +252,17 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
 
+    def test_create_broken_email(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "username": " test Xcdfgee ",
+                "email": "broken@@",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "email must be valid email." in response.json["message"]
+
     def test_create_empty_data(self) -> None:
         response = self.request("user.create", {})
         self.assert_status_code(response, 400)

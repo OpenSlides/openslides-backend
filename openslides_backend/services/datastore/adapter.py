@@ -95,7 +95,7 @@ class DatastoreAdapter(BaseDatastoreService):
         self,
         fqid: FullQualifiedId,
         mapped_fields: List[str],
-        position: int = None,
+        position: Optional[int] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
     ) -> PartialModel:
@@ -130,7 +130,7 @@ class DatastoreAdapter(BaseDatastoreService):
     def get_many(
         self,
         get_many_requests: List[commands.GetManyRequest],
-        position: int = None,
+        position: Optional[int] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Dict[Collection, Dict[int, PartialModel]]:

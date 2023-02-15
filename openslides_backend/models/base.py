@@ -137,7 +137,6 @@ class Model(metaclass=ModelMetaClass):
         """
         for model_field in self.get_fields():
             if model_field.required:
-
                 if isinstance(
                     model_field,
                     (

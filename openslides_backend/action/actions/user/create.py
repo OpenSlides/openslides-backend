@@ -8,6 +8,7 @@ from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
+from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
@@ -17,6 +18,7 @@ from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin
 
 @register_action("user.create")
 class UserCreate(
+    EmailCheckMixin,
     CreateAction,
     UserMixin,
     CreateUpdatePermissionsMixin,
@@ -60,6 +62,7 @@ class UserCreate(
             "forwarding_committee_ids",
         ],
     )
+    check_email_field = "email"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

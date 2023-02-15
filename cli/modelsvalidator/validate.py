@@ -1,4 +1,3 @@
-import re
 import sys
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
@@ -19,9 +18,6 @@ from openslides_backend.shared.patterns import (
 DEFAULT_FILES = [
     "./global/meta/models.yml",
 ]
-
-decimal_regex = re.compile(DECIMAL_PATTERN)  # N O Q A
-color_regex = re.compile(COLOR_PATTERN)
 
 RELATION_TYPES = (
     "relation",
@@ -293,12 +289,12 @@ class Checker:
                     f"Value '{value}' for {collectionfield}' is not a float."
                 )
         elif type_str == "decimal(6)":
-            if not decimal_regex.match(value):
+            if not DECIMAL_PATTERN.match(value):
                 self.errors.append(
                     f"Value '{value}' for {collectionfield}' is not a decimal(6)."
                 )
         elif type_str == "color":
-            if not color_regex.match(value):
+            if not COLOR_PATTERN.match(value):
                 self.errors.append(
                     f"Value '{value}' for {collectionfield}' is not a color."
                 )

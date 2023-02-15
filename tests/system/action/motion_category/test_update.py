@@ -91,6 +91,32 @@ class MotionCategorySystemTest(BaseActionTestCase):
         model = self.get_model("motion_category/111")
         assert model.get("name") == "name_srtgb123"
 
+    def test_update_non_unique_prefix(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "motion_category/111": {
+                    "name": "name_srtgb123",
+                    "prefix": "bla",
+                    "meeting_id": 222,
+                },
+                "motion_category/110": {
+                    "name": "name_already",
+                    "prefix": "test",
+                    "meeting_id": 222,
+                },
+            }
+        )
+        response = self.request(
+            "motion_category.update",
+            {
+                "id": 111,
+                "prefix": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Prefix 'test' is not unique in the meeting." in response.json["message"]
+
     def test_update_no_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_models,

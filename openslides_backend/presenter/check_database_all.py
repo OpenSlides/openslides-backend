@@ -56,6 +56,7 @@ class CheckDatabaseAll(BasePresenter):
         export: Dict[str, Any] = {
             collection: self.remove_meta_fields(everything[collection])
             for collection in everything
+            if collection != "action_worker"
         }
         export["_migration_index"] = get_backend_migration_index()
         return export

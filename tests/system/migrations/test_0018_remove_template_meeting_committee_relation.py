@@ -76,7 +76,7 @@ def test_migration(write, finalize, assert_model):
     )
     assert_model(
         "committee/1",
-        {"a": 2, "meta_deleted": False, "meta_position": 7},
+        {"a": 2, "meta_deleted": False, "meta_position": 6},
         position=7,
     )
     assert_model(

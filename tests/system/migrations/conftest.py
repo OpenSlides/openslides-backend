@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from importlib import import_module
 from typing import Any, Dict
 
@@ -143,7 +144,11 @@ def read_model(clear_datastore):
 
 @pytest.fixture()
 def assert_model(read_model):
-    def _assert_model(fqid, expected, position=None):
+    def _assert_model(fqid, _expected, position=None):
+        expected = deepcopy(_expected)
+        if "meta_deleted" not in expected:
+            expected["meta_deleted"] = False
+
         if position is None:
             assert read_model(fqid) == expected
 
@@ -151,6 +156,9 @@ def assert_model(read_model):
             read_database: ReadDatabase = injector.get(ReadDatabase)
             with read_database.get_context():
                 position = read_database.get_max_position()
+
+        if "meta_position" not in expected:
+            expected["meta_position"] = position
 
         # build model and check
         assert read_model(fqid, position=position) == expected
