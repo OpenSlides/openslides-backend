@@ -17,7 +17,7 @@ class Migration(BaseMigration):
       default_projector_$.._ids and changes value to list.
     """
 
-    target_migration_index = 35
+    target_migration_index = 37
     collection = "meeting"
 
     def modify(self, object: Dict[str, Any]) -> None:

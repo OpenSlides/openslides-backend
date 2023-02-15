@@ -19,7 +19,7 @@ def test_migration(write, finalize, assert_model):
             },
         },
     )
-    finalize("0034_rename_change_default_projector_ids")
+    finalize("0036_rename_change_default_projector_ids")
     assert_model(
         "meeting/1",
         {
@@ -71,7 +71,7 @@ def test_migration_delete_list(write, finalize, assert_model):
             },
         },
     )
-    finalize("0034_rename_change_default_projector_ids")
+    finalize("0036_rename_change_default_projector_ids")
     assert_model(
         "meeting/1",
         {
