@@ -1,28 +1,31 @@
 import re
 from typing import List, NewType, Optional, Sequence, Tuple, Union, cast
 
+from datastore.shared.util.key_types import _collection_regex, _field_regex, _id_regex
+
 KEYSEPARATOR = "/"
-DECIMAL_PATTERN = r"^-?(\d|[1-9]\d+)\.\d{6}$"
-COLOR_PATTERN = r"^#[0-9a-f]{6}$"
 
-ID_REGEX_PART = r"[1-9]\d*"
-ID_REGEX = rf"^{ID_REGEX_PART}$"
-POSITIVE_NUMBER_REGEX = rf"^(0|{ID_REGEX_PART})$"
+# Global regexes
+ID_REGEX = rf"^{_id_regex}$"
+FQID_REGEX_PART = rf"{_collection_regex}{KEYSEPARATOR}{_id_regex}"
+FQID_REGEX = rf"^{FQID_REGEX_PART}$"
+COLLECTIONFIELD_REGEX = f"^({_collection_regex}){KEYSEPARATOR}({_field_regex})$"
 
+# Specific regexes for fields etc.
+DECIMAL_REGEX = r"^-?(\d|[1-9]\d+)\.\d{6}$"
+COLOR_REGEX = r"^#[0-9a-f]{6}$"
+POSITIVE_NUMBER_REGEX = rf"^(0|{_id_regex})$"
+EXTENSION_REFERENCE_IDS_REGEX = rf"\[(?P<fqid>{FQID_REGEX_PART})\]"
+
+# Regexes as patterns
 ID_PATTERN = re.compile(ID_REGEX)
-
-COLLECTION_REGEX = r"[a-z]([a-z_]+[a-z]+)?"
-ID_REGEX = r"[1-9][0-9]*"
-FIELD_REGEX = r"[a-z][a-z0-9_]*\$?[a-z0-9_]*"
-
-COLLECTIONFIELD_PATTERN = re.compile(
-    f"^({COLLECTION_REGEX}){KEYSEPARATOR}({FIELD_REGEX})$"
-)
-FQID_REGEX = KEYSEPARATOR.join(("^[a-z]([a-z_]*[a-z])?", f"{ID_REGEX_PART}$"))
+COLLECTIONFIELD_PATTERN = re.compile(COLLECTIONFIELD_REGEX)
+DECIMAL_PATTERN = re.compile(DECIMAL_REGEX)
+COLOR_PATTERN = re.compile(COLOR_REGEX)
+EXTENSION_REFERENCE_IDS_PATTERN = re.compile(EXTENSION_REFERENCE_IDS_REGEX)
 
 Identifier = Union[int, str, "FullQualifiedId"]
 IdentifierList = Union[List[int], List[str], List["FullQualifiedId"]]
-
 
 _Collection = NewType("_Collection", str)
 _FullQualifiedId = NewType("_FullQualifiedId", str)

@@ -1,4 +1,3 @@
-import re
 import time
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
@@ -11,6 +10,7 @@ from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import (
+    EXTENSION_REFERENCE_IDS_PATTERN,
     POSITIVE_NUMBER_REGEX,
     Collection,
     collection_and_id_from_fqid,
@@ -23,8 +23,6 @@ from ...util.register import register_action
 from ...util.typing import ActionData
 from .mixins import PermissionHelperMixin
 from .set_number_mixin import SetNumberMixin
-
-EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
 
 
 @register_action("motion.update")
@@ -147,7 +145,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                         instance["created"] = timestamp
 
         for prefix in ("recommendation", "state"):
-            if instance.get(f"{prefix}_extension"):
+            if f"{prefix}_extension" in instance:
                 self.set_extension_reference_ids(prefix, instance)
 
         if instance.get("number"):
@@ -172,12 +170,13 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
             if collection != "motion":
                 raise ActionException(f"Found {fqid} but only motion is allowed.")
             motion_ids.append(int(id_))
-        gm_request = GetManyRequest("motion", motion_ids, ["id"])
-        gm_result = self.datastore.get_many([gm_request]).get("motion", {})
-        for motion_id in gm_result:
-            extension_reference_ids.append(
-                fqid_from_collection_and_id("motion", motion_id)
-            )
+        if motion_ids:
+            gm_request = GetManyRequest("motion", motion_ids, ["id"])
+            gm_result = self.datastore.get_many([gm_request]).get("motion", {})
+            for motion_id in gm_result:
+                extension_reference_ids.append(
+                    fqid_from_collection_and_id("motion", motion_id)
+                )
         instance[f"{prefix}_extension_reference_ids"] = extension_reference_ids
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

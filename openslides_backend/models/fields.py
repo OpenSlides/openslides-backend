@@ -7,7 +7,7 @@ import fastjsonschema
 
 from openslides_backend.shared.exceptions import ActionException
 
-from ..shared.patterns import COLOR_PATTERN, ID_REGEX, Collection, FullQualifiedId
+from ..shared.patterns import COLOR_REGEX, ID_REGEX, Collection, FullQualifiedId
 from ..shared.schema import (
     decimal_schema,
     fqid_list_schema,
@@ -228,7 +228,7 @@ class TimestampField(IntegerField):
 
 class ColorField(TextField):
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), pattern=COLOR_PATTERN)
+        return self.extend_schema(super().get_schema(), pattern=COLOR_REGEX)
 
 
 class ArrayField(Field):
