@@ -43,8 +43,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def test_create_simple_and_complex_workflow(self) -> None:
         meeting = self.basic_test(dict())
         self.assertCountEqual(
-            cast(Iterable[Any], meeting.get("default_projector_$_id")),
-            cast(List[str], Meeting.default_projector__id.replacement_enum),
+            cast(Iterable[Any], meeting.get("default_projector_$_ids")),
+            cast(List[str], Meeting.default_projector__ids.replacement_enum),
         )
         self.assert_model_exists(
             "meeting/1",
@@ -67,9 +67,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "assignment_poll_default_group_ids": [4],
                 "motion_poll_default_group_ids": [4],
                 **{
-                    f"default_projector_${name}_id": 1
+                    f"default_projector_${name}_ids": [1]
                     for name in cast(
-                        List[str], Meeting.default_projector__id.replacement_enum
+                        List[str], Meeting.default_projector__ids.replacement_enum
                     )
                 },
             },
@@ -157,7 +157,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         projector1 = self.get_model("projector/1")
         self.assertCountEqual(
             cast(Iterable[Any], projector1.get("used_as_default_$_in_meeting_id")),
-            cast(List[str], Meeting.default_projector__id.replacement_enum),
+            cast(List[str], Meeting.default_projector__ids.replacement_enum),
         )
         self.assert_model_exists(
             "projector/1",
@@ -168,7 +168,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 **{
                     f"used_as_default_${name}_in_meeting_id": 1
                     for name in cast(
-                        List[str], Meeting.default_projector__id.replacement_enum
+                        List[str], Meeting.default_projector__ids.replacement_enum
                     )
                 },
             },
