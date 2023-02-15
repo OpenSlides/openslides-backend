@@ -15,7 +15,7 @@ from datastore.shared.util import (
 
 
 class Migration(BaseMigration):
-    target_migration_index = 35
+    target_migration_index = 38
 
     def migrate_event(
         self,

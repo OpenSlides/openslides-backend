@@ -311,7 +311,7 @@ def test_migration(write, finalize, assert_model):
         {"type": "delete", "fqid": "projection/9"},
     )
 
-    finalize("0034_remove_user_projections")
+    finalize("0037_remove_user_projections")
 
     # assert that the user projections don't exist anymore
     for projection_id in [5, 7, 9]:
