@@ -117,7 +117,10 @@ class ProjectorUpdate(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting/222",
-            {"default_projector_$_id": ["topics"], "default_projector_$topics_id": 1},
+            {
+                "default_projector_$_ids": ["topics"],
+                "default_projector_$topics_ids": [1],
+            },
         )
 
     def test_update_not_allowed_change_used_as_default__in_meeting_id(self) -> None:
@@ -126,8 +129,8 @@ class ProjectorUpdate(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "projector_ids": [1],
-                    "default_projector_$_id": ["topics"],
-                    "default_projector_$topics_id": 1,
+                    "default_projector_$_ids": ["topics"],
+                    "default_projector_$topics_ids": [1],
                     "is_active_in_organization_id": 1,
                 },
                 "projector/1": {
@@ -150,8 +153,8 @@ class ProjectorUpdate(BaseActionTestCase):
         self.assert_model_exists(
             "projector/1",
             {
-                "used_as_default_$_in_meeting_id": [],
-                "used_as_default_$topics_in_meeting_id": None,
+                "used_as_default_$_in_meeting_id": ["topics"],
+                "used_as_default_$topics_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(
@@ -163,7 +166,10 @@ class ProjectorUpdate(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting/222",
-            {"default_projector_$_id": ["topics"], "default_projector_$topics_id": 2},
+            {
+                "default_projector_$_ids": ["topics"],
+                "default_projector_$topics_ids": [1, 2],
+            },
         )
 
     def test_update_change_used_as_default__in_meeting_id(self) -> None:
@@ -172,8 +178,8 @@ class ProjectorUpdate(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "projector_ids": [1],
-                    "default_projector_$_id": ["topics"],
-                    "default_projector_$topics_id": 1,
+                    "default_projector_$_ids": ["topics"],
+                    "default_projector_$topics_ids": [1],
                     "is_active_in_organization_id": 1,
                 },
                 "projector/1": {
@@ -196,8 +202,8 @@ class ProjectorUpdate(BaseActionTestCase):
         self.assert_model_exists(
             "projector/1",
             {
-                "used_as_default_$_in_meeting_id": [],
-                "used_as_default_$topics_in_meeting_id": None,
+                "used_as_default_$_in_meeting_id": ["topics"],
+                "used_as_default_$topics_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(
@@ -209,7 +215,10 @@ class ProjectorUpdate(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting/222",
-            {"default_projector_$_id": ["topics"], "default_projector_$topics_id": 2},
+            {
+                "default_projector_$_ids": ["topics"],
+                "default_projector_$topics_ids": [1, 2],
+            },
         )
 
     def test_update_set_wrong_used_as_default__in_meeting_id(self) -> None:

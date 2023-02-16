@@ -157,7 +157,7 @@ class MeetingUpdate(EmailCheckMixin, UpdateAction, GetMeetingIdFromIdMixin):
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
-            "default_projector_$_id",
+            "default_projector_$_ids",
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
@@ -181,11 +181,12 @@ class MeetingUpdate(EmailCheckMixin, UpdateAction, GetMeetingIdFromIdMixin):
                 meeting_check.append(
                     fqid_from_collection_and_id("projector", reference_projector_id)
                 )
-        if "default_projector_$_id" in instance:
+        if "default_projector_$_ids" in instance:
             meeting_check.extend(
                 [
                     fqid_from_collection_and_id("projector", projector_id)
-                    for projector_id in instance["default_projector_$_id"].values()
+                    for projectors in instance["default_projector_$_ids"].values()
+                    for projector_id in projectors
                     if projector_id
                 ]
             )
@@ -220,7 +221,8 @@ class MeetingUpdate(EmailCheckMixin, UpdateAction, GetMeetingIdFromIdMixin):
 
         # group C check
         if (
-            "reference_projector_id" in instance or "default_projector_$_id" in instance
+            "reference_projector_id" in instance
+            or "default_projector_$_ids" in instance
         ) and not has_perm(
             self.datastore,
             self.user_id,

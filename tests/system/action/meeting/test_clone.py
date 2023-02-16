@@ -41,11 +41,11 @@ class MeetingClone(BaseActionTestCase):
                 "motion_workflow_ids": [1],
                 "logo_$_id": None,
                 "font_$_id": [],
-                "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
+                "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
                 **{
-                    f"default_projector_${name}_id": 1
+                    f"default_projector_${name}_ids": [1]
                     for name in cast(
-                        List[str], Meeting.default_projector__id.replacement_enum
+                        List[str], Meeting.default_projector__ids.replacement_enum
                     )
                 },
                 "is_active_in_organization_id": 1,
@@ -123,7 +123,7 @@ class MeetingClone(BaseActionTestCase):
                 "motion_workflow_ids": [2],
                 "logo_$_id": None,
                 "font_$_id": [],
-                "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
+                "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
                 "template_for_organization_id": ONE_ORGANIZATION_ID,
             },
         )

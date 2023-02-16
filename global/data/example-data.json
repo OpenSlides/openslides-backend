@@ -1,5 +1,5 @@
 {
-    "_migration_index": 34,
+    "_migration_index": 37,
     "organization": {
         "1": {
             "id": 1,
@@ -684,7 +684,7 @@
             "reference_projector_id": 1,
             "list_of_speakers_countdown_id": 1,
             "poll_countdown_id": 2,
-            "default_projector_$_id": [
+            "default_projector_$_ids": [
                 "agenda_all_items",
                 "topics",
                 "list_of_speakers",
@@ -700,20 +700,20 @@
                 "motion_poll",
                 "poll"
             ],
-            "default_projector_$agenda_all_items_id": 1,
-            "default_projector_$topics_id": 1,
-            "default_projector_$list_of_speakers_id": 2,
-            "default_projector_$current_list_of_speakers_id": 2,
-            "default_projector_$motion_id": 1,
-            "default_projector_$amendment_id": 1,
-            "default_projector_$motion_block_id": 1,
-            "default_projector_$assignment_id": 1,
-            "default_projector_$mediafile_id": 1,
-            "default_projector_$projector_message_id": 1,
-            "default_projector_$projector_countdowns_id": 1,
-            "default_projector_$assignment_poll_id": 1,
-            "default_projector_$motion_poll_id": 1,
-            "default_projector_$poll_id": 1,
+            "default_projector_$agenda_all_items_ids": [1],
+            "default_projector_$topics_ids": [1],
+            "default_projector_$list_of_speakers_ids": [2],
+            "default_projector_$current_list_of_speakers_ids": [2],
+            "default_projector_$motion_ids": [1],
+            "default_projector_$amendment_ids": [1],
+            "default_projector_$motion_block_ids": [1],
+            "default_projector_$assignment_ids": [1],
+            "default_projector_$mediafile_ids": [1],
+            "default_projector_$projector_message_ids": [1],
+            "default_projector_$projector_countdowns_ids": [1],
+            "default_projector_$assignment_poll_ids": [1],
+            "default_projector_$motion_poll_ids": [1],
+            "default_projector_$poll_ids": [1],
             "projection_ids": [
                 3
             ],
