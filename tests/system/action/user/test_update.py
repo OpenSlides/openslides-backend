@@ -104,6 +104,33 @@ class UserUpdateActionTest(BaseActionTestCase):
         meeting = self.get_model("meeting/2")
         self.assertCountEqual(meeting.get("user_ids", []), [223])
 
+    def test_update_personal_ids(self) -> None:
+        self.set_models(
+            {
+                "user/111": {"username": "username_srtgb123"},
+                "meeting/1": {
+                    "name": "test_meeting_1",
+                    "personal_note_ids": [11],
+                    "is_active_in_organization_id": 1,
+                },
+                "personal_note/11": {"meeting_id": 1, "note": "blablabla"},
+            }
+        )
+        response = self.request(
+            "user.update", {"id": 111, "personal_note_ids": [11], "meeting_id": 1}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111", {"username": "username_srtgb123", "meeting_user_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {"meeting_id": 1, "user_id": 111, "personal_note_ids": [11]},
+        )
+        self.assert_model_exists(
+            "personal_note/11", {"note": "blablabla", "meeting_user_id": 1}
+        )
+
     def test_committee_manager_without_committee_ids(self) -> None:
         """Giving committee management level requires committee_ids"""
         self.set_models(

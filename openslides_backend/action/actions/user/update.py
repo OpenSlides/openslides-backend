@@ -4,6 +4,7 @@ from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import PermissionException
 from ....shared.patterns import ID_REGEX, fqid_from_collection_and_id
+from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -50,7 +51,9 @@ class UserUpdate(
                 "type": "object",
                 "additionalProperties": False,
                 "patternProperties": {ID_REGEX: "boolean"},
-            }
+            },
+            "meeting_id": optional_id_schema,
+            **UserMixin.transfer_field_list,
         },
     )
 
