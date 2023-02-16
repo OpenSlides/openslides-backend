@@ -32,7 +32,7 @@ class Migration(BaseMigration):
         self,
         event: BaseEvent,
     ) -> Optional[List[BaseEvent]]:
-        collection, id = collection_and_id_from_fqid(event.fqid)
+        collection, _ = collection_and_id_from_fqid(event.fqid)
         if collection != "motion":
             return None
 
@@ -56,6 +56,7 @@ class Migration(BaseMigration):
                         )
                         for fqid in model[f"{prefix}_extension_reference_ids"]
                         if self.new_accessor.get_model_ignore_deleted(fqid)[1] is False
+                        and fqid != event.fqid
                     ]
                 if f"referenced_in_motion_{prefix}_extension_ids" in model:
                     new_events += [
@@ -74,6 +75,7 @@ class Migration(BaseMigration):
                             (fqid := fqid_from_collection_and_id("motion", motion_id))
                         )[1]
                         is False
+                        and fqid != event.fqid
                     ]
             return new_events
         elif isinstance(event, UpdateEvent):

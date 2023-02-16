@@ -143,3 +143,54 @@ def test_migration(write, finalize, assert_model):
         },
         position=7,
     )
+
+
+def test_delete_reference_self(write, finalize):
+    # write the relations directly, only tests the correct relation handling
+    write(
+        {
+            "type": "create",
+            "fqid": "motion/1",
+            "fields": {
+                "referenced_in_motion_state_extension_ids": [3],
+                "referenced_in_motion_recommendation_extension_ids": [3],
+            },
+        },
+        {
+            "type": "create",
+            "fqid": "motion/2",
+            "fields": {
+                "referenced_in_motion_state_extension_ids": [3],
+                "referenced_in_motion_recommendation_extension_ids": [3],
+            },
+        },
+        {
+            "type": "create",
+            "fqid": "motion/3",
+            "fields": {
+                "state_extension_reference_ids": ["motion/1", "motion/2", "motion/3"],
+                "recommendation_extension_reference_ids": [
+                    "motion/1",
+                    "motion/2",
+                    "motion/3",
+                ],
+                "referenced_in_motion_state_extension_ids": [3],
+                "referenced_in_motion_recommendation_extension_ids": [3],
+            },
+        },
+    )
+    write(
+        {
+            "type": "delete",
+            "fqid": "motion/1",
+        },
+        {
+            "type": "delete",
+            "fqid": "motion/2",
+        },
+        {
+            "type": "delete",
+            "fqid": "motion/3",
+        },
+    )
+    finalize("0035_fix_motion_extension_fields")
