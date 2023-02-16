@@ -10,17 +10,21 @@ from datastore.reader.core import GetEverythingRequest, GetRequest, Reader
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
-from datastore.shared.services.environment_service import (
-    DATASTORE_DEV_MODE_ENVIRONMENT_VAR,
-    EnvironmentService,
+from datastore.shared.util import (
+    DeletedModelsBehaviour,
+    ModelDoesNotExist,
+    strip_reserved_fields,
 )
-from datastore.shared.util import DeletedModelsBehaviour, strip_reserved_fields
 from datastore.writer.core import Writer
 from datastore.writer.flask_frontend.json_handlers import WriteHandler
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker
+
+
+class DoesNotExist:
+    """Marker class to check for the existence of a model."""
 
 
 class MigrationChecker(Checker):
@@ -53,8 +57,6 @@ class MigrationChecker(Checker):
 @pytest.fixture(autouse=True)
 def setup() -> None:
     register_services()
-    env_service: EnvironmentService = injector.get(EnvironmentService)
-    env_service.set(DATASTORE_DEV_MODE_ENVIRONMENT_VAR, "1")
 
 
 @pytest.fixture(autouse=True)
@@ -145,22 +147,34 @@ def read_model(clear_datastore):
 @pytest.fixture()
 def assert_model(read_model):
     def _assert_model(fqid, _expected, position=None):
+        # try to fetch model and assert correct existance
+        try:
+            model = read_model(fqid, position=position)
+        except ModelDoesNotExist:
+            if not isinstance(_expected, DoesNotExist):
+                raise
+            else:
+                return
+        assert not isinstance(_expected, DoesNotExist)
+
         expected = deepcopy(_expected)
         if "meta_deleted" not in expected:
             expected["meta_deleted"] = False
 
         if position is None:
-            assert read_model(fqid) == expected
-
+            # assert that current model is equal to expected
+            assert model == expected
             # get max position
             read_database: ReadDatabase = injector.get(ReadDatabase)
             with read_database.get_context():
                 position = read_database.get_max_position()
 
+            # additionally assert that the model at the max position is equal to expected
+            model = read_model(fqid, position=position)
+
         if "meta_position" not in expected:
             expected["meta_position"] = position
 
-        # build model and check
-        assert read_model(fqid, position=position) == expected
+        assert model == expected
 
     yield _assert_model

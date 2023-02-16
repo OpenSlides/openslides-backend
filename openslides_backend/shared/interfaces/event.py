@@ -9,6 +9,9 @@ class EventType(str, Enum):
     Update = "update"
     Delete = "delete"
 
+    def __repr__(self) -> str:
+        return repr(self.value)
+
 
 ListFields = TypedDict(
     "ListFields",

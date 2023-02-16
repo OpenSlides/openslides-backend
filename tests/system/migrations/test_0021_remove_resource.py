@@ -1,5 +1,4 @@
-import pytest
-from datastore.shared.util.exceptions import ModelDoesNotExist
+from tests.system.migrations.conftest import DoesNotExist
 
 ONE_ORGANIZATION_FQID = "organization/1"
 
@@ -44,24 +43,22 @@ def test_migration(write, finalize, assert_model, read_model):
     )
 
     finalize("0021_remove_resource")
+
+    # resource is never created
+    assert_model("resource/8", DoesNotExist(), position=2)
+
     assert_model(
         ONE_ORGANIZATION_FQID,
         {"id": 1, "meta_deleted": False, "meta_position": 1},
         position=1,
     )
-    with pytest.raises(ModelDoesNotExist):
-        read_model("resource/8", position=1)
     assert_model(
         "theme/11",
         {"id": 11, "meta_deleted": False, "meta_position": 1},
         position=1,
     )
-    with pytest.raises(ModelDoesNotExist):
-        read_model("resource/8", position=2)
     assert_model(
         ONE_ORGANIZATION_FQID,
         {"id": 1, "meta_deleted": False, "meta_position": 1},
         position=3,
     )
-    with pytest.raises(ModelDoesNotExist):
-        read_model("resource/8", position=3)
