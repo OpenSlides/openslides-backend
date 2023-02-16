@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from datastore.migrations.core.base_migration import BaseMigration
 from datastore.migrations.core.events import (
@@ -7,21 +7,36 @@ from datastore.migrations.core.events import (
     DeleteFieldsEvent,
     UpdateEvent,
 )
-from datastore.shared.util import (
-    collection_and_id_from_fqid,
-    collection_from_fqid,
-    fqid_from_collection_and_id,
-)
+from datastore.shared.util import collection_from_fqid, fqid_from_collection_and_id
 
 
 class Migration(BaseMigration):
     target_migration_index = 38
 
+    def order_events(self, events: List[BaseEvent]) -> Iterable[BaseEvent]:
+        """
+        We always have to process create events for projections first so that we can filter them out
+        correctly when processing the reverse relations.
+        """
+        create_events = []
+        other_events = []
+        for event in events:
+            collection = collection_from_fqid(event.fqid)
+            if event.type == "create":
+                if collection == "projection":
+                    yield event
+                else:
+                    create_events.append(event)
+            else:
+                other_events.append(event)
+        yield from create_events
+        yield from other_events
+
     def migrate_event(
         self,
         event: BaseEvent,
     ) -> Optional[List[BaseEvent]]:
-        collection, id = collection_and_id_from_fqid(event.fqid)
+        collection = collection_from_fqid(event.fqid)
         # remove all projection ids from users
         if collection == "user":
             if isinstance(event, (CreateEvent, UpdateEvent)):
@@ -64,9 +79,11 @@ class Migration(BaseMigration):
                 data = event.data
             else:
                 data, _ = self.old_accessor.get_model_ignore_deleted(event.fqid)
-            content_collection = collection_from_fqid(data["content_object_id"])
-            if content_collection == "user":
-                return []
+            if data.get("content_object_id"):
+                # some imported projections do not have a content object, even though it is required
+                content_collection = collection_from_fqid(data["content_object_id"])
+                if content_collection == "user":
+                    return []
 
         return [event]
 

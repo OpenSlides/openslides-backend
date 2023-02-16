@@ -653,3 +653,52 @@ def test_migration(write, finalize, assert_model):
         },
         position=12,
     )
+
+
+def test_with_meeting(write, finalize, assert_model):
+    write(
+        {
+            "type": "create",
+            "fqid": "meeting/1",
+            "fields": {"all_projection_ids": [1]},
+        },
+        {
+            "type": "create",
+            "fqid": "projection/1",
+            "fields": {
+                "meeting_id": 1,
+                "content_object_id": "motion/1",
+            },
+        },
+        {
+            "type": "create",
+            "fqid": "motion/1",
+            "fields": {
+                "projection_ids": [1],
+            },
+        },
+    )
+    finalize("0037_remove_user_projections")
+
+    assert_model(
+        "meeting/1",
+        {
+            "all_projection_ids": [1],
+        },
+        position=1,
+    )
+    assert_model(
+        "projection/1",
+        {
+            "meeting_id": 1,
+            "content_object_id": "motion/1",
+        },
+        position=1,
+    )
+    assert_model(
+        "motion/1",
+        {
+            "projection_ids": [1],
+        },
+        position=1,
+    )
