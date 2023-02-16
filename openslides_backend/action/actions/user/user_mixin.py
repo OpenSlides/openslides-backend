@@ -62,16 +62,8 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "structure_level": {"type": "string"},
         "about_me": {"type": "string"},
         "vote_weight": decimal_schema,
-        "personal_note_ids": id_list_schema,
-        "speaker_ids": id_list_schema,
-        "supported_motion_ids": id_list_schema,
-        "submitted_motion_ids": id_list_schema,
-        "assignment_candidate_ids": id_list_schema,
-        "projection_ids": id_list_schema,
-        "vote_delegated_vote_ids": id_list_schema,
         "vote_delegated_to_id": required_id_schema,
         "vote_delegations_from_ids": id_list_schema,
-        "chat_message_ids": id_list_schema,
     }
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -92,7 +84,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
                     f"A user with the username {instance['username']} already exists."
                 )
         self.check_meeting_and_users(instance, user_fqid)
-        self.transfer_fields(instance)
+        self.meeting_user_set_data(instance)
         return instance
 
     def strip_field(self, field: str, instance: Dict[str, Any]) -> None:
@@ -120,7 +112,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 user_fqid, {"meeting_id": instance.get("meeting_id")}
             )
 
-    def transfer_fields(self, instance: Dict[str, Any]) -> None:
+    def meeting_user_set_data(self, instance: Dict[str, Any]) -> None:
         meeting_user_data = {}
         meeting_id = instance.pop("meeting_id", None)
         for field in self.transfer_field_list:

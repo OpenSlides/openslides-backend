@@ -24,16 +24,8 @@ class MeetingUserSetData(UpdateAction):
             "structure_level",
             "about_me",
             "vote_weight",
-            "personal_note_ids",
-            "speaker_ids",
-            "supported_motion_ids",
-            "submitted_motion_ids",
-            "assignment_candidate_ids",
-            "projection_ids",
-            "vote_delegated_vote_ids",
             "vote_delegated_to_id",
             "vote_delegations_from_ids",
-            "chat_message_ids",
         ],
     )
 
