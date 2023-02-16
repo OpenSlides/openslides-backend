@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from importlib import import_module
 from typing import Any, Dict
 
@@ -151,19 +152,35 @@ def read_model(clear_datastore):
 
 @pytest.fixture()
 def assert_model(read_model):
-    def _assert_model(fqid, expected, position=None):
+    def _assert_model(fqid, _expected, position=None):
+        # try to fetch model and assert correct existance
         try:
-            if position is None:
-                assert read_model(fqid) == expected
-                # get max position
-                read_database: ReadDatabase = injector.get(ReadDatabase)
-                with read_database.get_context():
-                    position = read_database.get_max_position()
-
-            # build model and check
-            assert read_model(fqid, position=position) == expected
+            model = read_model(fqid, position=position)
         except ModelDoesNotExist:
-            if not isinstance(expected, DoesNotExist):
+            if not isinstance(_expected, DoesNotExist):
                 raise
+            else:
+                return
+        assert not isinstance(_expected, DoesNotExist)
+
+        expected = deepcopy(_expected)
+        if "meta_deleted" not in expected:
+            expected["meta_deleted"] = False
+
+        if position is None:
+            # assert that current model is equal to expected
+            assert model == expected
+            # get max position
+            read_database: ReadDatabase = injector.get(ReadDatabase)
+            with read_database.get_context():
+                position = read_database.get_max_position()
+
+            # additionally assert that the model at the max position is equal to expected
+            model = read_model(fqid, position=position)
+
+        if "meta_position" not in expected:
+            expected["meta_position"] = position
+
+        assert model == expected
 
     yield _assert_model
