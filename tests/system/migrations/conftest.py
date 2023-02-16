@@ -10,10 +10,6 @@ from datastore.reader.core import GetEverythingRequest, GetRequest, Reader
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
-from datastore.shared.services.environment_service import (
-    DATASTORE_DEV_MODE_ENVIRONMENT_VAR,
-    EnvironmentService,
-)
 from datastore.shared.util import (
     DeletedModelsBehaviour,
     ModelDoesNotExist,
@@ -61,8 +57,6 @@ class MigrationChecker(Checker):
 @pytest.fixture(autouse=True)
 def setup() -> None:
     register_services()
-    env_service: EnvironmentService = injector.get(EnvironmentService)
-    env_service.set(DATASTORE_DEV_MODE_ENVIRONMENT_VAR, "1")
 
 
 @pytest.fixture(autouse=True)
