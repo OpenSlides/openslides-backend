@@ -34,8 +34,9 @@ class MotionSetStateAction(
         """
         Check if the state_id is from a previous or next state.
         """
+        fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         motion = self.datastore.get(
-            fqid_from_collection_and_id("motion", instance["id"]),
+            fqid,
             [
                 "state_id",
                 "meeting_id",
@@ -47,25 +48,22 @@ class MotionSetStateAction(
             ],
             lock_result=["state_id"],
         )
+        self.apply_instance(motion, fqid)
         state_id = motion["state_id"]
 
-        motion_state = self.datastore.get(
-            fqid_from_collection_and_id("motion_state", state_id),
-            ["next_state_ids", "previous_state_ids"],
-            lock_result=False,
-        )
-        is_in_next_state_ids = instance["state_id"] in motion_state.get(
-            "next_state_ids", []
-        )
-        is_in_previous_state_ids = instance["state_id"] in motion_state.get(
-            "previous_state_ids", []
-        )
-        if not self.check_state_in_graph and not (
-            is_in_next_state_ids or is_in_previous_state_ids
-        ):
-            raise ActionException(
-                f"State '{instance['state_id']}' is not in next or previous states of the state '{state_id}'."
+        if not self.skip_state_graph_check:
+            motion_state = self.datastore.get(
+                fqid_from_collection_and_id("motion_state", state_id),
+                ["next_state_ids", "previous_state_ids"],
+                lock_result=False,
             )
+            if instance["state_id"] not in (
+                motion_state.get("next_state_ids", [])
+                + motion_state.get("previous_state_ids", [])
+            ):
+                raise ActionException(
+                    f"State '{instance['state_id']}' is not in next or previous states of the state '{state_id}'."
+                )
 
         self.set_number(
             instance,
@@ -89,7 +87,7 @@ class MotionSetStateAction(
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.check_state_in_graph = False
+        self.skip_state_graph_check = False
         motion = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["id"]),
             [
@@ -105,12 +103,10 @@ class MotionSetStateAction(
             Permissions.Motion.CAN_MANAGE_METADATA,
             motion["meeting_id"],
         ):
-            self.check_state_in_graph = True
+            self.skip_state_graph_check = True
             return
 
-        if self.is_submitter(
-            motion.get("submitter_ids", []), motion["state_id"]
-        ) and has_perm(
+        if self.is_submitter(motion.get("submitter_ids", [])) and has_perm(
             self.datastore,
             self.user_id,
             Permissions.Motion.CAN_SEE,
@@ -121,7 +117,7 @@ class MotionSetStateAction(
                 ["submitter_withdraw_state_id"],
             )
             if instance["state_id"] == state.get("submitter_withdraw_state_id"):
-                self.check_state_in_graph = True
+                self.skip_state_graph_check = True
                 return
 
         if self.is_allowed_and_submitter(

@@ -43,7 +43,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
         If motion has a recommendation_id, set the state to it and
         set state_extension.
         """
-        self.check_state_in_graph = False
+        self.skip_state_graph_check = False
         recommendation_id = instance.pop("recommendation_id")
         instance["state_id"] = recommendation_id
         instance = super().update_instance(instance)
