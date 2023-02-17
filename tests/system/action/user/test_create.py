@@ -155,6 +155,37 @@ class UserCreateActionTest(BaseActionTestCase):
         meeting = self.get_model("meeting/2")
         assert meeting.get("user_ids") == [223]
 
+    def test_create_comment(self) -> None:
+        self.set_models(
+            {"meeting/1": {"name": "test meeting 1", "is_active_in_organization_id": 1}}
+        )
+        response = self.request(
+            "user.create",
+            {
+                "username": "test Xcdfgee",
+                "comment": "blablabla",
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "test Xcdfgee", "meeting_user_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/1", {"meeting_id": 1, "user_id": 2, "comment": "blablabla"}
+        )
+
+    def test_create_comment_without_meeting_id(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "username": "test Xcdfgee",
+                "comment": "blablabla",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Transfer data need meeting_id." in response.json["message"]
+
     def test_invalid_template_field_replacement_invalid_committee(self) -> None:
         self.set_models(
             {

@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
+from ....shared.schema import optional_id_schema
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
@@ -49,6 +50,10 @@ class UserCreate(
             "is_demo_user",
             "forwarding_committee_ids",
         ],
+        additional_optional_fields={
+            "meeting_id": optional_id_schema,
+            **UserMixin.transfer_field_list,
+        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
