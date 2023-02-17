@@ -212,7 +212,7 @@ class EmailSenderCheckMixin(Action):
                 for entry in self.blacklist
             ):
                 raise ActionException(
-                    f"{self.check_email_sender_field} must not contain {', '.join(self.blacklist)}."
+                    f"""{self.check_email_sender_field} must not contain '{"', '".join(self.blacklist)}'."""
                 )
         instance = super().update_instance(instance)
         return instance

@@ -120,7 +120,8 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "users_email_sender must not contain [, ], \\." in response.json["message"]
+            "users_email_sender must not contain '[', ']', '\\'."
+            in response.json["message"]
         )
 
     def test_update_group_a_no_permissions(self) -> None:
