@@ -17,8 +17,10 @@ class MeetingUserSetData(UpdateAction):
 
     model = MeetingUser()
     schema = DefaultSchema(MeetingUser()).get_create_schema(
-        required_properties=["meeting_id", "user_id"],
         optional_properties=[
+            "id",
+            "meeting_id",
+            "user_id",
             "comment",
             "number",
             "structure_level",
@@ -30,8 +32,8 @@ class MeetingUserSetData(UpdateAction):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        meeting_id = instance.pop("meeting_id")
-        user_id = instance.pop("user_id")
+        meeting_id = instance.pop("meeting_id", None)
+        user_id = instance.pop("user_id", None)
         meeting_users = self.datastore.filter(
             "meeting_user",
             And(
@@ -40,7 +42,10 @@ class MeetingUserSetData(UpdateAction):
             ),
             ["id"],
         ).values()
-        if not meeting_users:
+        if instance.get("id"):
+            if meeting_users:
+                assert instance["id"] == next(iter(meeting_users))["id"]
+        elif not meeting_users:
             res = self.execute_other_action(
                 MeetingUserCreate, [{"meeting_id": meeting_id, "user_id": user_id}]
             )
