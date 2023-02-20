@@ -9,13 +9,15 @@ from ....permissions.permission_helper import has_organization_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
-from ...mixins.send_email_mixin import EmailCheckMixin
+from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("organization.update")
-class OrganizationUpdate(EmailCheckMixin, UpdateAction, CheckForArchivedMeetingMixin):
+class OrganizationUpdate(
+    EmailCheckMixin, EmailSenderCheckMixin, UpdateAction, CheckForArchivedMeetingMixin
+):
     """
     Action to update a organization.
     """

@@ -111,6 +111,19 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "users_email_replyto must be valid email." in response.json["message"]
 
+    def test_update_broken_email_sender(self) -> None:
+        self.create_model(
+            "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+        )
+        response = self.request(
+            "organization.update", {"id": 3, "users_email_sender": "broken\\"}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "users_email_sender must not contain '[', ']', '\\'."
+            in response.json["message"]
+        )
+
     def test_update_group_a_no_permissions(self) -> None:
         self.set_models(
             {

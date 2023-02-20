@@ -199,3 +199,20 @@ class EmailCheckMixin(Action):
                 raise ActionException(f"{self.check_email_field} must be valid email.")
         instance = super().update_instance(instance)
         return instance
+
+
+class EmailSenderCheckMixin(Action):
+    check_email_sender_field = "users_email_sender"
+    blacklist = ("[", "]", "\\")
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if instance.get(self.check_email_sender_field):
+            if any(
+                entry in instance[self.check_email_sender_field]
+                for entry in self.blacklist
+            ):
+                raise ActionException(
+                    f"""{self.check_email_sender_field} must not contain '{"', '".join(self.blacklist)}'."""
+                )
+        instance = super().update_instance(instance)
+        return instance
