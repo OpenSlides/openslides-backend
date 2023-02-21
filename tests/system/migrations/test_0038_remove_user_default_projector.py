@@ -38,7 +38,6 @@ def test_migration(write, finalize, assert_model):
             "type": "update",
             "fqid": "projector/1",
             "fields": {
-                "default_projector_$_ids": [],
                 "default_projector_$user_ids": None,
             },
         },
@@ -59,22 +58,38 @@ def test_migration(write, finalize, assert_model):
 
     assert_model(
         "meeting/1",
-        {"a": 1, "meta_deleted": False, "meta_position": 1},
+        {
+            "a": 1,
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
         position=1,
     )
     assert_model(
         "meeting/1",
-        {"a": 2, "meta_deleted": False, "meta_position": 2},
+        {
+            "a": 2,
+            "meta_deleted": False,
+            "meta_position": 2,
+        },
         position=2,
     )
     assert_model(
         "meeting/1",
-        {"a": 2, "meta_deleted": True, "meta_position": 3},
+        {
+            "a": 2,
+            "meta_deleted": True,
+            "meta_position": 3,
+        },
         position=3,
     )
     assert_model(
         "meeting/1",
-        {"a": 2, "meta_deleted": False, "meta_position": 4},
+        {
+            "a": 2,
+            "meta_deleted": False,
+            "meta_position": 4,
+        },
         position=4,
     )
     assert_model(
@@ -85,7 +100,6 @@ def test_migration(write, finalize, assert_model):
         {
             "b": 1,
             "meta_deleted": False,
-            "default_projector_$_ids": [],
             "meta_position": 2,
         },
         position=2,

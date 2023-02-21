@@ -29,8 +29,10 @@ class Migration(BaseMigration):
 
     def remove_replacement(self, obj: Dict[str, Any]) -> None:
         for field in ("default_projector_$_ids", "used_as_default_$_in_meeting_id"):
-            if obj.get(field):
-                obj.pop(field, None)
+            if obj.get(field) and "user" in obj[field]:
+                obj[field].remove("user")
+                if not obj[field]:
+                    del obj[field]
 
     def migrate_event(
         self,
