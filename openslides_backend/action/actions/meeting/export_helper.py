@@ -109,8 +109,9 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
                     if entry.get(user_field.get_own_field_name()):
                         user_ids.update(
                             set(
-                                results["meeting_user"][id_]["user_id"]
+                                user_id
                                 for id_ in entry.get(user_field.get_own_field_name())
+                                    if (user_id:=results["meeting_user"][id_].get("user_id"))
                             )
                         )
             if isinstance(user_field, GenericRelationField):

@@ -939,7 +939,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "tag/2", {"tagged_ids": ["motion/3"], "name": "testag", "meeting_id": 3}
         )
-        self.assert_model_exists("committee/1", {"user_ids": [1, 2], "meeting_ids": [1, 2, 3]})
+        self.assert_model_exists("committee/1", {"user_ids": [2, 1], "meeting_ids": [1, 2, 3]})
 
     def test_no_permission(self) -> None:
         self.set_models(
@@ -1577,8 +1577,8 @@ class MeetingImport(BaseActionTestCase):
             {
                 "username": "admin",
                 "meeting_ids": [1, 2],  # meeting_ids 1, 2
-                "committee_ids": [1, 2],  # ist: 1
-                "meeting_user_ids": [1, 18], # ist:1
+                "committee_ids": [1, 2],  # ist: 1, meeting/2 gehört aber zu committee/2
+                "meeting_user_ids": [1, 18], # ist:1, 18
             },
         )
         self.assert_model_exists(
@@ -1613,11 +1613,8 @@ class MeetingImport(BaseActionTestCase):
         meeting1 = self.assert_model_exists("meeting/1", {"committee_id": 1})
         assert sorted(meeting1.get("user_ids", [])) == [1, 14]
         assert sorted(meeting1.get("meeting_user_ids", [])) == [1, 14]
-        committee2 = self.assert_model_exists("committee/2", {"meeting_ids": [2]})
-        #assert sorted(committee2.get("user_ids", [])) == [1, 14, 15, 16]
-        meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 2})
-        #assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15, 16]
-        #assert sorted(meeting2.get("meeting_user_ids", [])) == [1, 15, 16, 17]
+        self.assert_model_exists("committee/2", {"meeting_ids": [2]})
+        self.assert_model_exists("meeting/2", {"committee_id": 2})
         organization = self.assert_model_exists("organization/1", {"committee_ids": [1,2], "active_meeting_ids": [1,2]})
         assert sorted(organization.get("user_ids", [])) == [1, 14, 15, 16]
 
@@ -2005,7 +2002,7 @@ class MeetingImport(BaseActionTestCase):
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
-        assert counter.calls == 12
+        assert counter.calls == 7
         meeting = self.assert_model_exists(
             "meeting/2", {"assignment_poll_enable_max_votes_per_option": False}
         )  # checker repair

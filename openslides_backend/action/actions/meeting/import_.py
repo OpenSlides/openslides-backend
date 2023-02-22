@@ -480,13 +480,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin, Meetin
                 "Imported meeting has no AdminGroup to assign to request user"
             )
         new_meeting_user_id: Optional[int] = None
-        # meeting_user cannot exist for the request user, because the mmeting is new
-        # exception: the request user itself is found in the imported meeting
-        # Fall: im import kommt ein user/1 under request_user haz ebenfalls die 1
-
-
-
-        # hier sollte ein merged user gefunden werden
         for meeting_user_id, meeting_user in data_json["meeting_user"].items():
             if meeting_user.get("user_id") == self.user_id:
                 new_meeting_user_id = int(meeting_user_id)
@@ -509,7 +502,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin, Meetin
                 "meta_new": True
             }
             meeting["meeting_user_ids"].append(new_meeting_user_id)
-            request_user = self.datastore.get(fqid_from_collection_and_id("user", self.user_id), ["id", "meeting_user_ids"])
+            request_user = self.datastore.get(fqid_user := fqid_from_collection_and_id("user", self.user_id), ["id", "meeting_user_ids", "committee_management_ids", "committee_ids"])
             request_user.pop("meta_position", None)
             request_user["meeting_user_ids"] = (
                 request_user.get("meeting_user_ids") or []) + [
@@ -518,6 +511,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin, Meetin
             data_json["user"][str(self.user_id)] = request_user
             self.replace_map["user"].update({0:self.user_id}) # create a user.update event
             self.replace_map["meeting_user"].update({0:new_meeting_user_id}) # create a meeting_user.update event
+            self.datastore.apply_changed_model(fqid_user, request_user)
+            self.datastore.apply_changed_model(fqid_from_collection_and_id("meeting_user", new_meeting_user_id), data_json["meeting_user"][str(new_meeting_user_id)])
         if new_meeting_user_id not in (meeting_user_ids := data_json["group"][str(admin_group_id)].get("meeting_user_ids", [])):
             meeting_user_ids.append(new_meeting_user_id)
             data_json["group"][str(admin_group_id)]["meeting_user_ids"] = meeting_user_ids
@@ -538,9 +533,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin, Meetin
         update_events = []
         for collection in json_data:
             for entry in json_data[collection].values():
+                fqid = fqid_from_collection_and_id(collection, entry["id"])
                 meta_new = entry.pop("meta_new", None)
                 if meta_new:
-                    fqid = fqid_from_collection_and_id(collection, entry["id"])
                     events.append(
                         self.build_event(
                             EventType.Create,
@@ -561,7 +556,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin, Meetin
                             list_fields["add"][field] = value
                         elif isinstance(model_field, RelationListField):
                             list_fields["add"][field] = value
-                    fqid = fqid_from_collection_and_id(collection, entry["id"])
                     if fields or list_fields["add"]:
                         update_events.append(
                             self.build_event(
@@ -571,6 +565,14 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin, Meetin
                                 list_fields=list_fields if list_fields["add"] else None,
                             )
                         )
+                elif collection == "meeting_user":
+                    update_events.append(
+                        self.build_event(
+                            EventType.Update,
+                            fqid,
+                            fields=entry,
+                        )
+                    )
 
         if pure_create_events:
             return events
