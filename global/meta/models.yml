@@ -746,7 +746,13 @@ meeting:
   language:
     type: string
     restriction_mode: A
-    description: Filled at meeting creation.
+    enum:
+      - en
+      - de
+      - it
+      - es
+      - ru
+      - cs
     read_only: true
 
   # Configuration (only for the server owner)

@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "385546844506bd2b0df5c44371487014"
+MODELS_YML_CHECKSUM = "d433464aa019e6a3485ac97df1eec44f"
 
 
 class Organization(Model):
@@ -345,7 +345,7 @@ class Meeting(Model):
     end_time = fields.TimestampField()
     imported_at = fields.TimestampField()
     language = fields.CharField(
-        read_only=True, constraints={"description": "Filled at meeting creation."}
+        read_only=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
     )
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
