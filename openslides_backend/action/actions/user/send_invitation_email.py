@@ -158,17 +158,20 @@ class UserSendInvitationMail(UpdateAction):
         if meeting_id and meeting_id not in user["meeting_ids"]:
             result[
                 "message"
-            ] = f"'{user['username']}' does not belong to meeting/{meeting_id}"
+            ] = f"'{user['username']}' does not belong to meeting/{meeting_id}."
             return instance
 
         mail_data = self.get_data_from_meeting_or_organization(meeting_id)
         from_email: Union[str, Address]
         if users_email_sender := mail_data.get("users_email_sender", "").strip():
-            blacklist = ("[", "]", "\\")
-            if any(x in users_email_sender for x in blacklist):
-                result[
-                    "message"
-                ] = "Invalid characters in the sender name configuration."
+            if any(
+                x in users_email_sender for x in EmailUtils.SENDER_NAME_FORBIDDEN_CHARS
+            ):
+                result["message"] = (
+                    f"Invalid characters in the sender name configuration of meeting '{mail_data['name']}', forbidden characters: '"
+                    + "', '".join(EmailUtils.SENDER_NAME_FORBIDDEN_CHARS)
+                    + "'."
+                )
                 return instance
             from_email = Address(
                 users_email_sender, addr_spec=EmailSettings.default_from_email
