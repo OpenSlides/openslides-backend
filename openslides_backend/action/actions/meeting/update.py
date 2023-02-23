@@ -15,6 +15,7 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
+from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -143,7 +144,9 @@ meeting_settings_keys = [
 
 
 @register_action("meeting.update")
-class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
+class MeetingUpdate(
+    EmailCheckMixin, EmailSenderCheckMixin, UpdateAction, GetMeetingIdFromIdMixin
+):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
@@ -156,26 +159,26 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
-            "default_projector_agenda_all_items_id",
-            "default_projector_topics_id",
-            "default_projector_list_of_speakers_id",
-            "default_projector_current_list_of_speakers_id",
-            "default_projector_motion_id",
-            "default_projector_amendment_id",
-            "default_projector_motion_block_id",
-            "default_projector_assignment_id",
-            "default_projector_user_id",
-            "default_projector_mediafile_id",
-            "default_projector_projector_message_id",
-            "default_projector_projector_countdowns_id",
-            "default_projector_assignment_poll_id",
-            "default_projector_motion_poll_id",
-            "default_projector_poll_id",
+            "default_projector_agenda_all_items_ids",
+            "default_projector_topics_ids",
+            "default_projector_list_of_speakers_ids",
+            "default_projector_current_list_of_speakers_ids",
+            "default_projector_motion_ids",
+            "default_projector_amendment_ids",
+            "default_projector_motion_block_ids",
+            "default_projector_assignment_ids",
+            "default_projector_mediafile_ids",
+            "default_projector_projector_message_ids",
+            "default_projector_projector_countdowns_ids",
+            "default_projector_assignment_poll_ids",
+            "default_projector_motion_poll_ids",
+            "default_projector_poll_ids",
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
         },
     )
+    check_email_field = "users_email_replyto"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # handle set_as_template
@@ -197,7 +200,7 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             [
                 fqid_from_collection_and_id("projector", projector_id)
                 for projector_id in (
-                    instance.get(f"default_projector_{part}_id")
+                    instance.get(f"default_projector_{part}_ids")
                     for part in Meeting.DEFAULT_PROJECTOR_ENUM
                 )
                 if projector_id
@@ -213,7 +216,7 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
                 )
             if instance["jitsi_domain"].strip().endswith("/"):
                 raise ActionException("It is not allowed to end jitsi_domain with '/'.")
-
+        instance = super().update_instance(instance)
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
@@ -236,7 +239,7 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
         if (
             "reference_projector_id" in instance
             or any(
-                "default_projector_{part}_id" in instance
+                f"default_projector_{part}_ids" in instance
                 for part in Meeting.DEFAULT_PROJECTOR_ENUM
             )
         ) and not has_perm(
@@ -289,7 +292,6 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
                 ]
             ]
         ):
-
             is_superadmin = has_organization_management_level(
                 self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
             )

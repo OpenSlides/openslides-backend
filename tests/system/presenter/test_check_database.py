@@ -169,7 +169,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "is_active_in_organization_id": 1,
                     **self.get_meeting_defaults(),
                     **{
-                        f"default_projector_{part}_id": 1
+                        f"default_projector_{part}_ids": [1]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },
@@ -326,7 +326,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "font_bold_id": 2,
                     "meeting_user_ids": [3, 5, 6],
                     **{
-                        f"default_projector_{part}_id": 1
+                        f"default_projector_{part}_ids": [1]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                     **self.get_meeting_defaults(),
@@ -558,7 +558,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "motion_ids": [1],
                     "list_of_speakers_ids": [3],
                     **{
-                        f"default_projector_{part}_id": 1
+                        f"default_projector_{part}_ids": [1]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                     **self.get_meeting_defaults(),
@@ -649,7 +649,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "list_of_speakers_ids": [4],
                     "motion_ids": [2],
                     **{
-                        f"default_projector_{part}_id": 2
+                        f"default_projector_{part}_ids": [2]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                     **self.get_meeting_defaults(),

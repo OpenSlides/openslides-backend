@@ -223,7 +223,6 @@ class Model(Node):
                 "amendment",
                 "motion_block",
                 "assignment",
-                "user",
                 "mediafile",
                 "projector_message",
                 "projector_countdowns",

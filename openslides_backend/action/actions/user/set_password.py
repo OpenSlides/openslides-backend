@@ -3,10 +3,10 @@ from typing import Any, Dict
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
 class UserSetPasswordMixin(UpdateAction, CheckForArchivedMeetingMixin):
@@ -28,7 +28,7 @@ class UserSetPasswordMixin(UpdateAction, CheckForArchivedMeetingMixin):
 @register_action("user.set_password")
 class UserSetPasswordAction(
     UserSetPasswordMixin,
-    UserScopePermissionCheckMixin,
+    UserScopeMixin,
 ):
     """
     Action to set the password and default_pasword.
@@ -39,7 +39,8 @@ class UserSetPasswordAction(
         required_properties=["password"],
         additional_optional_fields={"set_as_default": {"type": "boolean"}},
     )
+    history_information = "Password changed"
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.check_permissions_for_scope(instance, check_user_oml_always=True)
+        self.check_permissions_for_scope(instance["id"])

@@ -10,7 +10,7 @@ from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
-from ...mixins.send_email_mixin import EmailMixin, EmailSettings
+from ...mixins.send_email_mixin import EmailSettings, EmailUtils
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
@@ -22,7 +22,7 @@ class format_dict(defaultdict):
 
 
 @register_action("user.forget_password")
-class UserForgetPassword(EmailMixin, UpdateAction):
+class UserForgetPassword(UpdateAction):
     """
     Action to send forget password mail(s).
     """
@@ -48,11 +48,11 @@ For completeness your username: {username}"""
             email = instance.pop("email")
 
             # check if email adress is valid
-            if not self.check_email(EmailSettings.default_from_email):
+            if not EmailUtils.check_email(EmailSettings.default_from_email):
                 raise ActionException(
                     "The server was configured improperly. Please contact your administrator."
                 )
-            if not self.check_email(email):
+            if not EmailUtils.check_email(email):
                 raise ActionException(f"'{email}' is not a valid email adress.")
 
             # search for users with email
@@ -68,9 +68,9 @@ For completeness your username: {username}"""
 
             # try to send the mails.
             try:
-                with EmailMixin.get_mail_connection() as mail_client:
+                with EmailUtils.get_mail_connection() as mail_client:
                     for user in results.values():
-                        ok, errors = self.send_email_safe(
+                        ok, errors = EmailUtils.send_email_safe(
                             mail_client,
                             self.logger,
                             EmailSettings.default_from_email,

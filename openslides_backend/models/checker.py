@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+from decimal import InvalidOperation
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, cast
 
 import fastjsonschema
@@ -30,7 +31,12 @@ from openslides_backend.models.fields import (
 )
 from openslides_backend.models.helper import calculate_inherited_groups_helper
 from openslides_backend.models.models import Meeting, Model
-from openslides_backend.shared.patterns import KEYSEPARATOR
+from openslides_backend.shared.patterns import (
+    COLOR_PATTERN,
+    DECIMAL_PATTERN,
+    EXTENSION_REFERENCE_IDS_PATTERN,
+    collection_and_id_from_fqid,
+)
 from openslides_backend.shared.schema import number_string_json_schema
 from openslides_backend.shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
 
@@ -77,11 +83,8 @@ def check_string(value: Any) -> bool:
     return value is None or isinstance(value, str)
 
 
-color_regex = re.compile("^#[0-9a-f]{6}$")
-
-
 def check_color(value: Any) -> bool:
-    return value is None or bool(isinstance(value, str) and color_regex.match(value))
+    return value is None or bool(isinstance(value, str) and COLOR_PATTERN.match(value))
 
 
 def check_number(value: Any) -> bool:
@@ -113,13 +116,9 @@ def check_x_list(value: Any, fn: Callable) -> bool:
 
 
 def check_decimal(value: Any) -> bool:
-    if value is None:
-        return True
-    if isinstance(value, str):
-        pattern = r"^-?(\d|[1-9]\d+)\.\d{6}$"
-        if re.match(pattern, value):
-            return True
-    return False
+    return value is None or bool(
+        isinstance(value, str) and DECIMAL_PATTERN.match(value)
+    )
 
 
 def check_json(value: Any, root: bool = True) -> bool:
@@ -417,7 +416,9 @@ class Checker:
                     error = f"{collection}/{model['id']}/{fieldname}: {str(e)}"
                     self.errors.append(error)
                     errors = True
-
+                except InvalidOperation:
+                    # invalide decimal json, will be checked at check_types
+                    pass
         return errors
 
     def fix_missing_default_values(
@@ -604,7 +605,7 @@ class Checker:
                 recommendation_extension
             )
             for fqid_str in possible_rerids:
-                re_collection, re_id_ = fqid_str.split(KEYSEPARATOR)
+                re_collection, re_id_ = collection_and_id_from_fqid(fqid_str)
                 if re_collection != "motion":
                     self.errors.append(
                         basemsg + f"Found {fqid_str} but only motion is allowed."
@@ -683,7 +684,7 @@ class Checker:
                     )
             elif self.mode == "external":
                 self.errors.append(
-                    f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
+                    f"{basemsg} points to {foreign_collection}/{foreign_field}, which is not allowed in an external import."
                 )
 
         elif isinstance(field_type, GenericRelationField) and model[field] is not None:
@@ -732,6 +733,24 @@ class Checker:
                     self.errors.append(
                         f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
                     )
+
+        elif collection == "motion":
+            for prefix in ("state", "recommendation"):
+                if field == f"{prefix}_extension" and (
+                    value := model.get(f"{prefix}_extension")
+                ):
+                    matches = EXTENSION_REFERENCE_IDS_PATTERN.findall(value)
+                    for fqid in matches:
+                        re_collection, re_id = collection_and_id_from_fqid(fqid)
+                        if re_collection != "motion":
+                            self.errors.append(
+                                basemsg + f"Found {fqid} but only motion is allowed."
+                            )
+                        if not self.find_model(re_collection, int(re_id)):
+                            self.errors.append(
+                                basemsg
+                                + f"Found {fqid} in {prefix}_extension but not in models."
+                            )
 
     def get_to(self, field: str, collection: str) -> Tuple[str, Optional[str]]:
         if self.is_structured_field(field):

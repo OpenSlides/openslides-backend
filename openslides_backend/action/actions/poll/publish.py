@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
-from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
@@ -9,7 +9,7 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import PollPermissionMixin, StopControl
+from .mixins import PollHistoryMixin, PollPermissionMixin, StopControl
 
 
 @register_action("poll.publish")
@@ -18,6 +18,7 @@ class PollPublishAction(
     StopControl,
     UpdateAction,
     PollPermissionMixin,
+    PollHistoryMixin,
 ):
     """
     Action to publish a poll.
@@ -42,15 +43,11 @@ class PollPublishAction(
         instance["state"] = Poll.STATE_PUBLISHED
         return instance
 
-    def get_history_information(self) -> Optional[List[str]]:
-        ids = [instance["id"] for instance in self.instances]
-        polls = self.datastore.get_many(
-            [GetManyRequest(self.model.collection, ids, ["state"])],
-            use_changed_models=False,
-            lock_result=False,
-        )
-        states = set(poll["state"] for poll in polls[self.model.collection].values())
-        if len(states) == 1 and states.pop() == Poll.STATE_FINISHED:
-            return ["Voting published"]
-        else:
-            return ["Voting stopped/published"]
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        polls = self.get_instances_with_fields(["content_object_id", "state"])
+        return {
+            poll["content_object_id"]: [
+                f"{self.get_history_title(poll)} {'stopped/' if poll['state'] != Poll.STATE_FINISHED else ''}published"
+            ]
+            for poll in polls
+        }

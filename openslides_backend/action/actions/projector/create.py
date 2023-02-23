@@ -39,7 +39,6 @@ class ProjectorCreateAction(SequentialNumbersMixin, CreateAction):
             "used_as_default_amendment_in_meeting_id",
             "used_as_default_motion_block_in_meeting_id",
             "used_as_default_assignment_in_meeting_id",
-            "used_as_default_user_in_meeting_id",
             "used_as_default_mediafile_in_meeting_id",
             "used_as_default_projector_message_in_meeting_id",
             "used_as_default_projector_countdowns_in_meeting_id",

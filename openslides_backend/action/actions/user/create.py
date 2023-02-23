@@ -1,11 +1,15 @@
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.schema import optional_id_schema
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
+from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
@@ -15,6 +19,7 @@ from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin
 
 @register_action("user.create")
 class UserCreate(
+    EmailCheckMixin,
     CreateAction,
     UserMixin,
     CreateUpdatePermissionsMixin,
@@ -55,6 +60,7 @@ class UserCreate(
             **UserMixin.transfer_field_list,
         },
     )
+    check_email_field = "email"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
@@ -86,3 +92,18 @@ class UserCreate(
                 )
             ]
         )[0]
+
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        information = {}
+        for instance in self.instances:
+            meeting_ids = list(instance.get("group_$_ids", []))
+            instance_information = ["Participant created"]
+            if len(meeting_ids) == 1:
+                instance_information[0] += " in meeting {}"
+                instance_information.append(
+                    fqid_from_collection_and_id("meeting", meeting_ids.pop())
+                )
+            information[
+                fqid_from_collection_and_id(self.model.collection, instance["id"])
+            ] = instance_information
+        return information

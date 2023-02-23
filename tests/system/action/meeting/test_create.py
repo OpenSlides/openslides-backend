@@ -60,7 +60,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "assignment_poll_default_group_ids": [4],
                 "motion_poll_default_group_ids": [4],
                 **{
-                    f"default_projector_{name}_id": 1
+                    f"default_projector_{name}_ids": [1]
                     for name in Meeting.DEFAULT_PROJECTOR_ENUM
                 },
             },

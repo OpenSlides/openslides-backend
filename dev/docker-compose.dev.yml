@@ -25,6 +25,7 @@ services:
             - AUTH_HOST=auth
             - MESSAGE_BUS_HOST=redis
             - DATASTORE_DATABASE_HOST=postgres
+            - DATASTORE_LOG_LEVEL=CRITICAL
         depends_on:
             - datastore-writer
         networks:
@@ -118,7 +119,7 @@ services:
             - auth
             - postgres
     postgres:
-        image: postgres:11
+        image: postgres:13
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides

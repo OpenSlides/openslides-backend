@@ -224,7 +224,7 @@ class MeetingImport(BaseActionTestCase):
                         "list_of_speakers_countdown_id": None,
                         "poll_countdown_id": None,
                         **{
-                            f"default_projector_{name}_id": 1
+                            f"default_projector_{name}_ids": [1]
                             for name in Meeting.DEFAULT_PROJECTOR_ENUM
                         },
                         "projection_ids": [],
@@ -1340,6 +1340,24 @@ class MeetingImport(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_dont_import_action_worker(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "action_worker": {
+                    "1": {
+                        "id": 1,
+                        "name": "testcase",
+                        "state": "end",
+                        "created": round(time.time() - 3),
+                        "timestamp": round(time.time()),
+                    }
+                }
+            }
+        )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("action_worker/1")
+
     def test_bad_format_invalid_id_key(self) -> None:
         request_data = self.create_request_data({"tag": {"1": {"id": 2}}})
         response = self.request("meeting.import", request_data)
@@ -1663,6 +1681,27 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_model_exists("meeting/2", {"present_user_ids": [15]})
 
+    def test_with_default_password(self) -> None:
+        request_data = self.create_request_data()
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/2")
+        assert user["default_password"] != "admin"
+        assert self.auth.is_equals(user["default_password"], user["password"])
+
+    def test_without_default_password(self) -> None:
+        request_data = self.create_request_data()
+        request_data["meeting"]["user"]["1"]["default_password"] = ""
+        request_data["meeting"]["user"]["1"]["last_email_send"] = int(time.time())
+        request_data["meeting"]["user"]["1"]["last_login"] = int(time.time())
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/2")
+        assert len(user["default_password"]) == 10
+        assert self.auth.is_equals(user["default_password"], user["password"])
+        assert "last_email_send" not in user
+        assert "last_login" not in user
+
     def test_merge_users_template_fields(self) -> None:
         self.set_models(
             {
@@ -1933,4 +1972,14 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "motion/2",
             {"amendment_paragraph": {"1": "&lt;it&gt;test&lt;/it&gt;", "2": "broken"}},
+        )
+
+    def test_import_with_wrong_decimal(self) -> None:
+        data = self.create_request_data({})
+        data["meeting"]["user"]["1"]["default_vote_weight"] = "1A0"
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 400)
+        assert (
+            "user/1/default_vote_weight: Type error: Type is not <openslides_backend.models.fields.DecimalField"
+            in response.json["message"]
         )

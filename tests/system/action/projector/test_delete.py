@@ -19,7 +19,7 @@ class ProjectorDelete(BaseActionTestCase):
                 },
                 "meeting/1": {
                     "reference_projector_id": 113,
-                    "default_projector_motion_id": 111,
+                    "default_projector_motion_ids": [111],
                     "projector_ids": [111, 113],
                     "is_active_in_organization_id": 1,
                 },
@@ -31,7 +31,7 @@ class ProjectorDelete(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("projector/111")
         meeting = self.get_model("meeting/1")
-        assert meeting.get("default_projector_motion_id") == 113
+        assert meeting.get("default_projector_motion_ids") == [113]
         self.assert_model_exists(
             "projector/113",
             {

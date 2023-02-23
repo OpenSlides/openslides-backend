@@ -2,18 +2,10 @@ from typing import Any, Dict, List
 
 import fastjsonschema
 
-from ..permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
-from ..permissions.permission_helper import (
-    has_committee_management_level,
-    has_organization_management_level,
-    has_perm,
-)
-from ..permissions.permissions import Permissions
+from openslides_backend.shared.mixins.user_scope_mixin import UserScopeMixin
+
 from ..services.datastore.commands import GetManyRequest
-from ..shared.exceptions import MissingPermission, PresenterException
+from ..shared.exceptions import PresenterException
 from ..shared.filters import And, FilterOperator
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
@@ -39,7 +31,7 @@ get_user_related_models_schema = fastjsonschema.compile(
 
 
 @register_presenter("get_user_related_models")
-class GetUserRelatedModels(BasePresenter):
+class GetUserRelatedModels(UserScopeMixin, BasePresenter):
     """
     Collects related models of the user_ids.
     """
@@ -49,6 +41,7 @@ class GetUserRelatedModels(BasePresenter):
     def get_result(self) -> Any:
         result: Dict[str, Any] = {}
         for user_id in self.data["user_ids"]:
+            self.check_permissions_for_scope(user_id)
             result[str(user_id)] = {}
             committees_data = self.get_committees_data(user_id)
             meetings_data = self.get_meetings_data(user_id)
@@ -56,42 +49,7 @@ class GetUserRelatedModels(BasePresenter):
                 result[str(user_id)]["committees"] = committees_data
             if meetings_data:
                 result[str(user_id)]["meetings"] = meetings_data
-        self.check_permissions(result)
         return result
-
-    def check_permissions(self, result: Any) -> None:
-        """It first collects the meetings which are included and checks them."""
-        if has_organization_management_level(
-            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
-        ):
-            return
-        for user_id in result:
-            meeting_ids = []
-            for meeting in result[user_id].get("meetings", []):
-                meeting_ids.append(meeting["id"])
-            if not all(
-                has_perm(
-                    self.datastore,
-                    self.user_id,
-                    Permissions.User.CAN_MANAGE,
-                    meeting_id,
-                )
-                for meeting_id in meeting_ids
-            ):
-                raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
-            committee_ids = []
-            for committee in result[user_id].get("committees", []):
-                committee_ids.append(committee["id"])
-            if not all(
-                has_committee_management_level(
-                    self.datastore,
-                    self.user_id,
-                    CommitteeManagementLevel.CAN_MANAGE,
-                    committee_id,
-                )
-                for committee_id in committee_ids
-            ):
-                raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
 
     def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
         committees_data = []

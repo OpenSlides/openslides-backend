@@ -11,7 +11,6 @@ from ....shared.patterns import (
 
 class MeetingUserMixin(Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-
         if "vote_delegated_to_id" in instance:
             self.check_vote_delegated_to_id(
                 instance, fqid_from_collection_and_id("meeting_user", instance["id"])

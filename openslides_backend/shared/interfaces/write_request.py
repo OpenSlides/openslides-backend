@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+from openslides_backend.shared.typing import HistoryInformation
+
 from .collection_field_lock import CollectionFieldLock
 from .event import Event
 
@@ -12,7 +14,7 @@ class WriteRequest:
     """
 
     events: List[Event]
-    information: Optional[List[str]] = None
+    information: Optional[HistoryInformation] = None
     user_id: Optional[int] = None
     locked_fields: Dict[str, CollectionFieldLock] = field(default_factory=dict)
 

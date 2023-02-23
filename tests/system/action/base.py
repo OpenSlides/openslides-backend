@@ -18,6 +18,7 @@ from openslides_backend.services.datastore.with_database_context import (
 from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import FullQualifiedId
+from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_action_test_application, get_route_path
@@ -378,8 +379,13 @@ class BaseActionTestCase(BaseSystemTestCase):
         Asserts that the last history information for the given model is the given information.
         """
         informations = self.datastore.history_information([fqid]).get(fqid)
+        last_information = (
+            cast(HistoryInformation, informations[-1]["information"])
+            if informations
+            else {}
+        )
         if information is None:
-            assert informations is None
+            assert not informations or fqid not in last_information, informations
         else:
             assert informations
-            self.assertEqual(informations[-1]["information"], information)
+            self.assertEqual(last_information[fqid], information)

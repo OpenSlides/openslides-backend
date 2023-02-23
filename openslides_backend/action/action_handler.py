@@ -256,7 +256,6 @@ class ActionHandler(BaseHandler):
             # -1: error which cannot be directly associated with a single action data
             if action.index > -1:
                 exception.action_data_error_index = action.index
-            on_failure = action.get_on_failure(action_data)
-            if on_failure:
+            if on_failure := action.get_on_failure(action_data):
                 on_failure()
             raise exception

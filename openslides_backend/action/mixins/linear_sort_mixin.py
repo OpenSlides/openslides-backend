@@ -2,11 +2,11 @@ from typing import List
 
 from ...shared.exceptions import ActionException
 from ...shared.filters import Filter
-from ..action import BaseAction
+from ..action import Action
 from ..util.typing import ActionData
 
 
-class LinearSortMixin(BaseAction):
+class LinearSortMixin(Action):
     """
     Provides a mixin for linear sorting.
     """

@@ -2,13 +2,14 @@ from typing import Any, Dict
 
 from ....models.models import User
 from ...generics.update import UpdateAction
+from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_mixin import UserMixin
+from .user_mixin import UpdateHistoryMixin, UserMixin
 
 
 @register_action("user.update_self")
-class UserUpdateSelf(UpdateAction, UserMixin):
+class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixin):
     """
     Action to self update a user.
     """
@@ -17,6 +18,7 @@ class UserUpdateSelf(UpdateAction, UserMixin):
     schema = DefaultSchema(User()).get_default_schema(
         optional_properties=["username", "pronoun", "gender", "email"]
     )
+    check_email_field = "email"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

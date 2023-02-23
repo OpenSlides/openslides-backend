@@ -73,6 +73,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("assignment_candidate/111")
+        self.assert_history_information("assignment/111", ["Candidate removed"])
 
     def test_delete_correct_empty_user(self) -> None:
         self.set_models(

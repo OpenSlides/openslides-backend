@@ -4,18 +4,18 @@ from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .mixins import PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin
 
 
 @register_action("poll.delete")
-class PollDelete(DeleteAction, PollPermissionMixin):
+class PollDelete(DeleteAction, PollPermissionMixin, PollHistoryMixin):
     """
     Action to delete polls.
     """
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_delete_schema()
-    history_information = "Poll deleted"
+    poll_history_information = "deleted"
 
     def prefetch(self, action_data: ActionData) -> None:
         result = self.datastore.get_many(

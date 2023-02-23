@@ -17,6 +17,8 @@ class AssignmentCandidateDelete(PermissionMixin, DeleteAction):
 
     model = AssignmentCandidate()
     schema = DefaultSchema(AssignmentCandidate()).get_delete_schema()
+    history_information = "Candidate removed"
+    history_relation_field = "assignment_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

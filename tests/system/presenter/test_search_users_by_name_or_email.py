@@ -1,8 +1,6 @@
-from openslides_backend.action.actions.user.user_scope_permission_check_mixin import (
-    UserScope,
-)
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.mixins.user_scope_mixin import UserScope
 from tests.system.util import Profiler, performance
 
 from .base import BasePresenterTestCase

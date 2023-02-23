@@ -54,7 +54,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "enable_chat": True,
                 "url": "https://openslides.example.com",
                 "users_email_sender": "email_sender",
-                "users_email_replyto": "email replyto",
+                "users_email_replyto": " email@replyto.de  ",
                 "users_email_subject": "email subject",
                 "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
             },
@@ -72,7 +72,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         assert model.get("enable_chat") is True
         assert model.get("url") == "https://openslides.example.com"
         assert model.get("users_email_sender") == "email_sender"
-        assert model.get("users_email_replyto") == "email replyto"
+        assert model.get("users_email_replyto") == "email@replyto.de"
         assert model.get("users_email_subject") == "email subject"
         assert (
             model.get("users_email_body")
@@ -100,6 +100,29 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         model = self.get_model("organization/3")
         assert model.get("name") == "aBuwxoYU"
         assert model.get("description") == "XrHbAWiF"
+
+    def test_update_broken_email(self) -> None:
+        self.create_model(
+            "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+        )
+        response = self.request(
+            "organization.update", {"id": 3, "users_email_replyto": "broken@@"}
+        )
+        self.assert_status_code(response, 400)
+        assert "users_email_replyto must be valid email." in response.json["message"]
+
+    def test_update_broken_email_sender(self) -> None:
+        self.create_model(
+            "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+        )
+        response = self.request(
+            "organization.update", {"id": 3, "users_email_sender": "broken\\"}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "users_email_sender must not contain '[', ']', '\\'."
+            in response.json["message"]
+        )
 
     def test_update_group_a_no_permissions(self) -> None:
         self.set_models(

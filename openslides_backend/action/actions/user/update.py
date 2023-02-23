@@ -3,22 +3,24 @@ from typing import Any, Dict
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import PermissionException
-from ....shared.patterns import ID_REGEX, fqid_from_collection_and_id
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .set_present import UserSetPresentAction
-from .user_mixin import LimitOfUserMixin, UserMixin
+from .user_mixin import LimitOfUserMixin, UpdateHistoryMixin, UserMixin
 
 
 @register_action("user.update")
 class UserUpdate(
+    EmailCheckMixin,
     UserMixin,
     CreateUpdatePermissionsMixin,
     UpdateAction,
     LimitOfUserMixin,
+    UpdateHistoryMixin,
 ):
     """
     Action to update a user.
@@ -47,15 +49,11 @@ class UserUpdate(
             "is_demo_user",
         ],
         additional_optional_fields={
-            "presence": {
-                "type": "object",
-                "additionalProperties": False,
-                "patternProperties": {ID_REGEX: "boolean"},
-            },
             "meeting_id": optional_id_schema,
             **UserMixin.transfer_field_list,
         },
     )
+    check_email_field = "email"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
@@ -86,15 +84,4 @@ class UserUpdate(
         if instance.get("is_active") and not user.get("is_active"):
             self.check_limit_of_user(1)
 
-        presence = instance.pop("presence", None)
-        if presence:
-            action_payload = [
-                {
-                    "id": instance["id"],
-                    "meeting_id": int(meeting_id),
-                    "present": present,
-                }
-                for meeting_id, present in presence.items()
-            ]
-            self.execute_other_action(UserSetPresentAction, action_payload)
         return instance

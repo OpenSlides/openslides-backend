@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Set, Tuple, Union
 
 import fastjsonschema
 
-from ..action.actions.user.user_scope_permission_check_mixin import UserScope
+from openslides_backend.shared.mixins.user_scope_mixin import UserScope
+
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -64,7 +65,7 @@ class SearchUsersByNameEmail(BasePresenter):
 
     def get_result(self) -> Any:
         self.check_permissions(self.data["permission_type"], self.data["permission_id"])
-        result: Dict[str, List[Dict[str, Union[str, int]]]] = defaultdict(list)
+        result: Dict[str, List[Dict[str, Union[str, int]]]] = {}
         filter_bulk_tuples: Set[Tuple[str, str]] = set()
         for search in self.data["search"]:
             if username := search.get("username", "").strip():

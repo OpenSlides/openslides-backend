@@ -1,3 +1,4 @@
+from time import time
 from typing import Any, Dict
 
 from openslides_backend.models.models import Meeting
@@ -180,7 +181,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "motion_workflow_ids": [1],
                     "is_active_in_organization_id": 1,
                     **{
-                        f"default_projector_{part}_id": 1
+                        f"default_projector_{part}_ids": [1]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                     **self.get_meeting_defaults(),
@@ -249,6 +250,12 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                         f"used_as_default_{part}_in_meeting_id": 1
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
+                },
+                "action_worker/1": {
+                    "name": "testcase",
+                    "state": "end",
+                    "created": round(time() - 3),
+                    "timestamp": round(time()),
                 },
             }
         )
@@ -343,7 +350,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "font_bold_id": 2,
                     "meeting_user_ids": [3, 5, 6],
                     **{
-                        f"default_projector_{part}_id": 1
+                        f"default_projector_{part}_ids": [1]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                     **self.get_meeting_defaults(),
@@ -603,7 +610,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "motion_ids": [1],
                     "list_of_speakers_ids": [3],
                     **{
-                        f"default_projector_{part}_id": 1
+                        f"default_projector_{part}_ids": [1]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                     **self.get_meeting_defaults(),
@@ -694,7 +701,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "list_of_speakers_ids": [4],
                     "motion_ids": [2],
                     **{
-                        f"default_projector_{part}_id": 2
+                        f"default_projector_{part}_ids": [2]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                     **self.get_meeting_defaults(),

@@ -218,7 +218,6 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
         return super().validate_fields(instance)
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-
         meeting_user = self.datastore.get(
             fqid_from_collection_and_id("meeting_user", instance["meeting_user_id"]),
             ["user_id"],

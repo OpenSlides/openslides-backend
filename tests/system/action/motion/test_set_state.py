@@ -1,6 +1,5 @@
 import threading
 import time
-from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -9,77 +8,48 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSetStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "motion_state/76": {
-                "meeting_id": 1,
-                "name": "test0",
-                "motion_ids": [],
-                "next_state_ids": [77],
-                "previous_state_ids": [],
-                "allow_submitter_edit": True,
-            },
-            "motion_state/77": {
-                "meeting_id": 1,
-                "name": "test1",
-                "motion_ids": [22],
-                "first_state_of_workflow_id": 76,
-                "next_state_ids": [],
-                "previous_state_ids": [76],
-                "allow_submitter_edit": True,
-            },
-            "motion/22": {
-                "meeting_id": 1,
-                "title": "test1",
-                "state_id": 77,
-                "number_value": 23,
-                "submitter_ids": [12],
-            },
-            "motion_submitter/12": {
-                "meeting_id": 1,
-                "motion_id": 22,
-                "meeting_user_id": 1,
-            },
-            "meeting_user/1": {
-                "meeting_id": 1,
-                "user_id": 1,
-                "submitted_motion_ids": [12],
-            },
-            "meeting/1": {"meeting_user_ids": [1]},
-            "user/1": {"meeting_user_ids": [1]},
-        }
+        self.set_models(
+            {
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                    "motion_submitter_ids": [12],
+                    "meeting_user_ids": [1],
+                },
+                "motion_state/76": {
+                    "meeting_id": 1,
+                    "next_state_ids": [77],
+                    "allow_submitter_edit": True,
+                },
+                "motion_state/77": {
+                    "meeting_id": 1,
+                    "motion_ids": [22],
+                    "first_state_of_workflow_id": 76,
+                    "previous_state_ids": [76],
+                    "allow_submitter_edit": True,
+                },
+                "motion/22": {
+                    "meeting_id": 1,
+                    "state_id": 77,
+                    "number_value": 23,
+                    "submitter_ids": [12],
+                },
+                "motion_submitter/12": {
+                    "meeting_id": 1,
+                    "motion_id": 22,
+                    "meeting_user_id": 1,
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "submitted_motion_ids": [12],
+                },
+                "user/1": {"meeting_user_ids": [1]},
+            }
+        )
 
     def test_set_state_correct_previous_state(self) -> None:
         check_time = round(time.time())
-        self.set_models(
-            {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion_state/76": {
-                    "meeting_id": 222,
-                    "name": "test0",
-                    "motion_ids": [],
-                    "next_state_ids": [77],
-                    "previous_state_ids": [],
-                    "set_created_timestamp": True,
-                },
-                "motion_state/77": {
-                    "meeting_id": 222,
-                    "name": "test1",
-                    "motion_ids": [22],
-                    "first_state_of_workflow_id": 76,
-                    "next_state_ids": [],
-                    "previous_state_ids": [76],
-                },
-                "motion/22": {
-                    "meeting_id": 222,
-                    "title": "test1",
-                    "state_id": 77,
-                    "number_value": 23,
-                },
-            }
-        )
+        self.update_model("motion_state/76", {"set_created_timestamp": True})
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
         model = self.get_model("motion/22")
@@ -87,91 +57,42 @@ class MotionSetStateActionTest(BaseActionTestCase):
         assert model.get("number_value") == 23
         assert model.get("last_modified", 0) >= check_time
         assert model.get("created", 0) >= check_time
-        self.assert_history_information("motion/22", ["State set to {}", "test0"])
+        self.assert_history_information(
+            "motion/22", ["State set to {}", "motion_state/76"]
+        )
 
     def test_set_state_correct_next_state(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_state/76": {
-                    "meeting_id": 222,
-                    "name": "test0",
-                    "motion_ids": [],
-                    "next_state_ids": [],
-                    "previous_state_ids": [77],
-                    "set_created_timestamp": True,
+                    "motion_ids": [22],
                 },
                 "motion_state/77": {
-                    "meeting_id": 222,
-                    "name": "test1",
-                    "motion_ids": [22],
-                    "first_state_of_workflow_id": 76,
-                    "next_state_ids": [76],
-                    "previous_state_ids": [],
+                    "motion_ids": [],
                 },
                 "motion/22": {
-                    "meeting_id": 222,
-                    "title": "test1",
-                    "state_id": 77,
+                    "state_id": 76,
                     "number": "A021",
                 },
             }
         )
-        response = self.request("motion.set_state", {"id": 22, "state_id": 76})
+        response = self.request("motion.set_state", {"id": 22, "state_id": 77})
         self.assert_status_code(response, 200)
         model = self.get_model("motion/22")
-        assert model.get("state_id") == 76
+        assert model.get("state_id") == 77
         assert model.get("number") == "A021"
-        assert model.get("created")
 
     def test_set_state_wrong_not_in_next_or_previous(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                    "motion_submitter_ids": [12],
-                    "meeting_user_ids": [1],
-                },
                 "motion_state/76": {
-                    "meeting_id": 222,
-                    "name": "test0",
-                    "motion_ids": [],
                     "next_state_ids": [],
-                    "previous_state_ids": [],
-                    "allow_submitter_edit": True,
                 },
                 "motion_state/77": {
-                    "meeting_id": 222,
-                    "name": "test1",
-                    "motion_ids": [22],
-                    "first_state_of_workflow_id": 76,
-                    "next_state_ids": [],
                     "previous_state_ids": [],
-                    "allow_submitter_edit": True,
-                },
-                "motion/22": {
-                    "meeting_id": 222,
-                    "title": "test1",
-                    "state_id": 77,
-                    "submitter_ids": [12],
-                },
-                "motion_submitter/12": {
-                    "meeting_id": 222,
-                    "motion_id": 22,
-                    "meeting_user_id": 1,
                 },
                 "user/1": {
                     "organization_management_level": None,
-                    "meeting_user_ids": [1],
-                },
-                "meeting_user/1": {
-                    "meeting_id": 222,
-                    "user_id": 1,
-                    "submitted_motion_ids": [12],
                 },
             }
         )
@@ -182,64 +103,77 @@ class MotionSetStateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_set_state_perm_bypass_of_workflow(self) -> None:
+    def test_set_state_perm_ignore_graph_with_can_manage_metadata(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
                 "motion_state/76": {
-                    "meeting_id": 222,
-                    "name": "test0",
-                    "motion_ids": [],
                     "next_state_ids": [],
-                    "previous_state_ids": [],
                 },
                 "motion_state/77": {
-                    "meeting_id": 222,
-                    "name": "test1",
-                    "motion_ids": [22],
-                    "first_state_of_workflow_id": 76,
-                    "next_state_ids": [],
                     "previous_state_ids": [],
                 },
-                "motion/22": {"meeting_id": 222, "title": "test1", "state_id": 77},
+                "user/1": {
+                    "organization_management_level": None,
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                },
+                "group/1": {
+                    "meeting_id": 1,
+                    "user_ids": [1],
+                    "permissions": [Permissions.Motion.CAN_MANAGE_METADATA],
+                },
             }
         )
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/22", {"state_id": 76})
 
+    def test_set_state_set_number_multiple_motions(self) -> None:
+        self.set_models(
+            {
+                "motion_state/76": {
+                    "set_number": True,
+                },
+                "motion_state/77": {
+                    "motion_ids": [22, 23, 24],
+                },
+                "motion/22": {
+                    "number_value": None,
+                },
+                "motion/23": {
+                    "meeting_id": 1,
+                    "state_id": 77,
+                },
+                "motion/24": {
+                    "meeting_id": 1,
+                    "state_id": 77,
+                },
+            }
+        )
+        response = self.request_multi(
+            "motion.set_state",
+            [
+                {"id": 22, "state_id": 76},
+                {"id": 23, "state_id": 76},
+                {"id": 24, "state_id": 76},
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion/22")
+        assert model.get("state_id") == 76
+        assert model.get("number") == "1"
+        model = self.get_model("motion/23")
+        assert model.get("state_id") == 76
+        assert model.get("number") == "2"
+        model = self.get_model("motion/24")
+        assert model.get("state_id") == 76
+        assert model.get("number") == "3"
+
     def test_history_multiple_actions(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion_state/76": {
-                    "meeting_id": 222,
-                    "name": "test0",
-                    "motion_ids": [],
-                    "next_state_ids": [77],
-                    "previous_state_ids": [],
-                    "set_created_timestamp": True,
-                },
-                "motion_state/77": {
-                    "meeting_id": 222,
-                    "name": "test1",
-                    "motion_ids": [22],
-                    "first_state_of_workflow_id": 76,
-                    "next_state_ids": [],
-                    "previous_state_ids": [76],
-                },
-                "motion/22": {
-                    "meeting_id": 222,
-                    "state_id": 77,
-                },
                 "motion/23": {
-                    "meeting_id": 222,
+                    "meeting_id": 1,
                     "state_id": 77,
                 },
             }
@@ -248,38 +182,18 @@ class MotionSetStateActionTest(BaseActionTestCase):
             "motion.set_state", [{"id": 22, "state_id": 76}, {"id": 23, "state_id": 76}]
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/22", ["State set to {}", "test0"])
-        self.assert_history_information("motion/22", ["State set to {}", "test0"])
+        self.assert_history_information(
+            "motion/22", ["State set to {}", "motion_state/76"]
+        )
+        self.assert_history_information(
+            "motion/23", ["State set to {}", "motion_state/76"]
+        )
 
     def test_history_multiple_actions_different_states(self) -> None:
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion_state/76": {
-                    "meeting_id": 222,
-                    "name": "test0",
-                    "motion_ids": [],
-                    "next_state_ids": [77],
-                    "previous_state_ids": [],
-                    "set_created_timestamp": True,
-                },
-                "motion_state/77": {
-                    "meeting_id": 222,
-                    "name": "test1",
-                    "motion_ids": [22],
-                    "first_state_of_workflow_id": 76,
-                    "next_state_ids": [],
-                    "previous_state_ids": [76],
-                },
-                "motion/22": {
-                    "meeting_id": 222,
-                    "state_id": 77,
-                },
                 "motion/23": {
-                    "meeting_id": 222,
+                    "meeting_id": 1,
                     "state_id": 76,
                 },
             }
@@ -288,59 +202,62 @@ class MotionSetStateActionTest(BaseActionTestCase):
             "motion.set_state", [{"id": 22, "state_id": 76}, {"id": 23, "state_id": 77}]
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/22", ["State changed"])
-        self.assert_history_information("motion/22", ["State changed"])
+        self.assert_history_information(
+            "motion/22", ["State set to {}", "motion_state/76"]
+        )
+        self.assert_history_information(
+            "motion/23", ["State set to {}", "motion_state/77"]
+        )
 
     def test_set_state_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "motion.set_state",
             {"id": 22, "state_id": 76},
         )
 
     def test_set_state_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            {},
             "motion.set_state",
             {"id": 22, "state_id": 76},
             Permissions.Motion.CAN_MANAGE_METADATA,
         )
 
     def test_set_state_permission_submitter(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.permission_test_models["motion_submitter/12"]["meeting_user_id"] = 2
-        self.permission_test_models["meeting_user/2"] = {
-            "meeting_id": 1,
-            "user_id": self.user_id,
-            "submitted_motion_ids": [12],
-        }
-        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [2]}
-        self.set_models(self.permission_test_models)
-        self.set_user_groups(self.user_id, [3])
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                },
+            }
+        )
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
 
     def test_set_state_permission_submitter_and_withdraw(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.permission_test_models["motion_submitter/12"]["meeting_user_id"] = 2
-        self.permission_test_models["meeting_user/2"] = {
-            "meeting_id": 1,
-            "user_id": self.user_id,
-            "submitted_motion_ids": [12],
-        }
-        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [2]}
-        self.permission_test_models["motion_state/76"]["allow_submitter_edit"] = False
-        self.permission_test_models["motion_state/77"]["allow_submitter_edit"] = False
-        self.permission_test_models["motion_state/77"][
-            "submitter_withdraw_state_id"
-        ] = 76
-        self.set_models(self.permission_test_models)
-        self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
+        self.set_models(
+            {
+                "motion_state/76": {
+                    "allow_submitter_edit": False,
+                    "submitter_withdraw_back_ids": [77],
+                },
+                "motion_state/77": {
+                    "allow_submitter_edit": False,
+                    "submitter_withdraw_state_id": 76,
+                },
+                "user/1": {
+                    "organization_management_level": None,
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                },
+                "group/1": {
+                    "meeting_id": 1,
+                    "user_ids": [1],
+                    "permissions": [Permissions.Motion.CAN_SEE],
+                },
+            }
+        )
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
 
@@ -351,30 +268,12 @@ class MotionSetStateActionTest(BaseActionTestCase):
 
         self.set_models(
             {
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion_state/76": {
-                    "meeting_id": 222,
-                    "name": "test0",
-                    "motion_ids": [],
-                    "next_state_ids": [77],
-                    "previous_state_ids": [],
-                    "set_created_timestamp": True,
-                },
                 "motion_state/77": {
-                    "meeting_id": 222,
-                    "name": "test1",
                     "motion_ids": [22 + i for i in range(count)],
-                    "first_state_of_workflow_id": 76,
-                    "next_state_ids": [],
-                    "previous_state_ids": [76],
                 },
                 **{
                     f"motion/{22+i}": {
-                        "meeting_id": 222,
-                        "title": "test1",
+                        "meeting_id": 1,
                         "state_id": 77,
                         "number_value": 23 + i,
                     }

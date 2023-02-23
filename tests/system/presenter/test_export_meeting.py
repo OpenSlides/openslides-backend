@@ -1,3 +1,5 @@
+from time import time
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
@@ -70,6 +72,23 @@ class TestExportMeeting(BasePresenterTestCase):
         assert status_code == 200
         assert "organization_tag" not in data
         assert data["meeting"]["1"].get("organization_tag_ids") is None
+
+    def test_action_worker_exclusion(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"name": "name_foo"},
+                "action_worker/1": {
+                    "id": 1,
+                    "name": "testcase",
+                    "state": "end",
+                    "created": round(time() - 3),
+                    "timestamp": round(time()),
+                },
+            }
+        )
+        status_code, data = self.request("export_meeting", {"meeting_id": 1})
+        assert status_code == 200
+        assert "action_worker" not in data
 
     def test_add_users(self) -> None:
         self.set_models(
@@ -224,7 +243,6 @@ class TestExportMeeting(BasePresenterTestCase):
         motion     | supporter_meeting_user_ids
         poll       | voted_ids
         vote       | delegated_user_id
-        projection | content_object_id
         """
 
         self.set_models(
@@ -235,8 +253,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "motion_ids": [30],
                     "poll_ids": [80],
                     "vote_ids": [120],
-                    "projection_ids": [200],
-                    "meeting_user_ids": [12, 14, 15],
+                    "meeting_user_ids": [12, 14],
                 },
                 "user/11": {
                     "username": "exuser11",
@@ -254,10 +271,6 @@ class TestExportMeeting(BasePresenterTestCase):
                     "username": "exuser14",
                     "meeting_user_ids": [14],
                 },
-                "user/15": {
-                    "username": "exuser15",
-                    "meeting_user_ids": [15],
-                },
                 "motion/30": {
                     "meeting_id": 1,
                     "supporter_meeting_user_ids": [12],
@@ -270,10 +283,6 @@ class TestExportMeeting(BasePresenterTestCase):
                     "meeting_id": 1,
                     "delegated_user_id": 14,
                 },
-                "projection/200": {
-                    "meeting_id": 1,
-                    "content_object_id": "meeting_user/15",
-                },
                 "meeting_user/12": {
                     "meeting_id": 1,
                     "user_id": 12,
@@ -284,15 +293,10 @@ class TestExportMeeting(BasePresenterTestCase):
                     "user_id": 14,
                     "vote_delegated_vote_ids": [120],
                 },
-                "meeting_user/15": {
-                    "meeting_id": 1,
-                    "user_id": 15,
-                    "projection_ids": [200],
-                },
             }
         )
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 200
         assert data["meeting"]["1"].get("user_ids") is None
-        for id_ in ("11", "12", "13", "14", "15"):
+        for id_ in ("11", "12", "13", "14"):
             assert data["user"][id_]

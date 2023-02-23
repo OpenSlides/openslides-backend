@@ -1,13 +1,19 @@
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, VoteServiceException
-from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
+from ....shared.patterns import (
+    KEYSEPARATOR,
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+)
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownControl
@@ -192,3 +198,23 @@ class StopControl(CountdownControl, Action):
             )
 
         return entitled_users
+
+
+class PollHistoryMixin(Action):
+    poll_history_information: str
+
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        # no datastore access necessary if information is in payload
+        polls = self.get_instances_with_fields(["content_object_id"])
+        return {
+            poll["content_object_id"]: [
+                f"{self.get_history_title(poll)} {self.poll_history_information}"
+            ]
+            for poll in polls
+        }
+
+    def get_history_title(self, poll: Dict[str, Any]) -> str:
+        content_collection = collection_from_fqid(poll["content_object_id"])
+        if content_collection == "assignment":
+            return "Ballot"
+        return "Voting"
