@@ -199,7 +199,17 @@ class MotionDeleteActionTest(BaseActionTestCase):
                     "submitter_ids": [1],
                     "change_recommendation_ids": [1],
                 },
-                "motion_submitter/1": {"meeting_id": 1, "motion_id": 110, "user_id": 1},
+                "motion_submitter/1": {
+                    "meeting_id": 1,
+                    "motion_id": 110,
+                    "meeting_user_id": 1,
+                },
+                "meeting_user/1": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "submitted_motion_ids": [1],
+                },
+                "user/1": {"meeting_user_ids": [1]},
                 "motion_change_recommendation/1": {"meeting_id": 1, "motion_id": 110},
             }
         )

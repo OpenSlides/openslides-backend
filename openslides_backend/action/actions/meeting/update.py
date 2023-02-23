@@ -199,11 +199,8 @@ class MeetingUpdate(
         meeting_check.extend(
             [
                 fqid_from_collection_and_id("projector", projector_id)
-                for projector_id in (
-                    instance.get(f"default_projector_{part}_ids")
-                    for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                )
-                if projector_id
+                for part in Meeting.DEFAULT_PROJECTOR_ENUM
+                for projector_id in instance.get(f"default_projector_{part}_ids", [])
             ]
         )
 

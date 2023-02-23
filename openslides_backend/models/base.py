@@ -139,14 +139,10 @@ class Model(metaclass=ModelMetaClass):
             if model_field.required:
                 if isinstance(
                     model_field,
-                    (
-                        fields.RelationListField,
-                        fields.GenericRelationListField,
-                        fields.BaseTemplateField,
-                    ),
+                    fields.BaseTemplateField,
                 ) and (
                     not hasattr(model_field, "replacement_enum")
-                    or not model_field.replacement_enum  # type: ignore
+                    or not model_field.replacement_enum
                 ):
                     raise NotImplementedError(
                         f"{self.collection}.{model_field.own_field_name}"

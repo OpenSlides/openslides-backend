@@ -29,7 +29,6 @@ class MeetingUserCreate(BaseActionTestCase):
             "supported_motion_ids": [14],
             "submitted_motion_ids": [15],
             "assignment_candidate_ids": [16],
-            "projection_ids": [17],
             "chat_message_ids": [13],
             "vote_delegated_vote_ids": [20],
         }

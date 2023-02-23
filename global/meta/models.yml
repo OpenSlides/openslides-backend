@@ -350,16 +350,7 @@ meeting_user:
     type: number
     required: true
     restriction_mode: A
-  user_id:
-    type: relation
-    to: user/meeting_user_ids
-    required: true
-    restriction_mode: A
-  meeting_id:
-    type: relation
-    to: meeting/meeting_user_ids
-    required: true
-    restriction_mode: A
+
   comment:
     type: HTMLStrict
     restriction_mode: D
@@ -376,6 +367,18 @@ meeting_user:
     type: decimal(6)
     minimum: 0
     restriction_mode: A
+
+  user_id:
+    type: relation
+    to: user/meeting_user_ids
+    required: true
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    to: meeting/meeting_user_ids
+    required: true
+    restriction_mode: A
+
   personal_note_ids:
     type: relation-list
     to: personal_note/meeting_user_id
@@ -398,11 +401,6 @@ meeting_user:
   assignment_candidate_ids:
     type: relation-list
     to: assignment_candidate/meeting_user_id
-    restriction_mode: A
-  projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    on_delete: CASCADE
     restriction_mode: A
   vote_delegated_vote_ids:
     type: relation-list

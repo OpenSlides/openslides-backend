@@ -85,6 +85,19 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 raise ActionException(
                     f"A user with the username {instance['username']} already exists."
                 )
+        if instance.get("group_$_ids") is not None:
+            self.datastore.apply_changed_model(
+                fqid_from_collection_and_id("user", instance["id"]),
+                {
+                    **{
+                        f"group_${meeting_id}_ids": ids
+                        for meeting_id, ids in instance.get("group_$_ids", {}).items()
+                    },
+                    "meeting_ids": [
+                        int(id) for id in instance.get("group_$_ids", {}).keys()
+                    ],
+                },
+            )
         self.meeting_user_set_data(instance)
         return instance
 
@@ -109,6 +122,8 @@ class UserMixin(CheckForArchivedMeetingMixin):
 
 class UpdateHistoryMixin(Action):
     def get_history_information(self) -> Optional[HistoryInformation]:
+        # Currently not working, will be reimplemented after template fields are fully removed
+        return None
         information = {}
 
         # Scan the instances and collect the info for the history information

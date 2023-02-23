@@ -1344,14 +1344,15 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/111": {"username": "user111"},
-                "meeting/110": {"is_active_in_organization_id": 1, "name": "Test"},
+                "meeting/110": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request(
             "user.update",
             {
                 "id": 111,
-                "vote_weight_$": {"110": "2.000000"},
+                "meeting_id": 110,
+                "vote_weight": "2.000000",
             },
         )
         self.assert_status_code(response, 200)
@@ -1470,11 +1471,13 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
                     "is_active": True,
-                    "structure_level_$": ["1"],
-                    "structure_level_$1": "level",
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                    "committee_$_management_level": ["can_manage"],
-                    "committee_$can_manage_management_level": [78],
+                    "committee_management_ids": [78],
+                },
+                "meeting_user/111": {
+                    "user_id": 111,
+                    "meeting_id": 1,
+                    "structure_level": "level",
                 },
                 "group/1": {"user_ids": [111], "meeting_id": 1},
                 "meeting/1": {
@@ -1492,9 +1495,10 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "title": "test",
                 "group_$_ids": {1: [1]},
                 "is_active": True,
-                "structure_level_$": {1: "level"},
+                "meeting_id": 1,
+                "structure_level": "level",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                "committee_$_management_level": {"can_manage": [78]},
+                "committee_management_ids": [78],
             },
         )
         self.assert_status_code(response, 200)
@@ -1504,7 +1508,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/111": {
-                    "committee_$_management_level": [],
+                    "committee_management_ids": [],
                 },
             }
         )
@@ -1512,7 +1516,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "committee_$_management_level": {"can_manage": []},
+                "committee_management_ids": [],
             },
         )
         self.assert_status_code(response, 200)
@@ -1524,14 +1528,20 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "committee/1": {"meeting_ids": [1]},
-                "user/222": {"structure_level_$": ["1"], "structure_level_$1": "level"},
+                "user/222": {"meeting_user_ids": [42]},
+                "meeting_user/42": {
+                    "user_id": 222,
+                    "meeting_id": 1,
+                    "structure_level": "level",
+                },
             }
         )
         response = self.request(
             "user.update",
             {
                 "id": 222,
-                "structure_level_$": {2: "level2"},
+                "meeting_id": 2,
+                "structure_level": "level2",
             },
         )
         self.assert_status_code(response, 200)
@@ -1552,16 +1562,28 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "meeting/3": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "committee/1": {"meeting_ids": [1]},
-                "user/222": {"structure_level_$": ["1"], "structure_level_$1": "level"},
+                "user/222": {"meeting_user_ids": [42]},
+                "meeting_user/42": {
+                    "user_id": 222,
+                    "meeting_id": 1,
+                    "structure_level": "level",
+                },
             }
         )
-        response = self.request(
+        response = self.request_multi(
             "user.update",
-            {
-                "id": 222,
-                "structure_level_$": {2: "level2"},
-                "vote_weight_$": {3: "1.000000"},
-            },
+            [
+                {
+                    "id": 222,
+                    "meeting_id": 2,
+                    "structure_level": "level2",
+                },
+                {
+                    "id": 222,
+                    "meeting_id": 3,
+                    "vote_weight": "1.000000",
+                },
+            ],
         )
         self.assert_status_code(response, 200)
         self.assert_history_information(

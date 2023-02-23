@@ -107,11 +107,12 @@ class ProjectorAddToPreview(BaseActionTestCase):
         )
 
     def test_add_to_preview_user(self) -> None:
+        user_id = self.create_user_for_meeting(1)
         response = self.request(
             "projector.add_to_preview",
             {
                 "ids": [1],
-                "content_object_id": "user/1",
+                "content_object_id": f"user/{user_id}",
                 "stable": False,
                 "meeting_id": 1,
             },

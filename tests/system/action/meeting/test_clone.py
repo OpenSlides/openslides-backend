@@ -112,7 +112,7 @@ class MeetingClone(BaseActionTestCase):
                 "motion_state_ids": [2],
                 "motion_workflow_ids": [2],
                 **{
-                    f"default_projector_{name}_ids": [1]
+                    f"default_projector_{name}_ids": [2]
                     for name in Meeting.DEFAULT_PROJECTOR_ENUM
                 },
                 "template_for_organization_id": ONE_ORGANIZATION_ID,

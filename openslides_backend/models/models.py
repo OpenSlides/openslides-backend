@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "a703ad454662c592c31ba57b899dec3c"
+MODELS_YML_CHECKSUM = "34067c5f2c0c364c87e527fecf5a0f94"
 
 
 class Organization(Model):
@@ -134,13 +134,13 @@ class MeetingUser(Model):
     verbose_name = "meeting user"
 
     id = fields.IntegerField(required=True)
-    user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
-    meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
     comment = fields.HTMLStrictField()
     number = fields.CharField()
     structure_level = fields.CharField()
     about_me = fields.HTMLStrictField()
     vote_weight = fields.DecimalField(constraints={"minimum": 0})
+    user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
+    meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
     personal_note_ids = fields.RelationListField(
         to={"personal_note": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -155,9 +155,6 @@ class MeetingUser(Model):
     )
     assignment_candidate_ids = fields.RelationListField(
         to={"assignment_candidate": "meeting_user_id"}
-    )
-    projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
     )
     vote_delegated_vote_ids = fields.RelationListField(to={"vote": "delegated_user_id"})
     vote_delegated_to_id = fields.RelationField(
