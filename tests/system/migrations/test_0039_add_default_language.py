@@ -5,7 +5,7 @@ def test_migration(write, finalize, assert_model):
     write({"type": "delete", "fqid": "organization/1"})
     write({"type": "restore", "fqid": "organization/1"})
 
-    finalize("0038_add_default_language")
+    finalize("0039_add_default_language")
 
     new_settings = {
         "default_language": "en",
