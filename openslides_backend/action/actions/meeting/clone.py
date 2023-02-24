@@ -167,31 +167,54 @@ class MeetingClone(MeetingImport):
             default_group_id = meeting.get("default_group_id")
             group_in_instance = instance["meeting"]["group"][str(default_group_id)]
             self._update_default_and_admin_group(
-                group_in_instance, meeting_users_in_instance, additional_user_ids, meeting_id
+                group_in_instance,
+                meeting_users_in_instance,
+                additional_user_ids,
+                meeting_id,
             )
 
         if additional_admin_ids:
             admin_group_id = meeting.get("admin_group_id")
             group_in_instance = instance["meeting"]["group"][str(admin_group_id)]
             self._update_default_and_admin_group(
-                group_in_instance, meeting_users_in_instance, additional_admin_ids, meeting_id
+                group_in_instance,
+                meeting_users_in_instance,
+                additional_admin_ids,
+                meeting_id,
             )
         return instance
 
-    def _update_default_and_admin_group(self,
-        group_in_instance: Dict[str, Any], meeting_users_in_instance: Dict[str, Any], additional_user_ids: List[int], meeting_id: int
+    def _update_default_and_admin_group(
+        self,
+        group_in_instance: Dict[str, Any],
+        meeting_users_in_instance: Dict[str, Any],
+        additional_user_ids: List[int],
+        meeting_id: int,
     ) -> None:
-        additional_meeting_user_ids = [self.create_or_get_meeting_user(meeting_id, user_id) for user_id in additional_user_ids]
-        meeting_user_ids = set(group_in_instance.get("meeting_user_ids", set()) or set())
+        additional_meeting_user_ids = [
+            self.create_or_get_meeting_user(meeting_id, user_id)
+            for user_id in additional_user_ids
+        ]
+        meeting_user_ids = set(
+            group_in_instance.get("meeting_user_ids", set()) or set()
+        )
         meeting_user_ids.update(additional_meeting_user_ids)
         group_id = group_in_instance["id"]
         for meeting_user_id in additional_meeting_user_ids:
-            fqid_meeting_user = fqid_from_collection_and_id("meeting_user", meeting_user_id)
-            group_ids = self.datastore.changed_models.get(fqid_meeting_user).get("group_ids", [])
+            fqid_meeting_user = fqid_from_collection_and_id(
+                "meeting_user", meeting_user_id
+            )
+            group_ids = self.datastore.changed_models.get(fqid_meeting_user).get(
+                "group_ids", []
+            )
             if group_id not in group_ids:
                 group_ids.append(group_id)
-                self.datastore.changed_models.get(fqid_meeting_user)["group_ids"] = group_ids
-            meeting_users_in_instance[str(meeting_user_id)] = self.datastore.changed_models.get(fqid_meeting_user)
+                self.datastore.changed_models.get(fqid_meeting_user)[
+                    "group_ids"
+                ] = group_ids
+            meeting_users_in_instance[
+                str(meeting_user_id)
+            ] = self.datastore.changed_models.get(fqid_meeting_user)
         group_in_instance["meeting_user_ids"] = list(meeting_user_ids)
 
     def duplicate_mediafiles(self, json_data: Dict[str, Any]) -> None:

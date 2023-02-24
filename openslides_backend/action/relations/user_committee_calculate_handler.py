@@ -23,7 +23,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     A user belongs to a committee, if he is member of a meeting in the committee via group or
     he has rights on CommitteeManagementLevel.
     Problem: The changes come from 2 different collections, both could add or remove user/committee_relations.
-    This method will calculate additions and removals by comparing the instances of datastore.changed_models and 
+    This method will calculate additions and removals by comparing the instances of datastore.changed_models and
     the stored db-content.
     Calculates only 1 time per user on
     1. user.committee_managment_ids, if changed, otherwise may not be triggered
@@ -39,10 +39,16 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             or ("group_ids" in instance and field_name != "group_ids")
         ):
             return {}
-        assert (changed_model := self.datastore.changed_models.get(fqid_from_collection_and_id(field.own_collection, instance["id"])))
+        assert (
+            changed_model := self.datastore.changed_models.get(
+                fqid_from_collection_and_id(field.own_collection, instance["id"])
+            )
+        )
         assert changed_model.get(field_name) == instance.get(field_name)
         if field.own_collection == "user":
-            fqid_user = fqid_from_collection_and_id(field.own_collection, instance["id"])
+            fqid_user = fqid_from_collection_and_id(
+                field.own_collection, instance["id"]
+            )
             user_id = instance["id"]
             db_user = self.datastore.get(
                 fqid_user,
@@ -54,22 +60,38 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         else:
             if action != "user.delete":
                 self.fill_meeting_user_changed_models_with_user_id()
-            fqid_meeting_user = fqid_from_collection_and_id(field.own_collection, instance["id"])
-            user_id = self.datastore.changed_models.get(fqid_meeting_user).get("user_id")
-            meeting_users = {id_from_fqid(key): data for key, data in self.datastore.changed_models.items() if collection_from_fqid(key) == "meeting_user" and (data.get("user_id") == user_id or isinstance(data, DeletedModel))}
+            fqid_meeting_user = fqid_from_collection_and_id(
+                field.own_collection, instance["id"]
+            )
+            user_id = self.datastore.changed_models.get(fqid_meeting_user).get(
+                "user_id"
+            )
+            meeting_users = {
+                id_from_fqid(key): data
+                for key, data in self.datastore.changed_models.items()
+                if collection_from_fqid(key) == "meeting_user"
+                and (data.get("user_id") == user_id or isinstance(data, DeletedModel))
+            }
             min_meeting_user_id = min(meeting_users.keys())
             if min_meeting_user_id == instance["id"]:
                 fqid_user = fqid_from_collection_and_id("user", user_id)
                 db_user = self.datastore.get(
                     fqid_user,
-                    ["id", "committee_ids", "committee_management_ids", "meeting_user_ids"],
+                    [
+                        "id",
+                        "committee_ids",
+                        "committee_management_ids",
+                        "meeting_user_ids",
+                    ],
                     use_changed_models=False,
                     raise_exception=False,
                 )
                 return self.do_changes(fqid_user, db_user, action)
         return {}
 
-    def do_changes(self, fqid:FullQualifiedId, db_user:Dict[str, Any], action:str) -> RelationUpdates:
+    def do_changes(
+        self, fqid: FullQualifiedId, db_user: Dict[str, Any], action: str
+    ) -> RelationUpdates:
         user_id = id_from_fqid(fqid)
         db_committee_ids = set(db_user.get("committee_ids", []) or [])
         changed_user = self.datastore.changed_models[fqid]
@@ -133,7 +155,11 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         return relation_update
 
     def fill_meeting_user_changed_models_with_user_id(self) -> None:
-        meeting_user_ids = (id_from_fqid(key) for key, data in self.datastore.changed_models.items() if collection_from_fqid(key) == "meeting_user" and not data.get("user_id"))
+        meeting_user_ids = (
+            id_from_fqid(key)
+            for key, data in self.datastore.changed_models.items()
+            if collection_from_fqid(key) == "meeting_user" and not data.get("user_id")
+        )
         if meeting_user_ids:
             results = self.datastore.get_many(
                 [
@@ -146,14 +172,16 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
                 use_changed_models=False,
             ).get("meeting_user", {})
             for key, value in results.items():
-                self.datastore.changed_models[fqid_from_collection_and_id("meeting_user", key)]["user_id"] = value["user_id"]
+                self.datastore.changed_models[
+                    fqid_from_collection_and_id("meeting_user", key)
+                ]["user_id"] = value["user_id"]
 
     def get_meeting_users_by_user_id(self, user_id: int) -> List[Dict[str, Any]]:
         """Get a user_id, filters all meeting_user for it and returns the meeting_id"""
         filter_ = And(
-                FilterOperator("user_id", "=", user_id),
-                Not(FilterOperator("group_ids", "=", None)),
-            )
+            FilterOperator("user_id", "=", user_id),
+            Not(FilterOperator("group_ids", "=", None)),
+        )
         res = self.datastore.filter(
             "meeting_user",
             filter_,
@@ -161,6 +189,6 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         )
         return list(res.values())
 
-    def get_all_meeting_ids_by_user_id(self, user_id:int) -> set[int]:
+    def get_all_meeting_ids_by_user_id(self, user_id: int) -> set[int]:
         meeting_users = self.get_meeting_users_by_user_id(user_id)
         return set(mu["meeting_id"] for mu in meeting_users)

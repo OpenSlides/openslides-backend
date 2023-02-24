@@ -19,5 +19,7 @@ class MeetingUserHelper(Action):
                 [{"meeting_id": meeting_id, "user_id": user_id}],
             )
             id_ = action_results[0]["id"]  # type: ignore
-            self.datastore.changed_models.get(fqid_from_collection_and_id("meeting_user", id_), {}).pop("meta_new", None)
+            self.datastore.changed_models.get(
+                fqid_from_collection_and_id("meeting_user", id_), {}
+            ).pop("meta_new", None)
             return id_

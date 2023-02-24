@@ -271,7 +271,10 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         """Check Group C group_ids: OML, CML or meeting.permissions for each meeting"""
         if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
             touch_meeting_id = instance.get("meeting_id")
-            if touch_meeting_id not in permstore.user_committees_meetings and touch_meeting_id not in permstore.user_meetings:
+            if (
+                touch_meeting_id not in permstore.user_committees_meetings
+                and touch_meeting_id not in permstore.user_meetings
+            ):
                 raise PermissionDenied(
                     f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting {touch_meeting_id}"
                 )

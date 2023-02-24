@@ -9,7 +9,7 @@ from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.patterns import fqid_from_collection_and_id, FullQualifiedId
+from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, required_id_schema
 from ..meeting_user.set_data import MeetingUserSetData
 
@@ -86,7 +86,9 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 raise ActionException(
                     f"A user with the username {instance['username']} already exists."
                 )
-        self.check_meeting_and_users(instance, fqid_from_collection_and_id("user", instance["id"]))
+        self.check_meeting_and_users(
+            instance, fqid_from_collection_and_id("user", instance["id"])
+        )
         self.meeting_user_set_data(instance)
         return instance
 
