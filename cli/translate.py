@@ -1,50 +1,71 @@
 import sys
+from collections import OrderedDict
 from typing import Any, Dict, List
 
-from datastore.reader.core import FilterRequest, Reader
+from datastore.reader.core import GetAllRequest, Reader
 from datastore.reader.services import register_services as register_reader_services
 from datastore.shared.di import injector
-from datastore.shared.util import FilterOperator, fqid_from_collection_and_id
+from datastore.shared.util import fqid_from_collection_and_id
 from datastore.writer.core import RequestUpdateEvent, Writer, WriteRequest
 from datastore.writer.services import register_services as register_writer_services
 
 from openslides_backend.locale.translator import Translator
+from openslides_backend.models.models import Organization
 
-collection_to_fields_map = {
-    "group": ["name"],
-    "motion_workflow": ["name"],
-    "motion_state": ["name", "recommendation_label"],
-    "projector_countdown": ["name"],
-    "projector": ["name"],
-    "meeting": [
-        "welcome_title",
-        "welcome_text",
-        "name",
-        "description",
-        "users_email_subject",
-        "users_email_body",
-        "assignments_export_title",
-    ],
-}
+collection_to_fields_map = OrderedDict(
+    {
+        "organization": [
+            "name",
+            "login_text",
+            "description",
+        ],
+        "meeting": [
+            "name",
+            "welcome_title",
+            "welcome_text",
+            "motion_preamble",
+            "motions_export_title",
+            "assignments_export_title",
+            "users_pdf_welcometitle",
+            "users_pdf_welcometext",
+            "users_email_sender",
+            "users_email_subject",
+            "users_email_body",
+        ],
+        "group": ["name"],
+        "motion_workflow": ["name"],
+        "motion_state": ["name", "recommendation_label"],
+        "projector_countdown": ["name"],
+        "projector": ["name"],
+        "motion": ["recommendation_label"],
+    }
+)
+possible_languages = Organization().default_language.constraints["enum"]
 
 
 def read_collection(collection: str, fields: List[str]) -> Any:
     reader: Reader = injector.get(Reader)
     with reader.get_database_context():
-        response = reader.filter(
-            FilterRequest(
+        response = reader.get_all(
+            GetAllRequest(
                 collection,
-                FilterOperator("meta_deleted", "=", False),
                 ["id", *fields],
             )
         )
-    return response["data"].items()
+    return response.items()
+
+
+def check_language(language: str) -> None:
+    if language not in possible_languages:
+        print("language is not allowed.")
+        print_help()
+        sys.exit(2)
 
 
 def print_help() -> None:
     print("Usage:  python translate.py <language>")
     print("     Translates from en to <language>.")
-    print("     language could be de, en, it, es, ru, cs")
+    print(f"     language could be {', '.join(possible_languages)}.")
 
 
 def main() -> None:
@@ -53,6 +74,7 @@ def main() -> None:
         sys.exit(1)
 
     language = sys.argv[1]
+    check_language(language)
     Translator.set_translation_language(language)
 
     register_reader_services()
@@ -69,6 +91,10 @@ def main() -> None:
                 possible_new_value = Translator.translate(old_value)
                 if possible_new_value != old_value and possible_new_value is not None:
                     changed_fields[field] = possible_new_value
+            if collection == "organization":
+                changed_fields["default_language"] = language
+            elif collection == "meeting":
+                changed_fields["language"] = language
             if changed_fields:
                 events.append(
                     RequestUpdateEvent(
