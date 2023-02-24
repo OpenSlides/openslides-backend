@@ -72,7 +72,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "committee_management_ids": [1],
                 },
                 "group/11": {"meeting_id": 1},
-                "group/22": {"meeting_id": 2},
             }
         )
         response = self.request(
@@ -80,6 +79,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 223,
                 "committee_management_ids": [2],
+                "meeting_id": 1,
+                "group_ids": [11],
             },
         )
         self.assert_status_code(response, 200)
@@ -87,20 +88,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/223",
             {
                 "committee_management_ids": [2],
+                "committee_ids": [1, 2],
+                "meeting_ids": [1],
+                "meeting_user_ids": [1],
             },
         )
-        self.assertCountEqual(user.get("committee_ids", []), [1, 2])
-        self.assertCountEqual(user.get("group_$_ids", []), ["1", "2"])
-        self.assertCountEqual(user.get("meeting_ids", []), [1, 2])
-
-        group1 = self.get_model("group/11")
-        self.assertCountEqual(group1.get("user_ids", []), [223])
-        group2 = self.get_model("group/22")
-        self.assertCountEqual(group2.get("user_ids", []), [223])
-        meeting = self.get_model("meeting/1")
-        self.assertCountEqual(meeting.get("user_ids", []), [223])
-        meeting = self.get_model("meeting/2")
-        self.assertCountEqual(meeting.get("user_ids", []), [223])
+        self.assert_model_exists("meeting_user/1", {"user_id": 223, "group_ids": [11], "meeting_id": 1})
+        self.assert_model_exists("group/11", {"meeting_user_ids": [1]})
+        self.assert_model_exists("meeting/1", {"user_ids": [223]})
         self.assert_history_information(
             "user/223",
             [
@@ -1083,19 +1078,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_no_OML_set(self) -> None:
-        self.permission_setup()
-        self.set_user_groups(self.user_id, [2])
-
-        response = self.request(
-            "user.update",
-            {
-                "id": self.user_id,
-                "group_$_ids": {"1": [1]},
-            },
-        )
-        self.assert_status_code(response, 200)
-
     def test_update_history_user_updated_in_meeting(self) -> None:
         self.set_models(
             {
@@ -1126,7 +1108,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": user_id,
-                "group_$_ids": {"1": [1]},
+                "meeting_id": 1,
+                "group_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -1145,7 +1128,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": user_id,
-                "group_$_ids": {"1": [2, 3]},
+                "meeting_id": 1,
+                "group_ids": [2, 3],
             },
         )
         self.assert_status_code(response, 200)
@@ -1162,7 +1146,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": user_id,
-                "group_$_ids": {"1": [1, 2]},
+                "meeting_id": 1,
+                "group_ids": [1, 2],
             },
         )
         self.assert_status_code(response, 200)
@@ -1174,16 +1159,19 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_history_remove_group(self) -> None:
         self.create_meeting()
         user_id = self.create_user_for_meeting(1)
-        self.set_user_groups(user_id, [1])
         self.assert_model_exists(
-            f"user/{user_id}", {"group_$_ids": ["1"], "group_$1_ids": [1]}
+            f"user/{user_id}", {"meeting_ids": [1], "meeting_user_ids": [1]}
+        )
+        self.assert_model_exists(
+            f"meeting_user/1", {"user_id": user_id, "meeting_id": 1, "group_ids": [1]}
         )
 
         response = self.request(
             "user.update",
             {
                 "id": user_id,
-                "group_$_ids": {"1": []},
+                "meeting_id": 1,
+                "group_ids": [],
             },
         )
         self.assert_status_code(response, 200)
@@ -1192,63 +1180,24 @@ class UserUpdateActionTest(BaseActionTestCase):
             ["Participant removed from group {} in meeting {}", "group/1", "meeting/1"],
         )
 
-    def test_update_groups_changed_multiple_meetings(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "meeting/2": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "committee/1": {"meeting_ids": [1]},
-                "user/222": {"group_$1_ids": [11], "group_$_ids": ["1"]},
-                "group/11": {"meeting_id": 1},
-                "group/22": {"meeting_id": 2},
-            }
-        )
-        response = self.request(
-            "user.update",
-            {
-                "id": 222,
-                "group_$_ids": {1: [], 2: [22]},
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_history_information(
-            "user/222",
-            [
-                "Groups changed in multiple meetings",
-            ],
-        )
-
-    def test_update_presence(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "user/111": {"username": "username_srtgb123"},
-                "committee/1": {},
-            }
-        )
-        response = self.request("user.update", {"id": 111, "presence": {"1": True}})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"is_present_in_meeting_ids": [1]})
-        self.assert_model_exists("meeting/1", {"present_user_ids": [111]})
-
     def test_update_fields_with_equal_value_no_history(self) -> None:
         self.set_models(
             {
                 "user/111": {
                     "username": "username_srtgb123",
                     "title": "test",
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
                     "is_active": True,
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                     "committee_management_ids": [78],
+                    "meeting_user_ids": [11],
                 },
-                "meeting_user/111": {
+                "meeting_user/11": {
                     "user_id": 111,
                     "meeting_id": 1,
                     "structure_level": "level",
+                    "group_ids": [1],
                 },
-                "group/1": {"user_ids": [111], "meeting_id": 1},
+                "group/1": {"meeting_user_ids": [11], "meeting_id": 1},
                 "meeting/1": {
                     "group_ids": [1],
                     "is_active_in_organization_id": 1,
@@ -1262,9 +1211,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "title": "test",
-                "group_$_ids": {1: [1]},
                 "is_active": True,
                 "meeting_id": 1,
+                "group_ids": [1],
                 "structure_level": "level",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "committee_management_ids": [78],
