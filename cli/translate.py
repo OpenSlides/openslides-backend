@@ -68,15 +68,15 @@ def check_organization_language() -> None:
     with reader.get_database_context():
         response = reader.get(GetRequest(ONE_ORGANIZATION_FQID, ["default_language"]))
     if response["default_language"] != "en":
-        print("Need organization to have default language equals en.")
+        print("Need organization to have default language equals 'en'.")
         print_help()
         sys.exit(3)
 
 
 def print_help() -> None:
     print("Usage:  python translate.py <language>")
-    print("     Translates from en to <language>.")
-    print(f"     language could be {', '.join(possible_languages)}.")
+    print("     Translates from 'en' to <language>.")
+    print(f"""     language could be '{"', '".join(possible_languages)}'.""")
 
 
 def main() -> None:
