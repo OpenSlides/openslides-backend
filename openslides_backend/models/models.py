@@ -116,7 +116,7 @@ class User(Model):
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
-            "description": "Calculated. All ids from group_$_ids as integers."
+            "description": "Calculated. All ids from meetings calculated via meeting_user and group_ids as integers."
         },
     )
     organization_id = fields.OrganizationField(
@@ -159,7 +159,9 @@ class MeetingUser(Model):
         to={"meeting_user": "vote_delegated_to_id"}
     )
     chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
-    group_ids = fields.RelationListField(to={"group": "meeting_user_ids"})
+    group_ids = fields.RelationListField(
+        to={"group": "meeting_user_ids"}, equal_fields="meeting_id"
+    )
 
 
 class OrganizationTag(Model):
@@ -830,7 +832,9 @@ class Group(Model):
         }
     )
     weight = fields.IntegerField()
-    meeting_user_ids = fields.RelationListField(to={"meeting_user": "group_ids"})
+    meeting_user_ids = fields.RelationListField(
+        to={"meeting_user": "group_ids"}, equal_fields="meeting_id"
+    )
     default_group_for_meeting_id = fields.RelationField(
         to={"meeting": "default_group_id"}, on_delete=fields.OnDelete.PROTECT
     )

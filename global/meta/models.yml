@@ -326,7 +326,7 @@ user:
 
   meeting_ids:
     type: number[]
-    description: Calculated. All ids from group_$_ids as integers.
+    description: Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.
     read_only: true
     restriction_mode: E
   organization_id:
@@ -418,6 +418,7 @@ meeting_user:
   group_ids:
     type: relation-list
     to: group/meeting_user_ids
+    equal_fields: meeting_id
     restriction_mode: A
 
 organization_tag:
@@ -1743,6 +1744,7 @@ group:
     type: relation-list
     to: meeting_user/group_ids
     restriction_mode: A
+    equal_fields: meeting_id
   default_group_for_meeting_id:
     type: relation
     to: meeting/default_group_id

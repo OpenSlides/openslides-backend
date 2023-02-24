@@ -67,6 +67,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "vote_weight": decimal_schema,
         "vote_delegated_to_id": required_id_schema,
         "vote_delegations_from_ids": id_list_schema,
+        "group_ids": id_list_schema,
     }
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

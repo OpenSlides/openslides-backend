@@ -162,8 +162,16 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             "presence",
         ],
         "B": [
+            "number",
+            "strucure_level",
+            "vote_weight",
+            "about_me",
+            "comment",
+            "vote_delegated_to_id",
+            "vote_delegations_from_ids",
             "is_present_in_meeting_ids",
         ],
+        "C": ["meeting_id", "group_ids"],
         "D": ["committee_ids", "committee_management_ids"],
         "E": ["organization_management_level"],
         "F": ["default_password"],
@@ -201,6 +209,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         # Ordered by supposed velocity advantages. Changing order only can effect the sequence of detected errors for tests
         self.check_group_E(permstore, actual_group_fields["E"], instance)
         self.check_group_D(permstore, actual_group_fields["D"], instance)
+        self.check_group_C(permstore, actual_group_fields["C"], instance)
         self.check_group_B(permstore, actual_group_fields["B"], instance)
         self.check_group_A(permstore, actual_group_fields["A"])
         self.check_group_F(permstore, actual_group_fields["F"])
@@ -248,14 +257,23 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
     def check_group_B(
         self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
     ) -> None:
-        """Check Group B meeting template fields: Only meeting.permissions for each meeting"""
+        """Check Group B meeting fields: Only meeting.permissions for each meeting"""
         if fields:
-            meeting_ids = self._meetings_from_group_B_fields_from_instance(
-                fields, instance
-            )
+            meeting_ids = self._meetings_from_group_B_fields_from_instance(instance)
             if diff := meeting_ids - permstore.user_meetings:
                 raise MissingPermission(
                     {Permissions.User.CAN_MANAGE: meeting_id for meeting_id in diff}
+                )
+
+    def check_group_C(
+        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
+    ) -> None:
+        """Check Group C group_ids: OML, CML or meeting.permissions for each meeting"""
+        if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
+            touch_meeting_id = instance.get("meeting_id")
+            if touch_meeting_id not in permstore.user_committees_meetings and touch_meeting_id not in permstore.user_meetings:
+                raise PermissionDenied(
+                    f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting {touch_meeting_id}"
                 )
 
     def check_group_D(
@@ -405,12 +423,13 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         return committees
 
     def _meetings_from_group_B_fields_from_instance(
-        self, fields_to_search_for: List[str], instance: Dict[str, Any]
+        self, instance: Dict[str, Any]
     ) -> Set[int]:
         """
-        Gets a set of all meetings from the fields of group B in instance
+        Gets a set of all meetings from the curious field is_present_in_meeting_ids.
+        The meeting_id don't belong explicitly to group B and is only added, if there is
+        any other group B field.
         """
-        meetings: Set[int] = set()
-        for field in fields_to_search_for:
-            meetings.update(set(instance.get(field, [])))
+        meetings: Set[int] = set(instance.get("is_present_in_meeting_ids", []))
+        meetings.add(instance.get("meeting_id"))
         return meetings

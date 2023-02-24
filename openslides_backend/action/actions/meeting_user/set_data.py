@@ -30,6 +30,7 @@ class MeetingUserSetData(UpdateAction):
             "vote_weight",
             "vote_delegated_to_id",
             "vote_delegations_from_ids",
+            "group_ids",
         ],
     )
 
