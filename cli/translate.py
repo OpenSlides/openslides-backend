@@ -2,7 +2,7 @@ import sys
 from collections import OrderedDict
 from typing import Any, Dict, List
 
-from datastore.reader.core import GetAllRequest, Reader
+from datastore.reader.core import GetAllRequest, GetRequest, Reader
 from datastore.reader.services import register_services as register_reader_services
 from datastore.shared.di import injector
 from datastore.shared.util import fqid_from_collection_and_id
@@ -11,6 +11,7 @@ from datastore.writer.services import register_services as register_writer_servi
 
 from openslides_backend.locale.translator import Translator
 from openslides_backend.models.models import Organization
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 collection_to_fields_map = OrderedDict(
     {
@@ -62,6 +63,16 @@ def check_language(language: str) -> None:
         sys.exit(2)
 
 
+def check_organization_language() -> None:
+    reader: Reader = injector.get(Reader)
+    with reader.get_database_context():
+        response = reader.get(GetRequest(ONE_ORGANIZATION_FQID, ["default_language"]))
+    if response["default_language"] != "en":
+        print("Need organization to have default language equals en.")
+        print_help()
+        sys.exit(3)
+
+
 def print_help() -> None:
     print("Usage:  python translate.py <language>")
     print("     Translates from en to <language>.")
@@ -79,6 +90,7 @@ def main() -> None:
 
     register_reader_services()
     register_writer_services()
+    check_organization_language()
 
     # translate and generate events
     events = []
