@@ -103,14 +103,16 @@ class GroupDeleteActionTest(BaseActionTestCase):
         response = self.request("group.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("group/111", {"meeting_user_ids": [142, 143], "meeting_id": 22})
-        #self.assert_model_exists("committee/3", {"user_ids": []})  # usr_ids stehen noch drin
+        self.assert_model_deleted(
+            "group/111", {"meeting_user_ids": [142, 143], "meeting_id": 22}
+        )
+        self.assert_model_exists("committee/3", {"user_ids": []})  # still has user_ids
         self.assert_model_exists("meeting/22", {"user_ids": [], "group_ids": []})
         self.assert_model_exists(
             "user/42",
             {
-                #"meeting_ids": [],  # 22 steht noch drin
-                #"committee_ids": [], # committee_id sstehen noch drin
+                "meeting_ids": [],
+                 "committee_ids": [], # still has committee_id
                 "meeting_user_ids": [142],
             },
         )
@@ -118,8 +120,8 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/43",
             {
-                #"meeting_ids": [],  # 22 steht noch drin
-                #"committee_ids": [], # committee_id sstehen noch drin
+                "meeting_ids": [],
+                 "committee_ids": [], # still has committee_id
                 "meeting_user_ids": [143],
             },
         )

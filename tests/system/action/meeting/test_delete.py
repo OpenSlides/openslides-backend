@@ -251,7 +251,13 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting1 = self.assert_model_deleted(
             "meeting/1",
-            {"meeting_user_ids": [2], "user_ids": [], "group_ids": [11], "committee_id": 1, "is_active_in_organization_id": 1},
+            {
+                "meeting_user_ids": [2],
+                "user_ids": [],
+                "group_ids": [11],
+                "committee_id": 1,
+                "is_active_in_organization_id": 1,
+            },
         )
         # One would expect the user_ids is still filled with user_ids = [2],
         # but relation user_ids will be reseted in an execute_other_action

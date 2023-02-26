@@ -59,7 +59,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             return self.do_changes(fqid_user, db_user, action)
         else:
             if action != "user.delete":
-                self.fill_meeting_user_changed_models_with_user_id()
+                self.fill_meeting_user_changed_models_with_user_and_meeting_id()
             fqid_meeting_user = fqid_from_collection_and_id(
                 field.own_collection, instance["id"]
             )
@@ -154,27 +154,27 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             add_relation(False, removed_ids)
         return relation_update
 
-    def fill_meeting_user_changed_models_with_user_id(self) -> None:
+    def fill_meeting_user_changed_models_with_user_and_meeting_id(self) -> None:
         meeting_user_ids = (
             id_from_fqid(key)
             for key, data in self.datastore.changed_models.items()
-            if collection_from_fqid(key) == "meeting_user" and not data.get("user_id")
-        )
+            if collection_from_fqid(key) == "meeting_user" and (not data.get("user_id") or not data.get("meeting_id")
+        ))
         if meeting_user_ids:
             results = self.datastore.get_many(
                 [
                     GetManyRequest(
                         "meeting_user",
                         meeting_user_ids,
-                        ["user_id"],
+                        ["user_id", "meeting_id"],
                     )
                 ],
                 use_changed_models=False,
             ).get("meeting_user", {})
             for key, value in results.items():
-                self.datastore.changed_models[
-                    fqid_from_collection_and_id("meeting_user", key)
-                ]["user_id"] = value["user_id"]
+                changed_model = self.datastore.changed_models[fqid_from_collection_and_id("meeting_user", key)]
+                changed_model["user_id"] = value["user_id"]
+                changed_model["meeting_id"] = value["meeting_id"]
 
     def get_meeting_users_by_user_id(self, user_id: int) -> List[Dict[str, Any]]:
         """Get a user_id, filters all meeting_user for it and returns the meeting_id"""

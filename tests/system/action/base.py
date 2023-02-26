@@ -17,10 +17,7 @@ from openslides_backend.services.datastore.with_database_context import (
 )
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
-from openslides_backend.shared.patterns import (
-    FullQualifiedId,
-    collection_from_fqid,
-)
+from openslides_backend.shared.patterns import FullQualifiedId, collection_from_fqid
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.base import BaseSystemTestCase
@@ -305,7 +302,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         meeting_users_new = {
             meeting_id: {
-                "id": (last_meeting_user_id := last_meeting_user_id + 1),
+                "id": (last_meeting_user_id := last_meeting_user_id + 1),  # noqa: F841
                 "user_id": user_id,
                 "meeting_id": meeting_id,
                 "group_ids": [],
@@ -341,6 +338,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         for group in groups.values():
             meeting_id = group["meeting_id"]
             meeting_user_id = meeting_users[meeting_id]["id"]
+            meetings[meeting_id]["id"] = meeting_id
             add_to_list(meeting_users[meeting_id], "group_ids", group["id"])
             add_to_list(group, "meeting_user_ids", meeting_user_id)
             add_to_list(meetings[meeting_id], "meeting_user_ids", meeting_user_id)

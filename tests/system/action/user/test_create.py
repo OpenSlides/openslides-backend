@@ -101,7 +101,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "default_password": "password",
                 "committee_management_ids": [78],
-                "meeting_user_ids": [1]
+                "meeting_user_ids": [1],
             },
         )
         self.assertCountEqual(user2.get("committee_ids", []), [78, 79])
@@ -170,9 +170,12 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_invalid_group_id(self) -> None:
         self.set_models(
             {
-                "committee/1": {"meeting_ids": [1,2]},
+                "committee/1": {"meeting_ids": [1, 2]},
                 "meeting/1": {"committee_id": 1},
-                "meeting/2": {"is_active_in_organization_id": ONE_ORGANIZATION_ID, "committee_id": 1},
+                "meeting/2": {
+                    "is_active_in_organization_id": ONE_ORGANIZATION_ID,
+                    "committee_id": 1,
+                },
                 "group/11": {"meeting_id": 1},
             }
         )
@@ -185,7 +188,10 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("The following models do not belong to meeting 2: ['group/11']", response.json["message"])
+        self.assertIn(
+            "The following models do not belong to meeting 2: ['group/11']",
+            response.json["message"],
+        )
 
     def test_create_broken_email(self) -> None:
         response = self.request(
@@ -423,7 +429,9 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting_user_ids": [2],
             },
         )
-        self.assert_model_exists("meeting_user/2", {"meeting_id": 1, "user_id": 3, "group_ids": [1]})
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 1, "user_id": 3, "group_ids": [1]}
+        )
 
     # Rm template fields makes this test useless.
     @pytest.mark.skip

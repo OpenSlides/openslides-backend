@@ -241,7 +241,8 @@ class MeetingClone(BaseActionTestCase):
         self.test_models["organization/1"]["committee_ids"] = [1, 2]
         self.set_models(self.test_models)
         response = self.request(
-            "meeting.clone", {"committee_id": 2, "meeting_id": 1, "admin_ids": [12], "user_ids": [13]}
+            "meeting.clone",
+            {"committee_id": 2, "meeting_id": 1, "admin_ids": [12], "user_ids": [13]},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/1", {"user_ids": [1, 11]})
@@ -252,23 +253,26 @@ class MeetingClone(BaseActionTestCase):
                 "motion_submitter_ids": [2],
                 "motion_ids": [2],
                 "group_ids": [3, 4],
-                "meeting_user_ids": [4,5,6,7],
-                "user_ids": [1, 11, 13, 12]
+                "meeting_user_ids": [4, 5, 6, 7],
+                "user_ids": [1, 11, 13, 12],
             },
         )
 
         self.assert_model_exists(
             "group/3",
-            {"name": "default group", "meeting_id": 2, "meeting_user_ids": [4,5,6]}
+            {"name": "default group", "meeting_id": 2, "meeting_user_ids": [4, 5, 6]},
         )
         self.assert_model_exists(
-            "group/4",
-            {"name": "admin group", "meeting_id": 2, "meeting_user_ids": [7]}
+            "group/4", {"name": "admin group", "meeting_id": 2, "meeting_user_ids": [7]}
         )
 
         self.assert_model_exists(
             "user/1",
-            {"meeting_ids": [1,2], "meeting_user_ids": [2,4], "committee_ids": [1, 2]}
+            {
+                "meeting_ids": [1, 2],
+                "meeting_user_ids": [2, 4],
+                "committee_ids": [1, 2],
+            },
         )
         self.assert_model_exists(
             "meeting_user/2", {"user_id": 1, "meeting_id": 1, "group_ids": [1]}

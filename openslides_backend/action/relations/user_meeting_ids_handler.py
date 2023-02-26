@@ -28,21 +28,16 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
             use_changed_models=False,
             raise_exception=False,
         )
-        # TODO: Hier python -m debugpy --listen 0.0.0.0:5678 --wait-for-client /usr/local/bin/pytest tests/system/action/group/test_delete.py -k test_delete_with_users
-        # steigt er aus, da meeeting_id weder in instance noch in changed_models enthalten ist
-        meeting_id = (
-            instance["meeting_id"]
-            if instance.get("meeting_id")
-            else self.datastore.changed_models.get(fqid).get("meeting_id")
-        )
-        if not meeting_id:
-            return {}
+        if not (meeting_id := instance.get("meeting_id")):
+            if not (meeting_id := self.datastore.changed_models.get(fqid).get("meeting_id")):
+                meeting_id = db_instance.get("meeting_id")
+        assert meeting_id, f"No meeting_id can be found for fqid {fqid}"
 
-        user_id = (
-            instance["user_id"]
-            if instance.get("user_id")
-            else self.datastore.changed_models.get(fqid).get("user_id")
-        )
+        if not (user_id := instance.get("user_id")):
+            if not (user_id := self.datastore.changed_models.get(fqid).get("user_id")):
+                user_id = db_instance.get("user_id")
+        assert user_id, f"No user_id can be found for fqid {fqid}"
+
         added_ids = (
             [meeting_id]
             if not db_instance.get("group_ids") and instance.get("group_ids")

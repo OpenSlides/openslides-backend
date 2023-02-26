@@ -361,12 +361,11 @@ class ProjectorProject(BaseActionTestCase):
             {
                 "user/2": {
                     "username": "normal user",
-                    "group_$1_ids": [1],
-                    "group_$_ids": ["1"],
                     "meeting_ids": [1],
                 },
             }
         )
+        self.set_user_groups(2, [1])
         response = self.request(
             "projector.project",
             {"ids": [75], "content_object_id": "user/2", "meeting_id": 1},

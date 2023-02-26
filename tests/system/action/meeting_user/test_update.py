@@ -5,11 +5,16 @@ class MeetingUserUpdate(BaseActionTestCase):
     def test_update(self) -> None:
         self.set_models(
             {
+                "committee/1": {
+                    "id": 1,
+                    "meeting_ids": [10],
+                },
                 "meeting/10": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [5],
                     "personal_note_ids": [11],
                     "speaker_ids": [12],
+                    "committee_id": 1,
                 },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
                 "personal_note/11": {"star": True, "meeting_id": 10},

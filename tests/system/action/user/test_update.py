@@ -93,7 +93,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting_user_ids": [1],
             },
         )
-        self.assert_model_exists("meeting_user/1", {"user_id": 223, "group_ids": [11], "meeting_id": 1})
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 223, "group_ids": [11], "meeting_id": 1}
+        )
         self.assert_model_exists("group/11", {"meeting_user_ids": [1]})
         self.assert_model_exists("meeting/1", {"user_ids": [223]})
         self.assert_history_information(
@@ -1163,7 +1165,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             f"user/{user_id}", {"meeting_ids": [1], "meeting_user_ids": [1]}
         )
         self.assert_model_exists(
-            f"meeting_user/1", {"user_id": user_id, "meeting_id": 1, "group_ids": [1]}
+            "meeting_user/1", {"user_id": user_id, "meeting_id": 1, "group_ids": [1]}
         )
 
         response = self.request(
