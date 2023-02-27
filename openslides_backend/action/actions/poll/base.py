@@ -3,7 +3,7 @@ from typing import Optional
 from ....shared.exceptions import ActionException
 
 
-def base_check_100_percent_base(
+def base_check_onehundred_percent_base(
     pollmethod: Optional[str], onehundred_percent_base: Optional[str]
 ) -> None:
     error_msg = "This onehundred_percent_base not allowed in this pollmethod."

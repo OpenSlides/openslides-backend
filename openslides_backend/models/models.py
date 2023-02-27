@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "e7b2e449cbf41620cfb26189db495095"
+MODELS_YML_CHECKSUM = "c0f7861eb7e55a99aeab4c935c0b40b9"
 
 
 class Organization(Model):
@@ -89,7 +89,7 @@ class User(Model):
     default_vote_weight = fields.DecimalField(
         default="1.000000", constraints={"minimum": 0}
     )
-    last_email_send = fields.TimestampField()
+    last_email_sent = fields.TimestampField()
     is_demo_user = fields.BooleanField()
     last_login = fields.TimestampField(read_only=True)
     organization_management_level = fields.CharField(
@@ -508,7 +508,7 @@ class Meeting(Model):
     )
     motion_poll_ballot_paper_number = fields.IntegerField(default=8)
     motion_poll_default_type = fields.CharField(default="pseudoanonymous")
-    motion_poll_default_100_percent_base = fields.CharField(default="YNA")
+    motion_poll_default_onehundred_percent_base = fields.CharField(default="YNA")
     motion_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_motion_poll_default_id"}
     )
@@ -558,7 +558,7 @@ class Meeting(Model):
     assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
     assignment_poll_default_type = fields.CharField(default="pseudoanonymous")
     assignment_poll_default_method = fields.CharField(default="Y")
-    assignment_poll_default_100_percent_base = fields.CharField(default="valid")
+    assignment_poll_default_onehundred_percent_base = fields.CharField(default="valid")
     assignment_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_assignment_poll_default_id"}
     )
@@ -578,7 +578,7 @@ class Meeting(Model):
     poll_sort_poll_result_by_votes = fields.BooleanField()
     poll_default_type = fields.CharField(default="analog")
     poll_default_method = fields.CharField()
-    poll_default_100_percent_base = fields.CharField(default="YNA")
+    poll_default_onehundred_percent_base = fields.CharField(default="YNA")
     poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_poll_default_id"}
     )

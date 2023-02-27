@@ -51,7 +51,7 @@ class SendInvitationMail(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
-        last_email_sent = user.get("last_email_send", 0)
+        last_email_sent = user.get("last_email_sent", 0)
         self.assertGreaterEqual(last_email_sent, start_time)
 
     def test_send_mixed_multimail(self) -> None:
@@ -131,9 +131,9 @@ class SendInvitationMail(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         user2 = self.get_model("user/2")
-        self.assertGreaterEqual(user2.get("last_email_send", 0), start_time)
+        self.assertGreaterEqual(user2.get("last_email_sent", 0), start_time)
         for i in range(3, 8, 1):
-            self.assert_model_exists(f"user/{i}", {"last_email_send": None})
+            self.assert_model_exists(f"user/{i}", {"last_email_sent": None})
         self.assertEqual(response.json["results"][0][0]["sent"], True)
         self.assertEqual(
             response.json["results"][0][0]["recipient"], "recipient2@example.com"

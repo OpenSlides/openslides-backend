@@ -264,7 +264,7 @@ user:
     default: "1.000000"
     minimum: 0
     restriction_mode: A
-  last_email_send:
+  last_email_sent:
     type: timestamp
     restriction_mode: D
   is_demo_user:
@@ -1201,7 +1201,7 @@ meeting:
     type: string
     default: pseudoanonymous
     restriction_mode: B
-  motion_poll_default_100_percent_base:
+  motion_poll_default_onehundred_percent_base:
     type: string
     default: YNA
     restriction_mode: B
@@ -1338,7 +1338,7 @@ meeting:
     type: string
     default: Y
     restriction_mode: B
-  assignment_poll_default_100_percent_base:
+  assignment_poll_default_onehundred_percent_base:
     type: string
     default: valid
     restriction_mode: B
@@ -1375,7 +1375,7 @@ meeting:
   poll_default_method:
     type: string
     restriction_mode: B
-  poll_default_100_percent_base:
+  poll_default_onehundred_percent_base:
     type: string
     default: YNA
     restriction_mode: B

@@ -151,7 +151,7 @@ class MeetingImport(BaseActionTestCase):
                         "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "motion_poll_ballot_paper_number": 8,
                         "motion_poll_default_type": "pseudoanonymous",
-                        "motion_poll_default_100_percent_base": "YNA",
+                        "motion_poll_default_onehundred_percent_base": "YNA",
                         "motion_poll_default_group_ids": [],
                         "motion_poll_default_backend": "fast",
                         "users_enable_presence_view": True,
@@ -176,7 +176,7 @@ class MeetingImport(BaseActionTestCase):
                         "assignment_poll_sort_poll_result_by_votes": True,
                         "assignment_poll_default_type": "pseudoanonymous",
                         "assignment_poll_default_method": "votes",
-                        "assignment_poll_default_100_percent_base": "valid",
+                        "assignment_poll_default_onehundred_percent_base": "valid",
                         "assignment_poll_default_group_ids": [],
                         "assignment_poll_default_backend": "fast",
                         "poll_ballot_paper_selection": "CUSTOM_NUMBER",
@@ -184,7 +184,7 @@ class MeetingImport(BaseActionTestCase):
                         "poll_sort_poll_result_by_votes": True,
                         "poll_default_type": "pseudoanonymous",
                         "poll_default_method": "votes",
-                        "poll_default_100_percent_base": "valid",
+                        "poll_default_onehundred_percent_base": "valid",
                         "poll_default_group_ids": [],
                         "poll_default_backend": "fast",
                         "poll_couple_countdown": True,
@@ -365,7 +365,7 @@ class MeetingImport(BaseActionTestCase):
             "default_number": "",
             "default_structure_level": "",
             "default_vote_weight": "1.000000",
-            "last_email_send": None,
+            "last_email_sent": None,
             "is_demo_user": False,
             "organization_management_level": None,
             "is_present_in_meeting_ids": [],
@@ -1682,14 +1682,14 @@ class MeetingImport(BaseActionTestCase):
     def test_without_default_password(self) -> None:
         request_data = self.create_request_data()
         request_data["meeting"]["user"]["1"]["default_password"] = ""
-        request_data["meeting"]["user"]["1"]["last_email_send"] = int(time.time())
+        request_data["meeting"]["user"]["1"]["last_email_sent"] = int(time.time())
         request_data["meeting"]["user"]["1"]["last_login"] = int(time.time())
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
         assert len(user["default_password"]) == 10
         assert self.auth.is_equals(user["default_password"], user["password"])
-        assert "last_email_send" not in user
+        assert "last_email_sent" not in user
         assert "last_login" not in user
 
     def test_merge_users_template_fields(self) -> None:
