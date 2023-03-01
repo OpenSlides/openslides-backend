@@ -1,11 +1,10 @@
 import sys
-from collections import OrderedDict
 from typing import Any, Dict, List
 
 from datastore.reader.core import GetAllRequest, GetRequest, Reader
 from datastore.reader.services import register_services as register_reader_services
 from datastore.shared.di import injector
-from datastore.shared.util import fqid_from_collection_and_id
+from datastore.shared.util import DeletedModelsBehaviour, fqid_from_collection_and_id
 from datastore.writer.core import RequestUpdateEvent, Writer, WriteRequest
 from datastore.writer.services import register_services as register_writer_services
 
@@ -13,34 +12,32 @@ from openslides_backend.locale.translator import Translator
 from openslides_backend.models.models import Organization
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-collection_to_fields_map = OrderedDict(
-    {
-        "organization": [
-            "name",
-            "login_text",
-            "description",
-        ],
-        "meeting": [
-            "name",
-            "welcome_title",
-            "welcome_text",
-            "motion_preamble",
-            "motions_export_title",
-            "assignments_export_title",
-            "users_pdf_welcometitle",
-            "users_pdf_welcometext",
-            "users_email_sender",
-            "users_email_subject",
-            "users_email_body",
-        ],
-        "group": ["name"],
-        "motion_workflow": ["name"],
-        "motion_state": ["name", "recommendation_label"],
-        "projector_countdown": ["name"],
-        "projector": ["name"],
-        "motion": ["recommendation_label"],
-    }
-)
+collection_to_fields_map = {
+    "organization": [
+        "name",
+        "login_text",
+        "description",
+    ],
+    "meeting": [
+        "name",
+        "welcome_title",
+        "welcome_text",
+        "motion_preamble",
+        "motions_export_title",
+        "assignments_export_title",
+        "users_pdf_welcometitle",
+        "users_pdf_welcometext",
+        "users_email_sender",
+        "users_email_subject",
+        "users_email_body",
+    ],
+    "group": ["name"],
+    "motion_workflow": ["name"],
+    "motion_state": ["name", "recommendation_label"],
+    "projector_countdown": ["name"],
+    "projector": ["name"],
+    "motion": ["recommendation_label"],
+}
 possible_languages = Organization().default_language.constraints["enum"]
 
 
@@ -49,8 +46,7 @@ def read_collection(collection: str, fields: List[str]) -> Any:
     with reader.get_database_context():
         response = reader.get_all(
             GetAllRequest(
-                collection,
-                ["id", *fields],
+                collection, ["id", *fields], DeletedModelsBehaviour.NO_DELETED
             )
         )
     return response.items()
@@ -68,7 +64,7 @@ def check_organization_language() -> None:
     with reader.get_database_context():
         response = reader.get(GetRequest(ONE_ORGANIZATION_FQID, ["default_language"]))
     if response["default_language"] != "en":
-        print("Need organization to have default language equals 'en'.")
+        print("Cannot translate from source languages other than `en`.")
         print_help()
         sys.exit(3)
 
