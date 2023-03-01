@@ -142,19 +142,22 @@ class SendInvitationMail(BaseActionTestCase):
 
         self.assertEqual(response.json["results"][0][1]["sent"], False)
         self.assertEqual(response.json["results"][0][1]["recipient_user_id"], 3)
-        self.assertIn("has no email-address", response.json["results"][0][1]["message"])
+        self.assertIn(
+            "'Testuser 3 no email' has no email address.",
+            response.json["results"][0][1]["message"],
+        )
 
         self.assertEqual(response.json["results"][1][0]["sent"], False)
         self.assertEqual(response.json["results"][1][0]["recipient_user_id"], 4)
         self.assertIn(
-            "The email-address recipient4 of User/4 is not valid",
+            "'Testuser 4 falsy email' has no valid email address.",
             response.json["results"][1][0]["message"],
         )
 
         self.assertEqual(response.json["results"][1][1]["sent"], False)
         self.assertEqual(response.json["results"][1][1]["recipient_user_id"], 5)
         self.assertIn(
-            "User/5 does not belong to meeting/2",
+            "'Testuser 5 wrong meeting' does not belong to meeting/2",
             response.json["results"][1][1]["message"],
         )
 
@@ -341,7 +344,7 @@ class SendInvitationMail(BaseActionTestCase):
         self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 3)
         self.assertEqual(response.json["results"][0][0]["recipient_meeting_id"], 1)
         self.assertIn(
-            'Invalid characters in the sender name configuration of meeting_id "1". Not allowed chars: "[", "]", "\\"',
+            "Invalid characters in the sender name configuration of meeting 'annual general meeting', forbidden characters: '[', ']', '\\'.",
             response.json["results"][0][0]["message"],
         )
 
