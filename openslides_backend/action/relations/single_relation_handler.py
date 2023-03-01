@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Set, Tuple, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union, cast
 
 from datastore.shared.util import DeletedModelsBehaviour
 
@@ -60,8 +60,6 @@ class SingleRelationHandler:
         self.field = field
         self.field_name = field_name
         self.instance = instance
-
-        self.type = self.get_field_type()
         self.chained_fields: List[Dict[str, Any]] = []
 
     def get_reverse_field(self, collection: Collection) -> BaseRelationField:
@@ -73,17 +71,20 @@ class SingleRelationHandler:
         assert isinstance(field, BaseRelationField)
         return field
 
-    def get_field_type(self) -> str:
+    def get_field_type(self, collection: Optional[Collection] = None) -> str:
         """
         Returns one of the following types: 1:1, 1:m, m:1 or m:n
         """
-        if isinstance(self.field, GenericRelationField) and (
-            value := self.instance.get(self.field_name)
-        ):
-            collection = collection_from_fqid(value)
-            if collection not in self.field.to:
+        if isinstance(self.field, GenericRelationField) and len(self.field.to) > 1:
+            if value := self.instance.get(self.field_name):
+                collection = collection_from_fqid(value)
+                if collection not in self.field.to:
+                    raise ActionException(
+                        f"The collection '{collection}' is not available for field '{self.field.own_field_name}' in collection '{self.field.own_collection}'."
+                    )
+            elif not collection:
                 raise ActionException(
-                    f"The collection '{collection}' is not available for field '{self.field.own_field_name}' in collection '{self.field.own_collection}'."
+                    f"Cannot determine field type for {self.field.own_collection}/{self.field.own_field_name}."
                 )
         else:
             collection = self.field.get_target_collection()
@@ -178,7 +179,7 @@ class SingleRelationHandler:
                 current_value = cast(
                     Union[List[int], List[FullQualifiedId]], rel_update["value"]
                 )
-                if self.type in ("1:1", "m:1"):
+                if self.get_field_type(collection) in ("1:1", "m:1"):
                     if len(current_value) == 0:
                         rel_update["value"] = None
                     else:
@@ -312,7 +313,7 @@ class SingleRelationHandler:
             if fqid in add:
                 if own_fqid in rel[related_name]:
                     continue
-                if rel[related_name] and self.type in ("1:1", "m:1"):
+                if rel[related_name] and self.get_field_type() in ("1:1", "m:1"):
                     assert len(rel[related_name]) == 1
                     self.chained_fields.append(
                         {
@@ -369,8 +370,9 @@ class SingleRelationHandler:
             current_value = db_rels.get(id_from_fqfield(fqfield), {}).get(
                 template_field_name, []
             )
-            if (self.type in ("1:1", "m:1") and rel_update["value"] is None) or (
-                self.type in ("1:m", "m:n") and rel_update["value"] == []
+            field_type = self.get_field_type(collection)
+            if (field_type in ("1:1", "m:1") and rel_update["value"] is None) or (
+                field_type in ("1:m", "m:n") and rel_update["value"] == []
             ):
                 # The field was emptied, so we have to remove the replacement.
                 current_value.remove(replacement)
@@ -378,9 +380,9 @@ class SingleRelationHandler:
                     type="remove", value=current_value, modified_element=replacement
                 )
             elif rel_update["type"] == "add" and (
-                self.type in ("1:1", "m:1")
+                field_type in ("1:1", "m:1")
                 or (
-                    self.type in ("1:m", "m:n")
+                    field_type in ("1:m", "m:n")
                     and isinstance(rel_update["value"], list)
                     and len(rel_update["value"]) == 1
                 )

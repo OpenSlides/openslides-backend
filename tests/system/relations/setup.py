@@ -35,6 +35,14 @@ class FakeModelA(Model):
     fake_model_b_generic_mm = fields.RelationListField(
         to={"fake_model_b": "fake_model_a_generic_mm"},
     )
+    # generic field which is m2m in one target collection and m2o in another
+    # Important: First comes the m2o relation
+    fake_model_generic_multitype = fields.GenericRelationField(
+        to={
+            "fake_model_c": "fake_model_a_generic_multitype_o",
+            "fake_model_b": "fake_model_a_generic_multitype_m",
+        },
+    )
 
     # template field / structured relation
     fake_model_b__ids = fields.TemplateRelationListField(
@@ -72,6 +80,9 @@ class FakeModelB(Model):
     fake_model_a_generic_mm = fields.GenericRelationListField(
         to={"fake_model_a": "fake_model_b_generic_mm"},
     )
+    fake_model_a_generic_multitype_m = fields.RelationListField(
+        to={"fake_model_a": "fake_model_generic_multitype"},
+    )
 
     structured_relation_field = fields.RelationField(
         to={"fake_model_a": "fake_model_b_$_ids"},
@@ -91,6 +102,10 @@ class FakeModelC(Model):
     meeting_id = fields.RelationField(
         to={"meeting": "fake_model_b_ids"},
         required=True,
+    )
+
+    fake_model_a_generic_multitype_o = fields.RelationField(
+        to={"fake_model_a": "fake_model_generic_multitype"},
     )
 
     # nested structured field
