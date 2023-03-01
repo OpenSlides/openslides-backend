@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Type, cast
 from unittest import TestCase
 
 import simplejson as json
-from datastore.shared.util import DeletedModelsBehaviour
+from datastore.shared.util import DeletedModelsBehaviour, is_reserved_field
 from fastjsonschema.exceptions import JsonSchemaException
 
 from openslides_backend.action import action_worker
@@ -19,7 +19,11 @@ from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
-from openslides_backend.shared.patterns import collection_from_fqid, id_from_fqid
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    collection_from_fqid,
+    id_from_fqid,
+)
 from openslides_backend.shared.util import (
     EXAMPLE_DATA_FILE,
     ONE_ORGANIZATION_FQID,
@@ -234,16 +238,7 @@ class BaseSystemTestCase(TestCase):
     def assert_model_exists(
         self, fqid: str, fields: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        model = self.get_model(fqid)
-        self.assertFalse(model.get("meta_deleted"))
-        if fields is not None:
-            for field_name, value in fields.items():
-                self.assertEqual(
-                    model.get(field_name),
-                    value,
-                    f"Models differ in field {field_name}!",
-                )
-        return model
+        return self._assert_fields(fqid, (fields or {}) | {"meta_deleted": False})
 
     def assert_model_not_exists(self, fqid: str) -> None:
         with self.assertRaises(DatastoreException):
@@ -252,16 +247,27 @@ class BaseSystemTestCase(TestCase):
     def assert_model_deleted(
         self, fqid: str, fields: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
+        return self._assert_fields(fqid, (fields or {}) | {"meta_deleted": True})
+
+    def _assert_fields(
+        self, fqid: FullQualifiedId, fields: Dict[str, Any]
+    ) -> Dict[str, Any]:
         model = self.get_model(fqid)
-        self.assertTrue(model.get("meta_deleted"), f"Model '{fqid}' was not deleted.")
-        if fields is not None:
-            for field_name, value in fields.items():
-                self.assertEqual(model.get(field_name), value)
+        model_cls = model_registry[collection_from_fqid(fqid)]()
+        for field_name, value in fields.items():
+            if not is_reserved_field(field_name) and value is not None:
+                # assert that the field actually exists to detect errors in the tests
+                model_cls.get_field(field_name)
+            self.assertEqual(
+                model.get(field_name),
+                value,
+                f"Models differ in field {field_name}!",
+            )
         return model
 
     def assert_defaults(self, model: Type[Model], instance: Dict[str, Any]) -> None:
         for field in model().get_fields():
-            if hasattr(field, "default") and field.default is not None:
+            if getattr(field, "default", None) is not None:
                 self.assertEqual(
                     field.default,
                     instance.get(field.own_field_name),
