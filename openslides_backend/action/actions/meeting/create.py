@@ -50,6 +50,20 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         ProjectorCreateAction,
     ]
     skip_archived_meeting_check = True
+    translation_of_defaults = [
+        "name",
+        "description",
+        "welcome_title",
+        "welcome_text",
+        "motion_preamble",
+        "motions_export_title",
+        "assignments_export_title",
+        "users_pdf_welcometitle",
+        "users_pdf_welcometext",
+        "users_email_sender",
+        "users_email_subject",
+        "users_email_body",
+    ]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         Translator.set_translation_language(instance["language"])
@@ -243,3 +257,15 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                 }
             ]
         return []
+
+    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        for field in self.model.get_fields():
+            if (
+                field.own_field_name not in instance.keys()
+                and field.default is not None
+            ):
+                if field.own_field_name in self.translation_of_defaults:
+                    instance[field.own_field_name] = _(field.default)
+                else:
+                    instance[field.own_field_name] = field.default
+        return instance
