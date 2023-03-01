@@ -174,7 +174,7 @@ class ActionWorkerWriting(object):
                 )
             elif hasattr(action_worker_thread, "response"):
                 response = action_worker_thread.response
-                self.logger.debug(
+                self.logger.info(
                     f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"
                 )
             else:
