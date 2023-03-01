@@ -59,6 +59,8 @@ EmailSettings.check_settings()
 
 
 class EmailUtils:
+    SENDER_NAME_FORBIDDEN_CHARS = ("[", "]", "\\")
+
     @staticmethod
     def check_email(email: str) -> bool:
         """returns True with valid email, else False"""
@@ -177,20 +179,13 @@ class EmailUtils:
             return True, EmailUtils.send_email(
                 client, from_, to, subject, content, contentplain, reply_to, html
             )
-        except smtplib.SMTPRecipientsRefused as e:
-            logger.error(f"SMTPRecipientsRefused: {str(e)}")
-            return False, {}
-        except smtplib.SMTPServerDisconnected as e:
-            logger.error(f"SMTPServerDisconnected: {str(e)}")
-            return False, {}
-        except smtplib.SMTPDataError as e:
-            logger.error(f"SMTPDataError: {str(e)}")
-            return False, {}
-        return True, {}
+        except smtplib.SMTPException as e:
+            logger.error(f"{type(e).__name__}: {str(e)}")
+        return False, {}
 
 
 class EmailCheckMixin(Action):
-    check_email_field: str = ""
+    check_email_field: str
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance.get(self.check_email_field):
@@ -203,16 +198,15 @@ class EmailCheckMixin(Action):
 
 class EmailSenderCheckMixin(Action):
     check_email_sender_field = "users_email_sender"
-    blacklist = ("[", "]", "\\")
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance.get(self.check_email_sender_field):
             if any(
                 entry in instance[self.check_email_sender_field]
-                for entry in self.blacklist
+                for entry in EmailUtils.SENDER_NAME_FORBIDDEN_CHARS
             ):
                 raise ActionException(
-                    f"""{self.check_email_sender_field} must not contain '{"', '".join(self.blacklist)}'."""
+                    f"""{self.check_email_sender_field} must not contain '{"', '".join(EmailUtils.SENDER_NAME_FORBIDDEN_CHARS)}'."""
                 )
         instance = super().update_instance(instance)
         return instance
