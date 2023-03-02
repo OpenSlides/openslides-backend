@@ -34,4 +34,7 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
         response = self.request("meeting.update", {"id": 1, "welcome_text": "<iframe>"})
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
-        self.assertEqual(meeting["welcome_text"], "&lt;iframe&gt;")
+        self.assertEqual(
+            meeting["welcome_text"],
+            '<iframe sandbox="allow-scripts allow-same-origin"></iframe>',
+        )

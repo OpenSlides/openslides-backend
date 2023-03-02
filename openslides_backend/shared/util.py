@@ -47,7 +47,7 @@ ALLOWED_HTML_TAGS_STRICT = {
     "div",
 }
 
-ALLOWED_HTML_TAGS_PERMISSIVE = ALLOWED_HTML_TAGS_STRICT | {"video"}
+ALLOWED_HTML_TAGS_PERMISSIVE = ALLOWED_HTML_TAGS_STRICT | {"video", "iframe"}
 
 ALLOWED_STYLES = [
     "color",
@@ -85,11 +85,14 @@ def validate_html(
         return True
 
     html = html.replace("\t", "")
-    return bleach.clean(
+    cleaned_html = bleach.clean(
         html,
         tags=allowed_tags,
         attributes=allow_all,
         css_sanitizer=CSSSanitizer(allowed_css_properties=allowed_styles),
+    )
+    return cleaned_html.replace(
+        "<iframe", '<iframe sandbox="allow-scripts allow-same-origin"'
     )
 
 
