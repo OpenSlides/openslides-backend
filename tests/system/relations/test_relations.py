@@ -21,7 +21,7 @@ class RelationHandlerTest(BaseActionTestCase):
         }
         assert result == expected
 
-    def xtest_O2O_replace(self) -> None:
+    def test_O2O_replace(self) -> None:
         self.create_model("fake_model_a/1", {})
         self.set_models(
             {
@@ -41,7 +41,12 @@ class RelationHandlerTest(BaseActionTestCase):
                 "type": "add",
                 "value": 1,
                 "modified_element": 1,
-            }
+            },
+            "fake_model_a/2/fake_model_b_oo": {
+                "type": "remove",
+                "value": None,
+                "modified_element": 3,
+            },
         }
         assert result == expected
 

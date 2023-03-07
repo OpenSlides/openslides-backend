@@ -82,7 +82,7 @@ class ActionWorkerTest(BaseActionTestCase):
 
         self.assert_status_code(response, 202)
         self.assertIn(
-            "Action lasts too long. action_worker/1 written to database. Get the result from database, when the job is done.",
+            "Action (motion.create) lasts too long. action_worker/1 written to database. Get the result from database, when the job is done.",
             response.json["message"],
         )
         self.assertFalse(
@@ -126,7 +126,7 @@ class ActionWorkerTest(BaseActionTestCase):
 
         self.assert_status_code(response, 202)
         self.assertIn(
-            "Action lasts too long. action_worker/1 written to database. Get the result from database, when the job is done.",
+            "Action (motion.create) lasts too long. action_worker/1 written to database. Get the result from database, when the job is done.",
             response.json["message"],
         )
         self.assertFalse(

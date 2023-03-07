@@ -1238,7 +1238,7 @@ class MeetingImport(BaseActionTestCase):
                 "meeting_id": 2,
                 "origin_id": None,
                 "derived_motion_ids": None,
-                "all_origin_id": None,
+                "all_origin_ids": None,
                 "all_derived_motion_ids": None,
             },
         )
