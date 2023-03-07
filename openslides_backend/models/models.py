@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "d433464aa019e6a3485ac97df1eec44f"
+MODELS_YML_CHECKSUM = "915f94f29f6aec5f95bc90b30651e51d"
 
 
 class Organization(Model):

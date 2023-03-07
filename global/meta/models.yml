@@ -2073,7 +2073,7 @@ motion:
     restriction_mode: A
   number:
     type: string
-    restriction_mode: A
+    restriction_mode: C
   number_value:
     type: number
     description: The number value of this motion. This number is auto-generated and read-only.
@@ -2084,11 +2084,11 @@ motion:
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
     required: true
-    restriction_mode: A
+    restriction_mode: C
   title:
     type: string
     required: true
-    restriction_mode: A
+    restriction_mode: C
   text:
     type: HTMLStrict
     restriction_mode: C
@@ -2108,7 +2108,7 @@ motion:
     restriction_mode: C
   state_extension:
     type: string
-    restriction_mode: A
+    restriction_mode: C
   recommendation_extension:
     type: string
     restriction_mode: C
@@ -2126,7 +2126,7 @@ motion:
     restriction_mode: C
   start_line_number:
     type: number
-    restriction_mode: A
+    restriction_mode: C
     minimum: 1
     default: 1
   forwarded:

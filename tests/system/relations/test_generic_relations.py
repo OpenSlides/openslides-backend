@@ -21,7 +21,7 @@ class GenericRelationsTest(BaseActionTestCase):
         }
         assert result == expected
 
-    def xtest_generic_O2O_replace(self) -> None:
+    def test_generic_O2O_replace(self) -> None:
         self.create_model("fake_model_a/1", {})
         self.set_models(
             {
@@ -41,7 +41,12 @@ class GenericRelationsTest(BaseActionTestCase):
                 "type": "add",
                 "value": "fake_model_a/1",
                 "modified_element": "fake_model_a/1",
-            }
+            },
+            "fake_model_a/2/fake_model_b_generic_oo": {
+                "modified_element": 3,
+                "type": "remove",
+                "value": None,
+            },
         }
         assert result == expected
 
@@ -195,5 +200,29 @@ class GenericRelationsTest(BaseActionTestCase):
                 "value": [],
                 "modified_element": "fake_model_a/1",
             }
+        }
+        assert result == expected
+
+    def test_generic_multitype_delete(self) -> None:
+        self.set_models(
+            {
+                "fake_model_a/1": {"fake_model_generic_multitype": "fake_model_b/3"},
+                "fake_model_a/2": {"fake_model_generic_multitype": "fake_model_b/3"},
+                "fake_model_b/3": {"fake_model_a_generic_multitype_m": [1, 2]},
+            }
+        )
+        handler = SingleRelationHandlerWithContext(
+            datastore=self.datastore,
+            field=FakeModelA.fake_model_generic_multitype,
+            field_name="fake_model_generic_multitype",
+            instance={"id": 1, "fake_model_generic_multitype": None},
+        )
+        result = handler.perform()
+        expected = {
+            "fake_model_b/3/fake_model_a_generic_multitype_m": {
+                "type": "remove",
+                "value": [2],
+                "modified_element": 1,
+            },
         }
         assert result == expected
