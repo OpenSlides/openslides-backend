@@ -2,20 +2,14 @@ from typing import Any, Dict, List
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from openslides_backend.action.actions.user.user_scope_permission_check_mixin import (
-    UserScopePermissionCheckMixin,
-)
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
-from openslides_backend.shared.mixins.user_scope_mixin import UserScope
+from openslides_backend.shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 
 
 class UserScopeTest(TestCase):
     def setUp(self) -> None:
         self.mock_datastore = MagicMock()
-        self.mixin = UserScopePermissionCheckMixin(
-            MagicMock(), self.mock_datastore, MagicMock(), MagicMock(), MagicMock()
-        )
-        self.mixin.model = MagicMock()
+        self.mixin = UserScopeMixin(MagicMock(), self.mock_datastore, MagicMock())
 
     def set_user_data(self, data: Dict[str, Any]) -> None:
         self.mock_datastore.get = MagicMock(return_value=data)

@@ -45,6 +45,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         assert model.get("user_id") == 110
         assert model.get("assignment_id") == 111
         assert model.get("weight") == 10000
+        self.assert_history_information("assignment/111", ["Candidate added"])
 
     def test_create_empty_data(self) -> None:
         response = self.request("assignment_candidate.create", {})

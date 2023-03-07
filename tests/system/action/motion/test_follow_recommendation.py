@@ -75,7 +75,9 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
         assert model.get("state_id") == 76
         assert model.get("state_extension") == "test_test_test"
         assert model.get("last_modified", 0) >= check_time
-        self.assert_history_information("motion/22", ["State set to {}", "test0"])
+        self.assert_history_information(
+            "motion/22", ["State set to {}", "motion_state/76"]
+        )
 
     def test_follow_recommendation_not_neighbour(self) -> None:
         self.set_models(

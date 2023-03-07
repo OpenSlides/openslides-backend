@@ -3,7 +3,7 @@ import time
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
-from datastore.migrations import BaseEvent, CreateEvent
+from datastore.migrations import BaseEvent, CreateEvent, UpdateEvent
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.migrations.migrate import MigrationWrapper
@@ -162,6 +162,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             user.pop("committee_ids", None)
             remove_from_collection(user, regex_cml)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
+        json_data.pop("action_worker", None)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = instance["meeting"]
@@ -206,7 +207,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                     "derived_motion_ids",
                     "all_origin_id",
                     "all_derived_motion_ids",
-                ]
+                ],
+                "user": [
+                    "password",
+                    "default_password",
+                    "last_email_send",
+                    "last_login",
+                ],
             },
         )
         try:
@@ -324,7 +331,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         # generate passwords
         for entry in json_data["user"].values():
             if entry["id"] not in self.merge_user_map:
-                entry["password"] = self.auth.hash(get_random_string(10))
+                entry["default_password"] = get_random_string(10)
+                entry["password"] = self.auth.hash(entry["default_password"])
 
         # set enable_anonymous
         meeting["enable_anonymous"] = False
@@ -781,6 +789,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             collection, id_ = collection_and_id_from_fqid(event.fqid)
             if event.type == CreateEvent.type:
                 data[collection].update({str(id_): event.data})
+            elif event.type == UpdateEvent.type:
+                data[collection][str(id_)].update(event.data)
             elif collection_from_fqid(event.fqid) in (
                 "organization",
                 "committee",

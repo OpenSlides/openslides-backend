@@ -92,6 +92,6 @@ def test_migration_url_name(write, finalize, assert_model):
     )
     assert_model(
         "meeting/1",
-        {"a": 2, "meta_deleted": False, "meta_position": 6},
+        {"a": 2, "meta_deleted": False, "meta_position": 4},
         position=6,
     )

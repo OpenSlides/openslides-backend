@@ -1,13 +1,13 @@
 import re
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Set, Union, cast
 
 import fastjsonschema
 
 from openslides_backend.shared.exceptions import ActionException
 
-from ..shared.patterns import COLOR_PATTERN, ID_REGEX, Collection, FullQualifiedId
+from ..shared.patterns import COLOR_REGEX, ID_REGEX, Collection, FullQualifiedId
 from ..shared.schema import (
     decimal_schema,
     fqid_list_schema,
@@ -53,8 +53,8 @@ class Field:
         self,
         required: bool = False,
         read_only: bool = False,
-        default: Any = None,
-        constraints: Dict[str, Any] = None,
+        default: Optional[Any] = None,
+        constraints: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.required = required
         self.read_only = read_only
@@ -166,7 +166,7 @@ class HTMLStrictField(TextField):
             return validate_html(html, self.get_allowed_tags())
         return None
 
-    def get_allowed_tags(self) -> List[str]:
+    def get_allowed_tags(self) -> Set[str]:
         return ALLOWED_HTML_TAGS_STRICT
 
 
@@ -175,7 +175,7 @@ class HTMLPermissiveField(HTMLStrictField):
     HTML field which can also contain video tags.
     """
 
-    def get_allowed_tags(self) -> List[str]:
+    def get_allowed_tags(self) -> Set[str]:
         return ALLOWED_HTML_TAGS_PERMISSIVE
 
 
@@ -228,7 +228,7 @@ class TimestampField(IntegerField):
 
 class ColorField(TextField):
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), pattern=COLOR_PATTERN)
+        return self.extend_schema(super().get_schema(), pattern=COLOR_REGEX)
 
 
 class ArrayField(Field):
@@ -236,7 +236,9 @@ class ArrayField(Field):
     Used for arbitrary arrays.
     """
 
-    def __init__(self, in_array_constraints: Dict = None, **kwargs: Any) -> None:
+    def __init__(
+        self, in_array_constraints: Optional[Dict] = None, **kwargs: Any
+    ) -> None:
         self.in_array_constraints = in_array_constraints
         super().__init__(**kwargs)
 
@@ -356,7 +358,6 @@ class OrganizationField(RelationField):
 
 
 class BaseTemplateField(Field):
-
     replacement_collection: Optional[Collection]
     replacement_enum: Optional[List[str]]
     index: int

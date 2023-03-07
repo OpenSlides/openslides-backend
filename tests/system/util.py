@@ -2,6 +2,7 @@ import base64
 import copy
 import cProfile
 import os
+from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Type
 from unittest.mock import MagicMock, Mock, patch
 
@@ -50,6 +51,7 @@ class TestVoteService(VoteService):
     url: str
     datastore: DatastoreService
 
+    @abstractmethod
     def vote(self, data: Dict[str, Any]) -> Response:
         ...
 

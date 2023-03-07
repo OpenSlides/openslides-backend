@@ -1,4 +1,6 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
@@ -90,3 +92,12 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
         ):
             return
         raise PermissionDenied("You are not allowed to set present.")
+
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        return {
+            fqid_from_collection_and_id(self.model.collection, instance["id"]): [
+                f"Set {'not ' if not instance['present'] else ''}present in meeting {{}}",
+                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
+            ]
+            for instance in self.action_data
+        }

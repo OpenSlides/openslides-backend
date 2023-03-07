@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "88610320cb276b94e2ea387ec2ea167f"
+MODELS_YML_CHECKSUM = "6be27b303de7a1de74514fc3b89f242d"
 
 
 class Organization(Model):
@@ -184,12 +184,6 @@ class User(Model):
         replacement_collection="meeting",
         to={"assignment_candidate": "user_id"},
     )
-    projection__ids = fields.TemplateRelationListField(
-        index=11,
-        replacement_collection="meeting",
-        to={"projection": "content_object_id"},
-        on_delete=fields.OnDelete.CASCADE,
-    )
     vote_delegated__to_id = fields.TemplateRelationField(
         index=15,
         replacement_collection="meeting",
@@ -205,6 +199,7 @@ class User(Model):
         replacement_collection="meeting",
         to={"chat_message": "user_id"},
     )
+    poll_candidate_ids = fields.RelationListField(to={"poll_candidate": "user_id"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -509,6 +504,10 @@ class Meeting(Model):
     motion_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
     )
+    poll_candidate_list_ids = fields.RelationListField(
+        to={"poll_candidate_list": "meeting_id"}
+    )
+    poll_candidate_ids = fields.RelationListField(to={"poll_candidate": "meeting_id"})
     users_enable_presence_view = fields.BooleanField(default=False)
     users_enable_vote_weight = fields.BooleanField(default=False)
     users_allow_self_set_present = fields.BooleanField(default=True)
@@ -720,7 +719,7 @@ class Meeting(Model):
     poll_countdown_id = fields.RelationField(
         to={"projector_countdown": "used_as_poll_countdown_meeting_id"}
     )
-    default_projector__id = fields.TemplateRelationField(
+    default_projector__ids = fields.TemplateRelationListField(
         index=18,
         to={"projector": "used_as_default_$_in_meeting_id"},
         required=True,
@@ -733,7 +732,6 @@ class Meeting(Model):
             "amendment",
             "motion_block",
             "assignment",
-            "user",
             "mediafile",
             "projector_message",
             "projector_countdowns",
@@ -1584,7 +1582,12 @@ class Option(Model):
         equal_fields="meeting_id",
     )
     content_object_id = fields.GenericRelationField(
-        to={"user": "option_$_ids", "motion": "option_ids"}, equal_fields="meeting_id"
+        to={
+            "poll_candidate_list": "option_id",
+            "user": "option_$_ids",
+            "motion": "option_ids",
+        },
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(to={"meeting": "option_ids"}, required=True)
 
@@ -1672,6 +1675,41 @@ class AssignmentCandidate(Model):
     user_id = fields.RelationField(to={"user": "assignment_candidate_$_ids"})
     meeting_id = fields.RelationField(
         to={"meeting": "assignment_candidate_ids"}, required=True
+    )
+
+
+class PollCandidateList(Model):
+    collection = "poll_candidate_list"
+    verbose_name = "poll candidate list"
+
+    id = fields.IntegerField()
+    poll_candidate_ids = fields.RelationListField(
+        to={"poll_candidate": "poll_candidate_list_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "poll_candidate_list_ids"}, required=True
+    )
+    option_id = fields.RelationField(
+        to={"option": "content_object_id"}, required=True, equal_fields="meeting_id"
+    )
+
+
+class PollCandidate(Model):
+    collection = "poll_candidate"
+    verbose_name = "poll candidate"
+
+    id = fields.IntegerField()
+    poll_candidate_list_id = fields.RelationField(
+        to={"poll_candidate_list": "poll_candidate_ids"},
+        required=True,
+        equal_fields="meeting_id",
+    )
+    user_id = fields.RelationField(to={"user": "poll_candidate_ids"}, required=True)
+    weight = fields.IntegerField(required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "poll_candidate_ids"}, required=True
     )
 
 
@@ -1795,7 +1833,7 @@ class Projector(Model):
     )
     used_as_default__in_meeting_id = fields.TemplateRelationField(
         index=16,
-        to={"meeting": "default_projector_$_id"},
+        to={"meeting": "default_projector_$_ids"},
         replacement_enum=[
             "agenda_all_items",
             "topics",
@@ -1805,7 +1843,6 @@ class Projector(Model):
             "amendment",
             "motion_block",
             "assignment",
-            "user",
             "mediafile",
             "projector_message",
             "projector_countdowns",
@@ -1837,7 +1874,6 @@ class Projection(Model):
     )
     content_object_id = fields.GenericRelationField(
         to={
-            "user": "projection_$_ids",
             "projector_countdown": "projection_ids",
             "projector_message": "projection_ids",
             "poll": "projection_ids",

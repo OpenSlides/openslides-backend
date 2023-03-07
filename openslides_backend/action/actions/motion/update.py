@@ -1,6 +1,8 @@
-import re
 import time
-from typing import Any, Dict, List, Optional, Set
+from copy import deepcopy
+from typing import Any, Dict, List, Optional
+
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
@@ -8,6 +10,7 @@ from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import (
+    EXTENSION_REFERENCE_IDS_PATTERN,
     POSITIVE_NUMBER_REGEX,
     Collection,
     collection_and_id_from_fqid,
@@ -19,12 +22,11 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .mixins import PermissionHelperMixin
-
-EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
+from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.update")
-class MotionUpdate(UpdateAction, PermissionHelperMixin):
+class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
     """
     Action to update motions.
     """
@@ -143,8 +145,15 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                         instance["created"] = timestamp
 
         for prefix in ("recommendation", "state"):
-            if instance.get(f"{prefix}_extension"):
+            if f"{prefix}_extension" in instance:
                 self.set_extension_reference_ids(prefix, instance)
+
+        if instance.get("number"):
+            meeting_id = self.get_meeting_id(instance)
+            if not self._check_if_unique(
+                instance["number"], meeting_id, instance["id"]
+            ):
+                raise ActionException("Number is not unique.")
 
         return instance
 
@@ -161,12 +170,13 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             if collection != "motion":
                 raise ActionException(f"Found {fqid} but only motion is allowed.")
             motion_ids.append(int(id_))
-        gm_request = GetManyRequest("motion", motion_ids, ["id"])
-        gm_result = self.datastore.get_many([gm_request]).get("motion", {})
-        for motion_id in gm_result:
-            extension_reference_ids.append(
-                fqid_from_collection_and_id("motion", motion_id)
-            )
+        if motion_ids:
+            gm_request = GetManyRequest("motion", motion_ids, ["id"])
+            gm_result = self.datastore.get_many([gm_request]).get("motion", {})
+            for motion_id in gm_result:
+                extension_reference_ids.append(
+                    fqid_from_collection_and_id("motion", motion_id)
+                )
         instance[f"{prefix}_extension_reference_ids"] = extension_reference_ids
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
@@ -211,37 +221,34 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
             raise PermissionDenied(msg)
 
-    def get_history_information(self) -> Optional[List[str]]:
-        informations: List[str] = []
-        all_instance_fields = set(
-            field for instance in self.instances for field in instance
-        )
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        information = {}
+        for instance in deepcopy(self.instances):
+            instance_information = []
 
-        # supporters changed
-        if "supporter_ids" in all_instance_fields:
-            all_instance_fields.remove("supporter_ids")
-            informations.append("Supporters changed")
+            # supporters changed
+            if "supporter_ids" in instance:
+                instance.pop("supporter_ids")
+                instance_information.append("Supporters changed")
 
-        # category changed
-        informations.extend(
-            self.create_history_information_for_field(
-                all_instance_fields,
-                "category_id",
-                "motion_category",
-                "Category",
-                "name",
+            # category changed
+            instance_information.extend(
+                self.create_history_information_for_field(
+                    instance,
+                    "category_id",
+                    "motion_category",
+                    "Category",
+                )
             )
-        )
 
-        # block changed
-        informations.extend(
-            self.create_history_information_for_field(
-                all_instance_fields, "block_id", "motion_block", "Motion block", "title"
+            # block changed
+            instance_information.extend(
+                self.create_history_information_for_field(
+                    instance, "block_id", "motion_block", "Motion block"
+                )
             )
-        )
 
-        generic_update_fields = set(
-            [
+            generic_update_fields = [
                 "title",
                 "text",
                 "reason",
@@ -251,37 +258,31 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 "start_line_number",
                 "state_extension",
             ]
-        )
-        if all_instance_fields & generic_update_fields:
-            # still other fields given, so we also add the generic "updated" message
-            informations.append("Motion updated")
+            if any(field in instance for field in generic_update_fields):
+                # still other fields given, so we also add the generic "updated" message
+                instance_information.append("Motion updated")
 
-        return informations
+            if instance_information:
+                information[
+                    fqid_from_collection_and_id(self.model.collection, instance["id"])
+                ] = instance_information
+
+        return information
 
     def create_history_information_for_field(
         self,
-        all_instance_fields: Set[str],
+        instance: Dict[str, Any],
         field: str,
         collection: Collection,
         verbose_collection: str,
-        name_field: str,
     ) -> List[str]:
-        if field in all_instance_fields:
-            all_instance_fields.remove(field)
-            all_values = set(
-                instance[field] for instance in self.instances if field in instance
-            )
-            if len(all_values) == 1:
-                single_value = all_values.pop()
-                if single_value is None:
-                    return [verbose_collection + " removed"]
-                else:
-                    instance = self.datastore.get(
-                        fqid_from_collection_and_id(collection, single_value),
-                        [name_field],
-                        lock_result=False,
-                    )
-                    return [verbose_collection + " set to {}", instance[name_field]]
+        if field in instance:
+            value = instance.pop(field)
+            if value is None:
+                return [verbose_collection + " removed"]
             else:
-                return [verbose_collection + " changed"]
+                return [
+                    verbose_collection + " set to {}",
+                    fqid_from_collection_and_id(collection, value),
+                ]
         return []

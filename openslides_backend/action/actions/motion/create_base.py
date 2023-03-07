@@ -23,7 +23,6 @@ class MotionCreateBase(
     SetNumberMixin,
     CreateActionWithListOfSpeakersMixin,
 ):
-
     model = Motion()
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 
@@ -60,7 +59,9 @@ class MotionCreateBase(
         for user_id in submitter_ids:
             data = {"motion_id": instance["id"], "user_id": user_id, "weight": weight}
             weight += 1
-            self.execute_other_action(MotionSubmitterCreateAction, [data])
+            self.execute_other_action(
+                MotionSubmitterCreateAction, [data], skip_history=True
+            )
 
     def set_sequential_number(self, instance: Dict[str, Any]) -> None:
         instance["sequential_number"] = self.get_sequential_number(

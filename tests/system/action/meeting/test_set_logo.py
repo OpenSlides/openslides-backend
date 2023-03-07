@@ -115,3 +115,25 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             {"id": 1, "mediafile_id": 17, "place": "web_header"},
             Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,
         )
+
+    def test_set_logo_svg_xml(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_meeting222",
+                    "is_active_in_organization_id": 1,
+                },
+                "mediafile/17": {
+                    "is_directory": False,
+                    "mimetype": "image/svg+xml",
+                    "owner_id": "meeting/222",
+                },
+            }
+        )
+        response = self.request(
+            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/222", {"logo_$_id": ["web_header"], "logo_$web_header_id": 17}
+        )

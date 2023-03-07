@@ -236,7 +236,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                     "used_as_default_$_in_meeting_id": {
                         name: instance["id"]
                         for name in cast(
-                            List[str], Meeting.default_projector__id.replacement_enum
+                            List[str], Meeting.default_projector__ids.replacement_enum
                         )
                     },
                 }

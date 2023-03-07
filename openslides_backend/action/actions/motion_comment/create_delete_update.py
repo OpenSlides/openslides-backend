@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MotionComment
 from ....permissions.permissions import Permissions
@@ -44,13 +45,7 @@ class MotionCommentMixin(Action):
             return
 
         if section.get("submitter_can_write"):
-            motion_id = instance.get("motion_id")
-            if not motion_id:
-                comment = self.datastore.get(
-                    fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                    ["motion_id"],
-                )
-                motion_id = comment.get("motion_id")
+            motion_id = self.get_field_from_instance("motion_id", instance)
 
             if motion_id and self.datastore.exists(
                 "motion_submitter",
@@ -72,28 +67,25 @@ class MotionCommentMixin(Action):
     def get_section(
         self, instance: Dict[str, Any], fields: List[str]
     ) -> Dict[str, Any]:
-        # get section_id and meeting_id, create vs delete/update case.
-        if instance.get("section_id"):
-            section_id = instance["section_id"]
-        else:
-            comment = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["section_id"],
-                lock_result=False,
-            )
-            section_id = comment["section_id"]
+        section_id = self.get_field_from_instance("section_id", instance)
         return self.datastore.get(
             fqid_from_collection_and_id("motion_comment_section", section_id),
             fields,
             lock_result=False,
         )
 
-    def get_history_information(self) -> Optional[List[str]]:
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        instances = self.get_instances_with_fields(["motion_id", "section_id"])
         _, action = self.name.split(".")
-        if len(self.instances) == 1:
-            section = self.get_section(self.instances[0], ["name"])
-            return ["Comment {} " + action + "d", section["name"]]
-        return ["Comment " + action + "d"]
+        return {
+            fqid_from_collection_and_id("motion", instance["motion_id"]): [
+                "Comment {} " + action + "d",
+                fqid_from_collection_and_id(
+                    "motion_comment_section", instance["section_id"]
+                ),
+            ]
+            for instance in instances
+        }
 
 
 class MotionCommentCreate(MotionCommentMixin, CreateActionWithInferredMeeting):

@@ -1,3 +1,4 @@
+from time import time
 from typing import Any, Dict
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -179,7 +180,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "motion_workflow_ids": [1],
                     "logo_$_id": None,
                     "font_$_id": [],
-                    "default_projector_$_id": [],
+                    "default_projector_$_ids": [],
                     "is_active_in_organization_id": 1,
                     **self.get_meeting_defaults(),
                 },
@@ -244,6 +245,12 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                },
+                "action_worker/1": {
+                    "name": "testcase",
+                    "state": "end",
+                    "created": round(time() - 3),
+                    "timestamp": round(time()),
                 },
             }
         )
@@ -319,7 +326,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "group_ids": [1, 2],
                     "motion_state_ids": [1],
                     "motion_workflow_ids": [1],
-                    "default_projector_$_id": [],
+                    "default_projector_$_ids": [],
                     "motion_ids": [1],
                     "motion_submitter_ids": [5],
                     "list_of_speakers_ids": [6, 11],
@@ -582,7 +589,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "motion_workflow_ids": [1],
                     "logo_$_id": None,
                     "font_$_id": [],
-                    "default_projector_$_id": [],
+                    "default_projector_$_ids": [],
                     "is_active_in_organization_id": 1,
                     "motion_ids": [1],
                     "list_of_speakers_ids": [3],
@@ -669,7 +676,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "motion_workflow_ids": [2],
                     "logo_$_id": None,
                     "font_$_id": [],
-                    "default_projector_$_id": [],
+                    "default_projector_$_ids": [],
                     "is_active_in_organization_id": 1,
                     "list_of_speakers_ids": [4],
                     "motion_ids": [2],

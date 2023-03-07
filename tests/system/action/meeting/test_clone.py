@@ -1,3 +1,4 @@
+from time import time
 from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock
 
@@ -40,11 +41,11 @@ class MeetingClone(BaseActionTestCase):
                 "motion_workflow_ids": [1],
                 "logo_$_id": None,
                 "font_$_id": [],
-                "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
+                "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
                 **{
-                    f"default_projector_${name}_id": 1
+                    f"default_projector_${name}_ids": [1]
                     for name in cast(
-                        List[str], Meeting.default_projector__id.replacement_enum
+                        List[str], Meeting.default_projector__ids.replacement_enum
                     )
                 },
                 "is_active_in_organization_id": 1,
@@ -122,7 +123,7 @@ class MeetingClone(BaseActionTestCase):
                 "motion_workflow_ids": [2],
                 "logo_$_id": None,
                 "font_$_id": [],
-                "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
+                "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
                 "template_for_organization_id": ONE_ORGANIZATION_ID,
             },
         )
@@ -1234,6 +1235,21 @@ class MeetingClone(BaseActionTestCase):
                 "vote_delegated_vote_$3_ids": [3],
             },
         )
+
+    def test_with_action_worker(self) -> None:
+        """action_worker shouldn't be cloned"""
+        aw_name = "test action_worker"
+        self.test_models["action_worker/1"] = {
+            "name": aw_name,
+            "state": "end",
+            "created": round(time() - 3),
+            "timestamp": round(time()),
+        }
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("action_worker/1", {"name": aw_name})
+        self.assert_model_not_exists("action_worker/2")
 
     def test_clone_with_2_existing_meetings(self) -> None:
         self.test_models[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [1, 2]

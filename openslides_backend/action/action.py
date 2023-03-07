@@ -1,4 +1,5 @@
 from collections import defaultdict
+from copy import deepcopy
 from typing import (
     Any,
     Callable,
@@ -15,19 +16,22 @@ from typing import (
 
 import fastjsonschema
 
+from openslides_backend.shared.base_service_provider import BaseServiceProvider
+
 from ..models.base import Model, model_registry
-from ..models.fields import BaseTemplateField, BaseTemplateRelationField
+from ..models.fields import (
+    BaseRelationField,
+    BaseTemplateField,
+    BaseTemplateRelationField,
+)
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
-from ..services.auth.interface import AuthenticationService
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
-from ..services.media.interface import MediaService
-from ..services.vote.interface import VoteService
 from ..shared.exceptions import (
     ActionException,
     AnonymousNotAllowed,
@@ -49,7 +53,7 @@ from ..shared.patterns import (
     fqid_from_fqfield,
     transform_to_fqids,
 )
-from ..shared.typing import DeletedModel
+from ..shared.typing import DeletedModel, HistoryInformation
 from .relations.relation_manager import RelationManager, RelationUpdates
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
@@ -74,30 +78,16 @@ def original_instances(method: Callable) -> Callable:
     return method
 
 
-class BaseAction:  # pragma: no cover
-    """
-    Abstract base class for an action.
-    """
-
-    services: Services
-    datastore: DatastoreService
-    auth: AuthenticationService
-    media: MediaService
-    vote: VoteService
-
-    name: str
-    model: Model
-    user_id: int
-
-
 T = TypeVar("T", bound=WriteRequest)
 
 
-class Action(BaseAction, metaclass=SchemaProvider):
+class Action(BaseServiceProvider, metaclass=SchemaProvider):
     """
     Base class for an action.
     """
 
+    name: str
+    model: Model
     schema: Dict
     schema_validator: Callable[[Dict[str, Any]], None]
 
@@ -109,12 +99,16 @@ class Action(BaseAction, metaclass=SchemaProvider):
     skip_archived_meeting_check: bool = False
     use_meeting_ids_for_archived_meeting_check: bool = False
     history_information: Optional[str] = None
+    history_relation_field: Optional[str] = None
+    add_self_history_information: bool = False
 
     relation_manager: RelationManager
 
+    action_data: ActionData
     instances: List[Dict[str, Any]]
     events: List[Event]
     results: ActionResults
+    cascaded_actions_history: HistoryInformation
 
     def __init__(
         self,
@@ -124,15 +118,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
         logging: LoggingModule,
         env: Env,
         skip_archived_meeting_check: Optional[bool] = None,
-        use_meeting_ids_for_archived_meeting_check: bool = None,
+        use_meeting_ids_for_archived_meeting_check: Optional[bool] = None,
     ) -> None:
-        self.services = services
-        self.auth = services.authentication()
-        self.media = services.media()
-        self.vote_service = services.vote()
-        self.datastore = datastore
+        super().__init__(services, datastore, logging)
         self.relation_manager = relation_manager
-        self.logging = logging
         self.logger = logging.getLogger(__name__)
         self.env = env
         if skip_archived_meeting_check is not None:
@@ -143,6 +132,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             )
         self.events = []
         self.results = []
+        self.cascaded_actions_history = {}
 
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
@@ -171,6 +161,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.index = -1
 
         action_data = self.prepare_action_data(action_data)
+        self.action_data = deepcopy(action_data)
         self.instances = list(self.get_updated_instances(action_data))
         is_original_instances = hasattr(
             self.get_updated_instances, "_original_instances"
@@ -427,7 +418,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for event in self.events:
                 self.apply_event(event)
                 events_by_type[event["type"]].append(event)
-            write_request.information = self.get_history_information()
+            write_request.information = self.get_full_history_information()
             write_request.user_id = self.user_id
             write_request.events.extend(events_by_type[EventType.Create])
             write_request.events.extend(
@@ -437,12 +428,76 @@ class Action(BaseAction, metaclass=SchemaProvider):
             return write_request
         return None
 
-    def get_history_information(self) -> Optional[List[str]]:
+    def get_full_history_information(self) -> Optional[HistoryInformation]:
+        """
+        Get history information for this action and all cascading ones. Should only be overridden if
+        the order should be changed.
+        """
+        information = self.get_history_information()
+        if self.cascaded_actions_history or information:
+            return merge_history_informations(
+                self.cascaded_actions_history, information or {}
+            )
+        else:
+            return None
+
+    def get_history_information(self) -> Optional[HistoryInformation]:
         """
         Get the history information for this action. Can be overridden to get
         context-dependent information.
         """
-        return [self.history_information] if self.history_information else None
+        if self.history_information is None:
+            return None
+
+        information = {}
+        instances = (
+            self.get_instances_with_fields(["id", self.history_relation_field])
+            if self.history_relation_field
+            else self.instances
+        )
+        for instance in instances:
+            fqids = []
+            if self.history_relation_field:
+                field = self.model.get_field(self.history_relation_field)
+                assert isinstance(field, BaseRelationField)
+                fqids = transform_to_fqids(
+                    instance[self.history_relation_field], field.get_target_collection()
+                )
+            if not self.history_relation_field or self.add_self_history_information:
+                fqids.append(
+                    fqid_from_collection_and_id(self.model.collection, instance["id"])
+                )
+            for fqid in fqids:
+                information[fqid] = [self.history_information]
+        return information
+
+    def get_instances_with_fields(
+        self, fields: List[str], instances: Optional[List[Dict[str, Any]]] = None
+    ) -> List[Dict[str, Any]]:
+        if not instances:
+            instances = self.instances
+        # if any field is missing in any instance, we need to access the datastore
+        if any(
+            any(not instance.get(field) for field in fields) for instance in instances
+        ):
+            result = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        self.model.collection,
+                        [instance["id"] for instance in instances],
+                        fields,
+                    )
+                ],
+                lock_result=False,
+                use_changed_models=False,
+            )
+            return list(result.get(self.model.collection, {}).values())
+        else:
+            return instances
+
+    def get_field_from_instance(self, field: str, instance: Dict[str, Any]) -> Any:
+        _instance = self.get_instances_with_fields([field], [instance])[0]
+        return _instance.get(field)
 
     def merge_update_events(self, update_events: List[Event]) -> List[Event]:
         """
@@ -637,6 +692,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         ActionClass: Type["Action"],
         action_data: ActionData,
         skip_archived_meeting_check: bool = False,
+        skip_history: bool = False,
     ) -> Optional[ActionResults]:
         """
         Executes the given action class as a dependent action with the given action
@@ -644,7 +700,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         relation models into it.
         The action is fully executed and created WriteRequests are appended to
         this action.
-        The attribute skip_archived_meeting_check" from the calling class is inherited
+        The attribute skip_archived_meeting_check from the calling class is inherited
         to the called class if set. Usually this is needed for cascading deletes from
         outside of meeting.
         """
@@ -665,16 +721,37 @@ class Action(BaseAction, metaclass=SchemaProvider):
             )
             if write_request:
                 self.events.extend(write_request.events)
+                if not skip_history and write_request.information:
+                    merge_history_informations(
+                        self.cascaded_actions_history, write_request.information
+                    )
             return action_results
 
-    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
+    def get_on_success(self, action_data: ActionData) -> Optional[Callable[[], None]]:
         """
         Can be overridden by actions to return a cleanup method to execute
         after the result was successfully written to the DS.
         """
+        return None
 
-    def get_on_failure(self, action_data: ActionData) -> Callable[[], None]:
+    def get_on_failure(self, action_data: ActionData) -> Optional[Callable[[], None]]:
         """
         Can be overridden by actions to return a cleanup method to execute
         after an error appeared in an action.
         """
+        return None
+
+
+def merge_history_informations(
+    a: HistoryInformation, *other: HistoryInformation
+) -> HistoryInformation:
+    """
+    Merges multiple history informations. All latter ones are merged into the first one.
+    """
+    for b in other:
+        for fqid, information in b.items():
+            if fqid in a:
+                a[fqid].extend(information)
+            else:
+                a[fqid] = information
+    return a

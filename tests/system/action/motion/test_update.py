@@ -232,13 +232,13 @@ class MotionUpdateActionTest(BaseActionTestCase):
             [
                 "Supporters changed",
                 "Category set to {}",
-                "name_GdPzDztT",
+                "motion_category/4",
                 "Motion block set to {}",
-                "title_ddyvpXch",
+                "motion_block/51",
                 "Motion updated",
             ],
         )
-        assert counter.calls == 16
+        assert counter.calls == 14
 
     def test_update_workflow_id(self) -> None:
         self.set_models(
@@ -381,7 +381,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "name_uZXBoHMp",
                     "is_active_in_organization_id": 1,
                 },
                 "motion/1": {"meeting_id": 1},
@@ -397,6 +396,44 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Found assignment/1 but only motion is allowed." in response.json.get(
             "message", ""
+        )
+
+    def test_reset_recommendation_extension(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {"meeting_id": 1},
+                "motion/2": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 1,
+                "recommendation_extension": "[motion/2]",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/1", {"recommendation_extension_reference_ids": ["motion/2"]}
+        )
+        self.assert_model_exists(
+            "motion/2", {"referenced_in_motion_recommendation_extension_ids": [1]}
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 1,
+                "recommendation_extension": "",
+            },
+        )
+        self.assert_model_exists(
+            "motion/1", {"recommendation_extension_reference_ids": []}
+        )
+        self.assert_model_exists(
+            "motion/2", {"referenced_in_motion_recommendation_extension_ids": []}
         )
 
     def test_update_no_permissions(self) -> None:
@@ -504,3 +541,24 @@ class MotionUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+
+    def test_update_check_not_unique_number(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_uZXBoHMp",
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {"meeting_id": 1, "number": "T001"},
+                "motion/2": {"meeting_id": 1, "number": "A001"},
+            }
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 1,
+                "number": "A001",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Number is not unique." in response.json["message"]

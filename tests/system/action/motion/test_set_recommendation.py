@@ -54,7 +54,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         assert model.get("recommendation_id") == 77
         assert model.get("last_modified", 0) >= check_time
         self.assert_history_information(
-            "motion/22", ["Recommendation set to {}", "blablabal"]
+            "motion/22", ["Recommendation set to {}", "motion_state/77"]
         )
 
     def test_set_recommendation_missing_recommendation_label(self) -> None:
@@ -77,7 +77,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
             "motion.set_recommendation", {"id": 22, "recommendation_id": 77}
         )
         self.assert_status_code(response, 400)
-        assert "Recommendation_label of a recommendation must be set." in str(
+        assert "Recommendation label of a recommendation must be set." in str(
             response.json["message"]
         )
 
@@ -136,10 +136,10 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_history_information(
-            "motion/22", ["Recommendation set to {}", "blablabal"]
+            "motion/22", ["Recommendation set to {}", "motion_state/77"]
         )
         self.assert_history_information(
-            "motion/22", ["Recommendation set to {}", "blablabal"]
+            "motion/23", ["Recommendation set to {}", "motion_state/77"]
         )
 
     def test_history_multiple_actions_different_states(self) -> None:
@@ -170,8 +170,12 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
             [{"id": 22, "recommendation_id": 77}, {"id": 23, "recommendation_id": 66}],
         )
         self.assert_status_code(response, 200)
-        self.assert_history_information("motion/22", ["Recommendation changed"])
-        self.assert_history_information("motion/22", ["Recommendation changed"])
+        self.assert_history_information(
+            "motion/22", ["Recommendation set to {}", "motion_state/77"]
+        )
+        self.assert_history_information(
+            "motion/23", ["Recommendation set to {}", "motion_state/66"]
+        )
 
     def test_set_recommendation_no_permission(self) -> None:
         self.base_permission_test(

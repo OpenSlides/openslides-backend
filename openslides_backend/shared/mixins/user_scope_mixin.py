@@ -1,9 +1,21 @@
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
+from openslides_backend.shared.base_service_provider import BaseServiceProvider
+
 from ...models.models import Committee
-from ...services.datastore.interface import DatastoreService, GetManyRequest
-from ..exceptions import ServiceException
+from ...permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
+from ...permissions.permission_helper import (
+    has_committee_management_level,
+    has_organization_management_level,
+    has_perm,
+)
+from ...permissions.permissions import Permissions
+from ...services.datastore.interface import GetManyRequest
+from ..exceptions import MissingPermission, ServiceException
 from ..patterns import fqid_from_collection_and_id
 from ..util_dict_sets import get_set_from_dict_by_fieldlist, get_set_from_dict_from_dict
 
@@ -14,10 +26,7 @@ class UserScope(int, Enum):
     Organization = 3
 
 
-class UserScopeMixin:
-
-    datastore: DatastoreService
-
+class UserScopeMixin(BaseServiceProvider):
     def get_user_scope(
         self, id_: Optional[int] = None, instance: Optional[Dict[str, Any]] = None
     ) -> Tuple[UserScope, int, str]:
@@ -74,3 +83,66 @@ class UserScopeMixin:
         elif len(committees) == 1:
             return UserScope.Committee, cast(int, committees[0]), oml_right
         return UserScope.Organization, 1, oml_right
+
+    def check_permissions_for_scope(
+        self, id: int, always_check_user_oml: bool = True
+    ) -> None:
+        """
+        Checks the permissions for user-altering actions depending on the user scope.
+        With check_user_oml_always=True it will be checked whether the request user
+        has at minimum the same OML-level than the requested user to pass.
+        Reason: A user with OML-level-permission has scope "meeting" or "committee" if
+        he belongs to only 1 meeting or 1 committee.
+        """
+        scope, scope_id, user_oml = self.get_user_scope(id)
+        if (
+            always_check_user_oml
+            and user_oml
+            and not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                perm := OrganizationManagementLevel(user_oml),
+            )
+        ):
+            raise MissingPermission({perm: 1})
+        if has_organization_management_level(
+            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            return
+
+        if scope == UserScope.Committee:
+            if not has_committee_management_level(
+                self.datastore,
+                self.user_id,
+                CommitteeManagementLevel.CAN_MANAGE,
+                scope_id,
+            ):
+                raise MissingPermission(
+                    {
+                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                        CommitteeManagementLevel.CAN_MANAGE: scope_id,
+                    }
+                )
+        elif scope == UserScope.Meeting:
+            meeting = self.datastore.get(
+                fqid_from_collection_and_id("meeting", scope_id),
+                ["committee_id"],
+                lock_result=False,
+            )
+            if not has_committee_management_level(
+                self.datastore,
+                self.user_id,
+                CommitteeManagementLevel.CAN_MANAGE,
+                meeting["committee_id"],
+            ) and not has_perm(
+                self.datastore, self.user_id, Permissions.User.CAN_MANAGE, scope_id
+            ):
+                raise MissingPermission(
+                    {
+                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                        CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
+                        Permissions.User.CAN_MANAGE: scope_id,
+                    }
+                )
+        else:
+            raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})

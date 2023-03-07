@@ -29,6 +29,16 @@ class PollPublishActionTest(BaseActionTestCase):
         assert poll.get("state") == "published"
         self.assert_history_information("topic/1", ["Voting published"])
 
+    def test_publish_assignment(self) -> None:
+        self.test_models["poll/1"]["content_object_id"] = "assignment/1"
+        self.test_models["assignment/1"] = {
+            "meeting_id": 1,
+        }
+        self.set_models(self.test_models)
+        response = self.request("poll.publish", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_history_information("assignment/1", ["Ballot published"])
+
     def test_publish_wrong_state(self) -> None:
         self.set_models(
             {

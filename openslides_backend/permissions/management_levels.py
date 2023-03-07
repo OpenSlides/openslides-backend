@@ -10,7 +10,7 @@ class CompareRightLevel(str, VerbosePermission, Enum):
         """
         Always return the first enum item if no matching one was found. -> NO_RIGHT must always be listed first.
         """
-        return list(cls)[0]
+        return list(cls)[0]  # type: ignore
 
     def check_instance(self, other: str) -> "CompareRightLevel":
         """

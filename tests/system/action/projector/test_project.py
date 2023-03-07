@@ -210,10 +210,7 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "data.content_object_id must match pattern ^[a-z]([a-z_]*[a-z])?/[1-9]\\d*$"
-            in response.json["message"]
-        )
+        assert "data.content_object_id must match pattern" in response.json["message"]
 
     def test_try_to_store_second_unstable_projection_1(self) -> None:
         response = self.request(
@@ -373,25 +370,10 @@ class ProjectorProject(BaseActionTestCase):
             "projector.project",
             {"ids": [75], "content_object_id": "user/2", "meeting_id": 1},
         )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/2", {"projection_$1_ids": [112], "projection_$_ids": ["1"]}
-        )
-        self.assert_model_exists(
-            "projector/75",
-            {
-                "current_projection_ids": [111, 112],
-                "history_projection_ids": [110],
-                "scroll": 0,
-            },
-        )
-        self.assert_model_exists(
-            "projection/112",
-            {
-                "content_object_id": "user/2",
-                "current_projector_id": 75,
-                "stable": False,
-            },
+        self.assert_status_code(response, 400)
+        assert (
+            "The collection 'user' is not available for field 'content_object_id' in collection 'projection'."
+            in response.json["message"]
         )
 
     def test_project_without_meeting_id(self) -> None:
@@ -424,21 +406,6 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assertIn("'assignment/452'", response.json["message"])
         self.assertIn("'projector/23'", response.json["message"])
-
-    def test_project_wrong_meeting_by_content_user(self) -> None:
-        self.create_model(
-            "user/2",
-            {"username": "normal user", "group_$1_ids": [1], "group_$_ids": ["1"]},
-        )
-        response = self.request(
-            "projector.project",
-            {"ids": [], "content_object_id": "user/2", "meeting_id": 2, "stable": True},
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "The following models do not belong to meeting 2: ['user/2']",
-            response.json["message"],
-        )
 
     def test_project_wrong_meeting_by_content_meeting(self) -> None:
         response = self.request(

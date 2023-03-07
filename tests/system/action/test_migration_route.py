@@ -85,7 +85,10 @@ class TestMigrationRoute(BaseMigrationRouteTest):
         assert "output" not in response.json
 
     def wait_for_lock(
-        self, wait_lock: Lock, indicator_lock: Lock = None, error: bool = False
+        self,
+        wait_lock: Lock,
+        indicator_lock: Optional[Lock] = None,
+        error: bool = False,
     ) -> Callable[[], None]:
         """
         wait_lock is intended to be waited upon and should be unlocked in the test when needed.

@@ -128,10 +128,10 @@ class ActionWorkerWriting(object):
                 self.datastore.get(
                     self.fqid, [], lock_result=False, use_changed_models=False
                 )
-                message = f"Action lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
+                message = f"Action ({self.action_names}) lasts too long. {self.fqid} written to database. Get the result from database, when the job is done."
                 self.written = True
             except DatastoreException as e:
-                message = f"Action lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."
+                message = f"Action ({self.action_names}) lasts too long, exception on writing {self.fqid}: {e.message}. Get the result later from database."
         self.logger.info(f"action_worker: {message}")
         return message
 
@@ -170,12 +170,12 @@ class ActionWorkerWriting(object):
                     "action_data_error_index": 0,
                 }
                 self.logger.error(
-                    f"finish action_worker '{self.fqid} {self.action_names}' {current_time} with exception: {message}"
+                    f"finish action_worker '{self.fqid}' ({self.action_names}) {current_time} with exception: {message}"
                 )
             elif hasattr(action_worker_thread, "response"):
                 response = action_worker_thread.response
-                self.logger.debug(
-                    f"finish action_worker '{self.fqid} {self.action_names}': {current_time}"
+                self.logger.info(
+                    f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"
                 )
             else:
                 message = "action_worker aborted without any specific message"
@@ -187,7 +187,7 @@ class ActionWorkerWriting(object):
                     "action_data_error_index": 0,
                 }
                 self.logger.error(
-                    f"aborted action_worker '{self.fqid} {self.action_names}' {current_time}: {message}"
+                    f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {message}"
                 )
 
             self.datastore.write_action_worker(

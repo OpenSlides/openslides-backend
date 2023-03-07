@@ -11,18 +11,20 @@ from ...util.register import register_action
 from ...util.typing import ActionData
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..vote.delete import VoteDelete
-from .mixins import PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin
 
 
 @register_action("poll.reset")
-class PollResetAction(ExtendHistoryMixin, UpdateAction, PollPermissionMixin):
+class PollResetAction(
+    ExtendHistoryMixin, UpdateAction, PollPermissionMixin, PollHistoryMixin
+):
     """
     Action to reset a poll.
     """
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
-    history_information = "Voting reset"
+    poll_history_information = "reset"
     extend_history_to = "content_object_id"
 
     def prefetch(self, action_data: ActionData) -> None:

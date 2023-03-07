@@ -1,6 +1,9 @@
+from abc import abstractmethod
 from typing import Any, Callable, Optional
 
 from fastjsonschema import JsonSchemaException
+
+from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PresenterException
@@ -8,14 +11,12 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 
 
-class BasePresenter:
+class BasePresenter(BaseServiceProvider):
     """
     Base class for presenters.
     """
 
     data: Any
-    datastore: DatastoreService
-    logging: LoggingModule
     schema: Optional[Callable[[Any], None]] = None
     csrf_exempt: bool
 
@@ -27,10 +28,8 @@ class BasePresenter:
         logging: LoggingModule,
         user_id: int,
     ):
+        super().__init__(services, datastore, logging)
         self.data = data
-        self.services = services
-        self.datastore = datastore
-        self.logging = logging
         self.logger = logging.getLogger(__name__)
         self.user_id = user_id
 
@@ -48,6 +47,7 @@ class BasePresenter:
             if self.data is not None:
                 raise PresenterException("This presenter does not take data.")
 
+    @abstractmethod
     def get_result(self) -> Any:
         """Does the actual work and returns the result depending on the data."""
         ...

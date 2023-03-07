@@ -8,13 +8,14 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
     PASSWORD = "password"
 
     def test_update_correct(self) -> None:
-        self.update_model("user/1", {"password": "old_pw"})
+        self.create_model("user/2", {"password": "old_pw"})
         response = self.request(
-            "user.set_password", {"id": 1, "password": self.PASSWORD}
+            "user.set_password", {"id": 2, "password": self.PASSWORD}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/1")
+        model = self.get_model("user/2")
         assert self.auth.is_equals(self.PASSWORD, model.get("password", ""))
+        self.assert_history_information("user/2", ["Password changed"])
 
     def test_update_correct_default_case(self) -> None:
         self.update_model("user/1", {"password": "old_pw"})

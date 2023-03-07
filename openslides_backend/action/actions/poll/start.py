@@ -10,7 +10,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..projector_countdown.mixins import CountdownControl
-from .mixins import PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin
 
 
 @register_action("poll.start")
@@ -19,6 +19,7 @@ class PollStartAction(
     CountdownControl,
     UpdateAction,
     PollPermissionMixin,
+    PollHistoryMixin,
 ):
     """
     Action to start a poll.
@@ -26,7 +27,7 @@ class PollStartAction(
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
-    history_information = "Voting started"
+    poll_history_information = "started"
     extend_history_to = "content_object_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

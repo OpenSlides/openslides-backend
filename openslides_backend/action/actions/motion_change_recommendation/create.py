@@ -28,6 +28,7 @@ class MotionChangeRecommendationCreateAction(
     )
     permission = Permissions.Motion.CAN_MANAGE
     history_information = "Motion change recommendation created"
+    history_relation_field = "motion_id"
     relation_field_for_meeting = "motion_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

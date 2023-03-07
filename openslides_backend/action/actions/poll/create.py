@@ -5,14 +5,14 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
 from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_id
-from ....shared.schema import decimal_schema, optional_fqid_schema
+from ....shared.schema import decimal_schema, id_list_schema, optional_fqid_schema
 from ...generics.create import CreateAction
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.create import OptionCreateAction
 from .base import base_check_100_percent_base
-from .mixins import PollPermissionMixin
+from .mixins import PollHistoryMixin, PollPermissionMixin
 
 options_schema = {
     "description": "A option inside a poll create schema",
@@ -20,6 +20,7 @@ options_schema = {
     "properties": {
         "text": {"type": "string", "description": "the text of an option"},
         "content_object_id": optional_fqid_schema,
+        "poll_candidate_user_ids": id_list_schema,
         "Y": decimal_schema,
         "N": decimal_schema,
         "A": decimal_schema,
@@ -29,7 +30,9 @@ options_schema = {
 
 
 @register_action("poll.create")
-class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin):
+class PollCreateAction(
+    SequentialNumbersMixin, CreateAction, PollPermissionMixin, PollHistoryMixin
+):
     """
     Action to create a poll.
     """
@@ -64,7 +67,7 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
             "publish_immediately": {"type": "boolean"},
         },
     )
-    history_information = "Poll created"
+    poll_history_information = "created"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
@@ -114,38 +117,35 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
                 raise ActionException("Motion state doesn't allow to create poll.")
 
         # handle non-global options
-        weight = 1
         unique_set = set()
-        for option in instance.get("options", []):
-            c_letter = "T" if "text" in option else "C"
-            content = (
-                option.get("content_object_id")
-                if c_letter == "C"
-                else option.get("text")
-            )
-            o_obj = f"{c_letter},{content}"
-            if o_obj in unique_set:
-                raise ActionException(f"Duplicated option in poll.options: {content}")
-            else:
-                unique_set.add(o_obj)
+
+        for weight, option in enumerate(instance.get("options", []), start=1):
+            # check the keys with staticmethod from option.create, where they belong
+            key = OptionCreateAction.check_one_of_three_keywords(option)
             data: Dict[str, Any] = {
                 "poll_id": instance["id"],
                 "meeting_id": instance["meeting_id"],
                 "weight": weight,
+                key: option[key],
             }
-            weight += 1
-            for key in ("text", "content_object_id"):
-                if key in option:
-                    data[key] = option[key]
-                    if instance["type"] == "analog":
-                        if instance["pollmethod"] == "N":
-                            data["no"] = self.parse_vote_value(option, "N")
-                        else:
-                            data["yes"] = self.parse_vote_value(option, "Y")
-                            if instance["pollmethod"] in ("YN", "YNA"):
-                                data["no"] = self.parse_vote_value(option, "N")
-                            if instance["pollmethod"] == "YNA":
-                                data["abstain"] = self.parse_vote_value(option, "A")
+
+            o_obj = f"{key},{option[key]}"
+            if o_obj in unique_set:
+                raise ActionException(
+                    f"Duplicated option in poll.options: {option[key]}"
+                )
+            else:
+                unique_set.add(o_obj)
+
+            if instance["type"] == "analog":
+                if instance["pollmethod"] == "N":
+                    data["no"] = self.parse_vote_value(option, "N")
+                else:
+                    data["yes"] = self.parse_vote_value(option, "Y")
+                    if instance["pollmethod"] in ("YN", "YNA"):
+                        data["no"] = self.parse_vote_value(option, "N")
+                    if instance["pollmethod"] == "YNA":
+                        data["abstain"] = self.parse_vote_value(option, "A")
 
             action_data.append(data)
 

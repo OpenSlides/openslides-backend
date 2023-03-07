@@ -27,3 +27,6 @@ openslides_backend/htmlcov
 
 migrations/*.json
 migrations/*.sql
+
+# secrets
+secrets/

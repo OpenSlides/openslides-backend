@@ -95,10 +95,21 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertNotIn("crypt_signature", poll)
         self.assert_model_not_exists("vote/1")
         # test history
-        self.assert_history_information("assignment/1", ["Voting started"])
+        self.assert_history_information("assignment/1", ["Ballot started"])
         # test that votes can be given
         response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
         self.assert_status_code(response, 200)
+
+    def test_start_motion_poll(self) -> None:
+        self.set_models(
+            {
+                "poll/1": {"content_object_id": "motion/1"},
+                "motion/1": {"meeting_id": 1},
+            }
+        )
+        response = self.request("poll.start", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_history_information("motion/1", ["Voting started"])
 
 
 class VotePollNamedY(VotePollBaseTestClass):

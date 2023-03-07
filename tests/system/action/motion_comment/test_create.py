@@ -39,7 +39,9 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         assert model.get("comment") == "test_Xcdfgee"
         assert model.get("motion_id") == 357
         assert model.get("section_id") == 78
-        self.assert_history_information("motion/357", ["Comment {} created", "test"])
+        self.assert_history_information(
+            "motion/357", ["Comment {} created", "motion_comment_section/78"]
+        )
 
     def test_create_not_unique_error(self) -> None:
         self.set_models(

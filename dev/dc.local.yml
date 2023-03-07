@@ -10,7 +10,7 @@ services:
         environment:
             - PYTHONPATH=/app:/datastore-service
             - MYPYPATH=/app:/datastore-service
-    writer:
+    datastore-writer:
         build:
             context: ../../openslides-datastore-service/
             dockerfile: Dockerfile.dev
@@ -26,7 +26,7 @@ services:
             - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
             - DATASTORE_DATABASE_NAME=openslides
             - DATASTORE_DATABASE_USER=openslides
-            - DATASTORE_DATABASE_HOST=postgresql
+            - DATASTORE_DATABASE_HOST=postgres
             - MESSAGE_BUS_HOST=redis
         volumes:
             - ../../openslides-datastore-service/datastore:/app/datastore
