@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from ...models.fields import Field
 from ...shared.patterns import (
@@ -30,13 +30,19 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         )
         if not (meeting_id := instance.get("meeting_id")):
             if not (
-                meeting_id := self.datastore.changed_models.get(fqid).get("meeting_id")
+                meeting_id := cast(
+                    Dict[str, Any], self.datastore.changed_models.get(fqid)
+                ).get("meeting_id")
             ):
                 meeting_id = db_instance.get("meeting_id")
         assert meeting_id, f"No meeting_id can be found for fqid {fqid}"
 
         if not (user_id := instance.get("user_id")):
-            if not (user_id := self.datastore.changed_models.get(fqid).get("user_id")):
+            if not (
+                user_id := cast(
+                    Dict[str, Any], self.datastore.changed_models.get(fqid)
+                ).get("user_id")
+            ):
                 user_id = db_instance.get("user_id")
         assert user_id, f"No user_id can be found for fqid {fqid}"
 

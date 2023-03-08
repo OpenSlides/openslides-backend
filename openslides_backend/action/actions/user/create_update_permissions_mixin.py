@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import reduce
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -434,5 +434,5 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         any other group B field.
         """
         meetings: Set[int] = set(instance.get("is_present_in_meeting_ids", []))
-        meetings.add(instance.get("meeting_id"))
+        meetings.add(cast(int, instance.get("meeting_id")))
         return meetings

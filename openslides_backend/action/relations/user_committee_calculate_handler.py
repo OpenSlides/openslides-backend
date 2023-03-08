@@ -64,9 +64,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             fqid_meeting_user = fqid_from_collection_and_id(
                 field.own_collection, instance["id"]
             )
-            user_id = self.datastore.changed_models.get(fqid_meeting_user).get(
-                "user_id"
-            )
+            user_id = cast(
+                Dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
+            ).get("user_id")
             meeting_users = self.get_meeting_users_from_changed_models(user_id)
             min_meeting_user_id = min(meeting_users.keys())
             if min_meeting_user_id == instance["id"]:
@@ -110,7 +110,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
                         [
                             GetManyRequest(
                                 meeting_collection,
-                                list(meeting_ids),
+                                meeting_ids,
                                 ["committee_id"],
                             )
                         ]
@@ -155,12 +155,12 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         return relation_update
 
     def fill_meeting_user_changed_models_with_user_and_meeting_id(self) -> None:
-        meeting_user_ids = (
+        meeting_user_ids: List[int] = [
             id_from_fqid(key)
             for key, data in self.datastore.changed_models.items()
             if collection_from_fqid(key) == "meeting_user"
             and (not data.get("user_id") or not data.get("meeting_id"))
-        )
+        ]
         if meeting_user_ids:
             results = self.datastore.get_many(
                 [
@@ -181,7 +181,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
 
     def get_all_meeting_ids_by_user_id(
         self, user_id: int, meeting_users: Dict[int, Dict[str, Any]]
-    ) -> set[int]:
+    ) -> List[int]:
         filter_ = And(
             FilterOperator("user_id", "=", user_id),
             Not(FilterOperator("group_ids", "=", None)),
