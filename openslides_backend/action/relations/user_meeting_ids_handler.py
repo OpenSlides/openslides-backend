@@ -29,7 +29,9 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
             raise_exception=False,
         )
         if not (meeting_id := instance.get("meeting_id")):
-            if not (meeting_id := self.datastore.changed_models.get(fqid).get("meeting_id")):
+            if not (
+                meeting_id := self.datastore.changed_models.get(fqid).get("meeting_id")
+            ):
                 meeting_id = db_instance.get("meeting_id")
         assert meeting_id, f"No meeting_id can be found for fqid {fqid}"
 

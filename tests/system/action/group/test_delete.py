@@ -106,13 +106,15 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted(
             "group/111", {"meeting_user_ids": [142, 143], "meeting_id": 22}
         )
-        self.assert_model_exists("committee/3", {"user_ids": []})  # still has user_ids
+        self.assert_model_exists(
+            "committee/3", {"user_ids": []}
+        )
         self.assert_model_exists("meeting/22", {"user_ids": [], "group_ids": []})
         self.assert_model_exists(
             "user/42",
             {
                 "meeting_ids": [],
-                 "committee_ids": [], # still has committee_id
+                "committee_ids": [],
                 "meeting_user_ids": [142],
             },
         )
@@ -121,11 +123,11 @@ class GroupDeleteActionTest(BaseActionTestCase):
             "user/43",
             {
                 "meeting_ids": [],
-                 "committee_ids": [], # still has committee_id
+                "committee_ids": [],
                 "meeting_user_ids": [143],
             },
         )
-        self.assert_model_exists("meeting_user/142", {"group_ids": []})
+        self.assert_model_exists("meeting_user/143", {"group_ids": []})
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(

@@ -56,7 +56,8 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
                 use_changed_models=False,
                 raise_exception=False,
             )
-            return self.do_changes(fqid_user, db_user, action)
+            meeting_users = self.get_meeting_users_from_changed_models(user_id)
+            return self.do_changes(fqid_user, db_user, meeting_users, action)
         else:
             if action != "user.delete":
                 self.fill_meeting_user_changed_models_with_user_and_meeting_id()
@@ -66,12 +67,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             user_id = self.datastore.changed_models.get(fqid_meeting_user).get(
                 "user_id"
             )
-            meeting_users = {
-                id_from_fqid(key): data
-                for key, data in self.datastore.changed_models.items()
-                if collection_from_fqid(key) == "meeting_user"
-                and (data.get("user_id") == user_id or isinstance(data, DeletedModel))
-            }
+            meeting_users = self.get_meeting_users_from_changed_models(user_id)
             min_meeting_user_id = min(meeting_users.keys())
             if min_meeting_user_id == instance["id"]:
                 fqid_user = fqid_from_collection_and_id("user", user_id)
@@ -86,11 +82,15 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
                     use_changed_models=False,
                     raise_exception=False,
                 )
-                return self.do_changes(fqid_user, db_user, action)
+                return self.do_changes(fqid_user, db_user, meeting_users, action)
         return {}
 
     def do_changes(
-        self, fqid: FullQualifiedId, db_user: Dict[str, Any], action: str
+        self,
+        fqid: FullQualifiedId,
+        db_user: Dict[str, Any],
+        meeting_users: Dict[int, Dict[str, Any]],
+        action: str,
     ) -> RelationUpdates:
         user_id = id_from_fqid(fqid)
         db_committee_ids = set(db_user.get("committee_ids", []) or [])
@@ -100,7 +100,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         else:
             new_committees_ids = set(db_user.get("committee_management_ids", []))
 
-        meeting_ids = self.get_all_meeting_ids_by_user_id(user_id)
+        meeting_ids = self.get_all_meeting_ids_by_user_id(user_id, meeting_users)
         if meeting_ids:
             meeting_collection = "meeting"
             committee_ids: Set[int] = set(
@@ -158,8 +158,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         meeting_user_ids = (
             id_from_fqid(key)
             for key, data in self.datastore.changed_models.items()
-            if collection_from_fqid(key) == "meeting_user" and (not data.get("user_id") or not data.get("meeting_id")
-        ))
+            if collection_from_fqid(key) == "meeting_user"
+            and (not data.get("user_id") or not data.get("meeting_id"))
+        )
         if meeting_user_ids:
             results = self.datastore.get_many(
                 [
@@ -172,12 +173,15 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
                 use_changed_models=False,
             ).get("meeting_user", {})
             for key, value in results.items():
-                changed_model = self.datastore.changed_models[fqid_from_collection_and_id("meeting_user", key)]
+                changed_model = self.datastore.changed_models[
+                    fqid_from_collection_and_id("meeting_user", key)
+                ]
                 changed_model["user_id"] = value["user_id"]
                 changed_model["meeting_id"] = value["meeting_id"]
 
-    def get_meeting_users_by_user_id(self, user_id: int) -> List[Dict[str, Any]]:
-        """Get a user_id, filters all meeting_user for it and returns the meeting_id"""
+    def get_all_meeting_ids_by_user_id(
+        self, user_id: int, meeting_users: Dict[int, Dict[str, Any]]
+    ) -> set[int]:
         filter_ = And(
             FilterOperator("user_id", "=", user_id),
             Not(FilterOperator("group_ids", "=", None)),
@@ -185,10 +189,23 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         res = self.datastore.filter(
             "meeting_user",
             filter_,
-            ["meeting_id"],
+            ["meeting_id", "group_ids"],
         )
-        return list(res.values())
+        meeting_ids = []
+        for meeting_user_id, meeting_user in res.items():
+            if meeting_user_id not in meeting_users and meeting_user["group_ids"]:
+                meeting_ids.append(meeting_user["meeting_id"])
+        meeting_ids.extend(
+            [mu["meeting_id"] for mu in meeting_users.values() if mu.get("group_ids")]
+        )
+        return meeting_ids
 
-    def get_all_meeting_ids_by_user_id(self, user_id: int) -> set[int]:
-        meeting_users = self.get_meeting_users_by_user_id(user_id)
-        return set(mu["meeting_id"] for mu in meeting_users)
+    def get_meeting_users_from_changed_models(
+        self, user_id: int
+    ) -> Dict[int, Dict[str, Any]]:
+        return {
+            id_from_fqid(key): data
+            for key, data in self.datastore.changed_models.items()
+            if collection_from_fqid(key) == "meeting_user"
+            and (data.get("user_id") == user_id or isinstance(data, DeletedModel))
+        }
