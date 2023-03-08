@@ -106,9 +106,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted(
             "group/111", {"meeting_user_ids": [142, 143], "meeting_id": 22}
         )
-        self.assert_model_exists(
-            "committee/3", {"user_ids": []}
-        )
+        self.assert_model_exists("committee/3", {"user_ids": []})
         self.assert_model_exists("meeting/22", {"user_ids": [], "group_ids": []})
         self.assert_model_exists(
             "user/42",
