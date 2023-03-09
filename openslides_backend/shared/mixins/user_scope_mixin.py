@@ -20,13 +20,13 @@ from ..patterns import fqid_from_collection_and_id
 from ..util_dict_sets import get_set_from_dict_by_fieldlist, get_set_from_dict_from_dict
 
 
-class UserScope(int, Enum):
-    Meeting = 1
-    Committee = 2
-    Organization = 3
+class UserScope(str, Enum):
+    Meeting = "meeting"
+    Committee = "committee"
+    Organization = "organization"
 
     def __repr__(self) -> str:
-        return str(self.value)
+        return repr(self.value)
 
 
 class UserScopeMixin(BaseServiceProvider):

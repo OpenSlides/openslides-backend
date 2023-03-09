@@ -29,7 +29,7 @@ search_users_schema = fastjsonschema.compile(
         "title": "search_users",
         "properties": {
             "permission_type": {
-                "type": "integer",
+                "type": "string",
                 "enum": list(UserScope),
             },
             "permission_id": {
