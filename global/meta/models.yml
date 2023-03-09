@@ -319,11 +319,6 @@ user:
     to: poll_candidate/user_id
     restriction_mode: A
 
-  poll_candidate_ids:
-    type: relation-list
-    to: poll_candidate/user_id
-    restriction_mode: A
-
   meeting_ids:
     type: number[]
     description: Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.
