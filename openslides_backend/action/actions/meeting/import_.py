@@ -492,7 +492,6 @@ class MeetingImport(
                     ) + [admin_group_id]
                 break
         if not new_meeting_user_id:
-            # und hier der request_user, der nicht im import drin ist
             new_meeting_user_id = self.datastore.reserve_id("meeting_user")
             data_json["meeting_user"][str(new_meeting_user_id)] = {
                 "id": new_meeting_user_id,
@@ -630,31 +629,6 @@ class MeetingImport(
     def append_extra_events(
         self, events: List[Event], json_data: Dict[str, Any]
     ) -> None:
-        # meeting = self.get_meeting_from_json(json_data)
-
-        # add request user to admin group of imported meeting.
-        # Request user is added to group in meeting to organization/active_meeting_ids if not archived
-        # if (
-        #     meeting.get("is_active_in_organization_id")
-        #     and hasattr(self, "new_group_for_request_user")
-        #     and self.new_group_for_request_user
-        #     and self.new_meeting_user_id
-        # ):
-        #     events.append(
-        #         self.build_event(
-        #             EventType.Update,
-        #             fqid_from_collection_and_id(
-        #                 "meeting_user", self.new_meeting_user_id
-        #             ),
-        #             list_fields={
-        #                 "add": {
-        #                     "group_ids": [self.new_group_for_request_user],
-        #                 },
-        #                 "remove": {},
-        #             },
-        #         )
-        #     )
-
         # add new users to the organization.user_ids
         new_user_ids = []
         for user_entry in json_data.get("user", {}).values():

@@ -302,7 +302,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         meeting_users_new = {
             meeting_id: {
-                "id": (last_meeting_user_id := last_meeting_user_id + 1),  # noqa: F841
+                "id": last_meeting_user_id + 1,
                 "user_id": user_id,
                 "meeting_id": meeting_id,
                 "group_ids": [],
