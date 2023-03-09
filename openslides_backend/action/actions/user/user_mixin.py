@@ -272,7 +272,11 @@ class UpdateHistoryMixin(Action):
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 resolved_instance_fields,
                 use_changed_models=False,
+                raise_exception=False,
             )
+            if not db_instance:
+                continue
+
             # Compare db version with payload
             for field in instance_fields:
                 model_field = self.model.try_get_field(field)
