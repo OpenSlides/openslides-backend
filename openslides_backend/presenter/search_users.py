@@ -1,5 +1,4 @@
-from collections import defaultdict
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import Any, Dict, List, Set, Tuple
 
 import fastjsonschema
 
@@ -16,23 +15,23 @@ from ..permissions.permission_helper import (
 )
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import MissingPermission, PresenterException
-from ..shared.filters import FilterOperator, Or
+from ..shared.filters import And, Filter, FilterOperator, Or
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
 
-search_users_by_name_or_email_schema = fastjsonschema.compile(
+user_match_fields = ["username", "first_name", "last_name", "email"]
+search_users_schema = fastjsonschema.compile(
     {
         "$schema": schema_version,
         "type": "object",
-        "title": "search_users_by_name_or_email",
-        "description": "get lists of id, first-, last-name and email for tuples of exact (username, emails)-tuples.",
+        "title": "search_users",
         "properties": {
             "permission_type": {
                 "type": "integer",
-                "enum": [1, 2, 3],
-            },  # 1=meeting, 2=committee, 3=organization
+                "enum": list(UserScope),
+            },
             "permission_id": {
                 "type": "integer",
                 "minimum": 1,
@@ -43,9 +42,9 @@ search_users_by_name_or_email_schema = fastjsonschema.compile(
                 "items": {
                     "type": "object",
                     "properties": {
-                        "username": {"type": "string"},
-                        "email": {"type": "string"},
+                        field: {"type": "string"} for field in user_match_fields
                     },
+                    "additionalProperties": False,
                 },
             },
         },
@@ -55,49 +54,64 @@ search_users_by_name_or_email_schema = fastjsonschema.compile(
 )
 
 
-@register_presenter("search_users_by_name_or_email")
+@register_presenter("search_users")
 class SearchUsersByNameEmail(BasePresenter):
     """
-    Collects users with exect usernames or exact emails.
+    Matches users to the search criteria either by username or by exact match of first name, last
+    name AND email. Returns a list of users for each search criteria in payload order.
     """
 
-    schema = search_users_by_name_or_email_schema
+    schema = search_users_schema
 
-    def get_result(self) -> Any:
+    def get_result(self) -> List[List[Dict[str, Any]]]:
         self.check_permissions(self.data["permission_type"], self.data["permission_id"])
-        result: Dict[str, List[Dict[str, Union[str, int]]]] = {}
-        filter_bulk_tuples: Set[Tuple[str, str]] = set()
+        filter_tuples: Set[Tuple[str, ...]] = set()
         for search in self.data["search"]:
-            if username := search.get("username", "").strip():
-                filter_bulk_tuples.add(("username", username))
-            if email := search.get("email", "").strip():
-                filter_bulk_tuples.add(("email", email))
-        if len(filter_bulk_tuples) == 0:
-            return result
-        filter_bulk = Or(
-            *[FilterOperator(t[0], "~=", t[1]) for t in filter_bulk_tuples]
-        )
-        instances = self.datastore.filter(
-            "user",
-            filter_bulk,
-            ["id", "username", "first_name", "last_name", "email"],
-            lock_result=False,
-        )
-        userd: Dict[str, Set[int]] = defaultdict(set)
-        emaild: Dict[str, Set[int]] = defaultdict(set)
-        for instance in instances.values():
-            if username := instance["username"]:
-                userd[username.lower()].add(instance["id"])
-            if email := instance["email"]:
-                emaild[email.lower()].add(instance["id"])
+            # strip all fields and use "" if no value was given
+            for field in user_match_fields:
+                search[field] = search.get(field, "").strip().lower()
+            if search["username"]:
+                # if a username is given, match only by username
+                filter_tuples.add((search["username"],))
+            elif search["first_name"] and search["last_name"] and search["email"]:
+                # otherwise ALL of first name, last name and email must match
+                filter_tuples.add(
+                    (search["first_name"], search["last_name"], search["email"])
+                )
+
+        if len(filter_tuples):
+            # fetch result from db
+            filters: List[Filter] = [
+                FilterOperator("username", "~=", t[0])
+                if len(t) == 1
+                else And(
+                    FilterOperator("first_name", "~=", t[0]),
+                    FilterOperator("last_name", "~=", t[1]),
+                    FilterOperator("email", "~=", t[2]),
+                )
+                for t in filter_tuples
+            ]
+            instances = self.datastore.filter(
+                "user",
+                Or(*filters),
+                ["id", "username", "first_name", "last_name", "email"],
+                lock_result=False,
+            )
+        else:
+            instances = {}
+
+        # match result to search criteria
+        result = []
         for search in self.data["search"]:
-            username = search.get("username", "").strip()
-            email = search.get("email", "").strip()
-            user_ids: Set[int] = userd[username.lower()] | emaild[email.lower()]
-            if user_ids:
-                result[f"{username}/{email}"] = [
-                    instances[user_id] for user_id in user_ids
-                ]
+            current_result = []
+            for instance in instances.values():
+                if (instance.get("username", "").lower() == search["username"]) or (
+                    instance.get("first_name", "").lower() == search["first_name"]
+                    and instance.get("last_name", "").lower() == search["last_name"]
+                    and instance.get("email", "").lower() == search["email"]
+                ):
+                    current_result.append(instance)
+            result.append(current_result)
         return result
 
     def check_permissions(self, permission_type: int, permission_id: int) -> None:

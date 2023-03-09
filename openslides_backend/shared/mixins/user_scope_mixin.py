@@ -25,6 +25,9 @@ class UserScope(int, Enum):
     Committee = 2
     Organization = 3
 
+    def __repr__(self) -> str:
+        return str(self.value)
+
 
 class UserScopeMixin(BaseServiceProvider):
     def get_user_scope(
