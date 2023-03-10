@@ -9,7 +9,7 @@ from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, required_id_schema
 from ..meeting_user.set_data import MeetingUserSetData
 
@@ -67,6 +67,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "vote_weight": decimal_schema,
         "vote_delegated_to_id": required_id_schema,
         "vote_delegations_from_ids": id_list_schema,
+        "group_ids": id_list_schema,
     }
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -85,25 +86,23 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 raise ActionException(
                     f"A user with the username {instance['username']} already exists."
                 )
-        if instance.get("group_$_ids") is not None:
-            self.datastore.apply_changed_model(
-                fqid_from_collection_and_id("user", instance["id"]),
-                {
-                    **{
-                        f"group_${meeting_id}_ids": ids
-                        for meeting_id, ids in instance.get("group_$_ids", {}).items()
-                    },
-                    "meeting_ids": [
-                        int(id) for id in instance.get("group_$_ids", {}).keys()
-                    ],
-                },
-            )
+        self.check_meeting_and_users(
+            instance, fqid_from_collection_and_id("user", instance["id"])
+        )
         self.meeting_user_set_data(instance)
         return instance
 
     def strip_field(self, field: str, instance: Dict[str, Any]) -> None:
         if instance.get(field):
             instance[field] = instance[field].strip()
+
+    def check_meeting_and_users(
+        self, instance: Dict[str, Any], user_fqid: FullQualifiedId
+    ) -> None:
+        if instance.get("meeting_id") is not None:
+            self.datastore.apply_changed_model(
+                user_fqid, {"meeting_id": instance.get("meeting_id")}
+            )
 
     def meeting_user_set_data(self, instance: Dict[str, Any]) -> None:
         meeting_user_data = {}

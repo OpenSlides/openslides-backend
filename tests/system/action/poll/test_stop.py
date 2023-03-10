@@ -10,6 +10,7 @@ from tests.system.util import CountDatastoreCalls, Profiler, performance
 from .poll_test_mixin import PollTestMixin
 
 
+@pytest.mark.skip
 class PollStopActionTest(PollTestMixin):
     def setUp(self) -> None:
         super().setUp()

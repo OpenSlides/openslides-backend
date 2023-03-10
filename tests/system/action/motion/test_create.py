@@ -536,6 +536,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_category/56": {"meeting_id": 1},
                 "motion_block/13": {"meeting_id": 1},
                 "motion_block/57": {"meeting_id": 1},
+                "meeting/1": {"user_ids": [2]},
             }
         )
         response = self.request(

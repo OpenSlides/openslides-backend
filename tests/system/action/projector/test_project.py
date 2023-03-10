@@ -361,12 +361,11 @@ class ProjectorProject(BaseActionTestCase):
             {
                 "user/2": {
                     "username": "normal user",
-                    "group_$1_ids": [1],
-                    "group_$_ids": ["1"],
                     "meeting_ids": [1],
                 },
             }
         )
+        self.set_user_groups(2, [1])
         response = self.request(
             "projector.project",
             {"ids": [75], "content_object_id": "user/2", "meeting_id": 1},
@@ -382,14 +381,13 @@ class ProjectorProject(BaseActionTestCase):
             {
                 "user/2": {
                     "username": "normal user",
-                    "group_$1_ids": [1],
-                    "group_$_ids": ["1"],
                     "meeting_ids": [1],
                     "meeting_user_ids": [2],
                 },
                 "meeting_user/2": {
                     "meeting_id": 1,
                     "user_id": 2,
+                    "group_ids": [1],
                 },
             }
         )
@@ -433,6 +431,24 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assertIn("'assignment/452'", response.json["message"])
         self.assertIn("'projector/23'", response.json["message"])
+
+    def test_project_wrong_meeting_by_content_user(self) -> None:
+        self.create_model(
+            "user/2",
+            {"username": "normal user", "meeting_user_ids": [2]},
+        )
+        self.set_models(
+            {"meeting_user/2": {"meeting_id": 1, "user_id": 2, "group_ids": [1]}}
+        )
+        response = self.request(
+            "projector.project",
+            {"ids": [], "content_object_id": "user/2", "meeting_id": 2, "stable": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 2: ['user/2']",
+            response.json["message"],
+        )
 
     def test_project_wrong_meeting_by_content_meeting(self) -> None:
         response = self.request(

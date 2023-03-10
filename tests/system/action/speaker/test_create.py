@@ -489,13 +489,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
         self.set_models(self.test_models)
-        self.set_models(
-            {f"meeting_user/{self.user_id}": {"meeting_id": 1, "user_id": self.user_id}}
-        )
+        self.set_models({"meeting_user/1": {"meeting_id": 1, "user_id": self.user_id}})
         response = self.request(
             "speaker.create",
             {
-                "meeting_user_id": self.user_id,
+                "meeting_user_id": 1,
                 "list_of_speakers_id": 23,
                 "speech_state": "contribution",
             },

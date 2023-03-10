@@ -466,7 +466,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 },
                 {
                     "action": "user.update",
-                    "data": [{"id": 4, "group_$_ids": {"3": [11]}}],
+                    "data": [{"id": 4, "meeting_id": 3, "group_ids": [11]}],
                 },
             ]
         )

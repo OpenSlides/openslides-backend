@@ -12,6 +12,10 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "name": "name_XDAddEAW",
                 "committee_id": 53,
                 "is_active_in_organization_id": 1,
+                "group_ids": [111],
+                "motion_ids": [12],
+                "meeting_user_ids": [1],
+                "user_ids": [1],
             },
             "meeting/2": {
                 "name": "name_SNLGsvIV",
@@ -20,12 +24,17 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "is_active_in_organization_id": 1,
                 "default_group_id": 112,
                 "group_ids": [112],
+                "meeting_user_ids": [2],
+                "user_ids": [
+                    1,
+                ],
             },
             "user/1": {"meeting_ids": [1, 2]},
             "motion_workflow/12": {
                 "name": "name_workflow1",
                 "first_state_id": 34,
                 "state_ids": [34],
+                "meeting_id": 2,
             },
             "motion_state/34": {
                 "name": "name_state34",
@@ -41,12 +50,36 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "state_id": 30,
             },
-            "committee/52": {"name": "committee_receiver"},
+            "committee/52": {
+                "name": "committee_receiver",
+                "meeting_ids": [2],
+                "receive_forwardings_from_committee_ids": [53],
+                "user_ids": [1],
+            },
             "committee/53": {
                 "name": "committee_forwarder",
+                "meeting_ids": [1],
                 "forward_to_committee_ids": [52],
+                "user_ids": [1],
             },
-            "group/112": {"name": "YZJAwUPK", "meeting_id": 2},
+            "group/111": {
+                "name": "Grp Meeting1",
+                "meeting_id": 1,
+                "meeting_user_ids": [1],
+            },
+            "group/112": {"name": "YZJAwUPK", "meeting_id": 2, "meeting_user_ids": [2]},
+            "meeting_user/1": {
+                "id": 1,
+                "user_id": 1,
+                "meeting_id": 1,
+                "group_ids": [111],
+            },
+            "meeting_user/2": {
+                "id": 2,
+                "user_id": 1,
+                "meeting_id": 2,
+                "group_ids": [112],
+            },
         }
 
     def test_correct_origin_id_set(self) -> None:
@@ -80,7 +113,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.assert_model_exists(
             "motion_submitter/1",
             {
-                "meeting_user_id": 1,
+                "meeting_user_id": 3,
                 "motion_id": 13,
             },
         )
@@ -91,17 +124,20 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "last_name": "committee_forwarder",
                 "is_physical_person": False,
                 "is_active": False,
-                "group_$_ids": ["2"],
-                "group_$2_ids": [112],
+                "meeting_user_ids": [3],
                 "forwarding_committee_ids": [53],
-                "meeting_user_ids": [1],
             },
         )
         self.assert_model_exists(
-            "meeting_user/1",
-            {"meeting_id": 2, "user_id": 2, "submitted_motion_ids": [1]},
+            "meeting_user/3",
+            {
+                "meeting_id": 2,
+                "user_id": 2,
+                "submitted_motion_ids": [1],
+                "group_ids": [112],
+            },
         )
-        self.assert_model_exists("group/112", {"user_ids": [2]})
+        self.assert_model_exists("group/112", {"meeting_user_ids": [2, 3]})
         self.assert_model_exists("committee/53", {"forwarding_user_id": 2})
         self.assert_model_exists(
             "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
@@ -115,19 +151,22 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/2": {
-                    "username": "committee_forwarder",
+                    "username": "committee_forwarder53",
                     "is_physical_person": False,
                     "is_active": False,
-                    "group_$_ids": ["2"],
-                    "group_$2_ids": [113],
                     "forwarding_committee_ids": [53],
                 },
-                "group/113": {"name": "HPMHcWhk", "meeting_id": 2, "user_ids": [2]},
+                "group/113": {"name": "HPMHcWhk", "meeting_id": 2},
                 "meeting/2": {"group_ids": [112, 113]},
                 "committee/53": {"forwarding_user_id": 2},
             }
         )
-
+        self.set_user_groups(
+            2,
+            [
+                113,
+            ],
+        )
         response = self.request(
             "motion.create_forwarded",
             {
@@ -139,34 +178,105 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.assert_model_exists(
+        self.assert_model_exists(
+            "committee/52",
+            {
+                "name": "committee_receiver",
+                "user_ids": [1, 2],
+                "meeting_ids": [2],
+                "receive_forwardings_from_committee_ids": [53],
+            },
+        )
+        self.assert_model_exists(
+            "committee/53",
+            {
+                "name": "committee_forwarder",
+                "user_ids": [1],
+                "forwarding_user_id": 2,
+                "forward_to_committee_ids": [52],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "committee_id": 53,
+                "user_ids": [1],
+                "motion_ids": [
+                    12,
+                ],
+                "forwarded_motion_ids": [13],
+                "group_ids": [111],
+                "meeting_user_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "committee_id": 52,
+                "user_ids": [1, 2],
+                "meeting_user_ids": [2, 3],
+                "motion_ids": [13],
+                "motion_submitter_ids": [1],
+                "group_ids": [112, 113],
+                "list_of_speakers_ids": [1],
+            },
+        )
+
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "committee_forwarder53",
+                "is_physical_person": False,
+                "is_active": False,
+                "meeting_ids": [2],
+                "committee_ids": [52],
+                "meeting_user_ids": [3],
+                "forwarding_committee_ids": [53],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/3",
+            {
+                "user_id": 2,
+                "meeting_id": 2,
+                "group_ids": [113, 112],
+                "submitted_motion_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "group/112", {"meeting_id": 2, "meeting_user_ids": [2, 3]}
+        )
+        self.assert_model_exists(
+            "group/113", {"meeting_id": 2, "meeting_user_ids": [3]}
+        )
+        self.assert_model_exists(
+            "motion/12",
+            {
+                "title": "title_FcnPUXJB",
+                "meeting_id": 1,
+                "origin_id": None,
+                "all_origin_ids": None,
+                "derived_motion_ids": [13],
+                "all_derived_motion_ids": [13],
+            },
+        )
+        motion13 = self.assert_model_exists(
             "motion/13",
             {
                 "title": "test_Xcdfgee",
+                "text": "test",
                 "meeting_id": 2,
                 "origin_id": 12,
                 "all_derived_motion_ids": None,
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx",
+                "submitter_ids": [1],
+                "list_of_speakers_id": 1,
             },
         )
-        assert model.get("forwarded")
+        assert motion13.get("forwarded")
         self.assert_model_exists(
-            "user/2",
-            {
-                "username": "committee_forwarder",
-                "is_physical_person": False,
-                "is_active": False,
-                "group_$_ids": ["2"],
-                "group_$2_ids": [113, 112],
-                "forwarding_committee_ids": [53],
-            },
-        )
-        self.assert_model_exists("group/112", {"user_ids": [2]})
-        self.assert_model_exists("group/113", {"user_ids": [2]})
-        self.assert_model_exists("committee/53", {"forwarding_user_id": 2})
-        self.assert_model_exists(
-            "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
+            "motion_submitter/1", {"motion_id": 13, "meeting_user_id": 3}
         )
 
     def test_correct_existing_unregistered_forward_user(self) -> None:
@@ -209,20 +319,29 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "last_name": "committee_forwarder",
                 "is_physical_person": False,
                 "is_active": False,
-                "group_$_ids": ["2"],
-                "group_$2_ids": [112],
+                "meeting_user_ids": [3],
                 "forwarding_committee_ids": [53],
+                "committee_ids": [52],
                 "meeting_ids": [2],
             },
         )
-        self.assert_model_exists("group/112", {"user_ids": [3]})
+        self.assert_model_exists(
+            "meeting_user/3",
+            {
+                "meeting_id": 2,
+                "user_id": 3,
+                "group_ids": [112],
+                "submitted_motion_ids": [1],
+            },
+        )
+        self.assert_model_exists("group/112", {"meeting_user_ids": [2, 3]})
         self.assert_model_exists("committee/53", {"forwarding_user_id": 3})
         self.assert_model_exists(
             "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
         )
         self.assert_model_exists(
             "motion_submitter/1",
-            {"meeting_user_id": 1, "motion_id": 13, "meeting_id": 2},
+            {"meeting_user_id": 3, "motion_id": 13, "meeting_id": 2},
         )
 
     def test_correct_origin_id_wrong_1(self) -> None:
@@ -282,6 +401,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "name": "name_workflow1",
                     "first_state_id": 34,
                     "state_ids": [34],
+                    "meeting_id": 2,
                 },
                 "motion_state/34": {
                     "name": "name_state34",
@@ -390,6 +510,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "motion_workflow/12": {
                     "first_state_id": 34,
                     "state_ids": [34],
+                    "meeting_id": 2,
                 },
                 "motion_state/34": {
                     "meeting_id": 2,
@@ -460,6 +581,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "name": "name_workflow1",
                     "first_state_id": 34,
                     "state_ids": [34],
+                    "meeting_id": 1,
                 },
                 "motion_state/34": {
                     "name": "name_state34",
@@ -498,9 +620,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
+        self.set_models(self.test_model)
         self.set_models({"group/4": {"meeting_id": 2}})
         self.set_user_groups(self.user_id, [3, 4])
-        self.set_models(self.test_model)
         response = self.request(
             "motion.create_forwarded",
             {
@@ -517,9 +639,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
+        self.set_models(self.test_model)
         self.set_models({"group/4": {"meeting_id": 2}})
         self.set_user_groups(self.user_id, [3, 4])
-        self.set_models(self.test_model)
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
         self.set_group_permissions(4, [Permissions.Motion.CAN_FORWARD])
         response = self.request(

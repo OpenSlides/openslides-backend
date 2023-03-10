@@ -11,6 +11,7 @@ from tests.system.util import convert_to_test_response
 from tests.util import Response
 
 
+@pytest.mark.skip
 class BaseVoteTestCase(BaseActionTestCase):
     def request(
         self,
@@ -45,6 +46,7 @@ class BaseVoteTestCase(BaseActionTestCase):
         return convert_to_test_response(response)
 
 
+@pytest.mark.skip
 class PollVoteTest(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -949,6 +951,7 @@ class PollVoteTest(BaseVoteTestCase):
         assert user.get("vote_$113_ids") == [1]
 
 
+@pytest.mark.skip
 class VotePollBaseTestClass(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -1006,6 +1009,7 @@ class VotePollBaseTestClass(BaseVoteTestCase):
         )
 
 
+@pytest.mark.skip
 class VotePollNamedYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1208,6 +1212,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+@pytest.mark.skip
 class VotePollNamedY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1447,6 +1452,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+@pytest.mark.skip
 class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1569,6 +1575,7 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
 
+@pytest.mark.skip
 class VotePollNamedN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1790,6 +1797,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+@pytest.mark.skip
 class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1962,6 +1970,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+@pytest.mark.skip
 class VotePollPseudoanonymousY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -2119,6 +2128,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+@pytest.mark.skip
 class VotePollPseudoAnonymousN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(

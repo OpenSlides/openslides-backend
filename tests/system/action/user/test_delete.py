@@ -20,25 +20,30 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         model = self.get_model("user/112")
         assert model.get("username") == "username_srtgb123"
 
-    def test_delete_correct_with_template_field(self) -> None:
+    def test_delete_correct_with_groups(self) -> None:
         self.set_models(
             {
                 "user/111": {
                     "username": "username_srtgb123",
-                    "group_$_ids": ["42"],
-                    "group_$42_ids": [456],
+                    "meeting_user_ids": [111],
                     "committee_ids": [1],
                     "committee_management_ids": [1],
                 },
-                "group/456": {"meeting_id": 42, "user_ids": [111, 222]},
+                "meeting_user/111": {
+                    "meeting_id": 42,
+                    "user_id": 111,
+                    "group_ids": [456],
+                },
+                "group/456": {"meeting_id": 42, "meeting_user_ids": [111]},
                 "meeting/42": {
                     "group_ids": [456],
-                    "user_ids": [111, 222],
+                    "user_ids": [111],
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [111],
                 },
                 "committee/1": {
                     "meeting_ids": [456],
-                    "user_ids": [111, 222],
+                    "user_ids": [111],
                     "manager_ids": [111],
                 },
             }
@@ -49,14 +54,13 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_deleted(
             "user/111",
             {
-                "group_$42_ids": [456],
+                "meeting_user_ids": [111],
                 "committee_ids": [1],
                 "committee_management_ids": [1],
             },
         )
-        self.assert_model_exists("group/456", {"user_ids": [222]})
-        self.assert_model_exists("meeting/42", {"user_ids": [222]})
-        self.assert_model_exists("committee/1", {"user_ids": [222], "manager_ids": []})
+        self.assert_model_deleted("meeting_user/111", {"group_ids": [456]})
+        self.assert_model_exists("group/456", {"user_ids": None})
 
     def test_delete_with_speaker(self) -> None:
         self.set_models(
@@ -153,7 +157,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_model_exists("motion/50", {"submitter_ids": []})
 
-    def test_delete_with_template_field_set_null(self) -> None:
+    def test_delete_with_group_ids_set_null(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -168,11 +172,15 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "group/1": {
                     "meeting_id": 1,
                     "default_group_for_meeting_id": 1,
-                    "user_ids": [2],
+                    "meeting_user_ids": [2],
                 },
                 "user/2": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [1],
                 },
             }
         )
@@ -180,9 +188,9 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
 
         self.assert_model_deleted("user/2")
-        self.assert_model_exists("group/1", {"user_ids": []})
+        self.assert_model_exists("group/1", {"meeting_user_ids": []})
 
-    def test_delete_with_multiple_template_fields(self) -> None:
+    def test_delete_with_multiple_fields(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -198,17 +206,16 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "group/1": {
                     "meeting_id": 1,
                     "default_group_for_meeting_id": 1,
-                    "user_ids": [2],
+                    "meeting_user_ids": [2],
                 },
                 "user/2": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
                     "meeting_user_ids": [2],
                 },
                 "meeting_user/2": {
                     "meeting_id": 1,
                     "user_id": 2,
                     "submitted_motion_ids": [1],
+                    "group_ids": [1],
                 },
                 "motion_submitter/1": {
                     "meeting_user_id": 2,
@@ -226,7 +233,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
         self.assert_model_deleted("user/2")
         self.assert_model_deleted("meeting_user/2")
-        self.assert_model_exists("group/1", {"user_ids": []})
+        self.assert_model_exists("group/1", {"meeting_user_ids": []})
         self.assert_model_deleted("motion_submitter/1")
         self.assert_model_exists("motion/1", {"submitter_ids": []})
 
@@ -361,6 +368,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
     def test_delete_scope_committee_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
         self.setup_scoped_user(UserScope.Committee)
+        self.assert_model_exists("user/111")
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("user/111")

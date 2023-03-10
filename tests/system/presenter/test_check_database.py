@@ -248,8 +248,6 @@ class TestCheckDatabase(BasePresenterTestCase):
     def get_new_user(self, username: str, datapart: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "username": username,
-            "group_$_ids": ["1"],
-            "group_$1_ids": [1],
             "can_change_own_password": False,
             "is_physical_person": True,
             "default_vote_weight": "1.000000",
@@ -324,7 +322,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "mediafile_ids": [1, 2],
                     "logo_web_header_id": 1,
                     "font_bold_id": 2,
-                    "meeting_user_ids": [3, 5, 6],
+                    "meeting_user_ids": [1, 2, 3, 4, 5, 6],
                     **{
                         f"default_projector_{part}_ids": [1]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
@@ -336,7 +334,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "name": "default group",
                     "weight": 1,
                     "default_group_for_meeting_id": 1,
-                    "user_ids": [1, 2, 3, 4, 5, 6],
+                    "meeting_user_ids": [1, 2, 3, 4, 5, 6],
                 },
                 "group/2": {
                     "meeting_id": 1,
@@ -345,8 +343,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "admin_group_for_meeting_id": 1,
                 },
                 "user/1": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [1],
                     "can_change_own_password": False,
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
@@ -356,6 +353,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "present_user",
                     {
                         "is_present_in_meeting_ids": [1],
+                        "meeting_user_ids": [2],
                     },
                 ),
                 "user/3": self.get_new_user(
@@ -368,6 +366,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "vote_user",
                     {
                         "vote_ids": [7],
+                        "meeting_user_ids": [4],
                     },
                 ),
                 "user/5": self.get_new_user(
@@ -382,20 +381,38 @@ class TestCheckDatabase(BasePresenterTestCase):
                         "meeting_user_ids": [6],
                     },
                 ),
+                "meeting_user/1": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "group_ids": [1],
+                },
+                "meeting_user/2": {
+                    "user_id": 2,
+                    "meeting_id": 1,
+                    "group_ids": [1],
+                },
                 "meeting_user/3": {
                     "user_id": 3,
                     "meeting_id": 1,
                     "submitted_motion_ids": [5],
+                    "group_ids": [1],
+                },
+                "meeting_user/4": {
+                    "user_id": 4,
+                    "meeting_id": 1,
+                    "group_ids": [1],
                 },
                 "meeting_user/5": {
                     "user_id": 5,
                     "meeting_id": 1,
                     "vote_delegated_vote_ids": [7],
+                    "group_ids": [1],
                 },
                 "meeting_user/6": {
                     "user_id": 6,
                     "meeting_id": 1,
                     "assignment_candidate_ids": [9],
+                    "group_ids": [1],
                 },
                 "motion_workflow/1": {
                     "meeting_id": 1,

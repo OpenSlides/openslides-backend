@@ -9,28 +9,33 @@ class MotionDeleteActionTest(BaseActionTestCase):
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {
-                "motion_ids": [111],
+                "motion_ids": [111, 112],
                 "is_active_in_organization_id": 1,
-                "meeting_user_ids": [1],
+                "meeting_user_ids": [5],
             },
-            "user/1": {"meeting_user_ids": [1]},
+            "user/1": {"meeting_user_ids": [5]},
             "motion/111": {
                 "title": "title_srtgb123",
                 "meeting_id": 1,
                 "state_id": 78,
                 "submitter_ids": [12],
             },
+            "motion/112": {
+                "title": "title_fgehemn",
+                "meeting_id": 1,
+                "state_id": 78,
+            },
             "motion_state/78": {
                 "meeting_id": 1,
                 "allow_submitter_edit": True,
-                "motion_ids": [111],
+                "motion_ids": [111, 112],
             },
             "motion_submitter/12": {
                 "meeting_id": 1,
                 "motion_id": 111,
-                "meeting_user_id": 1,
+                "meeting_user_id": 5,
             },
-            "meeting_user/1": {
+            "meeting_user/5": {
                 "meeting_id": 1,
                 "user_id": 1,
                 "submitted_motion_ids": [12],
@@ -221,14 +226,14 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_models,
             "motion.delete",
-            {"id": 111},
+            {"id": 112},
         )
 
     def test_delete_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_models,
             "motion.delete",
-            {"id": 111},
+            {"id": 112},
             Permissions.Motion.CAN_MANAGE,
         )
 

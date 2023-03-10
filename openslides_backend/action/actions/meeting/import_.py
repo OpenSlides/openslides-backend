@@ -44,12 +44,15 @@ from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
+from ..meeting_user.helper import MeetingUserHelper
 from ..motion.update import EXTENSION_REFERENCE_IDS_PATTERN
 from ..user.user_mixin import LimitOfUserMixin, UsernameMixin
 
 
 @register_action("meeting.import")
-class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
+class MeetingImport(
+    SingularActionMixin, LimitOfUserMixin, UsernameMixin, MeetingUserHelper
+):
     """
     Action to import a meeting.
     """
@@ -111,12 +114,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             ),
         ]
         if self.user_id:
-            cml_fields = ["committee_management_ids"]
             requests.append(
                 GetManyRequest(
                     "user",
                     [self.user_id],
-                    ["group_$_ids", "committee_ids", *cml_fields],
+                    ["committee_ids", "committee_management_ids"],
                 ),
             )
         self.datastore.get_many(requests, use_changed_models=False)
@@ -136,22 +138,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
 
     def remove_not_allowed_fields(self, instance: Dict[str, Any]) -> None:
         json_data = instance["meeting"]
-        regex_cml = re.compile(r"^committee_\$(\D)*_management_level$")
-
-        def remove_from_collection(
-            model: Dict[str, Any], regex: re.Pattern[str]
-        ) -> None:
-            keys: List[str] = []
-            for key in model.keys():
-                if regex.search(key):
-                    keys.append(key)
-            for key in keys:
-                model.pop(key)
 
         for user in json_data.get("user", {}).values():
             user.pop("organization_management_level", None)
             user.pop("committee_ids", None)
-            remove_from_collection(user, regex_cml)
+            user.pop("committee_management_ids", None)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
         json_data.pop("action_worker", None)
 
@@ -482,6 +473,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 entry[new_field] = tmp
 
     def update_admin_group(self, data_json: Dict[str, Any]) -> None:
+        """adds the request user to the admin group of the imported meeting"""
         meeting = self.get_meeting_from_json(data_json)
         admin_group_id = meeting.get("admin_group_id")
         group = data_json.get("group", {}).get(str(admin_group_id))
@@ -489,12 +481,55 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             raise ActionException(
                 "Imported meeting has no AdminGroup to assign to request user"
             )
-        if group.get("user_ids"):
-            if self.user_id not in group["user_ids"]:
-                group["user_ids"].insert(0, self.user_id)
-        else:
-            group["user_ids"] = [self.user_id]
-        self.new_group_for_request_user = admin_group_id
+        new_meeting_user_id: Optional[int] = None
+        for meeting_user_id, meeting_user in data_json["meeting_user"].items():
+            if meeting_user.get("user_id") == self.user_id:
+                new_meeting_user_id = int(meeting_user_id)
+                if new_meeting_user_id not in (group.get("meeting_user_ids", {}) or {}):
+                    data_json["meeting_user"][meeting_user_id]["group_ids"] = (
+                        data_json["meeting_user"][meeting_user_id].get("group_ids")
+                        or []
+                    ) + [admin_group_id]
+                break
+        if not new_meeting_user_id:
+            new_meeting_user_id = self.datastore.reserve_id("meeting_user")
+            data_json["meeting_user"][str(new_meeting_user_id)] = {
+                "id": new_meeting_user_id,
+                "meeting_id": meeting["id"],
+                "user_id": self.user_id,
+                "group_ids": [admin_group_id],
+                "meta_new": True,
+            }
+            meeting["meeting_user_ids"].append(new_meeting_user_id)
+            request_user = self.datastore.get(
+                fqid_user := fqid_from_collection_and_id("user", self.user_id),
+                ["id", "meeting_user_ids", "committee_management_ids", "committee_ids"],
+            )
+            request_user.pop("meta_position", None)
+            request_user["meeting_user_ids"] = (
+                request_user.get("meeting_user_ids") or []
+            ) + [new_meeting_user_id]
+            data_json["user"][str(self.user_id)] = request_user
+            self.replace_map["user"].update(
+                {0: self.user_id}
+            )  # create a user.update event
+            self.replace_map["meeting_user"].update(
+                {0: new_meeting_user_id}
+            )  # create a meeting_user.update event
+            self.datastore.apply_changed_model(fqid_user, request_user)
+            self.datastore.apply_changed_model(
+                fqid_from_collection_and_id("meeting_user", new_meeting_user_id),
+                data_json["meeting_user"][str(new_meeting_user_id)],
+            )
+        if new_meeting_user_id not in (
+            meeting_user_ids := data_json["group"][str(admin_group_id)].get(
+                "meeting_user_ids", []
+            )
+        ):
+            meeting_user_ids.append(new_meeting_user_id)
+            data_json["group"][str(admin_group_id)][
+                "meeting_user_ids"
+            ] = meeting_user_ids
 
     def upload_mediadata(self) -> None:
         for blob, id_, mimetype in self.mediadata:
@@ -512,9 +547,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         update_events = []
         for collection in json_data:
             for entry in json_data[collection].values():
+                fqid = fqid_from_collection_and_id(collection, entry["id"])
                 meta_new = entry.pop("meta_new", None)
                 if meta_new:
-                    fqid = fqid_from_collection_and_id(collection, entry["id"])
                     events.append(
                         self.build_event(
                             EventType.Create,
@@ -522,9 +557,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                             entry,
                         )
                     )
-                elif (
-                    collection == "user" and entry["id"] in self.merge_user_map.values()
-                ):
+                elif collection == "user":
                     list_fields: ListFields = {"add": {}, "remove": {}}
                     fields: Dict[str, Any] = {}
                     for field, value in entry.items():
@@ -537,7 +570,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                             list_fields["add"][field] = value
                         elif isinstance(model_field, RelationListField):
                             list_fields["add"][field] = value
-                    fqid = fqid_from_collection_and_id(collection, entry["id"])
                     if fields or list_fields["add"]:
                         update_events.append(
                             self.build_event(
@@ -547,6 +579,14 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                                 list_fields=list_fields if list_fields["add"] else None,
                             )
                         )
+                elif collection == "meeting_user":
+                    update_events.append(
+                        self.build_event(
+                            EventType.Update,
+                            fqid,
+                            fields=entry,
+                        )
+                    )
 
         if pure_create_events:
             return events
@@ -589,32 +629,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
     def append_extra_events(
         self, events: List[Event], json_data: Dict[str, Any]
     ) -> None:
-        meeting = self.get_meeting_from_json(json_data)
-        meeting_id = meeting["id"]
-
-        # add request user to admin group of imported meeting.
-        # Request user is added to group in meeting to organization/active_meeting_ids if not archived
-        if (
-            meeting.get("is_active_in_organization_id")
-            and hasattr(self, "new_group_for_request_user")
-            and self.new_group_for_request_user
-        ):
-            events.append(
-                self.build_event(
-                    EventType.Update,
-                    fqid_from_collection_and_id("user", self.user_id),
-                    list_fields={
-                        "add": {
-                            "group_$_ids": [str(meeting_id)],
-                            f"group_${meeting_id}_ids": [
-                                self.new_group_for_request_user
-                            ],
-                        },
-                        "remove": {},
-                    },
-                )
-            )
-
         # add new users to the organization.user_ids
         new_user_ids = []
         for user_entry in json_data.get("user", {}).values():

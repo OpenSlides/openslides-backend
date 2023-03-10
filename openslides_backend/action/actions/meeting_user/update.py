@@ -32,6 +32,7 @@ class MeetingUserUpdate(MeetingUserMixin, UpdateAction):
             "vote_delegated_to_id",
             "vote_delegations_from_ids",
             "chat_message_ids",
+            "group_ids",
         ],
     )
     permission = Permissions.User.CAN_MANAGE

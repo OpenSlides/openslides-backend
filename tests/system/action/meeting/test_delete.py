@@ -230,15 +230,20 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                     "committee_ids": [1],
                 },
                 "user/2": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [11],
                     "committee_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [11],
                 },
                 "group/11": {
-                    "user_ids": [2],
+                    "meeting_user_ids": [2],
                 },
                 "meeting/1": {
                     "user_ids": [2],
+                    "meeting_user_ids": [2],
                 },
             }
         )
@@ -246,7 +251,13 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting1 = self.assert_model_deleted(
             "meeting/1",
-            {"group_ids": [11], "committee_id": 1, "is_active_in_organization_id": 1},
+            {
+                "meeting_user_ids": [2],
+                "user_ids": [],
+                "group_ids": [11],
+                "committee_id": 1,
+                "is_active_in_organization_id": 1,
+            },
         )
         # One would expect the user_ids is still filled with user_ids = [2],
         # but relation user_ids will be reseted in an execute_other_action
@@ -264,7 +275,9 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "manager_ids": [1],
             },
         )
-        self.assert_model_deleted("group/11", {"user_ids": [2], "meeting_id": 1})
+        self.assert_model_deleted(
+            "group/11", {"meeting_user_ids": [2], "meeting_id": 1}
+        )
         self.assert_model_exists(
             "user/1",
             {
@@ -272,7 +285,12 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "committee_management_ids": [1],
             },
         )
-        self.assert_model_exists("user/2", {"group_$_ids": [], "committee_ids": []})
+        self.assert_model_exists(
+            "user/2", {"meeting_user_ids": [], "committee_ids": []}
+        )
+        self.assert_model_deleted(
+            "meeting_user/2", {"meeting_id": 1, "user_id": 2, "group_ids": [11]}
+        )
 
     def test_delete_archived_meeting(self) -> None:
         self.set_models(
@@ -288,12 +306,16 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                     "committee_ids": [1],
                 },
                 "user/2": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [11],
+                    "meeting_user_ids": [2],
                     "committee_ids": [1],
                 },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [11],
+                },
                 "group/11": {
-                    "user_ids": [2],
+                    "meeting_user_ids": [2],
                 },
                 "meeting/1": {
                     "user_ids": [2],

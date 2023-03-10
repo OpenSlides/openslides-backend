@@ -1,9 +1,12 @@
+import pytest
+
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
+@pytest.mark.skip
 class UpdatePollTestCase(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()

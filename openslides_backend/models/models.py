@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "a946af9183f5f207f0080c8fc9dcb7b7"
+MODELS_YML_CHECKSUM = "68f60b4ed3e0da7894502c92c0b25669"
 
 
 class Organization(Model):
@@ -112,16 +112,11 @@ class User(Model):
     poll_voted_ids = fields.RelationListField(to={"poll": "voted_ids"})
     option_ids = fields.RelationListField(to={"option": "content_object_id"})
     vote_ids = fields.RelationListField(to={"vote": "user_id"})
-    group__ids = fields.TemplateRelationListField(
-        index=6,
-        replacement_collection="meeting",
-        to={"group": "user_ids"},
-    )
     poll_candidate_ids = fields.RelationListField(to={"poll_candidate": "user_id"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
-            "description": "Calculated. All ids from group_$_ids as integers."
+            "description": "Calculated. All ids from meetings calculated via meeting_user and group_ids as integers."
         },
     )
     organization_id = fields.OrganizationField(
@@ -164,6 +159,9 @@ class MeetingUser(Model):
         to={"meeting_user": "vote_delegated_to_id"}
     )
     chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
+    group_ids = fields.RelationListField(
+        to={"group": "meeting_user_ids"}, equal_fields="meeting_id"
+    )
 
 
 class OrganizationTag(Model):
@@ -834,7 +832,9 @@ class Group(Model):
         }
     )
     weight = fields.IntegerField()
-    user_ids = fields.RelationListField(to={"user": "group_$_ids"})
+    meeting_user_ids = fields.RelationListField(
+        to={"meeting_user": "group_ids"}, equal_fields="meeting_id"
+    )
     default_group_for_meeting_id = fields.RelationField(
         to={"meeting": "default_group_id"}, on_delete=fields.OnDelete.PROTECT
     )

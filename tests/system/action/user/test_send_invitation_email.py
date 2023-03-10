@@ -23,6 +23,7 @@ class SendInvitationMail(BaseActionTestCase):
                     "name": "annual general meeting",
                     "users_email_sender": "Openslides",
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [2],
                 },
                 "user/2": {
                     "username": "Testuser 2",
@@ -30,8 +31,13 @@ class SendInvitationMail(BaseActionTestCase):
                     "last_name": "Beam",
                     "default_password": "secret",
                     "email": "recipient2@example.com",
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [2],
                     "meeting_ids": [1],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [1],
                 },
             },
         )
@@ -70,36 +76,61 @@ class SendInvitationMail(BaseActionTestCase):
                     "username": "Testuser 3 no email",
                     "first_name": "Jim3",
                     "email": "",
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [3],
                     "meeting_ids": [1],
                 },
                 "user/4": {
                     "username": "Testuser 4 falsy email",
                     "first_name": "Jim4",
                     "email": "recipient4",
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [4],
                     "meeting_ids": [1],
                 },
                 "user/5": {
                     "username": "Testuser 5 wrong meeting",
                     "first_name": "Jim5",
                     "email": "recipient5@example.com",
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [5],
                     "meeting_ids": [1],
                 },
                 "user/6": {
                     "username": "Testuser 6 wrong schema",
                     "first_name": "Jim6",
                     "email": "recipient6@example.com",
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [6],
                     "meeting_ids": [1],
                 },
                 "user/7": {
                     "username": "Testuser 7 special email for server detection",
                     "first_name": "Jim7",
                     "email": "recipient7_create_error551@example.com",
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [7],
                     "meeting_ids": [1],
+                },
+                "meeting_user/3": {
+                    "meeting_id": 1,
+                    "user_id": 3,
+                    "group_ids": [1],
+                },
+                "meeting_user/4": {
+                    "meeting_id": 1,
+                    "user_id": 4,
+                    "group_ids": [1],
+                },
+                "meeting_user/5": {
+                    "meeting_id": 1,
+                    "user_id": 5,
+                    "group_ids": [1],
+                },
+                "meeting_user/6": {
+                    "meeting_id": 1,
+                    "user_id": 6,
+                    "group_ids": [1],
+                },
+                "meeting_user/7": {
+                    "meeting_id": 1,
+                    "user_id": 7,
+                    "group_ids": [1],
                 },
             },
         )
@@ -323,9 +354,18 @@ class SendInvitationMail(BaseActionTestCase):
                     "username": "Testuser 3",
                     "first_name": "Jim3",
                     "email": "x@abc.com",
-                    "group_$1_ids": [1],
-                    "group_$4_ids": [4],
+                    "meeting_user_ids": [3, 4],
                     "meeting_ids": [1, 4],
+                },
+                "meeting_user/3": {
+                    "meeting_id": 1,
+                    "user_id": 3,
+                    "group_ids": [1],
+                },
+                "meeting_user/4": {
+                    "meeting_id": 1,
+                    "user_id": 4,
+                    "group_ids": [4],
                 },
             },
         )
@@ -398,13 +438,27 @@ class SendInvitationMail(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": None,
-                    "group_$1_ids": [2],  # admin group
-                    "group_$4_ids": [4],  # default group without rights
+                    "meeting_user_ids": [1, 2],
                     "meeting_ids": [1, 4],
                 },
                 "user/2": {
-                    "group_$4_ids": [4],
+                    "meeting_user_ids": [3],
                     "meeting_ids": [1, 4],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 4,
+                    "user_id": 1,
+                    "group_ids": [4],
+                },
+                "meeting_user/3": {
+                    "meeting_id": 4,
+                    "user_id": 2,
+                    "group_ids": [4],
                 },
             },
         )
@@ -441,9 +495,14 @@ class SendInvitationMail(BaseActionTestCase):
             {
                 "user/2": {
                     "title": "Dr.",
-                    f"group_${meeting_id}_ids": [4],
+                    "meeting_user_ids": [2],
                     "meeting_ids": [meeting_id],
-                }
+                },
+                "meeting_user/2": {
+                    "meeting_id": meeting_id,
+                    "user_id": 2,
+                    "group_ids": [4],
+                },
             }
         )
         handler = AIOHandler()
@@ -578,7 +637,7 @@ class SendInvitationMail(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"organization_management_level": None},
-                "user/2": {"group_$1_ids": []},
+                "user/2": {"username": "testx"},
                 ONE_ORGANIZATION_FQID: {
                     "name": "test orga name",
                     "users_email_subject": "Invitation for Openslides '{event_name}'",

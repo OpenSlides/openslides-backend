@@ -586,7 +586,12 @@ class CreatePoll(BaseActionTestCase):
 
     def test_unique_no_error_mixed_text_content_object_id_options(self) -> None:
         self.create_meeting()
-        self.set_models({"meeting_user/1": {"meeting_id": 1, "user_id": 1}})
+        self.set_models(
+            {
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
+                "user/1": {"meeting_ids": [1]},
+            }
+        )
         self.set_user_groups(1, [1])
         response = self.request(
             "poll.create",
@@ -670,12 +675,19 @@ class CreatePoll(BaseActionTestCase):
     def test_create_user_option_valid(self) -> None:
         self.set_models(
             {
-                "meeting/42": {"is_active_in_organization_id": 1},
-                "group/5": {"meeting_id": 42, "user_ids": [1]},
+                "meeting/42": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "group/5": {"meeting_id": 42, "meeting_user_ids": [1]},
                 "user/1": {
-                    "group_$42_ids": [5],
-                    "group_$_ids": ["42"],
+                    "meeting_user_ids": [1],
                     "meeting_ids": [42],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 42,
+                    "user_id": 1,
+                    "group_ids": [5],
                 },
                 "assignment/2": {
                     "meeting_id": 42,
@@ -712,13 +724,17 @@ class CreatePoll(BaseActionTestCase):
     def test_create_user_option_invalid(self) -> None:
         self.set_models(
             {
-                "meeting/42": {},
+                "meeting/42": {"meeting_user_ids": [1]},
                 "meeting/7": {"is_active_in_organization_id": 1},
-                "group/5": {"meeting_id": 42, "user_ids": [1]},
+                "group/5": {"meeting_id": 42, "meeting_user_ids": [1]},
                 "user/1": {
-                    "group_$42_ids": [5],
-                    "group_$_ids": ["42"],
+                    "meeting_user_ids": [1],
                     "meeting_ids": [42],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 42,
+                    "user_id": 1,
+                    "group_ids": [5],
                 },
             }
         )

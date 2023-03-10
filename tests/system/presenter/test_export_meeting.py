@@ -98,16 +98,21 @@ class TestExportMeeting(BasePresenterTestCase):
                     "user_ids": [1],
                     "group_ids": [11],
                     "present_user_ids": [1],
+                    "meeting_user_ids": [1],
                 },
                 "user/1": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [11],
                     "is_present_in_meeting_ids": [1],
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [11],
                 },
                 "group/11": {
                     "name": "group_in_meeting_1",
                     "meeting_id": 1,
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                 },
             }
         )
@@ -116,10 +121,9 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["user"]["1"]["organization_management_level"] == "superadmin"
         assert data["user"]["1"]["username"] == "admin"
         assert data["user"]["1"]["is_active"] is True
-        assert data["user"]["1"]["group_$_ids"] == ["1"]
-        assert data["user"]["1"]["group_$1_ids"] == [11]
         assert data["user"]["1"]["meeting_ids"] == [1]
         assert data["user"]["1"]["is_present_in_meeting_ids"] == [1]
+        assert data["meeting_user"]["1"]["group_ids"] == [11]
 
     def test_add_users_in_2_meetings(self) -> None:
         self.set_models(
@@ -129,6 +133,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "user_ids": [1],
                     "group_ids": [11],
                     "present_user_ids": [1],
+                    "meeting_user_ids": [1, 2],
                 },
                 "meeting/2": {
                     "name": "not exported_meeting",
@@ -137,21 +142,29 @@ class TestExportMeeting(BasePresenterTestCase):
                     "present_user_ids": [1],
                 },
                 "user/1": {
-                    "group_$_ids": ["1", "2"],
-                    "group_$1_ids": [11],
-                    "group_$2_ids": [12],
                     "is_present_in_meeting_ids": [1, 2],
                     "meeting_ids": [1, 2],
+                    "meeting_user_ids": [1, 2],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [11],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 2,
+                    "user_id": 1,
+                    "group_ids": [12],
                 },
                 "group/11": {
                     "name": "group_in_meeting_1",
                     "meeting_id": 1,
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                 },
                 "group/12": {
                     "name": "group_in_meeting_2",
                     "meeting_id": 2,
-                    "user_ids": [1],
+                    "meeting_user_ids": [2],
                 },
             }
         )
@@ -160,10 +173,9 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["user"]["1"]["organization_management_level"] == "superadmin"
         assert data["user"]["1"]["username"] == "admin"
         assert data["user"]["1"]["is_active"] is True
-        assert data["user"]["1"]["group_$_ids"] == ["1"]
-        assert data["user"]["1"]["group_$1_ids"] == [11]
         assert data["user"]["1"]["meeting_ids"] == [1]
         assert data["user"]["1"]["is_present_in_meeting_ids"] == [1]
+        assert data["meeting_user"]["1"]["group_ids"] == [11]
 
     def test_export_meeting_with_ex_user(self) -> None:
         self.set_models(

@@ -15,19 +15,15 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                     "name": "Meeting223",
                     "is_active_in_organization_id": 1,
                 },
-                "group/1": {"meeting_id": 222, "user_ids": [1, 2, 3, 4]},
-                "group/100": {"meeting_id": 223, "user_ids": [5]},
+                "group/1": {"meeting_id": 222, "meeting_user_ids": [1, 2, 3, 4]},
+                "group/100": {"meeting_id": 223, "meeting_user_ids": [5]},
                 "user/4": {
                     "username": "delegator2",
-                    "group_$_ids": ["222"],
-                    "group_$222_ids": [1],
                     "meeting_ids": [222],
                     "meeting_user_ids": [4],
                 },
                 "user/5": {
                     "username": "user5",
-                    "group_$_ids": ["223"],
-                    "group_$223_ids": [100],
                     "meeting_ids": [223],
                     "meeting_user_ids": [5],
                 },
@@ -35,10 +31,12 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                     "meeting_id": 222,
                     "user_id": 4,
                     "vote_delegated_to_id": 2,
+                    "group_ids": [1],
                 },
                 "meeting_user/5": {
                     "meeting_id": 223,
                     "user_id": 5,
+                    "group_ids": [100],
                 },
             }
         )
@@ -48,37 +46,31 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "group_$_ids": ["222"],
-                    "group_$222_ids": [1],
+                    "meeting_user_ids": [1],
                     "meeting_ids": [222],
                 },
                 "user/2": {
                     "username": "voter",
-                    "group_$_ids": ["222"],
-                    "group_$222_ids": [1],
                     "meeting_ids": [222],
                     "meeting_user_ids": [2],
                 },
                 "user/3": {
                     "username": "delegator1",
-                    "group_$_ids": ["222"],
-                    "group_$222_ids": [1],
                     "meeting_ids": [222],
                     "meeting_user_ids": [3],
                 },
-                "meeting_user/1": {
-                    "meeting_id": 222,
-                    "user_id": 1,
-                },
+                "meeting_user/1": {"meeting_id": 222, "user_id": 1, "group_ids": [1]},
                 "meeting_user/2": {
                     "meeting_id": 222,
                     "user_id": 2,
                     "vote_delegations_from_ids": [3, 4],
+                    "group_ids": [1],
                 },
                 "meeting_user/3": {
                     "meeting_id": 222,
                     "user_id": 3,
                     "vote_delegated_to_id": 2,
+                    "group_ids": [1],
                 },
             },
         )
@@ -87,13 +79,12 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         """meeting_user/2 with permission delegates to admin meeting_user/1"""
         setup_data: Dict[str, Dict[str, Any]] = {
             "user/2": {
-                "group_$_ids": ["222"],
-                "group_$222_ids": [1],
                 "meeting_ids": [222],
             },
             "meeting_user/2": {
                 "meeting_id": 222,
                 "user_id": 2,
+                "group_ids": [1],
             },
         }
         request_data = {"id": 2, "vote_delegated_to_id": 1}
@@ -103,15 +94,14 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                     "name": "Meeting222",
                     "is_active_in_organization_id": 1,
                 },
-                "group/1": {"meeting_id": 222, "user_ids": [1, 2]},
+                "group/1": {"meeting_id": 222, "meeting_user_ids": [1, 2]},
                 "user/1": {
-                    "group_$_ids": ["222"],
-                    "group_$222_ids": [1],
                     "meeting_ids": [222],
                 },
                 "meeting_user/1": {
                     "meeting_id": 222,
                     "user_id": 1,
+                    "group_ids": [1],
                 },
             }
         )
@@ -131,11 +121,10 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         """meeting_user/2 tries to delegate to himself"""
         setup_data: Dict[str, Dict[str, Any]] = {
             "user/2": {
-                "group_$_ids": ["222"],
-                "group_$222_ids": [1],
                 "meeting_ids": [222],
+                "meeting_user_ids": [2],
             },
-            "meeting_user/2": {"meeting_id": 222, "user_id": 2},
+            "meeting_user/2": {"meeting_id": 222, "user_id": 2, "group_ids": [1]},
         }
         request_data = {"id": 2, "vote_delegated_to_id": 2}
         self.set_models(
@@ -144,7 +133,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                     "name": "Meeting222",
                     "is_active_in_organization_id": 1,
                 },
-                "group/1": {"meeting_id": 222, "user_ids": [2]},
+                "group/1": {"meeting_id": 222, "meeting_user_ids": [2]},
             },
         )
         self.set_models(setup_data)
@@ -157,8 +146,8 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     def test_update_vote_delegated_to_invalid_id_standard_user(self) -> None:
         """meeting_user/2 tries to delegate to not existing meeting_user/42"""
         setup_data: Dict[str, Dict[str, Any]] = {
-            "user/2": {"group_$_ids": ["222"], "group_$222_ids": [1]},
-            "meeting_user/2": {"meeting_id": 222, "user_id": 2},
+            "user/2": {"meeting_user_ids": [2]},
+            "meeting_user/2": {"meeting_id": 222, "user_id": 2, "group_ids": [1]},
         }
 
         request_data = {"id": 2, "vote_delegated_to_id": 42}
@@ -168,7 +157,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                     "name": "Meeting222",
                     "is_active_in_organization_id": 1,
                 },
-                "group/1": {"meeting_id": 222, "user_ids": [2]},
+                "group/1": {"meeting_id": 222, "meeting_user_ids": [2]},
             },
         )
         self.set_models(setup_data)
@@ -183,13 +172,13 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         """meeting_user/2 tries to delegate to himself"""
         setup_data: Dict[str, Dict[str, Any]] = {
             "user/2": {
-                "group_$_ids": ["222"],
-                "group_$222_ids": [1],
                 "meeting_ids": [222],
+                "meeting_user_ids": [2],
             },
             "meeting_user/2": {
                 "meeting_id": 222,
                 "user_id": 2,
+                "group_ids": [1],
             },
         }
         request_data = {"id": 2, "vote_delegations_from_ids": [2]}
@@ -199,7 +188,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                     "name": "Meeting222",
                     "is_active_in_organization_id": 1,
                 },
-                "group/1": {"meeting_id": 222, "user_ids": [2]},
+                "group/1": {"meeting_id": 222, "meeting_user_ids": [2]},
             },
         )
         self.set_models(setup_data)
@@ -212,8 +201,8 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     def test_update_vote_delegations_from_invalid_id_standard_user(self) -> None:
         """meeting_user/2 receives delegation from non existing meeting_user/1234"""
         setup_data: Dict[str, Dict[str, Any]] = {
-            "user/2": {"group_$_ids": ["222"], "group_$222_ids": [1]},
-            "meeting_user/2": {"meeting_id": 222, "user_id": 2},
+            "user/2": {"meeting_user_ids": [2]},
+            "meeting_user/2": {"meeting_id": 222, "user_id": 2, "group_ids": [1]},
         }
         request_data = {"id": 2, "vote_delegations_from_ids": [1234]}
         self.set_models(
@@ -222,11 +211,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                     "name": "Meeting222",
                     "is_active_in_organization_id": 1,
                 },
-                "group/1": {"meeting_id": 222, "user_ids": [2]},
-                "user/2": {
-                    "group_$_ids": ["222"],
-                    "group_$222_ids": [1],
-                },
+                "group/1": {"meeting_id": 222, "meeting_user_ids": [2]},
             },
         )
         self.set_models(setup_data)
@@ -382,8 +367,6 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                 },
                 "user/5": {
                     "username": "delegator5",
-                    "group_$222_ids": [1],
-                    "group_$_ids": ["222"],
                     "meeting_ids": [222],
                     "meeting_user_ids": [5],
                 },
@@ -394,6 +377,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                     "meeting_id": 222,
                     "user_id": 5,
                     "vote_delegated_to_id": 1,
+                    "group_ids": [1],
                 },
             }
         )
@@ -563,13 +547,12 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             {
                 "user/100": {
                     "username": "new independant",
-                    "group_$_ids": ["222"],
-                    "group_$222_ids": [1],
                     "meeting_ids": [222],
                 },
                 "meeting_user/100": {
                     "meeting_id": 222,
                     "user_id": 100,
+                    "group_ids": [1],
                 },
             },
         )

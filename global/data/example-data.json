@@ -54,12 +54,6 @@
                 1
             ],
             "committee_management_ids": [1],
-            "group_$_ids": [
-                "1"
-            ],
-            "group_$1_ids": [
-                2
-            ],
             "poll_voted_ids": [5],
             "option_ids": [5, 7],
             "vote_ids": [9],
@@ -83,12 +77,6 @@
             "committee_ids": [
                 1
             ],
-            "group_$_ids": [
-                "1"
-            ],
-            "group_$1_ids": [
-                5
-            ],
             "option_ids": [9, 12],
             "meeting_user_ids": [2],
             "meeting_ids": [
@@ -107,12 +95,6 @@
             "can_change_own_password": true,
             "gender": "diverse",
             "default_vote_weight": "1.000000",
-            "group_$_ids": [
-                "1"
-            ],
-            "group_$1_ids": [
-                5
-            ],
             "option_ids": [8, 11],
             "meeting_user_ids": [3],
             "meeting_ids": [
@@ -138,7 +120,8 @@
             "speaker_ids": [1, 5, 6, 12],
             "submitted_motion_ids": [1, 2, 3, 4],
             "assignment_candidate_ids": [1],
-            "vote_delegated_vote_ids": [9]
+            "vote_delegated_vote_ids": [9],
+            "group_ids": [2]
         },
         "2": {
             "id": 2,
@@ -150,7 +133,8 @@
             "about_me": "What I want to say about me with a",
             "vote_weight": "1.000000",
             "speaker_ids": [2, 3, 7, 10, 11, 13],
-            "assignment_candidate_ids": [3, 5]
+            "assignment_candidate_ids": [3, 5],
+            "group_ids": [5]
         },
         "3": {
             "id": 3,
@@ -163,7 +147,8 @@
             "vote_weight": "1.000000",
             "speaker_ids": [4, 8, 9],
             "supported_motion_ids": [3],
-            "assignment_candidate_ids": [2, 4]
+            "assignment_candidate_ids": [2, 4],
+            "group_ids": [5]
         }
     },
     "theme": {
@@ -614,7 +599,7 @@
             "admin_group_for_meeting_id": 1,
             "permissions": [],
             "weight": 2,
-            "user_ids": [
+            "meeting_user_ids": [
                 1
             ],
             "mediafile_access_group_ids": [
@@ -710,7 +695,7 @@
                 "user.can_see"
             ],
             "weight": 5,
-            "user_ids": [
+            "meeting_user_ids": [
                 2,
                 3
             ],

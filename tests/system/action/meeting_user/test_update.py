@@ -5,11 +5,16 @@ class MeetingUserUpdate(BaseActionTestCase):
     def test_update(self) -> None:
         self.set_models(
             {
+                "committee/1": {
+                    "id": 1,
+                    "meeting_ids": [10],
+                },
                 "meeting/10": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [5],
                     "personal_note_ids": [11],
                     "speaker_ids": [12],
+                    "committee_id": 1,
                 },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
                 "personal_note/11": {"star": True, "meeting_id": 10},
@@ -20,6 +25,7 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "projection/17": {"meeting_id": 10},
                 "chat_message/13": {"meeting_id": 10},
                 "vote/20": {"meeting_id": 10},
+                "group/21": {"meeting_id": 10},
             }
         )
         test_dict = {
@@ -36,6 +42,7 @@ class MeetingUserUpdate(BaseActionTestCase):
             "assignment_candidate_ids": [16],
             "chat_message_ids": [13],
             "vote_delegated_vote_ids": [20],
+            "group_ids": [21],
         }
         response = self.request("meeting_user.update", test_dict)
         self.assert_status_code(response, 200)
