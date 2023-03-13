@@ -21,6 +21,13 @@ def has_perm(
             ],
             lock_result=False,
         )
+        # superadmins have all permissions
+        if (
+            user.get("organization_management_level")
+            == OrganizationManagementLevel.SUPERADMIN
+        ):
+            return True
+
         filter_result = datastore.filter(
             "meeting_user",
             And(
@@ -28,47 +35,33 @@ def has_perm(
                 FilterOperator("user_id", "=", user_id),
             ),
             ["group_ids"],
+            lock_result=False,
         )
         if len(filter_result) == 1:
             meeting_user = list(filter_result.values())[0]
-        else:
-            meeting_user = {}
-    else:
-        user = {}
-        meeting_user = {}
-
-    # superadmins have all permissions
-    if (
-        user.get("organization_management_level")
-        == OrganizationManagementLevel.SUPERADMIN
-    ):
-        return True
-
-    # get correct group ids for this user
-    if meeting_user.get("group_ids"):
-        group_ids = meeting_user["group_ids"]
-    else:
-        # anonymous users are in the default group
-        if user_id == 0:
-            meeting = datastore.get(
-                fqid_from_collection_and_id("meeting", meeting_id),
-                ["default_group_id", "enable_anonymous"],
-            )
-            # check if anonymous is allowed
-            if not meeting.get("enable_anonymous"):
-                raise PermissionDenied(
-                    f"Anonymous is not enabled for meeting {meeting_id}"
-                )
-            group_ids = [meeting["default_group_id"]]
+            if not (group_ids := meeting_user.get("group_ids")):
+                return False
         else:
             return False
+    elif user_id == 0:
+        # anonymous users are in the default group
+        meeting = datastore.get(
+            fqid_from_collection_and_id("meeting", meeting_id),
+            ["default_group_id", "enable_anonymous"],
+        )
+        # check if anonymous is allowed
+        if not meeting.get("enable_anonymous"):
+            raise PermissionDenied(f"Anonymous is not enabled for meeting {meeting_id}")
+        group_ids = [meeting["default_group_id"]]
+    else:
+        return False
 
     gmr = GetManyRequest(
         "group",
         group_ids,
         ["permissions", "admin_group_for_meeting_id"],
     )
-    result = datastore.get_many([gmr])
+    result = datastore.get_many([gmr], lock_result=False)
     for group in result["group"].values():
         # admins implicitly have all permissions
         if group.get("admin_group_for_meeting_id") == meeting_id:

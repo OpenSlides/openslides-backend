@@ -135,13 +135,42 @@ class UpdateHistoryMixin(Action):
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 list(instance.keys()),
                 use_changed_models=False,
+                raise_exception=False,
             )
-            # Only keep the fields that are different
-            instance = {
-                field: value
-                for field, value in instance.items()
-                if value != db_instance.get(field)
-            }
+            if not db_instance:
+                continue
+
+            # Compare db version with payload
+            # for field in instance_fields:
+            #     model_field = self.model.try_get_field(field)
+            #     if model_field:
+            #         # Remove fields if equal
+            #         if not isinstance(
+            #             model_field, BaseTemplateField
+            #         ) or not model_field.is_template_field(field):
+            #             if instance[field] == db_instance.get(field):
+            #                 del instance[field]
+            #                 # Also remove from template field, if necessary
+            #                 if isinstance(model_field, BaseTemplateField):
+            #                     template_field_name = (
+            #                         model_field.get_template_field_name()
+            #                     )
+            #                     replacement = model_field.get_replacement(field)
+            #                     if template_field_name in instance:
+            #                         if replacement in instance[template_field_name]:
+            #                             instance[template_field_name].remove(
+            #                                 replacement
+            #                             )
+            #                         if not instance[template_field_name]:
+            #                             del instance[template_field_name]
+            #         else:
+            #             # clean up template fields
+            #             for replacement in list(instance.get(field, [])):
+            #                 if (
+            #                     model_field.get_structured_field_name(replacement)
+            #                     not in instance
+            #                 ):
+            #                     instance[field].remove(replacement)
 
             # personal data
             update_fields = [

@@ -601,6 +601,151 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.assert_status_code(response, 403)
         assert "Amendments cannot be forwarded." in response.json["message"]
 
+    def test_forward_to_2_meetings_1_transaction(self) -> None:
+        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "meeting/3": {
+                    "name": "meeting3",
+                    "motions_default_workflow_id": 13,
+                    "committee_id": 52,
+                    "is_active_in_organization_id": 1,
+                    "default_group_id": 113,
+                    "group_ids": [113],
+                },
+                "motion_workflow/13": {
+                    "name": "name_workflow13",
+                    "first_state_id": 33,
+                    "state_ids": [33],
+                    "meeting_id": 3,
+                },
+                "motion_state/33": {
+                    "name": "name_state33",
+                    "meeting_id": 3,
+                },
+                "group/113": {"name": "YZJAwUPK", "meeting_id": 3},
+            }
+        )
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "title_12_to_meeting2",
+                    "meeting_id": 2,
+                    "origin_id": 12,
+                    "text": "test2",
+                    "reason": "reason_jLvcgAMx2",
+                },
+                {
+                    "title": "title_12_to_meeting3",
+                    "meeting_id": 3,
+                    "origin_id": 12,
+                    "text": "test3",
+                    "reason": "reason_jLvcgAMx3",
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+
+        model = self.assert_model_exists(
+            "motion/13",
+            {
+                "title": "title_12_to_meeting2",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "origin_meeting_id": 1,
+                "all_derived_motion_ids": None,
+                "all_origin_ids": [12],
+                "reason": "reason_jLvcgAMx2",
+                "submitter_ids": [1],
+                "state_id": 34,
+            },
+        )
+        assert model.get("forwarded")
+        self.assert_model_exists(
+            "motion_submitter/1",
+            {
+                "meeting_id": 2,
+                "meeting_user_id": 3,
+                "motion_id": 13,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/3",
+            {
+                "user_id": 2,
+                "meeting_id": 2,
+                "submitted_motion_ids": [1],
+                "group_ids": [112],
+            },
+        )
+        self.assert_model_exists(
+            "group/112", {"meeting_user_ids": [2, 3], "meeting_id": 2}
+        )
+
+        model = self.assert_model_exists(
+            "motion/14",
+            {
+                "title": "title_12_to_meeting3",
+                "meeting_id": 3,
+                "origin_id": 12,
+                "origin_meeting_id": 1,
+                "all_derived_motion_ids": None,
+                "all_origin_ids": [12],
+                "reason": "reason_jLvcgAMx3",
+                "submitter_ids": [2],
+                "state_id": 33,
+            },
+        )
+        assert model.get("forwarded")
+        self.assert_model_exists(
+            "motion_submitter/2",
+            {
+                "meeting_user_id": 4,
+                "meeting_id": 3,
+                "motion_id": 14,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/4",
+            {
+                "user_id": 2,
+                "meeting_id": 3,
+                "submitted_motion_ids": [2],
+                "group_ids": [113],
+            },
+        )
+        self.assert_model_exists(
+            "group/113", {"meeting_user_ids": [4], "meeting_id": 3}
+        )
+
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "committee_forwarder",
+                "last_name": "committee_forwarder",
+                "is_physical_person": False,
+                "is_active": False,
+                "meeting_user_ids": [3, 4],
+                "forwarding_committee_ids": [53],
+                "meeting_ids": [2, 3],
+                "committee_ids": [52],
+            },
+        )
+
+        self.assert_model_exists("committee/53", {"forwarding_user_id": 2})
+        self.assert_model_exists(
+            "motion/12",
+            {"derived_motion_ids": [13, 14], "all_derived_motion_ids": [13, 14]},
+        )
+        # test history
+        self.assert_history_information(
+            "motion/12", ["Forwarded to {}", "meeting/3"]
+        )  # TODO: Should be meeting2 and 3
+        self.assert_history_information("motion/13", ["Motion created (forwarded)"])
+        self.assert_history_information("motion/14", ["Motion created (forwarded)"])
+
     def test_create_forwarded_not_allowed_by_state(self) -> None:
         self.test_model["motion_state/30"]["allow_motion_forwarding"] = False
         self.set_models(self.test_model)
@@ -640,10 +785,8 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_models(self.test_model)
-        self.set_models({"group/4": {"meeting_id": 2}})
-        self.set_user_groups(self.user_id, [3, 4])
+        self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
-        self.set_group_permissions(4, [Permissions.Motion.CAN_FORWARD])
         response = self.request(
             "motion.create_forwarded",
             {

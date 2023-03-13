@@ -52,8 +52,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assertCountEqual(
             write_requests[0].locked_fields.keys(),
             [
-                "meeting_user/meeting_id",
-                "meeting_user/user_id",
                 "group/meeting_id",
                 "group/weight",
                 "meeting/1/group_ids",
@@ -67,8 +65,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assertCountEqual(
             write_requests[1].locked_fields.keys(),
             [
-                "meeting_user/meeting_id",
-                "meeting_user/user_id",
                 "group/meeting_id",
                 "group/weight",
             ],
@@ -101,8 +97,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assertCountEqual(
             write_requests[0].locked_fields.keys(),
             [
-                "meeting_user/meeting_id",
-                "meeting_user/user_id",
                 "group/meeting_id",
                 "group/weight",
                 "meeting/1/group_ids",
