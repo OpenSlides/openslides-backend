@@ -31,6 +31,7 @@ from .mock_gunicorn_gthread_worker import MockGunicornThreadWorker
 
 DEFAULT_PASSWORD = "password"
 ACTION_URL = get_route_path(ActionView.action_route)
+ACTION_URL_SEPARATELY = get_route_path(ActionView.action_route, "handle_separately")
 
 
 class BaseActionTestCase(BaseSystemTestCase):
