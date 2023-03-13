@@ -183,6 +183,77 @@ class TestSearchUsers(BasePresenterTestCase):
             [],
         )
 
+    def test_search_empty_username(self) -> None:
+        status_code, data = self.request(
+            "search_users",
+            {
+                "permission_type": UserScope.Meeting,
+                "permission_id": 1,
+                "search": [
+                    {
+                        "username": "",
+                        "email": "user2@test.de",
+                        "first_name": "first2",
+                        "last_name": "last2",
+                    },
+                ],
+            },
+        )
+        self.assertEqual(status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertCountEqual(
+            data[0],
+            [self.user2],
+        )
+
+    def test_search_empty_username_and_first_name(self) -> None:
+        self.user2["first_name"] = ""
+        self.update_model("user/2", self.user2)
+        status_code, data = self.request(
+            "search_users",
+            {
+                "permission_type": UserScope.Meeting,
+                "permission_id": 1,
+                "search": [
+                    {
+                        "username": "",
+                        "email": "user2@test.de",
+                        "first_name": "",
+                        "last_name": "last2",
+                    },
+                ],
+            },
+        )
+        self.assertEqual(status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertCountEqual(
+            data[0],
+            [self.user2],
+        )
+
+    def test_search_everything_empty(self) -> None:
+        status_code, data = self.request(
+            "search_users",
+            {
+                "permission_type": UserScope.Meeting,
+                "permission_id": 1,
+                "search": [
+                    {
+                        "username": "",
+                        "email": "",
+                        "first_name": "",
+                        "last_name": "",
+                    },
+                ],
+            },
+        )
+        self.assertEqual(status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertCountEqual(
+            data[0],
+            [],
+        )
+
     def test_search_wrong_permission_type(self) -> None:
         status_code, data = self.request(
             "search_users",

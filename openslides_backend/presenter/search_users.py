@@ -73,7 +73,7 @@ class SearchUsers(BasePresenter):
             if search["username"]:
                 # if a username is given, match only by username
                 filter_tuples.add((search["username"],))
-            elif search["first_name"] and search["last_name"] and search["email"]:
+            elif search["first_name"] or search["last_name"] or search["email"]:
                 # otherwise ALL of first name, last name and email must match
                 filter_tuples.add(
                     (search["first_name"], search["last_name"], search["email"])
