@@ -198,9 +198,9 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             return
 
         # store scope, id and OML-permission for requested user
+        # breakpoint()
         if uid := instance.get("id"):
-            self.apply_instance(instance)
-
+            pass
         (
             self.instance_user_scope,
             self.instance_user_scope_id,
