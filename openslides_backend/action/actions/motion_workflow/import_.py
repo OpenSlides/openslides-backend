@@ -1,9 +1,10 @@
 import copy
 from typing import Any, Dict, List
 
-from ....models.models import MotionWorkflow
+from ....models.models import MotionState, MotionWorkflow
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
+from ....shared.schema import str_list_schema
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -27,28 +28,22 @@ class MotionWorkflowImport(SequentialNumbersMixin):
                 "items": {
                     "type": "object",
                     "properties": {
-                        "name": {"type": "string"},
-                        "recommendation_label": {"type": "string"},
-                        "css_class": {"type": "string"},
-                        "restrictions": {"type": "array", "items": {"type": "string"}},
-                        "allow_support": {"type": ["boolean", "null"]},
-                        "allow_submitter_edit": {"type": ["boolean", "null"]},
-                        "allow_create_poll": {"type": ["boolean", "null"]},
-                        "set_number": {"type": ["boolean", "null"]},
-                        "show_state_extension_field": {"type": ["boolean", "null"]},
-                        "show_recommendation_extension_field": {
-                            "type": ["boolean", "null"]
-                        },
-                        "merge_amendment_into_final": {"type": ["string", "null"]},
-                        "next_state_names": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                        "previous_state_names": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                        "weight": {"type": "integer"},
+                        **MotionState().get_properties(
+                            "name",
+                            "weight",
+                            "recommendation_label",
+                            "css_class",
+                            "restrictions",
+                            "allow_support",
+                            "allow_create_poll",
+                            "allow_submitter_edit",
+                            "set_number",
+                            "show_state_extension_field",
+                            "show_recommendation_extension_field",
+                            "merge_amendment_into_final",
+                        ),
+                        "next_state_names": str_list_schema,
+                        "previous_state_names": str_list_schema,
                     },
                     "additionalProperties": False,
                 },
