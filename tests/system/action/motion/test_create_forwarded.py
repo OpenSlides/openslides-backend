@@ -594,8 +594,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
         # test history
         self.assert_history_information(
-            "motion/12", ["Forwarded to {}", "meeting/3"]
-        )  # TODO: Should be meeting2 and 3
+            "motion/12",
+            ["Forwarded to {}", "meeting/2", "Forwarded to {}", "meeting/3"],
+        )
         self.assert_history_information("motion/13", ["Motion created (forwarded)"])
         self.assert_history_information("motion/14", ["Motion created (forwarded)"])
 
