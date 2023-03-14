@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set
 
 import fastjsonschema
 
@@ -21,7 +21,9 @@ from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
 
-user_match_fields = ["username", "first_name", "last_name", "email"]
+search_fields = [["username"], ["first_name", "last_name", "email"]]
+all_fields = [field for fields in search_fields for field in fields]
+
 search_users_schema = fastjsonschema.compile(
     {
         "$schema": schema_version,
@@ -41,9 +43,7 @@ search_users_schema = fastjsonschema.compile(
                 "minItems": 1,
                 "items": {
                     "type": "object",
-                    "properties": {
-                        field: {"type": "string"} for field in user_match_fields
-                    },
+                    "properties": {field: {"type": "string"} for field in all_fields},
                     "additionalProperties": False,
                 },
             },
@@ -65,36 +65,27 @@ class SearchUsers(BasePresenter):
 
     def get_result(self) -> List[List[Dict[str, Any]]]:
         self.check_permissions(self.data["permission_type"], self.data["permission_id"])
-        filter_tuples: Set[Tuple[str, ...]] = set()
+        filters: Set[Filter] = set()
         for search in self.data["search"]:
             # strip all fields and use "" if no value was given
-            for field in user_match_fields:
+            for field in all_fields:
                 search[field] = search.get(field, "").strip().lower()
-            if search["username"]:
-                # if a username is given, match only by username
-                filter_tuples.add((search["username"],))
-            elif search["first_name"] or search["last_name"] or search["email"]:
-                # otherwise ALL of first name, last name and email must match
-                filter_tuples.add(
-                    (search["first_name"], search["last_name"], search["email"])
-                )
+            for search_def in search_fields:
+                if any(search.get(field) for field in search_def):
+                    filters.add(
+                        And(
+                            self.get_filter(field, search[field])
+                            for field in search_def
+                        )
+                    )
+                    break
 
-        if len(filter_tuples):
+        if len(filters):
             # fetch result from db
-            filters: List[Filter] = [
-                FilterOperator("username", "~=", t[0])
-                if len(t) == 1
-                else And(
-                    FilterOperator("first_name", "~=", t[0]),
-                    FilterOperator("last_name", "~=", t[1]),
-                    FilterOperator("email", "~=", t[2]),
-                )
-                for t in filter_tuples
-            ]
             instances = self.datastore.filter(
                 "user",
                 Or(*filters),
-                ["id", "username", "first_name", "last_name", "email"],
+                ["id"] + all_fields,
                 lock_result=False,
             )
         else:
@@ -105,14 +96,21 @@ class SearchUsers(BasePresenter):
         for search in self.data["search"]:
             current_result = []
             for instance in instances.values():
-                if (instance.get("username", "").lower() == search["username"]) or (
-                    instance.get("first_name", "").lower() == search["first_name"]
-                    and instance.get("last_name", "").lower() == search["last_name"]
-                    and instance.get("email", "").lower() == search["email"]
-                ):
-                    current_result.append(instance)
+                for search_def in search_fields:
+                    if all(
+                        (instance.get(field) or "").lower() == search[field]
+                        for field in search_def
+                    ):
+                        current_result.append(instance)
+                        break
             result.append(current_result)
         return result
+
+    def get_filter(self, field: str, value: str) -> Filter:
+        return Or(
+            [FilterOperator(field, "~=", value)]
+            + ([FilterOperator(field, "=", None)] if not value else [])
+        )
 
     def check_permissions(self, permission_type: int, permission_id: int) -> None:
         if has_organization_management_level(

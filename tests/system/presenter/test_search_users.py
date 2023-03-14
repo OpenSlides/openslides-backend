@@ -3,8 +3,9 @@ from openslides_backend.permissions.management_levels import (
     OrganizationManagementLevel,
 )
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.filters import And, FilterOperator, Or
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope
-from tests.system.util import Profiler, performance
+from tests.system.util import Profiler, mock_datastore_method, performance
 
 from .base import BasePresenterTestCase
 
@@ -91,22 +92,10 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(len(data), 4)
-        self.assertCountEqual(
-            data[0],
-            [self.user2],
-        )
-        self.assertCountEqual(
-            data[1],
-            [],
-        )
-        self.assertCountEqual(
-            data[2],
-            [self.user2],
-        )
-        self.assertCountEqual(
-            data[3],
-            [self.user4],
-        )
+        self.assertEqual(data[0], [self.user2])
+        self.assertEqual(data[1], [])
+        self.assertEqual(data[2], [self.user2])
+        self.assertEqual(data[3], [self.user4])
 
     def test_search_ignore_case_strip(self) -> None:
         status_code, data = self.request(
@@ -128,14 +117,8 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(len(data), 2)
-        self.assertCountEqual(
-            data[0],
-            [self.user2],
-        )
-        self.assertCountEqual(
-            data[1],
-            [self.user2],
-        )
+        self.assertEqual(data[0], [self.user2])
+        self.assertEqual(data[1], [self.user2])
 
     def test_search_all_fields_username_match(self) -> None:
         status_code, data = self.request(
@@ -155,10 +138,7 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(len(data), 1)
-        self.assertCountEqual(
-            data[0],
-            [self.user2],
-        )
+        self.assertEqual(data[0], [self.user2])
 
     def test_search_all_fields_username_no_match(self) -> None:
         status_code, data = self.request(
@@ -178,10 +158,7 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(len(data), 1)
-        self.assertCountEqual(
-            data[0],
-            [],
-        )
+        self.assertEqual(data[0], [])
 
     def test_search_empty_username(self) -> None:
         status_code, data = self.request(
@@ -201,10 +178,7 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(len(data), 1)
-        self.assertCountEqual(
-            data[0],
-            [self.user2],
-        )
+        self.assertEqual(data[0], [self.user2])
 
     def test_search_empty_username_and_first_name(self) -> None:
         self.user2["first_name"] = ""
@@ -226,10 +200,29 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(len(data), 1)
-        self.assertCountEqual(
-            data[0],
-            [self.user2],
+        self.assertEqual(data[0], [self.user2])
+
+    def test_search_empty_username_and_first_name_is_none(self) -> None:
+        self.user2["first_name"] = None
+        self.update_model("user/2", self.user2)
+        status_code, data = self.request(
+            "search_users",
+            {
+                "permission_type": UserScope.Meeting,
+                "permission_id": 1,
+                "search": [
+                    {
+                        "username": "",
+                        "email": "user2@test.de",
+                        "first_name": "",
+                        "last_name": "last2",
+                    },
+                ],
+            },
         )
+        self.assertEqual(status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0], [self.user2])
 
     def test_search_everything_empty(self) -> None:
         status_code, data = self.request(
@@ -249,10 +242,41 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(len(data), 1)
-        self.assertCountEqual(
-            data[0],
-            [],
+        self.assertEqual(data[0], [])
+
+    def test_search_remove_duplicates(self) -> None:
+        mock, patcher = mock_datastore_method("filter")
+        status_code, data = self.request(
+            "search_users",
+            {
+                "permission_type": UserScope.Meeting,
+                "permission_id": 1,
+                "search": [
+                    {
+                        "username": "user2",
+                        "email": "user4@test.de",
+                        "first_name": "first4",
+                        "last_name": "last4",
+                    },
+                    {
+                        "username": "user2",
+                        "email": "user4@test.de",
+                        "first_name": "first4",
+                        "last_name": "last4",
+                    },
+                ],
+            },
         )
+        self.assertEqual(status_code, 200)
+        self.assertEqual(len(data), 2)
+        self.assertEqual(data[0], [self.user2])
+        self.assertEqual(data[1], [self.user2])
+        # assert only once in filter instead of twice
+        self.assertEqual(
+            mock.call_args[0][2],
+            Or(And(Or(FilterOperator(field="username", operator="~=", value="user2")))),
+        )
+        patcher.stop()
 
     def test_search_wrong_permission_type(self) -> None:
         status_code, data = self.request(
