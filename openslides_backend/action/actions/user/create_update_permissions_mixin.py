@@ -163,7 +163,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         ],
         "B": [
             "number",
-            "strucure_level",
+            "structure_level",
             "vote_weight",
             "about_me",
             "comment",
