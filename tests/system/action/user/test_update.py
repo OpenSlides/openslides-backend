@@ -1,3 +1,5 @@
+import pytest
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -1583,7 +1585,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/111": {"username": "user111"},
-                "meeting/110": {"is_active_in_organization_id": 1},
+                "meeting/110": {"is_active_in_organization_id": 1, "name": "Test"},
             }
         )
         response = self.request(
