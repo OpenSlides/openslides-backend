@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Optional, Set, Tuple, cast
+from typing import Any, Dict, Set, Tuple, cast
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
@@ -14,7 +14,7 @@ from ...permissions.permission_helper import (
 )
 from ...permissions.permissions import Permissions
 from ...services.datastore.interface import GetManyRequest
-from ..exceptions import MissingPermission, ServiceException
+from ..exceptions import MissingPermission
 from ..patterns import fqid_from_collection_and_id
 
 
@@ -26,7 +26,7 @@ class UserScope(int, Enum):
 
 class UserScopeMixin(BaseServiceProvider):
     def get_user_scope(
-        self, id_: Optional[int] = None, instance: Optional[Dict[str, Any]] = None
+        self, id_or_instance: int | Dict[str, Any]
     ) -> Tuple[UserScope, int, str]:
         """
         Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
@@ -34,23 +34,25 @@ class UserScopeMixin(BaseServiceProvider):
         """
         meetings: Set[int] = set()
         committees_manager: Set[int] = set()
-        if not instance and not id_:
-            raise ServiceException("There is no user_id given to get the user_scope!")
-        if instance:
-            if "group_ids" in instance:
-                if "meeting_id" in instance:
-                    meetings.add(instance["meeting_id"])
+        if isinstance(id_or_instance, dict):
+            if "group_ids" in id_or_instance:
+                if "meeting_id" in id_or_instance:
+                    meetings.add(id_or_instance["meeting_id"])
                 else:
                     meeting_user = self.datastore.get(
-                        fqid_from_collection_and_id("meeting_user", instance["id"]),
+                        fqid_from_collection_and_id(
+                            "meeting_user", id_or_instance["id"]
+                        ),
                         ["meeting_id"],
                     )
                     meetings.add(meeting_user["meeting_id"])
-            committees_manager.update(set(instance.get("committee_management_ids", [])))
-            oml_right = instance.get("organization_management_level", "")
-        if id_:
+            committees_manager.update(
+                set(id_or_instance.get("committee_management_ids", []))
+            )
+            oml_right = id_or_instance.get("organization_management_level", "")
+        else:
             user = self.datastore.get(
-                fqid_from_collection_and_id("user", id_),
+                fqid_from_collection_and_id("user", id_or_instance),
                 [
                     "meeting_ids",
                     "organization_management_level",

@@ -792,7 +792,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to change a user with a Level of can_manage_organization!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization!",
             response.json["message"],
         )
 
@@ -909,6 +909,51 @@ class UserUpdateActionTest(BaseActionTestCase):
             "Your organization management level is not high enough to change a user with a Level of superadmin!"
             in response.json["message"]
         )
+
+    def test_update_demote_superadmin(self) -> None:
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, 111
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Your organization management level is not high enough to change a user with a Level of superadmin!"
+            in response.json["message"]
+        )
+
+    def test_update_change_superadmin_meeting_specific(self) -> None:
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, 111
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "comment": "test",
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/111", {"meeting_user_ids": [2]})
+        self.assert_model_exists("meeting_user/2", {"group_ids": [1], "meeting_id": 1})
 
     def test_update_hit_user_limit(self) -> None:
         self.set_models(

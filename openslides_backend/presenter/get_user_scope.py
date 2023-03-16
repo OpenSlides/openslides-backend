@@ -16,7 +16,7 @@ get_user_scope_schema = fastjsonschema.compile(
         "properties": {
             "user_ids": {
                 "type": "array",
-                "item": {"type": "integer"},
+                "items": {"type": "integer"},
             },
         },
         "required": ["user_ids"],
