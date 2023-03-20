@@ -1845,6 +1845,58 @@ class MeetingImport(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_with_listfields_from_migration(self) -> None:
+        """ test for listFields in event.data after migration. Uses migration 0035 to create one """
+        data = self.create_request_data({
+            "motion": {
+                "5": self.get_motion_data(
+                    5,
+                    {
+                        "title": "motion/5",
+                        "referenced_in_motion_state_extension_ids": []
+                    },
+                ),
+                "6": self.get_motion_data(
+                    6,
+                    {
+                        "title": "motion/6",
+                        "state_extension": "[motion/5]",
+                        "list_of_speakers_id": 2,
+                    },
+                ),
+           },
+            "list_of_speakers": {
+                "1": {
+                    "id": 1,
+                    "meeting_id": 1,
+                    "content_object_id": "motion/5",
+                    "closed": False,
+                    "sequential_number": 1,
+                    "speaker_ids": [],
+                    "projection_ids": [],
+                },
+                "2": {
+                    "id": 2,
+                    "meeting_id": 1,
+                    "content_object_id": "motion/6",
+                    "closed": False,
+                    "sequential_number": 2,
+                    "speaker_ids": [],
+                    "projection_ids": [],
+                },
+            },
+        })
+        data["meeting"]["meeting"]["1"]["motion_ids"] = [5, 6]
+        data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1, 2]
+        data["meeting"]["motion_state"]["1"]["motion_ids"] = [5, 6]
+        data["meeting"]["_migration_index"] = 35
+        assert(data["meeting"]["motion"]["5"]["referenced_in_motion_state_extension_ids"] == [])
+
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/2", {"title": "motion/5", "referenced_in_motion_state_extension_ids": [3]})
+        self.assert_model_exists("motion/3", {"title": "motion/6", "state_extension": "[motion/2]"})
+
     def test_without_migration_index(self) -> None:
         data = self.create_request_data({})
         del data["meeting"]["_migration_index"]
