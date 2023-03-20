@@ -31,12 +31,32 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
         self.create_model(
             "meeting/1", {"welcome_text": "Hi", "is_active_in_organization_id": 1}
         )
-        response = self.request("meeting.update", {"id": 1, "welcome_text": "<iframe>"})
+        response = self.request(
+            "meeting.update", {"id": 1, "welcome_text": '<iframe allow="yes">'}
+        )
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
         self.assertEqual(
             meeting["welcome_text"],
-            '<iframe sandbox="allow-scripts allow-same-origin"></iframe>',
+            '<iframe sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>',
+        )
+
+    def test_html_field_iframe_attributes(self) -> None:
+        self.create_model(
+            "meeting/1", {"welcome_text": "Hi", "is_active_in_organization_id": 1}
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "welcome_text": '<iframe allow="yes" allowfullscreen=true allowpaymentrequest=true csp="test" fetchpriority="high" sandbox="broken" referrerpolicy="link">',
+            },
+        )
+        self.assert_status_code(response, 200)
+        meeting = self.get_model("meeting/1")
+        self.assertEqual(
+            meeting["welcome_text"],
+            '<iframe sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>',
         )
 
     def test_html_field_script(self) -> None:

@@ -40,7 +40,9 @@ class TopicUpdateTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "topic/1",
-            {"text": '<iframe sandbox="allow-scripts allow-same-origin">text</iframe>'},
+            {
+                "text": '<iframe sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer">text</iframe>'
+            },
         )
 
     def test_update_tag_ids_add(self) -> None:
