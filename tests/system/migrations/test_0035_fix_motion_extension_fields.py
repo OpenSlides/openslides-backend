@@ -194,3 +194,36 @@ def test_delete_reference_self(write, finalize):
         },
     )
     finalize("0035_fix_motion_extension_fields")
+
+
+def test_double_create(write, finalize, assert_model):
+    write(
+        {
+            "type": "create",
+            "fqid": "motion/1",
+            "fields": {"state_extension": "test [motion:2]"},
+        },
+        {
+            "type": "create",
+            "fqid": "motion/2",
+            "fields": {"title": "test"},
+        },
+    )
+    finalize("0035_fix_motion_extension_fields")
+
+    assert_model(
+        "motion/1",
+        {
+            "state_extension": "test [motion/2]",
+            "state_extension_reference_ids": ["motion/2"],
+        },
+        position=1,
+    )
+    assert_model(
+        "motion/2",
+        {
+            "title": "test",
+            "referenced_in_motion_state_extension_ids": [1],
+        },
+        position=1,
+    )

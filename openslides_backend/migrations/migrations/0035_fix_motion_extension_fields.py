@@ -28,6 +28,12 @@ class Migration(BaseMigration):
 
     target_migration_index = 36
 
+    prefixes = ("state", "recommendation")
+    list_updates: List[BaseEvent]
+
+    def position_init(self) -> None:
+        self.list_updates = []
+
     def migrate_event(
         self,
         event: BaseEvent,
@@ -37,13 +43,12 @@ class Migration(BaseMigration):
             return None
 
         if isinstance(event, CreateEvent):
-            return [event, *self.handle_event("state", event)]
+            self.handle_event("state", event)
         elif isinstance(event, DeleteEvent):
             model: Dict[str, Any] = self.new_accessor.get_model(event.fqid)
-            new_events: List[BaseEvent] = [event]
-            for prefix in ("recommendation", "state"):
+            for prefix in self.prefixes:
                 if f"{prefix}_extension_reference_ids" in model:
-                    new_events += [
+                    self.list_updates += [
                         ListUpdateEvent(
                             fqid,
                             {
@@ -55,11 +60,10 @@ class Migration(BaseMigration):
                             },
                         )
                         for fqid in model[f"{prefix}_extension_reference_ids"]
-                        if self.new_accessor.get_model_ignore_deleted(fqid)[1] is False
-                        and fqid != event.fqid
+                        if self.will_exist(fqid) and fqid != event.fqid
                     ]
                 if f"referenced_in_motion_{prefix}_extension_ids" in model:
-                    new_events += [
+                    self.list_updates += [
                         ListUpdateEvent(
                             fqid,
                             {
@@ -71,37 +75,28 @@ class Migration(BaseMigration):
                         for motion_id in model[
                             f"referenced_in_motion_{prefix}_extension_ids"
                         ]
-                        if self.new_accessor.get_model_ignore_deleted(
+                        if self.will_exist(
                             (fqid := fqid_from_collection_and_id("motion", motion_id))
-                        )[1]
-                        is False
+                        )
                         and fqid != event.fqid
                     ]
-            return new_events
         elif isinstance(event, UpdateEvent):
-            return [
-                event,
-                *self.handle_event("recommendation", event),
-                *self.handle_event("state", event),
-            ]
-        return None
+            for prefix in self.prefixes:
+                self.handle_event(prefix, event)
+        return [event]
 
-    def handle_event(
-        self, prefix: str, event: Union[CreateEvent, UpdateEvent]
-    ) -> List[BaseEvent]:
+    def get_additional_events(self) -> Optional[List[BaseEvent]]:
+        return self.list_updates
+
+    def handle_event(self, prefix: str, event: Union[CreateEvent, UpdateEvent]) -> None:
         if f"{prefix}_extension" in event.data:
             value = event.data[f"{prefix}_extension"]
             replaced_value, motion_fqids = self.extract_and_replace_motion_ids(value)
             # Filter out deleted models
-            motion_fqids = [
-                fqid
-                for fqid in motion_fqids
-                if self.new_accessor.model_exists(fqid)
-                and self.new_accessor.get_model_ignore_deleted(fqid)[1] is False
-            ]
+            motion_fqids = [fqid for fqid in motion_fqids if self.will_exist(fqid)]
             event.data[f"{prefix}_extension"] = replaced_value
             event.data[f"{prefix}_extension_reference_ids"] = motion_fqids
-            return [
+            self.list_updates += [
                 ListUpdateEvent(
                     fqid,
                     {
@@ -114,7 +109,6 @@ class Migration(BaseMigration):
                 )
                 for fqid in motion_fqids
             ]
-        return []
 
     def extract_and_replace_motion_ids(self, value: str) -> Tuple[str, List[str]]:
         motion_fqids = []
