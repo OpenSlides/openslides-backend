@@ -47,7 +47,7 @@ ALLOWED_HTML_TAGS_STRICT = {
     "div",
 }
 
-ALLOWED_HTML_TAGS_PERMISSIVE = ALLOWED_HTML_TAGS_STRICT | {"video"}
+ALLOWED_HTML_TAGS_PERMISSIVE = ALLOWED_HTML_TAGS_STRICT | {"video", "iframe"}
 
 ALLOWED_STYLES = [
     "color",
@@ -81,15 +81,29 @@ def validate_html(
     allowed_tags: Set[str] = ALLOWED_HTML_TAGS_STRICT,
     allowed_styles: List[str] = ALLOWED_STYLES,
 ) -> str:
-    def allow_all(tag: str, name: str, value: str) -> bool:
+    def allow_all_except_some_iframe_attrs(tag: str, name: str, value: str) -> bool:
+        if tag == "iframe" and name in (
+            "allow",
+            "allowfullscreen",
+            "allowpaymentrequest",
+            "csp",
+            "fetchpriority",
+            "sandbox",
+            "referrerpolicy",
+        ):
+            return False
         return True
 
     html = html.replace("\t", "")
-    return bleach.clean(
+    cleaned_html = bleach.clean(
         html,
         tags=allowed_tags,
-        attributes=allow_all,
+        attributes=allow_all_except_some_iframe_attrs,
         css_sanitizer=CSSSanitizer(allowed_css_properties=allowed_styles),
+    )
+    return cleaned_html.replace(
+        "<iframe",
+        '<iframe sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"',
     )
 
 
