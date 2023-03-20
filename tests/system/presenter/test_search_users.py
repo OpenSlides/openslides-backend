@@ -200,7 +200,7 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(len(data), 1)
-        self.assertEqual(data[0], [self.user2])
+        self.assertEqual(data[0], [])
 
     def test_search_empty_username_and_first_name_is_none(self) -> None:
         self.user2["first_name"] = None
@@ -222,7 +222,29 @@ class TestSearchUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(len(data), 1)
-        self.assertEqual(data[0], [self.user2])
+        self.assertEqual(data[0], [])
+
+    def test_search_empty_username_and_email(self) -> None:
+        self.user2["email"] = None
+        self.update_model("user/2", self.user2)
+        status_code, data = self.request(
+            "search_users",
+            {
+                "permission_type": UserScope.Meeting,
+                "permission_id": 1,
+                "search": [
+                    {
+                        "username": "",
+                        "email": "",
+                        "first_name": "first2",
+                        "last_name": "last2",
+                    },
+                ],
+            },
+        )
+        self.assertEqual(status_code, 200)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0], [])
 
     def test_search_everything_empty(self) -> None:
         status_code, data = self.request(

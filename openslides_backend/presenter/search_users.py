@@ -71,7 +71,7 @@ class SearchUsers(BasePresenter):
             for field in all_fields:
                 search[field] = search.get(field, "").strip().lower()
             for search_def in search_fields:
-                if any(search.get(field) for field in search_def):
+                if all(search.get(field) for field in search_def):
                     filters.add(
                         And(
                             self.get_filter(field, search[field])
