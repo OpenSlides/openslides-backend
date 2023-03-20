@@ -3,7 +3,7 @@ import time
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
-from datastore.migrations import BaseEvent, CreateEvent, UpdateEvent, ListUpdateEvent
+from datastore.migrations import BaseEvent, CreateEvent, ListUpdateEvent, UpdateEvent
 
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.migrations.migrate import MigrationWrapper
@@ -798,13 +798,17 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 "user",
             ):
                 continue
-            elif event.type == ListUpdateEvent.type:
+            elif isinstance(event, ListUpdateEvent):
                 if event.add:
                     for k, v in event.add.items():
-                        data[collection][str_id][k] = list(set(data[collection][str_id][k]).union(v))
+                        data[collection][str_id][k] = list(
+                            set(data[collection][str_id][k]).union(v)
+                        )
                 if event.remove:
                     for k, v in event.remove.items():
-                        data[collection][str_id][k] = list(set(data[collection][str_id][k]).difference(v))
+                        data[collection][str_id][k] = list(
+                            set(data[collection][str_id][k]).difference(v)
+                        )
             else:
                 raise ActionException(
                     f"ActionType {event.type} for {event.fqid} not implemented!"
