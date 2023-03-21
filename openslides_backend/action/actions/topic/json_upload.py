@@ -1,12 +1,18 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import fastjsonschema
 
 from ....models.models import Topic
+from ....permissions.permissions import Permissions
+from ....shared.interfaces.event import Event, EventType
+from ....shared.interfaces.write_request import WriteRequest
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...action import Action
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionResultElement
+from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create import TopicCreate
 
 
@@ -21,75 +27,106 @@ class TopicJsonUpload(Action):
         additional_required_fields={
             "data": {
                 "type": "array",
-                "items": {"type": "object"},
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        **model.get_properties("title", "text"),
+                        **{
+                            prop: agenda_creation_properties[prop]
+                            for prop in (
+                                "agenda_comment",
+                                "agenda_type",
+                                "agenda_duration",
+                            )
+                        },
+                    },
+                    "required": ["title"],
+                    "additionalProperties": False,
+                },
                 "minItems": 1,
                 "uniqueItems": True,
             },
             "meeting_id": required_id_schema,
         }
     )
-    # permission = ???
-    whitelist = [
-        "title",
-        "meeting_id",
-        "text",
-        "attachment_ids",
-        "agenda_create",
-        "agenda_type",
-        "agenda_parent_id",
-        "agenda_comment",
-        "agenda_duration",
-        "agenda_weight",
-    ]
+    permission = Permissions.AgendaItem.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
 
-        # filter fields not in the whitelist
-        data = [
-            {field: partial[field] for field in self.whitelist if field in partial}
-            for partial in data
+        # enrich data with meeting_id
+        for entry in data:
+            entry["meeting_id"] = instance["meeting_id"]
+
+        # generate headers
+        self.headers = [
+            {"property": "title", "type": "string"},
+            {"property": "text", "type": "string"},
+            {"property": "agenda_comment", "type": "string"},
+            {"property": "agenda_type", "type": "string"},
+            {"proptery": "agenda_duration", "type": "number"},
         ]
 
-        # special code for agenda_type and agenda_duration
-        for entry in data:
-            if "agenda_type" in entry:
-                entry["agenda_type"] = self.update_agenda_type(entry["agenda_type"])
-            if "agenda_duration" in entry:
-                entry["agenda_duration"] = self.update_agenda_duration(
-                    entry["agenda_duration"]
-                )
-
         # validate
-        preview_data = [self.validate_entry(entry) for entry in data]
-        print("XXX", preview_data)
+        self.rows = [self.validate_entry(entry) for entry in data]
+
+        # generate statistics
+        itemCount, itemNew, itemError = 0, 0, 0
+        for entry in self.rows:
+            itemCount += 1
+            if entry["status"] == "new":
+                itemNew += 1
+            if entry["status"] == "error":
+                itemError += 1
+        self.statistics = {
+            "itemCount": itemCount,
+            "Created": itemNew,
+            "Error": itemError,
+        }
+
+        # store rows in the action_worker
+        self.new_store_id = self.datastore.reserve_id(collection="action_worker")
+        fqid = fqid_from_collection_and_id("action_worker", self.new_store_id)
+        self.datastore.write_action_worker(
+            WriteRequest(
+                events=[
+                    Event(
+                        type=EventType.Create,
+                        fqid=fqid,
+                        fields={
+                            "id": self.new_store_id,
+                            "result": self.rows,
+                        },
+                    )
+                ],
+                user_id=self.user_id,
+                locked_fields={},
+            )
+        )
         return {}
 
-    def update_agenda_type(self, value: Any) -> int:
-        return 1
-
-    def update_agenda_duration(self, value: Any) -> int:
-        return 10
-
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        okay, error = None, None
+        status, error = None, []
         try:
             TopicCreate.schema_validator(entry)
-            okay = True
+            status = "new"
         except fastjsonschema.JsonSchemaException as exception:
-            okay = False
-            error = exception.message
-        preview_entry = {"okay": okay, "entry": entry}
-        if error:
-            preview_entry["error"] = error
-        return preview_entry
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        # ???
-        pass
+            status = "error"
+            error.append(exception.message)
+        return {"status": status, "error": error, "data": entry}
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
         return {}
 
     def create_events(self, instance: Dict[str, Any]) -> Any:
         return []
+
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        return {
+            "id": self.new_store_id,
+            "headers": self.headers,
+            "rows": self.rows,
+            "statistics": self.statistics,
+        }
