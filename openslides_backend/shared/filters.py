@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Sequence, Union
+from typing import Any, Callable, Dict, Iterable, Sequence, Union
 
 from datastore.shared.util import And as BaseAnd
 from datastore.shared.util import FilterOperator as BaseFilterOperator
@@ -9,44 +9,61 @@ from datastore.shared.util import Or as BaseOr
 FilterData = Dict[str, Any]
 
 
-class FilterBase(ABC):
+class _FilterBase(ABC):
     @abstractmethod
     def to_dict(self) -> FilterData:
         """Return a dict representation of this filter."""
 
 
-class FilterOperator(FilterBase, BaseFilterOperator):
+class _ListFilterBase(_FilterBase, ABC):
+    def __init__(
+        self, arg: "Filter" | Iterable["Filter"], *more_filters: "Filter"
+    ) -> None:
+        self._set_filters(
+            (list(arg) if isinstance(arg, Iterable) else [arg]) + list(more_filters)
+        )
+
+    def to_dict(self) -> FilterData:
+        filters = list(map(lambda x: x.to_dict(), self._get_filters()))
+        return {self._get_field_name(): filters}
+
+    def _get_filters(self) -> Sequence["Filter"]:
+        return getattr(self, self._get_field_name())
+
+    def _set_filters(self, filters: Sequence["Filter"]) -> None:
+        setattr(self, self._get_field_name(), filters)
+
+    def _get_field_name(self) -> str:
+        return f"{type(self).__name__.lower()}_filter"
+
+    def __hash__(self) -> int:
+        return hash((self._get_field_name(),) + tuple(self._get_filters()))
+
+
+class FilterOperator(_FilterBase, BaseFilterOperator):
     def to_dict(self) -> FilterData:
         return {"field": self.field, "operator": self.operator, "value": self.value}
 
+    def __hash__(self) -> int:
+        return hash((self.field, self.operator, self.value))
 
-class And(FilterBase, BaseAnd):
+
+class And(_ListFilterBase, BaseAnd):
     and_filter: Sequence["Filter"]
 
-    def __init__(self, *filters: "Filter") -> None:
-        super().__init__(list(filters))
 
-    def to_dict(self) -> FilterData:
-        filters = list(map(lambda x: x.to_dict(), self.and_filter))
-        return {"and_filter": filters}
-
-
-class Or(FilterBase, BaseOr):
+class Or(_ListFilterBase, BaseOr):
     or_filter: Sequence["Filter"]
 
-    def __init__(self, *filters: "Filter") -> None:
-        super().__init__(list(filters))
 
-    def to_dict(self) -> FilterData:
-        filters = list(map(lambda x: x.to_dict(), self.or_filter))
-        return {"or_filter": filters}
-
-
-class Not(FilterBase, BaseNot):
+class Not(_FilterBase, BaseNot):
     not_filter: "Filter"
 
     def to_dict(self) -> FilterData:
         return {"not_filter": self.not_filter.to_dict()}
+
+    def __hash__(self) -> int:
+        return hash(("not_filter", self.not_filter))
 
 
 Filter = Union[And, Or, Not, FilterOperator]

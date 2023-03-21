@@ -4,7 +4,7 @@ import fastjsonschema
 
 from openslides_backend.shared.schema import id_list_schema
 
-from ..shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
+from ..shared.mixins.user_scope_mixin import UserScopeMixin
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -33,18 +33,12 @@ class GetUserScope(UserScopeMixin, BasePresenter):
     schema = get_user_scope_schema
 
     def get_result(self) -> Any:
-        result: Dict["str", Any] = {}
+        result: Dict[str, Any] = {}
         user_ids = self.data["user_ids"]
         for user_id in user_ids:
             scope, scope_id, user_oml = self.get_user_scope(user_id)
-            if scope == UserScope.Committee:
-                scope_str = "committee"
-            elif scope == UserScope.Organization:
-                scope_str = "organization"
-            else:
-                scope_str = "meeting"
             result[str(user_id)] = {
-                "collection": scope_str,
+                "collection": scope,
                 "id": scope_id,
                 "user_oml": user_oml,
             }
