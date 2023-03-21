@@ -1,7 +1,7 @@
 from typing import Any, Dict, Iterable, Optional
 
 from ...models.base import Model
-from ...shared.schema import schema_version
+from ...shared.schema import id_list_schema, required_id_schema, schema_version
 from ...shared.typing import Schema
 
 sort_node_schema = {
@@ -11,11 +11,7 @@ sort_node_schema = {
     "description": "A node inside a sort tree.",
     "type": "object",
     "properties": {
-        "id": {
-            "description": "The id of the instance.",
-            "type": "integer",
-            "minimum": 1,
-        },
+        "id": required_id_schema,
         "children": {
             "type": "array",
             "items": {"type": "object", "$ref": "tree_sort_node"},
@@ -146,11 +142,6 @@ class DefaultSchema:
             title=f"Sort {self.model} schema",
             required_properties=[id_field_main],
             additional_required_fields={
-                id_field_to_sort: {
-                    "type": "array",
-                    "items": {"type": "integer", "min": 1},
-                    "minItems": 1,
-                    "uniqueItems": True,
-                },
+                id_field_to_sort: id_list_schema,
             },
         )

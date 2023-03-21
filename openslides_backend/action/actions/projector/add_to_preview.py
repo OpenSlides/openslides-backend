@@ -1,7 +1,7 @@
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator
-from ....shared.schema import required_id_schema
+from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
@@ -20,9 +20,7 @@ class ProjectorAddToPreview(WeightMixin, UpdateAction):
     schema = DefaultSchema(Projection()).get_default_schema(
         required_properties=["content_object_id", "meeting_id"],
         optional_properties=["options", "stable", "type"],
-        additional_required_fields={
-            "ids": {"type": "array", "items": required_id_schema, "uniqueItems": True}
-        },
+        additional_required_fields={"ids": id_list_schema},
         title="Projector add to preview schema",
     )
     permission = Permissions.Projector.CAN_MANAGE

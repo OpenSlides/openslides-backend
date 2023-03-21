@@ -4,7 +4,7 @@ from ....models.models import Projector
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.schema import required_id_schema
+from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -20,9 +20,7 @@ class ProjectorSortPreview(UpdateAction):
 
     model = Projector()
     schema = DefaultSchema(Projector()).get_update_schema(
-        additional_required_fields={
-            "projection_ids": {"type": "array", "items": required_id_schema}
-        },
+        additional_required_fields={"projection_ids": id_list_schema},
     )
     permission = Permissions.Projector.CAN_MANAGE
 
