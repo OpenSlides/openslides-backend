@@ -2,8 +2,6 @@ import base64
 import time
 from typing import Any, Dict, Optional
 
-import pytest
-
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
 from openslides_backend.shared.util import (
@@ -564,35 +562,27 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         assert start <= meeting_2.get("imported_at", 0) <= end
-        # user_2 = self.assert_model_exists(
-        #     "user/2",
-        #     {
-        #         "username": "test",
-        #         "group_$2_ids": [2],
-        #         "group_$_ids": ["2"],
-        #         "default_structure_level": "default boss",
-        #         "meeting_ids": [2],
-        #         "committee_ids": [1],
-        #         "meeting_user_ids": [1],
-        #     },
-        # )
-        # assert user_2.get("password")
-        # self.assert_model_exists(
-        #     "meeting_user/1",
-        #     {
-        #         "meeting_id": 2,
-        #         "user_id": 2,
-        #         "structure_level": "meeting freak",
-        #         "personal_note_ids": [1],
-        #         "submitted_motion_ids": [],
-        #     },
-        # )
         user_2 = self.assert_model_exists(
-            "user/2", {"username": "test", "meeting_user_ids": [1]}
+            "user/2",
+            {
+                "username": "test",
+                "default_structure_level": "default boss",
+                "meeting_ids": [2],
+                "committee_ids": [1],
+                "meeting_user_ids": [1],
+            },
         )
-        assert user_2.get("password", "")
+        assert user_2.get("password")
         self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 2, "user_id": 2, "group_ids": [2]}
+            "meeting_user/1",
+            {
+                "meeting_id": 2,
+                "user_id": 2,
+                "structure_level": "meeting freak",
+                "personal_note_ids": [1],
+                "submitted_motion_ids": [],
+                "group_ids": [2],
+            },
         )
         self.assert_model_exists(
             "meeting_user/2", {"meeting_id": 2, "user_id": 1, "group_ids": [2]}
@@ -606,9 +596,9 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
         )
-        committee_1 = self.get_model("committee/1")
-        self.assertCountEqual(committee_1.get("meeting_ids", []), [1, 2])
-        # self.assertCountEqual(committee_1.get("user_ids", []), [1, 2])
+        self.assert_model_exists(
+            "committee/1", {"user_ids": [2, 1], "meeting_ids": [1, 2]}
+        )
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1, 2]})
 
     def test_check_calc_fields(self) -> None:
@@ -1313,16 +1303,30 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "mediafile/3: is_public is wrong." in response.json["message"]
 
-    # XXX need to update admin group in import first.
-    @pytest.mark.skip
     def test_request_user_in_admin_group(self) -> None:
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
-        meeting = self.assert_model_exists("meeting/2")
-        self.assertCountEqual(meeting["user_ids"], [1, 2])
-        group2 = self.assert_model_exists("group/2")
-        self.assertCountEqual(group2["user_ids"], [1, 2])
+        self.assert_model_exists(
+            "user/1", {"meeting_user_ids": [2], "username": "admin"}
+        )
+        self.assert_model_exists(
+            "meeting_user/2", {"group_ids": [2], "meeting_id": 2, "user_id": 1}
+        )
+        self.assert_model_exists(
+            "user/2", {"meeting_user_ids": [1], "username": "test"}
+        )
+        self.assert_model_exists(
+            "meeting_user/1", {"group_ids": [2], "meeting_id": 2, "user_id": 2}
+        )
+        self.assert_model_exists("meeting/2", {"user_ids": [2, 1]})
+        self.assert_model_exists(
+            "group/2",
+            {
+                "meeting_user_ids": [1, 2],
+                "meeting_id": 2,
+                "name": "imported admin group1",
+            },
+        )
 
     def test_motion_all_derived_motion_ids(self) -> None:
         """
