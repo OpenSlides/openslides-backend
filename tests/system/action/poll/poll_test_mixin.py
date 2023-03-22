@@ -36,14 +36,14 @@ class PollTestMixin(BaseActionTestCase):
                     for i in user_ids
                 },
                 **{
-                    f"meeting_user/{i}": {
+                    f"meeting_user/{i+10}": {
                         "meeting_id": 1,
                         "user_id": i,
                         "group_ids": [3],
                     }
                     for i in user_ids
                 },
-                "group/3": {"meeting_user_ids": user_ids, "meeting_id": 1},
+                "group/3": {"meeting_user_ids": [id_+10 for id_ in user_ids], "meeting_id": 1},
                 "meeting/1": {
                     "user_ids": user_ids,
                     "group_ids": [3],

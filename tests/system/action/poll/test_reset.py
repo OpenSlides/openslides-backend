@@ -105,7 +105,7 @@ class PollResetActionTest(PollTestMixin):
             Permissions.Poll.CAN_MANAGE,
         )
 
-    @pytest.mark.skip
+    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_reset_not_allowed_to_vote_again(self) -> None:
         self.set_models(self.test_models)
         self.set_models(
@@ -136,7 +136,7 @@ class PollResetActionTest(PollTestMixin):
         response = self.vote_service.vote({"id": 1, "value": {"1": 1}})
         self.assert_status_code(response, 200)
 
-    @pytest.mark.skip
+    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_reset_datastore_calls(self) -> None:
         self.prepare_users_and_poll(3)
 

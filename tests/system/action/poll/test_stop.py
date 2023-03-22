@@ -10,7 +10,7 @@ from tests.system.util import CountDatastoreCalls, Profiler, performance
 from .poll_test_mixin import PollTestMixin
 
 
-@pytest.mark.skip
+#@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class PollStopActionTest(PollTestMixin):
     def setUp(self) -> None:
         super().setUp()
@@ -29,9 +29,7 @@ class PollStopActionTest(PollTestMixin):
             "meeting/1": {"is_active_in_organization_id": 1},
         }
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
+    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_stop_correct(self) -> None:
         self.set_models(
             {
@@ -73,24 +71,31 @@ class PollStopActionTest(PollTestMixin):
         self.set_models(
             {
                 f"user/{user1}": {
-                    "vote_weight_$1": "2.000000",
+                    "meeting_user_ids": [1],
+                    "default_vote_weight": "2.000000",
                     "is_present_in_meeting_ids": [1],
                 },
                 f"user/{user2}": {
-                    "vote_weight_$1": "3.000000",
+                    "meeting_user_ids": [2],
+                    "default_vote_weight": "3.000000",
                     "is_present_in_meeting_ids": [1],
                 },
-                f"user/{user3}": {"vote_delegated_$1_to_id": user2},
+                f"user/{user3}": {"meeting_user_ids": [3]},
                 "meeting_user/1": {
-                    "user_id": user1,
-                    "meeting_id": 1,
-                    "vote_weight": "2.000000",
+                    "user_id": 2,
+                    "vote_weight": "2.600000",
+                    "vote_delegations_from_ids": [4]
                 },
                 "meeting_user/2": {
-                    "user_id": user2,
-                    "meeting_id": 1,
-                    "vote_weight": "3.000000",
+                    "user_id": 3,
+                    "vote_weight": "3.600000",
                 },
+                "meeting_user/3": {
+                    "user_id": 4,
+                    "vote_weight": "4.600000",
+                    "vote_delegated_to_id": 1,
+                },
+
             }
         )
         self.start_poll(1)
@@ -139,6 +144,7 @@ class PollStopActionTest(PollTestMixin):
         self.assert_status_code(response, 200)
         self.assert_history_information("assignment/1", ["Ballot stopped"])
 
+    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_stop_entitled_users_at_stop_user_only_once(self) -> None:
         self.set_models(
             {
@@ -156,11 +162,18 @@ class PollStopActionTest(PollTestMixin):
                 },
                 "user/2": {
                     "is_present_in_meeting_ids": [1],
+                    "meeting_user_ids": [1],
                 },
-                "group/3": {"user_ids": [2]},
-                "group/4": {"user_ids": [2]},
+                "meeting_user/1": {
+                    "user_id": 2,
+                    "meeting_id": 1,
+                    "group_ids": [3, 4],
+                },
+                "group/3": {"meeting_user_ids": [1]},
+                "group/4": {"meeting_user_ids": [1]},
                 "meeting/1": {
                     "group_ids": [3, 4],
+                    "meeting_user_ids": [1],
                     "is_active_in_organization_id": 1,
                 },
             }
@@ -173,6 +186,7 @@ class PollStopActionTest(PollTestMixin):
             {"voted": False, "user_id": 2, "vote_delegated_to_id": None},
         ]
 
+    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_stop_entitled_users_not_present(self) -> None:
         self.set_models(
             {
@@ -189,20 +203,21 @@ class PollStopActionTest(PollTestMixin):
                     "entitled_group_ids": [3],
                 },
                 "user/2": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [3],
+                    "meeting_user_ids": [12],
                     "meeting_ids": [1],
                 },
+                "meeting_user/12": {"user_id": 2, "meeting_id": 1, "group_ids": [3]},
                 "user/3": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [4],
+                    "meeting_user_ids": [13],
                     "meeting_ids": [1],
                 },
-                "group/3": {"user_ids": [2], "meeting_id": 1},
-                "group/4": {"user_ids": [3], "meeting_id": 1},
+                "meeting_user/13": {"user_id": 3, "meeting_id": 1, "group_ids": [4]},
+                "group/3": {"meeting_user_ids": [12], "meeting_id": 1},
+                "group/4": {"meeting_user_ids": [13], "meeting_id": 1},
                 "meeting/1": {
                     "user_ids": [2, 3],
                     "group_ids": [3, 4],
+                    "meeting_user_ids": [12, 13],
                     "is_active_in_organization_id": 1,
                 },
             }
@@ -276,7 +291,7 @@ class PollStopActionTest(PollTestMixin):
             Permissions.Poll.CAN_MANAGE,
         )
 
-    @pytest.mark.skip
+    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_stop_datastore_calls(self) -> None:
         user_ids = self.prepare_users_and_poll(3)
 

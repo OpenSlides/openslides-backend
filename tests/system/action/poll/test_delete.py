@@ -112,7 +112,7 @@ class PollDeleteTest(PollTestMixin):
             Permissions.Poll.CAN_MANAGE,
         )
 
-    @pytest.mark.skip
+    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_delete_datastore_calls(self) -> None:
         self.prepare_users_and_poll(3)
 

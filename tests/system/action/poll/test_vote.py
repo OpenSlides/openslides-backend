@@ -11,7 +11,6 @@ from tests.system.util import convert_to_test_response
 from tests.util import Response
 
 
-@pytest.mark.skip
 class BaseVoteTestCase(BaseActionTestCase):
     def request(
         self,
@@ -46,7 +45,7 @@ class BaseVoteTestCase(BaseActionTestCase):
         return convert_to_test_response(response)
 
 
-@pytest.mark.skip
+@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class PollVoteTest(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -55,31 +54,33 @@ class PollVoteTest(BaseVoteTestCase):
             {"is_active_in_organization_id": 1},
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_correct_pollmethod_Y(self) -> None:
         user_id = self.create_user("test2")
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1, user_id]},
+                "group/1": {"meeting_user_ids": [11, 12], "poll_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
-                f"user/{user_id}": {
-                    "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
-                    "meeting_user_ids": [1],
-                },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                    "meeting_ids": [113],
                 },
-                "meeting_user/1": {
+                "meeting_user/11": {
+                    "meeting_id": 113,
+                    "user_id": 1,
+                    "group_ids": [1],
+                },
+                f"user/{user_id}": {
+                    "is_present_in_meeting_ids": [113],
+                    "meeting_user_ids": [12],
+                    "meeting_ids": [113],
+                },
+                "meeting_user/12": {
                     "meeting_id": 113,
                     "user_id": user_id,
                     "vote_weight": "2.000000",
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -100,7 +101,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "meeting/113": {
                     "users_enable_vote_weight": True,
-                    "meeting_user_ids": [1],
+                    "meeting_user_ids": [11, 12],
                 },
             }
         )
@@ -180,9 +181,6 @@ class PollVoteTest(BaseVoteTestCase):
             in response.json["message"]
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_correct_pollmethod_YN(self) -> None:
         self.set_models(
             {
@@ -336,9 +334,6 @@ class PollVoteTest(BaseVoteTestCase):
         assert "Your vote has a wrong format" in response.json["message"]
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_no_votes_total_check_by_YNA(self) -> None:
         self.set_models(
             {
@@ -382,9 +377,6 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_no_votes_total_check_by_YN(self) -> None:
         self.set_models(
             {
@@ -475,9 +467,6 @@ class PollVoteTest(BaseVoteTestCase):
         )
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_global(self) -> None:
         self.set_models(
             {
@@ -686,9 +675,6 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_status_code(response, 400)
         assert "Option_id 113 does not belong to the poll" in response.json["message"]
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_double_vote(self) -> None:
         self.set_models(
             {
@@ -837,9 +823,6 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_status_code(response, 400)
         assert "Global vote X is not enabled" in response.json["message"]
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_default_vote_weight(self) -> None:
         self.set_models(
             {
@@ -889,9 +872,6 @@ class PollVoteTest(BaseVoteTestCase):
         assert user.get("vote_$_ids") == ["113"]
         assert user.get("vote_$113_ids") == [1]
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_weight_not_enabled(self) -> None:
         self.set_models(
             {
@@ -951,7 +931,7 @@ class PollVoteTest(BaseVoteTestCase):
         assert user.get("vote_$113_ids") == [1]
 
 
-@pytest.mark.skip
+@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollBaseTestClass(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -1009,7 +989,7 @@ class VotePollBaseTestClass(BaseVoteTestCase):
         )
 
 
-@pytest.mark.skip
+@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollNamedYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1032,9 +1012,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.add_option()
         self.start_poll()
@@ -1062,9 +1039,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("no"), "0.000000")
         self.assertEqual(option3.get("abstain"), "1.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_with_voteweight(self) -> None:
         self.set_models(
             {
@@ -1103,9 +1077,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("no"), "0.000000")
         self.assertEqual(option3.get("abstain"), "4.200000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1212,7 +1183,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
+@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollNamedY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1236,9 +1207,6 @@ class VotePollNamedY(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1262,9 +1230,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1287,9 +1252,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_yes(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
@@ -1306,9 +1268,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_no(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
@@ -1325,9 +1284,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_abstain(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
@@ -1452,7 +1408,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
+@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1476,9 +1432,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1501,9 +1454,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1526,9 +1476,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_weight(self) -> None:
         self.update_model("user/1", {"default_vote_weight": "3.000000"})
         self.update_model("meeting/113", {"users_enable_vote_weight": True})
@@ -1547,9 +1494,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_change_weight(self) -> None:
         self.update_model("user/1", {"default_vote_weight": "3.000000"})
         self.update_model("meeting/113", {"users_enable_vote_weight": True})
@@ -1575,7 +1519,7 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
 
-@pytest.mark.skip
+@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollNamedN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1599,9 +1543,6 @@ class VotePollNamedN(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1625,9 +1566,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.add_option()
         self.start_poll()
@@ -1651,9 +1589,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_yes(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
@@ -1670,9 +1605,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_no(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
@@ -1689,9 +1621,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_abstain(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
@@ -1797,7 +1726,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
+@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1818,9 +1747,6 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.add_option()
         self.start_poll()
@@ -1847,9 +1773,6 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("no"), "0.000000")
         self.assertEqual(option3.get("abstain"), "1.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1877,9 +1800,6 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_partial_vote(self) -> None:
         self.add_option()
         self.start_poll()
@@ -1970,7 +1890,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
+@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollPseudoanonymousY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1991,9 +1911,6 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -2019,9 +1936,6 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         vote = self.get_model("vote/1")
         self.assertIsNone(vote.get("user_id"))
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -2127,8 +2041,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-
-@pytest.mark.skip
+@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollPseudoAnonymousN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -2149,9 +2062,6 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -2177,9 +2087,6 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
         vote = self.get_model("vote/1")
         self.assertIsNone(vote.get("user_id"))
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
