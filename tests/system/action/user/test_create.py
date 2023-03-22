@@ -1,5 +1,3 @@
-import pytest
-
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
@@ -195,7 +193,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "structure_level": "level_1",
                 "about_me": "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;",
                 "vote_weight": "1.000000",
-            }
+            },
         )
         self.assert_model_exists("user/222", {"meeting_user_ids": [1]})
         self.assert_model_exists("meeting_user/1", {"vote_delegated_to_id": 2})
@@ -303,9 +301,11 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
-        self.set_models({
-            "meeting/1": {"is_active_in_organization_id": 1},
-        })
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+            }
+        )
         response = self.request(
             "user.create",
             {
@@ -316,8 +316,13 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "testname", "meeting_user_ids": [1]})
-        self.assert_model_exists("meeting_user/1", {"meeting_id": 1, "user_id": 2, "vote_delegations_from_ids": []})
+        self.assert_model_exists(
+            "user/2", {"username": "testname", "meeting_user_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {"meeting_id": 1, "user_id": 2, "vote_delegations_from_ids": []},
+        )
 
     def test_create_committee_manager_without_committee_ids(self) -> None:
         """create has to add a missing committee to the user, because cml permission is demanded"""
@@ -456,7 +461,6 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
-
     def test_create_permission_group_A_oml_manage_user(self) -> None:
         """May create group A fields on organsisation scope, because belongs to 2 meetings in 2 committees, requiring OML level permission"""
         self.permission_setup()
@@ -465,34 +469,42 @@ class UserCreateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
 
-        response = self.request_json([
-            {
-            "action": "user.create",
-            "data":[{
-                "username": "new username",
-                "title": "new title",
-                "first_name": "new first_name",
-                "last_name": "new last_name",
-                "is_active": True,
-                "is_physical_person": True,
-                "default_password": "new default_password",
-                "gender": "female",
-                "email": "info@openslides.com",
-                "default_number": "new default_number",
-                "default_structure_level": "new default_structure_level",
-                "default_vote_weight": "1.234000",
-                "can_change_own_password": False,
-                "meeting_id": 1,
-                "group_ids": [1],
-            }]},
-            {
-            "action": "meeting_user.create",
-            "data":[{
-                "user_id": 3,
-                "meeting_id": 4,
-                "group_ids": [4],
-            }]}],
-            atomic=False
+        response = self.request_json(
+            [
+                {
+                    "action": "user.create",
+                    "data": [
+                        {
+                            "username": "new username",
+                            "title": "new title",
+                            "first_name": "new first_name",
+                            "last_name": "new last_name",
+                            "is_active": True,
+                            "is_physical_person": True,
+                            "default_password": "new default_password",
+                            "gender": "female",
+                            "email": "info@openslides.com",
+                            "default_number": "new default_number",
+                            "default_structure_level": "new default_structure_level",
+                            "default_vote_weight": "1.234000",
+                            "can_change_own_password": False,
+                            "meeting_id": 1,
+                            "group_ids": [1],
+                        }
+                    ],
+                },
+                {
+                    "action": "meeting_user.create",
+                    "data": [
+                        {
+                            "user_id": 3,
+                            "meeting_id": 4,
+                            "group_ids": [4],
+                        }
+                    ],
+                },
+            ],
+            atomic=False,
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -534,22 +546,30 @@ class UserCreateActionTest(BaseActionTestCase):
             }
         )
 
-        response = self.request_json([
-            {
-            "action": "user.create",
-            "data":[{
-                "username": "usersname",
-                "meeting_id": 1,
-                "group_ids": [1],
-            }]},
-            {
-            "action": "meeting_user.create",
-            "data":[{
-                "user_id": 3,
-                "meeting_id": 4,
-                "group_ids": [4],
-            }]}],
-            atomic=False
+        response = self.request_json(
+            [
+                {
+                    "action": "user.create",
+                    "data": [
+                        {
+                            "username": "usersname",
+                            "meeting_id": 1,
+                            "group_ids": [1],
+                        }
+                    ],
+                },
+                {
+                    "action": "meeting_user.create",
+                    "data": [
+                        {
+                            "user_id": 3,
+                            "meeting_id": 4,
+                            "group_ids": [4],
+                        }
+                    ],
+                },
+            ],
+            atomic=False,
         )
 
         self.assert_status_code(response, 200)
@@ -564,7 +584,6 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("meeting_user/2", {"meeting_id": 1, "group_ids": [1]})
         self.assert_model_exists("meeting_user/3", {"meeting_id": 4, "group_ids": [4]})
-
 
     def test_create_permission_group_A_user_can_manage(self) -> None:
         """May create group A fields on meeting scope"""
@@ -655,7 +674,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting_ids": [1],
                 "meeting_user_ids": [4],
                 "is_present_in_meeting_ids": [1],
-            }
+            },
         )
         self.assert_model_exists(
             "meeting_user/4",
@@ -729,7 +748,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/3", {"meeting_user_ids": [2]})
-        self.assert_model_exists("meeting_user/2",{"group_ids": [1]})
+        self.assert_model_exists("meeting_user/2", {"group_ids": [1]})
 
     def test_create_permission_group_C_committee_manager(self) -> None:
         """May create group C group_ids by committee permission"""
@@ -1143,7 +1162,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting_ids": [2],
                 "committee_ids": [1, 2],
                 "meeting_user_ids": [1],
-            }
+            },
         )
         self.assert_model_exists(
             "meeting_user/1",
@@ -1154,8 +1173,14 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
-        self.assert_model_exists("committee/1", {"user_ids": [222, 223], "manager_ids": [222, 223]})
-        self.assert_model_exists("committee/2", {"user_ids": [222, 223], "manager_ids": [222]})
+        self.assert_model_exists(
+            "committee/1", {"user_ids": [222, 223], "manager_ids": [222, 223]}
+        )
+        self.assert_model_exists(
+            "committee/2", {"user_ids": [222, 223], "manager_ids": [222]}
+        )
         self.assert_model_exists("group/22", {"meeting_user_ids": [1]})
         self.assert_model_exists("meeting/1", {"user_ids": None})
-        self.assert_model_exists("meeting/2", {"user_ids": [223], "meeting_user_ids": [1]})
+        self.assert_model_exists(
+            "meeting/2", {"user_ids": [223], "meeting_user_ids": [1]}
+        )
