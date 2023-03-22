@@ -39,3 +39,14 @@ class TopicJsonImport(BaseActionTestCase):
         response = self.request("topic.import", {"id": 2, "command": "abort"})
         self.assert_status_code(response, 400)
         assert "Topic import is aborted or done." in response.json["message"]
+
+    def test_import_duplicates_in_db(self) -> None:
+        self.set_models(
+            {
+                "topic/1": {"title": "test", "meeting_id": 22},
+                "meeting/22": {"topic_ids": [1]},
+            }
+        )
+        response = self.request("topic.import", {"id": 2, "command": "import"})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("topic/2")

@@ -11,10 +11,11 @@ from ...action import Action
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import TopicCreate
+from .mixins import DuplicateCheckMixin
 
 
 @register_action("topic.import")
-class TopicImport(Action):
+class TopicImport(DuplicateCheckMixin, Action):
     """
     Action to import a result from the action_worker.
     """
@@ -32,6 +33,8 @@ class TopicImport(Action):
         store_id = instance["id"]
         command = instance["command"]
         if command == "import":
+            meeting_id = self.get_meeting_id(instance)
+            self.init_duplicate_set(meeting_id)
             worker = self.datastore.get(
                 fqid_from_collection_and_id("action_worker", store_id), ["result"]
             )
@@ -39,6 +42,7 @@ class TopicImport(Action):
                 entry["data"]
                 for entry in worker.get("result", [])
                 if entry["status"] == "new"
+                and not self.check_for_duplicate(entry["data"]["title"])
             ]
             self.execute_other_action(TopicCreate, action_payload)
 

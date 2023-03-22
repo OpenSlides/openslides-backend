@@ -14,10 +14,11 @@ from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create import TopicCreate
+from .mixins import DuplicateCheckMixin
 
 
 @register_action("topic.json_upload")
-class TopicJsonUpload(Action):
+class TopicJsonUpload(DuplicateCheckMixin, Action):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -44,7 +45,7 @@ class TopicJsonUpload(Action):
                     "additionalProperties": False,
                 },
                 "minItems": 1,
-                "uniqueItems": True,
+                "uniqueItems": False,
             },
             "meeting_id": required_id_schema,
         }
@@ -68,6 +69,7 @@ class TopicJsonUpload(Action):
         ]
 
         # validate
+        self.init_duplicate_set(instance["meeting_id"])
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
@@ -109,7 +111,11 @@ class TopicJsonUpload(Action):
         status, error = None, []
         try:
             TopicCreate.schema_validator(entry)
-            status = "new"
+            if self.check_for_duplicate(entry["title"]):
+                status = "error"
+                error.append("Duplicate")
+            else:
+                status = "new"
         except fastjsonschema.JsonSchemaException as exception:
             status = "error"
             error.append(exception.message)

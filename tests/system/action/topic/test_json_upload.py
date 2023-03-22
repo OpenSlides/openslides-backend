@@ -96,6 +96,33 @@ class TopicJsonUpload(BaseActionTestCase):
         }
         assert result["statistics"] == {"itemCount": 1, "Created": 1, "Error": 0}
 
+    def test_json_upload_duplicate_in_db(self) -> None:
+        self.set_models(
+            {
+                "topic/3": {"title": "test", "meeting_id": 22},
+                "meeting/22": {"topic_ids": [3]},
+            }
+        )
+        response = self.request(
+            "topic.json_upload",
+            {"meeting_id": 22, "data": [{"title": "test"}]},
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"][0]["error"] == ["Duplicate"]
+
+    def test_json_upload_duplicate_in_data(self) -> None:
+        response = self.request(
+            "topic.json_upload",
+            {
+                "meeting_id": 22,
+                "data": [{"title": "test"}, {"title": "bla"}, {"title": "test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"][2]["error"] == ["Duplicate"]
+
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
             {}, "topic.json_upload", {"data": [{"title": "test"}], "meeting_id": 1}
