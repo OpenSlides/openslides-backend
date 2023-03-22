@@ -683,7 +683,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting_ids": [1],
                 "meeting_user_ids": [4],
                 "is_present_in_meeting_ids": [1],
-            }
+            },
         )
         self.assert_model_exists(
             "meeting_user/4",

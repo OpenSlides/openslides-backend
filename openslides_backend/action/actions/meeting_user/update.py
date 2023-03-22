@@ -17,7 +17,7 @@ class MeetingUserUpdate(MeetingUserMixin, UpdateAction):
         optional_properties=[
             "about_me",
             "group_ids",
-            *MeetingUserMixin.standard_fields
+            *MeetingUserMixin.standard_fields,
         ],
     )
     permission = Permissions.User.CAN_MANAGE
