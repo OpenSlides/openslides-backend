@@ -470,7 +470,6 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
-
     def test_create_permission_group_A_oml_manage_user(self) -> None:
         """May create group A fields on organsisation scope, because belongs to 2 meetings in 2 committees, requiring OML level permission"""
         self.permission_setup()
@@ -684,7 +683,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting_ids": [1],
                 "meeting_user_ids": [4],
                 "is_present_in_meeting_ids": [1],
-            }
+            },
         )
         self.assert_model_exists(
             "meeting_user/4",
