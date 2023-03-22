@@ -25,21 +25,21 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "user/111": {
                     "username": "username_srtgb123",
-                    "meeting_user_ids": [111],
+                    "meeting_user_ids": [1111],
                     "committee_ids": [1],
                     "committee_management_ids": [1],
                 },
-                "meeting_user/111": {
+                "meeting_user/1111": {
                     "meeting_id": 42,
                     "user_id": 111,
                     "group_ids": [456],
                 },
-                "group/456": {"meeting_id": 42, "meeting_user_ids": [111]},
+                "group/456": {"meeting_id": 42, "meeting_user_ids": [1111]},
                 "meeting/42": {
                     "group_ids": [456],
                     "user_ids": [111],
                     "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [111],
+                    "meeting_user_ids": [1111],
                 },
                 "committee/1": {
                     "meeting_ids": [456],
@@ -54,12 +54,12 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_deleted(
             "user/111",
             {
-                "meeting_user_ids": [111],
+                "meeting_user_ids": [1111],
                 "committee_ids": [1],
                 "committee_management_ids": [1],
             },
         )
-        self.assert_model_deleted("meeting_user/111", {"group_ids": [456]})
+        self.assert_model_deleted("meeting_user/1111", {"group_ids": [456]})
         self.assert_model_exists("group/456", {"user_ids": None})
 
     def test_delete_with_speaker(self) -> None:
@@ -67,22 +67,22 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "user/111": {
                     "username": "username_srtgb123",
-                    "meeting_user_ids": [112],
+                    "meeting_user_ids": [1111],
                 },
-                "meeting_user/112": {
+                "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
                     "speaker_ids": [15],
                 },
                 "meeting/1": {},
-                "speaker/15": {"meeting_user_id": 112, "meeting_id": 1},
+                "speaker/15": {"meeting_user_id": 1111, "meeting_id": 1},
             }
         )
         response = self.request("user.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("user/111")
-        self.assert_model_deleted("meeting_user/112")
+        self.assert_model_deleted("meeting_user/1111")
         self.assert_model_deleted("speaker/15")
 
     def test_delete_with_candidate(self) -> None:
@@ -90,16 +90,16 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "user/111": {
                     "username": "username_srtgb123",
-                    "meeting_user_ids": [111],
+                    "meeting_user_ids": [1111],
                 },
-                "meeting_user/111": {
+                "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
                     "assignment_candidate_ids": [34],
                 },
-                "meeting/1": {"meeting_user_ids": [111]},
+                "meeting/1": {"meeting_user_ids": [1111]},
                 "assignment_candidate/34": {
-                    "meeting_user_id": 111,
+                    "meeting_user_id": 1111,
                     "meeting_id": 1,
                     "assignment_id": 123,
                 },
@@ -115,10 +115,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted(
             "user/111",
-            {"meeting_user_ids": [111]},
+            {"meeting_user_ids": [1111]},
         )
         self.assert_model_deleted(
-            "meeting_user/111", {"assignment_candidate_ids": [34]}
+            "meeting_user/1111", {"assignment_candidate_ids": [34]}
         )
         self.assert_model_exists(
             "assignment_candidate/34", {"assignment_id": 123, "meeting_user_id": None}
@@ -130,11 +130,11 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "user/111": {
                     "username": "username_srtgb123",
-                    "meeting_user_ids": [111],
+                    "meeting_user_ids": [1111],
                 },
                 "meeting/1": {},
-                "motion_submitter/34": {"meeting_user_id": 111, "motion_id": 50},
-                "meeting_user/111": {
+                "motion_submitter/34": {"meeting_user_id": 1111, "motion_id": 50},
+                "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
                     "submitted_motion_ids": [34],
@@ -146,14 +146,14 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted(
-            "user/111", {"username": "username_srtgb123", "meeting_user_ids": [111]}
+            "user/111", {"username": "username_srtgb123", "meeting_user_ids": [1111]}
         )
         self.assert_model_deleted(
-            "meeting_user/111",
+            "meeting_user/1111",
             {"meeting_id": 1, "user_id": 111, "submitted_motion_ids": [34]},
         )
         self.assert_model_deleted(
-            "motion_submitter/34", {"meeting_user_id": 111, "motion_id": 50}
+            "motion_submitter/34", {"meeting_user_id": 1111, "motion_id": 50}
         )
         self.assert_model_exists("motion/50", {"submitter_ids": []})
 
@@ -172,12 +172,12 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "group/1": {
                     "meeting_id": 1,
                     "default_group_for_meeting_id": 1,
-                    "meeting_user_ids": [2],
+                    "meeting_user_ids": [12],
                 },
                 "user/2": {
-                    "meeting_user_ids": [2],
+                    "meeting_user_ids": [12],
                 },
-                "meeting_user/2": {
+                "meeting_user/12": {
                     "meeting_id": 1,
                     "user_id": 2,
                     "group_ids": [1],
@@ -201,24 +201,24 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "group_ids": [1],
                     "default_group_id": 1,
                     "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [2],
+                    "meeting_user_ids": [12],
                 },
                 "group/1": {
                     "meeting_id": 1,
                     "default_group_for_meeting_id": 1,
-                    "meeting_user_ids": [2],
+                    "meeting_user_ids": [12],
                 },
                 "user/2": {
-                    "meeting_user_ids": [2],
+                    "meeting_user_ids": [12],
                 },
-                "meeting_user/2": {
+                "meeting_user/12": {
                     "meeting_id": 1,
                     "user_id": 2,
                     "submitted_motion_ids": [1],
                     "group_ids": [1],
                 },
                 "motion_submitter/1": {
-                    "meeting_user_id": 2,
+                    "meeting_user_id": 12,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
@@ -232,7 +232,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
 
         self.assert_model_deleted("user/2")
-        self.assert_model_deleted("meeting_user/2")
+        self.assert_model_deleted("meeting_user/12")
         self.assert_model_exists("group/1", {"meeting_user_ids": []})
         self.assert_model_deleted("motion_submitter/1")
         self.assert_model_exists("motion/1", {"submitter_ids": []})
@@ -242,23 +242,23 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             {
                 "user/111": {
                     "username": "u111",
-                    "meeting_user_ids": [111],
+                    "meeting_user_ids": [1111],
                 },
                 "user/112": {
                     "username": "u112",
-                    "meeting_user_ids": [112],
+                    "meeting_user_ids": [1112],
                 },
-                "meeting_user/111": {
+                "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
-                    "vote_delegated_to_id": 112,
+                    "vote_delegated_to_id": 1112,
                 },
-                "meeting_user/112": {
+                "meeting_user/1112": {
                     "meeting_id": 1,
                     "user_id": 112,
-                    "vote_delegations_from_ids": [111],
+                    "vote_delegations_from_ids": [1111],
                 },
-                "meeting/1": {"meeting_user_ids": [111, 112]},
+                "meeting/1": {"meeting_user_ids": [1111, 1112]},
             }
         )
         response = self.request("user.delete", {"id": 111})
@@ -266,54 +266,54 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted(
             "user/111",
-            {"meeting_user_ids": [111]},
+            {"meeting_user_ids": [1111]},
         )
-        self.assert_model_deleted("meeting_user/111", {"vote_delegated_to_id": 112})
+        self.assert_model_deleted("meeting_user/1111", {"vote_delegated_to_id": 1112})
         self.assert_model_exists(
             "user/112",
-            {"meeting_user_ids": [112]},
+            {"meeting_user_ids": [1112]},
         )
-        self.assert_model_exists("meeting_user/112", {"vote_delegations_from_ids": []})
+        self.assert_model_exists("meeting_user/1112", {"vote_delegations_from_ids": []})
 
     def test_delete_with_delegation_from(self) -> None:
         self.set_models(
             {
                 "user/111": {
                     "username": "u111",
-                    "meeting_user_ids": [111],
+                    "meeting_user_ids": [1111],
                 },
                 "user/112": {
                     "username": "u112",
-                    "meeting_user_ids": [112],
+                    "meeting_user_ids": [1112],
                 },
-                "meeting_user/111": {
+                "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
-                    "vote_delegated_to_id": 112,
+                    "vote_delegated_to_id": 1112,
                 },
-                "meeting_user/112": {
+                "meeting_user/1112": {
                     "meeting_id": 1,
                     "user_id": 112,
-                    "vote_delegations_from_ids": [111],
+                    "vote_delegations_from_ids": [1111],
                 },
-                "meeting/1": {"meeting_user_ids": [111, 112]},
+                "meeting/1": {"meeting_user_ids": [1111, 1112]},
             }
         )
         response = self.request("user.delete", {"id": 112})
 
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"meeting_user_ids": [111]})
+        self.assert_model_exists("user/111", {"meeting_user_ids": [1111]})
         self.assert_model_deleted(
             "user/112",
-            {"meeting_user_ids": [112]},
+            {"meeting_user_ids": [1112]},
         )
-        self.assert_model_exists("meeting_user/111", {"vote_delegated_to_id": None})
+        self.assert_model_exists("meeting_user/1111", {"vote_delegated_to_id": None})
         self.assert_model_deleted(
-            "meeting_user/112",
+            "meeting_user/1112",
             {
                 "meeting_id": 1,
                 "user_id": 112,
-                "vote_delegations_from_ids": [111],
+                "vote_delegations_from_ids": [1111],
             },
         )
 
