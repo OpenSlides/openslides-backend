@@ -9,6 +9,7 @@ from ...action import Action
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import TopicCreate
+from .json_upload import ImportStatus
 from .mixins import DuplicateCheckMixin
 
 
@@ -36,7 +37,7 @@ class TopicImport(DuplicateCheckMixin, Action):
         action_payload = [
             entry["data"]
             for entry in worker.get("result", {}).get("rows", [])
-            if entry["status"] == "new"
+            if entry["status"] == ImportStatus.NEW
             and not self.check_for_duplicate(entry["data"]["title"])
         ]
         self.execute_other_action(TopicCreate, action_payload)
