@@ -86,8 +86,8 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
             if entry["status"] == ImportStatus.ERROR:
                 itemError += 1
         self.statistics = {
-            "itemCount": itemCount,
-            "Created": itemNew,
+            "Total": itemCount,
+            "New": itemNew,
             "Error": itemError,
         }
 

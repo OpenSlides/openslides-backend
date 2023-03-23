@@ -97,7 +97,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "data": {"title": "test", "meeting_id": 22},
                 }
             ],
-            "statistics": {"itemCount": 1, "Created": 1, "Error": 0},
+            "statistics": {"Total": 1, "New": 1, "Error": 0},
         }
 
     def test_json_upload_duplicate_in_db(self) -> None:
