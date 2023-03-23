@@ -51,6 +51,13 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
         }
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
+    headers = [
+        {"property": "title", "type": "string"},
+        {"property": "text", "type": "string"},
+        {"property": "agenda_comment", "type": "string"},
+        {"property": "agenda_type", "type": "string"},
+        {"proptery": "agenda_duration", "type": "number"},
+    ]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
@@ -59,16 +66,7 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
         for entry in data:
             entry["meeting_id"] = instance["meeting_id"]
 
-        # generate headers
-        self.headers = [
-            {"property": "title", "type": "string"},
-            {"property": "text", "type": "string"},
-            {"property": "agenda_comment", "type": "string"},
-            {"property": "agenda_type", "type": "string"},
-            {"proptery": "agenda_duration", "type": "number"},
-        ]
-
-        # validate
+        # validate and check for duplicates
         self.init_duplicate_set(instance["meeting_id"])
         self.rows = [self.validate_entry(entry) for entry in data]
 

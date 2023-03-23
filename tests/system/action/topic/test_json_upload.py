@@ -72,7 +72,6 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["id"] == 1
         self.assert_model_exists(
             "action_worker/1",
             {
@@ -85,16 +84,24 @@ class TopicJsonUpload(BaseActionTestCase):
                 ]
             },
         )
-        assert result["headers"][0] == {
-            "property": "title",
-            "type": "string",
+        assert result == {
+            "id": 1,
+            "headers": [
+                {"property": "title", "type": "string"},
+                {"property": "text", "type": "string"},
+                {"property": "agenda_comment", "type": "string"},
+                {"property": "agenda_type", "type": "string"},
+                {"proptery": "agenda_duration", "type": "number"},
+            ],
+            "rows": [
+                {
+                    "status": "new",
+                    "error": [],
+                    "data": {"title": "test", "meeting_id": 22},
+                }
+            ],
+            "statistics": {"itemCount": 1, "Created": 1, "Error": 0},
         }
-        assert result["rows"][0] == {
-            "status": "new",
-            "error": [],
-            "data": {"title": "test", "meeting_id": 22},
-        }
-        assert result["statistics"] == {"itemCount": 1, "Created": 1, "Error": 0}
 
     def test_json_upload_duplicate_in_db(self) -> None:
         self.set_models(
@@ -122,6 +129,29 @@ class TopicJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
         assert result["rows"][2]["error"] == ["Duplicate"]
+        assert result["rows"][2]["status"] == "error"
+        self.assert_model_exists(
+            "action_worker/1",
+            {
+                "result": [
+                    {
+                        "status": "new",
+                        "error": [],
+                        "data": {"title": "test", "meeting_id": 22},
+                    },
+                    {
+                        "status": "new",
+                        "error": [],
+                        "data": {"title": "bla", "meeting_id": 22},
+                    },
+                    {
+                        "status": "error",
+                        "error": ["Duplicate"],
+                        "data": {"title": "test", "meeting_id": 22},
+                    },
+                ]
+            },
+        )
 
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(

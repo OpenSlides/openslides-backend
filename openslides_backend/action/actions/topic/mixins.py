@@ -5,13 +5,11 @@ from ...action import Action
 class DuplicateCheckMixin(Action):
     def init_duplicate_set(self, meeting_id: int) -> None:
         self.all_titles_in_meeting = set(
-            [
-                values.get("title")
-                for values in self.datastore.filter(
-                    "topic", FilterOperator("meeting_id", "=", meeting_id), ["title"]
-                ).values()
-                if values.get("title")
-            ]
+            values.get("title")
+            for values in self.datastore.filter(
+                "topic", FilterOperator("meeting_id", "=", meeting_id), ["title"]
+            ).values()
+            if values.get("title")
         )
 
     def check_for_duplicate(self, title: str) -> bool:
