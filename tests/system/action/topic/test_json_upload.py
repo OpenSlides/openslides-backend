@@ -11,13 +11,6 @@ class TopicJsonUpload(BaseActionTestCase):
             }
         )
 
-    def test_json_upload(self) -> None:
-        response = self.request(
-            "topic.json_upload",
-            {"meeting_id": 22, "data": [{"title": "test"}]},
-        )
-        self.assert_status_code(response, 200)
-
     def test_json_upload_agenda_data(self) -> None:
         response = self.request(
             "topic.json_upload",
@@ -71,19 +64,22 @@ class TopicJsonUpload(BaseActionTestCase):
             {"meeting_id": 22, "data": [{"title": "test"}]},
         )
         self.assert_status_code(response, 200)
-        result = response.json["results"][0][0]
         self.assert_model_exists(
             "action_worker/1",
             {
-                "result": [
-                    {
-                        "status": "new",
-                        "error": [],
-                        "data": {"title": "test", "meeting_id": 22},
-                    }
-                ]
+                "result": {
+                    "import": "topic",
+                    "rows": [
+                        {
+                            "status": "new",
+                            "error": [],
+                            "data": {"title": "test", "meeting_id": 22},
+                        }
+                    ],
+                }
             },
         )
+        result = response.json["results"][0][0]
         assert result == {
             "id": 1,
             "headers": [
@@ -116,7 +112,13 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["rows"][0]["error"] == ["Duplicate"]
+        assert result["rows"] == [
+            {
+                "status": "error",
+                "error": ["Duplicate"],
+                "data": {"title": "test", "meeting_id": 22},
+            }
+        ]
 
     def test_json_upload_duplicate_in_data(self) -> None:
         response = self.request(
@@ -133,23 +135,26 @@ class TopicJsonUpload(BaseActionTestCase):
         self.assert_model_exists(
             "action_worker/1",
             {
-                "result": [
-                    {
-                        "status": "new",
-                        "error": [],
-                        "data": {"title": "test", "meeting_id": 22},
-                    },
-                    {
-                        "status": "new",
-                        "error": [],
-                        "data": {"title": "bla", "meeting_id": 22},
-                    },
-                    {
-                        "status": "error",
-                        "error": ["Duplicate"],
-                        "data": {"title": "test", "meeting_id": 22},
-                    },
-                ]
+                "result": {
+                    "import": "topic",
+                    "rows": [
+                        {
+                            "status": "new",
+                            "error": [],
+                            "data": {"title": "test", "meeting_id": 22},
+                        },
+                        {
+                            "status": "new",
+                            "error": [],
+                            "data": {"title": "bla", "meeting_id": 22},
+                        },
+                        {
+                            "status": "error",
+                            "error": ["Duplicate"],
+                            "data": {"title": "test", "meeting_id": 22},
+                        },
+                    ],
+                }
             },
         )
 

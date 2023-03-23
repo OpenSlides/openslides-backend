@@ -8,18 +8,21 @@ class TopicJsonImport(BaseActionTestCase):
             {
                 "meeting/22": {"name": "test", "is_active_in_organization_id": 1},
                 "action_worker/2": {
-                    "result": [
-                        {
-                            "status": "new",
-                            "error": [],
-                            "data": {"title": "test", "meeting_id": 22},
-                        },
-                        {
-                            "status": "error",
-                            "error": ["test"],
-                            "data": {"title": "broken", "meeting_id": 22},
-                        },
-                    ]
+                    "result": {
+                        "import": "topic",
+                        "rows": [
+                            {
+                                "status": "new",
+                                "error": [],
+                                "data": {"title": "test", "meeting_id": 22},
+                            },
+                            {
+                                "status": "error",
+                                "error": ["test"],
+                                "data": {"title": "broken", "meeting_id": 22},
+                            },
+                        ],
+                    }
                 },
             }
         )

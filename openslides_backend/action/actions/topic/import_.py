@@ -35,7 +35,7 @@ class TopicImport(DuplicateCheckMixin, Action):
         )
         action_payload = [
             entry["data"]
-            for entry in worker.get("result", [])
+            for entry in worker.get("result", {}).get("rows", [])
             if entry["status"] == "new"
             and not self.check_for_duplicate(entry["data"]["title"])
         ]
@@ -53,8 +53,6 @@ class TopicImport(DuplicateCheckMixin, Action):
         worker = self.datastore.get(
             fqid_from_collection_and_id("action_worker", store_id), ["result"]
         )
-        if worker.get("result") and isinstance(worker["result"], list):
-            for entry in worker["result"]:
-                if "data" in entry:
-                    return entry["data"].get("meeting_id")
-        raise ActionException("Meeting_id is not found in data.")
+        if worker.get("result", {}).get("import") == "topic":
+            return next(iter(worker["result"]["rows"]))["data"]["meeting_id"]
+        raise ActionException("Import data cannot be found.")

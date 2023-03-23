@@ -95,7 +95,7 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
                         fqid=fqid,
                         fields={
                             "id": self.new_store_id,
-                            "result": self.rows,
+                            "result": {"import": "topic", "rows": self.rows},
                         },
                     )
                 ],
