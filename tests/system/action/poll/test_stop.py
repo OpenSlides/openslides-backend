@@ -1,7 +1,5 @@
 from typing import Any, Dict
 
-import pytest
-
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -10,7 +8,6 @@ from tests.system.util import CountDatastoreCalls, Profiler, performance
 from .poll_test_mixin import PollTestMixin
 
 
-#@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class PollStopActionTest(PollTestMixin):
     def setUp(self) -> None:
         super().setUp()
@@ -29,7 +26,6 @@ class PollStopActionTest(PollTestMixin):
             "meeting/1": {"is_active_in_organization_id": 1},
         }
 
-    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_stop_correct(self) -> None:
         self.set_models(
             {
@@ -56,6 +52,7 @@ class PollStopActionTest(PollTestMixin):
                     "poll_countdown_id": 1,
                     "is_active_in_organization_id": 1,
                     "group_ids": [1],
+                    "users_enable_vote_delegations": True,
                 },
                 "projector_countdown/1": {
                     "running": True,
@@ -84,7 +81,7 @@ class PollStopActionTest(PollTestMixin):
                 "meeting_user/1": {
                     "user_id": 2,
                     "vote_weight": "2.600000",
-                    "vote_delegations_from_ids": [4]
+                    "vote_delegations_from_ids": [4],
                 },
                 "meeting_user/2": {
                     "user_id": 3,
@@ -95,14 +92,17 @@ class PollStopActionTest(PollTestMixin):
                     "vote_weight": "4.600000",
                     "vote_delegated_to_id": 1,
                 },
-
             }
         )
         self.start_poll(1)
-        for user_id in (user1, user2):
-            self.login(user_id)
-            response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
-            self.assert_status_code(response, 200)
+        self.login(user1)
+        response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
+        self.assert_status_code(response, 200)
+        response = self.vote_service.vote(
+            {"id": 1, "user_id": user3, "value": {"1": "N"}}
+        )
+        self.assert_status_code(response, 200)
+
         self.login(1)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)
@@ -110,14 +110,15 @@ class PollStopActionTest(PollTestMixin):
         assert countdown.get("running") is False
         assert countdown.get("countdown_time") == 60
         poll = self.get_model("poll/1")
+        assert poll.get("voted_ids") == [2, 4]
         assert poll.get("state") == Poll.STATE_FINISHED
         assert poll.get("votescast") == "2.000000"
         assert poll.get("votesinvalid") == "0.000000"
-        assert poll.get("votesvalid") == "5.000000"
+        assert poll.get("votesvalid") == "7.200000"
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": True, "user_id": user1, "vote_delegated_to_id": None},
-            {"voted": True, "user_id": user2, "vote_delegated_to_id": None},
-            {"voted": False, "user_id": user3, "vote_delegated_to_id": user2},
+            {"voted": True, "user_id": user1, "vote_delegated_to_user_id": None},
+            {"voted": False, "user_id": user2, "vote_delegated_to_user_id": None},
+            {"voted": True, "user_id": user3, "vote_delegated_to_user_id": user1},
         ]
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
@@ -144,7 +145,6 @@ class PollStopActionTest(PollTestMixin):
         self.assert_status_code(response, 200)
         self.assert_history_information("assignment/1", ["Ballot stopped"])
 
-    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_stop_entitled_users_at_stop_user_only_once(self) -> None:
         self.set_models(
             {
@@ -183,10 +183,9 @@ class PollStopActionTest(PollTestMixin):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": False, "user_id": 2, "vote_delegated_to_id": None},
+            {"voted": False, "user_id": 2, "vote_delegated_to_user_id": None},
         ]
 
-    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_stop_entitled_users_not_present(self) -> None:
         self.set_models(
             {
@@ -227,7 +226,7 @@ class PollStopActionTest(PollTestMixin):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": False, "user_id": 2, "vote_delegated_to_id": None},
+            {"voted": False, "user_id": 2, "vote_delegated_to_user_id": None},
         ]
 
     def test_stop_published(self) -> None:
@@ -291,7 +290,6 @@ class PollStopActionTest(PollTestMixin):
             Permissions.Poll.CAN_MANAGE,
         )
 
-    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_stop_datastore_calls(self) -> None:
         user_ids = self.prepare_users_and_poll(3)
 
@@ -301,8 +299,8 @@ class PollStopActionTest(PollTestMixin):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
-        # always 8 plus len(user_ids) calls, dependent of user count
-        assert counter.calls == 8 + len(user_ids)
+        # always 9 plus len(user_ids) calls, dependent of user count
+        assert counter.calls == 9 + len(user_ids) * 2
 
     @performance
     def test_stop_performance(self) -> None:

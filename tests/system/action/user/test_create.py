@@ -812,7 +812,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_C_no_permission(self) -> None:
-        """May not create group C group_$_ids"""
+        """May not create group C group_ids"""
         self.permission_setup()
 
         response = self.request(

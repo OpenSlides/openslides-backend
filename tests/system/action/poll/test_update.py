@@ -1,5 +1,3 @@
-import pytest
-
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -15,7 +13,11 @@ class UpdatePollTestCase(BaseActionTestCase):
                     "title": "test_assignment_ohneivoh9caiB8Yiungo",
                     "open_posts": 1,
                 },
-                "meeting/1": {"name": "my meeting", "is_active_in_organization_id": 1, "meeting_user_ids": [11]},
+                "meeting/1": {
+                    "name": "my meeting",
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [11],
+                },
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "group/1": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "poll/1": {

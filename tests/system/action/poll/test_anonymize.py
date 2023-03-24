@@ -25,18 +25,18 @@ class PollAnonymize(BaseActionTestCase):
                 "vote/1": {
                     "user_id": 1,
                     "meeting_id": 1,
-                    "delegated_user_id": 1,
+                    "delegated_meeting_user_id": 11,
                 },
                 "vote/2": {
                     "user_id": 1,
                     "meeting_id": 1,
-                    "delegated_user_id": 1,
+                    "delegated_meeting_user_id": 11,
                 },
                 "user/1": {
                     "meeting_user_ids": [1],
                     "vote_ids": [1, 2],
                 },
-                "meeting_user/1": {
+                "meeting_user/11": {
                     "meeting_id": 1,
                     "user_id": 1,
                     "vote_delegated_vote_ids": [1, 2],
@@ -50,9 +50,9 @@ class PollAnonymize(BaseActionTestCase):
         for fqid in ("vote/1", "vote/2"):
             vote = self.get_model(fqid)
             assert vote.get("user_id") is None
-            assert vote.get("delegated_user_is") is None
+            assert vote.get("delegated_meeting_user_id") is None
         self.assert_model_exists("user/1", {"vote_ids": []})
-        self.assert_model_exists("meeting_user/1", {"vote_delegated_vote_ids": []})
+        self.assert_model_exists("meeting_user/11", {"vote_delegated_vote_ids": []})
 
     def test_anonymize(self) -> None:
         response = self.request("poll.anonymize", {"id": 1})
@@ -87,8 +87,8 @@ class PollAnonymize(BaseActionTestCase):
         self.assert_status_code(response, 400)
         for vote_fqid in ("vote/1", "vote/2"):
             vote = self.get_model(vote_fqid)
-            assert vote.get("user_id")
-            assert vote.get("delegated_user_id")
+            assert vote.get("user_id") == 1
+            assert vote.get("delegated_meeting_user_id") == 11
 
     def test_anonymize_wrong_type(self) -> None:
         self.update_model("poll/1", {"type": Poll.TYPE_ANALOG})
@@ -96,8 +96,8 @@ class PollAnonymize(BaseActionTestCase):
         self.assert_status_code(response, 400)
         for vote_fqid in ("vote/1", "vote/2"):
             vote = self.get_model(vote_fqid)
-            assert vote.get("user_id")
-            assert vote.get("delegated_user_id")
+            assert vote.get("user_id") == 1
+            assert vote.get("delegated_meeting_user_id") == 11
 
     def test_anonymize_no_permissions(self) -> None:
         self.base_permission_test(

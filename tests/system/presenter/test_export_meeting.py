@@ -254,7 +254,7 @@ class TestExportMeeting(BasePresenterTestCase):
         meeting    | present_user_ids
         motion     | supporter_meeting_user_ids
         poll       | voted_ids
-        vote       | delegated_user_id
+        vote       | delegated_meeting_user_id
         """
 
         self.set_models(
@@ -265,7 +265,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "motion_ids": [30],
                     "poll_ids": [80],
                     "vote_ids": [120],
-                    "meeting_user_ids": [12, 14],
+                    "meeting_user_ids": [112, 114],
                 },
                 "user/11": {
                     "username": "exuser11",
@@ -273,7 +273,7 @@ class TestExportMeeting(BasePresenterTestCase):
                 },
                 "user/12": {
                     "username": "exuser12",
-                    "meeting_user_ids": [12],
+                    "meeting_user_ids": [112],
                 },
                 "user/13": {
                     "username": "exuser13",
@@ -281,11 +281,11 @@ class TestExportMeeting(BasePresenterTestCase):
                 },
                 "user/14": {
                     "username": "exuser14",
-                    "meeting_user_ids": [14],
+                    "meeting_user_ids": [114],
                 },
                 "motion/30": {
                     "meeting_id": 1,
-                    "supporter_meeting_user_ids": [12],
+                    "supporter_meeting_user_ids": [112],
                 },
                 "poll/80": {
                     "meeting_id": 1,
@@ -293,14 +293,14 @@ class TestExportMeeting(BasePresenterTestCase):
                 },
                 "vote/120": {
                     "meeting_id": 1,
-                    "delegated_user_id": 14,
+                    "delegated_meeting_user_id": 114,
                 },
-                "meeting_user/12": {
+                "meeting_user/112": {
                     "meeting_id": 1,
                     "user_id": 12,
                     "supported_motion_ids": [30],
                 },
-                "meeting_user/14": {
+                "meeting_user/114": {
                     "meeting_id": 1,
                     "user_id": 14,
                     "vote_delegated_vote_ids": [120],

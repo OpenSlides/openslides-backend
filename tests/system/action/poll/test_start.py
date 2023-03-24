@@ -1,4 +1,3 @@
-import pytest
 from typing import Any, Dict
 
 from openslides_backend.models.models import Poll
@@ -19,6 +18,7 @@ class VotePollBaseTestClass(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "group_ids": [1],
                     "meeting_user_ids": [11],
+                    "present_user_ids": [1],
                 },
                 "projector_countdown/11": {
                     "default_time": 60,
@@ -89,7 +89,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
             "type": Poll.TYPE_NAMED,
         }
 
-    @pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
     def test_start_poll(self) -> None:
         response = self.request("poll.start", {"id": 1})
         self.assert_status_code(response, 200)
@@ -102,7 +101,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         # test history
         self.assert_history_information("assignment/1", ["Ballot started"])
         # test that votes can be given
-        assert((mu1 :=self.get_model("meeting_user/11"))["user_id"] == 1 and mu1["group_ids"][0] == self.get_model("poll/1")["entitled_group_ids"][0])
         response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
         self.assert_status_code(response, 200)
 

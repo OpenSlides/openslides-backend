@@ -2194,7 +2194,7 @@
             "weight": "1.000000",
             "user_token": "ivgipZ18D9Xac8pd",
             "user_id": 1,
-            "delegated_user_id": 1,
+            "delegated_meeting_user_id": 1,
             "option_id": 12,
             "meeting_id": 1
         }

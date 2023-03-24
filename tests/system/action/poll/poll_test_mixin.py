@@ -32,6 +32,7 @@ class PollTestMixin(BaseActionTestCase):
                         **self._get_user_data(f"user{i}", {1: [{"id": 3}]}),
                         "is_present_in_meeting_ids": [1],
                         "meeting_ids": [1],
+                        "meeting_user_ids": [i + 10],
                     }
                     for i in user_ids
                 },
@@ -43,7 +44,10 @@ class PollTestMixin(BaseActionTestCase):
                     }
                     for i in user_ids
                 },
-                "group/3": {"meeting_user_ids": [id_+10 for id_ in user_ids], "meeting_id": 1},
+                "group/3": {
+                    "meeting_user_ids": [id_ + 10 for id_ in user_ids],
+                    "meeting_id": 1,
+                },
                 "meeting/1": {
                     "user_ids": user_ids,
                     "group_ids": [3],

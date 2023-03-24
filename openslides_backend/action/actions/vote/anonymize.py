@@ -18,5 +18,5 @@ class VoteAnonymize(UpdateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["user_id"] = None
-        instance["delegated_user_id"] = None
+        instance["delegated_meeting_user_id"] = None
         return instance

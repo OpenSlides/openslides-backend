@@ -1,5 +1,3 @@
-
-
 def test_user_group_create_delete_restore_update_one_position(
     write, finalize, assert_model
 ):

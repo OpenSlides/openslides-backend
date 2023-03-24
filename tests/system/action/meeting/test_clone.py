@@ -1387,13 +1387,13 @@ class MeetingClone(BaseActionTestCase):
                     "vote_delegated_vote_ids": [2],
                 },
                 "vote/1": {
-                    "delegated_user_id": 1,
+                    "delegated_meeting_user_id": 1,
                     "meeting_id": 1,
                     "option_id": 1,
                     "user_token": "asdfgh",
                 },
                 "vote/2": {
-                    "delegated_user_id": 2,
+                    "delegated_meeting_user_id": 2,
                     "meeting_id": 2,
                 },
                 "option/1": {
@@ -1406,7 +1406,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "vote/3", {"delegated_user_id": 3, "option_id": 2, "meeting_id": 3}
+            "vote/3", {"delegated_meeting_user_id": 3, "option_id": 2, "meeting_id": 3}
         )
         self.assert_model_exists(
             "user/1",

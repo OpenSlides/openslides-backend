@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "68f60b4ed3e0da7894502c92c0b25669"
+MODELS_YML_CHECKSUM = "896b28cee1192260f164cc0e31b64767"
 
 
 class Organization(Model):
@@ -151,7 +151,9 @@ class MeetingUser(Model):
     assignment_candidate_ids = fields.RelationListField(
         to={"assignment_candidate": "meeting_user_id"}
     )
-    vote_delegated_vote_ids = fields.RelationListField(to={"vote": "delegated_user_id"})
+    vote_delegated_vote_ids = fields.RelationListField(
+        to={"vote": "delegated_meeting_user_id"}
+    )
     vote_delegated_to_id = fields.RelationField(
         to={"meeting_user": "vote_delegations_from_ids"}
     )
@@ -1641,7 +1643,7 @@ class Vote(Model):
         to={"option": "vote_ids"}, required=True, equal_fields="meeting_id"
     )
     user_id = fields.RelationField(to={"user": "vote_ids"})
-    delegated_user_id = fields.RelationField(
+    delegated_meeting_user_id = fields.RelationField(
         to={"meeting_user": "vote_delegated_vote_ids"}
     )
     meeting_id = fields.RelationField(to={"meeting": "vote_ids"}, required=True)

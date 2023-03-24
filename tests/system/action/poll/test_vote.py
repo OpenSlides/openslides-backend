@@ -1,6 +1,5 @@
 from typing import Any, Dict, Optional
 
-import pytest
 import requests
 import simplejson as json
 
@@ -45,7 +44,6 @@ class BaseVoteTestCase(BaseActionTestCase):
         return convert_to_test_response(response)
 
 
-@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class PollVoteTest(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -121,17 +119,37 @@ class PollVoteTest(BaseVoteTestCase):
                 assert vote.get("option_id") == 11
                 assert vote.get("weight") == "1.000000"
                 assert vote.get("meeting_id") == 113
-                user = self.get_model("user/1")
-                assert user.get("vote_$_ids") == ["113"]
-                assert user.get("vote_$113_ids") == [vote.get("id")]
+                user1 = self.assert_model_exists(
+                    "user/1",
+                    {
+                        "meeting_user_ids": [11],
+                        "vote_ids": [vote["id"]],
+                        "poll_voted_ids": [1],
+                    },
+                )
+                assert vote["delegated_meeting_user_id"] == user1["meeting_user_ids"][0]
+                self.assert_model_exists(
+                    "meeting_user/11",
+                    {"user_id": 1, "vote_delegated_vote_ids": [1], "meeting_id": 113},
+                )
             elif vote.get("user_id") == 2:
                 assert vote.get("value") == "Y"
                 assert vote.get("option_id") == 11
                 assert vote.get("weight") == "2.000000"
                 assert vote.get("meeting_id") == 113
-                user = self.get_model("user/2")
-                assert user.get("vote_$_ids") == ["113"]
-                assert user.get("vote_$113_ids") == [vote.get("id")]
+                user2 = self.assert_model_exists(
+                    "user/2",
+                    {
+                        "meeting_user_ids": [12],
+                        "vote_ids": [vote["id"]],
+                        "poll_voted_ids": [1],
+                    },
+                )
+                assert vote["delegated_meeting_user_id"] == user2["meeting_user_ids"][0]
+                self.assert_model_exists(
+                    "meeting_user/12",
+                    {"user_id": 2, "vote_delegated_vote_ids": [2], "meeting_id": 113},
+                )
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1, 2]
         assert option.get("yes") == "3.000000"
@@ -142,7 +160,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -162,8 +180,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -185,7 +207,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -208,8 +230,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -247,14 +273,13 @@ class PollVoteTest(BaseVoteTestCase):
         assert option.get("no") == "1.000000"
         assert option.get("abstain") == "0.000000"
         user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1, 2]
+        assert user.get("vote_ids") == [1, 2]
 
     def test_vote_wrong_votes_total(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -277,8 +302,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -301,7 +330,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "motion/1": {
                     "meeting_id": 113,
@@ -318,8 +347,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -338,7 +371,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -361,8 +394,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -381,7 +418,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -404,8 +441,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -424,7 +465,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -447,8 +488,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -471,18 +516,26 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1, 2]},
+                "group/1": {"meeting_user_ids": [11, 12]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "user/2": {
                     "username": "test2",
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [12],
+                },
+                "meeting_user/12": {
+                    "user_id": 2,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -524,20 +577,16 @@ class PollVoteTest(BaseVoteTestCase):
         assert option.get("no") == "1.000000"
         assert option.get("abstain") == "0.000000"
         user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
+        assert user.get("vote_ids") == [1]
         self.assert_model_not_exists("vote/2")
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1]
-        user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
 
     def test_vote_schema_problems(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -553,8 +602,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -566,7 +619,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "motion/1": {
                     "meeting_id": 113,
@@ -584,8 +637,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -607,7 +664,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -624,8 +681,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$_ids": ["113"],
-                    "group_$113_ids": [1],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -642,7 +703,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -659,8 +720,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -679,18 +744,26 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1, 2]},
+                "group/1": {"meeting_user_ids": [11, 12]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "user/2": {
                     "username": "test2",
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [12],
+                },
+                "meeting_user/12": {
+                    "user_id": 2,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -733,15 +806,19 @@ class PollVoteTest(BaseVoteTestCase):
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1]
         user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
+        assert user.get("vote_ids") == [1]
 
     def test_check_user_in_entitled_group(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
-                "user/1": {"is_present_in_meeting_ids": [113]},
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "meeting_user_ids": [11],
+                    "meeting_ids": [113],
+                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113, "group_ids": [1]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -768,8 +845,13 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
-                "user/1": {"group_$_ids": ["113"], "group_$113_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
+                "user/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
+                },
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "motion/1": {
                     "meeting_id": 113,
@@ -798,7 +880,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -814,8 +896,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$_ids": ["113"],
-                    "group_$113_ids": [1],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -827,13 +913,17 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
                     "default_vote_weight": "3.000000",
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -869,26 +959,24 @@ class PollVoteTest(BaseVoteTestCase):
         assert option.get("no") == "0.000000"
         assert option.get("abstain") == "0.000000"
         user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
+        assert user.get("vote_ids") == [1]
 
     def test_vote_weight_not_enabled(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
                     "default_vote_weight": "3.000000",
-                    "meeting_user_ids": [1],
+                    "meeting_user_ids": [11],
                 },
-                "meeting_user/1": {
+                "meeting_user/11": {
                     "meeting_id": 113,
                     "user_id": 1,
                     "vote_weight": "4.200000",
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -907,7 +995,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "meeting/113": {
                     "users_enable_vote_weight": False,
-                    "meeting_user_ids": [1],
+                    "meeting_user_ids": [11],
                 },
             }
         )
@@ -927,11 +1015,9 @@ class PollVoteTest(BaseVoteTestCase):
         assert option.get("no") == "0.000000"
         assert option.get("abstain") == "0.000000"
         user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
+        assert user.get("vote_ids") == [1]
 
 
-@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollBaseTestClass(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -948,7 +1034,7 @@ class VotePollBaseTestClass(BaseVoteTestCase):
         self.create_poll()
         self.set_models(
             {
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11], "meeting_id": 113},
                 "option/1": {
                     "meeting_id": 113,
                     "poll_id": 1,
@@ -965,8 +1051,12 @@ class VotePollBaseTestClass(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "poll/1": {"global_option_id": 11, "backend": "fast"},
@@ -989,7 +1079,6 @@ class VotePollBaseTestClass(BaseVoteTestCase):
         )
 
 
-@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollNamedYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1042,8 +1131,8 @@ class VotePollNamedYNA(VotePollBaseTestClass):
     def test_vote_with_voteweight(self) -> None:
         self.set_models(
             {
-                "user/1": {"vote_weight_$113": "4.200000", "vote_weight_$": ["113"]},
-                "meeting_user/1": {
+                "user/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {
                     "meeting_id": 113,
                     "user_id": 1,
                     "vote_weight": "4.200000",
@@ -1183,7 +1272,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollNamedY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1408,7 +1496,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1519,7 +1606,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
 
-@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollNamedN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1726,7 +1812,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1890,7 +1975,6 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
 class VotePollPseudoanonymousY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -2041,8 +2125,8 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-@pytest.mark.skip("error in vote-service, see https://github.com/OpenSlides/openslides-vote-service/issues/191")
-class VotePollPseudoAnonymousN(VotePollBaseTestClass):
+
+class VotePollPseudoanonymousN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
             "poll/1",
