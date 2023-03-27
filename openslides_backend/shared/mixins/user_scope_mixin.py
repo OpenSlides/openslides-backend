@@ -18,10 +18,13 @@ from ..exceptions import MissingPermission
 from ..patterns import fqid_from_collection_and_id
 
 
-class UserScope(int, Enum):
-    Meeting = 1
-    Committee = 2
-    Organization = 3
+class UserScope(str, Enum):
+    Meeting = "meeting"
+    Committee = "committee"
+    Organization = "organization"
+
+    def __repr__(self) -> str:
+        return repr(self.value)
 
 
 class UserScopeMixin(BaseServiceProvider):

@@ -27,6 +27,24 @@ class TopicUpdateTest(BaseActionTestCase):
         self.assertEqual(topic.get("title"), "test2")
         self.assertEqual(topic.get("text"), "text")
 
+    def test_update_text_with_iframe(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "topic/1": {"title": "test", "meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "topic.update", {"id": 1, "text": "<IFRAME>text</IFRAME>"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "topic/1",
+            {
+                "text": '<iframe sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer">text</iframe>'
+            },
+        )
+
     def test_update_tag_ids_add(self) -> None:
         self.set_models(
             {

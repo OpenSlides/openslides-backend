@@ -11,30 +11,6 @@ from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
 
-get_users_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "type": "object",
-        "title": "get_users",
-        "description": "get user ids data",
-        "properties": {
-            "start_index": {"type": "integer"},
-            "entries": {"type": "integer"},
-            "sort_criteria": {
-                "type": "array",
-                "item": {
-                    "type": "string",
-                    "enum": ["username", "first_name", "last_name"],
-                },
-            },
-            "reverse": {"type": "boolean"},
-            "filter": {"type": ["string", "null"]},
-        },
-        "required": [],
-        "additionalProperties": False,
-    }
-)
-
 # The values are the default values for None.
 ALLOWED = {
     "first_name": "",
@@ -50,6 +26,30 @@ ALLOWED = {
     "structure_level": "",
     "vote_weight": "",
 }
+
+get_users_schema = fastjsonschema.compile(
+    {
+        "$schema": schema_version,
+        "type": "object",
+        "title": "get_users",
+        "description": "get user ids data",
+        "properties": {
+            "start_index": {"type": "integer"},
+            "entries": {"type": "integer"},
+            "sort_criteria": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": list(ALLOWED.keys()),
+                },
+            },
+            "reverse": {"type": "boolean"},
+            "filter": {"type": ["string", "null"]},
+        },
+        "required": [],
+        "additionalProperties": False,
+    }
+)
 
 
 @register_presenter("get_users")

@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 import fastjsonschema
 
 from openslides_backend.shared.mixins.user_scope_mixin import UserScopeMixin
+from openslides_backend.shared.schema import id_list_schema
 
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PresenterException
@@ -19,10 +20,7 @@ get_user_related_models_schema = fastjsonschema.compile(
         "title": "get_user_related_models",
         "description": "get user ids related models",
         "properties": {
-            "user_ids": {
-                "type": "array",
-                "item": {"type": "integer"},
-            },
+            "user_ids": id_list_schema,
         },
         "required": ["user_ids"],
         "additionalProperties": False,
