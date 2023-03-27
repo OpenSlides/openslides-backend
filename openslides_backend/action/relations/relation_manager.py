@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, cast
 
 from ...models.base import Model, model_registry
-from ...models.fields import BaseRelationField, BaseTemplateField, Field
+from ...models.fields import BaseRelationField, Field
 from ...services.datastore.interface import DatastoreService
 from ...shared.patterns import (
     FullQualifiedField,
@@ -59,12 +59,6 @@ class RelationManager:
             # only relations are handled here
             if not isinstance(field, BaseRelationField):
                 continue
-            # ignore template fields, we have to do no relation handling there
-            if isinstance(field, BaseTemplateField) and field.is_template_field(
-                field_name
-            ):
-                continue
-
             handler = SingleRelationHandler(
                 self.datastore,
                 field,

@@ -44,18 +44,6 @@ class FakeModelA(Model):
         },
     )
 
-    # template field / structured relation
-    fake_model_b__ids = fields.TemplateRelationListField(
-        replacement_collection="meeting",
-        index=13,
-        to={"fake_model_b": "structured_relation_field"},
-    )
-    fake_model_c__ids = fields.TemplateRelationListField(
-        replacement_collection="meeting",
-        index=13,
-        to={"fake_model_c": "structured_relation_field"},
-    )
-
 
 class FakeModelB(Model):
     collection = "fake_model_b"

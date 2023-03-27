@@ -19,11 +19,7 @@ import fastjsonschema
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
 from ..models.base import Model, model_registry
-from ..models.fields import (
-    BaseRelationField,
-    BaseTemplateField,
-    BaseTemplateRelationField,
-)
+from ..models.fields import BaseRelationField
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -547,8 +543,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         Validate required fields with the events of one WriteRequest.
         Precondition: Events are sorted create/update/delete-events
         Not implemented: required RelationListFields of all types raise a NotImplementedError, if there exist
-        one, during getting required_fields from model, except TemplateRelationField and
-        TemplateRelationListField with replacement_enum-attribute.
+        one, during getting required_fields from model.
         Also check for fields in the write request, which are not model fields.
         """
         fdict: Dict[FullQualifiedId, Dict[str, Any]] = {}
@@ -610,23 +605,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         Validates all relation fields according to the model definition.
         """
         for field in self.model.get_relation_fields():
-            if not field.equal_fields:
+            if not field.equal_fields or field.own_field_name not in instance:
                 continue
 
-            if field.own_field_name in instance:
-                fields = [field.own_field_name]
-            elif isinstance(field, BaseTemplateRelationField):
-                fields = [
-                    instance_field
-                    for instance_field, replacement in self.get_structured_fields_in_instance(
-                        field, instance
-                    )
-                ]
-                if not fields:
-                    continue
-            else:
-                continue
-
+            fields = [field.own_field_name]
             for equal_field in field.equal_fields:
                 if not (own_equal_field_value := instance.get(equal_field)):
                     fqid = fqid_from_collection_and_id(
@@ -665,20 +647,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                                     f"{fqid}/{equal_field}: "
                                     f"{related_instance.get(equal_field)}"
                                 )
-
-    def get_structured_fields_in_instance(
-        self, field: BaseTemplateField, instance: Dict[str, Any]
-    ) -> List[Tuple[str, str]]:
-        """
-        Finds the given field in the given instance and returns the names as well as
-        the used replacements of it.
-        """
-        structured_fields: List[Tuple[str, str]] = []
-        for instance_field in instance:
-            replacement = field.try_get_replacement(instance_field)
-            if replacement:
-                structured_fields.append((instance_field, replacement))
-        return structured_fields
 
     def apply_instance(
         self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None

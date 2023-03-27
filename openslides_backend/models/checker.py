@@ -1,5 +1,4 @@
 import re
-from collections import defaultdict
 from decimal import InvalidOperation
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, cast
 
@@ -9,7 +8,6 @@ from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
     BaseRelationField,
-    BaseTemplateField,
     BooleanField,
     CharArrayField,
     CharField,
@@ -254,11 +252,6 @@ class Checker:
 
         self.errors: List[str] = []
 
-        self.template_prefixes: Dict[
-            str, Dict[str, Tuple[str, int, int]]
-        ] = defaultdict(dict)
-        self.generate_template_prefixes()
-
     def check_migration_index(self) -> None:
         # Unfortunately, TypedDict does not support any kind of generic or pattern property to
         # distinguish between the MI and the collections, so we have to cast the field here
@@ -279,56 +272,6 @@ class Checker:
 
     def get_fields(self, collection: str) -> Iterable[Field]:
         return self.get_model(collection).get_fields()
-
-    def generate_template_prefixes(self) -> None:
-        for collection in self.allowed_collections:
-            for field in self.get_fields(collection):
-                if not isinstance(field, BaseTemplateField):
-                    continue
-                field_name = field.get_template_field_name()
-                parts = field_name.split("$")
-                prefix = parts[0]
-                suffix = parts[1]
-                if prefix in self.template_prefixes[collection]:
-                    raise ValueError(
-                        f"the template prefix {prefix} is not unique within {collection}"
-                    )
-                self.template_prefixes[collection][prefix] = (
-                    field_name,
-                    len(prefix),
-                    len(suffix),
-                )
-
-    def is_template_field(self, field: str) -> bool:
-        return "$_" in field or field.endswith("$")
-
-    def is_structured_field(self, field: str) -> bool:
-        return "$" in field and not self.is_template_field(field)
-
-    def is_normal_field(self, field: str) -> bool:
-        return "$" not in field
-
-    def make_structured(self, field: BaseTemplateField, replacement: Any) -> str:
-        if type(replacement) not in (str, int):
-            raise CheckException(
-                f"Invalid type {type(replacement)} for the replacement of field {field}"
-            )
-        return field.get_structured_field_name(replacement)
-
-    def to_template_field(
-        self, collection: str, structured_field: str
-    ) -> Tuple[str, str]:
-        """Returns template_field, replacement"""
-        parts = structured_field.split("$")
-        descriptor = self.template_prefixes[collection].get(parts[0])
-        if not descriptor:
-            raise CheckException(
-                f"Unknown template field for prefix {parts[0]} in collection {collection}"
-            )
-        return (
-            descriptor[0],
-            structured_field[descriptor[1] + 1 : len(structured_field) - descriptor[2]],
-        )
 
     def run_check(self) -> None:
         self.check_json()
@@ -372,20 +315,13 @@ class Checker:
         errors = self.check_normal_fields(model, collection)
 
         if not errors:
-            errors = self.check_template_fields(model, collection)
-
-        if not errors:
             self.check_types(model, collection)
             self.check_special_fields(model, collection)
             self.check_relations(model, collection)
             self.check_calculated_fields(model, collection)
 
     def check_normal_fields(self, model: Dict[str, Any], collection: str) -> bool:
-        model_fields = set(
-            x
-            for x in model.keys()
-            if self.is_normal_field(x) or self.is_template_field(x)
-        )
+        model_fields = model.keys()
         all_collection_fields = set(
             field.get_own_field_name() for field in self.get_fields(collection)
         )
@@ -433,96 +369,8 @@ class Checker:
                 remaining_fields.add(fieldname)
         return remaining_fields
 
-    def check_template_fields(self, model: Dict[str, Any], collection: str) -> bool:
-        """
-        Only checks that for each replacement a structured field exists and
-        not too many structured fields. Does not check the content.
-        Returns True on errors.
-        """
-        errors = False
-        for template_field in self.get_fields(collection):
-            if not isinstance(template_field, BaseTemplateField):
-                continue
-            field_error = False
-            replacements = model.get(template_field.get_template_field_name())
-
-            if replacements is None:
-                replacements = []
-
-            if not isinstance(replacements, list):
-                self.errors.append(
-                    f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Replacements for the template field must be a list"
-                )
-                field_error = True
-                continue
-            for replacement in replacements:
-                if not isinstance(replacement, str):
-                    self.errors.append(
-                        f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Each replacement for the template field must be a string"
-                    )
-                    field_error = True
-            if field_error:
-                errors = True
-                continue
-            replacement_collection = None
-            if template_field.replacement_collection:
-                replacement_collection = template_field.replacement_collection
-
-            for replacement in replacements:
-                structured_field = self.make_structured(template_field, replacement)
-                if model.get(structured_field) is None:
-                    self.errors.append(
-                        f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Missing {structured_field} since it is given as a replacement"
-                    )
-                    errors = True
-
-                if replacement_collection:
-                    try:
-                        as_id = int(replacement)
-                    except (TypeError, ValueError):
-                        self.errors.append(
-                            f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Replacement {replacement} is not an integer"
-                        )
-                    if not self.find_model(replacement_collection, as_id):
-                        self.errors.append(
-                            f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Replacement {replacement} does not exist as a model of collection {replacement_collection}"
-                        )
-
-            if template_field.replacement_enum:
-                replacement_enum = template_field.replacement_enum
-                for replacement in replacements:
-                    if replacement not in replacement_enum:
-                        self.errors.append(
-                            f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Replacement {replacement} does not match replacement_enum {replacement_enum}"
-                        )
-
-            for field in model.keys():
-                if self.is_structured_field(field) and model[field]:
-                    try:
-                        _template_field, _replacement = self.to_template_field(
-                            collection, field
-                        )
-                        if (
-                            template_field.get_own_field_name() == _template_field
-                            and _replacement not in model.get(_template_field, [])
-                        ):
-                            self.errors.append(
-                                f"{collection}/{model['id']}/{field}: Invalid structured field. Missing replacement {_replacement} in {template_field.get_own_field_name()}"
-                            )
-                            errors = True
-                    except CheckException as e:
-                        self.errors.append(
-                            f"{collection}/{model['id']}/{field} error: " + str(e)
-                        )
-                        errors = True
-
-        return errors
-
     def check_types(self, model: Dict[str, Any], collection: str) -> None:
         for field in model.keys():
-            if self.is_template_field(field):
-                continue
-
             field_type = self.get_type_from_collection(field, collection)
             enum = self.get_enum_from_collection_field(field, collection)
 
@@ -558,18 +406,11 @@ class Checker:
                 self.errors.append(error)
 
     def get_type_from_collection(self, field: str, collection: str) -> Field:
-        if self.is_structured_field(field):
-            field, _ = self.to_template_field(collection, field)
-
-        field_type = self.get_model(collection).get_field(field)
-        return field_type
+        return self.get_model(collection).get_field(field)
 
     def get_enum_from_collection_field(
         self, field: str, collection: str
     ) -> Optional[Set[str]]:
-        if self.is_structured_field(field):
-            field, _ = self.to_template_field(collection, field)
-
         field_type = self.get_model(collection).get_field(field)
         return field_type.constraints.get("enum")
 
@@ -628,15 +469,8 @@ class Checker:
     def check_relation(
         self, model: Dict[str, Any], collection: str, field: str
     ) -> None:
-        if self.is_template_field(field):
-            return
-
         field_type = self.get_type_from_collection(field, collection)
         basemsg = f"{collection}/{model['id']}/{field}: Relation Error: "
-
-        replacement = None
-        if self.is_structured_field(field):
-            _, replacement = self.to_template_field(collection, field)
 
         if collection == "user" and field == "organization_id":
             return
@@ -652,12 +486,10 @@ class Checker:
                 self.check_reverse_relation(
                     collection,
                     model["id"],
-                    model,
                     foreign_collection,
                     foreign_id,
                     foreign_field,
                     basemsg,
-                    replacement,
                 )
             elif self.mode == "external":
                 self.errors.append(
@@ -675,12 +507,10 @@ class Checker:
                     self.check_reverse_relation(
                         collection,
                         model["id"],
-                        model,
                         foreign_collection,
                         foreign_id,
                         foreign_field,
                         basemsg,
-                        replacement,
                     )
             elif self.mode == "external":
                 self.errors.append(
@@ -697,12 +527,10 @@ class Checker:
                 self.check_reverse_relation(
                     collection,
                     model["id"],
-                    model,
                     foreign_collection,
                     foreign_id,
                     foreign_field,
                     basemsg,
-                    replacement,
                 )
             elif self.mode == "external":
                 self.errors.append(
@@ -722,12 +550,10 @@ class Checker:
                     self.check_reverse_relation(
                         collection,
                         model["id"],
-                        model,
                         foreign_collection,
                         foreign_id,
                         foreign_field,
                         basemsg,
-                        replacement,
                     )
                 elif self.mode == "external":
                     self.errors.append(
@@ -753,9 +579,6 @@ class Checker:
                             )
 
     def get_to(self, field: str, collection: str) -> Tuple[str, Optional[str]]:
-        if self.is_structured_field(field):
-            field, _ = self.to_template_field(collection, field)
-
         field_type = cast(
             BaseRelationField, self.get_model(collection).get_field(field)
         )
@@ -802,12 +625,10 @@ class Checker:
         self,
         collection: str,
         id: int,
-        model: Dict[str, Any],
         foreign_collection: str,
         foreign_id: int,
         foreign_field: Optional[str],
         basemsg: str,
-        replacement: Optional[str],
     ) -> None:
         if foreign_field is None:
             raise ValueError("Foreign field is None.")
@@ -815,26 +636,6 @@ class Checker:
             foreign_field, foreign_collection
         )
         actual_foreign_field = foreign_field
-        if self.is_template_field(foreign_field):
-            if replacement:
-                actual_foreign_field = cast(
-                    BaseTemplateField, foreign_field_type
-                ).get_structured_field_name(replacement)
-            else:
-                replacement_collection = cast(
-                    BaseTemplateField, foreign_field_type
-                ).replacement_collection
-                if replacement_collection:
-                    replacement = model.get(f"{replacement_collection}_id")
-                if not replacement:
-                    self.errors.append(
-                        f"{basemsg} points to {foreign_collection}/{foreign_id}/{foreign_field},"
-                        f" but there is no replacement for {replacement_collection}"
-                    )
-                actual_foreign_field = self.make_structured(
-                    cast(BaseTemplateField, foreign_field_type), replacement
-                )
-
         foreign_model = self.find_model(foreign_collection, foreign_id)
         foreign_value = (
             foreign_model.get(actual_foreign_field)

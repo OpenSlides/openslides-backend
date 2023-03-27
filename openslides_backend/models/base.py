@@ -1,4 +1,3 @@
-import re
 from typing import Dict, Iterable, Optional, Type
 
 from ..shared.exceptions import ActionException
@@ -30,11 +29,8 @@ class ModelMetaClass(type):
                     attr.own_collection = new_class.collection
                     attr.own_field_name = attr_name
 
-                    # Save field name. For template fields also save prefix.
+                    # Save field name.
                     new_class.field_prefix_map[attr_name] = attr
-                    if isinstance(attr, fields.BaseTemplateField):
-                        prefix = attr_name[: attr.index]
-                        new_class.field_prefix_map[prefix] = attr
             model_registry[new_class.collection] = new_class
         return new_class
 
@@ -48,8 +44,6 @@ class Model(metaclass=ModelMetaClass):
     verbose_name: str
 
     # Saves all fields with their respective unique prefix for easier access.
-    # Template fields are saved twice. Once with the pythonic name from models.py and
-    # once only with the prefix.
     field_prefix_map: Dict[str, fields.BaseRelationField]
 
     def __str__(self) -> str:
@@ -66,17 +60,14 @@ class Model(metaclass=ModelMetaClass):
 
     def has_field(self, field_name: str) -> bool:
         """
-        Returns True if the model has such a field (including populated template fields).
+        Returns True if the model has such a field.
         """
         return bool(self.try_get_field(field_name))
 
     def try_get_field(self, field_name: str) -> Optional[fields.Field]:
         """
         Returns the field for the given field name. You may give the
-        pythonic field name or even a populated template field.
-
-        E. g. for User the `group__ids` field alias `group_$_ids` field is also found
-        if you look for `group_$42_ids`.
+        pythonic field name.
 
         Returns None if field is not found.
         """
@@ -85,10 +76,6 @@ class Model(metaclass=ModelMetaClass):
             return None
 
         field = self.field_prefix_map[prefix]
-        if isinstance(field, fields.BaseTemplateField):
-            # We use the regex here since we want to also match template fields.
-            if "$" in field_name and not re.match(field.get_regex(), field_name):
-                return None
         return field
 
     def get_fields(self) -> Iterable[fields.Field]:
@@ -137,14 +124,4 @@ class Model(metaclass=ModelMetaClass):
         """
         for model_field in self.get_fields():
             if model_field.required:
-                if isinstance(
-                    model_field,
-                    fields.BaseTemplateField,
-                ) and (
-                    not hasattr(model_field, "replacement_enum")
-                    or not model_field.replacement_enum
-                ):
-                    raise NotImplementedError(
-                        f"{self.collection}.{model_field.own_field_name}"
-                    )
                 yield model_field

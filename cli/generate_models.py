@@ -72,22 +72,13 @@ def main() -> None:
             to:
               collection: another_model
               field:
-                type: structured-relation
-                name: another_$_attribute
-                replacement_collection: ...
-                through:
-                - ...
-                - ...
+                type: relation
+                name: another_attribute
 
         another_model:
-          another_$_attribute:
-            type: template
-            replacement_collection: ...
-            fields:
-              type: relation-list
-              to:
-                collection: some_model
-                field: some_attribute
+          another_attribute:
+            type: relation_list
+            to: some_model/some_attribute_id
     """
 
     global MODELS
@@ -275,15 +266,11 @@ class Attribute(Node):
     equal_fields: Optional[Union[str, List[str]]] = None
     contraints: Dict[str, Any]
 
-    is_template: bool = False
-
     FIELD_TEMPLATE = string.Template(
         "    ${field_name} = fields.${field_class}(${properties})\n"
     )
 
-    def __init__(
-        self, value: Union[str, Dict], is_inner_attribute: bool = False
-    ) -> None:
+    def __init__(self, value: Union[str, Dict]) -> None:
         self.FIELD_CLASSES = {
             **COMMON_FIELD_CLASSES,
             **RELATION_FIELD_CLASSES,
@@ -294,59 +281,34 @@ class Attribute(Node):
             self.type = value
         else:
             self.type = value.get("type", "")
-            if self.type == "template":
-                self.is_template = True
-                replacement_str = value.get("replacement_collection")
-                self.replacement_collection = (
-                    replacement_str if replacement_str else None
-                )
-                inner_value = value.get("fields")
-                assert not is_inner_attribute and inner_value
-                self.fields = type(self)(inner_value, is_inner_attribute=True)
-                if self.fields.type in ("relation", "relation-list"):
-                    self.replacement_enum = value.get("replacement_enum")
-                    assert not self.replacement_collection or not self.replacement_enum
-                    if self.replacement_enum:
-                        self.required = self.fields.required
+            if self.type in RELATION_FIELD_CLASSES.keys():
+                self.to = To(value.get("to", {}))
+                self.on_delete = value.get("on_delete")
             else:
-                if self.type in RELATION_FIELD_CLASSES.keys():
-                    self.to = To(value.get("to", {}))
-                    self.on_delete = value.get("on_delete")
-                else:
-                    assert self.type in COMMON_FIELD_CLASSES.keys(), (
-                        "Invalid type: " + self.type
-                    )
-                self.required = value.get("required", False)
-                self.read_only = value.get("read_only", False)
-                self.default = value.get("default")
-                self.equal_fields = value.get("equal_fields")
-                for k, v in value.items():
-                    if k not in (
-                        "type",
-                        "to",
-                        "required",
-                        "read_only",
-                        "default",
-                        "on_delete",
-                        "equal_fields",
-                        "items",
-                        "restriction_mode",
-                    ):
-                        self.contraints[k] = v
-                    elif self.type in ("string[]", "number[]") and k == "items":
-                        self.in_array_constraints.update(v)
+                assert self.type in COMMON_FIELD_CLASSES.keys(), (
+                    "Invalid type: " + self.type
+                )
+            self.required = value.get("required", False)
+            self.read_only = value.get("read_only", False)
+            self.default = value.get("default")
+            self.equal_fields = value.get("equal_fields")
+            for k, v in value.items():
+                if k not in (
+                    "type",
+                    "to",
+                    "required",
+                    "read_only",
+                    "default",
+                    "on_delete",
+                    "equal_fields",
+                    "items",
+                    "restriction_mode",
+                ):
+                    self.contraints[k] = v
+                elif self.type in ("string[]", "number[]") and k == "items":
+                    self.in_array_constraints.update(v)
 
     def get_code(self, field_name: str) -> str:
-        structured_field_sign = field_name.find("$")
-        if structured_field_sign == -1:
-            assert not self.is_template
-            return self.get_code_for_normal(field_name)
-        assert self.is_template
-        field_name = field_name.replace("$", "", 1)
-        assert field_name.find("$") == -1
-        return self.get_code_for_template(field_name, structured_field_sign)
-
-    def get_code_for_normal(self, field_name: str) -> str:
         if field_name == "organization_id":
             field_class = "OrganizationField"
         else:
@@ -375,29 +337,6 @@ class Attribute(Node):
                 field_class=field_class,
                 properties=properties.rstrip(", "),
             )
-        )
-
-    def get_code_for_template(self, field_name: str, index: int) -> str:
-        assert self.fields is not None
-        field_class = f"Template{self.FIELD_CLASSES[self.fields.type]}"
-        properties = f"index={index}, "
-        if self.replacement_collection:
-            properties += f"replacement_collection={repr(self.replacement_collection)},"
-        if self.fields.to:
-            properties += self.fields.to.get_properties()
-        if self.fields.required:
-            properties += "required=True,"
-        if self.fields.on_delete:
-            assert self.fields.on_delete in [mode.value for mode in OnDelete]
-            properties += f"on_delete=fields.OnDelete.{self.fields.on_delete},"
-        if self.contraints:
-            properties += f"constraints={repr(self.contraints)},"
-        if self.fields.contraints:
-            properties += f"constraints={repr(self.fields.contraints)},"
-        if self.replacement_enum:
-            properties += f"replacement_enum={repr(self.replacement_enum)},"
-        return self.FIELD_TEMPLATE.substitute(
-            dict(field_name=field_name, field_class=field_class, properties=properties)
         )
 
 

@@ -1,5 +1,3 @@
-from openslides_backend.models.fields import BaseRelationField, BaseTemplateField
-from openslides_backend.models.models import User
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -139,21 +137,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_deleted(f"projector_countdown/{i+1}")
         for i in range(2):
             self.assert_model_deleted(f"chat_group/{i+1}")
-        # assert that all structured fields on all users of the meeting are deleted.
-        for i in range(3):
-            user = self.get_model(f"user/{i+1}")
-            for field in User().get_fields():
-                if (
-                    isinstance(field, BaseTemplateField)
-                    and field.replacement_collection
-                    and field.replacement_collection == "meeting"
-                ):
-                    assert user.get(field.get_template_field_name()) in ([], None)
-                    val = user.get(field.get_structured_field_name(1))
-                    if isinstance(field, BaseRelationField) and field.is_list_field:
-                        assert val in ([], None)
-                    else:
-                        assert val is None
 
     def test_delete_with_tag_and_motion(self) -> None:
         self.set_models(
