@@ -205,7 +205,9 @@ class StopControl(CountdownControl, Action):
                 {
                     "user_id": mu["user_id"],
                     "voted": mu["user_id"] in all_voted_users,
-                    "vote_delegated_to_user_id": cast(Dict[int, Dict[str, int]], mu_to_user_id)[vote_mu_id]["user_id"]
+                    "vote_delegated_to_user_id": cast(
+                        Dict[int, Dict[str, int]], mu_to_user_id
+                    )[vote_mu_id]["user_id"]
                     if (vote_mu_id := mu.get("vote_delegated_to_id"))
                     else None,
                 }
