@@ -33,8 +33,7 @@ class MeetingUserCreate(MeetingUserMixin, CreateAction):
             FilterOperator("meeting_id", "=", instance["meeting_id"]),
             FilterOperator("user_id", "=", instance["user_id"]),
         )
-        result = self.datastore.filter("meeting_user", filter_, ["id"])
-        if result:
+        if self.datastore.exists("meeting_user", filter_):
             raise ActionException(
                 f"MeetingUser instance with user {instance['user_id']} and meeting {instance['meeting_id']} already exists"
             )

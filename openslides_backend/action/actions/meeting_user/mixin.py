@@ -67,7 +67,7 @@ class MeetingUserMixin(Action):
             try:
                 super(MeetingUserMixin, self).check_permissions(instance)
                 return False
-            except Exception:
+            except PermissionDenied:
                 return True
 
         user_id, meeting_id = get_user_and_meeting_id()
