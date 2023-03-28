@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "6be27b303de7a1de74514fc3b89f242d"
+MODELS_YML_CHECKSUM = "e61e35b136e77079342e9d121503a167"
 
 
 class Organization(Model):
@@ -575,6 +575,9 @@ class Meeting(Model):
         default="fast", constraints={"enum": ["long", "fast"]}
     )
     poll_couple_countdown = fields.BooleanField(default=True)
+    topic_poll_default_group_ids = fields.RelationListField(
+        to={"group": "used_as_topic_poll_default_id"}
+    )
     projector_ids = fields.RelationListField(
         to={"projector": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -832,6 +835,9 @@ class Group(Model):
     )
     used_as_assignment_poll_default_id = fields.RelationField(
         to={"meeting": "assignment_poll_default_group_ids"}
+    )
+    used_as_topic_poll_default_id = fields.RelationField(
+        to={"meeting": "topic_poll_default_group_ids"}
     )
     used_as_poll_default_id = fields.RelationField(
         to={"meeting": "poll_default_group_ids"}
