@@ -93,16 +93,17 @@ class UserCreate(
         )[0]
 
     def get_history_information(self) -> Optional[HistoryInformation]:
-        information = {}
-        for instance in self.instances:
-            meeting_ids = list(instance.get("group_$_ids", []))
-            instance_information = ["Participant created"]
-            if len(meeting_ids) == 1:
-                instance_information[0] += " in meeting {}"
-                instance_information.append(
-                    fqid_from_collection_and_id("meeting", meeting_ids.pop())
-                )
-            information[
-                fqid_from_collection_and_id(self.model.collection, instance["id"])
-            ] = instance_information
-        return information
+        return None
+        # information = {}
+        # for instance in self.instances:
+        #     meeting_ids = list(instance.get("group_$_ids", []))
+        #     instance_information = ["Participant created"]
+        #     if len(meeting_ids) == 1:
+        #         instance_information[0] += " in meeting {}"
+        #         instance_information.append(
+        #             fqid_from_collection_and_id("meeting", meeting_ids.pop())
+        #         )
+        #     information[
+        #         fqid_from_collection_and_id(self.model.collection, instance["id"])
+        #     ] = instance_information
+        # return information

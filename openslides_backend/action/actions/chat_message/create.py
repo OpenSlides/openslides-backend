@@ -1,5 +1,6 @@
 from time import time
 from typing import Any, Dict
+from openslides_backend.shared.filters import And, FilterOperator
 
 from ....models.models import ChatMessage
 from ....permissions.permission_helper import has_perm
@@ -42,12 +43,20 @@ class ChatMessageCreate(MeetingUserHelper, CreateActionWithInferredMeeting):
         )
         write_group_set = set(chat_group.get("write_group_ids", []))
         meeting_id = chat_group["meeting_id"]
-        user = self.datastore.get(
-            fqid_from_collection_and_id("user", self.user_id),
-            [f"group_${meeting_id}_ids"],
+        filter_result = self.datastore.filter(
+            "meeting_user",
+            And(
+                FilterOperator("meeting_id", "=", meeting_id),
+                FilterOperator("user_id", "=", self.user_id),
+            ),
+            ["group_ids"],
             lock_result=False,
         )
-        user_group_set = set(user.get(f"group_${meeting_id}_ids", []))
+        if len(filter_result) == 1:
+            meeting_user = list(filter_result.values())[0]
+            user_group_set = set(meeting_user.get("group_ids", ()))
+        else:
+            user_group_set = set()
         if not (
             (write_group_set & user_group_set)
             or has_perm(

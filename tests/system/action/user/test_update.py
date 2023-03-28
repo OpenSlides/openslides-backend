@@ -60,7 +60,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_template_fields(self) -> None:
+    def test_update_with_meeting_user_fields(self) -> None:
         self.set_models(
             {
                 "committee/1": {"name": "C1", "meeting_ids": [1]},
