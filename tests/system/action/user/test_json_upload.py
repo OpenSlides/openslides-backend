@@ -3,14 +3,6 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class TopicJsonUpload(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.set_models(
-            {
-                "meeting/22": {"name": "test", "is_active_in_organization_id": 1},
-            }
-        )
-
     def test_json_upload(self) -> None:
         response = self.request(
             "user.json_upload",
