@@ -5,6 +5,7 @@ from . import (  # noqa
     forget_password,
     forget_password_confirm,
     generate_new_password,
+    import_,
     json_upload,
     merge_together,
     reset_password_to_default,
