@@ -173,3 +173,19 @@ class UpdateHistoryMixin(Action):
                     fqid_from_collection_and_id("user", instance["id"])
                 ] = instance_information
         return information
+
+
+class DuplicateCheckMixin(Action):
+    def init_duplicate_set(self) -> None:
+        self.all_usernames = set(
+            values.get("username")
+            for values in self.datastore.get_all(
+                "user", ["username"], lock_result=False
+            ).values()
+            if values.get("username")
+        )
+
+    def check_for_duplicate(self, username: str) -> bool:
+        result = username in self.all_usernames
+        self.all_usernames.add(username)
+        return result
