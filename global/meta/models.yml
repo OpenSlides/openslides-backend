@@ -304,6 +304,10 @@ user:
     type: relation-list
     to: vote/user_id
     restriction_mode: A
+  delegated_vote_ids:
+    type: relation-list
+    to: vote/delegated_user_id
+    restriction_mode: A
   poll_candidate_ids:
     type: relation-list
     to: poll_candidate/user_id
@@ -376,10 +380,6 @@ meeting_user:
   assignment_candidate_ids:
     type: relation-list
     to: assignment_candidate/meeting_user_id
-    restriction_mode: A
-  vote_delegated_vote_ids:
-    type: relation-list
-    to: vote/delegated_meeting_user_id
     restriction_mode: A
   vote_delegated_to_id:
     type: relation
@@ -3055,9 +3055,9 @@ vote:
     to: user/vote_ids
     restriction_mode: A
     required: false
-  delegated_meeting_user_id:
+  delegated_user_id:
     type: relation
-    to: meeting_user/vote_delegated_vote_ids
+    to: user/delegated_vote_ids
     restriction_mode: A
     required: false
   meeting_id:

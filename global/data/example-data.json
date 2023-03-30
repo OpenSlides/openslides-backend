@@ -57,6 +57,7 @@
             "poll_voted_ids": [5],
             "option_ids": [5, 7],
             "vote_ids": [9],
+            "delegated_vote_ids": [9],
             "meeting_user_ids": [1],
             "meeting_ids": [
                 1
@@ -120,7 +121,6 @@
             "speaker_ids": [1, 5, 6, 12],
             "submitted_motion_ids": [1, 2, 3, 4],
             "assignment_candidate_ids": [1],
-            "vote_delegated_vote_ids": [9],
             "group_ids": [2]
         },
         "2": {
@@ -2194,7 +2194,7 @@
             "weight": "1.000000",
             "user_token": "ivgipZ18D9Xac8pd",
             "user_id": 1,
-            "delegated_meeting_user_id": 1,
+            "delegated_user_id": 1,
             "option_id": 12,
             "meeting_id": 1
         }

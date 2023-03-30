@@ -9,7 +9,6 @@ from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, VoteServiceException
-from ....shared.filters import FilterOperator
 from ....shared.patterns import (
     KEYSEPARATOR,
     collection_from_fqid,
@@ -82,17 +81,6 @@ class StopControl(CountdownControl, Action):
 
         # stop poll in vote service and create vote objects
         results = self.vote_service.stop(instance["id"])
-        meeting_users = self.datastore.filter(
-            collection="meeting_user",
-            filter=FilterOperator("meeting_id", "=", poll["meeting_id"]),
-            mapped_fields=["id", "user_id"],
-            use_changed_models=False,
-        )
-        user_to_meeting_user: Dict[int, int] = {
-            mu["user_id"]: mu["id"]
-            for mu in meeting_users.values()
-            if mu["user_id"] in results.get("user_ids", [])
-        }
         action_data = []
         votesvalid = Decimal("0.000000")
         option_results: Dict[int, Dict[str, Decimal]] = defaultdict(
@@ -106,9 +94,7 @@ class StopControl(CountdownControl, Action):
             if "vote_user_id" in ballot:
                 vote_template["user_id"] = ballot["vote_user_id"]
             if "request_user_id" in ballot:
-                vote_template["delegated_meeting_user_id"] = user_to_meeting_user[
-                    ballot["request_user_id"]
-                ]
+                vote_template["delegated_user_id"] = ballot["request_user_id"]
 
             if isinstance(ballot["value"], dict):
                 for option_id_str, value in ballot["value"].items():

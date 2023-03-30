@@ -322,7 +322,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "mediafile_ids": [1, 2],
                     "logo_web_header_id": 1,
                     "font_bold_id": 2,
-                    "meeting_user_ids": [1, 2, 3, 4, 5, 6],
+                    "meeting_user_ids": [11, 12, 13, 14, 15, 16],
                     **{
                         f"default_projector_{part}_ids": [1]
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
@@ -334,7 +334,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "name": "default group",
                     "weight": 1,
                     "default_group_for_meeting_id": 1,
-                    "meeting_user_ids": [1, 2, 3, 4, 5, 6],
+                    "meeting_user_ids": [11, 12, 13, 14, 15, 16],
                 },
                 "group/2": {
                     "meeting_id": 1,
@@ -343,7 +343,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "admin_group_for_meeting_id": 1,
                 },
                 "user/1": {
-                    "meeting_user_ids": [1],
+                    "meeting_user_ids": [11],
                     "can_change_own_password": False,
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
@@ -353,62 +353,62 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "present_user",
                     {
                         "is_present_in_meeting_ids": [1],
-                        "meeting_user_ids": [2],
+                        "meeting_user_ids": [12],
                     },
                 ),
                 "user/3": self.get_new_user(
                     "submitter_user",
                     {
-                        "meeting_user_ids": [3],
+                        "meeting_user_ids": [13],
                     },
                 ),
                 "user/4": self.get_new_user(
                     "vote_user",
                     {
+                        "meeting_user_ids": [14],
                         "vote_ids": [7],
-                        "meeting_user_ids": [4],
                     },
                 ),
                 "user/5": self.get_new_user(
                     "delegated_user",
                     {
-                        "meeting_user_ids": [5],
+                        "meeting_user_ids": [15],
+                        "delegated_vote_ids": [7],
                     },
                 ),
                 "user/6": self.get_new_user(
                     "candidate_user",
                     {
-                        "meeting_user_ids": [6],
+                        "meeting_user_ids": [16],
                     },
                 ),
-                "meeting_user/1": {
+                "meeting_user/11": {
                     "user_id": 1,
                     "meeting_id": 1,
                     "group_ids": [1],
                 },
-                "meeting_user/2": {
+                "meeting_user/12": {
                     "user_id": 2,
                     "meeting_id": 1,
                     "group_ids": [1],
                 },
-                "meeting_user/3": {
+                "meeting_user/13": {
                     "user_id": 3,
                     "meeting_id": 1,
                     "submitted_motion_ids": [5],
                     "group_ids": [1],
                 },
-                "meeting_user/4": {
+                "meeting_user/14": {
                     "user_id": 4,
                     "meeting_id": 1,
                     "group_ids": [1],
                 },
-                "meeting_user/5": {
+                "meeting_user/15": {
                     "user_id": 5,
                     "meeting_id": 1,
-                    "vote_delegated_vote_ids": [7],
                     "group_ids": [1],
                 },
-                "meeting_user/6": {
+                "meeting_user/16": {
                     "user_id": 6,
                     "meeting_id": 1,
                     "assignment_candidate_ids": [9],
@@ -490,7 +490,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "list_of_speakers_id": 6,
                 },
                 "motion_submitter/5": {
-                    "meeting_user_id": 3,
+                    "meeting_user_id": 13,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
@@ -504,7 +504,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "user_token": "test",
                     "option_id": 8,
                     "user_id": 4,
-                    "delegated_meeting_user_id": 5,
+                    "delegated_user_id": 5,
                     "meeting_id": 1,
                 },
                 "option/8": {
@@ -515,7 +515,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "assignment_candidate/9": {
                     "weight": 10000,
                     "assignment_id": 10,
-                    "meeting_user_id": 6,
+                    "meeting_user_id": 16,
                     "meeting_id": 1,
                 },
                 "assignment/10": {

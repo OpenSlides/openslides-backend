@@ -22,7 +22,6 @@ class MeetingUserMixin(Action):
         "supported_motion_ids",
         "submitted_motion_ids",
         "assignment_candidate_ids",
-        "vote_delegated_vote_ids",
         "vote_delegated_to_id",
         "vote_delegations_from_ids",
         "chat_message_ids",

@@ -300,7 +300,7 @@ class PollStopActionTest(PollTestMixin):
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
         # always 9 plus len(user_ids) calls, dependent of user count
-        assert counter.calls == 9 + len(user_ids) * 2
+        assert counter.calls == 9 + len(user_ids)
 
     @performance
     def test_stop_performance(self) -> None:

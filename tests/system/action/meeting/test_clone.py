@@ -1375,25 +1375,27 @@ class MeetingClone(BaseActionTestCase):
                 "user/1": {
                     "meeting_ids": [1, 2],
                     "meeting_user_ids": [1, 2],
+                    "vote_ids": [1, 2],
+                    "delegated_vote_ids": [1, 2],
                 },
                 "meeting_user/1": {
                     "user_id": 1,
                     "meeting_id": 1,
-                    "vote_delegated_vote_ids": [1],
                 },
                 "meeting_user/2": {
                     "user_id": 1,
                     "meeting_id": 2,
-                    "vote_delegated_vote_ids": [2],
                 },
                 "vote/1": {
-                    "delegated_meeting_user_id": 1,
+                    "user_id": 1,
+                    "delegated_user_id": 1,
                     "meeting_id": 1,
                     "option_id": 1,
                     "user_token": "asdfgh",
                 },
                 "vote/2": {
-                    "delegated_meeting_user_id": 2,
+                    "user_id": 1,
+                    "delegated_user_id": 1,
                     "meeting_id": 2,
                 },
                 "option/1": {
@@ -1406,15 +1408,19 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "vote/3", {"delegated_meeting_user_id": 3, "option_id": 2, "meeting_id": 3}
+            "vote/3",
+            {"user_id": 1, "delegated_user_id": 1, "option_id": 2, "meeting_id": 3},
         )
         self.assert_model_exists(
             "user/1",
             {
                 "meeting_user_ids": [1, 2, 3],
+                "vote_ids": [1, 2, 3],
+                "delegated_vote_ids": [1, 2, 3],
+                "meeting_ids": [1, 2],
             },
         )
-        self.assert_model_exists("meeting_user/3", {"vote_delegated_vote_ids": [3]})
+        self.assert_model_exists("meeting_user/3", {"user_id": 1, "meeting_id": 3})
 
     def test_with_action_worker(self) -> None:
         """action_worker shouldn't be cloned"""
@@ -1532,7 +1538,11 @@ class MeetingClone(BaseActionTestCase):
                     "username": "user3",
                     "organization_id": 1,
                 },
-                "organization/1": {"user_ids": [1, 2]},
+                "organization/1": {
+                    "user_ids": [1, 2],
+                    "limit_of_meetings": 0,
+                    "archived_meeting_ids": [],
+                },
             }
         )
         self.execute_action_internally(
@@ -1555,7 +1565,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 14
+        assert counter.calls == 24
 
     @performance
     def test_clone_performance(self) -> None:

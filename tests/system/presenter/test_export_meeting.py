@@ -282,6 +282,7 @@ class TestExportMeeting(BasePresenterTestCase):
                 "user/14": {
                     "username": "exuser14",
                     "meeting_user_ids": [114],
+                    "delegated_vote_ids": [120],
                 },
                 "motion/30": {
                     "meeting_id": 1,
@@ -293,7 +294,8 @@ class TestExportMeeting(BasePresenterTestCase):
                 },
                 "vote/120": {
                     "meeting_id": 1,
-                    "delegated_meeting_user_id": 114,
+                    "delegated_user_id": 14,
+                    "user_id": 14,
                 },
                 "meeting_user/112": {
                     "meeting_id": 1,
@@ -303,7 +305,6 @@ class TestExportMeeting(BasePresenterTestCase):
                 "meeting_user/114": {
                     "meeting_id": 1,
                     "user_id": 14,
-                    "vote_delegated_vote_ids": [120],
                 },
             }
         )

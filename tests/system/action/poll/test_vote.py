@@ -113,48 +113,29 @@ class PollVoteTest(BaseVoteTestCase):
         )
         self.assert_status_code(response, 200)
         for i in range(1, 3):
-            vote = self.get_model(f"vote/{i}")
-            if vote.get("user_id") == 1:
-                assert vote.get("value") == "Y"
-                assert vote.get("option_id") == 11
-                assert vote.get("weight") == "1.000000"
-                assert vote.get("meeting_id") == 113
-                user1 = self.assert_model_exists(
-                    "user/1",
-                    {
-                        "meeting_user_ids": [11],
-                        "vote_ids": [vote["id"]],
-                        "poll_voted_ids": [1],
-                    },
-                )
-                assert vote["delegated_meeting_user_id"] == user1["meeting_user_ids"][0]
-                self.assert_model_exists(
-                    "meeting_user/11",
-                    {"user_id": 1, "vote_delegated_vote_ids": [1], "meeting_id": 113},
-                )
-            elif vote.get("user_id") == 2:
-                assert vote.get("value") == "Y"
-                assert vote.get("option_id") == 11
-                assert vote.get("weight") == "2.000000"
-                assert vote.get("meeting_id") == 113
-                user2 = self.assert_model_exists(
-                    "user/2",
-                    {
-                        "meeting_user_ids": [12],
-                        "vote_ids": [vote["id"]],
-                        "poll_voted_ids": [1],
-                    },
-                )
-                assert vote["delegated_meeting_user_id"] == user2["meeting_user_ids"][0]
-                self.assert_model_exists(
-                    "meeting_user/12",
-                    {"user_id": 2, "vote_delegated_vote_ids": [2], "meeting_id": 113},
-                )
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1, 2]
-        assert option.get("yes") == "3.000000"
-        assert option.get("no") == "0.000000"
-        assert option.get("abstain") == "0.000000"
+            vote = self.assert_model_exists(
+                f"vote/{i}", {"value": "Y", "option_id": 11, "meeting_id": 113}
+            )
+            user_id = vote.get("user_id", 0)
+            assert user_id == vote.get("delegated_user_id")
+            self.assert_model_exists(
+                f"user/{user_id}",
+                {
+                    "poll_voted_ids": [1],
+                    "delegated_vote_ids": [i],
+                    "vote_ids": [vote["id"]],
+                },
+            )
+            assert vote.get("weight") == f"{user_id}.000000"
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1, 2],
+                "yes": "3.000000",
+                "no": "0.000000",
+                "abstain": "0.000000",
+            },
+        )
 
     def test_value_check(self) -> None:
         self.set_models(
@@ -248,32 +229,48 @@ class PollVoteTest(BaseVoteTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "Y"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
+        vote = self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "Y",
+                "option_id": 11,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+                "delegated_user_id": 1,
+            },
+        )
         user_token = vote.get("user_token")
-        vote = self.get_model("vote/2")
-        assert vote.get("value") == "N"
-        assert vote.get("option_id") == 12
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
+        vote = self.assert_model_exists(
+            "vote/2",
+            {
+                "value": "N",
+                "option_id": 12,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+                "delegated_user_id": 1,
+            },
+        )
         assert vote.get("user_token") == user_token
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        assert option.get("yes") == "1.000000"
-        assert option.get("no") == "0.000000"
-        assert option.get("abstain") == "0.000000"
-        option = self.get_model("option/12")
-        assert option.get("vote_ids") == [2]
-        assert option.get("yes") == "0.000000"
-        assert option.get("no") == "1.000000"
-        assert option.get("abstain") == "0.000000"
-        user = self.get_model("user/1")
-        assert user.get("vote_ids") == [1, 2]
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1],
+                "yes": "1.000000",
+                "no": "0.000000",
+                "abstain": "0.000000",
+            },
+        )
+        self.assert_model_exists(
+            "option/12",
+            {
+                "vote_ids": [2],
+                "yes": "0.000000",
+                "no": "1.000000",
+                "abstain": "0.000000",
+            },
+        )
 
     def test_vote_wrong_votes_total(self) -> None:
         self.set_models(
@@ -565,22 +562,34 @@ class PollVoteTest(BaseVoteTestCase):
         response = self.request("poll.vote", {"id": 1, "user_id": 2, "value": "Y"})
         self.assert_status_code(response, 400)
 
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "N"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        assert option.get("yes") == "0.000000"
-        assert option.get("no") == "1.000000"
-        assert option.get("abstain") == "0.000000"
-        user = self.get_model("user/1")
-        assert user.get("vote_ids") == [1]
+        self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "N",
+                "option_id": 11,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1],
+                "yes": "0.000000",
+                "no": "1.000000",
+                "abstain": "0.000000",
+            },
+        )
+        self.assert_model_exists(
+            "user/1",
+            {
+                "poll_voted_ids": [1],
+                "delegated_vote_ids": [1],
+                "vote_ids": [1],
+            },
+        )
         self.assert_model_not_exists("vote/2")
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
 
     def test_vote_schema_problems(self) -> None:
         self.set_models(
@@ -797,16 +806,22 @@ class PollVoteTest(BaseVoteTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Not the first vote" in response.json["message"]
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "N"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        user = self.get_model("user/1")
-        assert user.get("vote_ids") == [1]
+        self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "N",
+                "option_id": 11,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+                "delegated_user_id": 1,
+            },
+        )
+        self.assert_model_exists("option/11", {"vote_ids": [1]})
+        self.assert_model_exists(
+            "user/1",
+            {"poll_voted_ids": [1], "vote_ids": [1], "delegated_vote_ids": [1]},
+        )
 
     def test_check_user_in_entitled_group(self) -> None:
         self.set_models(
@@ -947,19 +962,29 @@ class PollVoteTest(BaseVoteTestCase):
             "poll.vote", {"id": 1, "user_id": 1, "value": {"11": 1}}
         )
         self.assert_status_code(response, 200)
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "Y"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "3.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        assert option.get("yes") == "3.000000"
-        assert option.get("no") == "0.000000"
-        assert option.get("abstain") == "0.000000"
-        user = self.get_model("user/1")
-        assert user.get("vote_ids") == [1]
+        self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "Y",
+                "option_id": 11,
+                "weight": "3.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1],
+                "yes": "3.000000",
+                "no": "0.000000",
+                "abstain": "0.000000",
+            },
+        )
+        self.assert_model_exists(
+            "user/1",
+            {"poll_voted_ids": [1], "delegated_vote_ids": [1], "vote_ids": [1]},
+        )
 
     def test_vote_weight_not_enabled(self) -> None:
         self.set_models(
@@ -1003,19 +1028,29 @@ class PollVoteTest(BaseVoteTestCase):
             "poll.vote", {"id": 1, "user_id": 1, "value": {"11": 1}}
         )
         self.assert_status_code(response, 200)
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "Y"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        assert option.get("yes") == "1.000000"
-        assert option.get("no") == "0.000000"
-        assert option.get("abstain") == "0.000000"
-        user = self.get_model("user/1")
-        assert user.get("vote_ids") == [1]
+        self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "Y",
+                "option_id": 11,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1],
+                "yes": "1.000000",
+                "no": "0.000000",
+                "abstain": "0.000000",
+            },
+        )
+        self.assert_model_exists(
+            "user/1",
+            {"poll_voted_ids": [1], "delegated_vote_ids": [1], "vote_ids": [1]},
+        )
 
 
 class VotePollBaseTestClass(BaseVoteTestCase):

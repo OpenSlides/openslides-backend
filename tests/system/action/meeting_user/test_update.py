@@ -41,7 +41,6 @@ class MeetingUserUpdate(BaseActionTestCase):
             "submitted_motion_ids": [15],
             "assignment_candidate_ids": [16],
             "chat_message_ids": [13],
-            "vote_delegated_vote_ids": [20],
             "group_ids": [21],
         }
         response = self.request("meeting_user.update", test_dict)
