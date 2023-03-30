@@ -49,6 +49,10 @@ THEME_OPT_FIELDS = [
     "warn_a200",
     "warn_a400",
     "warn_a700",
+    "headbar",
+    "yes",
+    "no",
+    "abstain",
 ]
 
 
