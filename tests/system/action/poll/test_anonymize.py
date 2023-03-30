@@ -25,12 +25,12 @@ class PollAnonymize(BaseActionTestCase):
                 "vote/1": {
                     "user_id": 1,
                     "meeting_id": 1,
-                    "delegated_meeting_user_id": 11,
+                    "delegated_user_id": 1,
                 },
                 "vote/2": {
                     "user_id": 1,
                     "meeting_id": 1,
-                    "delegated_meeting_user_id": 11,
+                    "delegated_user_id": 1,
                 },
                 "user/1": {
                     "meeting_user_ids": [11],
