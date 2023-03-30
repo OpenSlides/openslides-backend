@@ -1,6 +1,5 @@
 from typing import Any, Dict, Optional
 
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import User

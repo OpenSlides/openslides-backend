@@ -1,7 +1,5 @@
-from copy import deepcopy
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
-from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -123,7 +121,7 @@ class UpdateHistoryMixin(Action):
     def get_history_information(self) -> Optional[HistoryInformation]:
         # Currently not working, will be reimplemented after template fields are fully removed
         return None
-        information = {}
+        # information = {}
 
         # Scan the instances and collect the info for the history information
         # Copy instances first since they are modified
