@@ -616,10 +616,10 @@ theme:
   headbar:
     restriction_mode: A
     type: color
-  yes:
+  "yes":
     restriction_mode: A
     type: color
-  no:
+  "no":
     restriction_mode: A
     type: color
   abstain:
