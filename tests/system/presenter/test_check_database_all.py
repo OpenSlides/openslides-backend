@@ -528,7 +528,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "user_token": "test",
                     "option_id": 8,
                     "user_id": 4,
-                    "delegated_meeting_user_id": 5,
+                    "delegated_user_id": 5,
                     "meeting_id": 1,
                 },
                 "option/8": {

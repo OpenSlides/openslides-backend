@@ -3055,7 +3055,7 @@ vote:
     to: user/vote_ids
     restriction_mode: A
     required: false
-  delegated_meeting_user_id:
+  delegated_user_id:
     type: relation
     to: user/delegated_vote_ids
     restriction_mode: A
