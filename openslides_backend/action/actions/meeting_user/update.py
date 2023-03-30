@@ -1,8 +1,5 @@
-from typing import Any, Dict
-
 from ....models.models import MeetingUser
 from ....permissions.permissions import Permissions
-from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -18,32 +15,9 @@ class MeetingUserUpdate(MeetingUserMixin, UpdateAction):
     model = MeetingUser()
     schema = DefaultSchema(MeetingUser()).get_update_schema(
         optional_properties=[
-            "comment",
-            "number",
-            "structure_level",
             "about_me",
-            "vote_weight",
-            "personal_note_ids",
-            "speaker_ids",
-            "supported_motion_ids",
-            "submitted_motion_ids",
-            "assignment_candidate_ids",
-            "vote_delegated_vote_ids",
-            "vote_delegated_to_id",
-            "vote_delegations_from_ids",
-            "chat_message_ids",
             "group_ids",
+            *MeetingUserMixin.standard_fields,
         ],
     )
     permission = Permissions.User.CAN_MANAGE
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if "about_me" in instance and len(instance) == 2:
-            meeting_user = self.datastore.get(
-                fqid_from_collection_and_id("meeting_user", instance["id"]),
-                ["user_id"],
-                lock_result=False,
-            )
-            if self.user_id == meeting_user["user_id"]:
-                return
-        super().check_permissions(instance)

@@ -179,11 +179,21 @@ def add_users(
             user["is_present_in_meeting_ids"] = [meeting_id]
         else:
             user["is_present_in_meeting_ids"] = None
-        user["meeting_user_ids"] = [
-            id_
-            for id_ in user.get("meeting_user_ids", [])
-            if export_data.get("meeting_user", {}).get(str(id_))
+        # limit user fields to exported objects
+        collection_field_tupels = [
+            ("meeting_user", "meeting_user_ids"),
+            ("poll", "poll_voted_ids"),
+            ("option", "option_ids"),
+            ("vote", "vote_ids"),
+            ("poll_candidate", "poll_candidate_ids"),
+            ("vote", "delegated_vote_ids"),
         ]
+        for collection, fname in collection_field_tupels:
+            user[fname] = [
+                id_
+                for id_ in user.get(fname, [])
+                if export_data.get(collection, {}).get(str(id_))
+            ]
 
     export_data["user"] = users
 

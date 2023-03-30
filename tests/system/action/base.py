@@ -77,12 +77,17 @@ class BaseActionTestCase(BaseSystemTestCase):
         payload: Payload,
         anonymous: bool = False,
         lang: Optional[str] = None,
+        atomic: bool = True,
     ) -> Response:
         client = self.client if not anonymous else self.anon_client
         headers = {}
         if lang:
             headers["Accept-Language"] = lang
-        response = client.post(ACTION_URL, json=payload, headers=headers)
+        if atomic:
+            url = ACTION_URL
+        else:
+            url = ACTION_URL_SEPARATELY
+        response = client.post(url, json=payload, headers=headers)
         if response.status_code == 202:
             gunicorn_post_request(
                 MockGunicornThreadWorker(),
@@ -303,7 +308,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         meeting_users_new = {
             meeting_id: {
-                "id": last_meeting_user_id + 1,
+                "id": (last_meeting_user_id := last_meeting_user_id + 1),  # noqa: F841
                 "user_id": user_id,
                 "meeting_id": meeting_id,
                 "group_ids": [],

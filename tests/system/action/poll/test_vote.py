@@ -1,6 +1,5 @@
 from typing import Any, Dict, Optional
 
-import pytest
 import requests
 import simplejson as json
 
@@ -11,7 +10,6 @@ from tests.system.util import convert_to_test_response
 from tests.util import Response
 
 
-@pytest.mark.skip
 class BaseVoteTestCase(BaseActionTestCase):
     def request(
         self,
@@ -46,7 +44,6 @@ class BaseVoteTestCase(BaseActionTestCase):
         return convert_to_test_response(response)
 
 
-@pytest.mark.skip
 class PollVoteTest(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -55,31 +52,33 @@ class PollVoteTest(BaseVoteTestCase):
             {"is_active_in_organization_id": 1},
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_correct_pollmethod_Y(self) -> None:
         user_id = self.create_user("test2")
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1, user_id]},
+                "group/1": {"meeting_user_ids": [11, 12], "poll_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
-                f"user/{user_id}": {
-                    "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
-                    "meeting_user_ids": [1],
-                },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                    "meeting_ids": [113],
                 },
-                "meeting_user/1": {
+                "meeting_user/11": {
+                    "meeting_id": 113,
+                    "user_id": 1,
+                    "group_ids": [1],
+                },
+                f"user/{user_id}": {
+                    "is_present_in_meeting_ids": [113],
+                    "meeting_user_ids": [12],
+                    "meeting_ids": [113],
+                },
+                "meeting_user/12": {
                     "meeting_id": 113,
                     "user_id": user_id,
                     "vote_weight": "2.000000",
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -100,7 +99,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "meeting/113": {
                     "users_enable_vote_weight": True,
-                    "meeting_user_ids": [1],
+                    "meeting_user_ids": [11, 12],
                 },
             }
         )
@@ -114,34 +113,35 @@ class PollVoteTest(BaseVoteTestCase):
         )
         self.assert_status_code(response, 200)
         for i in range(1, 3):
-            vote = self.get_model(f"vote/{i}")
-            if vote.get("user_id") == 1:
-                assert vote.get("value") == "Y"
-                assert vote.get("option_id") == 11
-                assert vote.get("weight") == "1.000000"
-                assert vote.get("meeting_id") == 113
-                user = self.get_model("user/1")
-                assert user.get("vote_$_ids") == ["113"]
-                assert user.get("vote_$113_ids") == [vote.get("id")]
-            elif vote.get("user_id") == 2:
-                assert vote.get("value") == "Y"
-                assert vote.get("option_id") == 11
-                assert vote.get("weight") == "2.000000"
-                assert vote.get("meeting_id") == 113
-                user = self.get_model("user/2")
-                assert user.get("vote_$_ids") == ["113"]
-                assert user.get("vote_$113_ids") == [vote.get("id")]
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1, 2]
-        assert option.get("yes") == "3.000000"
-        assert option.get("no") == "0.000000"
-        assert option.get("abstain") == "0.000000"
+            vote = self.assert_model_exists(
+                f"vote/{i}", {"value": "Y", "option_id": 11, "meeting_id": 113}
+            )
+            user_id = vote.get("user_id", 0)
+            assert user_id == vote.get("delegated_user_id")
+            self.assert_model_exists(
+                f"user/{user_id}",
+                {
+                    "poll_voted_ids": [1],
+                    "delegated_vote_ids": [i],
+                    "vote_ids": [vote["id"]],
+                },
+            )
+            assert vote.get("weight") == f"{user_id}.000000"
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1, 2],
+                "yes": "3.000000",
+                "no": "0.000000",
+                "abstain": "0.000000",
+            },
+        )
 
     def test_value_check(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -161,8 +161,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -180,14 +184,11 @@ class PollVoteTest(BaseVoteTestCase):
             in response.json["message"]
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_correct_pollmethod_YN(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -210,8 +211,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -224,39 +229,54 @@ class PollVoteTest(BaseVoteTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "Y"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
+        vote = self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "Y",
+                "option_id": 11,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+                "delegated_user_id": 1,
+            },
+        )
         user_token = vote.get("user_token")
-        vote = self.get_model("vote/2")
-        assert vote.get("value") == "N"
-        assert vote.get("option_id") == 12
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
+        vote = self.assert_model_exists(
+            "vote/2",
+            {
+                "value": "N",
+                "option_id": 12,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+                "delegated_user_id": 1,
+            },
+        )
         assert vote.get("user_token") == user_token
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        assert option.get("yes") == "1.000000"
-        assert option.get("no") == "0.000000"
-        assert option.get("abstain") == "0.000000"
-        option = self.get_model("option/12")
-        assert option.get("vote_ids") == [2]
-        assert option.get("yes") == "0.000000"
-        assert option.get("no") == "1.000000"
-        assert option.get("abstain") == "0.000000"
-        user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1, 2]
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1],
+                "yes": "1.000000",
+                "no": "0.000000",
+                "abstain": "0.000000",
+            },
+        )
+        self.assert_model_exists(
+            "option/12",
+            {
+                "vote_ids": [2],
+                "yes": "0.000000",
+                "no": "1.000000",
+                "abstain": "0.000000",
+            },
+        )
 
     def test_vote_wrong_votes_total(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -279,8 +299,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -303,7 +327,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "motion/1": {
                     "meeting_id": 113,
@@ -320,8 +344,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -336,14 +364,11 @@ class PollVoteTest(BaseVoteTestCase):
         assert "Your vote has a wrong format" in response.json["message"]
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_no_votes_total_check_by_YNA(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -366,8 +391,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -382,14 +411,11 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_no_votes_total_check_by_YN(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -412,8 +438,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -432,7 +462,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
@@ -455,8 +485,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -475,25 +509,30 @@ class PollVoteTest(BaseVoteTestCase):
         )
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_global(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1, 2]},
+                "group/1": {"meeting_user_ids": [11, 12]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "user/2": {
                     "username": "test2",
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [12],
+                },
+                "meeting_user/12": {
+                    "user_id": 2,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -523,32 +562,40 @@ class PollVoteTest(BaseVoteTestCase):
         response = self.request("poll.vote", {"id": 1, "user_id": 2, "value": "Y"})
         self.assert_status_code(response, 400)
 
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "N"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        assert option.get("yes") == "0.000000"
-        assert option.get("no") == "1.000000"
-        assert option.get("abstain") == "0.000000"
-        user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
+        self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "N",
+                "option_id": 11,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1],
+                "yes": "0.000000",
+                "no": "1.000000",
+                "abstain": "0.000000",
+            },
+        )
+        self.assert_model_exists(
+            "user/1",
+            {
+                "poll_voted_ids": [1],
+                "delegated_vote_ids": [1],
+                "vote_ids": [1],
+            },
+        )
         self.assert_model_not_exists("vote/2")
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
 
     def test_vote_schema_problems(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -564,8 +611,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -577,7 +628,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "motion/1": {
                     "meeting_id": 113,
@@ -595,8 +646,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -618,7 +673,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -635,8 +690,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$_ids": ["113"],
-                    "group_$113_ids": [1],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -653,7 +712,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -670,8 +729,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -686,25 +749,30 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_status_code(response, 400)
         assert "Option_id 113 does not belong to the poll" in response.json["message"]
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_double_vote(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1, 2]},
+                "group/1": {"meeting_user_ids": [11, 12]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "user/2": {
                     "username": "test2",
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [12],
+                },
+                "meeting_user/12": {
+                    "user_id": 2,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -738,24 +806,34 @@ class PollVoteTest(BaseVoteTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Not the first vote" in response.json["message"]
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "N"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
+        self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "N",
+                "option_id": 11,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+                "delegated_user_id": 1,
+            },
+        )
+        self.assert_model_exists("option/11", {"vote_ids": [1]})
+        self.assert_model_exists(
+            "user/1",
+            {"poll_voted_ids": [1], "vote_ids": [1], "delegated_vote_ids": [1]},
+        )
 
     def test_check_user_in_entitled_group(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
-                "user/1": {"is_present_in_meeting_ids": [113]},
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "meeting_user_ids": [11],
+                    "meeting_ids": [113],
+                },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 113, "group_ids": [1]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -782,8 +860,13 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
-                "user/1": {"group_$_ids": ["113"], "group_$113_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
+                "user/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
+                },
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "motion/1": {
                     "meeting_id": 113,
@@ -812,7 +895,7 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "motion/1": {
                     "meeting_id": 113,
                 },
@@ -828,8 +911,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$_ids": ["113"],
-                    "group_$113_ids": [1],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
             }
         )
@@ -837,20 +924,21 @@ class PollVoteTest(BaseVoteTestCase):
         self.assert_status_code(response, 400)
         assert "Global vote X is not enabled" in response.json["message"]
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_default_vote_weight(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
                     "default_vote_weight": "3.000000",
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -874,41 +962,46 @@ class PollVoteTest(BaseVoteTestCase):
             "poll.vote", {"id": 1, "user_id": 1, "value": {"11": 1}}
         )
         self.assert_status_code(response, 200)
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "Y"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "3.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        assert option.get("yes") == "3.000000"
-        assert option.get("no") == "0.000000"
-        assert option.get("abstain") == "0.000000"
-        user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
+        self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "Y",
+                "option_id": 11,
+                "weight": "3.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1],
+                "yes": "3.000000",
+                "no": "0.000000",
+                "abstain": "0.000000",
+            },
+        )
+        self.assert_model_exists(
+            "user/1",
+            {"poll_voted_ids": [1], "delegated_vote_ids": [1], "vote_ids": [1]},
+        )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_weight_not_enabled(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
                     "default_vote_weight": "3.000000",
-                    "meeting_user_ids": [1],
+                    "meeting_user_ids": [11],
                 },
-                "meeting_user/1": {
+                "meeting_user/11": {
                     "meeting_id": 113,
                     "user_id": 1,
                     "vote_weight": "4.200000",
+                    "group_ids": [1],
                 },
                 "motion/1": {
                     "meeting_id": 113,
@@ -927,7 +1020,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
                 "meeting/113": {
                     "users_enable_vote_weight": False,
-                    "meeting_user_ids": [1],
+                    "meeting_user_ids": [11],
                 },
             }
         )
@@ -935,23 +1028,31 @@ class PollVoteTest(BaseVoteTestCase):
             "poll.vote", {"id": 1, "user_id": 1, "value": {"11": 1}}
         )
         self.assert_status_code(response, 200)
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "Y"
-        assert vote.get("option_id") == 11
-        assert vote.get("weight") == "1.000000"
-        assert vote.get("meeting_id") == 113
-        assert vote.get("user_id") == 1
-        option = self.get_model("option/11")
-        assert option.get("vote_ids") == [1]
-        assert option.get("yes") == "1.000000"
-        assert option.get("no") == "0.000000"
-        assert option.get("abstain") == "0.000000"
-        user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113"]
-        assert user.get("vote_$113_ids") == [1]
+        self.assert_model_exists(
+            "vote/1",
+            {
+                "value": "Y",
+                "option_id": 11,
+                "weight": "1.000000",
+                "meeting_id": 113,
+                "user_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "option/11",
+            {
+                "vote_ids": [1],
+                "yes": "1.000000",
+                "no": "0.000000",
+                "abstain": "0.000000",
+            },
+        )
+        self.assert_model_exists(
+            "user/1",
+            {"poll_voted_ids": [1], "delegated_vote_ids": [1], "vote_ids": [1]},
+        )
 
 
-@pytest.mark.skip
 class VotePollBaseTestClass(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -968,7 +1069,7 @@ class VotePollBaseTestClass(BaseVoteTestCase):
         self.create_poll()
         self.set_models(
             {
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11], "meeting_id": 113},
                 "option/1": {
                     "meeting_id": 113,
                     "poll_id": 1,
@@ -985,8 +1086,12 @@ class VotePollBaseTestClass(BaseVoteTestCase):
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 113,
+                    "group_ids": [1],
                 },
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "poll/1": {"global_option_id": 11, "backend": "fast"},
@@ -1009,7 +1114,6 @@ class VotePollBaseTestClass(BaseVoteTestCase):
         )
 
 
-@pytest.mark.skip
 class VotePollNamedYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1032,9 +1136,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.add_option()
         self.start_poll()
@@ -1062,14 +1163,11 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("no"), "0.000000")
         self.assertEqual(option3.get("abstain"), "1.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_with_voteweight(self) -> None:
         self.set_models(
             {
-                "user/1": {"vote_weight_$113": "4.200000", "vote_weight_$": ["113"]},
-                "meeting_user/1": {
+                "user/1": {"meeting_user_ids": [11]},
+                "meeting_user/11": {
                     "meeting_id": 113,
                     "user_id": 1,
                     "vote_weight": "4.200000",
@@ -1103,9 +1201,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("no"), "0.000000")
         self.assertEqual(option3.get("abstain"), "4.200000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1212,7 +1307,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
 class VotePollNamedY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1236,9 +1330,6 @@ class VotePollNamedY(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1262,9 +1353,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1287,9 +1375,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_yes(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
@@ -1306,9 +1391,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_no(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
@@ -1325,9 +1407,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_abstain(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
@@ -1452,7 +1531,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
 class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1476,9 +1554,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1501,9 +1576,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1526,9 +1598,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_weight(self) -> None:
         self.update_model("user/1", {"default_vote_weight": "3.000000"})
         self.update_model("meeting/113", {"users_enable_vote_weight": True})
@@ -1547,9 +1616,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote_change_weight(self) -> None:
         self.update_model("user/1", {"default_vote_weight": "3.000000"})
         self.update_model("meeting/113", {"users_enable_vote_weight": True})
@@ -1575,7 +1641,6 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
 
-@pytest.mark.skip
 class VotePollNamedN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1599,9 +1664,6 @@ class VotePollNamedN(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1625,9 +1687,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.add_option()
         self.start_poll()
@@ -1651,9 +1710,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_yes(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
@@ -1670,9 +1726,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_no(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
@@ -1689,9 +1742,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_global_abstain(self) -> None:
         self.start_poll()
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
@@ -1797,7 +1847,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
 class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1818,9 +1867,6 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.add_option()
         self.start_poll()
@@ -1847,9 +1893,6 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("no"), "0.000000")
         self.assertEqual(option3.get("abstain"), "1.000000")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -1877,9 +1920,6 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_partial_vote(self) -> None:
         self.add_option()
         self.start_poll()
@@ -1970,7 +2010,6 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
 class VotePollPseudoanonymousY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1991,9 +2030,6 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -2019,9 +2055,6 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         vote = self.get_model("vote/1")
         self.assertIsNone(vote.get("user_id"))
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -2128,8 +2161,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
-class VotePollPseudoAnonymousN(VotePollBaseTestClass):
+class VotePollPseudoanonymousN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
             "poll/1",
@@ -2149,9 +2181,6 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
             },
         )
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_vote(self) -> None:
         self.start_poll()
         response = self.request(
@@ -2177,9 +2206,6 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
         vote = self.get_model("vote/1")
         self.assertIsNone(vote.get("user_id"))
 
-    # TODO: We need a new vote service, which can handle the moved fields.
-    # As we move just vote_weight_$, we skip it here.
-    @pytest.mark.skip()
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(

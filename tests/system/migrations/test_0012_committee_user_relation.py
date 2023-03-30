@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_user_group_create_delete_restore_update_one_position(
     write, finalize, assert_model
 ):
@@ -190,7 +187,6 @@ def test_user_group_create_delete_restore_update_one_position(
     )
 
 
-@pytest.mark.skip
 def test_user_committee_management_level_create_delete_restore_update_one_position(
     write, finalize, assert_model
 ):
@@ -343,7 +339,6 @@ def test_user_committee_management_level_create_delete_restore_update_one_positi
     )
 
 
-@pytest.mark.skip
 def test_user_mixed_cml_and_group(write, finalize, assert_model):
     write(
         {
@@ -842,7 +837,6 @@ def test_events_in_wrong_sequence(write, finalize, assert_model):
     )
 
 
-@pytest.mark.skip
 def test_with_shortened_example_data(write, finalize, assert_model):
     write(
         {

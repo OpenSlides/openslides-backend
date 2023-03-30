@@ -1,13 +1,10 @@
 from typing import Any, Dict
 
-import pytest
-
 from openslides_backend.models.models import Poll
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
-@pytest.mark.skip
 class VotePollBaseTestClass(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -20,6 +17,8 @@ class VotePollBaseTestClass(BaseActionTestCase):
                     "poll_countdown_id": 11,
                     "is_active_in_organization_id": 1,
                     "group_ids": [1],
+                    "meeting_user_ids": [11],
+                    "present_user_ids": [1],
                 },
                 "projector_countdown/11": {
                     "default_time": 60,
@@ -27,13 +26,17 @@ class VotePollBaseTestClass(BaseActionTestCase):
                     "countdown_time": 60,
                     "meeting_id": 1,
                 },
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/1": {"meeting_id": 1, "poll_id": 1},
                 "option/2": {"meeting_id": 1, "poll_id": 1},
                 "user/1": {
                     "is_present_in_meeting_ids": [1],
-                    "group_$1_ids": [1],
-                    "group_$_ids": ["1"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
                 },
                 "assignment/1": {
                     "title": "test_assignment_tcLT59bmXrXif424Qw7K",
@@ -61,7 +64,6 @@ class VotePollBaseTestClass(BaseActionTestCase):
         raise NotImplementedError()
 
 
-@pytest.mark.skip
 class VotePollAnalogYNA(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -80,7 +82,6 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
         self.assertEqual(poll.get("state"), Poll.STATE_CREATED)
 
 
-@pytest.mark.skip
 class VotePollNamedYNA(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -115,7 +116,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_history_information("motion/1", ["Voting started"])
 
 
-@pytest.mark.skip
 class VotePollNamedY(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -134,7 +134,6 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
 class VotePollNamedN(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -153,7 +152,6 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
 class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -172,7 +170,6 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
 class VotePollPseudoanonymousY(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {
@@ -191,7 +188,6 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-@pytest.mark.skip
 class VotePollPseudoAnonymousN(VotePollBaseTestClass):
     def get_poll_data(self) -> Dict[str, Any]:
         return {

@@ -42,16 +42,6 @@
 #           - PROTECT: if the foreign key is not empty, throw an error instead of
 #                      deleting the object
 #           - CASCADE: also delete all models in this foreign key
-# Structured fields:
-#     - There are template fields (see autoupdate service interface) with a `$` as
-#       the placeholder.
-#     - The type `template` describes a structured field for the given model. If the
-#       property `replacement_collection` is given, it describes which model the
-#       replacement ids are belonging to (=> structured relation), 
-#       `replacement_enum` describes the possibel replacement as list of strings.
-#       If it is not given, the field is a structured tag. 
-#       The property `fields` contains the definition
-#       for all the fields that come from the template field.
 # JSON Schema Properties:
 #     - You can add JSON Schema properties to the fields like `enum`, `description`,
 #       `items`, `maxLength` and `minimum`
@@ -314,6 +304,10 @@ user:
     type: relation-list
     to: vote/user_id
     restriction_mode: A
+  delegated_vote_ids:
+    type: relation-list
+    to: vote/delegated_user_id
+    restriction_mode: A
   poll_candidate_ids:
     type: relation-list
     to: poll_candidate/user_id
@@ -386,10 +380,6 @@ meeting_user:
   assignment_candidate_ids:
     type: relation-list
     to: assignment_candidate/meeting_user_id
-    restriction_mode: A
-  vote_delegated_vote_ids:
-    type: relation-list
-    to: vote/delegated_user_id
     restriction_mode: A
   vote_delegated_to_id:
     type: relation
@@ -3067,7 +3057,7 @@ vote:
     required: false
   delegated_user_id:
     type: relation
-    to: meeting_user/vote_delegated_vote_ids
+    to: user/delegated_vote_ids
     restriction_mode: A
     required: false
   meeting_id:
