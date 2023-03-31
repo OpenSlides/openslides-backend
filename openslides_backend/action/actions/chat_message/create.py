@@ -1,14 +1,11 @@
 from time import time
 from typing import Any, Dict
 
-from openslides_backend.shared.filters import And, FilterOperator
-
-from openslides_backend.shared.filters import And, FilterOperator
-
 from ....models.models import ChatMessage
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import PermissionDenied
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
