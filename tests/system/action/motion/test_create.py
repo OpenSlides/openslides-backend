@@ -60,7 +60,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert submitter.get("motion_id") == 1
         self.assert_model_exists(
             "meeting_user/1",
-            {"meeting_id": 222, "user_id": 1, "submitted_motion_ids": [1]},
+            {"meeting_id": 222, "user_id": 1, "motion_submitter_ids": [1]},
         )
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 222)

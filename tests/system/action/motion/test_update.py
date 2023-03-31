@@ -29,7 +29,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "meeting_user/1": {
                 "meeting_id": 1,
                 "user_id": 1,
-                "submitted_motion_ids": [1],
+                "motion_submitter_ids": [1],
             },
             "user/1": {"meeting_user_ids": [1]},
             "motion_state/1": {
@@ -535,7 +535,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.permission_test_models["meeting_user/2"] = {
             "meeting_id": 1,
             "user_id": self.user_id,
-            "submitted_motion_ids": [1],
+            "motion_submitter_ids": [1],
         }
         self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [2]}
         self.set_models(self.permission_test_models)
@@ -560,7 +560,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.permission_test_models["meeting_user/1"] = {
             "meeting_id": 1,
             "user_id": self.user_id,
-            "submitted_motion_ids": [1],
+            "motion_submitter_ids": [1],
         }
         self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [1]}
         self.set_models(self.permission_test_models)

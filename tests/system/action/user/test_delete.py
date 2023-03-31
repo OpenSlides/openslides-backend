@@ -137,7 +137,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "meeting_user/1111": {
                     "meeting_id": 1,
                     "user_id": 111,
-                    "submitted_motion_ids": [34],
+                    "motion_submitter_ids": [34],
                 },
                 "motion/50": {"submitter_ids": [34]},
             }
@@ -150,7 +150,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_model_deleted(
             "meeting_user/1111",
-            {"meeting_id": 1, "user_id": 111, "submitted_motion_ids": [34]},
+            {"meeting_id": 1, "user_id": 111, "motion_submitter_ids": [34]},
         )
         self.assert_model_deleted(
             "motion_submitter/34", {"meeting_user_id": 1111, "motion_id": 50}
@@ -214,7 +214,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                 "meeting_user/12": {
                     "meeting_id": 1,
                     "user_id": 2,
-                    "submitted_motion_ids": [1],
+                    "motion_submitter_ids": [1],
                     "group_ids": [1],
                 },
                 "motion_submitter/1": {

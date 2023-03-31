@@ -38,7 +38,7 @@ class MeetingUserUpdate(BaseActionTestCase):
             "personal_note_ids": [11],
             "speaker_ids": [12],
             "supported_motion_ids": [14],
-            "submitted_motion_ids": [15],
+            "motion_submitter_ids": [15],
             "assignment_candidate_ids": [16],
             "chat_message_ids": [13],
             "group_ids": [21],

@@ -71,7 +71,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
                 "meeting_user/78": {
                     "meeting_id": 111,
                     "user_id": 78,
-                    "submitted_motion_ids": [1],
+                    "motion_submitter_ids": [1],
                 },
                 "meeting_user/79": {"meeting_id": 111, "user_id": 79},
             }

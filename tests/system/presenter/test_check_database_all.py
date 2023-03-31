@@ -419,7 +419,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 "meeting_user/13": {
                     "meeting_id": 1,
                     "user_id": 3,
-                    "submitted_motion_ids": [5],
+                    "motion_submitter_ids": [5],
                     "group_ids": [1],
                 },
                 "meeting_user/14": {

@@ -20,7 +20,7 @@ class MeetingUserMixin(Action):
         "personal_note_ids",
         "speaker_ids",
         "supported_motion_ids",
-        "submitted_motion_ids",
+        "motion_submitter_ids",
         "assignment_candidate_ids",
         "vote_delegated_to_id",
         "vote_delegations_from_ids",

@@ -229,7 +229,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/3": {
                     "user_id": 11,
                     "meeting_id": 1,
-                    "submitted_motion_ids": [1],
+                    "motion_submitter_ids": [1],
                     "group_ids": [1],
                 },
             }
@@ -1201,7 +1201,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("user/1", {"meeting_user_ids": [1]})
         self.assert_model_exists(
             "meeting_user/1",
-            {"meeting_id": 1, "user_id": 1, "submitted_motion_ids": [1]},
+            {"meeting_id": 1, "user_id": 1, "motion_submitter_ids": [1]},
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)

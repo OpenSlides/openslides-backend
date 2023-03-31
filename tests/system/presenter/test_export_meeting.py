@@ -199,7 +199,7 @@ class TestExportMeeting(BasePresenterTestCase):
                 "meeting_user/11": {
                     "meeting_id": 1,
                     "user_id": 11,
-                    "submitted_motion_ids": [1],
+                    "motion_submitter_ids": [1],
                 },
                 "meeting_user/12": {
                     "meeting_id": 1,
@@ -240,7 +240,7 @@ class TestExportMeeting(BasePresenterTestCase):
         user11 = data["user"]["11"]
         assert user11.get("username") == "exuser11"
         assert user11.get("meeting_user_ids") == [11]
-        self.assert_model_exists("meeting_user/11", {"submitted_motion_ids": [1]})
+        self.assert_model_exists("meeting_user/11", {"motion_submitter_ids": [1]})
         user12 = data["user"]["12"]
         assert user12.get("username") == "exuser12"
         meeting_user_12 = data["meeting_user"]["12"]

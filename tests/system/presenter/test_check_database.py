@@ -395,7 +395,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "meeting_user/13": {
                     "user_id": 3,
                     "meeting_id": 1,
-                    "submitted_motion_ids": [5],
+                    "motion_submitter_ids": [5],
                     "group_ids": [1],
                 },
                 "meeting_user/14": {

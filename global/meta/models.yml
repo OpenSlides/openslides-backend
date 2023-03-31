@@ -124,7 +124,6 @@ organization:
     type: relation-list
     to: meeting/template_for_organization_id
     restriction_mode: A
-    required: false
   organization_tag_ids:
     type: relation-list
     restriction_mode: B
@@ -372,7 +371,7 @@ meeting_user:
     type: relation-list
     to: motion/supporter_meeting_user_ids
     restriction_mode: A
-  submitted_motion_ids:
+  motion_submitter_ids:
     type: relation-list
     to: motion_submitter/meeting_user_id
     on_delete: CASCADE
@@ -384,7 +383,6 @@ meeting_user:
   vote_delegated_to_id:
     type: relation
     to: meeting_user/vote_delegations_from_ids
-    required: false
     restriction_mode: A
   vote_delegations_from_ids:
     type: relation-list
@@ -602,7 +600,6 @@ committee:
     type: relation
     to: meeting/default_meeting_for_committee_id
     restriction_mode: A
-    required: false
   user_ids:
     type: relation-list
     to: user/committee_ids
@@ -660,13 +657,11 @@ meeting:
     to: organization/active_meeting_ids
     restriction_mode: A
     description: Backrelation and boolean flag at once
-    required: false
   is_archived_in_organization_id:
     type: relation
     to: organization/archived_meeting_ids
     restriction_mode: A
     description: Backrelation and boolean flag at once
-    required: false
   description:
     type: string
     maxLength: 100
@@ -701,7 +696,6 @@ meeting:
     type: relation
     to: organization/template_meeting_ids
     restriction_mode: B
-    required: false
   enable_anonymous:
     type: boolean
     default: False
@@ -1471,82 +1465,66 @@ meeting:
   logo_projector_main_id:
     type: relation
     to: mediafile/used_as_logo_projector_main_in_meeting_id
-    required: false
     restriction_mode: B
   logo_projector_header_id:
     type: relation
     to: mediafile/used_as_logo_projector_header_in_meeting_id
-    required: false
     restriction_mode: B
   logo_web_header_id:
     type: relation
     to: mediafile/used_as_logo_web_header_in_meeting_id
-    required: false
     restriction_mode: B
   logo_pdf_header_l_id:
     type: relation
     to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
-    required: false
     restriction_mode: B
   logo_pdf_header_r_id:
     type: relation
     to: mediafile/used_as_logo_pdf_header_r_in_meeting_id
-    required: false
     restriction_mode: B
   logo_pdf_footer_l_id:
     type: relation
     to: mediafile/used_as_logo_pdf_footer_l_in_meeting_id
-    required: false
     restriction_mode: B
   logo_pdf_footer_r_id:
     type: relation
     to: mediafile/used_as_logo_pdf_footer_r_in_meeting_id
-    required: false
     restriction_mode: B
   logo_pdf_ballot_paper_id:
     type: relation
     to: mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id
-    required: false
     restriction_mode: B
   font_regular_id:
     type: relation
     to: mediafile/used_as_font_regular_in_meeting_id
-    required: false
     restriction_mode: B
   font_italic_id:
     type: relation
     to: mediafile/used_as_font_italic_in_meeting_id
-    required: false
     restriction_mode: B
   font_bold_id:
     type: relation
     to: mediafile/used_as_font_bold_in_meeting_id
-    required: false
     restriction_mode: B
   font_bold_italic_id:
     type: relation
     to: mediafile/used_as_font_bold_italic_in_meeting_id
-    required: false
     restriction_mode: B
   font_monospace_id:
     type: relation
     to: mediafile/used_as_font_monospace_in_meeting_id
-    required: false
     restriction_mode: B
   font_chyron_speaker_name_id:
     type: relation
     to: mediafile/used_as_font_chyron_speaker_name_in_meeting_id
-    required: false
     restriction_mode: B
   font_projector_h1_id:
     type: relation
     to: mediafile/used_as_font_projector_h1_in_meeting_id
-    required: false
     restriction_mode: B
   font_projector_h2_id:
     type: relation
     to: mediafile/used_as_font_projector_h2_in_meeting_id
-    required: false
     restriction_mode: B
   # Other relations
   committee_id:
@@ -1558,7 +1536,6 @@ meeting:
     type: relation
     to: committee/default_meeting_id
     restriction_mode: B
-    required: false
   organization_tag_ids:
     type: relation-list
     to: organization_tag/tagged_ids
@@ -1581,12 +1558,10 @@ meeting:
     type: relation
     to: projector_countdown/used_as_list_of_speakers_countdown_meeting_id
     restriction_mode: B
-    required: false
   poll_countdown_id:
     type: relation
     to: projector_countdown/used_as_poll_countdown_meeting_id
     restriction_mode: B
-    required: false
   projection_ids:
     type: relation-list
     to: projection/content_object_id
@@ -1671,7 +1646,6 @@ meeting:
     type: relation
     to: group/admin_group_for_meeting_id
     restriction_mode: B
-    required: false
 
 group:
   id:
@@ -1735,13 +1709,11 @@ group:
     to: meeting/default_group_id
     on_delete: PROTECT
     restriction_mode: A
-    required: false
   admin_group_for_meeting_id:
     type: relation
     to: meeting/admin_group_id
     on_delete: PROTECT
     restriction_mode: A
-    required: false
   mediafile_access_group_ids:
     type: relation-list
     to: mediafile/access_group_ids
@@ -1782,17 +1754,14 @@ group:
     type: relation
     to: meeting/motion_poll_default_group_ids
     restriction_mode: A
-    required: false
   used_as_assignment_poll_default_id:
     type: relation
     to: meeting/assignment_poll_default_group_ids
     restriction_mode: A
-    required: false
   used_as_poll_default_id:
     type: relation
     to: meeting/poll_default_group_ids
     restriction_mode: A
-    required: false
   meeting_id:
     type: relation
     to: meeting/group_ids
@@ -1823,7 +1792,6 @@ personal_note:
       field: personal_note_ids
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   meeting_id:
     type: relation
     to: meeting/personal_note_ids
@@ -1920,7 +1888,6 @@ agenda_item:
     to: agenda_item/child_ids
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   child_ids:
     type: relation-list
     to: agenda_item/parent_id
@@ -2169,7 +2136,6 @@ motion:
     to: motion/amendment_ids
     equal_fields: meeting_id
     restriction_mode: C
-    required: false
   amendment_ids:
     type: relation-list
     to: motion/lead_motion_id
@@ -2180,7 +2146,6 @@ motion:
     to: motion/sort_child_ids
     equal_fields: meeting_id
     restriction_mode: C
-    required: false
   sort_child_ids:
     type: relation-list
     to: motion/sort_parent_id
@@ -2194,7 +2159,6 @@ motion:
     type: relation
     to: meeting/forwarded_motion_ids
     restriction_mode: A
-    required: false
   derived_motion_ids:
     type: relation-list
     to: motion/origin_id # Note: The related motions may not be in the same meeting
@@ -2218,7 +2182,6 @@ motion:
     to: motion_state/motion_recommendation_ids
     equal_fields: meeting_id
     restriction_mode: C
-    required: false
   state_extension_reference_ids:
     type: generic-relation-list
     to:
@@ -2250,13 +2213,11 @@ motion:
     to: motion_category/motion_ids
     equal_fields: meeting_id
     restriction_mode: C
-    required: false
   block_id:
     type: relation
     to: motion_block/motion_ids
     equal_fields: meeting_id
     restriction_mode: C
-    required: false
   submitter_ids:
     type: relation-list
     to: motion_submitter/motion_id
@@ -2290,7 +2251,6 @@ motion:
     to: motion_statute_paragraph/motion_ids
     equal_fields: meeting_id
     restriction_mode: C
-    required: false
   comment_ids:
     type: relation-list
     to: motion_comment/motion_id
@@ -2303,7 +2263,6 @@ motion:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: C
-    required: false
   list_of_speakers_id:
     type: relation
     to: list_of_speakers/content_object_id
@@ -2348,7 +2307,7 @@ motion_submitter:
     restriction_mode: A
   meeting_user_id:
     type: relation
-    to: meeting_user/submitted_motion_ids
+    to: meeting_user/motion_submitter_ids
     restriction_mode: A
     required: true
   motion_id:
@@ -2465,7 +2424,6 @@ motion_category:
     to: motion_category/child_ids
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   child_ids:
     type: relation-list
     to: motion_category/parent_id
@@ -2511,7 +2469,6 @@ motion_block:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   list_of_speakers_id:
     type: relation
     to: list_of_speakers/content_object_id
@@ -2709,7 +2666,6 @@ motion_state:
     on_delete: PROTECT
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   meeting_id:
     type: relation
     to: meeting/motion_state_ids
@@ -2747,17 +2703,14 @@ motion_workflow:
     type: relation
     to: meeting/motions_default_workflow_id
     restriction_mode: A
-    required: false
   default_amendment_workflow_meeting_id:
     type: relation
     to: meeting/motions_default_amendment_workflow_id
     restriction_mode: A
-    required: false
   default_statute_amendment_workflow_meeting_id:
     type: relation
     to: meeting/motions_default_statute_amendment_workflow_id
     restriction_mode: A
-    required: false
   meeting_id:
     type: relation
     to: meeting/motion_workflow_ids
@@ -2953,7 +2906,6 @@ poll:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   voted_ids:
     type: relation-list
     to: user/poll_voted_ids
@@ -3001,13 +2953,11 @@ option:
     to: poll/option_ids
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   used_as_global_option_in_poll_id:
     type: relation
     to: poll/global_option_id
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   vote_ids:
     type: relation-list
     to: vote/option_id
@@ -3022,7 +2972,6 @@ option:
       - poll_candidate_list/option_id
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   meeting_id:
     type: relation
     to: meeting/option_ids
@@ -3054,12 +3003,10 @@ vote:
     type: relation
     to: user/vote_ids
     restriction_mode: A
-    required: false
   delegated_user_id:
     type: relation
     to: user/delegated_vote_ids
     restriction_mode: A
-    required: false
   meeting_id:
     type: relation
     to: meeting/vote_ids
@@ -3121,7 +3068,6 @@ assignment:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   list_of_speakers_id:
     type: relation
     to: list_of_speakers/content_object_id
@@ -3279,7 +3225,6 @@ mediafile:
     to: mediafile/child_ids
     equal_fields: owner_id
     restriction_mode: A
-    required: false
   child_ids:
     type: relation-list
     to: mediafile/parent_id
@@ -3290,7 +3235,6 @@ mediafile:
     to: list_of_speakers/content_object_id
     on_delete: CASCADE
     restriction_mode: A
-    required: false
   projection_ids:
     type: relation-list
     to: projection/content_object_id
@@ -3317,82 +3261,66 @@ mediafile:
   used_as_logo_projector_main_in_meeting_id:
     type: relation
     to: meeting/logo_projector_main_id
-    required: false
     restriction_mode: A
   used_as_logo_projector_header_in_meeting_id:
     type: relation
     to: meeting/logo_projector_header_id
-    required: false
     restriction_mode: A
   used_as_logo_web_header_in_meeting_id:
     type: relation
     to: meeting/logo_web_header_id
-    required: false
     restriction_mode: A
   used_as_logo_pdf_header_l_in_meeting_id:
     type: relation
     to: meeting/logo_pdf_header_l_id
-    required: false
     restriction_mode: A
   used_as_logo_pdf_header_r_in_meeting_id:
     type: relation
     to: meeting/logo_pdf_header_r_id
-    required: false
     restriction_mode: A
   used_as_logo_pdf_footer_l_in_meeting_id:
     type: relation
     to: meeting/logo_pdf_footer_l_id
-    required: false
     restriction_mode: A
   used_as_logo_pdf_footer_r_in_meeting_id:
     type: relation
     to: meeting/logo_pdf_footer_r_id
-    required: false
     restriction_mode: A
   used_as_logo_pdf_ballot_paper_in_meeting_id:
     type: relation
     to: meeting/logo_pdf_ballot_paper_id
-    required: false
     restriction_mode: A
   used_as_font_regular_in_meeting_id:
     type: relation
     to: meeting/font_regular_id
-    required: false
     restriction_mode: A
   used_as_font_italic_in_meeting_id:
     type: relation
     to: meeting/font_italic_id
-    required: false
     restriction_mode: A
   used_as_font_bold_in_meeting_id:
     type: relation
     to: meeting/font_bold_id
-    required: false
     restriction_mode: A
   used_as_font_bold_italic_in_meeting_id:
     type: relation
     to: meeting/font_bold_italic_id
-    required: false
     restriction_mode: A
   used_as_font_monospace_in_meeting_id:
     type: relation
     to: meeting/font_monospace_id
-    required: false
     restriction_mode: A
   used_as_font_chyron_speaker_name_in_meeting_id:
     type: relation
     to: meeting/font_chyron_speaker_name_id
-    required: false
     restriction_mode: A
   used_as_font_projector_h1_in_meeting_id:
     type: relation
     to: meeting/font_projector_h1_id
-    required: false
     restriction_mode: A
   used_as_font_projector_h2_in_meeting_id:
     type: relation
     to: meeting/font_projector_h2_id
-    required: false
     restriction_mode: A
 
 projector:
@@ -3498,76 +3426,61 @@ projector:
     type: relation
     to: meeting/reference_projector_id
     restriction_mode: A
-    required: false
   used_as_default_agenda_all_items_in_meeting_id:
     type: relation
     to: meeting/default_projector_agenda_all_items_ids
-    required: false
     restriction_mode: A
   used_as_default_topics_in_meeting_id:
     type: relation
     to: meeting/default_projector_topics_ids
-    required: false
     restriction_mode: A
   used_as_default_list_of_speakers_in_meeting_id:
     type: relation
     to: meeting/default_projector_list_of_speakers_ids
-    required: false
     restriction_mode: A
   used_as_default_current_list_of_speakers_in_meeting_id:
     type: relation
     to: meeting/default_projector_current_list_of_speakers_ids
-    required: false
     restriction_mode: A
   used_as_default_motion_in_meeting_id:
     type: relation
     to: meeting/default_projector_motion_ids
-    required: false
     restriction_mode: A
   used_as_default_amendment_in_meeting_id:
     type: relation
     to: meeting/default_projector_amendment_ids
-    required: false
     restriction_mode: A
   used_as_default_motion_block_in_meeting_id:
     type: relation
     to: meeting/default_projector_motion_block_ids
-    required: false
     restriction_mode: A
   used_as_default_assignment_in_meeting_id:
     type: relation
     to: meeting/default_projector_assignment_ids
-    required: false
     restriction_mode: A
   used_as_default_mediafile_in_meeting_id:
     type: relation
     to: meeting/default_projector_mediafile_ids
-    required: false
     restriction_mode: A
   used_as_default_projector_message_in_meeting_id:
     type: relation
     to: meeting/default_projector_projector_message_ids
-    required: false
     restriction_mode: A
   used_as_default_projector_countdowns_in_meeting_id:
     type: relation
     to: meeting/default_projector_projector_countdowns_ids
-    required: false
     restriction_mode: A
   used_as_default_assignment_poll_in_meeting_id:
     type: relation
     to: meeting/default_projector_assignment_poll_ids
-    required: false
     restriction_mode: A
   used_as_default_motion_poll_in_meeting_id:
     type: relation
     to: meeting/default_projector_motion_poll_ids
-    required: false
     restriction_mode: A
   used_as_default_poll_in_meeting_id:
     type: relation
     to: meeting/default_projector_poll_ids
-    required: false
     restriction_mode: A
   meeting_id:
     type: relation
@@ -3608,19 +3521,16 @@ projection:
     to: projector/current_projection_ids
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   preview_projector_id:
     type: relation
     to: projector/preview_projection_ids
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   history_projector_id:
     type: relation
     to: projector/history_projection_ids
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
   content_object_id:
     type: generic-relation
     to:
@@ -3698,12 +3608,10 @@ projector_countdown:
     type: relation
     to: meeting/list_of_speakers_countdown_id
     restriction_mode: A
-    required: false
   used_as_poll_countdown_meeting_id:
     type: relation
     to: meeting/poll_countdown_id
     restriction_mode: A
-    required: false
   meeting_id:
     type: relation
     to: meeting/projector_countdown_ids

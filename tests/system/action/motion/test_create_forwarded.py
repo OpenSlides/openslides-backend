@@ -133,7 +133,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             {
                 "meeting_id": 2,
                 "user_id": 2,
-                "submitted_motion_ids": [1],
+                "motion_submitter_ids": [1],
                 "group_ids": [112],
             },
         )
@@ -240,7 +240,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "user_id": 2,
                 "meeting_id": 2,
                 "group_ids": [113, 112],
-                "submitted_motion_ids": [1],
+                "motion_submitter_ids": [1],
             },
         )
         self.assert_model_exists(
@@ -331,7 +331,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "meeting_id": 2,
                 "user_id": 3,
                 "group_ids": [112],
-                "submitted_motion_ids": [1],
+                "motion_submitter_ids": [1],
             },
         )
         self.assert_model_exists("group/112", {"meeting_user_ids": [2, 3]})
@@ -676,7 +676,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             {
                 "user_id": 2,
                 "meeting_id": 2,
-                "submitted_motion_ids": [1],
+                "motion_submitter_ids": [1],
                 "group_ids": [112],
             },
         )
@@ -712,7 +712,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             {
                 "user_id": 2,
                 "meeting_id": 3,
-                "submitted_motion_ids": [2],
+                "motion_submitter_ids": [2],
                 "group_ids": [113],
             },
         )
