@@ -139,9 +139,7 @@ def add_users(
 ) -> None:
     if not user_ids:
         return
-    fields = []
-    for field in User().get_fields():
-        fields.append(field.own_field_name)
+    fields = [field.own_field_name for field in User().get_fields()]
 
     gmr = GetManyRequest(
         "user",
