@@ -1569,72 +1569,72 @@ meeting:
     restriction_mode: B
   default_projector_agenda_all_items_ids:
     type: relation-list
-    to: projector/used_as_default_agenda_all_items_in_meeting_id
+    to: projector/used_as_default_projector_for_agenda_all_items_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_topics_ids:
     type: relation-list
-    to: projector/used_as_default_topics_in_meeting_id
+    to: projector/used_as_default_projector_for_topics_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_list_of_speakers_ids:
     type: relation-list
-    to: projector/used_as_default_list_of_speakers_in_meeting_id
+    to: projector/used_as_default_projector_for_list_of_speakers_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_current_list_of_speakers_ids:
     type: relation-list
-    to: projector/used_as_default_current_list_of_speakers_in_meeting_id
+    to: projector/used_as_default_projector_for_current_list_of_speakers_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_motion_ids:
     type: relation-list
-    to: projector/used_as_default_motion_in_meeting_id
+    to: projector/used_as_default_projector_for_motion_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_amendment_ids:
     type: relation-list
-    to: projector/used_as_default_amendment_in_meeting_id
+    to: projector/used_as_default_projector_for_amendment_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_motion_block_ids:
     type: relation-list
-    to: projector/used_as_default_motion_block_in_meeting_id
+    to: projector/used_as_default_projector_for_motion_block_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_assignment_ids:
     type: relation-list
-    to: projector/used_as_default_assignment_in_meeting_id
+    to: projector/used_as_default_projector_for_assignment_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_mediafile_ids:
     type: relation-list
-    to: projector/used_as_default_mediafile_in_meeting_id
+    to: projector/used_as_default_projector_for_mediafile_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_projector_message_ids:
     type: relation-list
-    to: projector/used_as_default_projector_message_in_meeting_id
+    to: projector/used_as_default_projector_for_projector_message_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_projector_countdowns_ids:
     type: relation-list
-    to: projector/used_as_default_projector_countdowns_in_meeting_id
+    to: projector/used_as_default_projector_for_projector_countdowns_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_assignment_poll_ids:
     type: relation-list
-    to: projector/used_as_default_assignment_poll_in_meeting_id
+    to: projector/used_as_default_projector_for_assignment_poll_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_motion_poll_ids:
     type: relation-list
-    to: projector/used_as_default_motion_poll_in_meeting_id
+    to: projector/used_as_default_projector_for_motion_poll_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_poll_ids:
     type: relation-list
-    to: projector/used_as_default_poll_in_meeting_id
+    to: projector/used_as_default_projector_for_poll_in_meeting_id
     restriction_mode: B
     required: true
   default_group_id:
@@ -3426,59 +3426,59 @@ projector:
     type: relation
     to: meeting/reference_projector_id
     restriction_mode: A
-  used_as_default_agenda_all_items_in_meeting_id:
+  used_as_default_projector_for_agenda_all_items_in_meeting_id:
     type: relation
     to: meeting/default_projector_agenda_all_items_ids
     restriction_mode: A
-  used_as_default_topics_in_meeting_id:
+  used_as_default_projector_for_topics_in_meeting_id:
     type: relation
     to: meeting/default_projector_topics_ids
     restriction_mode: A
-  used_as_default_list_of_speakers_in_meeting_id:
+  used_as_default_projector_for_list_of_speakers_in_meeting_id:
     type: relation
     to: meeting/default_projector_list_of_speakers_ids
     restriction_mode: A
-  used_as_default_current_list_of_speakers_in_meeting_id:
+  used_as_default_projector_for_current_list_of_speakers_in_meeting_id:
     type: relation
     to: meeting/default_projector_current_list_of_speakers_ids
     restriction_mode: A
-  used_as_default_motion_in_meeting_id:
+  used_as_default_projector_for_motion_in_meeting_id:
     type: relation
     to: meeting/default_projector_motion_ids
     restriction_mode: A
-  used_as_default_amendment_in_meeting_id:
+  used_as_default_projector_for_amendment_in_meeting_id:
     type: relation
     to: meeting/default_projector_amendment_ids
     restriction_mode: A
-  used_as_default_motion_block_in_meeting_id:
+  used_as_default_projector_for_motion_block_in_meeting_id:
     type: relation
     to: meeting/default_projector_motion_block_ids
     restriction_mode: A
-  used_as_default_assignment_in_meeting_id:
+  used_as_default_projector_for_assignment_in_meeting_id:
     type: relation
     to: meeting/default_projector_assignment_ids
     restriction_mode: A
-  used_as_default_mediafile_in_meeting_id:
+  used_as_default_projector_for_mediafile_in_meeting_id:
     type: relation
     to: meeting/default_projector_mediafile_ids
     restriction_mode: A
-  used_as_default_projector_message_in_meeting_id:
+  used_as_default_projector_for_projector_message_in_meeting_id:
     type: relation
     to: meeting/default_projector_projector_message_ids
     restriction_mode: A
-  used_as_default_projector_countdowns_in_meeting_id:
+  used_as_default_projector_for_projector_countdowns_in_meeting_id:
     type: relation
     to: meeting/default_projector_projector_countdowns_ids
     restriction_mode: A
-  used_as_default_assignment_poll_in_meeting_id:
+  used_as_default_projector_for_assignment_poll_in_meeting_id:
     type: relation
     to: meeting/default_projector_assignment_poll_ids
     restriction_mode: A
-  used_as_default_motion_poll_in_meeting_id:
+  used_as_default_projector_for_motion_poll_in_meeting_id:
     type: relation
     to: meeting/default_projector_motion_poll_ids
     restriction_mode: A
-  used_as_default_poll_in_meeting_id:
+  used_as_default_projector_for_poll_in_meeting_id:
     type: relation
     to: meeting/default_projector_poll_ids
     restriction_mode: A

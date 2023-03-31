@@ -231,7 +231,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                     "meeting_id": instance["id"],
                     "used_as_reference_projector_meeting_id": instance["id"],
                     **{
-                        f"used_as_default_{name}_in_meeting_id": instance["id"]
+                        f"used_as_default_projector_for_{name}_in_meeting_id": instance["id"]
                         for name in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 }

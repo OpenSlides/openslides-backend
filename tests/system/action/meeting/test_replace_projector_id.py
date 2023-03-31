@@ -12,7 +12,7 @@ class MeetingReplaceProjectorIdTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                 },
                 "projector/11": {
-                    "used_as_default_motion_in_meeting_id": 1,
+                    "used_as_default_projector_for_motion_in_meeting_id": 1,
                 },
                 "projector/20": {
                     "used_as_reference_projector_meeting_id": 1,
@@ -30,11 +30,16 @@ class MeetingReplaceProjectorIdTest(BaseActionTestCase):
         assert meeting.get("reference_projector_id") == 20
 
         projector_11 = self.get_model("projector/11")
-        assert projector_11.get("used_as_default_motion_in_meeting_id") is None
+        assert (
+            projector_11.get("used_as_default_projector_for_motion_in_meeting_id")
+            is None
+        )
 
         projector_20 = self.get_model("projector/20")
         assert projector_20.get("used_as_reference_projector_meeting_id") == 1
-        assert projector_20.get("used_as_default_motion_in_meeting_id") == 1
+        assert (
+            projector_20.get("used_as_default_projector_for_motion_in_meeting_id") == 1
+        )
 
     def test_no_replacing(self) -> None:
         response = self.request(
@@ -46,7 +51,9 @@ class MeetingReplaceProjectorIdTest(BaseActionTestCase):
         assert meeting.get("reference_projector_id") == 20
 
         projector_11 = self.get_model("projector/11")
-        assert projector_11.get("used_as_default_motion_in_meeting_id") == 1
+        assert (
+            projector_11.get("used_as_default_projector_for_motion_in_meeting_id") == 1
+        )
 
         projector_20 = self.get_model("projector/20")
         assert projector_20.get("used_as_reference_projector_meeting_id") == 1

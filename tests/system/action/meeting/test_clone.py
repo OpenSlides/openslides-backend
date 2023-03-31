@@ -81,7 +81,7 @@ class MeetingClone(BaseActionTestCase):
                 "used_as_reference_projector_meeting_id": 1,
                 "name": "Default projector",
                 **{
-                    f"used_as_default_{name}_in_meeting_id": 1
+                    f"used_as_default_projector_for_{name}_in_meeting_id": 1
                     for name in Meeting.DEFAULT_PROJECTOR_ENUM
                 },
             },

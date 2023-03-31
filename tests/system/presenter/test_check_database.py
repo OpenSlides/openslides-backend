@@ -234,7 +234,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_logo": True,
                     "show_clock": True,
                     **{
-                        f"used_as_default_{part}_in_meeting_id": 1
+                        f"used_as_default_projector_for_{part}_in_meeting_id": 1
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },
@@ -464,7 +464,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_logo": True,
                     "show_clock": True,
                     **{
-                        f"used_as_default_{part}_in_meeting_id": 1
+                        f"used_as_default_projector_for_{part}_in_meeting_id": 1
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },
@@ -642,7 +642,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_logo": True,
                     "show_clock": True,
                     **{
-                        f"used_as_default_{part}_in_meeting_id": 1
+                        f"used_as_default_projector_for_{part}_in_meeting_id": 1
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },
@@ -732,7 +732,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_logo": True,
                     "show_clock": True,
                     **{
-                        f"used_as_default_{part}_in_meeting_id": 2
+                        f"used_as_default_projector_for_{part}_in_meeting_id": 2
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },

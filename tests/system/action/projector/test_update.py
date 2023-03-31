@@ -104,14 +104,14 @@ class ProjectorUpdate(BaseActionTestCase):
             "projector.update",
             {
                 "id": 1,
-                "used_as_default_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topics_in_meeting_id": 222,
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "projector/1",
             {
-                "used_as_default_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topics_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(
@@ -131,7 +131,7 @@ class ProjectorUpdate(BaseActionTestCase):
                 "projector/1": {
                     "name": "Projector1",
                     "meeting_id": 222,
-                    "used_as_default_topics_in_meeting_id": 222,
+                    "used_as_default_projector_for_topics_in_meeting_id": 222,
                 },
                 "projector/2": {"name": "Projector2", "meeting_id": 222},
             }
@@ -140,20 +140,20 @@ class ProjectorUpdate(BaseActionTestCase):
             "projector.update",
             {
                 "id": 2,
-                "used_as_default_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topics_in_meeting_id": 222,
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "projector/1",
             {
-                "used_as_default_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topics_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(
             "projector/2",
             {
-                "used_as_default_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topics_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(

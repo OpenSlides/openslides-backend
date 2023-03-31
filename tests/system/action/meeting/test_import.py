@@ -325,7 +325,7 @@ class MeetingImport(BaseActionTestCase):
                         "preview_projection_ids": [],
                         "history_projection_ids": [],
                         **{
-                            f"used_as_default_{name}_in_meeting_id": 1
+                            f"used_as_default_projector_for_{name}_in_meeting_id": 1
                             for name in Meeting.DEFAULT_PROJECTOR_ENUM
                         },
                         "sequential_number": 1,
