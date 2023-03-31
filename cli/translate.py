@@ -8,7 +8,7 @@ from datastore.shared.util import DeletedModelsBehaviour, fqid_from_collection_a
 from datastore.writer.core import RequestUpdateEvent, Writer, WriteRequest
 from datastore.writer.services import register_services as register_writer_services
 
-from openslides_backend.locale.translator import Translator
+from openslides_backend.i18n.translator import Translator
 from openslides_backend.models.models import Organization
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 

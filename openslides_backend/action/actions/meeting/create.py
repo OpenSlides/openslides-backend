@@ -2,8 +2,8 @@ from typing import Any, Dict, List, Type, cast
 
 from openslides_backend.models.models import Meeting
 
-from ....locale.translator import Translator
-from ....locale.translator import translate as _
+from ....i18n.translator import Translator
+from ....i18n.translator import translate as _
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid

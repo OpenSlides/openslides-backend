@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Tuple, Type
 
-from ....locale.translator import translate as _
+from ....i18n.translator import translate as _
 from ....models.models import MotionWorkflow
 from ....permissions.permissions import Permissions
 from ...action import Action

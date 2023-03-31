@@ -1,7 +1,7 @@
 from typing import Any, Dict, Iterable, List, cast
 
-from openslides_backend.locale.translator import Translator
-from openslides_backend.locale.translator import translate as _
+from openslides_backend.i18n.translator import Translator
+from openslides_backend.i18n.translator import translate as _
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,

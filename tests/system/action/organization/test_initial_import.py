@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from openslides_backend.locale.translator import Translator
+from openslides_backend.i18n.translator import Translator
 from openslides_backend.migrations import (
     assert_migration_index,
     get_backend_migration_index,

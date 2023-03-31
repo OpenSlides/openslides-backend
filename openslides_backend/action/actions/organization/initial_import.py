@@ -4,8 +4,8 @@ from datastore.shared.util import DeletedModelsBehaviour
 
 from openslides_backend.migrations import get_backend_migration_index
 
-from ....locale.translator import Translator
-from ....locale.translator import translate as _
+from ....i18n.translator import Translator
+from ....i18n.translator import translate as _
 from ....models.checker import Checker, CheckException
 from ....models.models import Organization
 from ....shared.exceptions import ActionException

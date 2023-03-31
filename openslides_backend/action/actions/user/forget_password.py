@@ -5,7 +5,7 @@ from urllib.parse import quote
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....locale.translator import translate as _
+from ....i18n.translator import translate as _
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
