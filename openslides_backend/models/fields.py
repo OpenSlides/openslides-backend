@@ -1,4 +1,3 @@
-import re
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Union, cast
@@ -7,7 +6,7 @@ import fastjsonschema
 
 from openslides_backend.shared.exceptions import ActionException
 
-from ..shared.patterns import COLOR_REGEX, ID_REGEX, Collection, FullQualifiedId
+from ..shared.patterns import COLOR_REGEX, Collection, FullQualifiedId
 from ..shared.schema import (
     decimal_schema,
     fqid_list_schema,
@@ -22,13 +21,6 @@ from ..shared.util import (
     ALLOWED_HTML_TAGS_PERMISSIVE,
     ALLOWED_HTML_TAGS_STRICT,
     validate_html,
-)
-
-TEMPLATE_FIELD_SCHEMA = fastjsonschema.compile(
-    {
-        "type": ["array", "null"],
-        "items": {"type": "string"},
-    }
 )
 
 
@@ -353,117 +345,3 @@ class OrganizationField(RelationField):
 
     def get_schema(self) -> Schema:
         return self.extend_schema(super().get_schema(), enum=[1])
-
-
-class BaseTemplateField(Field):
-    replacement_collection: Optional[Collection]
-    replacement_enum: Optional[List[str]]
-    index: int
-
-    def __init__(self, **kwargs: Any) -> None:
-        self.replacement_collection = kwargs.pop("replacement_collection", None)
-        self.replacement_enum = kwargs.pop("replacement_enum", None)
-        self.index = kwargs.pop("index")
-        super().__init__(**kwargs)
-
-    def get_own_field_name(self) -> str:
-        return self.get_template_field_name()
-
-    def get_payload_schema(
-        self, replacement_pattern: Optional[str] = None, *args: Any, **kwargs: Any
-    ) -> Schema:
-        schema = {
-            "type": "object",
-            "additionalProperties": False,
-        }
-
-        if not replacement_pattern:
-            if self.replacement_collection:
-                replacement_pattern = ID_REGEX
-            else:
-                replacement_pattern = ".*"
-        schema.update({"patternProperties": {replacement_pattern: self.get_schema()}})
-        return schema
-
-    def get_regex(self) -> str:
-        """
-        For internal usage. To find the replacement, please use [try_]get_replacement.
-        """
-        return (
-            r"^"
-            + self.own_field_name[: self.index]
-            + r"\$"
-            + r"([a-zA-Z0-9_\-]*)"
-            + self.own_field_name[self.index :]
-            + r"$"
-        )
-
-    def get_replacement(self, field_name: str) -> str:
-        replacement = self.try_get_replacement(field_name)
-        if not replacement:
-            raise ValueError(
-                f"{field_name} does not contain a valid replacement for a structured field."
-            )
-        return replacement
-
-    def get_template_field_name(self) -> str:
-        return self.get_structured_field_name("")
-
-    def get_structured_field_name(self, replacement: Any) -> str:
-        return (
-            self.own_field_name[: self.index]
-            + "$"
-            + str(replacement)
-            + self.own_field_name[self.index :]
-        )
-
-    def is_template_field(self, field_name: str) -> bool:
-        return field_name == self.get_template_field_name()
-
-    def try_get_replacement(self, field_name: str) -> Optional[str]:
-        match = re.match(self.get_regex(), field_name)
-        if not match:
-            return None
-        replacement = match.group(1)
-        if not replacement:
-            raise ValueError(
-                "You try to get the replacement of a template field: " + field_name
-            )
-        if self.replacement_collection and not replacement.isnumeric():
-            raise ValueError(
-                f"Replacements for Structured Relation Fields must be ids. Invalid replacement: {replacement}"
-            )
-        if replacement.startswith("_"):
-            raise ValueError(f"Replacements must not start with '_': {field_name}")
-        return replacement
-
-    def validate_with_schema(
-        self, fqid: FullQualifiedId, field_name: str, value: Any
-    ) -> None:
-        if self.is_template_field(field_name):
-            try:
-                TEMPLATE_FIELD_SCHEMA(value)
-            except fastjsonschema.JsonSchemaException as e:
-                raise ActionException(
-                    f"Invalid data for {fqid}/{field_name}: " + e.message
-                )
-        else:
-            super().validate_with_schema(fqid, field_name, value)
-
-
-class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
-    pass
-
-
-class TemplateRelationListField(BaseTemplateRelationField, RelationListField):
-    def get_schema(self) -> Schema:
-        schema = super().get_schema()
-        if self.constraints:
-            for key in self.constraints.keys():
-                del schema[key]
-        schema = self.extend_schema(schema, **id_list_schema)
-        if self.constraints:
-            schema["items"].update(self.constraints)
-        if not hasattr(self, "required") or not self.required:
-            schema["type"] = ["array", "null"]
-        return schema

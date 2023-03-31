@@ -84,7 +84,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         }
         assert model.get("start_line_number") == 13
         self.assert_history_information("motion/111", ["Motion updated"])
-        assert counter.calls == 4
+        assert counter.calls == 3
 
     def test_update_wrong_id(self) -> None:
         self.set_models(

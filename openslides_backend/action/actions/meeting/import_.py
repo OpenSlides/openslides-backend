@@ -12,7 +12,6 @@ from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (
     BaseGenericRelationField,
     BaseRelationField,
-    BaseTemplateField,
     GenericRelationField,
     GenericRelationListField,
     RelationField,
@@ -420,22 +419,7 @@ class MeetingImport(
                     replace_fn, entry[field]
                 )
         else:
-            if (
-                isinstance(model_field, BaseTemplateField)
-                and model_field.is_template_field(field)
-                and model_field.replacement_collection
-            ):
-                entry[field] = [
-                    str(self.replace_map[model_field.replacement_collection][int(id_)])
-                    for id_ in entry[field]
-                ]
-            elif (
-                isinstance(model_field, BaseTemplateField)
-                and model_field.is_template_field(field)
-                and not model_field.replacement_collection
-            ):
-                pass
-            elif isinstance(model_field, RelationField):
+            if isinstance(model_field, RelationField):
                 target_collection = model_field.get_target_collection()
                 if entry[field]:
                     entry[field] = self.replace_map[target_collection][entry[field]]
@@ -459,18 +443,6 @@ class MeetingImport(
                         name + KEYSEPARATOR + str(self.replace_map[name][int(id_)])
                     )
                 entry[field] = new_fqid_list
-            if (
-                isinstance(model_field, BaseTemplateField)
-                and model_field.replacement_collection
-                and not model_field.is_template_field(field)
-            ):
-                replacement = model_field.get_replacement(field)
-                id_ = int(replacement)
-                new_id_ = self.replace_map[model_field.replacement_collection][id_]
-                new_field = model_field.get_structured_field_name(new_id_)
-                tmp = entry[field]
-                del entry[field]
-                entry[new_field] = tmp
 
     def update_admin_group(self, data_json: Dict[str, Any]) -> None:
         """adds the request user to the admin group of the imported meeting"""
@@ -562,13 +534,7 @@ class MeetingImport(
                     fields: Dict[str, Any] = {}
                     for field, value in entry.items():
                         model_field = model_registry[collection]().try_get_field(field)
-                        if (
-                            isinstance(model_field, BaseTemplateField)
-                            and model_field.replacement_collection
-                            and isinstance(model_field, RelationListField)
-                        ):
-                            list_fields["add"][field] = value
-                        elif isinstance(model_field, RelationListField):
+                        if isinstance(model_field, RelationListField):
                             list_fields["add"][field] = value
                     if fields or list_fields["add"]:
                         update_events.append(

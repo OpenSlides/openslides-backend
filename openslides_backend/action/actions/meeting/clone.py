@@ -10,10 +10,7 @@ from openslides_backend.permissions.permission_helper import (
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import Event, EventType
-from openslides_backend.shared.patterns import (
-    FullQualifiedId,
-    fqid_from_collection_and_id,
-)
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
 
 from ...util.default_schema import DefaultSchema
@@ -245,29 +242,6 @@ class MeetingClone(MeetingImport):
                         },
                     ),
                 )
-
-    def field_with_meeting(self, field: str, meeting_id: int) -> str:
-        front, back = field.split("$")
-        return f"{front}${meeting_id}{back}"
-
-    def build_event_helper(
-        self,
-        fqid: FullQualifiedId,
-        meeting_id: int,
-        field_template: str,
-        model_id: int,
-    ) -> Event:
-        return self.build_event(
-            EventType.Update,
-            fqid,
-            list_fields={
-                "add": {
-                    field_template: [str(meeting_id)],
-                    self.field_with_meeting(field_template, meeting_id): [model_id],
-                },
-                "remove": {},
-            },
-        )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if instance.get("committee_id"):

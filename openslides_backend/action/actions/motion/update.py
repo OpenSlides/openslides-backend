@@ -81,7 +81,7 @@ class MotionUpdate(
                         "state_id",
                         "submitter_ids",
                         "text",
-                        "amendment_paragraph_$",
+                        "amendment_paragraph",
                     ],
                 )
             ]

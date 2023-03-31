@@ -11,7 +11,6 @@ from ....models.fields import (
     OnDelete,
     RelationField,
     RelationListField,
-    TemplateRelationListField,
 )
 from ....models.models import Meeting, User
 from ....services.datastore.commands import GetManyRequest
@@ -140,22 +139,7 @@ def add_users(
 ) -> None:
     if not user_ids:
         return
-    fields = []
-    template_fields = []
-    for field in User().get_fields():
-        if isinstance(
-            field,
-            (TemplateRelationListField,),
-        ):
-            template_fields.append(
-                (
-                    struct_field := field.get_structured_field_name(meeting_id),
-                    field.get_template_field_name(),
-                )
-            )
-            fields.append(struct_field)
-        else:
-            fields.append(field.own_field_name)
+    fields = [field.own_field_name for field in User().get_fields()]
 
     gmr = GetManyRequest(
         "user",
@@ -171,9 +155,6 @@ def add_users(
     )
 
     for user in users.values():
-        for field_name, field_template_name in template_fields:
-            if user.get(field_name):
-                user[field_template_name] = [str(meeting_id)]
         user["meeting_ids"] = [meeting_id]
         if meeting_id in (user.get("is_present_in_meeting_ids") or []):
             user["is_present_in_meeting_ids"] = [meeting_id]
