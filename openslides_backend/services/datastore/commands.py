@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Set, Union
 
 import simplejson as json
 
-from ...shared.filters import FilterBase as FilterInterface
+from ...shared.filters import _FilterBase as FilterInterface
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection
 

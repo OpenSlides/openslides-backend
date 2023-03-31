@@ -14,7 +14,7 @@ from openslides_backend.shared.patterns import (
     FullQualifiedId,
     fqid_from_collection_and_id,
 )
-from openslides_backend.shared.schema import id_list_schema
+from openslides_backend.shared.schema import id_list_schema, required_id_schema
 
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -42,7 +42,7 @@ class MeetingClone(MeetingImport):
 
     schema = DefaultSchema(Meeting()).get_default_schema(
         optional_properties=updatable_fields,
-        additional_required_fields={"meeting_id": {"type": "integer"}},
+        additional_required_fields={"meeting_id": required_id_schema},
         additional_optional_fields={
             "user_ids": id_list_schema,
             "admin_ids": id_list_schema,

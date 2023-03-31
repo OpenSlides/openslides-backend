@@ -1,4 +1,5 @@
 import time
+from collections import defaultdict
 from typing import Any, Dict, Optional
 
 from openslides_backend.shared.typing import HistoryInformation
@@ -204,13 +205,17 @@ class MotionCreateForwarded(MotionCreateBase):
             raise ActionException("State doesn't allow to forward motion.")
 
     def get_history_information(self) -> Optional[HistoryInformation]:
-        return {
-            fqid_from_collection_and_id("motion", instance["origin_id"]): [
-                "Forwarded to {}",
-                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-            ]
-            for instance in self.instances
-        } | {
+        forwarded_entries = defaultdict(list)
+        for instance in self.instances:
+            forwarded_entries[
+                fqid_from_collection_and_id("motion", instance["origin_id"])
+            ].extend(
+                [
+                    "Forwarded to {}",
+                    fqid_from_collection_and_id("meeting", instance["meeting_id"]),
+                ]
+            )
+        return forwarded_entries | {
             fqid_from_collection_and_id("motion", instance["id"]): [
                 "Motion created (forwarded)"
             ]

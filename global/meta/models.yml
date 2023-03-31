@@ -624,6 +624,18 @@ theme:
   warn_a700:
     restriction_mode: A
     type: color
+  headbar:
+    restriction_mode: A
+    type: color
+  "yes":
+    restriction_mode: A
+    type: color
+  "no":
+    restriction_mode: A
+    type: color
+  abstain:
+    restriction_mode: A
+    type: color
   theme_for_organization_id:
     restriction_mode: A
     to: organization/theme_id
@@ -1380,6 +1392,12 @@ meeting:
     default: True
     restriction_mode: B
 
+  # Topic poll
+  topic_poll_default_group_ids:
+    type: relation-list
+    to: group/used_as_topic_poll_default_id
+    restriction_mode: B
+
   # Relations
   projector_ids:
     type: relation-list
@@ -1755,6 +1773,11 @@ group:
   used_as_assignment_poll_default_id:
     type: relation
     to: meeting/assignment_poll_default_group_ids
+    restriction_mode: A
+    required: false
+  used_as_topic_poll_default_id:
+    type: relation
+    to: meeting/topic_poll_default_group_ids
     restriction_mode: A
     required: false
   used_as_poll_default_id:

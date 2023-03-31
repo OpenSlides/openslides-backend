@@ -5,6 +5,7 @@ from authlib.exceptions import InvalidCredentialsException
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
+from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -21,7 +22,7 @@ class UserForgetPasswordConfirm(UpdateAction):
         title="user forget password confirm schema",
         additional_required_fields={
             "new_password": {"type": "string"},
-            "user_id": {"type": "integer"},
+            "user_id": required_id_schema,
             "authorization_token": {"type": "string"},
         },
     )

@@ -173,6 +173,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             id_from_fqid(fqid_delegates_group)
         ]
         instance["motion_poll_default_group_ids"] = [id_from_fqid(fqid_delegates_group)]
+        instance["topic_poll_default_group_ids"] = [id_from_fqid(fqid_delegates_group)]
 
         # Add user to admin group
         if admin_ids := instance.pop("admin_ids", []):

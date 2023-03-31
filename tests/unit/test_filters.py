@@ -36,3 +36,33 @@ def test_complex_operator() -> None:
     not_ = Not(filter2)
     or_ = Or(filter1, not_)
     assert or_.to_dict() == {"or_filter": [filter1.to_dict(), not_.to_dict()]}
+
+
+def test_hash_equal_operator() -> None:
+    filter1 = FilterOperator("f", "=", 1)
+    filter2 = FilterOperator("f", "=", 1)
+    assert hash(filter1) == hash(filter2)
+
+
+def test_hash_not_equal_operator() -> None:
+    filter1 = FilterOperator("f", "=", 1)
+    filter2 = FilterOperator("f", "=", 2)
+    assert hash(filter1) != hash(filter2)
+
+
+def test_hash_equal_and() -> None:
+    filter1 = And(FilterOperator("f", "=", 1))
+    filter2 = And(FilterOperator("f", "=", 1))
+    assert hash(filter1) == hash(filter2)
+
+
+def test_hash_not_equal_and() -> None:
+    filter1 = And(FilterOperator("f", "=", 1))
+    filter2 = And(FilterOperator("f2", "=", 1))
+    assert hash(filter1) != hash(filter2)
+
+
+def test_hash_not_equal_and_or() -> None:
+    filter1 = And(FilterOperator("f", "=", 1))
+    filter2 = Or(FilterOperator("f", "=", 1))
+    assert hash(filter1) != hash(filter2)
