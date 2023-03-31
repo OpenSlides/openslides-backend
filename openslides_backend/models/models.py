@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "e61e35b136e77079342e9d121503a167"
+MODELS_YML_CHECKSUM = "acacf106054f294fa1bf4f1a3badb4f3"
 
 
 class Organization(Model):
@@ -274,6 +274,10 @@ class Theme(Model):
     warn_a200 = fields.ColorField()
     warn_a400 = fields.ColorField()
     warn_a700 = fields.ColorField()
+    headbar = fields.ColorField()
+    yes = fields.ColorField()
+    no = fields.ColorField()
+    abstain = fields.ColorField()
     theme_for_organization_id = fields.RelationField(to={"organization": "theme_id"})
     organization_id = fields.OrganizationField(
         to={"organization": "theme_ids"}, required=True

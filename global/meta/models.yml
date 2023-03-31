@@ -613,6 +613,18 @@ theme:
   warn_a700:
     restriction_mode: A
     type: color
+  headbar:
+    restriction_mode: A
+    type: color
+  "yes":
+    restriction_mode: A
+    type: color
+  "no":
+    restriction_mode: A
+    type: color
+  abstain:
+    restriction_mode: A
+    type: color
   theme_for_organization_id:
     restriction_mode: A
     to: organization/theme_id
