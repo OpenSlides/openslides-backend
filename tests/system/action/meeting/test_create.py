@@ -59,6 +59,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "is_active_in_organization_id": 1,
                 "assignment_poll_default_group_ids": [4],
                 "motion_poll_default_group_ids": [4],
+                "topic_poll_default_group_ids": [4],
                 **{
                     f"default_projector_{name}_ids": [1]
                     for name in Meeting.DEFAULT_PROJECTOR_ENUM

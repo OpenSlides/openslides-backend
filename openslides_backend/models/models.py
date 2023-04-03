@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "f51ca1724fb0b34b3a52a1eac55ec53b"
+MODELS_YML_CHECKSUM = "ea05e6b986f5ce45c5521473eb4d09eb"
 
 
 class Organization(Model):
@@ -227,6 +227,10 @@ class Theme(Model):
     warn_a200 = fields.ColorField()
     warn_a400 = fields.ColorField()
     warn_a700 = fields.ColorField()
+    headbar = fields.ColorField()
+    yes = fields.ColorField()
+    no = fields.ColorField()
+    abstain = fields.ColorField()
     theme_for_organization_id = fields.RelationField(to={"organization": "theme_id"})
     organization_id = fields.OrganizationField(
         to={"organization": "theme_ids"}, required=True
@@ -527,6 +531,9 @@ class Meeting(Model):
         default="fast", constraints={"enum": ["long", "fast"]}
     )
     poll_couple_countdown = fields.BooleanField(default=True)
+    topic_poll_default_group_ids = fields.RelationListField(
+        to={"group": "used_as_topic_poll_default_id"}
+    )
     projector_ids = fields.RelationListField(
         to={"projector": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -888,6 +895,9 @@ class Group(Model):
     )
     used_as_assignment_poll_default_id = fields.RelationField(
         to={"meeting": "assignment_poll_default_group_ids"}
+    )
+    used_as_topic_poll_default_id = fields.RelationField(
+        to={"meeting": "topic_poll_default_group_ids"}
     )
     used_as_poll_default_id = fields.RelationField(
         to={"meeting": "poll_default_group_ids"}

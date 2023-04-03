@@ -25,6 +25,36 @@ class ThemeCreateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_create_opt_fields(self) -> None:
+        response = self.request(
+            "theme.create",
+            {
+                "name": "test_Xcdfgee",
+                "primary_500": "#111222",
+                "accent_500": "#111222",
+                "warn_500": "#222333",
+                "headbar": "#333444",
+                "yes": "#333555",
+                "no": "#333666",
+                "abstain": "#333777",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "theme/1",
+            {
+                "name": "test_Xcdfgee",
+                "primary_500": "#111222",
+                "accent_500": "#111222",
+                "warn_500": "#222333",
+                "headbar": "#333444",
+                "yes": "#333555",
+                "no": "#333666",
+                "abstain": "#333777",
+                "organization_id": 1,
+            },
+        )
+
     def test_create_empty_data(self) -> None:
         response = self.request("theme.create", {})
         self.assert_status_code(response, 400)
