@@ -102,7 +102,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             meeting_users = self.datastore.filter(
                 "meeting_user",
                 filter_,
-                ["speaker_ids", "submitted_motion_ids", "assignment_candidate_ids"],
+                ["speaker_ids", "motion_submitter_ids", "assignment_candidate_ids"],
             )
             speaker_ids = []
             submitter_ids = []
@@ -110,7 +110,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             if meeting_users:
                 meeting_user = list(meeting_users.values())[0]
                 speaker_ids = meeting_user.get("speaker_ids", [])
-                submitter_ids = meeting_user.get("submitted_motion_ids", [])
+                submitter_ids = meeting_user.get("motion_submitter_ids", [])
                 candidate_ids = meeting_user.get("assignment_candidate_ids", [])
             if submitter_ids or candidate_ids or speaker_ids:
                 meetings_data.append(

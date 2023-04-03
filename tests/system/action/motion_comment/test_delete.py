@@ -109,7 +109,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": self.user_id,
-                    "submitted_motion_ids": [12],
+                    "motion_submitter_ids": [12],
                 },
             }
         )

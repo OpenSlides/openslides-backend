@@ -42,7 +42,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
                 "meeting_user/5": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "submitted_motion_ids": [12],
+                    "motion_submitter_ids": [12],
                 },
                 "meeting/1": {
                     "id": 1,

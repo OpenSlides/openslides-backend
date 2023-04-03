@@ -38,7 +38,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
             "meeting_user/5": {
                 "meeting_id": 1,
                 "user_id": 1,
-                "submitted_motion_ids": [12],
+                "motion_submitter_ids": [12],
             },
         }
 
@@ -212,7 +212,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
                 "meeting_user/1": {
                     "user_id": 1,
                     "meeting_id": 1,
-                    "submitted_motion_ids": [1],
+                    "motion_submitter_ids": [1],
                 },
                 "user/1": {"meeting_user_ids": [1]},
                 "motion_change_recommendation/1": {"meeting_id": 1, "motion_id": 110},
@@ -244,7 +244,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.permission_test_models["meeting_user/2"] = {
             "meeting_id": 1,
             "user_id": self.user_id,
-            "submitted_motion_ids": [12],
+            "motion_submitter_ids": [12],
         }
         self.permission_test_models["motion_submitter/12"]["meeting_user_id"] = 2
         self.set_models({f"user/{self.user_id}": {"meeting_user_ids": [2]}})

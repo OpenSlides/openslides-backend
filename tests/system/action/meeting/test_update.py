@@ -31,7 +31,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
                 **{
-                    f"used_as_default_{name}_in_meeting_id": 1
+                    f"used_as_default_projector_for_{name}_in_meeting_id": 1
                     for name in Meeting.DEFAULT_PROJECTOR_ENUM
                 },
             },
@@ -61,7 +61,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     **{
-                        f"used_as_default_{name}_in_meeting_id": 1
+                        f"used_as_default_projector_for_{name}_in_meeting_id": 1
                         for name in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },
@@ -153,16 +153,16 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "projector/1",
             {
                 "used_as_reference_projector_meeting_id": None,
-                "used_as_default_topics_in_meeting_id": None,
-                "used_as_default_motion_in_meeting_id": 1,
+                "used_as_default_projector_for_topics_in_meeting_id": None,
+                "used_as_default_projector_for_motion_in_meeting_id": 1,
             },
         )
         self.assert_model_exists(
             "projector/2",
             {
                 "used_as_reference_projector_meeting_id": 1,
-                "used_as_default_topics_in_meeting_id": 1,
-                "used_as_default_motion_in_meeting_id": None,
+                "used_as_default_projector_for_topics_in_meeting_id": 1,
+                "used_as_default_projector_for_motion_in_meeting_id": None,
             },
         )
 

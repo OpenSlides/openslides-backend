@@ -10,7 +10,7 @@ class ProjectorDelete(BaseActionTestCase):
                 "projector/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 1,
-                    "used_as_default_motion_in_meeting_id": 1,
+                    "used_as_default_projector_for_motion_in_meeting_id": 1,
                 },
                 "projector/113": {
                     "name": "name_test1",
@@ -35,7 +35,7 @@ class ProjectorDelete(BaseActionTestCase):
         self.assert_model_exists(
             "projector/113",
             {
-                "used_as_default_motion_in_meeting_id": 1,
+                "used_as_default_projector_for_motion_in_meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
             },
         )

@@ -135,7 +135,7 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         self.test_models["meeting_user/1"] = {
             "meeting_id": 1,
             "user_id": self.user_id,
-            "submitted_motion_ids": [777],
+            "motion_submitter_ids": [777],
         }
         self.set_models(self.test_models)
         response = self.request(

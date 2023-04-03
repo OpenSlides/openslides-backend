@@ -93,7 +93,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "meeting_id": 1,
                     "user_id": 1,
                     "speaker_ids": [4],
-                    "submitted_motion_ids": [2],
+                    "motion_submitter_ids": [2],
                     "assignment_candidate_ids": [3],
                 },
             }
@@ -131,14 +131,14 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "meeting_id": 1,
                     "user_id": 1,
                     "speaker_ids": [4],
-                    "submitted_motion_ids": [2],
+                    "motion_submitter_ids": [2],
                     "assignment_candidate_ids": [3],
                 },
                 "meeting_user/2": {
                     "meeting_id": 1,
                     "user_id": 2,
                     "speaker_ids": [5],
-                    "submitted_motion_ids": [3],
+                    "motion_submitter_ids": [3],
                     "assignment_candidate_ids": [4],
                 },
             }
@@ -188,7 +188,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "meeting_user/1": {
                     "meeting_id": 1,
                     "user_id": 1,
-                    "submitted_motion_ids": [2],
+                    "motion_submitter_ids": [2],
                 },
             }
         )

@@ -745,6 +745,36 @@ class UserCreateActionTest(BaseActionTestCase):
                 "vote_delegated_to_id": 4,
             },
         )
+        self.assert_model_exists(
+            "meeting_user/4",
+            {
+                "meeting_id": 1,
+                "user_id": 7,
+                "number": "number1",
+                "structure_level": "structure_level 1",
+                "vote_weight": "12.002345",
+                "about_me": "about me 1",
+                "comment": "comment for meeting/1",
+                "vote_delegations_from_ids": [2, 3],
+                "group_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "meeting_id": 1,
+                "user_id": 5,
+                "vote_delegated_to_id": 4,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/3",
+            {
+                "meeting_id": 1,
+                "user_id": 6,
+                "vote_delegated_to_id": 4,
+            },
+        )
 
     def test_create_permission_group_B_user_can_manage_no_permission(self) -> None:
         """Group B fields needs explicit user.can_manage permission for meeting"""

@@ -81,7 +81,7 @@ class MeetingClone(BaseActionTestCase):
                 "used_as_reference_projector_meeting_id": 1,
                 "name": "Default projector",
                 **{
-                    f"used_as_default_{name}_in_meeting_id": 1
+                    f"used_as_default_projector_for_{name}_in_meeting_id": 1
                     for name in Meeting.DEFAULT_PROJECTOR_ENUM
                 },
             },
@@ -229,7 +229,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_user/3": {
                     "user_id": 11,
                     "meeting_id": 1,
-                    "submitted_motion_ids": [1],
+                    "motion_submitter_ids": [1],
                     "group_ids": [1],
                 },
             }
@@ -1201,7 +1201,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("user/1", {"meeting_user_ids": [1]})
         self.assert_model_exists(
             "meeting_user/1",
-            {"meeting_id": 1, "user_id": 1, "submitted_motion_ids": [1]},
+            {"meeting_id": 1, "user_id": 1, "motion_submitter_ids": [1]},
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)

@@ -325,7 +325,7 @@ class MeetingImport(BaseActionTestCase):
                         "preview_projection_ids": [],
                         "history_projection_ids": [],
                         **{
-                            f"used_as_default_{name}_in_meeting_id": 1
+                            f"used_as_default_projector_for_{name}_in_meeting_id": 1
                             for name in Meeting.DEFAULT_PROJECTOR_ENUM
                         },
                         "sequential_number": 1,
@@ -503,7 +503,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "user_id": 1,
                         "personal_note_ids": [1],
-                        "submitted_motion_ids": [],
+                        "motion_submitter_ids": [],
                         "structure_level": "meeting freak",
                         "group_ids": [1],
                     },
@@ -580,7 +580,7 @@ class MeetingImport(BaseActionTestCase):
                 "user_id": 2,
                 "structure_level": "meeting freak",
                 "personal_note_ids": [1],
-                "submitted_motion_ids": [],
+                "motion_submitter_ids": [],
                 "group_ids": [2],
             },
         )
@@ -859,7 +859,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "user_id": 1,
                         "personal_note_ids": [1],
-                        "submitted_motion_ids": [],
+                        "motion_submitter_ids": [],
                         "group_ids": [1],
                     },
                 },
@@ -1882,7 +1882,7 @@ class MeetingImport(BaseActionTestCase):
                     "meeting_id": 1,
                     "user_id": 14,
                     "personal_note_ids": [1],
-                    "submitted_motion_ids": [],
+                    "motion_submitter_ids": [],
                     "vote_delegated_to_id": 1,
                 },
                 "personal_note/1": {
@@ -1944,7 +1944,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "user_id": 12,
                         "personal_note_ids": [1],
-                        "submitted_motion_ids": [],
+                        "motion_submitter_ids": [],
                         "vote_delegated_to_id": 13,
                     },
                     "13": {
@@ -1952,7 +1952,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "user_id": 13,
                         "personal_note_ids": [2],
-                        "submitted_motion_ids": [],
+                        "motion_submitter_ids": [],
                         "vote_delegations_from_ids": [12],
                     },
                 },

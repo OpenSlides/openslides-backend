@@ -172,7 +172,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         self.permission_test_models["meeting_user/1"] = {
             "meeting_id": 1,
             "user_id": self.user_id,
-            "submitted_motion_ids": [1234],
+            "motion_submitter_ids": [1234],
         }
         self.set_models(self.permission_test_models)
         response = self.request(
@@ -188,7 +188,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
             "meeting_user/1",
             {
                 "group_ids": [3],
-                "submitted_motion_ids": [1234],
+                "motion_submitter_ids": [1234],
                 "meeting_id": 1,
                 "user_id": 2,
             },

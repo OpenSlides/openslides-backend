@@ -234,7 +234,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_logo": True,
                     "show_clock": True,
                     **{
-                        f"used_as_default_{part}_in_meeting_id": 1
+                        f"used_as_default_projector_for_{part}_in_meeting_id": 1
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },
@@ -395,7 +395,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "meeting_user/13": {
                     "user_id": 3,
                     "meeting_id": 1,
-                    "submitted_motion_ids": [5],
+                    "motion_submitter_ids": [5],
                     "group_ids": [1],
                 },
                 "meeting_user/14": {
@@ -464,7 +464,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_logo": True,
                     "show_clock": True,
                     **{
-                        f"used_as_default_{part}_in_meeting_id": 1
+                        f"used_as_default_projector_for_{part}_in_meeting_id": 1
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },
@@ -642,7 +642,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_logo": True,
                     "show_clock": True,
                     **{
-                        f"used_as_default_{part}_in_meeting_id": 1
+                        f"used_as_default_projector_for_{part}_in_meeting_id": 1
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },
@@ -732,7 +732,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "show_logo": True,
                     "show_clock": True,
                     **{
-                        f"used_as_default_{part}_in_meeting_id": 2
+                        f"used_as_default_projector_for_{part}_in_meeting_id": 2
                         for part in Meeting.DEFAULT_PROJECTOR_ENUM
                     },
                 },
