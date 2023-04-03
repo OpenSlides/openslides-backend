@@ -1,8 +1,11 @@
+from time import time
 from typing import Any, Dict
 
 from ....models.models import ActionWorker
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
+from ....shared.interfaces.event import Event, EventType
+from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...action import Action
@@ -41,6 +44,23 @@ class TopicImport(DuplicateCheckMixin, Action):
             and not self.check_for_duplicate(entry["data"]["title"])
         ]
         self.execute_other_action(TopicCreate, action_payload)
+        timestamp = int(time())
+        self.datastore.write_action_worker(
+            WriteRequest(
+                events=[
+                    Event(
+                        type=EventType.Update,
+                        fqid=fqid_from_collection_and_id("action_worker", store_id),
+                        fields={
+                            "timestamp": timestamp,
+                            "state": "end",
+                        },
+                    )
+                ],
+                user_id=self.user_id,
+                locked_fields={},
+            )
+        )
         return {}
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:

@@ -1,4 +1,5 @@
 from enum import Enum
+from time import time
 from typing import Any, Dict, Optional
 
 import fastjsonschema
@@ -94,6 +95,7 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
         # store rows in the action_worker
         self.new_store_id = self.datastore.reserve_id(collection="action_worker")
         fqid = fqid_from_collection_and_id("action_worker", self.new_store_id)
+        time_created = int(time())
         self.datastore.write_action_worker(
             WriteRequest(
                 events=[
@@ -103,6 +105,9 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
                         fields={
                             "id": self.new_store_id,
                             "result": {"import": "topic", "rows": self.rows},
+                            "created": time_created,
+                            "timestamp": time_created,
+                            "state": "running",
                         },
                     )
                 ],

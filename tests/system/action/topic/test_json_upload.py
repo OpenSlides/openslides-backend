@@ -1,3 +1,5 @@
+from time import time
+
 from openslides_backend.action.actions.topic.json_upload import ImportStatus
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -13,6 +15,7 @@ class TopicJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_agenda_data(self) -> None:
+        start_time = int(time())
         response = self.request(
             "topic.json_upload",
             {
@@ -27,6 +30,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 ],
             },
         )
+        end_time = int(time())
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "status": ImportStatus.NEW,
@@ -39,6 +43,9 @@ class TopicJsonUpload(BaseActionTestCase):
                 "agenda_duration": 50,
             },
         }
+        worker = self.assert_model_exists("action_worker/1", {"state": "running"})
+        assert start_time <= worker.get("created", -1) <= end_time
+        assert start_time <= worker.get("timestamp", -1) <= end_time
 
     def test_json_upload_wrong_data(self) -> None:
         response = self.request(
