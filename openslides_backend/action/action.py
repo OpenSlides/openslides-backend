@@ -97,6 +97,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     history_information: Optional[str] = None
     history_relation_field: Optional[str] = None
     add_self_history_information: bool = False
+    own_history_information_first: bool = False
 
     relation_manager: RelationManager
 
@@ -431,9 +432,14 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         information = self.get_history_information()
         if self.cascaded_actions_history or information:
-            return merge_history_informations(
-                self.cascaded_actions_history, information or {}
-            )
+            if self.own_history_information_first:
+                return merge_history_informations(
+                    information, self.cascaded_actions_history
+                )
+            else:
+                return merge_history_informations(
+                    self.cascaded_actions_history, information
+                )
         else:
             return None
 
@@ -711,12 +717,16 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
 
 def merge_history_informations(
-    a: HistoryInformation, *other: HistoryInformation
+    a: Optional[HistoryInformation], *other: Optional[HistoryInformation]
 ) -> HistoryInformation:
     """
     Merges multiple history informations. All latter ones are merged into the first one.
     """
+    if a is None:
+        a = {}
     for b in other:
+        if b is None:
+            b = {}
         for fqid, information in b.items():
             if fqid in a:
                 a[fqid].extend(information)

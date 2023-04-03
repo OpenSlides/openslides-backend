@@ -1,3 +1,8 @@
+from typing import Optional
+
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from openslides_backend.shared.typing import HistoryInformation
+
 from ....models.models import MeetingUser
 from ....permissions.permissions import Permissions
 from ...generics.delete import DeleteAction
@@ -14,3 +19,13 @@ class MeetingUserDelete(DeleteAction):
     model = MeetingUser()
     schema = DefaultSchema(MeetingUser()).get_delete_schema()
     permission = Permissions.User.CAN_MANAGE
+
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        users = self.get_instances_with_fields(["user_id", "meeting_id"])
+        return {
+            fqid_from_collection_and_id("user", user["user_id"]): [
+                "Participant removed from meeting {}",
+                fqid_from_collection_and_id("meeting", user["meeting_id"]),
+            ]
+            for user in users
+        }

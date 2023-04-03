@@ -1,5 +1,8 @@
 from typing import Any, Dict
 
+from openslides_backend.action.actions.meeting_user.mixin import MeetingUserHistoryMixin
+from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+
 from ....models.models import MeetingUser
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
@@ -12,7 +15,7 @@ from .create import MeetingUserCreate
 
 
 @register_action("meeting_user.set_data", action_type=ActionType.BACKEND_INTERNAL)
-class MeetingUserSetData(UpdateAction):
+class MeetingUserSetData(MeetingUserHistoryMixin, ExtendHistoryMixin, UpdateAction):
     """
     Action to create, update or delete a meeting_user.
     """
@@ -33,6 +36,7 @@ class MeetingUserSetData(UpdateAction):
             "group_ids",
         ],
     )
+    extend_history_to = "user_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_id = instance.pop("meeting_id", None)
