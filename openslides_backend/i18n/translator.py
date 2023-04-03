@@ -1,9 +1,10 @@
-from babel.messages.pofile import read_po
-from babel.messages.catalog import Catalog
 from pathlib import Path
 from typing import Dict, List, Optional
 
-DEFAULT_LANGUAGE = "en_US"
+from babel.messages.catalog import Catalog
+from babel.messages.pofile import read_po
+
+DEFAULT_LANGUAGE = "en"
 
 
 class _Translator:
@@ -16,10 +17,16 @@ class _Translator:
         for file in path.glob("*.po"):
             with file.open("r") as f:
                 self.translations[file.stem] = read_po(f)
+        # empty catalog for en since it is not used anyway
+        self.translations[DEFAULT_LANGUAGE] = Catalog()
         self.current_language = DEFAULT_LANGUAGE
 
     def translate(self, msg: str) -> str:
-        return self.translations[self.current_language].get(msg)
+        translation = self.translations[self.current_language].get(msg)
+        if translation:
+            return translation.string
+        else:
+            return msg
 
     def set_translation_language(self, lang_header: Optional[str]) -> None:
         langs = []
@@ -41,16 +48,16 @@ class _Translator:
             parts = language.split(";")
             lang = parts[0]
             if len(parts) == 1:
-                q = 1
+                q = 1.0
             else:
                 # quantity is given in the form of "q=*"
                 q = float(parts[1].split("=")[1])
             # extract language code from string - may be suffixed by a region
             code = lang.split("_")[0]
-            code = lang.split("-")[0]
+            code = code.split("-")[0]
             result.append((q, code))
         # sort by quality value and return only the codes
-        return map(lambda x: x[1], sorted(result))
+        return [t[1] for t in sorted(result)]
 
 
 Translator = _Translator()
