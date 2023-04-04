@@ -26,30 +26,32 @@ class TopicImport(DuplicateCheckMixin, Action):
     schema = DefaultSchema(ActionWorker()).get_default_schema(
         additional_required_fields={
             "id": required_id_schema,
+            "import": {"type": "boolean"},
         }
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         store_id = instance["id"]
-        meeting_id = self.get_meeting_id(instance)
-        self.init_duplicate_set(meeting_id)
-        worker = self.datastore.get(
-            fqid_from_collection_and_id("action_worker", store_id),
-            ["result"],
-            lock_result=False,
-        )
-        action_payload = [
-            entry["data"]
-            for entry in worker.get("result", {}).get("rows", [])
-            if (
-                entry["status"] == ImportStatus.NEW
-                or entry["status"] == ImportStatus.ERROR
-                and entry["error"] == ["Duplicate"]
+        if instance["import"]:
+            meeting_id = self.get_meeting_id(instance)
+            self.init_duplicate_set(meeting_id)
+            worker = self.datastore.get(
+                fqid_from_collection_and_id("action_worker", store_id),
+                ["result"],
+                lock_result=False,
             )
-            and not self.check_for_duplicate(entry["data"]["title"])
-        ]
-        self.execute_other_action(TopicCreate, action_payload)
+            action_payload = [
+                entry["data"]
+                for entry in worker.get("result", {}).get("rows", [])
+                if (
+                    entry["status"] == ImportStatus.NEW
+                    or entry["status"] == ImportStatus.ERROR
+                    and entry["error"] == ["Duplicate"]
+                )
+                and not self.check_for_duplicate(entry["data"]["title"])
+            ]
+            self.execute_other_action(TopicCreate, action_payload)
         return instance
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
