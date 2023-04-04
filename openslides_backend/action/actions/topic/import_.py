@@ -35,12 +35,18 @@ class TopicImport(DuplicateCheckMixin, Action):
         meeting_id = self.get_meeting_id(instance)
         self.init_duplicate_set(meeting_id)
         worker = self.datastore.get(
-            fqid_from_collection_and_id("action_worker", store_id), ["result"]
+            fqid_from_collection_and_id("action_worker", store_id),
+            ["result"],
+            lock_result=False,
         )
         action_payload = [
             entry["data"]
             for entry in worker.get("result", {}).get("rows", [])
-            if entry["status"] == ImportStatus.NEW
+            if (
+                entry["status"] == ImportStatus.NEW
+                or entry["status"] == ImportStatus.ERROR
+                and entry["error"] == ["Duplicate"]
+            )
             and not self.check_for_duplicate(entry["data"]["title"])
         ]
         self.execute_other_action(TopicCreate, action_payload)
@@ -55,7 +61,9 @@ class TopicImport(DuplicateCheckMixin, Action):
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         store_id = instance["id"]
         worker = self.datastore.get(
-            fqid_from_collection_and_id("action_worker", store_id), ["result"]
+            fqid_from_collection_and_id("action_worker", store_id),
+            ["result"],
+            lock_result=False,
         )
         if worker.get("result", {}).get("import") == "topic":
             return next(iter(worker["result"]["rows"]))["data"]["meeting_id"]
@@ -82,4 +90,5 @@ class TopicImport(DuplicateCheckMixin, Action):
                         locked_fields={},
                     )
                 )
+
         return on_success

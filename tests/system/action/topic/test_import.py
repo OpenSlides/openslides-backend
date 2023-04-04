@@ -45,3 +45,52 @@ class TopicJsonImport(BaseActionTestCase):
         response = self.request("topic.import", {"id": 2})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("topic/2")
+
+    def test_import_dublicates_in_db_2(self) -> None:
+        self.set_models(
+            {
+                "topic/1": {"title": "test", "meeting_id": 22},
+                "meeting/22": {"topic_ids": [1]},
+            }
+        )
+        response = self.request(
+            "topic.json_upload",
+            {
+                "meeting_id": 22,
+                "data": [
+                    {
+                        "title": "test",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("action_worker/3")
+        response = self.request("topic.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("topic/1")
+        response = self.request("topic.import", {"id": 3})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("topic/2", {"title": "test"})
+
+    def test_import_with_upload(self) -> None:
+        response = self.request(
+            "topic.json_upload",
+            {
+                "meeting_id": 22,
+                "data": [
+                    {
+                        "title": "another title",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("action_worker/3")
+        response = self.request("topic.import", {"id": 3})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "topic/1", {"title": "another title", "meeting_id": 22}
+        )
+        self.assert_model_exists("meeting/22", {"topic_ids": [1]})
+        self.assert_model_exists("action_worker/3", {"result": None})
