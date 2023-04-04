@@ -1,5 +1,4 @@
-from time import time
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 from ....models.models import ActionWorker
 from ....permissions.permissions import Permissions
@@ -11,6 +10,7 @@ from ....shared.schema import required_id_schema
 from ...action import Action
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from .create import TopicCreate
 from .json_upload import ImportStatus
 from .mixins import DuplicateCheckMixin
@@ -44,24 +44,7 @@ class TopicImport(DuplicateCheckMixin, Action):
             and not self.check_for_duplicate(entry["data"]["title"])
         ]
         self.execute_other_action(TopicCreate, action_payload)
-        timestamp = int(time())
-        self.datastore.write_action_worker(
-            WriteRequest(
-                events=[
-                    Event(
-                        type=EventType.Update,
-                        fqid=fqid_from_collection_and_id("action_worker", store_id),
-                        fields={
-                            "timestamp": timestamp,
-                            "state": "end",
-                        },
-                    )
-                ],
-                user_id=self.user_id,
-                locked_fields={},
-            )
-        )
-        return {}
+        return instance
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
         return {}
@@ -77,3 +60,26 @@ class TopicImport(DuplicateCheckMixin, Action):
         if worker.get("result", {}).get("import") == "topic":
             return next(iter(worker["result"]["rows"]))["data"]["meeting_id"]
         raise ActionException("Import data cannot be found.")
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
+        def on_success() -> None:
+            for instance in action_data:
+                store_id = instance["id"]
+                self.datastore.write_action_worker(
+                    WriteRequest(
+                        events=[
+                            Event(
+                                type=EventType.Update,
+                                fqid=fqid_from_collection_and_id(
+                                    "action_worker", store_id
+                                ),
+                                fields={
+                                    "result": None,
+                                },
+                            )
+                        ],
+                        user_id=self.user_id,
+                        locked_fields={},
+                    )
+                )
+        return on_success
