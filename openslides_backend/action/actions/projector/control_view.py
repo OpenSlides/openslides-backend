@@ -50,6 +50,7 @@ class ProjectorControlView(UpdateAction):
             new_value = projector.get(field, 0) - step
         else:
             raise ActionException(f"Unknown direction {direction}")
-
+        if field == "scroll" and new_value < 0:
+            new_value = 0
         instance[field] = new_value
         return instance
