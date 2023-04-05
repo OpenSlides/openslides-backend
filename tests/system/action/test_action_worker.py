@@ -1,13 +1,20 @@
 from datetime import datetime
 from threading import Lock, Thread
+from time import sleep
 from typing import Any, Dict, List, Tuple
 
 import pytest
 
+from openslides_backend.shared.interfaces.event import Event, EventType
+from openslides_backend.shared.interfaces.write_request import WriteRequest
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from tests.system.action.base import BaseActionTestCase
 
 
 class ActionWorkerTest(BaseActionTestCase):
+    start1: datetime
+    end1: datetime
+
     def setUp(self) -> None:
         super().setUp()
         self.set_models(
@@ -157,10 +164,34 @@ class ActionWorkerTest(BaseActionTestCase):
             "motion_statute_paragraph": {"text": "text"},
         }
 
+        def thread_method(self: ActionWorkerTest, collection: str) -> None:
+            for i in range(1, self.number):
+                data = {
+                    "title": f"title{i}",
+                    "meeting_id": 222,
+                    **self.collection_types[collection],
+                }
+                response = self.request(f"{collection}.create", data)
+                with self.lock:
+                    if response.status_code != 200:
+                        self.result_list.append(
+                            (
+                                f"{collection}/{i}",
+                                response.status_code,
+                                response.json["message"],
+                            )
+                        )
+
         start = datetime.now()
         threads = []
         for collection in self.collection_types:
-            thread = Thread(target=self.thread_method, args=(collection,))
+            thread = Thread(
+                target=thread_method,
+                args=(
+                    self,
+                    collection,
+                ),
+            )
             thread.start()
             threads.append(thread)
 
@@ -169,20 +200,93 @@ class ActionWorkerTest(BaseActionTestCase):
         print(f"Runtime: {datetime.now() - start}")
         assert not self.result_list
 
-    def thread_method(self, collection: str) -> None:
-        for i in range(1, self.number):
-            data = {
-                "title": f"title{i}",
-                "meeting_id": 222,
-                **self.collection_types[collection],
-            }
-            response = self.request(f"{collection}.create", data)
+    def test_action_worker_create_action_worker_during_running_db_action(self) -> None:
+        self.user_id = 1
+        self.lock = Lock()
+        self.number = 100
+
+        def thread_method(self: ActionWorkerTest) -> None:
             with self.lock:
-                if response.status_code != 200:
-                    self.result_list.append(
-                        (
-                            f"{collection}/{i}",
-                            response.status_code,
-                            response.json["message"],
+                data = [
+                    {
+                        "title": f"title{i}",
+                        "meeting_id": 222,
+                        "text": "text",
+                    }
+                    for i in range(1, self.number)
+                ]
+                self.start1 = datetime.now()
+            self.request_multi("motion_statute_paragraph.create", data)
+            self.end1 = datetime.now()
+
+        thread = Thread(target=thread_method, args=(self,))
+        thread.start()
+        sleep(0.1)
+
+        with self.lock:
+            start2 = datetime.now()
+            self.new_id = self.datastore.reserve_id("action_worker")
+            self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
+            self.datastore.write_action_worker(
+                WriteRequest(
+                    events=[
+                        Event(
+                            type=EventType.Create,
+                            fqid=self.fqid,
+                            fields={
+                                "id": self.new_id,
+                                "name": "test",
+                                "state": "running",
+                            },
                         )
-                    )
+                    ],
+                    user_id=self.user_id,
+                    locked_fields={},
+                )
+            )
+            end2 = datetime.now()
+        thread.join()
+        self.assert_model_exists(
+            "action_worker/1", {"name": "test", "state": "running"}
+        )
+        assert (
+            self.start1 < start2 and self.end1 > end2
+        ), "action_worker.create run outside of thread requests time intervall"
+
+    def test_action_worker_delete_by_ids(self) -> None:
+        self.user_id = 1
+        new_ids = self.datastore.reserve_ids("action_worker", amount=3)
+        for new_id in new_ids:
+            self.datastore.write_action_worker(
+                WriteRequest(
+                    events=[
+                        Event(
+                            type=EventType.Create,
+                            fqid=fqid_from_collection_and_id("action_worker", new_id),
+                            fields={
+                                "id": new_id,
+                                "name": "test",
+                                "state": "running",
+                            },
+                        )
+                    ],
+                    user_id=self.user_id,
+                    locked_fields={},
+                )
+            )
+            self.assert_model_exists(
+                f"action_worker/{new_id}", {"name": "test", "state": "running"}
+            )
+
+        self.datastore.write_action_worker(
+            WriteRequest(
+                events=[
+                    Event(type=EventType.Delete, fqid=f"action_worker/{new_id}")
+                    for new_id in new_ids
+                ],
+                user_id=self.user_id,
+                locked_fields={},
+            )
+        )
+        for new_id in new_ids:
+            self.assert_model_not_exists(f"action_worker/{new_id}")
