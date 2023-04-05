@@ -3314,6 +3314,7 @@ projector:
   scroll:
     type: number
     default: 0
+    minimum: 0
     restriction_mode: A
   width:
     type: number
