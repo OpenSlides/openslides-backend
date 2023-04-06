@@ -79,9 +79,8 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
-        itemCount, itemNew, itemError = 0, 0, 0
+        itemCount, itemNew, itemError = len(self.rows), 0, 0
         for entry in self.rows:
-            itemCount += 1
             if entry["status"] == ImportStatus.NEW:
                 itemNew += 1
             if entry["status"] == ImportStatus.ERROR:
