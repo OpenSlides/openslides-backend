@@ -13,5 +13,6 @@ class DuplicateCheckMixin(Action):
 
     def check_for_duplicate(self, title: str) -> bool:
         result = title in self.all_titles_in_meeting
-        self.all_titles_in_meeting.add(title)
+        if not result:
+            self.all_titles_in_meeting.add(title)
         return result
