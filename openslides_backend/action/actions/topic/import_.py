@@ -79,13 +79,10 @@ class TopicImport(DuplicateCheckMixin, Action):
                     WriteRequest(
                         events=[
                             Event(
-                                type=EventType.Update,
+                                type=EventType.Delete,
                                 fqid=fqid_from_collection_and_id(
                                     "action_worker", store_id
                                 ),
-                                fields={
-                                    "result": None,
-                                },
                             )
                         ],
                         user_id=self.user_id,

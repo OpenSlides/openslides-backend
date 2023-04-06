@@ -33,13 +33,13 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("topic/1", {"title": "test", "meeting_id": 22})
         self.assert_model_exists("meeting/22", {"topic_ids": [1]})
-        self.assert_model_exists("action_worker/2", {"result": None})
+        self.assert_model_not_exists("action_worker/2")
 
     def test_import_abort(self) -> None:
         response = self.request("topic.import", {"id": 2, "import": False})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("topic/1")
-        self.assert_model_exists("action_worker/2", {"result": None})
+        self.assert_model_not_exists("action_worker/2")
 
     def test_import_duplicates_in_db(self) -> None:
         self.set_models(
@@ -99,4 +99,4 @@ class TopicJsonImport(BaseActionTestCase):
             "topic/1", {"title": "another title", "meeting_id": 22}
         )
         self.assert_model_exists("meeting/22", {"topic_ids": [1]})
-        self.assert_model_exists("action_worker/3", {"result": None})
+        self.assert_model_not_exists("action_worker/3")

@@ -9,7 +9,6 @@ class DuplicateCheckMixin(Action):
             for values in self.datastore.filter(
                 "topic", FilterOperator("meeting_id", "=", meeting_id), ["title"]
             ).values()
-            if values.get("title")
         )
 
     def check_for_duplicate(self, title: str) -> bool:
