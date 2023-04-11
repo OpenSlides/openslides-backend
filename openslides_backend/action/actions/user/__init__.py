@@ -13,5 +13,6 @@ from . import (  # noqa
     set_present,
     toggle_presence_by_number,
     update,
+    update_saml_account,
     update_self,
 )

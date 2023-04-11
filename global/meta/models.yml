@@ -200,6 +200,13 @@ user:
     type: string
     required: true
     restriction_mode: A
+  saml_id:
+    type: string
+    restriction_mode: A
+  single_sign_on_only:
+    type: boolean
+    default: false
+    restriction_mode: A
   pronoun:
     type: string
     restriction_mode: A
