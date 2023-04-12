@@ -1,6 +1,8 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MeetingUser
 from ....permissions.permissions import Permissions
@@ -38,3 +40,33 @@ class MeetingUserCreate(MeetingUserMixin, CreateAction):
                 f"MeetingUser instance with user {instance['user_id']} and meeting {instance['meeting_id']} already exists"
             )
         return super().update_instance(instance)
+
+    def get_history_information(self) -> Optional[HistoryInformation]:
+        information = {}
+        for instance in self.instances:
+            instance_information = []
+            if "group_ids" in instance:
+                if len(instance["group_ids"]) == 1:
+                    instance_information.extend(
+                        [
+                            "Participant added to group {} in meeting {}",
+                            fqid_from_collection_and_id(
+                                "group", instance["group_ids"][0]
+                            ),
+                        ]
+                    )
+                else:
+                    instance_information.append(
+                        "Participant added to multiple groups in meeting {}",
+                    )
+            else:
+                instance_information.append(
+                    "Participant added to meeting {}",
+                )
+            instance_information.append(
+                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
+            )
+            information[
+                fqid_from_collection_and_id("user", instance["user_id"])
+            ] = instance_information
+        return information

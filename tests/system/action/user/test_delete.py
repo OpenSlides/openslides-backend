@@ -12,6 +12,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("user/111")
+        self.assert_history_information("user/111", ["Account deleted"])
 
     def test_delete_wrong_id(self) -> None:
         self.create_model("user/112", {"username": "username_srtgb123"})
@@ -61,6 +62,10 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_model_deleted("meeting_user/1111", {"group_ids": [456]})
         self.assert_model_exists("group/456", {"user_ids": None})
+        self.assert_history_information(
+            "user/111",
+            ["Participant removed from meeting {}", "meeting/42", "Account deleted"],
+        )
 
     def test_delete_with_speaker(self) -> None:
         self.set_models(

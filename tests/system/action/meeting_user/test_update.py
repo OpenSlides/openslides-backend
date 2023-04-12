@@ -15,6 +15,7 @@ class MeetingUserUpdate(BaseActionTestCase):
                     "personal_note_ids": [11],
                     "speaker_ids": [12],
                     "committee_id": 1,
+                    "default_group_id": 22,
                 },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
                 "personal_note/11": {"star": True, "meeting_id": 10},
@@ -26,6 +27,7 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "chat_message/13": {"meeting_id": 10},
                 "vote/20": {"meeting_id": 10},
                 "group/21": {"meeting_id": 10},
+                "group/22": {"meeting_id": 10, "default_group_for_meeting_id": 10},
             }
         )
         test_dict = {

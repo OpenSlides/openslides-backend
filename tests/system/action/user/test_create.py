@@ -27,6 +27,7 @@ class UserCreateActionTest(BaseActionTestCase):
         assert self.auth.is_equals(
             model.get("default_password", ""), model.get("password", "")
         )
+        self.assert_history_information("user/2", ["Account created"])
 
     def test_create_first_and_last_name(self) -> None:
         response = self.request(
@@ -115,6 +116,10 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "committee/79", {"meeting_ids": [111], "user_ids": [2]}
         )
+        self.assert_history_information(
+            "user/2",
+            ["Account created", "Participant added to meeting {}", "meeting/111"],
+        )
 
     def test_create_comment(self) -> None:
         self.set_models(
@@ -145,7 +150,7 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Transfer data need meeting_id." in response.json["message"]
+        assert "Transfer data needs meeting_id." in response.json["message"]
 
     def test_create_with_meeting_user_fields(self) -> None:
         self.set_models(

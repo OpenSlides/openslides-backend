@@ -142,11 +142,11 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_history_information(
-            "user/223",
+            "user/22",
             [
-                "Participant data updated in multiple meetings",
-                "Participant added to multiple groups in multiple meetings",
-                "Committee Management Level changed",
+                "Participant added to meeting {}",
+                "meeting/1",
+                "Committee management changed",
             ],
         )
 
@@ -233,11 +233,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/111",
             [
-                "Personal data changed",
                 "Participant removed from group {} in meeting {}",
                 "group/600",
                 "meeting/60",
-                "Committee Management Level changed",
+                "Personal data changed",
+                "Committee management changed",
             ],
         )
 
@@ -1582,8 +1582,15 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_history_user_updated_in_meeting(self) -> None:
         self.set_models(
             {
-                "user/111": {"username": "user111"},
-                "meeting/110": {"is_active_in_organization_id": 1},
+                "user/111": {"username": "user111", "meeting_user_ids": [10]},
+                "meeting/110": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [10],
+                },
+                "meeting_user/10": {
+                    "user_id": 111,
+                    "meeting_id": 110,
+                },
             }
         )
         response = self.request(
@@ -1603,27 +1610,47 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.create_meeting(base=10)
         user_id = self.create_user(username="test")
-        self.set_user_groups(user_id, [10, 11, 12])
+        self.set_user_groups(user_id, [2, 10, 11, 12])
 
         response = self.request(
             "user.update",
             {
                 "id": user_id,
                 "meeting_id": 1,
-                "group_ids": [1],
+                "group_ids": [2, 3],
             },
         )
         self.assert_status_code(response, 200)
         self.assert_history_information(
             f"user/{user_id}",
-            ["Participant added to group {} in meeting {}", "group/1", "meeting/1"],
+            ["Participant added to group {} in meeting {}", "group/3", "meeting/1"],
+        )
+
+    def test_update_history_add_group_to_default_group(self) -> None:
+        self.create_meeting()
+        self.create_meeting(base=10)
+        user_id = self.create_user(username="test")
+        self.set_user_groups(user_id, [1, 10, 11, 12])
+
+        response = self.request(
+            "user.update",
+            {
+                "id": user_id,
+                "meeting_id": 1,
+                "group_ids": [2],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information(
+            f"user/{user_id}",
+            ["Participant added to group {} in meeting {}", "group/2", "meeting/1"],
         )
 
     def test_update_history_add_multiple_groups(self) -> None:
         self.create_meeting()
         self.create_meeting(base=10)
         user_id = self.create_user(username="test")
-        self.set_user_groups(user_id, [10, 11, 12])
+        self.set_user_groups(user_id, [1, 10, 11, 12])
 
         response = self.request(
             "user.update",
@@ -1642,6 +1669,17 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_history_add_multiple_groups_with_default_group(self) -> None:
         self.create_meeting()
         user_id = self.create_user(username="test")
+        self.set_models(
+            {
+                f"user/{user_id}": {
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": user_id,
+                },
+            }
+        )
 
         response = self.request(
             "user.update",
@@ -1678,7 +1716,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_history_information(
             f"user/{user_id}",
-            ["Participant removed from group {} in meeting {}", "group/1", "meeting/1"],
+            ["Participant removed from meeting {}", "meeting/1"],
         )
 
     def test_update_fields_with_equal_value_no_history(self) -> None:
@@ -1767,7 +1805,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/222",
             [
-                "Participant data updated in meeting {}",
+                "Participant added to meeting {}",
                 "meeting/2",
             ],
         )
@@ -1808,6 +1846,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "user/222",
             [
-                "Participant data updated in multiple meetings",
+                "Participant added to meeting {}",
+                "meeting/2",
+                "Participant added to meeting {}",
+                "meeting/3",
             ],
         )

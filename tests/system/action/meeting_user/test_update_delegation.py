@@ -15,13 +15,17 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
                     "meeting_user_ids": [11, 12, 13, 14],
+                    "default_group_id": 11,
                 },
                 "meeting/223": {
                     "name": "Meeting223",
                     "is_active_in_organization_id": 1,
+                    "default_group_id": 12,
                 },
                 "group/1": {"meeting_id": 222, "meeting_user_ids": [11, 12, 13, 14]},
                 "group/2": {"meeting_id": 223, "meeting_user_ids": [21]},
+                "group/11": {"meeting_id": 222, "default_group_for_meeting_id": 222},
+                "group/12": {"meeting_id": 223, "default_group_for_meeting_id": 223},
                 "user/1": {"meeting_user_ids": [11, 21], "meeting_ids": [222]},
                 "user/2": {
                     "username": "user/2",
