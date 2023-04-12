@@ -1,9 +1,12 @@
 from enum import Enum
+from time import time
 from typing import Any, Dict, Optional
 
 import fastjsonschema
 
 from ....models.models import User
+from ....permissions.management_levels import OrganizationManagementLevel
+from ....shared.filters import And, FilterOperator
 from ....shared.interfaces.event import Event, EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
@@ -12,17 +15,16 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from .create import UserCreate
-from .user_mixin import DuplicateCheckMixin
 
 
 class ImportStatus(str, Enum):
-    NEW = "new"
+    CREATE = "create"
+    UPDATE = "update"
     ERROR = "error"
-    DONE = "done"
 
 
 @register_action("user.json_upload")
-class UserJsonUpload(DuplicateCheckMixin, Action):
+class UserJsonUpload(Action):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -48,7 +50,7 @@ class UserJsonUpload(DuplicateCheckMixin, Action):
                             "pronoun",
                         ),
                     },
-                    "required": ["username"],
+                    "required": [],
                     "additionalProperties": False,
                 },
                 "minItems": 1,
@@ -68,32 +70,35 @@ class UserJsonUpload(DuplicateCheckMixin, Action):
         {"property": "gender", "type": "string"},
         {"property": "pronoun", "type": "string"},
     ]
+    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
 
         # validate and check for duplicates
-        self.init_duplicate_set()
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
-        itemCount, itemNew, itemError = 0, 0, 0
+        itemCount, itemCreate, itemUpdate, itemError = len(self.rows), 0, 0, 0
         for entry in self.rows:
-            itemCount += 1
-            if entry["status"] == ImportStatus.NEW:
-                itemNew += 1
+            if entry["status"] == ImportStatus.CREATE:
+                itemCreate += 1
             if entry["status"] == ImportStatus.ERROR:
                 itemError += 1
+            if entry["status"] == ImportStatus.UPDATE:
+                itemUpdate += 1
         self.statistics = {
             "total": itemCount,
-            "created": itemNew,
+            "created": itemCreate,
+            "updated": itemUpdate,
             "omitted": itemError,
         }
 
         # store rows in the action_worker
         self.new_store_id = self.datastore.reserve_id(collection="action_worker")
         fqid = fqid_from_collection_and_id("action_worker", self.new_store_id)
+        created_timestamp = int(time())
         self.datastore.write_action_worker(
             WriteRequest(
                 events=[
@@ -103,6 +108,8 @@ class UserJsonUpload(DuplicateCheckMixin, Action):
                         fields={
                             "id": self.new_store_id,
                             "result": {"import": "account", "rows": self.rows},
+                            "created": created_timestamp,
+                            "timestamp": created_timestamp,
                         },
                     )
                 ],
@@ -116,11 +123,28 @@ class UserJsonUpload(DuplicateCheckMixin, Action):
         status, error = None, []
         try:
             UserCreate.schema_validator(entry)
-            if self.check_for_duplicate(entry["username"]):
-                status = ImportStatus.ERROR
-                error.append("Duplicate")
+            if entry.get("username"):
+                filter_: Any = FilterOperator("username", "=", entry["username"])
+                if self.datastore.exists("user", filter_):
+                    status = ImportStatus.UPDATE
+                else:
+                    status = ImportStatus.CREATE
+
             else:
-                status = ImportStatus.NEW
+                if not entry.get("first_name") and not entry.get("last_name"):
+                    status = ImportStatus.ERROR
+                    error.append("Cannot generate username.")
+                elif self.datastore.exists(
+                    "user",
+                    And(
+                        FilterOperator("first_name", "=", entry.get("first_name")),
+                        FilterOperator("last_name", "=", entry.get("last_name")),
+                        FilterOperator("email", "=", entry.get("email")),
+                    ),
+                ):
+                    status = ImportStatus.UPDATE
+                else:
+                    status = ImportStatus.CREATE
         except fastjsonschema.JsonSchemaException as exception:
             status = ImportStatus.ERROR
             error.append(exception.message)
@@ -141,6 +165,3 @@ class UserJsonUpload(DuplicateCheckMixin, Action):
             "rows": self.rows,
             "statistics": self.statistics,
         }
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        pass

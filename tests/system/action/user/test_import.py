@@ -12,7 +12,7 @@ class UserJsonImport(BaseActionTestCase):
                         "import": "account",
                         "rows": [
                             {
-                                "status": ImportStatus.NEW,
+                                "status": ImportStatus.CREATE,
                                 "error": [],
                                 "data": {"username": "test"},
                             },

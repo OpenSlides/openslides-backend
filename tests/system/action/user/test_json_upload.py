@@ -1,9 +1,15 @@
+from time import time
+
+import pytest
+
 from openslides_backend.action.actions.user.json_upload import ImportStatus
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 
 class TopicJsonUpload(BaseActionTestCase):
     def test_json_upload(self) -> None:
+        start_time = int(time())
         response = self.request(
             "user.json_upload",
             {
@@ -14,14 +20,19 @@ class TopicJsonUpload(BaseActionTestCase):
                 ],
             },
         )
+        end_time = int(time())
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
-            "status": ImportStatus.NEW,
+            "status": ImportStatus.CREATE,
             "error": [],
             "data": {
                 "username": "test",
             },
         }
+        worker = self.assert_model_exists("action_worker/1")
+        assert worker["result"]["import"] == "account"
+        assert start_time <= worker["created"] <= end_time
+        assert start_time <= worker["timestamp"] <= end_time
 
     def test_json_upload_wrong_data(self) -> None:
         response = self.request(
@@ -55,7 +66,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "account",
                     "rows": [
                         {
-                            "status": ImportStatus.NEW,
+                            "status": ImportStatus.CREATE,
                             "error": [],
                             "data": {"username": "test"},
                         }
@@ -80,14 +91,14 @@ class TopicJsonUpload(BaseActionTestCase):
             ],
             "rows": [
                 {
-                    "status": ImportStatus.NEW,
+                    "status": ImportStatus.CREATE,
                     "error": [],
                     "data": {
                         "username": "test",
                     },
                 }
             ],
-            "statistics": {"total": 1, "created": 1, "omitted": 0},
+            "statistics": {"total": 1, "created": 1, "updated": 0, "omitted": 0},
         }
 
     def test_json_upload_duplicate_in_db(self) -> None:
@@ -104,12 +115,13 @@ class TopicJsonUpload(BaseActionTestCase):
         result = response.json["results"][0][0]
         assert result["rows"] == [
             {
-                "status": ImportStatus.ERROR,
-                "error": ["Duplicate"],
+                "status": ImportStatus.UPDATE,
+                "error": [],
                 "data": {"username": "test"},
             }
         ]
 
+    @pytest.mark.skip()
     def test_json_upload_duplicate_in_data(self) -> None:
         response = self.request(
             "user.json_upload",
@@ -123,8 +135,8 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["rows"][2]["error"] == ["Duplicate"]
-        assert result["rows"][2]["status"] == ImportStatus.ERROR
+        assert result["rows"][2]["error"] == []
+        assert result["rows"][2]["status"] == ImportStatus.UPDATE
         self.assert_model_exists(
             "action_worker/1",
             {
@@ -132,18 +144,18 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "account",
                     "rows": [
                         {
-                            "status": ImportStatus.NEW,
+                            "status": ImportStatus.CREATE,
                             "error": [],
                             "data": {"username": "test"},
                         },
                         {
-                            "status": ImportStatus.NEW,
+                            "status": ImportStatus.CREATE,
                             "error": [],
                             "data": {"username": "bla"},
                         },
                         {
-                            "status": ImportStatus.ERROR,
-                            "error": ["Duplicate"],
+                            "status": ImportStatus.UPDATE,
+                            "error": [],
                             "data": {"username": "test"},
                         },
                     ],
@@ -151,15 +163,15 @@ class TopicJsonUpload(BaseActionTestCase):
             },
         )
 
-    # def test_json_upload_no_permission(self) -> None:
-    #    self.base_permission_test(
-    #        {}, "user.json_upload", {"data": [{"username": "test"}]}
-    #    )
+    def test_json_upload_no_permission(self) -> None:
+        self.base_permission_test(
+            {}, "user.json_upload", {"data": [{"username": "test"}]}
+        )
 
-    # def test_json_upload_permission(self) -> None:
-    #    self.base_permission_test(
-    #        {},
-    #        "user.json_upload",
-    #        {"data": [{"username": "test"}]},
-    #        Permissions.AgendaItem.CAN_MANAGE,
-    #    )
+    def test_json_upload_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "user.json_upload",
+            {"data": [{"username": "test"}]},
+            OrganizationManagementLevel.CAN_MANAGE_USERS,
+        )

@@ -34,7 +34,7 @@ class UserImport(DuplicateCheckMixin, Action):
         action_payload = [
             entry["data"]
             for entry in worker.get("result", {}).get("rows", [])
-            if entry["status"] == ImportStatus.NEW
+            if entry["status"] == ImportStatus.CREATE
             and not self.check_for_duplicate(entry["data"]["username"])
         ]
         self.execute_other_action(UserCreate, action_payload)
