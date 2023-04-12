@@ -1,6 +1,7 @@
 from . import (  # noqa
     assign_meetings,
     create,
+    create_saml_account,
     delete,
     forget_password,
     forget_password_confirm,
