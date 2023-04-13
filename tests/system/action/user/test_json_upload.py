@@ -1,7 +1,5 @@
 from time import time
 
-import pytest
-
 from openslides_backend.action.actions.user.json_upload import ImportStatus
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
@@ -121,7 +119,6 @@ class TopicJsonUpload(BaseActionTestCase):
             }
         ]
 
-    @pytest.mark.skip()
     def test_json_upload_duplicate_in_data(self) -> None:
         response = self.request(
             "user.json_upload",

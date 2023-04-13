@@ -177,15 +177,38 @@ class UpdateHistoryMixin(Action):
 
 class DuplicateCheckMixin(Action):
     def init_duplicate_set(self) -> None:
-        self.all_usernames = set(
-            values.get("username")
-            for values in self.datastore.get_all(
-                "user", ["username"], lock_result=False
-            ).values()
-            if values.get("username")
+        users = self.datastore.get_all(
+            "user",
+            ["id", "username", "first_name", "last_name", "email"],
+            lock_result=False,
+        ).values()
+        self.all_usernames = set(values.get("username") for values in users)
+        self.all_names_and_emails = set(
+            (values.get("first_name"), values.get("last_name"), values.get("email"))
+            for values in users
+            if values.get("first_name") or values.get("last_name")
         )
+        self.username_to_id = {values["username"]: values["id"] for values in users}
+        self.names_and_email_to_id = {
+            (
+                values.get("first_name"),
+                values.get("last_name"),
+                values.get("email"),
+            ): values["id"]
+            for values in users
+        }
 
-    def check_for_duplicate(self, username: str) -> bool:
+    def check_username_for_duplicate(self, username: str) -> bool:
         result = username in self.all_usernames
-        self.all_usernames.add(username)
+        if not result:
+            self.all_usernames.add(username)
+        return result
+
+    def check_name_and_email_for_duplicate(
+        self, first_name: Optional[str], last_name: Optional[str], email: Optional[str]
+    ) -> bool:
+        entry = (first_name, last_name, email)
+        result = entry in self.all_names_and_emails
+        if not result:
+            self.all_names_and_emails.add(entry)
         return result

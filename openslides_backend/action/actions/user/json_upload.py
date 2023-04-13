@@ -6,7 +6,6 @@ import fastjsonschema
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.filters import And, FilterOperator
 from ....shared.interfaces.event import Event, EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
@@ -15,6 +14,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from .create import UserCreate
+from .user_mixin import DuplicateCheckMixin
 
 
 class ImportStatus(str, Enum):
@@ -24,7 +24,7 @@ class ImportStatus(str, Enum):
 
 
 @register_action("user.json_upload")
-class UserJsonUpload(Action):
+class UserJsonUpload(DuplicateCheckMixin, Action):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -77,6 +77,7 @@ class UserJsonUpload(Action):
         data = instance.pop("data")
 
         # validate and check for duplicates
+        self.init_duplicate_set()
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
@@ -124,8 +125,7 @@ class UserJsonUpload(Action):
         try:
             UserCreate.schema_validator(entry)
             if entry.get("username"):
-                filter_: Any = FilterOperator("username", "=", entry["username"])
-                if self.datastore.exists("user", filter_):
+                if self.check_username_for_duplicate(entry["username"]):
                     status = ImportStatus.UPDATE
                 else:
                     status = ImportStatus.CREATE
@@ -134,13 +134,8 @@ class UserJsonUpload(Action):
                 if not entry.get("first_name") and not entry.get("last_name"):
                     status = ImportStatus.ERROR
                     error.append("Cannot generate username.")
-                elif self.datastore.exists(
-                    "user",
-                    And(
-                        FilterOperator("first_name", "=", entry.get("first_name")),
-                        FilterOperator("last_name", "=", entry.get("last_name")),
-                        FilterOperator("email", "=", entry.get("email")),
-                    ),
+                elif self.check_name_and_email_for_duplicate(
+                    entry.get("first_name"), entry.get("last_name"), entry.get("email")
                 ):
                     status = ImportStatus.UPDATE
                 else:
