@@ -35,13 +35,30 @@ class UserImport(DuplicateCheckMixin, Action):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         store_id = instance["id"]
-        self.init_duplicate_set()
         worker = self.datastore.get(
             fqid_from_collection_and_id("action_worker", store_id), ["result"]
         )
         if (worker.get("result") or {}).get("import") != "account":
             raise ActionException("Wrong id doesn't point on account import data.")
         if instance["import"]:
+            usernames: List[str] = []
+            names_and_emails: List[Any] = []
+            for row in worker.get("result", {}).get("rows", []):
+                entry = row["data"]
+                if entry.get("username"):
+                    usernames.append(entry["username"])
+                elif entry.get("first_name") or entry.get("last_name"):
+                    names_and_emails.append(
+                        (
+                            entry.get("first_name"),
+                            entry.get("last_name"),
+                            entry.get("email"),
+                        )
+                    )
+            if not usernames and not names_and_emails:
+                raise ActionException("Error in import.")
+
+            self.init_duplicate_set(usernames, names_and_emails)
             create_action_payload: List[Dict[str, Any]] = []
             update_action_payload: List[Dict[str, Any]] = []
             for entry in worker.get("result", {}).get("rows", []):

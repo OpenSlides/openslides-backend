@@ -7,7 +7,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....shared.exceptions import ActionException
-from ....shared.filters import FilterOperator
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, required_id_schema
 from ..meeting_user.set_data import MeetingUserSetData
@@ -176,9 +176,24 @@ class UpdateHistoryMixin(Action):
 
 
 class DuplicateCheckMixin(Action):
-    def init_duplicate_set(self) -> None:
-        users = self.datastore.get_all(
+    def init_duplicate_set(
+        self, usernames: List[str], names_and_emails: List[Any]
+    ) -> None:
+        filter_ = Or(
+            *[FilterOperator("username", "=", un) for un in usernames],
+            *[
+                And(
+                    FilterOperator("first_name", "=", entry[0]),
+                    FilterOperator("last_name", "=", entry[1]),
+                    FilterOperator("email", "=", entry[2]),
+                )
+                for entry in names_and_emails
+            ],
+        )
+
+        users = self.datastore.filter(
             "user",
+            filter_,
             ["id", "username", "first_name", "last_name", "email"],
             lock_result=False,
         ).values()

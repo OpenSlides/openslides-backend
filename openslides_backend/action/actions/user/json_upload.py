@@ -1,6 +1,6 @@
 from enum import Enum
 from time import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import fastjsonschema
 
@@ -77,7 +77,21 @@ class UserJsonUpload(DuplicateCheckMixin, Action):
         data = instance.pop("data")
 
         # validate and check for duplicates
-        self.init_duplicate_set()
+        usernames: List[str] = []
+        names_and_emails: List[Any] = []
+        for entry in data:
+            if entry.get("username"):
+                usernames.append(entry["username"])
+            elif entry.get("first_name") or entry.get("last_name"):
+                names_and_emails.append(
+                    (
+                        entry.get("first_name"),
+                        entry.get("last_name"),
+                        entry.get("email"),
+                    )
+                )
+
+        self.init_duplicate_set(usernames, names_and_emails)
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
