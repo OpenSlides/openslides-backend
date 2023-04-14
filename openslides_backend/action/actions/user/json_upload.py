@@ -90,7 +90,6 @@ class UserJsonUpload(DuplicateCheckMixin, Action):
                         entry.get("email"),
                     )
                 )
-
         self.init_duplicate_set(usernames, names_and_emails)
         self.rows = [self.validate_entry(entry) for entry in data]
 

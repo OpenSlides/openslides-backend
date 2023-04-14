@@ -40,73 +40,81 @@ class UserImport(DuplicateCheckMixin, Action):
         )
         if (worker.get("result") or {}).get("import") != "account":
             raise ActionException("Wrong id doesn't point on account import data.")
-        if instance["import"]:
-            usernames: List[str] = []
-            names_and_emails: List[Any] = []
-            for row in worker.get("result", {}).get("rows", []):
-                entry = row["data"]
-                if entry.get("username"):
-                    usernames.append(entry["username"])
-                elif entry.get("first_name") or entry.get("last_name"):
-                    names_and_emails.append(
+
+        # handle abort in on_success
+        if not instance["import"]:
+            return {}
+
+        # init duplicate mixin
+        usernames: List[str] = []
+        names_and_emails: List[Any] = []
+        for row in worker.get("result", {}).get("rows", []):
+            entry = row["data"]
+            if entry.get("username"):
+                usernames.append(entry["username"])
+            elif entry.get("first_name") or entry.get("last_name"):
+                names_and_emails.append(
+                    (
+                        entry.get("first_name"),
+                        entry.get("last_name"),
+                        entry.get("email"),
+                    )
+                )
+        # If no username and no names and emails init will fail.
+        if not usernames and not names_and_emails:
+            raise ActionException("Error in import.")
+        self.init_duplicate_set(usernames, names_and_emails)
+
+        # Recheck and update data, update needs "id"
+        create_action_payload: List[Dict[str, Any]] = []
+        update_action_payload: List[Dict[str, Any]] = []
+        for entry in worker.get("result", {}).get("rows", []):
+            if entry["status"] in (
+                ImportStatus.CREATE,
+                ImportStatus.UPDATE,
+            ) and entry[
+                "data"
+            ].get("username"):
+                username = entry["data"]["username"]
+                data = entry["data"]
+                if self.check_username_for_duplicate(username):
+                    id_ = self.username_to_id.get(username)
+                    if not id_:
+                        raise ActionException("Could not find id for username.")
+                    del data["username"]
+                    data["id"] = id_
+                    update_action_payload.append(data)
+                else:
+                    create_action_payload.append(data)
+            elif entry["status"] in (ImportStatus.CREATE, ImportStatus.UPDATE):
+                data = entry["data"]
+                if self.check_name_and_email_for_duplicate(
+                    data.get("first_name"), data.get("last_name"), data.get("email")
+                ):
+                    id_ = self.names_and_email_to_id.get(
                         (
-                            entry.get("first_name"),
-                            entry.get("last_name"),
-                            entry.get("email"),
+                            data.get("first_name"),
+                            data.get("last_name"),
+                            data.get("email"),
                         )
                     )
-            if not usernames and not names_and_emails:
+                    if not id_:
+                        raise ActionException("Could not find id for names and email")
+                    for field in ("first_name", "last_name", "email", "username"):
+                        if field in data:
+                            del data[field]
+                    data["id"] = id_
+                    update_action_payload.append(data)
+                else:
+                    create_action_payload.append(data)
+            else:
                 raise ActionException("Error in import.")
 
-            self.init_duplicate_set(usernames, names_and_emails)
-            create_action_payload: List[Dict[str, Any]] = []
-            update_action_payload: List[Dict[str, Any]] = []
-            for entry in worker.get("result", {}).get("rows", []):
-                if entry["status"] in (
-                    ImportStatus.CREATE,
-                    ImportStatus.UPDATE,
-                ) and entry["data"].get("username"):
-                    username = entry["data"]["username"]
-                    data = entry["data"]
-                    if self.check_username_for_duplicate(username):
-                        id_ = self.username_to_id.get(username)
-                        if not id_:
-                            raise ActionException("Could not find id for username.")
-                        del data["username"]
-                        data["id"] = id_
-                        update_action_payload.append(data)
-                    else:
-                        create_action_payload.append(data)
-                elif entry["status"] in (ImportStatus.CREATE, ImportStatus.UPDATE):
-                    data = entry["data"]
-                    if self.check_name_and_email_for_duplicate(
-                        data.get("first_name"), data.get("last_name"), data.get("email")
-                    ):
-                        id_ = self.names_and_email_to_id.get(
-                            (
-                                data.get("first_name"),
-                                data.get("last_name"),
-                                data.get("email"),
-                            )
-                        )
-                        if not id_:
-                            raise ActionException(
-                                "Could not find id for names and email"
-                            )
-                        for field in ("first_name", "last_name", "email", "username"):
-                            if field in data:
-                                del data[field]
-                        data["id"] = id_
-                        update_action_payload.append(data)
-                    else:
-                        create_action_payload.append(data)
-                else:
-                    raise ActionException("Error in import.")
-
-            if create_action_payload:
-                self.execute_other_action(UserCreate, create_action_payload)
-            if update_action_payload:
-                self.execute_other_action(UserUpdate, update_action_payload)
+        # execute the actions
+        if create_action_payload:
+            self.execute_other_action(UserCreate, create_action_payload)
+        if update_action_payload:
+            self.execute_other_action(UserUpdate, update_action_payload)
         return {}
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
