@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Callable, Dict
 
 from ...shared.interfaces.event import Event, EventType
@@ -5,6 +6,12 @@ from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
 from ..action import Action
 from ..util.typing import ActionData
+
+
+class ImportStatus(str, Enum):
+    ERROR = "error"
+    CREATE = "create"
+    UPDATE = "update"
 
 
 class ImportMixin(Action):

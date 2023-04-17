@@ -5,11 +5,10 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportMixin
+from ...mixins.import_mixins import ImportMixin, ImportStatus
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import TopicCreate
-from .json_upload import ImportStatus
 from .mixins import DuplicateCheckMixin
 
 
@@ -42,7 +41,7 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
                 entry["data"]
                 for entry in worker.get("result", {}).get("rows", [])
                 if (
-                    entry["status"] == ImportStatus.NEW
+                    entry["status"] == ImportStatus.CREATE
                     or entry["status"] == ImportStatus.ERROR
                     and entry["error"] == ["Duplicate"]
                 )

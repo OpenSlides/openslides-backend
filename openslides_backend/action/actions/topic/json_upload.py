@@ -1,4 +1,3 @@
-from enum import Enum
 from time import time
 from typing import Any, Dict, Optional
 
@@ -11,18 +10,13 @@ from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...action import Action
+from ...mixins.import_mixins import ImportStatus
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create import TopicCreate
 from .mixins import DuplicateCheckMixin
-
-
-class ImportStatus(str, Enum):
-    NEW = "new"
-    ERROR = "error"
-    DONE = "done"
 
 
 @register_action("topic.json_upload")
@@ -81,7 +75,7 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
         # generate statistics
         itemCount, itemNew, itemError = len(self.rows), 0, 0
         for entry in self.rows:
-            if entry["status"] == ImportStatus.NEW:
+            if entry["status"] == ImportStatus.CREATE:
                 itemNew += 1
             if entry["status"] == ImportStatus.ERROR:
                 itemError += 1
@@ -124,7 +118,7 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
                 status = ImportStatus.ERROR
                 error.append("Duplicate")
             else:
-                status = ImportStatus.NEW
+                status = ImportStatus.CREATE
         except fastjsonschema.JsonSchemaException as exception:
             status = ImportStatus.ERROR
             error.append(exception.message)

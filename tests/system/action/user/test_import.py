@@ -1,4 +1,4 @@
-from openslides_backend.action.actions.user.json_upload import ImportStatus
+from openslides_backend.action.mixins.import_mixins import ImportStatus
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 

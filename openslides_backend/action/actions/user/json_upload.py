@@ -1,4 +1,3 @@
-from enum import Enum
 from time import time
 from typing import Any, Dict, List, Optional
 
@@ -10,17 +9,12 @@ from ....shared.interfaces.event import Event, EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
+from ...mixins.import_mixins import ImportStatus
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from .create import UserCreate
 from .user_mixin import DuplicateCheckMixin
-
-
-class ImportStatus(str, Enum):
-    CREATE = "create"
-    UPDATE = "update"
-    ERROR = "error"
 
 
 @register_action("user.json_upload")

@@ -1,6 +1,6 @@
 from time import time
 
-from openslides_backend.action.actions.topic.json_upload import ImportStatus
+from openslides_backend.action.mixins.import_mixins import ImportStatus
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -33,7 +33,7 @@ class TopicJsonUpload(BaseActionTestCase):
         end_time = int(time())
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
-            "status": ImportStatus.NEW,
+            "status": ImportStatus.CREATE,
             "error": [],
             "data": {
                 "title": "test",
@@ -79,7 +79,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "topic",
                     "rows": [
                         {
-                            "status": ImportStatus.NEW,
+                            "status": ImportStatus.CREATE,
                             "error": [],
                             "data": {"title": "test", "meeting_id": 22},
                         }
@@ -99,7 +99,7 @@ class TopicJsonUpload(BaseActionTestCase):
             ],
             "rows": [
                 {
-                    "status": ImportStatus.NEW,
+                    "status": ImportStatus.CREATE,
                     "error": [],
                     "data": {"title": "test", "meeting_id": 22},
                 }
@@ -147,12 +147,12 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "topic",
                     "rows": [
                         {
-                            "status": ImportStatus.NEW,
+                            "status": ImportStatus.CREATE,
                             "error": [],
                             "data": {"title": "test", "meeting_id": 22},
                         },
                         {
-                            "status": ImportStatus.NEW,
+                            "status": ImportStatus.CREATE,
                             "error": [],
                             "data": {"title": "bla", "meeting_id": 22},
                         },

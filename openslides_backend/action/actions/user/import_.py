@@ -5,11 +5,10 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportMixin
+from ...mixins.import_mixins import ImportMixin, ImportStatus
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import UserCreate
-from .json_upload import ImportStatus
 from .update import UserUpdate
 from .user_mixin import DuplicateCheckMixin
 
