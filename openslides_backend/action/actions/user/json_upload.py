@@ -1,24 +1,18 @@
-from time import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import fastjsonschema
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.interfaces.event import Event, EventType
-from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import fqid_from_collection_and_id
-from ...action import Action
-from ...mixins.import_mixins import ImportStatus
+from ...mixins.import_mixins import ImportStatus, JsonUploadMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionResultElement
 from .create import UserCreate
 from .user_mixin import DuplicateCheckMixin
 
 
 @register_action("user.json_upload")
-class UserJsonUpload(DuplicateCheckMixin, Action):
+class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -85,46 +79,10 @@ class UserJsonUpload(DuplicateCheckMixin, Action):
                     )
                 )
         self.init_duplicate_set(usernames, names_and_emails)
-        self.rows = [self.validate_entry(entry) for entry in data]
+        rows = [self.validate_entry(entry) for entry in data]
 
-        # generate statistics
-        itemCount, itemCreate, itemUpdate, itemError = len(self.rows), 0, 0, 0
-        for entry in self.rows:
-            if entry["status"] == ImportStatus.CREATE:
-                itemCreate += 1
-            if entry["status"] == ImportStatus.ERROR:
-                itemError += 1
-            if entry["status"] == ImportStatus.UPDATE:
-                itemUpdate += 1
-        self.statistics = {
-            "total": itemCount,
-            "created": itemCreate,
-            "updated": itemUpdate,
-            "omitted": itemError,
-        }
-
-        # store rows in the action_worker
-        self.new_store_id = self.datastore.reserve_id(collection="action_worker")
-        fqid = fqid_from_collection_and_id("action_worker", self.new_store_id)
-        created_timestamp = int(time())
-        self.datastore.write_action_worker(
-            WriteRequest(
-                events=[
-                    Event(
-                        type=EventType.Create,
-                        fqid=fqid,
-                        fields={
-                            "id": self.new_store_id,
-                            "result": {"import": "account", "rows": self.rows},
-                            "created": created_timestamp,
-                            "timestamp": created_timestamp,
-                        },
-                    )
-                ],
-                user_id=self.user_id,
-                locked_fields={},
-            )
-        )
+        self.init_rows(rows)
+        self.store_rows_in_the_action_worker("account")
         return {}
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
@@ -151,19 +109,3 @@ class UserJsonUpload(DuplicateCheckMixin, Action):
             status = ImportStatus.ERROR
             error.append(exception.message)
         return {"status": status, "error": error, "data": entry}
-
-    def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
-        return {}
-
-    def create_events(self, instance: Dict[str, Any]) -> Any:
-        return []
-
-    def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
-        return {
-            "id": self.new_store_id,
-            "headers": self.headers,
-            "rows": self.rows,
-            "statistics": self.statistics,
-        }
