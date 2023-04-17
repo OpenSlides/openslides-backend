@@ -1,16 +1,13 @@
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 
 from ....models.models import ActionWorker
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException
-from ....shared.interfaces.event import Event, EventType
-from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
-from ...action import Action
+from ...mixins.import_mixins import ImportMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionData
 from .create import UserCreate
 from .json_upload import ImportStatus
 from .update import UserUpdate
@@ -18,7 +15,7 @@ from .user_mixin import DuplicateCheckMixin
 
 
 @register_action("user.import")
-class UserImport(DuplicateCheckMixin, Action):
+class UserImport(DuplicateCheckMixin, ImportMixin):
     """
     Action to import a result from the action_worker.
     """
@@ -116,30 +113,3 @@ class UserImport(DuplicateCheckMixin, Action):
         if update_action_payload:
             self.execute_other_action(UserUpdate, update_action_payload)
         return {}
-
-    def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
-        return {}
-
-    def create_events(self, instance: Dict[str, Any]) -> Any:
-        return []
-
-    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
-        def on_success() -> None:
-            for instance in action_data:
-                store_id = instance["id"]
-                self.datastore.write_action_worker(
-                    WriteRequest(
-                        events=[
-                            Event(
-                                type=EventType.Delete,
-                                fqid=fqid_from_collection_and_id(
-                                    "action_worker", store_id
-                                ),
-                            )
-                        ],
-                        user_id=self.user_id,
-                        locked_fields={},
-                    )
-                )
-
-        return on_success

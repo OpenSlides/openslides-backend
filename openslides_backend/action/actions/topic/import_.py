@@ -1,23 +1,20 @@
-from typing import Any, Callable, Dict
+from typing import Any, Dict
 
 from ....models.models import ActionWorker
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.interfaces.event import Event, EventType
-from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
-from ...action import Action
+from ...mixins.import_mixins import ImportMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionData
 from .create import TopicCreate
 from .json_upload import ImportStatus
 from .mixins import DuplicateCheckMixin
 
 
 @register_action("topic.import")
-class TopicImport(DuplicateCheckMixin, Action):
+class TopicImport(DuplicateCheckMixin, ImportMixin):
     """
     Action to import a result from the action_worker.
     """
@@ -54,12 +51,6 @@ class TopicImport(DuplicateCheckMixin, Action):
             self.execute_other_action(TopicCreate, action_payload)
         return instance
 
-    def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
-        return {}
-
-    def create_events(self, instance: Dict[str, Any]) -> Any:
-        return []
-
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         store_id = instance["id"]
         worker = self.datastore.get(
@@ -70,24 +61,3 @@ class TopicImport(DuplicateCheckMixin, Action):
         if worker.get("result", {}).get("import") == "topic":
             return next(iter(worker["result"]["rows"]))["data"]["meeting_id"]
         raise ActionException("Import data cannot be found.")
-
-    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
-        def on_success() -> None:
-            for instance in action_data:
-                store_id = instance["id"]
-                self.datastore.write_action_worker(
-                    WriteRequest(
-                        events=[
-                            Event(
-                                type=EventType.Delete,
-                                fqid=fqid_from_collection_and_id(
-                                    "action_worker", store_id
-                                ),
-                            )
-                        ],
-                        user_id=self.user_id,
-                        locked_fields={},
-                    )
-                )
-
-        return on_success
