@@ -1,7 +1,7 @@
 import os
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, patch
+from typing import Any, Callable, Dict, Optional
+from unittest.mock import patch
 
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.shared.env import DEV_PASSWORD
@@ -29,6 +29,12 @@ class BaseInternalActionsTest(BaseActionTestCase):
             json=[{"action": action, "data": [data]}],
             headers=headers,
         )
+
+
+def disable_dev_mode(fn: Callable) -> Callable:
+    return patch(
+        "openslides_backend.shared.env.Environment.is_dev_mode", lambda _: False
+    )(fn)
 
 
 class TestInternalActionsDev(BaseInternalActionsTest):
@@ -84,9 +90,8 @@ class TestInternalActionsDev(BaseInternalActionsTest):
         self.assert_status_code(response, 401)
         self.assert_model_not_exists("user/2")
 
-    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_internal_no_password_on_server(self, is_dev_mode: MagicMock) -> None:
-        is_dev_mode.return_value = False
+    @disable_dev_mode
+    def test_internal_no_password_on_server(self) -> None:
         response = self.internal_request(
             "user.create", {"username": "test"}, "some password"
         )
@@ -113,33 +118,24 @@ class TestInternalActionsProd(BaseInternalActionsTest):
         del os.environ["INTERNAL_AUTH_PASSWORD_FILE"]
         self.secret_file.close()
 
-    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_internal_try_access_backend_internal_action_wrong_pw(
-        self, is_dev_mode: MagicMock
-    ) -> None:
-        is_dev_mode.return_value = False
+    @disable_dev_mode
+    def test_internal_try_access_backend_internal_action_wrong_pw(self) -> None:
         response = self.internal_request(
             "user.create", {"username": "my username"}, "wrong pw"
         )
         self.assert_status_code(response, 401)
         self.assert_model_not_exists("user/2")
 
-    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_internal_try_access_backend_common_action(
-        self, is_dev_mode: MagicMock
-    ) -> None:
-        is_dev_mode.return_value = False
+    @disable_dev_mode
+    def test_internal_try_access_backend_common_action(self) -> None:
         response = self.internal_request(
             "user.create", {"username": "my username"}, self.internal_auth_password
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2")
 
-    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_internal_try_access_backend_internal_action(
-        self, is_dev_mode: MagicMock
-    ) -> None:
-        is_dev_mode.return_value = False
+    @disable_dev_mode
+    def test_internal_try_access_backend_internal_action(self) -> None:
         response = self.internal_request(
             "option.create",
             {"meeting_id": 1, "text": "test"},
@@ -147,3 +143,10 @@ class TestInternalActionsProd(BaseInternalActionsTest):
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("option/1")
+
+    @disable_dev_mode
+    def test_internal_try_access_via_public_route(self) -> None:
+        self.datastore.truncate_db()
+        response = self.request("organization.initial_import", {"data": {}})
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("organization/1")
