@@ -85,13 +85,13 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
             elif entry["status"] in (ImportStatus.CREATE, ImportStatus.UPDATE):
                 data = entry["data"]
                 if self.check_name_and_email_for_duplicate(
-                    data.get("first_name"), data.get("last_name"), data.get("email")
+                    data["first_name"], data["last_name"], data["email"]
                 ):
                     id_ = self.names_and_email_to_id.get(
                         (
-                            data.get("first_name"),
-                            data.get("last_name"),
-                            data.get("email"),
+                            data["first_name"],
+                            data["last_name"],
+                            data["email"],
                         )
                     )
                     if not id_:

@@ -218,7 +218,7 @@ class DuplicateCheckMixin(Action):
         return result
 
     def check_name_and_email_for_duplicate(
-        self, first_name: Optional[str], last_name: Optional[str], email: Optional[str]
+        self, first_name: str, last_name: str, email: str
     ) -> bool:
         entry = (first_name, last_name, email)
         result = entry in self.names_and_email_to_id

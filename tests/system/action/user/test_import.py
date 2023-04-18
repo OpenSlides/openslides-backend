@@ -27,7 +27,12 @@ class UserJsonImport(BaseActionTestCase):
                             {
                                 "status": ImportStatus.CREATE,
                                 "error": [],
-                                "data": {"first_name": "Testy", "gender": "male"},
+                                "data": {
+                                    "first_name": "Testy",
+                                    "last_name": "Tester",
+                                    "email": "email@test.com",
+                                    "gender": "male",
+                                },
                             },
                         ],
                     },
@@ -84,7 +89,14 @@ class UserJsonImport(BaseActionTestCase):
         response = self.request("user.import", {"id": 3, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2", {"username": "Testy", "first_name": "Testy", "gender": "male"}
+            "user/2",
+            {
+                "username": "TestyTester",
+                "first_name": "Testy",
+                "gender": "male",
+                "last_name": "Tester",
+                "email": "email@test.com",
+            },
         )
 
     def test_import_names_and_email_and_update(self) -> None:
@@ -93,13 +105,23 @@ class UserJsonImport(BaseActionTestCase):
                 "user/1": {
                     "username": "test",
                     "first_name": "Testy",
+                    "last_name": "Tester",
+                    "email": "email@test.com",
                 },
             }
         )
         response = self.request("user.import", {"id": 3, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/2")
-        self.assert_model_exists("user/1", {"first_name": "Testy", "gender": "male"})
+        self.assert_model_exists(
+            "user/1",
+            {
+                "first_name": "Testy",
+                "last_name": "Tester",
+                "email": "email@test.com",
+                "gender": "male",
+            },
+        )
 
     def test_import_error_status(self) -> None:
         response = self.request("user.import", {"id": 4, "import": True})

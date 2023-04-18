@@ -96,11 +96,15 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
                     status = ImportStatus.CREATE
 
             else:
-                if not entry.get("first_name") and not entry.get("last_name"):
+                if not (
+                    entry.get("first_name")
+                    and entry.get("last_name")
+                    and entry.get("email")
+                ):
                     status = ImportStatus.ERROR
                     error.append("Cannot generate username.")
                 elif self.check_name_and_email_for_duplicate(
-                    entry.get("first_name"), entry.get("last_name"), entry.get("email")
+                    entry["first_name"], entry["last_name"], entry["email"]
                 ):
                     status = ImportStatus.UPDATE
                 else:
