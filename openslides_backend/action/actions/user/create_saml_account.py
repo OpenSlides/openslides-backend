@@ -37,9 +37,7 @@ class UserCreateSamlAccount(EmailCheckMixin, UsernameMixin, CreateAction):
     skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["username"] = next(
-            iter(self.generate_usernames([instance["saml_id"]]))
-        )
+        instance["username"] = self.generate_usernames([instance["saml_id"]])[0]
         if self.datastore.exists(
             "user", FilterOperator("saml_id", "=", instance["saml_id"])
         ):
