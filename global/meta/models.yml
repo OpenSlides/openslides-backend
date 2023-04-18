@@ -200,6 +200,9 @@ user:
     type: string
     required: true
     restriction_mode: A
+  saml_id:
+    type: string
+    restriction_mode: A
   pronoun:
     type: string
     restriction_mode: A
