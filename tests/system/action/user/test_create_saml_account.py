@@ -2,22 +2,6 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class UserCreateSamlAccount(BaseActionTestCase):
-    def test_create_saml_account_correct(self) -> None:
-        response = self.request(
-            "user.create_saml_account",
-            {"saml_id": "111222333", "first_name": "Max", "last_name": "Mustermann"},
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/2",
-            {
-                "username": "111222333",
-                "saml_id": "111222333",
-                "first_name": "Max",
-                "last_name": "Mustermann",
-            },
-        )
-
     def test_create_saml_account_full_fields(self) -> None:
         response = self.request(
             "user.create_saml_account",
@@ -59,26 +43,31 @@ class UserCreateSamlAccount(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Saml_id already exists." in response.json["message"]
 
-    def test_create_saml_account_user_exists(self) -> None:
+    def test_create_saml_account_username_exists(self) -> None:
         self.set_models(
             {
                 "user/78": {
-                    "username": "test",
-                    "saml_id": "222333444",
-                    "first_name": "Max",
-                    "last_name": "Mustermann",
-                    "email": "max@mustermann.com",
+                    "username": "SAMLID",
                 }
             }
         )
         response = self.request(
             "user.create_saml_account",
             {
-                "saml_id": "111222333",
+                "saml_id": "SAMLID",
                 "first_name": "Max",
                 "last_name": "Mustermann",
                 "email": "max@mustermann.com",
             },
         )
-        self.assert_status_code(response, 400)
-        assert "User with name and email already exists." in response.json["message"]
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/79",
+            {
+                "saml_id": "SAMLID",
+                "username": "SAMLID1",
+                "first_name": "Max",
+                "last_name": "Mustermann",
+                "email": "max@mustermann.com",
+            },
+        )

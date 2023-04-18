@@ -1,18 +1,19 @@
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
-from ....shared.filters import And, FilterOperator
+from ....shared.filters import FilterOperator
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .user_mixin import UsernameMixin
 
 
 @register_action("user.create_saml_account", action_type=ActionType.STACK_INTERNAL)
-class UserCreateSamlAccount(EmailCheckMixin, CreateAction):
+class UserCreateSamlAccount(EmailCheckMixin, UsernameMixin, CreateAction):
     """
     Internal action to create a saml account.
     It should be called from the auth service.
@@ -36,20 +37,14 @@ class UserCreateSamlAccount(EmailCheckMixin, CreateAction):
     skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["username"] = instance["saml_id"]
+        instance["username"] = next(
+            iter(self.generate_usernames([instance["saml_id"]]))
+        )
         if self.datastore.exists(
             "user", FilterOperator("saml_id", "=", instance["saml_id"])
         ):
             raise ActionException("Saml_id already exists.")
 
-        filter_operators: List[FilterOperator] = []
-        for field in ("first_name", "last_name", "email"):
-            if instance.get(field):
-                filter_operators.append(FilterOperator(field, "=", instance.get(field)))
-        if self.datastore.exists("user", And(*filter_operators)):
-            raise ActionException("User with name and email already exists.")
-
-        instance["single_sign_on_only"] = True
         instance["can_change_own_password"] = False
         instance["organization_id"] = ONE_ORGANIZATION_ID
         return instance

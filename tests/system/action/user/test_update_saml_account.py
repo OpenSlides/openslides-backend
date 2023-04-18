@@ -25,7 +25,7 @@ class UserUpdateSamlAccount(BaseActionTestCase):
         )
 
     def test_update_saml_account_all_fields(self) -> None:
-        self.set_models({"user/78": {"username": "111222333", "saml_id": "111222333"}})
+        self.set_models({"user/78": {"username": "Saml", "saml_id": "111222333"}})
         response = self.request(
             "user.update_saml_account",
             {
@@ -45,6 +45,7 @@ class UserUpdateSamlAccount(BaseActionTestCase):
             "user/78",
             {
                 "saml_id": "111222333",
+                "username": "Saml",
                 "title": "Dr.",
                 "first_name": "Max",
                 "last_name": "Mustermann",

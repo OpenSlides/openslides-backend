@@ -203,9 +203,6 @@ user:
   saml_id:
     type: string
     restriction_mode: A
-  single_sign_on_only:
-    type: boolean
-    restriction_mode: A
   pronoun:
     type: string
     restriction_mode: A
