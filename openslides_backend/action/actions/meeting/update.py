@@ -203,6 +203,15 @@ class MeetingUpdate(
                 )
             if instance["jitsi_domain"].strip().endswith("/"):
                 raise ActionException("It is not allowed to end jitsi_domain with '/'.")
+
+        if (
+            instance.get("start_time")
+            and not instance.get("end_time")
+            or not instance.get("start_time")
+            and instance.get("end_time")
+        ):
+            raise ActionException("Only one of start_time and end_time is not allowed.")
+
         instance = super().update_instance(instance)
         return instance
 

@@ -67,6 +67,14 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                 f"You cannot create a new meeting, because you reached your limit of {limit_of_meetings} active meetings."
             )
 
+        if (
+            instance.get("start_time")
+            and not instance.get("end_time")
+            or not instance.get("start_time")
+            and instance.get("end_time")
+        ):
+            raise ActionException("Only one of start_time and end_time is not allowed.")
+
         instance["is_active_in_organization_id"] = committee["organization_id"]
         self.apply_instance(instance)
         action_data = [
