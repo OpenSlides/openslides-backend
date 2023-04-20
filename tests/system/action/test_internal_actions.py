@@ -145,7 +145,7 @@ class TestInternalActionsProd(BaseInternalActionsTest):
         self.assert_model_not_exists("option/1")
 
     @disable_dev_mode
-    def test_internal_try_access_via_public_route(self) -> None:
+    def test_internal_try_access_stack_internal_via_public_route(self) -> None:
         self.datastore.truncate_db()
         response = self.request("organization.initial_import", {"data": {}})
         self.assert_status_code(response, 400)

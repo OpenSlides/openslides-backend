@@ -218,13 +218,10 @@ class ActionHandler(BaseHandler):
         if ActionClass is None or (
             not self.env.is_dev_mode()
             and (
-                (
-                    self.internal
-                    and ActionClass.action_type == ActionType.BACKEND_INTERNAL
-                )
+                ActionClass.action_type == ActionType.BACKEND_INTERNAL
                 or (
                     not self.internal
-                    and ActionClass.action_type <= ActionType.STACK_INTERNAL
+                    and ActionClass.action_type == ActionType.STACK_INTERNAL
                 )
             )
         ):

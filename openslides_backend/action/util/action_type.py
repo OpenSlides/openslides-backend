@@ -1,7 +1,7 @@
 from enum import Enum, auto
 
 
-class ActionType(int, Enum):
+class ActionType(Enum):
     BACKEND_INTERNAL = auto()
     STACK_INTERNAL = auto()
     PUBLIC = auto()
