@@ -339,6 +339,55 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_update_only_one_time_one_removal_from_db(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"name": "test_committee"},
+                "group/1": {},
+                "meeting/1": {
+                    "name": "test_name",
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                    "default_group_id": 1,
+                    "projector_ids": [1],
+                    "reference_projector_id": 1,
+                    "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
+                    **{
+                        f"default_projector_${name}_ids": [1]
+                        for name in cast(
+                            List[str], Meeting.default_projector__ids.replacement_enum
+                        )
+                    },
+                    "start_time": 160000,
+                    "end_time": 170000,
+                },
+                "projector/1": {
+                    "name": "Projector 1",
+                    "meeting_id": 1,
+                    "used_as_reference_projector_meeting_id": 1,
+                    "used_as_default_$_in_meeting_id": Meeting.default_projector__ids.replacement_enum,
+                    **{
+                        f"used_as_default_${name}_in_meeting_id": 1
+                        for name in cast(
+                            List[str], Meeting.default_projector__ids.replacement_enum
+                        )
+                    },
+                },
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "start_time": None,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Only one of start_time and end_time is not allowed."
+            in response.json["message"]
+        )
+
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}
