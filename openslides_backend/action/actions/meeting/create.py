@@ -18,11 +18,13 @@ from ..motion_workflow.create import (
 from ..projector.create import ProjectorCreateAction
 from ..projector_countdown.create import ProjectorCountdownCreate
 from ..user.update import UserUpdate
-from .mixins import MeetingPermissionMixin
+from .mixins import MeetingCheckTimesMixin, MeetingPermissionMixin
 
 
 @register_action("meeting.create")
-class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
+class MeetingCreate(
+    CreateActionWithDependencies, MeetingPermissionMixin, MeetingCheckTimesMixin
+):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_create_schema(
         required_properties=["committee_id", "name"],
@@ -66,14 +68,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             raise ActionException(
                 f"You cannot create a new meeting, because you reached your limit of {limit_of_meetings} active meetings."
             )
-
-        if (
-            instance.get("start_time")
-            and not instance.get("end_time")
-            or not instance.get("start_time")
-            and instance.get("end_time")
-        ):
-            raise ActionException("Only one of start_time and end_time is not allowed.")
+        self.check_start_and_end_time(instance)
 
         instance["is_active_in_organization_id"] = committee["organization_id"]
         self.apply_instance(instance)
