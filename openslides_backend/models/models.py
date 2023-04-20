@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "276d54da975da1ff56c877ec1b24b005"
+MODELS_YML_CHECKSUM = "a6a5ccd1b1b44359190645211cf1bfb6"
 
 
 class Organization(Model):
@@ -69,6 +69,7 @@ class User(Model):
 
     id = fields.IntegerField()
     username = fields.CharField(required=True)
+    saml_id = fields.CharField()
     pronoun = fields.CharField()
     title = fields.CharField()
     first_name = fields.CharField()
