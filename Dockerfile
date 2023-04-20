@@ -36,4 +36,4 @@ LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-backend"
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD [ "python", "-m", "openslides_backend" ]
+CMD exec python -m openslides_backend
