@@ -6,8 +6,9 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
+from ....presenter.search_users import SearchUsers
 from ....shared.exceptions import ActionException
-from ....shared.filters import And, FilterOperator, Or
+from ....shared.filters import FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, required_id_schema
 from ..meeting_user.set_data import MeetingUserSetData
@@ -179,26 +180,21 @@ class DuplicateCheckMixin(Action):
     def init_duplicate_set(
         self, usernames: List[str], names_and_emails: List[Any]
     ) -> None:
-        # we don't want to call "get_all", so need to construct this large
-        # filter here.
-        filter_ = Or(
-            *[FilterOperator("username", "=", un) for un in usernames],
-            *[
-                And(
-                    FilterOperator("first_name", "=", entry[0]),
-                    FilterOperator("last_name", "=", entry[1]),
-                    FilterOperator("email", "=", entry[2]),
-                )
-                for entry in names_and_emails
-            ],
+        users_in_double_lists = self.execute_presenter(
+            SearchUsers,
+            {
+                "permission_type": "organization",
+                "permission_id": 1,
+                "search": [{"username": un} for un in usernames]
+                + [
+                    {"first_name": entry[0], "last_name": entry[1], "email": entry[2]}
+                    for entry in names_and_emails
+                ],
+            },
         )
-
-        users = self.datastore.filter(
-            "user",
-            filter_,
-            ["id", "username", "first_name", "last_name", "email"],
-            lock_result=False,
-        ).values()
+        users: Any = []
+        for user_list in users_in_double_lists:
+            users.extend(user_list)
 
         # for getting the ids in update case (username, names_and_email)
         self.username_to_id = {values["username"]: values["id"] for values in users}

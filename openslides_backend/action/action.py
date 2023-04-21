@@ -715,6 +715,17 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         return None
 
+    def execute_presenter(self, PresenterClass: Any, payload: Any) -> Any:
+        presenter_instance = PresenterClass(
+            payload,
+            self.services,
+            self.datastore,
+            self.logging,
+            self.user_id,
+        )
+        presenter_instance.validate()
+        return presenter_instance.get_result()
+
 
 def merge_history_informations(
     a: Optional[HistoryInformation], *other: Optional[HistoryInformation]
