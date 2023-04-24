@@ -1,5 +1,3 @@
-import os
-from tempfile import NamedTemporaryFile
 from threading import Lock
 from time import sleep
 from typing import Any, Callable, Optional
@@ -17,53 +15,39 @@ from openslides_backend.migrations.migration_handler import (
     MigrationState,
 )
 from openslides_backend.shared.env import DEV_PASSWORD
-from tests.system.util import get_route_path
+from tests.system.util import disable_dev_mode
 from tests.util import Response
 
-from .base import BaseActionTestCase
-from .util import get_internal_auth_header
+from .test_internal_actions import BaseInternalPasswordTest, BaseInternalRequestTest
 
 
-class BaseMigrationRouteTest(BaseActionTestCase):
+class BaseMigrationRouteTest(BaseInternalRequestTest):
     """
     Uses the anonymous client to call the migration route.
     """
+
+    route = ActionView.migrations_route
 
     def setUp(self) -> None:
         MigrationHandler.migration_running = False
         MigrationHandler.migrate_thread_exception = None
         if MigrationHandler.migrate_thread_stream:
             MigrationHandler.close_migrate_thread_stream()
-        self.secret_file = NamedTemporaryFile()
-        self.secret_file.write(DEV_PASSWORD.encode("ascii"))
-        self.secret_file.seek(0)
-        self.set_environ()
         super().setUp()
 
-    def set_environ(self) -> None:
-        os.environ["INTERNAL_AUTH_PASSWORD_FILE"] = self.secret_file.name
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        self.secret_file.close()
+    def wait_for_migration_thread(self) -> None:
+        while MigrationHandler.migration_running:
+            sleep(0.02)
 
     def migration_request(
         self,
         cmd: str,
         internal_auth_password: Optional[str] = DEV_PASSWORD,
     ) -> Response:
-        if internal_auth_password is None:
-            headers = {}
-        else:
-            headers = get_internal_auth_header(internal_auth_password)
-        return self.anon_client.post(
-            get_route_path(ActionView.migrations_route),
-            json={"cmd": cmd},
-            headers=headers,
-        )
+        return super().call_internal_route({"cmd": cmd}, internal_auth_password)
 
 
-class TestMigrationRoute(BaseMigrationRouteTest):
+class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
     def test_migrate_mismatching_passwords(self) -> None:
         response = self.migration_request("migrate", "wrong_pw")
         self.assert_status_code(response, 401)
@@ -84,6 +68,11 @@ class TestMigrationRoute(BaseMigrationRouteTest):
         assert response.json["status"] == MigrationState.MIGRATION_REQUIRED
         assert "output" not in response.json
 
+
+@patch(
+    "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"
+)
+class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTest):
     def wait_for_lock(
         self,
         wait_lock: Lock,
@@ -110,13 +99,6 @@ class TestMigrationRoute(BaseMigrationRouteTest):
 
         return _wait_for_lock
 
-    def wait_for_migration_thread(self) -> None:
-        while MigrationHandler.migration_running:
-            sleep(0.02)
-
-    @patch(
-        "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"
-    )
     def test_longer_migration(self, execute_command: Mock) -> None:
         wait_lock = Lock()
         wait_lock.acquire()
@@ -147,9 +129,6 @@ class TestMigrationRoute(BaseMigrationRouteTest):
         assert response.json["status"] == MigrationState.MIGRATION_REQUIRED
         assert response.json["output"] == "start\nfinish\n"
 
-    @patch(
-        "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"
-    )
     def test_double_migration(self, execute_command: Mock) -> None:
         lock = Lock()
         lock.acquire()
@@ -167,9 +146,6 @@ class TestMigrationRoute(BaseMigrationRouteTest):
         )
         lock.release()
 
-    @patch(
-        "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"
-    )
     def test_migration_with_error(self, execute_command: Mock) -> None:
         lock = Lock()
         lock.acquire()
@@ -190,13 +166,9 @@ class TestMigrationRoute(BaseMigrationRouteTest):
         assert response.json["exception"] == "test"
 
 
-class TestMigrationRoute2(BaseMigrationRouteTest):
-    def set_environ(self) -> None:
-        os.environ["INTERNAL_AUTH_PASSWORD_FILE"] = ""
-
-    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_migrate_no_password_on_server(self, is_dev_mode: Mock) -> None:
-        is_dev_mode.return_value = False
+@disable_dev_mode
+class TestMigrationRouteWithoutPassword(BaseMigrationRouteTest):
+    def test_migrate_no_password_on_server(self) -> None:
         response = self.migration_request("migrate")
         self.assert_status_code(response, 500)
         self.assertEqual(
