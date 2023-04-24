@@ -21,7 +21,7 @@ class TopicJsonUpload(BaseActionTestCase):
         end_time = int(time())
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
-            "status": ImportStatus.CREATE,
+            "status": ImportStatus.NEW,
             "error": [],
             "data": {
                 "username": "test",
@@ -64,7 +64,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "account",
                     "rows": [
                         {
-                            "status": ImportStatus.CREATE,
+                            "status": ImportStatus.NEW,
                             "error": [],
                             "data": {"username": "test"},
                         }
@@ -89,7 +89,7 @@ class TopicJsonUpload(BaseActionTestCase):
             ],
             "rows": [
                 {
-                    "status": ImportStatus.CREATE,
+                    "status": ImportStatus.NEW,
                     "error": [],
                     "data": {
                         "username": "test",
@@ -113,7 +113,7 @@ class TopicJsonUpload(BaseActionTestCase):
         result = response.json["results"][0][0]
         assert result["rows"] == [
             {
-                "status": ImportStatus.UPDATE,
+                "status": ImportStatus.DONE,
                 "error": [],
                 "data": {"username": "test"},
             }
@@ -133,7 +133,7 @@ class TopicJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
         assert result["rows"][2]["error"] == []
-        assert result["rows"][2]["status"] == ImportStatus.UPDATE
+        assert result["rows"][2]["status"] == ImportStatus.DONE
         self.assert_model_exists(
             "action_worker/1",
             {
@@ -141,17 +141,17 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "account",
                     "rows": [
                         {
-                            "status": ImportStatus.CREATE,
+                            "status": ImportStatus.NEW,
                             "error": [],
                             "data": {"username": "test"},
                         },
                         {
-                            "status": ImportStatus.CREATE,
+                            "status": ImportStatus.NEW,
                             "error": [],
                             "data": {"username": "bla"},
                         },
                         {
-                            "status": ImportStatus.UPDATE,
+                            "status": ImportStatus.DONE,
                             "error": [],
                             "data": {"username": "test"},
                         },

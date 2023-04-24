@@ -41,7 +41,7 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
                 entry["data"]
                 for entry in worker.get("result", {}).get("rows", [])
                 if (
-                    entry["status"] == ImportStatus.CREATE
+                    entry["status"] == ImportStatus.NEW
                     or entry["status"] == ImportStatus.ERROR
                     and entry["error"] == ["Duplicate"]
                 )

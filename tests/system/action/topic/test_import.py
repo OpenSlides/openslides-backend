@@ -13,7 +13,7 @@ class TopicJsonImport(BaseActionTestCase):
                         "import": "topic",
                         "rows": [
                             {
-                                "status": ImportStatus.CREATE,
+                                "status": ImportStatus.NEW,
                                 "error": [],
                                 "data": {"title": "test", "meeting_id": 22},
                             },

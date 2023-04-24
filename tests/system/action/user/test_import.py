@@ -13,7 +13,7 @@ class UserJsonImport(BaseActionTestCase):
                         "import": "account",
                         "rows": [
                             {
-                                "status": ImportStatus.CREATE,
+                                "status": ImportStatus.NEW,
                                 "error": [],
                                 "data": {"username": "test", "first_name": "Testy"},
                             },
@@ -25,7 +25,7 @@ class UserJsonImport(BaseActionTestCase):
                         "import": "account",
                         "rows": [
                             {
-                                "status": ImportStatus.CREATE,
+                                "status": ImportStatus.NEW,
                                 "error": [],
                                 "data": {
                                     "first_name": "Testy",

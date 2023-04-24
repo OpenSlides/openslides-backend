@@ -66,8 +66,8 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
         update_action_payload: List[Dict[str, Any]] = []
         for entry in worker.get("result", {}).get("rows", []):
             if entry["status"] in (
-                ImportStatus.CREATE,
-                ImportStatus.UPDATE,
+                ImportStatus.NEW,
+                ImportStatus.DONE,
             ) and entry[
                 "data"
             ].get("username"):
@@ -82,7 +82,7 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
                     update_action_payload.append(data)
                 else:
                     create_action_payload.append(data)
-            elif entry["status"] in (ImportStatus.CREATE, ImportStatus.UPDATE):
+            elif entry["status"] in (ImportStatus.NEW, ImportStatus.DONE):
                 data = entry["data"]
                 if self.check_name_and_email_for_duplicate(
                     data["first_name"], data["last_name"], data["email"]

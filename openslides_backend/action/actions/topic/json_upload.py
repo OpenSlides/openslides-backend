@@ -78,7 +78,7 @@ class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
                 status = ImportStatus.ERROR
                 error.append("Duplicate")
             else:
-                status = ImportStatus.CREATE
+                status = ImportStatus.NEW
         except fastjsonschema.JsonSchemaException as exception:
             status = ImportStatus.ERROR
             error.append(exception.message)

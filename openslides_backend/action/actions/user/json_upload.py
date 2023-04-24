@@ -91,9 +91,9 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
             UserCreate.schema_validator(entry)
             if entry.get("username"):
                 if self.check_username_for_duplicate(entry["username"]):
-                    status = ImportStatus.UPDATE
+                    status = ImportStatus.DONE
                 else:
-                    status = ImportStatus.CREATE
+                    status = ImportStatus.NEW
 
             else:
                 if not (
@@ -106,9 +106,9 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
                 elif self.check_name_and_email_for_duplicate(
                     entry["first_name"], entry["last_name"], entry["email"]
                 ):
-                    status = ImportStatus.UPDATE
+                    status = ImportStatus.DONE
                 else:
-                    status = ImportStatus.CREATE
+                    status = ImportStatus.NEW
         except fastjsonschema.JsonSchemaException as exception:
             status = ImportStatus.ERROR
             error.append(exception.message)

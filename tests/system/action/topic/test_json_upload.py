@@ -33,7 +33,7 @@ class TopicJsonUpload(BaseActionTestCase):
         end_time = int(time())
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
-            "status": ImportStatus.CREATE,
+            "status": ImportStatus.NEW,
             "error": [],
             "data": {
                 "title": "test",
@@ -79,7 +79,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "topic",
                     "rows": [
                         {
-                            "status": ImportStatus.CREATE,
+                            "status": ImportStatus.NEW,
                             "error": [],
                             "data": {"title": "test", "meeting_id": 22},
                         }
@@ -99,7 +99,7 @@ class TopicJsonUpload(BaseActionTestCase):
             ],
             "rows": [
                 {
-                    "status": ImportStatus.CREATE,
+                    "status": ImportStatus.NEW,
                     "error": [],
                     "data": {"title": "test", "meeting_id": 22},
                 }
@@ -147,12 +147,12 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "topic",
                     "rows": [
                         {
-                            "status": ImportStatus.CREATE,
+                            "status": ImportStatus.NEW,
                             "error": [],
                             "data": {"title": "test", "meeting_id": 22},
                         },
                         {
-                            "status": ImportStatus.CREATE,
+                            "status": ImportStatus.NEW,
                             "error": [],
                             "data": {"title": "bla", "meeting_id": 22},
                         },

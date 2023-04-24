@@ -11,8 +11,8 @@ from ..util.typing import ActionData, ActionResultElement
 
 class ImportStatus(str, Enum):
     ERROR = "error"
-    CREATE = "create"
-    UPDATE = "update"
+    NEW = "new"
+    DONE = "done"
 
 
 class ImportMixin(Action):
@@ -55,18 +55,18 @@ class JsonUploadMixin(Action):
         self.rows = rows
 
         # generate statistics
-        itemCount, itemCreate, itemUpdate, itemError = len(self.rows), 0, 0, 0
+        itemCount, itemNew, itemDone, itemError = len(self.rows), 0, 0, 0
         for entry in self.rows:
-            if entry["status"] == ImportStatus.CREATE:
-                itemCreate += 1
-            elif entry["status"] == ImportStatus.UPDATE:
-                itemUpdate += 1
+            if entry["status"] == ImportStatus.NEW:
+                itemNew += 1
+            elif entry["status"] == ImportStatus.DONE:
+                itemDone += 1
             elif entry["status"] == ImportStatus.ERROR:
                 itemError += 1
         self.statistics = {
             "total": itemCount,
-            "created": itemCreate,
-            "updated": itemUpdate,
+            "created": itemNew,
+            "updated": itemDone,
             "omitted": itemError,
         }
 
