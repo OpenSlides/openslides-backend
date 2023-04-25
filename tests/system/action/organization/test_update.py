@@ -124,6 +124,13 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_update_default_language(self) -> None:
+        response = self.request(
+            "organization.update", {"id": 1, "default_language": "it"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("organization/1", {"default_language": "it"})
+
     def test_update_group_a_no_permissions(self) -> None:
         self.set_models(
             {

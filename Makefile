@@ -60,6 +60,9 @@ pip-check:
 coverage:
 	pytest --cov --cov-report html
 
+extract-translations:
+	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
+
 
 # Build and run production docker container (not usable inside the docker container)
 
@@ -115,16 +118,3 @@ build-dev:
 
 rebuild-dev:
 	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev --no-cache
-
-# Translation targets
-
-babel-compile:
-	pybabel compile -d openslides_backend/locale
-
-babel-extract:
-	pybabel extract openslides_backend/ \
-		-o openslides_backend/locale/backend.pot
-
-babel-update:
-	pybabel update -i openslides_backend/locale/backend.pot \
-		-d openslides_backend/locale

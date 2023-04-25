@@ -1,5 +1,7 @@
 from typing import Any, Dict, Iterable, List, cast
 
+from openslides_backend.i18n.translator import Translator
+from openslides_backend.i18n.translator import translate as _
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
@@ -36,6 +38,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "name": "test_name",
                 "committee_id": 1,
                 "organization_tag_ids": [3],
+                "language": "en",
                 **datapart,
             },
         )
@@ -263,6 +266,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "committee_id": 1,
                 "user_ids": [2, 3],
                 "admin_ids": [1],
+                "language": "en",
             },
         )
         self.assert_status_code(response, 200)
@@ -320,6 +324,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_name",
                 "committee_id": 1,
+                "language": "en",
             },
         )
         self.assert_status_code(response, 403)
@@ -391,6 +396,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_name",
                 "committee_id": 1,
+                "language": "en",
             },
         )
         self.assert_status_code(response, 400)
@@ -398,3 +404,35 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "You cannot create a new meeting, because you reached your limit of 1 active meetings.",
             response.json["message"],
         )
+
+    def test_create_language(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                    "default_language": "en",
+                },
+                "committee/1": {
+                    "name": "test_committee",
+                    "user_ids": [2],
+                    "organization_id": 1,
+                },
+                "group/1": {},
+                "user/2": {},
+                "organization_tag/3": {},
+            }
+        )
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "organization_tag_ids": [3],
+                "language": "de",
+            },
+        )
+        self.assert_status_code(response, 200)
+        Translator.set_translation_language("de")
+        self.assert_model_exists("group/2", {"name": _("Default")})

@@ -4,6 +4,8 @@ from datastore.shared.util import DeletedModelsBehaviour
 
 from openslides_backend.migrations import get_backend_migration_index
 
+from ....i18n.translator import Translator
+from ....i18n.translator import translate as _
 from ....models.checker import Checker, CheckException
 from ....models.models import Organization
 from ....shared.exceptions import ActionException
@@ -70,6 +72,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         except CheckException as ce:
             raise ActionException(str(ce))
 
+        self.translate_organization_and_theme(data)
         self.data_migration_index = data["_migration_index"]
 
         return instance
@@ -83,6 +86,23 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             False,
         ):
             raise ActionException("Datastore is not empty.")
+
+    def translate_organization_and_theme(self, data: Dict[str, Any]) -> None:
+        organization = data["organization"]["1"]
+        Translator.set_translation_language(organization["default_language"])
+        translation_fields = (
+            "legal_notice",
+            "login_text",
+            "users_email_subject",
+            "users_email_body",
+        )
+        for field in translation_fields:
+            if organization.get(field):
+                organization[field] = _(organization[field])
+        if data.get("theme"):
+            for entry in data["theme"].values():
+                if entry.get("name"):
+                    entry["name"] = _(entry["name"])
 
     def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         json_data = instance["data"]

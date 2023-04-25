@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 
 from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
-from ...locale.translator import Translator
+from ...i18n.translator import Translator
 from ...migrations import assert_migration_index
 from ...migrations.migration_handler import MigrationHandler
 from ...services.auth.adapter import AUTHENTICATION_HEADER, COOKIE_NAME

@@ -904,6 +904,7 @@ class MeetingClone(BaseActionTestCase):
                 "user_ids": [2, 3],
                 "admin_ids": [],
                 "organization_tag_ids": [],
+                "language": "en",
             },
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
@@ -1336,6 +1337,7 @@ class MeetingClone(BaseActionTestCase):
                 "user_ids": [2, 3],
                 "admin_ids": [],
                 "organization_tag_ids": [],
+                "language": "en",
             },
         )
 

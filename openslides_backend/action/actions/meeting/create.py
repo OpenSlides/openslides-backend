@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Type, cast
 
 from openslides_backend.models.models import Meeting
 
+from ....i18n.translator import Translator
+from ....i18n.translator import translate as _
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
@@ -40,6 +42,9 @@ class MeetingCreate(
             "admin_ids": id_list_schema,
             "set_as_template": {"type": "boolean"},
         },
+        additional_required_fields={
+            "language": {"type": "string"},
+        },
     )
     dependencies = [
         MotionWorkflowCreateSimpleWorkflowAction,
@@ -47,8 +52,23 @@ class MeetingCreate(
         ProjectorCreateAction,
     ]
     skip_archived_meeting_check = True
+    translation_of_defaults = [
+        "name",
+        "description",
+        "welcome_title",
+        "welcome_text",
+        "motion_preamble",
+        "motions_export_title",
+        "assignments_export_title",
+        "users_pdf_welcometitle",
+        "users_pdf_welcometext",
+        "users_email_sender",
+        "users_email_subject",
+        "users_email_body",
+    ]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        Translator.set_translation_language(instance["language"])
         instance = super().update_instance(instance)
         # handle set_as_template
         if instance.pop("set_as_template", None):
@@ -74,7 +94,7 @@ class MeetingCreate(
         self.apply_instance(instance)
         action_data = [
             {
-                "name": "Default",
+                "name": _("Default"),
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -88,11 +108,11 @@ class MeetingCreate(
                 ],
             },
             {
-                "name": "Admin",
+                "name": _("Admin"),
                 "meeting_id": instance["id"],
             },
             {
-                "name": "Delegates",
+                "name": _("Delegates"),
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -110,7 +130,7 @@ class MeetingCreate(
                 ],
             },
             {
-                "name": "Staff",
+                "name": _("Staff"),
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_MANAGE,
@@ -128,7 +148,7 @@ class MeetingCreate(
                 ],
             },
             {
-                "name": "Committees",
+                "name": _("Committees"),
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -149,11 +169,6 @@ class MeetingCreate(
         fqid_default_group = fqid_from_collection_and_id("group", action_results[0]["id"])  # type: ignore
         fqid_admin_group = fqid_from_collection_and_id("group", action_results[1]["id"])  # type: ignore
         fqid_delegates_group = fqid_from_collection_and_id("group", action_results[2]["id"])  # type: ignore
-        assert self.datastore.changed_models[fqid_default_group]["name"] == "Default"
-        assert self.datastore.changed_models[fqid_admin_group]["name"] == "Admin"
-        assert (
-            self.datastore.changed_models[fqid_delegates_group]["name"] == "Delegates"
-        )
 
         instance["default_group_id"] = id_from_fqid(fqid_default_group)
         instance["admin_group_id"] = id_from_fqid(fqid_admin_group)
@@ -194,11 +209,11 @@ class MeetingCreate(
 
         action_data_countdowns = [
             {
-                "title": "Speaking time",
+                "title": _("Speaking time"),
                 "meeting_id": instance["id"],
             },
             {
-                "title": "Voting",
+                "title": _("Voting"),
                 "meeting_id": instance["id"],
             },
         ]
@@ -217,7 +232,7 @@ class MeetingCreate(
         if CreateActionClass == MotionWorkflowCreateSimpleWorkflowAction:
             return [
                 {
-                    "name": "Simple Workflow",
+                    "name": _("Simple Workflow"),
                     "default_workflow_meeting_id": instance["id"],
                     "default_amendment_workflow_meeting_id": instance["id"],
                     "default_statute_amendment_workflow_meeting_id": instance["id"],
@@ -227,14 +242,14 @@ class MeetingCreate(
         elif CreateActionClass == MotionWorkflowCreateComplexWorkflowAction:
             return [
                 {
-                    "name": "Complex Workflow",
+                    "name": _("Complex Workflow"),
                     "meeting_id": instance["id"],
                 }
             ]
         elif CreateActionClass == ProjectorCreateAction:
             return [
                 {
-                    "name": "Default projector",
+                    "name": _("Default projector"),
                     "meeting_id": instance["id"],
                     "used_as_reference_projector_meeting_id": instance["id"],
                     "used_as_default_$_in_meeting_id": {
@@ -246,3 +261,15 @@ class MeetingCreate(
                 }
             ]
         return []
+
+    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        for field in self.model.get_fields():
+            if (
+                field.own_field_name not in instance.keys()
+                and field.default is not None
+            ):
+                if field.own_field_name in self.translation_of_defaults:
+                    instance[field.own_field_name] = _(field.default)
+                else:
+                    instance[field.own_field_name] = field.default
+        return instance

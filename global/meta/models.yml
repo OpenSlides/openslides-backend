@@ -111,6 +111,17 @@ organization:
     restriction_mode: B
     default: 0
     minimum: 0
+  default_language:
+    type: string
+    restriction_mode: A
+    enum:
+      - en
+      - de
+      - it
+      - es
+      - ru
+      - cs
+    required: true
 
   vote_decrypt_public_main_key:
     type: string
@@ -747,6 +758,17 @@ meeting:
   imported_at:
     type: timestamp
     restriction_mode: B
+  language:
+    type: string
+    restriction_mode: A
+    enum:
+      - en
+      - de
+      - it
+      - es
+      - ru
+      - cs
+    read_only: true
 
   # Configuration (only for the server owner)
   jitsi_domain:

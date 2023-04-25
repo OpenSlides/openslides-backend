@@ -41,6 +41,7 @@ class OrganizationUpdate(
             "users_email_replyto",
             "users_email_subject",
             "users_email_body",
+            "default_language",
         ]
     )
     check_email_field = "users_email_replyto"
@@ -57,6 +58,7 @@ class OrganizationUpdate(
                     "privacy_policy",
                     "login_text",
                     "theme_id",
+                    "default_language",
                 ]
             ]
         ) and not has_organization_management_level(

@@ -137,6 +137,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "url": "foo",
                     "theme_ids": [1],
                     "committee_ids": [1],
+                    "default_language": "en",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -289,6 +290,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "url": "foo",
                     "theme_ids": [1],
                     "committee_ids": [1],
+                    "default_language": "en",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -546,6 +548,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "url": "foo",
                     "theme_ids": [1],
                     "committee_ids": [1],
+                    "default_language": "en",
                 },
                 "theme/1": {
                     "name": "Test Theme",
