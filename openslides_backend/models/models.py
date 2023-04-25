@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "6d7d14507c02051e0fc8f6c49938638e"
+MODELS_YML_CHECKSUM = "e7b2e449cbf41620cfb26189db495095"
 
 
 class Organization(Model):
@@ -72,6 +72,7 @@ class User(Model):
 
     id = fields.IntegerField()
     username = fields.CharField(required=True)
+    saml_id = fields.CharField()
     pronoun = fields.CharField()
     title = fields.CharField()
     first_name = fields.CharField()
@@ -1801,7 +1802,7 @@ class Projector(Model):
     id = fields.IntegerField()
     name = fields.CharField()
     scale = fields.IntegerField(default=0)
-    scroll = fields.IntegerField(default=0)
+    scroll = fields.IntegerField(default=0, constraints={"minimum": 0})
     width = fields.IntegerField(default=1200, constraints={"minimum": 1})
     aspect_ratio_numerator = fields.IntegerField(default=16, constraints={"minimum": 1})
     aspect_ratio_denominator = fields.IntegerField(

@@ -60,6 +60,14 @@ class ProjectorControlView(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "data.step must be bigger than or equal to 1" in response.json["message"]
 
+    def test_control_view_scroll_min(self) -> None:
+        response = self.request(
+            "projector.control_view",
+            {"id": 1, "field": "scroll", "direction": "down", "step": 100},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("projector/1", {"scroll": 0, "scale": 11})
+
     def test_control_view_no_permissions(self) -> None:
         self.base_permission_test(
             {},

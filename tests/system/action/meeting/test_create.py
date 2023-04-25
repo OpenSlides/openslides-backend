@@ -12,7 +12,9 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MeetingCreateActionTest(BaseActionTestCase):
-    def basic_test(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def basic_test(
+        self, datapart: Dict[str, Any], set_400_str: str = ""
+    ) -> Dict[str, Any]:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -40,8 +42,13 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 **datapart,
             },
         )
-        self.assert_status_code(response, 200)
-        return self.get_model("meeting/1")
+        if set_400_str:
+            self.assert_status_code(response, 400)
+            assert set_400_str == response.json["message"]
+            return {}
+        else:
+            self.assert_status_code(response, 200)
+            return self.get_model("meeting/1")
 
     def test_create_simple_and_complex_workflow(self) -> None:
         meeting = self.basic_test(dict())
@@ -287,6 +294,18 @@ class MeetingCreateActionTest(BaseActionTestCase):
         meeting = self.basic_test({"set_as_template": True})
         assert meeting.get("template_for_organization_id") == 1
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": [1]})
+
+    def test_create_set_only_one_time_1(self) -> None:
+        self.basic_test(
+            {"start_time": 160000},
+            set_400_str="Only one of start_time and end_time is not allowed.",
+        )
+
+    def test_create_set_only_one_time_2(self) -> None:
+        self.basic_test(
+            {"end_time": 170000},
+            set_400_str="Only one of start_time and end_time is not allowed.",
+        )
 
     def test_create_no_permissions(self) -> None:
         self.set_models(
