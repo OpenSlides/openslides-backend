@@ -1,4 +1,5 @@
-from typing import Any, Dict, List
+import re
+from typing import Any, Dict, List, Tuple
 
 import fastjsonschema
 
@@ -79,22 +80,24 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
                     )
                 )
         self.init_duplicate_set(usernames, names_and_emails)
-        rows = [self.validate_entry(entry) for entry in data]
+        rows = [self.generate_entry(entry) for entry in data]
 
         self.init_rows(rows)
         self.store_rows_in_the_action_worker("account")
         return {}
 
-    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         status, error = None, []
         try:
             UserCreate.schema_validator(entry)
             if entry.get("username"):
                 if self.check_username_for_duplicate(entry["username"]):
                     status = ImportStatus.DONE
+                    if self.username_to_id[entry["username"]]:
+                        entry["id"] = self.username_to_id[entry["username"]]
                 else:
                     status = ImportStatus.NEW
-
+                entry["username"] = {"value": entry["username"], "info": "done"}
             else:
                 if not (
                     entry.get("first_name")
@@ -103,13 +106,31 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
                 ):
                     status = ImportStatus.ERROR
                     error.append("Cannot generate username.")
-                elif self.check_name_and_email_for_duplicate(
-                    entry["first_name"], entry["last_name"], entry["email"]
-                ):
+                elif self.check_name_and_email_for_duplicate(*_names_and_email(entry)):
                     status = ImportStatus.DONE
+                    entry["username"] = {"value": entry["username"], "info": "done"}
+                    if self.names_and_email_to_id[_names_and_email(entry)]:
+                        entry["id"] = self.names_and_email_to_id[
+                            _names_and_email(entry)
+                        ]
                 else:
                     status = ImportStatus.NEW
+                    entry["username"] = {
+                        "value": self.generate_username(entry),
+                        "info": "generated",
+                    }
         except fastjsonschema.JsonSchemaException as exception:
             status = ImportStatus.ERROR
             error.append(exception.message)
         return {"status": status, "error": error, "data": entry}
+
+    def generate_username(self, entry: Dict[str, Any]) -> str:
+        return re.sub(
+            r"\W",
+            "",
+            entry.get("first_name", "") + entry.get("last_name", ""),
+        )
+
+
+def _names_and_email(entry: Dict[str, Any]) -> Tuple[str, str, str]:
+    return (entry["first_name"], entry["last_name"], entry["email"])

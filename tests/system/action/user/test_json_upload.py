@@ -24,7 +24,7 @@ class TopicJsonUpload(BaseActionTestCase):
             "status": ImportStatus.NEW,
             "error": [],
             "data": {
-                "username": "test",
+                "username": {"value": "test", "info": "done"},
             },
         }
         worker = self.assert_model_exists("action_worker/1")
@@ -66,7 +66,7 @@ class TopicJsonUpload(BaseActionTestCase):
                         {
                             "status": ImportStatus.NEW,
                             "error": [],
-                            "data": {"username": "test"},
+                            "data": {"username": {"value": "test", "info": "done"}},
                         }
                     ],
                 }
@@ -92,7 +92,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "status": ImportStatus.NEW,
                     "error": [],
                     "data": {
-                        "username": "test",
+                        "username": {"value": "test", "info": "done"},
                     },
                 }
             ],
@@ -115,7 +115,7 @@ class TopicJsonUpload(BaseActionTestCase):
             {
                 "status": ImportStatus.DONE,
                 "error": [],
-                "data": {"username": "test"},
+                "data": {"username": {"value": "test", "info": "done"}, "id": 3},
             }
         ]
 
@@ -143,17 +143,17 @@ class TopicJsonUpload(BaseActionTestCase):
                         {
                             "status": ImportStatus.NEW,
                             "error": [],
-                            "data": {"username": "test"},
+                            "data": {"username": {"value": "test", "info": "done"}},
                         },
                         {
                             "status": ImportStatus.NEW,
                             "error": [],
-                            "data": {"username": "bla"},
+                            "data": {"username": {"value": "bla", "info": "done"}},
                         },
                         {
                             "status": ImportStatus.DONE,
                             "error": [],
-                            "data": {"username": "test"},
+                            "data": {"username": {"value": "test", "info": "done"}},
                         },
                     ],
                 }
