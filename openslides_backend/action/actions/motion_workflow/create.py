@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Tuple, Type
 
+from ....i18n.translator import translate as _
 from ....models.models import MotionWorkflow
 from ....permissions.permissions import Permissions
 from ...action import Action
@@ -63,7 +64,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
         self.apply_instance(instance)
         action_data = [
             {
-                "name": "submitted",
+                "name": _("submitted"),
                 "allow_create_poll": True,
                 "allow_support": True,
                 "workflow_id": instance["id"],
@@ -71,22 +72,22 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
                 "set_created_timestamp": True,
             },
             {
-                "name": "accepted",
-                "recommendation_label": "Acceptance",
+                "name": _("accepted"),
+                "recommendation_label": _("Acceptance"),
                 "css_class": "green",
                 "merge_amendment_into_final": "do_merge",
                 "workflow_id": instance["id"],
             },
             {
-                "name": "rejected",
-                "recommendation_label": "Rejection",
+                "name": _("rejected"),
+                "recommendation_label": _("Rejection"),
                 "css_class": "red",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
             },
             {
-                "name": "not decided",
-                "recommendation_label": "No decision",
+                "name": _("not decided"),
+                "recommendation_label": _("No decision"),
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
@@ -134,7 +135,7 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
         self.apply_instance(instance)
         action_data = [
             {
-                "name": "in progress",
+                "name": _("in progress"),
                 "allow_submitter_edit": True,
                 "set_number": False,
                 "workflow_id": instance["id"],
@@ -142,67 +143,67 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "set_created_timestamp": True,
             },
             {
-                "name": "submitted",
+                "name": _("submitted"),
                 "allow_support": True,
                 "workflow_id": instance["id"],
                 "set_number": False,
             },
             {
-                "name": "permitted",
+                "name": _("permitted"),
                 "allow_create_poll": True,
                 "workflow_id": instance["id"],
-                "recommendation_label": "Permission",
+                "recommendation_label": _("Permission"),
             },
             {
-                "name": "accepted",
-                "recommendation_label": "Acceptance",
+                "name": _("accepted"),
+                "recommendation_label": _("Acceptance"),
                 "css_class": "green",
                 "merge_amendment_into_final": "do_merge",
                 "workflow_id": instance["id"],
             },
             {
-                "name": "rejected",
-                "recommendation_label": "Rejection",
+                "name": _("rejected"),
+                "recommendation_label": _("Rejection"),
                 "css_class": "red",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
             },
             {
-                "name": "withdrawn",
+                "name": _("withdrawn"),
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
             },
             {
-                "name": "adjourned",
-                "recommendation_label": "Adjournment",
+                "name": _("adjourned"),
+                "recommendation_label": _("Adjournment"),
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
             },
             {
-                "name": "not concerned",
-                "recommendation_label": "No concernment",
+                "name": _("not concerned"),
+                "recommendation_label": _("No concernment"),
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
             },
             {
-                "name": "referred to committee",
-                "recommendation_label": "Referral to committee",
+                "name": _("referred to committee"),
+                "recommendation_label": _("Referral to committee"),
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
             },
             {
-                "name": "needs review",
+                "name": _("needs review"),
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
             },
             {
-                "name": "rejected (not authorized)",
-                "recommendation_label": "Rejection (not authorized)",
+                "name": _("rejected (not authorized)"),
+                "recommendation_label": _("Rejection (not authorized)"),
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],

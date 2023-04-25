@@ -1,11 +1,12 @@
 {
-    "_migration_index": 39,
+    "_migration_index": 40,
     "organization": {
         "1": {
             "id": 1,
             "name": "Test Organization",
             "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly.",
-            "login_text": "Guten Morgen!",
+            "login_text": "Good Morning!",
+            "default_language": "en",
             "enable_electronic_voting": true,
             "enable_chat": true,
             "reset_password_verbose_errors": true,
