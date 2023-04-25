@@ -9,6 +9,7 @@ from ...mixins.import_mixins import ImportStatus, JsonUploadMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import UserCreate
+from .password_mixin import PasswordCreateMixin
 from .user_mixin import DuplicateCheckMixin
 
 
@@ -119,6 +120,7 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
                         "value": self.generate_username(entry),
                         "info": "generated",
                     }
+            self.handle_default_password(entry, status)
         except fastjsonschema.JsonSchemaException as exception:
             status = ImportStatus.ERROR
             error.append(exception.message)
@@ -130,6 +132,22 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
             "",
             entry.get("first_name", "") + entry.get("last_name", ""),
         )
+
+    def handle_default_password(self, entry: Dict[str, Any], status: str) -> None:
+        if status == ImportStatus.NEW:
+            if "default_password" in entry:
+                value = entry["default_password"]
+                info = "done"
+            else:
+                value = PasswordCreateMixin.generate_password()
+                info = "generated"
+            entry["default_password"] = {"value": value, "info": info}
+        elif status == ImportStatus.DONE:
+            if "default_password" in entry:
+                entry["default_password"] = {
+                    "value": entry["default_password"],
+                    "info": "done",
+                }
 
 
 def _names_and_email(entry: Dict[str, Any]) -> Tuple[str, str, str]:

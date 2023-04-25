@@ -14,6 +14,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 "data": [
                     {
                         "username": "test",
+                        "default_password": "secret",
                     }
                 ],
             },
@@ -25,6 +26,7 @@ class TopicJsonUpload(BaseActionTestCase):
             "error": [],
             "data": {
                 "username": {"value": "test", "info": "done"},
+                "default_password": {"value": "secret", "info": "done"},
             },
         }
         worker = self.assert_model_exists("action_worker/1")
@@ -54,7 +56,7 @@ class TopicJsonUpload(BaseActionTestCase):
     def test_json_upload_results(self) -> None:
         response = self.request(
             "user.json_upload",
-            {"data": [{"username": "test"}]},
+            {"data": [{"username": "test", "default_password": "secret"}]},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -66,7 +68,10 @@ class TopicJsonUpload(BaseActionTestCase):
                         {
                             "status": ImportStatus.NEW,
                             "error": [],
-                            "data": {"username": {"value": "test", "info": "done"}},
+                            "data": {
+                                "username": {"value": "test", "info": "done"},
+                                "default_password": {"value": "secret", "info": "done"},
+                            },
                         }
                     ],
                 }
@@ -93,6 +98,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "error": [],
                     "data": {
                         "username": {"value": "test", "info": "done"},
+                        "default_password": {"value": "secret", "info": "done"},
                     },
                 }
             ],
@@ -120,13 +126,14 @@ class TopicJsonUpload(BaseActionTestCase):
         ]
 
     def test_json_upload_duplicate_in_data(self) -> None:
+        self.maxDiff = None
         response = self.request(
             "user.json_upload",
             {
                 "data": [
-                    {"username": "test"},
-                    {"username": "bla"},
-                    {"username": "test"},
+                    {"username": "test", "default_password": "secret"},
+                    {"username": "bla", "default_password": "secret"},
+                    {"username": "test", "default_password": "secret"},
                 ],
             },
         )
@@ -143,21 +150,50 @@ class TopicJsonUpload(BaseActionTestCase):
                         {
                             "status": ImportStatus.NEW,
                             "error": [],
-                            "data": {"username": {"value": "test", "info": "done"}},
+                            "data": {
+                                "username": {"value": "test", "info": "done"},
+                                "default_password": {"value": "secret", "info": "done"},
+                            },
                         },
                         {
                             "status": ImportStatus.NEW,
                             "error": [],
-                            "data": {"username": {"value": "bla", "info": "done"}},
+                            "data": {
+                                "username": {"value": "bla", "info": "done"},
+                                "default_password": {"value": "secret", "info": "done"},
+                            },
                         },
                         {
                             "status": ImportStatus.DONE,
                             "error": [],
-                            "data": {"username": {"value": "test", "info": "done"}},
+                            "data": {
+                                "username": {"value": "test", "info": "done"},
+                                "default_password": {"value": "secret", "info": "done"},
+                            },
                         },
                     ],
                 }
             },
+        )
+
+    def test_json_upload_generate_default_password(self) -> None:
+        response = self.request(
+            "user.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        worker = self.assert_model_exists("action_worker/1")
+        assert worker["result"]["import"] == "account"
+        assert worker["result"]["rows"][0]["data"].get("default_password")
+        assert (
+            worker["result"]["rows"][0]["data"]["default_password"]["info"]
+            == "generated"
         )
 
     def test_json_upload_no_permission(self) -> None:
