@@ -1,23 +1,27 @@
-import os
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, patch
 
 from openslides_backend.http.views.action_view import ActionView
+from openslides_backend.http.views.base_view import RouteFunction
 from openslides_backend.shared.env import DEV_PASSWORD
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
-from tests.system.util import get_route_path
+from tests.system.util import disable_dev_mode, get_route_path
 from tests.util import Response
 
 from .base import BaseActionTestCase
 from .util import get_internal_auth_header
 
 
-class BaseInternalActionsTest(BaseActionTestCase):
-    def internal_request(
+class BaseInternalRequestTest(BaseActionTestCase):
+    """
+    Provides the ability to use the anonymous client to call an internal route.
+    """
+
+    route: RouteFunction
+
+    def call_internal_route(
         self,
-        action: str,
-        data: Dict[str, Any],
+        payload: Any,
         internal_auth_password: Optional[str] = DEV_PASSWORD,
     ) -> Response:
         if internal_auth_password is None:
@@ -25,19 +29,57 @@ class BaseInternalActionsTest(BaseActionTestCase):
         else:
             headers = get_internal_auth_header(internal_auth_password)
         return self.anon_client.post(
-            get_route_path(ActionView.internal_action_route),
-            json=[{"action": action, "data": [data]}],
+            get_route_path(self.route),
+            json=payload,
             headers=headers,
         )
 
 
-class TestInternalActionsDev(BaseInternalActionsTest):
+class BaseInternalPasswordTest(BaseInternalRequestTest):
+    """
+    Sets up a server-side password for internal requests.
+    """
+
+    internal_auth_password: str = "Q2^$2J9QXimW6lDPoGj4"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.secret_file = NamedTemporaryFile()
+        self.secret_file.write(self.internal_auth_password.encode("ascii"))
+        self.secret_file.seek(0)
+        self.app.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = self.secret_file.name
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.app.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = ""
+        self.secret_file.close()
+
+
+class BaseInternalActionTest(BaseInternalRequestTest):
+    """
+    Sets up a server-side password for internal requests.
+    """
+
+    route = ActionView.internal_action_route
+
+    def internal_request(
+        self,
+        action: str,
+        data: Dict[str, Any],
+        internal_auth_password: Optional[str] = DEV_PASSWORD,
+    ) -> Response:
+        return super().call_internal_route(
+            [{"action": action, "data": [data]}], internal_auth_password
+        )
+
+
+class TestInternalActionsDev(BaseInternalActionTest):
     """
     Uses the anonymous client to call the internal action route. This should skip all permission checks, so the requests
     still succeed.
 
     Just rudimentary tests that the actions generally succeed since if that's the case, everything should be handled
-    analogously to the external case, which is already test sufficiently in the special test cases for the actions.
+    analogously to the external case, which is already tested sufficiently in the special test cases for the actions.
 
     Hint: This test assumes that OPENSLIDES_DEVELOPMENT is truthy.
     """
@@ -84,9 +126,19 @@ class TestInternalActionsDev(BaseInternalActionsTest):
         self.assert_status_code(response, 401)
         self.assert_model_not_exists("user/2")
 
-    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_internal_no_password_on_server(self, is_dev_mode: MagicMock) -> None:
-        is_dev_mode.return_value = False
+    def test_internal_wrong_password_in_request(self) -> None:
+        response = self.internal_request("user.create", {"username": "test"}, "wrong")
+        self.assert_status_code(response, 401)
+        self.assert_model_not_exists("user/2")
+
+
+@disable_dev_mode
+class TestInternalActionsProd(BaseInternalActionTest):
+    """
+    The same as the TestInternalActionsDev class but in prod mode.
+    """
+
+    def test_internal_no_password_on_server(self) -> None:
         response = self.internal_request(
             "user.create", {"username": "test"}, "some password"
         )
@@ -94,56 +146,52 @@ class TestInternalActionsDev(BaseInternalActionsTest):
         self.assert_model_not_exists("user/2")
 
 
-class TestInternalActionsProd(BaseInternalActionsTest):
+@disable_dev_mode
+class TestInternalActionsProdWithPasswordFile(
+    BaseInternalActionTest, BaseInternalPasswordTest
+):
     """
-    That same as the TestInternalActionsDev class but we patch the is_dev_mode
-    in every test.
+    Same as TestInternalActionsProd but with a server-side password set.
     """
 
-    def setUp(self) -> None:
-        self.internal_auth_password = "my secret password"
-        self.secret_file = NamedTemporaryFile()
-        self.secret_file.write(self.internal_auth_password.encode("ascii"))
-        self.secret_file.seek(0)
-        os.environ["INTERNAL_AUTH_PASSWORD_FILE"] = self.secret_file.name
-        super().setUp()
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        del os.environ["INTERNAL_AUTH_PASSWORD_FILE"]
-        self.secret_file.close()
-
-    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_internal_try_access_backend_internal_action_wrong_pw(
-        self, is_dev_mode: MagicMock
-    ) -> None:
-        is_dev_mode.return_value = False
-        response = self.internal_request(
-            "user.create", {"username": "my username"}, "wrong pw"
-        )
+    def test_internal_wrong_password(self) -> None:
+        response = self.internal_request("user.create", {"username": "test"}, "wrong")
         self.assert_status_code(response, 401)
         self.assert_model_not_exists("user/2")
 
-    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_internal_try_access_backend_common_action(
-        self, is_dev_mode: MagicMock
-    ) -> None:
-        is_dev_mode.return_value = False
+    def test_internal_execute_public_action(self) -> None:
         response = self.internal_request(
-            "user.create", {"username": "my username"}, self.internal_auth_password
+            "user.create", {"username": "test"}, self.internal_auth_password
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2")
 
-    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_internal_try_access_backend_internal_action(
-        self, is_dev_mode: MagicMock
-    ) -> None:
-        is_dev_mode.return_value = False
+    def test_internal_execute_stack_internal_action(self) -> None:
+        self.datastore.truncate_db()
+        response = self.internal_request(
+            "organization.initial_import", {"data": {}}, self.internal_auth_password
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(ONE_ORGANIZATION_FQID)
+
+    def test_internal_execute_backend_internal_action(self) -> None:
         response = self.internal_request(
             "option.create",
             {"meeting_id": 1, "text": "test"},
             self.internal_auth_password,
         )
         self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json.get("message"), "Action option.create does not exist."
+        )
         self.assert_model_not_exists("option/1")
+
+    def test_internal_execute_stack_internal_via_public_route(self) -> None:
+        self.datastore.truncate_db()
+        response = self.request("organization.initial_import", {"data": {}})
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json.get("message"),
+            "Action organization.initial_import does not exist.",
+        )
+        self.assert_model_not_exists("organization/1")
