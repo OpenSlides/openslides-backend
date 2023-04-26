@@ -75,9 +75,9 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
             elif entry.get("first_name") or entry.get("last_name"):
                 names_and_emails.append(
                     (
-                        entry.get("first_name"),
-                        entry.get("last_name"),
-                        entry.get("email"),
+                        entry.get("first_name", ""),
+                        entry.get("last_name", ""),
+                        entry.get("email", ""),
                     )
                 )
         self.init_duplicate_set(usernames, names_and_emails)
@@ -100,20 +100,24 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
                     status = ImportStatus.NEW
                 entry["username"] = {"value": entry["username"], "info": "done"}
             else:
-                if not (
-                    entry.get("first_name")
-                    and entry.get("last_name")
-                    and entry.get("email")
-                ):
+                if not (entry.get("first_name") or entry.get("last_name")):
                     status = ImportStatus.ERROR
                     error.append("Cannot generate username.")
                 elif self.check_name_and_email_for_duplicate(*_names_and_email(entry)):
                     status = ImportStatus.DONE
-                    entry["username"] = {"value": entry["username"], "info": "done"}
                     if self.names_and_email_to_id[_names_and_email(entry)]:
+                        entry["username"] = {
+                            "value": self.names_and_email_to_username[
+                                _names_and_email(entry)
+                            ],
+                            "info": "done",
+                        }
                         entry["id"] = self.names_and_email_to_id[
                             _names_and_email(entry)
                         ]
+                    else:
+                        status = ImportStatus.ERROR
+                        error.append("Could not find id with names and email")
                 else:
                     status = ImportStatus.NEW
                     entry["username"] = {
@@ -151,4 +155,8 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
 
 
 def _names_and_email(entry: Dict[str, Any]) -> Tuple[str, str, str]:
-    return (entry["first_name"], entry["last_name"], entry["email"])
+    return (
+        entry.get("first_name", ""),
+        entry.get("last_name", ""),
+        entry.get("email", ""),
+    )

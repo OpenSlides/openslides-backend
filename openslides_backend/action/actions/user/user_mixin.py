@@ -180,21 +180,23 @@ class DuplicateCheckMixin(Action):
     def init_duplicate_set(
         self, usernames: List[str], names_and_emails: List[Any]
     ) -> None:
-        users_in_double_lists = self.execute_presenter(
-            SearchUsers,
-            {
-                "permission_type": "organization",
-                "permission_id": 1,
-                "search": [{"username": un} for un in usernames]
-                + [
-                    {"first_name": entry[0], "last_name": entry[1], "email": entry[2]}
-                    for entry in names_and_emails
-                ],
-            },
-        )
+        search_users = [{"username": un} for un in usernames] + [
+            {"first_name": entry[0], "last_name": entry[1], "email": entry[2]}
+            for entry in names_and_emails
+            if entry[0] and entry[1] and entry[2]
+        ]
         users: Any = []
-        for user_list in users_in_double_lists:
-            users.extend(user_list)
+        if search_users:
+            users_in_double_lists = self.execute_presenter(
+                SearchUsers,
+                {
+                    "permission_type": "organization",
+                    "permission_id": 1,
+                    "search": search_users,
+                },
+            )
+            for user_list in users_in_double_lists:
+                users.extend(user_list)
 
         # for getting the ids in update case (username, names_and_email)
         self.username_to_id = {values["username"]: values["id"] for values in users}
@@ -204,6 +206,14 @@ class DuplicateCheckMixin(Action):
                 values.get("last_name"),
                 values.get("email"),
             ): values["id"]
+            for values in users
+        }
+        self.names_and_email_to_username = {
+            (
+                values.get("first_name"),
+                values.get("last_name"),
+                values.get("email"),
+            ): values["username"]
             for values in users
         }
 

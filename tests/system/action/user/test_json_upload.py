@@ -176,6 +176,57 @@ class TopicJsonUpload(BaseActionTestCase):
             },
         )
 
+    def test_json_upload_names_and_email_generate_username(self) -> None:
+        response = self.request(
+            "user.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["data"]["first_name"] == "Max"
+        assert entry["data"]["last_name"] == "Mustermann"
+        assert entry["data"]["username"] == {
+            "value": "MaxMustermann",
+            "info": "generated",
+        }
+
+    def test_json_upload_names_and_email_set_username(self) -> None:
+        self.set_models(
+            {
+                "user/34": {
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "test@ntvtn.de",
+                    "username": "test",
+                }
+            }
+        )
+        response = self.request(
+            "user.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "test@ntvtn.de",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["data"]["first_name"] == "Max"
+        assert entry["data"]["last_name"] == "Mustermann"
+        assert entry["data"]["username"] == {"value": "test", "info": "done"}
+        assert entry["data"]["id"] == 34
+
     def test_json_upload_generate_default_password(self) -> None:
         response = self.request(
             "user.json_upload",
