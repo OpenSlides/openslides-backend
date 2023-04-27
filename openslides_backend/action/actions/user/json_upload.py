@@ -10,11 +10,11 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import UserCreate
 from .password_mixin import PasswordCreateMixin
-from .user_mixin import DuplicateCheckMixin
+from .user_mixin import DuplicateCheckMixin, UsernameMixin
 
 
 @register_action("user.json_upload")
-class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
+class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -132,11 +132,15 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
         return {"status": status, "error": error, "data": entry}
 
     def generate_username(self, entry: Dict[str, Any]) -> str:
-        return re.sub(
-            r"\W",
-            "",
-            entry.get("first_name", "") + entry.get("last_name", ""),
-        )
+        return self.generate_usernames(
+            [
+                re.sub(
+                    r"\W",
+                    "",
+                    entry.get("first_name", "") + entry.get("last_name", ""),
+                )
+            ]
+        )[0]
 
     def handle_default_password(self, entry: Dict[str, Any], status: str) -> None:
         if status == ImportStatus.NEW:

@@ -173,6 +173,16 @@ class TopicJsonUpload(BaseActionTestCase):
         )
 
     def test_json_upload_names_and_email_generate_username(self) -> None:
+        self.set_models(
+            {
+                "user/34": {
+                    "username": "MaxMustermann",
+                    "first_name": "Testy",
+                    "last_name": "Tester",
+                }
+            }
+        )
+
         response = self.request(
             "user.json_upload",
             {
@@ -189,7 +199,7 @@ class TopicJsonUpload(BaseActionTestCase):
         assert entry["data"]["first_name"] == "Max"
         assert entry["data"]["last_name"] == "Mustermann"
         assert entry["data"]["username"] == {
-            "value": "MaxMustermann",
+            "value": "MaxMustermann1",
             "info": "generated",
         }
 
