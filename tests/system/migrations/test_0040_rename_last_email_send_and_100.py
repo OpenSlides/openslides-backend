@@ -38,7 +38,7 @@ def test_migration(write, finalize, assert_model):
         {"type": "restore", "fqid": "meeting/1"}, {"type": "restore", "fqid": "user/1"}
     )
 
-    finalize("0039_rename_last_email_send_and_100")
+    finalize("0040_rename_last_email_send_and_100")
 
     assert_model(
         "meeting/1",

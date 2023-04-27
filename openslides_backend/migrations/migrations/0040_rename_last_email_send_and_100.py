@@ -16,7 +16,7 @@ class Migration(BaseMigration):
     This migration renames a field from old_name to new_name for one collection.
     """
 
-    target_migration_index = 40
+    target_migration_index = 41
     collection_to_old_and_new_field = {
         "user": [("last_email_send", "last_email_sent")],
         "meeting": [
