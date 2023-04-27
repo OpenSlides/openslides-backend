@@ -75,8 +75,7 @@ class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
         try:
             TopicCreate.schema_validator(entry)
             if self.check_for_duplicate(entry["title"]):
-                status = ImportStatus.ERROR
-                error.append("Duplicate")
+                status = ImportStatus.WARNING
             else:
                 status = ImportStatus.NEW
         except fastjsonschema.JsonSchemaException as exception:

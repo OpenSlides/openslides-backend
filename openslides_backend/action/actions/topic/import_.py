@@ -40,11 +40,7 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
             action_payload = [
                 entry["data"]
                 for entry in worker.get("result", {}).get("rows", [])
-                if (
-                    entry["status"] == ImportStatus.NEW
-                    or entry["status"] == ImportStatus.ERROR
-                    and entry["error"] == ["Duplicate"]
-                )
+                if (entry["status"] in (ImportStatus.NEW, ImportStatus.WARNING))
                 and not self.check_for_duplicate(entry["data"]["title"])
             ]
             self.execute_other_action(TopicCreate, action_payload)

@@ -104,7 +104,13 @@ class TopicJsonUpload(BaseActionTestCase):
                     "data": {"title": "test", "meeting_id": 22},
                 }
             ],
-            "statistics": {"total": 1, "created": 1, "updated": 0, "omitted": 0},
+            "statistics": {
+                "total": 1,
+                "created": 1,
+                "updated": 0,
+                "omitted": 0,
+                "warning": 0,
+            },
         }
 
     def test_json_upload_duplicate_in_db(self) -> None:
@@ -122,8 +128,8 @@ class TopicJsonUpload(BaseActionTestCase):
         result = response.json["results"][0][0]
         assert result["rows"] == [
             {
-                "status": ImportStatus.ERROR,
-                "error": ["Duplicate"],
+                "status": ImportStatus.WARNING,
+                "error": [],
                 "data": {"title": "test", "meeting_id": 22},
             }
         ]
@@ -138,8 +144,8 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["rows"][2]["error"] == ["Duplicate"]
-        assert result["rows"][2]["status"] == "error"
+        assert result["rows"][2]["error"] == []
+        assert result["rows"][2]["status"] == ImportStatus.WARNING
         self.assert_model_exists(
             "action_worker/1",
             {
@@ -157,8 +163,8 @@ class TopicJsonUpload(BaseActionTestCase):
                             "data": {"title": "bla", "meeting_id": 22},
                         },
                         {
-                            "status": ImportStatus.ERROR,
-                            "error": ["Duplicate"],
+                            "status": ImportStatus.WARNING,
+                            "error": [],
                             "data": {"title": "test", "meeting_id": 22},
                         },
                     ],

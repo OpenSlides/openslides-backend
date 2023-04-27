@@ -12,6 +12,7 @@ from ..util.typing import ActionData, ActionResultElement
 class ImportStatus(str, Enum):
     ERROR = "error"
     NEW = "new"
+    WARNING = "warning"
     DONE = "done"
 
 
@@ -56,6 +57,7 @@ class JsonUploadMixin(Action):
 
         # generate statistics
         itemCount, itemNew, itemDone, itemError = len(self.rows), 0, 0, 0
+        itemWarning = 0
         for entry in self.rows:
             if entry["status"] == ImportStatus.NEW:
                 itemNew += 1
@@ -63,11 +65,14 @@ class JsonUploadMixin(Action):
                 itemDone += 1
             elif entry["status"] == ImportStatus.ERROR:
                 itemError += 1
+            elif entry["status"] == ImportStatus.WARNING:
+                itemWarning += 1
         self.statistics = {
             "total": itemCount,
             "created": itemNew,
             "updated": itemDone,
             "omitted": itemError,
+            "warning": itemWarning,
         }
 
     def store_rows_in_the_action_worker(self, import_name: str) -> None:
