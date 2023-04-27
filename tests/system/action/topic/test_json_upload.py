@@ -95,7 +95,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 {"property": "text", "type": "string"},
                 {"property": "agenda_comment", "type": "string"},
                 {"property": "agenda_type", "type": "string"},
-                {"proptery": "agenda_duration", "type": "number"},
+                {"property": "agenda_duration", "type": "number"},
             ],
             "rows": [
                 {

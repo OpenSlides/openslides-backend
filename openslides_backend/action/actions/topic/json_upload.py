@@ -52,7 +52,7 @@ class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
         {"property": "text", "type": "string"},
         {"property": "agenda_comment", "type": "string"},
         {"property": "agenda_type", "type": "string"},
-        {"proptery": "agenda_duration", "type": "number"},
+        {"property": "agenda_duration", "type": "number"},
     ]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
