@@ -64,21 +64,39 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
         create_action_payload: List[Dict[str, Any]] = []
         update_action_payload: List[Dict[str, Any]] = []
         for payload_index, entry in enumerate(data):
-            if entry["status"] in (
-                ImportStatus.NEW,
-                ImportStatus.DONE,
-            ) and entry[
-                "data"
-            ].get("username"):
-                username = entry["data"]["username"]
-                data = entry["data"]
-                if self.check_username_for_duplicate(username, payload_index):
-                    if not entry["data"].get("id"):
-                        raise ActionException("Could not find id for username.")
-                    del data["username"]
-                    update_action_payload.append(data)
+            if entry["status"] == ImportStatus.NEW:
+                if not entry["data"].get("username"):
+                    raise ActionException("Error: could not find username")
+                elif self.check_username_for_duplicate(
+                    entry["data"]["username"], payload_index
+                ):
+                    raise ActionException(
+                        "Error: want to create a new user, but username already exists."
+                    )
                 else:
-                    create_action_payload.append(data)
+                    create_action_payload.append(entry["data"])
+            elif entry["status"] == ImportStatus.DONE:
+                sdata = self.get_search_data(payload_index)
+                if not entry["data"].get("username"):
+                    raise ActionException("Error: could not find username")
+                elif not self.check_username_for_duplicate(
+                    entry["data"]["username"], payload_index
+                ):
+                    raise ActionException(
+                        "Error: want to update, but missing user in db."
+                    )
+                elif sdata is None:
+                    raise ActionException(
+                        "Error: want to update, but found search data are wrong."
+                    )
+                elif sdata["username"] != entry["data"]["username"]:
+                    raise ActionException(
+                        "Error: want to update, but found search data doesn't match."
+                    )
+
+                else:
+                    del entry["data"]["username"]
+                    update_action_payload.append(entry["data"])
             else:
                 raise ActionException("Error in import.")
 
