@@ -177,57 +177,39 @@ class UpdateHistoryMixin(Action):
 
 
 class DuplicateCheckMixin(Action):
-    def init_duplicate_set(
-        self, usernames: List[str], names_and_emails: List[Any]
-    ) -> None:
-        search_users = [{"username": un} for un in usernames] + [
-            {"first_name": entry[0], "last_name": entry[1], "email": entry[2]}
-            for entry in names_and_emails
-            if entry[0] and entry[1] and entry[2]
-        ]
-        users: Any = []
-        if search_users:
-            users_in_double_lists = self.execute_presenter(
-                SearchUsers,
-                {
-                    "permission_type": "organization",
-                    "permission_id": 1,
-                    "search": search_users,
-                },
-            )
-            for user_list in users_in_double_lists:
-                users.extend(user_list)
+    def init_duplicate_set(self, data: List[Any]) -> None:
+        self.users_in_double_lists = self.execute_presenter(
+            SearchUsers,
+            {
+                "permission_type": "organization",
+                "permission_id": 1,
+                "search": data,
+            },
+        )
+        self.used_usernames: List[str] = []
+        self.used_names_and_email: List[Any] = []
 
-        # for getting the ids in update case (username, names_and_email)
-        self.username_to_id = {values["username"]: values["id"] for values in users}
-        self.names_and_email_to_id = {
-            (
-                values.get("first_name"),
-                values.get("last_name"),
-                values.get("email"),
-            ): values["id"]
-            for values in users
-        }
-        self.names_and_email_to_username = {
-            (
-                values.get("first_name"),
-                values.get("last_name"),
-                values.get("email"),
-            ): values["username"]
-            for values in users
-        }
-
-    def check_username_for_duplicate(self, username: str) -> bool:
-        result = username in self.username_to_id
-        if not result:
-            self.username_to_id[username] = None
+    def check_username_for_duplicate(self, username: str, payload_index: int) -> bool:
+        result = (
+            self.users_in_double_lists[payload_index] or username in self.used_usernames
+        )
+        if username not in self.used_usernames:
+            self.used_usernames.append(username)
         return result
 
     def check_name_and_email_for_duplicate(
-        self, first_name: str, last_name: str, email: str
+        self, first_name: str, last_name: str, email: str, payload_index: int
     ) -> bool:
         entry = (first_name, last_name, email)
-        result = entry in self.names_and_email_to_id
-        if not result:
-            self.names_and_email_to_id[entry] = None
+        result = (
+            self.users_in_double_lists[payload_index]
+            or entry in self.used_names_and_email
+        )
+        if entry not in self.used_names_and_email:
+            self.used_names_and_email.append(entry)
         return result
+
+    def get_search_data(self, payload_index: int) -> Optional[Dict[str, Any]]:
+        if len(self.users_in_double_lists[payload_index]) == 1:
+            return self.users_in_double_lists[payload_index][0]
+        return None

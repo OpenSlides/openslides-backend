@@ -139,8 +139,8 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["rows"][2]["error"] == []
-        assert result["rows"][2]["status"] == ImportStatus.DONE
+        assert result["rows"][2]["error"] == ["Duplicate in csv list index: 2"]
+        assert result["rows"][2]["status"] == ImportStatus.ERROR
         self.assert_model_exists(
             "action_worker/1",
             {
@@ -164,8 +164,8 @@ class TopicJsonUpload(BaseActionTestCase):
                             },
                         },
                         {
-                            "status": ImportStatus.DONE,
-                            "error": [],
+                            "status": ImportStatus.ERROR,
+                            "error": ["Duplicate in csv list index: 2"],
                             "data": {
                                 "username": {"value": "test", "info": "done"},
                                 "default_password": {"value": "secret", "info": "done"},

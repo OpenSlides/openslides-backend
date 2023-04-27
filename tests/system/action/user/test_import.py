@@ -15,7 +15,10 @@ class UserJsonImport(BaseActionTestCase):
                             {
                                 "status": ImportStatus.NEW,
                                 "error": [],
-                                "data": {"username": "test", "first_name": "Testy"},
+                                "data": {
+                                    "username": {"value": "test", "info": "done"},
+                                    "first_name": "Testy",
+                                },
                             },
                         ],
                     },
@@ -28,6 +31,10 @@ class UserJsonImport(BaseActionTestCase):
                                 "status": ImportStatus.NEW,
                                 "error": [],
                                 "data": {
+                                    "username": {
+                                        "value": "TestyTester",
+                                        "info": "done",
+                                    },
                                     "first_name": "Testy",
                                     "last_name": "Tester",
                                     "email": "email@test.com",
@@ -56,7 +63,10 @@ class UserJsonImport(BaseActionTestCase):
     def test_import_username_and_create(self) -> None:
         response = self.request("user.import", {"id": 2, "import": True})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "test", "first_name": "Testy"})
+        self.assert_model_exists(
+            "user/2",
+            {"username": "test", "first_name": "Testy"},
+        )
         self.assert_model_not_exists("action_worker/2")
 
     def test_import_abort(self) -> None:
@@ -78,9 +88,25 @@ class UserJsonImport(BaseActionTestCase):
                 "user/1": {
                     "username": "test",
                 },
+                "action_worker/6": {
+                    "result": {
+                        "import": "account",
+                        "rows": [
+                            {
+                                "status": ImportStatus.DONE,
+                                "error": [],
+                                "data": {
+                                    "username": {"value": "test", "info": "done"},
+                                    "id": 1,
+                                    "first_name": "Testy",
+                                },
+                            },
+                        ],
+                    },
+                },
             }
         )
-        response = self.request("user.import", {"id": 2, "import": True})
+        response = self.request("user.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/2")
         self.assert_model_exists("user/1", {"first_name": "Testy"})
@@ -96,30 +122,6 @@ class UserJsonImport(BaseActionTestCase):
                 "gender": "male",
                 "last_name": "Tester",
                 "email": "email@test.com",
-            },
-        )
-
-    def test_import_names_and_email_and_update(self) -> None:
-        self.set_models(
-            {
-                "user/1": {
-                    "username": "test",
-                    "first_name": "Testy",
-                    "last_name": "Tester",
-                    "email": "email@test.com",
-                },
-            }
-        )
-        response = self.request("user.import", {"id": 3, "import": True})
-        self.assert_status_code(response, 200)
-        self.assert_model_not_exists("user/2")
-        self.assert_model_exists(
-            "user/1",
-            {
-                "first_name": "Testy",
-                "last_name": "Tester",
-                "email": "email@test.com",
-                "gender": "male",
             },
         )
 

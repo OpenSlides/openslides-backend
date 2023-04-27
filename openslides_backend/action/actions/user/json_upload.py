@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 import fastjsonschema
 
@@ -67,35 +67,38 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
         data = instance.pop("data")
 
         # validate and check for duplicates
-        usernames: List[str] = []
-        names_and_emails: List[Any] = []
-        for entry in data:
-            if entry.get("username"):
-                usernames.append(entry["username"])
-            elif entry.get("first_name") or entry.get("last_name"):
-                names_and_emails.append(
-                    (
-                        entry.get("first_name", ""),
-                        entry.get("last_name", ""),
-                        entry.get("email", ""),
-                    )
-                )
-        self.init_duplicate_set(usernames, names_and_emails)
-        rows = [self.generate_entry(entry) for entry in data]
+        self.init_duplicate_set(
+            [
+                {
+                    field: entry.get(field, "")
+                    for field in ("username", "first_name", "last_name", "email")
+                }
+                for entry in data
+            ]
+        )
+        rows = [
+            self.generate_entry(entry, payload_index)
+            for payload_index, entry in enumerate(data)
+        ]
 
         self.init_rows(rows)
         self.store_rows_in_the_action_worker("account")
         return {}
 
-    def generate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_entry(
+        self, entry: Dict[str, Any], payload_index: int
+    ) -> Dict[str, Any]:
         status, error = None, []
         try:
             UserCreate.schema_validator(entry)
             if entry.get("username"):
-                if self.check_username_for_duplicate(entry["username"]):
+                if self.check_username_for_duplicate(entry["username"], payload_index):
                     status = ImportStatus.DONE
-                    if self.username_to_id[entry["username"]]:
-                        entry["id"] = self.username_to_id[entry["username"]]
+                    if searchdata := self.get_search_data(payload_index):
+                        entry["id"] = searchdata["id"]
+                    else:
+                        status = ImportStatus.ERROR
+                        error.append(f"Duplicate in csv list index: {payload_index}")
                 else:
                     status = ImportStatus.NEW
                 entry["username"] = {"value": entry["username"], "info": "done"}
@@ -103,21 +106,19 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
                 if not (entry.get("first_name") or entry.get("last_name")):
                     status = ImportStatus.ERROR
                     error.append("Cannot generate username.")
-                elif self.check_name_and_email_for_duplicate(*_names_and_email(entry)):
+                elif self.check_name_and_email_for_duplicate(
+                    *_names_and_email(entry), payload_index
+                ):
                     status = ImportStatus.DONE
-                    if self.names_and_email_to_id[_names_and_email(entry)]:
+                    if searchdata := self.get_search_data(payload_index):
                         entry["username"] = {
-                            "value": self.names_and_email_to_username[
-                                _names_and_email(entry)
-                            ],
+                            "value": searchdata["username"],
                             "info": "done",
                         }
-                        entry["id"] = self.names_and_email_to_id[
-                            _names_and_email(entry)
-                        ]
+                        entry["id"] = searchdata["id"]
                     else:
                         status = ImportStatus.ERROR
-                        error.append("Could not find id with names and email")
+                        error.append("Duplicate in csv list index: {payload_index}")
                 else:
                     status = ImportStatus.NEW
                     entry["username"] = {
@@ -146,7 +147,7 @@ class UserJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
                 value = PasswordCreateMixin.generate_password()
                 info = "generated"
             entry["default_password"] = {"value": value, "info": info}
-        elif status == ImportStatus.DONE:
+        elif status in (ImportStatus.DONE, ImportStatus.ERROR):
             if "default_password" in entry:
                 entry["default_password"] = {
                     "value": entry["default_password"],
