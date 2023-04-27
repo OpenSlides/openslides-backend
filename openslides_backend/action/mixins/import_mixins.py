@@ -114,3 +114,13 @@ class JsonUploadMixin(Action):
             "rows": self.rows,
             "statistics": self.statistics,
         }
+
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        # filter extra, not needed fields before validate.
+        allowed_fields_from_header = [header["property"] for header in self.headers]
+        for entry in list(instance.get("data", [])):
+            for field in dict(entry):
+                if field not in allowed_fields_from_header:
+                    del entry[field]
+
+        super().validate_instance(instance)

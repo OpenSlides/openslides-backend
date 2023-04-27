@@ -26,6 +26,7 @@ class TopicJsonUpload(BaseActionTestCase):
                         "agenda_comment": "testtesttest",
                         "agenda_type": "hidden",
                         "agenda_duration": 50,
+                        "wrong": 15,
                     }
                 ],
             },
@@ -46,17 +47,6 @@ class TopicJsonUpload(BaseActionTestCase):
         worker = self.assert_model_exists("action_worker/1", {"state": "running"})
         assert start_time <= worker.get("created", -1) <= end_time
         assert start_time <= worker.get("timestamp", -1) <= end_time
-
-    def test_json_upload_wrong_data(self) -> None:
-        response = self.request(
-            "topic.json_upload",
-            {"meeting_id": 22, "data": [{"title": "test", "wrong": 15}]},
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "data.data[0] must not contain {'wrong'} properties"
-            in response.json["message"]
-        )
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(

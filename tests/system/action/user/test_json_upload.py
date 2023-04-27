@@ -15,6 +15,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     {
                         "username": "test",
                         "default_password": "secret",
+                        "wrong": 15,
                     }
                 ],
             },
@@ -33,17 +34,6 @@ class TopicJsonUpload(BaseActionTestCase):
         assert worker["result"]["import"] == "account"
         assert start_time <= worker["created"] <= end_time
         assert start_time <= worker["timestamp"] <= end_time
-
-    def test_json_upload_wrong_data(self) -> None:
-        response = self.request(
-            "user.json_upload",
-            {"data": [{"username": "test", "wrong": 15}]},
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "data.data[0] must not contain {'wrong'} properties"
-            in response.json["message"]
-        )
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
