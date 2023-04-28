@@ -67,13 +67,16 @@ class JsonUploadMixin(Action):
                 itemError += 1
             elif entry["status"] == ImportStatus.WARNING:
                 itemWarning += 1
-        self.statistics = {
-            "total": itemCount,
-            "created": itemNew,
-            "updated": itemDone,
-            "omitted": itemError,
-            "warning": itemWarning,
-        }
+        raw_statistics = (
+            ("total", itemCount),
+            ("created", itemNew),
+            ("updated", itemDone),
+            ("omitted", itemError),
+            ("warning", itemWarning),
+        )
+        self.statistics = [
+            {"name": name, "value": value} for name, value in raw_statistics
+        ]
 
     def store_rows_in_the_action_worker(self, import_name: str) -> None:
         self.new_store_id = self.datastore.reserve_id(collection="action_worker")

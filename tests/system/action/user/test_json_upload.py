@@ -92,13 +92,13 @@ class TopicJsonUpload(BaseActionTestCase):
                     },
                 }
             ],
-            "statistics": {
-                "total": 1,
-                "created": 1,
-                "updated": 0,
-                "omitted": 0,
-                "warning": 0,
-            },
+            "statistics": [
+                {"name": "total", "value": 1},
+                {"name": "created", "value": 1},
+                {"name": "updated", "value": 0},
+                {"name": "omitted", "value": 0},
+                {"name": "warning", "value": 0},
+            ],
         }
 
     def test_json_upload_duplicate_in_db(self) -> None:
