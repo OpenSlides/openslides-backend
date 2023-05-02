@@ -26,6 +26,7 @@ from ..permissions.management_levels import (
 )
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
+from ..presenter.base import BasePresenter
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import (
@@ -715,7 +716,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         return None
 
-    def execute_presenter(self, PresenterClass: Any, payload: Any) -> Any:
+    def execute_presenter(
+        self, PresenterClass: Type[BasePresenter], payload: Any
+    ) -> Any:
         presenter_instance = PresenterClass(
             payload,
             self.services,

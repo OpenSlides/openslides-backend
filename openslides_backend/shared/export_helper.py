@@ -4,22 +4,18 @@ from datastore.shared.util import is_reserved_field
 
 from openslides_backend.migrations import get_backend_migration_index
 
-from ....models.base import model_registry
-from ....models.fields import (
+from ..models.base import model_registry
+from ..models.fields import (
     BaseRelationField,
     GenericRelationField,
     OnDelete,
     RelationField,
     RelationListField,
 )
-from ....models.models import Meeting, User
-from ....services.datastore.commands import GetManyRequest
-from ....services.datastore.interface import DatastoreService
-from ....shared.patterns import (
-    collection_from_fqid,
-    fqid_from_collection_and_id,
-    id_from_fqid,
-)
+from ..models.models import Meeting, User
+from ..services.datastore.commands import GetManyRequest
+from ..services.datastore.interface import DatastoreService
+from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
 
 
 def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, Any]:
