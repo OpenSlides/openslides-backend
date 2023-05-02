@@ -1,3 +1,4 @@
+import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
@@ -40,6 +41,17 @@ class UsernameMixin(Action):
                 break
             used_usernames.append(username)
         return used_usernames
+
+    def generate_username(self, entry: Dict[str, Any]) -> str:
+        return self.generate_usernames(
+            [
+                re.sub(
+                    r"\W",
+                    "",
+                    entry.get("first_name", "") + entry.get("last_name", ""),
+                )
+            ]
+        )[0]
 
 
 class LimitOfUserMixin(Action):

@@ -51,14 +51,14 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
             if entry["status"] == ImportStatus.ERROR:
                 raise ActionException("Error in import.")
 
-        search_data = [
+        search_data_list = [
             {
                 field: entry["data"].get(field, "")
                 for field in ("username", "first_name", "last_name", "email")
             }
             for entry in data
         ]
-        self.init_duplicate_set(search_data)
+        self.init_duplicate_set(search_data_list)
 
         # Recheck and update data, update needs "id"
         create_action_payload: List[Dict[str, Any]] = []
@@ -76,7 +76,7 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
                 else:
                     create_action_payload.append(entry["data"])
             elif entry["status"] == ImportStatus.DONE:
-                sdata = self.get_search_data(payload_index)
+                search_data = self.get_search_data(payload_index)
                 if not entry["data"].get("username"):
                     raise ActionException("Error: could not find username")
                 elif not self.check_username_for_duplicate(
@@ -85,11 +85,11 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
                     raise ActionException(
                         "Error: want to update, but missing user in db."
                     )
-                elif sdata is None:
+                elif search_data is None:
                     raise ActionException(
                         "Error: want to update, but found search data are wrong."
                     )
-                elif sdata["username"] != entry["data"]["username"]:
+                elif search_data["username"] != entry["data"]["username"]:
                     raise ActionException(
                         "Error: want to update, but found search data doesn't match."
                     )

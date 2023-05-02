@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, Tuple
 
 import fastjsonschema
@@ -107,13 +106,13 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                     status = ImportStatus.ERROR
                     error.append("Cannot generate username.")
                 elif self.check_name_and_email_for_duplicate(
-                    *_names_and_email(entry), payload_index
+                    *self._names_and_email(entry), payload_index
                 ):
                     status = ImportStatus.DONE
                     if searchdata := self.get_search_data(payload_index):
                         entry["username"] = {
                             "value": searchdata["username"],
-                            "info": "done",
+                            "info": ImportStatus.DONE,
                         }
                         entry["id"] = searchdata["id"]
                     else:
@@ -123,7 +122,7 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                     status = ImportStatus.NEW
                     entry["username"] = {
                         "value": self.generate_username(entry),
-                        "info": "generated",
+                        "info": ImportStatus.GENERATED,
                     }
             self.handle_default_password(entry, status)
         except fastjsonschema.JsonSchemaException as exception:
@@ -131,37 +130,25 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
             error.append(exception.message)
         return {"status": status, "error": error, "data": entry}
 
-    def generate_username(self, entry: Dict[str, Any]) -> str:
-        return self.generate_usernames(
-            [
-                re.sub(
-                    r"\W",
-                    "",
-                    entry.get("first_name", "") + entry.get("last_name", ""),
-                )
-            ]
-        )[0]
-
     def handle_default_password(self, entry: Dict[str, Any], status: str) -> None:
         if status == ImportStatus.NEW:
             if "default_password" in entry:
                 value = entry["default_password"]
-                info = "done"
+                info = ImportStatus.DONE
             else:
                 value = PasswordCreateMixin.generate_password()
-                info = "generated"
+                info = ImportStatus.GENERATED
             entry["default_password"] = {"value": value, "info": info}
         elif status in (ImportStatus.DONE, ImportStatus.ERROR):
             if "default_password" in entry:
                 entry["default_password"] = {
                     "value": entry["default_password"],
-                    "info": "done",
+                    "info": ImportStatus.DONE,
                 }
 
-
-def _names_and_email(entry: Dict[str, Any]) -> Tuple[str, str, str]:
-    return (
-        entry.get("first_name", ""),
-        entry.get("last_name", ""),
-        entry.get("email", ""),
-    )
+    def _names_and_email(self, entry: Dict[str, Any]) -> Tuple[str, str, str]:
+        return (
+            entry.get("first_name", ""),
+            entry.get("last_name", ""),
+            entry.get("email", ""),
+        )

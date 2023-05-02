@@ -1,6 +1,6 @@
 from enum import Enum
 from time import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TypedDict
 
 from ...shared.interfaces.event import Event, EventType
 from ...shared.interfaces.write_request import WriteRequest
@@ -14,6 +14,7 @@ class ImportStatus(str, Enum):
     NEW = "new"
     WARNING = "warning"
     DONE = "done"
+    GENERATED = "generated"
 
 
 class ImportMixin(Action):
@@ -49,8 +50,13 @@ class ImportMixin(Action):
         return on_success
 
 
+class HeaderEntry(TypedDict):
+    property: str
+    type: str
+
+
 class JsonUploadMixin(Action):
-    headers: Any
+    headers: List[HeaderEntry]
 
     def init_rows(self, rows: List[Dict[str, Any]]) -> None:
         self.rows = rows

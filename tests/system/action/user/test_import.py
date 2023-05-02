@@ -16,7 +16,10 @@ class UserJsonImport(BaseActionTestCase):
                                 "status": ImportStatus.NEW,
                                 "error": [],
                                 "data": {
-                                    "username": {"value": "test", "info": "done"},
+                                    "username": {
+                                        "value": "test",
+                                        "info": ImportStatus.DONE,
+                                    },
                                     "first_name": "Testy",
                                 },
                             },
@@ -33,7 +36,7 @@ class UserJsonImport(BaseActionTestCase):
                                 "data": {
                                     "username": {
                                         "value": "TestyTester",
-                                        "info": "done",
+                                        "info": ImportStatus.DONE,
                                     },
                                     "first_name": "Testy",
                                     "last_name": "Tester",
@@ -96,7 +99,10 @@ class UserJsonImport(BaseActionTestCase):
                                 "status": ImportStatus.DONE,
                                 "error": [],
                                 "data": {
-                                    "username": {"value": "test", "info": "done"},
+                                    "username": {
+                                        "value": "test",
+                                        "info": ImportStatus.DONE,
+                                    },
                                     "id": 1,
                                     "first_name": "Testy",
                                 },

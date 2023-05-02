@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict
 
 from ....models.models import User
@@ -79,14 +78,3 @@ class UserCreate(
             instance = self.set_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
         return instance
-
-    def generate_username(self, instance: Dict[str, Any]) -> str:
-        return self.generate_usernames(
-            [
-                re.sub(
-                    r"\W",
-                    "",
-                    instance.get("first_name", "") + instance.get("last_name", ""),
-                )
-            ]
-        )[0]
