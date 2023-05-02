@@ -15,6 +15,8 @@ class TopicJsonUpload(BaseActionTestCase):
                     {
                         "username": "test",
                         "default_password": "secret",
+                        "is_active": "1",
+                        "is_physical_person": "F",
                         "wrong": 15,
                     }
                 ],
@@ -28,6 +30,8 @@ class TopicJsonUpload(BaseActionTestCase):
             "data": {
                 "username": {"value": "test", "info": ImportStatus.DONE},
                 "default_password": {"value": "secret", "info": ImportStatus.DONE},
+                "is_active": True,
+                "is_physical_person": False,
             },
         }
         worker = self.assert_model_exists("action_worker/1")
@@ -42,6 +46,22 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "data.data must contain at least 1 items" in response.json["message"]
+
+    def test_json_upload_parse_boolean_error(self) -> None:
+        response = self.request(
+            "user.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test",
+                        "default_password": "secret",
+                        "is_physical_person": "X50",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Could not parse X50 expect boolean" in response.json["message"]
 
     def test_json_upload_results(self) -> None:
         response = self.request(

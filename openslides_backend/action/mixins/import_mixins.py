@@ -2,6 +2,7 @@ from enum import Enum
 from time import time
 from typing import Any, Callable, Dict, List, Optional, TypedDict
 
+from ...shared.exceptions import ActionException
 from ...shared.interfaces.event import Event, EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
@@ -125,11 +126,31 @@ class JsonUploadMixin(Action):
         }
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
-        # filter extra, not needed fields before validate.
-        allowed_fields_from_header = [header["property"] for header in self.headers]
+        # filter extra, not needed fields before validate and parse some fields
+        property_to_type = {
+            header["property"]: header["type"] for header in self.headers
+        }
         for entry in list(instance.get("data", [])):
             for field in dict(entry):
-                if field not in allowed_fields_from_header:
+                if field not in property_to_type:
                     del entry[field]
+                else:
+                    type_ = property_to_type[field]
+                    if type_ == "integer":
+                        if str.isdigit(entry[field]):
+                            entry[field] = int(entry[field])
+                        else:
+                            raise ActionException(
+                                f"Could not parse {entry[field]} expect integer"
+                            )
+                    elif type_ == "boolean":
+                        if entry[field] in ("1", "true", "True", "T", "t"):
+                            entry[field] = True
+                        elif entry[field] in ("0", "false", "False", "F", "f"):
+                            entry[field] = False
+                        else:
+                            raise ActionException(
+                                f"Could not parse {entry[field]} expect boolean"
+                            )
 
         super().validate_instance(instance)

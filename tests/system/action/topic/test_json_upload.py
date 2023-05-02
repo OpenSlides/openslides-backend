@@ -25,7 +25,7 @@ class TopicJsonUpload(BaseActionTestCase):
                         "title": "test",
                         "agenda_comment": "testtesttest",
                         "agenda_type": "hidden",
-                        "agenda_duration": 50,
+                        "agenda_duration": "50",
                         "wrong": 15,
                     }
                 ],
@@ -56,6 +56,25 @@ class TopicJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "data.data must contain at least 1 items" in response.json["message"]
 
+    def test_json_upload_integer_parsing_error(self) -> None:
+        response = self.request(
+            "topic.json_upload",
+            {
+                "meeting_id": 22,
+                "data": [
+                    {
+                        "title": "test",
+                        "agenda_comment": "testtesttest",
+                        "agenda_type": "hidden",
+                        "agenda_duration": "X50",
+                        "wrong": 15,
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Could not parse X50 expect integer" in response.json["message"]
+
     def test_json_upload_results(self) -> None:
         response = self.request(
             "topic.json_upload",
@@ -85,7 +104,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 {"property": "text", "type": "string"},
                 {"property": "agenda_comment", "type": "string"},
                 {"property": "agenda_type", "type": "string"},
-                {"property": "agenda_duration", "type": "number"},
+                {"property": "agenda_duration", "type": "integer"},
             ],
             "rows": [
                 {
