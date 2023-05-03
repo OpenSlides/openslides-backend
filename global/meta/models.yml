@@ -249,6 +249,7 @@ user:
       - male
       - female
       - diverse
+      - non-binary
     restriction_mode: A
   email:
     type: string
