@@ -106,7 +106,7 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                     status = ImportStatus.ERROR
                     error.append("Cannot generate username.")
                 elif self.check_name_and_email_for_duplicate(
-                    *self._names_and_email(entry), payload_index
+                    *UserJsonUpload._names_and_email(entry), payload_index
                 ):
                     status = ImportStatus.DONE
                     if searchdata := self.get_search_data(payload_index):
@@ -146,7 +146,8 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                     "info": ImportStatus.DONE,
                 }
 
-    def _names_and_email(self, entry: Dict[str, Any]) -> Tuple[str, str, str]:
+    @staticmethod
+    def _names_and_email(entry: Dict[str, Any]) -> Tuple[str, str, str]:
         return (
             entry.get("first_name", ""),
             entry.get("last_name", ""),

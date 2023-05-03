@@ -137,9 +137,9 @@ class JsonUploadMixin(Action):
                 else:
                     type_ = property_to_type[field]
                     if type_ == "integer":
-                        if str.isdigit(entry[field]):
+                        try:
                             entry[field] = int(entry[field])
-                        else:
+                        except ValueError:
                             raise ActionException(
                                 f"Could not parse {entry[field]} expect integer"
                             )
