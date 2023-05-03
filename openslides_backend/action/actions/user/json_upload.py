@@ -97,6 +97,9 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
             {"name": name, "value": value} for name, value in raw_statistics
         ]
 
+        self.set_status(
+            status_to_count[ImportStatus.ERROR], status_to_count[ImportStatus.WARNING]
+        )
         self.store_rows_in_the_action_worker("account")
         return {}
 

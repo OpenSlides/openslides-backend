@@ -128,6 +128,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 {"name": "error", "value": 0},
                 {"name": "warning", "value": 0},
             ],
+            "status": ImportStatus.DONE,
         }
 
     def test_json_upload_duplicate_in_db(self) -> None:

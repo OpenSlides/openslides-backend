@@ -60,6 +60,15 @@ class JsonUploadMixin(Action):
     headers: List[HeaderEntry]
     rows: List[Dict[str, Any]]
     statistics: Any
+    status: ImportStatus
+
+    def set_status(self, number_errors: int, number_warnings: int) -> None:
+        if number_errors > 0:
+            self.status = ImportStatus.ERROR
+        elif number_warnings > 0:
+            self.status = ImportStatus.WARNING
+        else:
+            self.status = ImportStatus.DONE
 
     def store_rows_in_the_action_worker(self, import_name: str) -> None:
         self.new_store_id = self.datastore.reserve_id(collection="action_worker")
@@ -76,7 +85,7 @@ class JsonUploadMixin(Action):
                             "result": {"import": import_name, "rows": self.rows},
                             "created": time_created,
                             "timestamp": time_created,
-                            "state": "running",
+                            "state": self.status,
                         },
                     )
                 ],
@@ -99,6 +108,7 @@ class JsonUploadMixin(Action):
             "headers": self.headers,
             "rows": self.rows,
             "statistics": self.statistics,
+            "status": self.status,
         }
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:

@@ -32,10 +32,12 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         store_id = instance["id"]
         worker = self.datastore.get(
-            fqid_from_collection_and_id("action_worker", store_id), ["result"]
+            fqid_from_collection_and_id("action_worker", store_id), ["result", "state"]
         )
         if (worker.get("result") or {}).get("import") != "account":
             raise ActionException("Wrong id doesn't point on account import data.")
+        if worker.get("state") == ImportStatus.ERROR:
+            raise ActionException("Error in import.")
 
         # handle abort in on_success
         if not instance["import"]:
@@ -48,8 +50,6 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
             for field in ("username", "default_password"):
                 if field in entry["data"]:
                     entry["data"][field] = entry["data"][field]["value"]
-            if entry["status"] == ImportStatus.ERROR:
-                raise ActionException("Error in import.")
 
         search_data_list = [
             {

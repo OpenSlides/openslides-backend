@@ -44,7 +44,9 @@ class TopicJsonUpload(BaseActionTestCase):
                 "agenda_duration": 50,
             },
         }
-        worker = self.assert_model_exists("action_worker/1", {"state": "running"})
+        worker = self.assert_model_exists(
+            "action_worker/1", {"state": ImportStatus.DONE}
+        )
         assert start_time <= worker.get("created", -1) <= end_time
         assert start_time <= worker.get("timestamp", -1) <= end_time
 
@@ -120,6 +122,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 {"name": "error", "value": 0},
                 {"name": "warning", "value": 0},
             ],
+            "status": ImportStatus.DONE,
         }
 
     def test_json_upload_duplicate_in_db(self) -> None:
