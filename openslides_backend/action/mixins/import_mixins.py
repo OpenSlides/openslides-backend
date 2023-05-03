@@ -61,32 +61,6 @@ class JsonUploadMixin(Action):
     rows: List[Dict[str, Any]]
     statistics: Any
 
-    def init_rows(self, rows: List[Dict[str, Any]]) -> None:
-        self.rows = rows
-
-        # generate statistics
-        itemCount, itemNew, itemDone, itemError = len(self.rows), 0, 0, 0
-        itemWarning = 0
-        for entry in self.rows:
-            if entry["status"] == ImportStatus.NEW:
-                itemNew += 1
-            elif entry["status"] == ImportStatus.DONE:
-                itemDone += 1
-            elif entry["status"] == ImportStatus.ERROR:
-                itemError += 1
-            elif entry["status"] == ImportStatus.WARNING:
-                itemWarning += 1
-        raw_statistics = (
-            ("total", itemCount),
-            ("created", itemNew),
-            ("updated", itemDone),
-            ("omitted", itemError),
-            ("warning", itemWarning),
-        )
-        self.statistics = [
-            {"name": name, "value": value} for name, value in raw_statistics
-        ]
-
     def store_rows_in_the_action_worker(self, import_name: str) -> None:
         self.new_store_id = self.datastore.reserve_id(collection="action_worker")
         fqid = fqid_from_collection_and_id("action_worker", self.new_store_id)
