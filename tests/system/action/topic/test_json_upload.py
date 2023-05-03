@@ -117,7 +117,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 {"name": "total", "value": 1},
                 {"name": "created", "value": 1},
                 {"name": "updated", "value": 0},
-                {"name": "omitted", "value": 0},
+                {"name": "error", "value": 0},
                 {"name": "warning", "value": 0},
             ],
         }

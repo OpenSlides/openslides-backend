@@ -58,6 +58,8 @@ class HeaderEntry(TypedDict):
 
 class JsonUploadMixin(Action):
     headers: List[HeaderEntry]
+    rows: List[Dict[str, Any]]
+    statistics: Any
 
     def init_rows(self, rows: List[Dict[str, Any]]) -> None:
         self.rows = rows

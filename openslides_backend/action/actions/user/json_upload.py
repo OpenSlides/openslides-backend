@@ -75,12 +75,28 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                 for entry in data
             ]
         )
-        rows = [
+        self.rows = [
             self.generate_entry(entry, payload_index)
             for payload_index, entry in enumerate(data)
         ]
 
-        self.init_rows(rows)
+        # generate statistics
+        itemCount = len(self.rows)
+        status_to_count = {status: 0 for status in ImportStatus}
+        for entry in self.rows:
+            status_to_count[entry["status"]] += 1
+
+        raw_statistics = (
+            ("total", itemCount),
+            ("created", status_to_count[ImportStatus.NEW]),
+            ("updated", status_to_count[ImportStatus.DONE]),
+            ("error", status_to_count[ImportStatus.ERROR]),
+            ("warning", status_to_count[ImportStatus.WARNING]),
+        )
+        self.statistics = [
+            {"name": name, "value": value} for name, value in raw_statistics
+        ]
+
         self.store_rows_in_the_action_worker("account")
         return {}
 
