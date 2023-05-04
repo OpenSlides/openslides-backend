@@ -203,7 +203,8 @@ class DuplicateCheckMixin(Action):
 
     def check_username_for_duplicate(self, username: str, payload_index: int) -> bool:
         result = (
-            self.users_in_double_lists[payload_index] or username in self.used_usernames
+            bool(self.users_in_double_lists[payload_index])
+            or username in self.used_usernames
         )
         if username not in self.used_usernames:
             self.used_usernames.append(username)
