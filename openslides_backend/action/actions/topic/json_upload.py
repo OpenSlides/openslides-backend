@@ -72,15 +72,12 @@ class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
         for entry in self.rows:
             status_to_count[entry["status"]] += 1
 
-        raw_statistics = (
-            ("total", itemCount),
-            ("created", status_to_count[ImportStatus.NEW]),
-            ("updated", status_to_count[ImportStatus.DONE]),
-            ("error", status_to_count[ImportStatus.ERROR]),
-            ("warning", status_to_count[ImportStatus.WARNING]),
-        )
         self.statistics = [
-            {"name": name, "value": value} for name, value in raw_statistics
+            {"name": "total", "value": itemCount},
+            {"name": "created", "value": status_to_count[ImportStatus.NEW]},
+            {"name": "updated", "value": status_to_count[ImportStatus.DONE]},
+            {"name": "error", "value": status_to_count[ImportStatus.ERROR]},
+            {"name": "warning", "value": status_to_count[ImportStatus.WARNING]},
         ]
 
         self.set_status(
