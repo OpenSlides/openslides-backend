@@ -5,7 +5,7 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportMixin, ImportStatus
+from ...mixins.import_mixins import ImportMixin, ImportState
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import UserCreate
@@ -36,7 +36,7 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
         )
         if (worker.get("result") or {}).get("import") != "account":
             raise ActionException("Wrong id doesn't point on account import data.")
-        if worker.get("state") == ImportStatus.ERROR:
+        if worker.get("state") == ImportState.ERROR:
             raise ActionException("Error in import.")
 
         # handle abort in on_success
@@ -64,7 +64,7 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
         create_action_payload: List[Dict[str, Any]] = []
         update_action_payload: List[Dict[str, Any]] = []
         for payload_index, entry in enumerate(data):
-            if entry["status"] == ImportStatus.NEW:
+            if entry["state"] == ImportState.NEW:
                 if not entry["data"].get("username"):
                     raise ActionException("Error: could not find username")
                 elif self.check_username_for_duplicate(
@@ -75,7 +75,7 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
                     )
                 else:
                     create_action_payload.append(entry["data"])
-            elif entry["status"] == ImportStatus.DONE:
+            elif entry["state"] == ImportState.DONE:
                 search_data = self.get_search_data(payload_index)
                 if not entry["data"].get("username"):
                     raise ActionException("Error: could not find username")

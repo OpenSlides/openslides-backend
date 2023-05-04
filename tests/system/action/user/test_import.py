@@ -1,4 +1,4 @@
-from openslides_backend.action.mixins.import_mixins import ImportStatus
+from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -13,12 +13,12 @@ class UserJsonImport(BaseActionTestCase):
                         "import": "account",
                         "rows": [
                             {
-                                "status": ImportStatus.NEW,
+                                "state": ImportState.NEW,
                                 "error": [],
                                 "data": {
                                     "username": {
                                         "value": "test",
-                                        "info": ImportStatus.DONE,
+                                        "info": ImportState.DONE,
                                     },
                                     "first_name": "Testy",
                                 },
@@ -31,12 +31,12 @@ class UserJsonImport(BaseActionTestCase):
                         "import": "account",
                         "rows": [
                             {
-                                "status": ImportStatus.NEW,
+                                "state": ImportState.NEW,
                                 "error": [],
                                 "data": {
                                     "username": {
                                         "value": "TestyTester",
-                                        "info": ImportStatus.DONE,
+                                        "info": ImportState.DONE,
                                     },
                                     "first_name": "Testy",
                                     "last_name": "Tester",
@@ -52,7 +52,7 @@ class UserJsonImport(BaseActionTestCase):
                         "import": "account",
                         "rows": [
                             {
-                                "status": ImportStatus.ERROR,
+                                "state": ImportState.ERROR,
                                 "error": ["test"],
                                 "data": {"gender": "male"},
                             },
@@ -96,12 +96,12 @@ class UserJsonImport(BaseActionTestCase):
                         "import": "account",
                         "rows": [
                             {
-                                "status": ImportStatus.DONE,
+                                "state": ImportState.DONE,
                                 "error": [],
                                 "data": {
                                     "username": {
                                         "value": "test",
-                                        "info": ImportStatus.DONE,
+                                        "info": ImportState.DONE,
                                     },
                                     "id": 1,
                                     "first_name": "Testy",
@@ -131,7 +131,7 @@ class UserJsonImport(BaseActionTestCase):
             },
         )
 
-    def test_import_error_status(self) -> None:
+    def test_import_error_state(self) -> None:
         response = self.request("user.import", {"id": 4, "import": True})
         self.assert_status_code(response, 400)
         assert "Error in import." in response.json["message"]

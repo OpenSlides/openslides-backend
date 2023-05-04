@@ -13,7 +13,7 @@ TRUE_VALUES = ("1", "true", "yes", "t")
 FALSE_VALUES = ("0", "false", "no", "f")
 
 
-class ImportStatus(str, Enum):
+class ImportState(str, Enum):
     ERROR = "error"
     NEW = "new"
     WARNING = "warning"
@@ -68,15 +68,15 @@ class JsonUploadMixin(Action):
     headers: List[HeaderEntry]
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
-    status: ImportStatus
+    state: ImportState
 
-    def set_status(self, number_errors: int, number_warnings: int) -> None:
+    def set_state(self, number_errors: int, number_warnings: int) -> None:
         if number_errors > 0:
-            self.status = ImportStatus.ERROR
+            self.state = ImportState.ERROR
         elif number_warnings > 0:
-            self.status = ImportStatus.WARNING
+            self.state = ImportState.WARNING
         else:
-            self.status = ImportStatus.DONE
+            self.state = ImportState.DONE
 
     def store_rows_in_the_action_worker(self, import_name: str) -> None:
         self.new_store_id = self.datastore.reserve_id(collection="action_worker")
@@ -93,7 +93,7 @@ class JsonUploadMixin(Action):
                             "result": {"import": import_name, "rows": self.rows},
                             "created": time_created,
                             "timestamp": time_created,
-                            "state": self.status,
+                            "state": self.state,
                         },
                     )
                 ],
@@ -116,7 +116,7 @@ class JsonUploadMixin(Action):
             "headers": self.headers,
             "rows": self.rows,
             "statistics": self.statistics,
-            "status": self.status,
+            "state": self.state,
         }
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:

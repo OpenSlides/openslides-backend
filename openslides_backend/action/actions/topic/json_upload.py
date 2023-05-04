@@ -5,7 +5,7 @@ import fastjsonschema
 from ....models.models import Topic
 from ....permissions.permissions import Permissions
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportStatus, JsonUploadMixin
+from ...mixins.import_mixins import ImportState, JsonUploadMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..agenda_item.agenda_creation import agenda_creation_properties
@@ -68,33 +68,33 @@ class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
 
         # generate statistics
         itemCount = len(self.rows)
-        status_to_count = {status: 0 for status in ImportStatus}
+        state_to_count = {state: 0 for state in ImportState}
         for entry in self.rows:
-            status_to_count[entry["status"]] += 1
+            state_to_count[entry["state"]] += 1
 
         self.statistics = [
             {"name": "total", "value": itemCount},
-            {"name": "created", "value": status_to_count[ImportStatus.NEW]},
-            {"name": "updated", "value": status_to_count[ImportStatus.DONE]},
-            {"name": "error", "value": status_to_count[ImportStatus.ERROR]},
-            {"name": "warning", "value": status_to_count[ImportStatus.WARNING]},
+            {"name": "created", "value": state_to_count[ImportState.NEW]},
+            {"name": "updated", "value": state_to_count[ImportState.DONE]},
+            {"name": "error", "value": state_to_count[ImportState.ERROR]},
+            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
         ]
 
-        self.set_status(
-            status_to_count[ImportStatus.ERROR], status_to_count[ImportStatus.WARNING]
+        self.set_state(
+            state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )
         self.store_rows_in_the_action_worker("topic")
         return {}
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        status, error = None, []
+        state, error = None, []
         try:
             TopicCreate.schema_validator(entry)
             if self.check_for_duplicate(entry["title"]):
-                status = ImportStatus.WARNING
+                state = ImportState.WARNING
             else:
-                status = ImportStatus.NEW
+                state = ImportState.NEW
         except fastjsonschema.JsonSchemaException as exception:
-            status = ImportStatus.ERROR
+            state = ImportState.ERROR
             error.append(exception.message)
-        return {"status": status, "error": error, "data": entry}
+        return {"state": state, "error": error, "data": entry}

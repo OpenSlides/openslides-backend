@@ -5,7 +5,7 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportMixin, ImportStatus
+from ...mixins.import_mixins import ImportMixin, ImportState
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import TopicCreate
@@ -40,7 +40,7 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
             action_payload = [
                 entry["data"]
                 for entry in worker.get("result", {}).get("rows", [])
-                if (entry["status"] in (ImportStatus.NEW, ImportStatus.WARNING))
+                if (entry["state"] in (ImportState.NEW, ImportState.WARNING))
                 and not self.check_for_duplicate(entry["data"]["title"])
             ]
             self.execute_other_action(TopicCreate, action_payload)

@@ -1,6 +1,6 @@
 from time import time
 
-from openslides_backend.action.mixins.import_mixins import ImportStatus
+from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -25,11 +25,11 @@ class TopicJsonUpload(BaseActionTestCase):
         end_time = int(time())
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
-            "status": ImportStatus.NEW,
+            "state": ImportState.NEW,
             "error": [],
             "data": {
-                "username": {"value": "test", "info": ImportStatus.DONE},
-                "default_password": {"value": "secret", "info": ImportStatus.DONE},
+                "username": {"value": "test", "info": ImportState.DONE},
+                "default_password": {"value": "secret", "info": ImportState.DONE},
                 "is_active": True,
                 "is_physical_person": False,
             },
@@ -76,16 +76,16 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "account",
                     "rows": [
                         {
-                            "status": ImportStatus.NEW,
+                            "state": ImportState.NEW,
                             "error": [],
                             "data": {
                                 "username": {
                                     "value": "test",
-                                    "info": ImportStatus.DONE,
+                                    "info": ImportState.DONE,
                                 },
                                 "default_password": {
                                     "value": "secret",
-                                    "info": ImportStatus.DONE,
+                                    "info": ImportState.DONE,
                                 },
                             },
                         }
@@ -110,13 +110,13 @@ class TopicJsonUpload(BaseActionTestCase):
             ],
             "rows": [
                 {
-                    "status": ImportStatus.NEW,
+                    "state": ImportState.NEW,
                     "error": [],
                     "data": {
-                        "username": {"value": "test", "info": ImportStatus.DONE},
+                        "username": {"value": "test", "info": ImportState.DONE},
                         "default_password": {
                             "value": "secret",
-                            "info": ImportStatus.DONE,
+                            "info": ImportState.DONE,
                         },
                     },
                 }
@@ -128,7 +128,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 {"name": "error", "value": 0},
                 {"name": "warning", "value": 0},
             ],
-            "status": ImportStatus.DONE,
+            "state": ImportState.DONE,
         }
 
     def test_json_upload_duplicate_in_db(self) -> None:
@@ -145,10 +145,10 @@ class TopicJsonUpload(BaseActionTestCase):
         result = response.json["results"][0][0]
         assert result["rows"] == [
             {
-                "status": ImportStatus.DONE,
+                "state": ImportState.DONE,
                 "error": [],
                 "data": {
-                    "username": {"value": "test", "info": ImportStatus.DONE},
+                    "username": {"value": "test", "info": ImportState.DONE},
                     "id": 3,
                 },
             }
@@ -169,7 +169,7 @@ class TopicJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
         assert result["rows"][2]["error"] == ["Duplicate in csv list index: 2"]
-        assert result["rows"][2]["status"] == ImportStatus.ERROR
+        assert result["rows"][2]["state"] == ImportState.ERROR
         self.assert_model_exists(
             "action_worker/1",
             {
@@ -177,41 +177,41 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "account",
                     "rows": [
                         {
-                            "status": ImportStatus.NEW,
+                            "state": ImportState.NEW,
                             "error": [],
                             "data": {
                                 "username": {
                                     "value": "test",
-                                    "info": ImportStatus.DONE,
+                                    "info": ImportState.DONE,
                                 },
                                 "default_password": {
                                     "value": "secret",
-                                    "info": ImportStatus.DONE,
+                                    "info": ImportState.DONE,
                                 },
                             },
                         },
                         {
-                            "status": ImportStatus.NEW,
+                            "state": ImportState.NEW,
                             "error": [],
                             "data": {
-                                "username": {"value": "bla", "info": ImportStatus.DONE},
+                                "username": {"value": "bla", "info": ImportState.DONE},
                                 "default_password": {
                                     "value": "secret",
-                                    "info": ImportStatus.DONE,
+                                    "info": ImportState.DONE,
                                 },
                             },
                         },
                         {
-                            "status": ImportStatus.ERROR,
+                            "state": ImportState.ERROR,
                             "error": ["Duplicate in csv list index: 2"],
                             "data": {
                                 "username": {
                                     "value": "test",
-                                    "info": ImportStatus.DONE,
+                                    "info": ImportState.DONE,
                                 },
                                 "default_password": {
                                     "value": "secret",
-                                    "info": ImportStatus.DONE,
+                                    "info": ImportState.DONE,
                                 },
                             },
                         },
@@ -248,7 +248,7 @@ class TopicJsonUpload(BaseActionTestCase):
         assert entry["data"]["last_name"] == "Mustermann"
         assert entry["data"]["username"] == {
             "value": "MaxMustermann1",
-            "info": ImportStatus.GENERATED,
+            "info": ImportState.GENERATED,
         }
 
     def test_json_upload_names_and_email_set_username(self) -> None:
@@ -278,7 +278,7 @@ class TopicJsonUpload(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["data"]["first_name"] == "Max"
         assert entry["data"]["last_name"] == "Mustermann"
-        assert entry["data"]["username"] == {"value": "test", "info": ImportStatus.DONE}
+        assert entry["data"]["username"] == {"value": "test", "info": ImportState.DONE}
         assert entry["data"]["id"] == 34
 
     def test_json_upload_generate_default_password(self) -> None:
@@ -298,7 +298,7 @@ class TopicJsonUpload(BaseActionTestCase):
         assert worker["result"]["rows"][0]["data"].get("default_password")
         assert (
             worker["result"]["rows"][0]["data"]["default_password"]["info"]
-            == ImportStatus.GENERATED
+            == ImportState.GENERATED
         )
 
     def test_json_upload_no_permission(self) -> None:

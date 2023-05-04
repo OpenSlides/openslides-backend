@@ -1,6 +1,6 @@
 from time import time
 
-from openslides_backend.action.mixins.import_mixins import ImportStatus
+from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -34,7 +34,7 @@ class TopicJsonUpload(BaseActionTestCase):
         end_time = int(time())
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
-            "status": ImportStatus.NEW,
+            "state": ImportState.NEW,
             "error": [],
             "data": {
                 "title": "test",
@@ -45,7 +45,7 @@ class TopicJsonUpload(BaseActionTestCase):
             },
         }
         worker = self.assert_model_exists(
-            "action_worker/1", {"state": ImportStatus.DONE}
+            "action_worker/1", {"state": ImportState.DONE}
         )
         assert start_time <= worker.get("created", -1) <= end_time
         assert start_time <= worker.get("timestamp", -1) <= end_time
@@ -90,7 +90,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "topic",
                     "rows": [
                         {
-                            "status": ImportStatus.NEW,
+                            "state": ImportState.NEW,
                             "error": [],
                             "data": {"title": "test", "meeting_id": 22},
                         }
@@ -110,7 +110,7 @@ class TopicJsonUpload(BaseActionTestCase):
             ],
             "rows": [
                 {
-                    "status": ImportStatus.NEW,
+                    "state": ImportState.NEW,
                     "error": [],
                     "data": {"title": "test", "meeting_id": 22},
                 }
@@ -122,7 +122,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 {"name": "error", "value": 0},
                 {"name": "warning", "value": 0},
             ],
-            "status": ImportStatus.DONE,
+            "state": ImportState.DONE,
         }
 
     def test_json_upload_duplicate_in_db(self) -> None:
@@ -140,7 +140,7 @@ class TopicJsonUpload(BaseActionTestCase):
         result = response.json["results"][0][0]
         assert result["rows"] == [
             {
-                "status": ImportStatus.WARNING,
+                "state": ImportState.WARNING,
                 "error": [],
                 "data": {"title": "test", "meeting_id": 22},
             }
@@ -157,7 +157,7 @@ class TopicJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
         assert result["rows"][2]["error"] == []
-        assert result["rows"][2]["status"] == ImportStatus.WARNING
+        assert result["rows"][2]["state"] == ImportState.WARNING
         self.assert_model_exists(
             "action_worker/1",
             {
@@ -165,17 +165,17 @@ class TopicJsonUpload(BaseActionTestCase):
                     "import": "topic",
                     "rows": [
                         {
-                            "status": ImportStatus.NEW,
+                            "state": ImportState.NEW,
                             "error": [],
                             "data": {"title": "test", "meeting_id": 22},
                         },
                         {
-                            "status": ImportStatus.NEW,
+                            "state": ImportState.NEW,
                             "error": [],
                             "data": {"title": "bla", "meeting_id": 22},
                         },
                         {
-                            "status": ImportStatus.WARNING,
+                            "state": ImportState.WARNING,
                             "error": [],
                             "data": {"title": "test", "meeting_id": 22},
                         },

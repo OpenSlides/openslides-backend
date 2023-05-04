@@ -4,7 +4,7 @@ import fastjsonschema
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
-from ...mixins.import_mixins import ImportStatus, JsonUploadMixin
+from ...mixins.import_mixins import ImportState, JsonUploadMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import UserCreate
@@ -82,20 +82,20 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
 
         # generate statistics
         itemCount = len(self.rows)
-        status_to_count = {status: 0 for status in ImportStatus}
+        state_to_count = {state: 0 for state in ImportState}
         for entry in self.rows:
-            status_to_count[entry["status"]] += 1
+            state_to_count[entry["state"]] += 1
 
         self.statistics = [
             {"name": "total", "value": itemCount},
-            {"name": "created", "value": status_to_count[ImportStatus.NEW]},
-            {"name": "updated", "value": status_to_count[ImportStatus.DONE]},
-            {"name": "error", "value": status_to_count[ImportStatus.ERROR]},
-            {"name": "warning", "value": status_to_count[ImportStatus.WARNING]},
+            {"name": "created", "value": state_to_count[ImportState.NEW]},
+            {"name": "updated", "value": state_to_count[ImportState.DONE]},
+            {"name": "error", "value": state_to_count[ImportState.ERROR]},
+            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
         ]
 
-        self.set_status(
-            status_to_count[ImportStatus.ERROR], status_to_count[ImportStatus.WARNING]
+        self.set_state(
+            state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )
         self.store_rows_in_the_action_worker("account")
         return {}
@@ -103,63 +103,63 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
     def generate_entry(
         self, entry: Dict[str, Any], payload_index: int
     ) -> Dict[str, Any]:
-        status, error = None, []
+        state, error = None, []
         try:
             UserCreate.schema_validator(entry)
             if entry.get("username"):
                 if self.check_username_for_duplicate(entry["username"], payload_index):
-                    status = ImportStatus.DONE
+                    state = ImportState.DONE
                     if searchdata := self.get_search_data(payload_index):
                         entry["id"] = searchdata["id"]
                     else:
-                        status = ImportStatus.ERROR
+                        state = ImportState.ERROR
                         error.append(f"Duplicate in csv list index: {payload_index}")
                 else:
-                    status = ImportStatus.NEW
+                    state = ImportState.NEW
                 entry["username"] = {"value": entry["username"], "info": "done"}
             else:
                 if not (entry.get("first_name") or entry.get("last_name")):
-                    status = ImportStatus.ERROR
+                    state = ImportState.ERROR
                     error.append("Cannot generate username.")
                 elif self.check_name_and_email_for_duplicate(
                     *UserJsonUpload._names_and_email(entry), payload_index
                 ):
-                    status = ImportStatus.DONE
+                    state = ImportState.DONE
                     if searchdata := self.get_search_data(payload_index):
                         entry["username"] = {
                             "value": searchdata["username"],
-                            "info": ImportStatus.DONE,
+                            "info": ImportState.DONE,
                         }
                         entry["id"] = searchdata["id"]
                     else:
-                        status = ImportStatus.ERROR
+                        state = ImportState.ERROR
                         error.append("Duplicate in csv list index: {payload_index}")
                 else:
-                    status = ImportStatus.NEW
+                    state = ImportState.NEW
                     entry["username"] = {
                         "value": self.generate_username(entry),
-                        "info": ImportStatus.GENERATED,
+                        "info": ImportState.GENERATED,
                     }
-            self.handle_default_password(entry, status)
+            self.handle_default_password(entry, state)
         except fastjsonschema.JsonSchemaException as exception:
-            status = ImportStatus.ERROR
+            state = ImportState.ERROR
             error.append(exception.message)
-        return {"status": status, "error": error, "data": entry}
+        return {"state": state, "error": error, "data": entry}
 
-    def handle_default_password(self, entry: Dict[str, Any], status: str) -> None:
-        if status == ImportStatus.NEW:
+    def handle_default_password(self, entry: Dict[str, Any], state: str) -> None:
+        if state == ImportState.NEW:
             if "default_password" in entry:
                 value = entry["default_password"]
-                info = ImportStatus.DONE
+                info = ImportState.DONE
             else:
                 value = PasswordCreateMixin.generate_password()
-                info = ImportStatus.GENERATED
+                info = ImportState.GENERATED
             entry["default_password"] = {"value": value, "info": info}
-        elif status in (ImportStatus.DONE, ImportStatus.ERROR):
+        elif state in (ImportState.DONE, ImportState.ERROR):
             if "default_password" in entry:
                 entry["default_password"] = {
                     "value": entry["default_password"],
-                    "info": ImportStatus.DONE,
+                    "info": ImportState.DONE,
                 }
 
     @staticmethod
