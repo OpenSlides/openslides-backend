@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Protocol
 
 
-class Logger(Protocol):  # pragma: no cover
+class Logger(Protocol):
     """
     Interface for logger object provided by LoggingModule.
     """
@@ -32,7 +32,7 @@ class Logger(Protocol):  # pragma: no cover
         ...
 
 
-class LoggingModule(Protocol):  # pragma: no cover
+class LoggingModule(Protocol):
     """
     Interface for module to provide a hierarchical logger.
     """

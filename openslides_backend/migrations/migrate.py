@@ -1,107 +1,10 @@
-import pkgutil
 import sys
 from argparse import ArgumentParser
-from importlib import import_module
-from typing import Any, Dict, List, Optional, Type, cast
 
-from datastore.migrations import (
-    BaseEvent,
-    BaseMigration,
-    CreateEvent,
-    MigrationException,
-    PrintFunction,
-    setup,
+from openslides_backend.migrations.migration_wrapper import (
+    InvalidMigrationCommand,
+    MigrationWrapper,
 )
-from datastore.migrations.core.migration_handler import (
-    MigrationHandlerImplementationMemory,
-)
-from datastore.shared.typing import Fqid, Model
-
-
-class BadMigrationModule(MigrationException):
-    pass
-
-
-class InvalidMigrationCommand(MigrationException):
-    def __init__(self, command: str) -> None:
-        super().__init__(f"Invalid migration command: {command}")
-
-
-class MigrationWrapper:
-    def __init__(
-        self,
-        verbose: bool = False,
-        print_fn: PrintFunction = print,
-        memory_only: bool = False,
-    ) -> None:
-        migrations = MigrationWrapper.load_migrations()
-        self.handler = setup(verbose, print_fn, memory_only)
-        self.handler.register_migrations(*migrations)
-
-    @staticmethod
-    def load_migrations(
-        base_migration_module_pypath: Optional[str] = None,
-    ) -> List[Type[BaseMigration]]:
-        if not base_migration_module_pypath:
-            base_module = __name__.rsplit(".", 1)[0]
-            if base_module == "__main__":
-                base_migration_module_pypath = "migrations"
-            else:
-                base_migration_module_pypath = base_module + ".migrations"
-        base_migration_module = import_module(base_migration_module_pypath)
-
-        module_names = {
-            name
-            for _, name, is_pkg in pkgutil.iter_modules(base_migration_module.__path__)  # type: ignore
-            if not is_pkg
-        }
-
-        migration_classes: List[Type[BaseMigration]] = []
-        for module_name in module_names:
-            module_pypath = f"{base_migration_module_pypath}.{module_name}"
-            migration_module = import_module(module_pypath)
-            if not hasattr(migration_module, "Migration"):
-                raise BadMigrationModule(
-                    f"The module {module_pypath} does not have a class called 'Migration'"
-                )
-            migration_class = migration_module.Migration  # type: ignore
-            if not issubclass(migration_class, BaseMigration):
-                raise BadMigrationModule(
-                    f"The class 'Migration' in module {module_pypath} does not inherit from 'BaseMigration'"
-                )
-            migration_classes.append(migration_class)
-        return migration_classes
-
-    def execute_command(self, command: str) -> Any:
-        if command == "migrate":
-            self.handler.migrate()
-        elif command == "finalize":
-            self.handler.finalize()
-        elif command == "reset":
-            self.handler.reset()
-        elif command == "clear-collectionfield-tables":
-            self.handler.delete_collectionfield_aux_tables()
-        elif command == "stats":
-            return self.handler.get_stats()
-        else:
-            raise InvalidMigrationCommand(command)
-
-    def set_additional_data(
-        self,
-        import_create_events: List[CreateEvent],
-        models: Dict[Fqid, Model],
-        start_migration_index: int,
-    ) -> None:
-        cast(
-            MigrationHandlerImplementationMemory, self.handler
-        ).migrater.set_additional_data(
-            import_create_events, models, start_migration_index
-        )
-
-    def get_migrated_events(self) -> List[BaseEvent]:
-        return cast(
-            MigrationHandlerImplementationMemory, self.handler
-        ).migrater.get_migrated_events()
 
 
 def get_parser() -> ArgumentParser:
@@ -139,7 +42,7 @@ def get_parser() -> ArgumentParser:
         "clear-collectionfield-tables",
         add_help=False,
         description="The clear-collectionfield-tables parser",
-        help="Clear all data from these auxillary tables. Can be done to clean up diskspace, but only when the datastore is offile.",
+        help="Clear all data from these auxiliary tables. Can be done to clean up diskspace, but only when the datastore is offline.",
     )
     subparsers.add_parser(
         "stats",

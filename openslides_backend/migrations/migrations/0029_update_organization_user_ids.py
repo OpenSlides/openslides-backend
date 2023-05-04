@@ -2,7 +2,7 @@ from typing import List, Optional, Set
 
 from datastore.migrations import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     DeleteEvent,
     ListUpdateEvent,
@@ -13,7 +13,7 @@ ONE_ORGANIZATION_ID = 1
 ONE_ORGANIZATION_FQID = "organization/1"
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     target_migration_index = 30
 
     def position_init(self) -> None:

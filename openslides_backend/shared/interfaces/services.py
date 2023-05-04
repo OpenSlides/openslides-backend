@@ -6,19 +6,19 @@ from ...services.media.interface import MediaService
 from ...services.vote.interface import VoteService
 
 
-class Services(Protocol):  # pragma: no cover
+class Services(Protocol):
     """
     Interface for service container used for dependency injection.
     """
 
     def authentication(self) -> AuthenticationService:
-        pass
+        ...
 
     def datastore(self) -> DatastoreService:
-        pass
+        ...
 
     def media(self) -> MediaService:
-        pass
+        ...
 
     def vote(self) -> VoteService:
-        pass
+        ...

@@ -162,7 +162,7 @@ class CountDatastoreCalls:
         self.patcher: List[Any] = []
         self.mocks: List[Mock] = []
         for method in ("get", "get_many"):
-            mock, patcher = mock_datastore_method(method)
+            mock, patcher = mock_datastore_method(method, self.verbose)
             self.mocks.append(mock)
             self.patcher.append(patcher)
         return self

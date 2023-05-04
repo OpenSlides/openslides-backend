@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from datastore.migrations import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     DeleteFieldsEvent,
     ListUpdateEvent,
@@ -11,7 +11,7 @@ from datastore.migrations import (
 from datastore.shared.util import collection_from_fqid
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     This migration renames default_projector_$.._id into
       default_projector_$.._ids and changes value to list.
