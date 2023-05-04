@@ -102,8 +102,8 @@ class UserJsonImport(BaseActionTestCase):
                                     "username": {
                                         "value": "test",
                                         "info": ImportState.DONE,
+                                        "id": 1,
                                     },
-                                    "id": 1,
                                     "first_name": "Testy",
                                 },
                             },

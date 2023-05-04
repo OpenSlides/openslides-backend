@@ -42,6 +42,8 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
             # Revert username-info and default-password-info
             for field in ("username", "default_password"):
                 if field in entry["data"]:
+                    if field == "username" and "id" in entry["data"][field]:
+                        entry["data"]["id"] = entry["data"][field]["id"]
                     entry["data"][field] = entry["data"][field]["value"]
 
         search_data_list = [

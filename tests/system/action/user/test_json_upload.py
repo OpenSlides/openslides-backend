@@ -148,8 +148,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 "state": ImportState.DONE,
                 "error": [],
                 "data": {
-                    "username": {"value": "test", "info": ImportState.DONE},
-                    "id": 3,
+                    "username": {"value": "test", "info": ImportState.DONE, "id": 3},
                 },
             }
         ]
@@ -278,8 +277,11 @@ class TopicJsonUpload(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["data"]["first_name"] == "Max"
         assert entry["data"]["last_name"] == "Mustermann"
-        assert entry["data"]["username"] == {"value": "test", "info": ImportState.DONE}
-        assert entry["data"]["id"] == 34
+        assert entry["data"]["username"] == {
+            "value": "test",
+            "info": ImportState.DONE,
+            "id": 34,
+        }
 
     def test_json_upload_generate_default_password(self) -> None:
         response = self.request(

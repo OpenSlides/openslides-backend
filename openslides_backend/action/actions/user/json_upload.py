@@ -110,13 +110,18 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                 if self.check_username_for_duplicate(entry["username"], payload_index):
                     state = ImportState.DONE
                     if searchdata := self.get_search_data(payload_index):
-                        entry["id"] = searchdata["id"]
+                        entry["username"] = {
+                            "value": entry["username"],
+                            "info": "done",
+                            "id": searchdata["id"],
+                        }
                     else:
+                        entry["username"] = {"value": entry["username"], "info": "done"}
                         state = ImportState.ERROR
                         error.append(f"Duplicate in csv list index: {payload_index}")
                 else:
                     state = ImportState.NEW
-                entry["username"] = {"value": entry["username"], "info": "done"}
+                    entry["username"] = {"value": entry["username"], "info": "done"}
             else:
                 if not (entry.get("first_name") or entry.get("last_name")):
                     state = ImportState.ERROR
@@ -129,8 +134,8 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                         entry["username"] = {
                             "value": searchdata["username"],
                             "info": ImportState.DONE,
+                            "id": searchdata["id"],
                         }
-                        entry["id"] = searchdata["id"]
                     else:
                         state = ImportState.ERROR
                         error.append("Duplicate in csv list index: {payload_index}")
