@@ -9,6 +9,9 @@ from ...shared.patterns import fqid_from_collection_and_id
 from ..action import Action
 from ..util.typing import ActionData, ActionResultElement
 
+TRUE_VALUES = ("1", "true", "yes", "t")
+FALSE_VALUES = ("0", "false", "no", "f")
+
 
 class ImportStatus(str, Enum):
     ERROR = "error"
@@ -56,10 +59,15 @@ class HeaderEntry(TypedDict):
     type: str
 
 
+class StatisticEntry(TypedDict):
+    name: str
+    value: int
+
+
 class JsonUploadMixin(Action):
     headers: List[HeaderEntry]
     rows: List[Dict[str, Any]]
-    statistics: Any
+    statistics: List[StatisticEntry]
     status: ImportStatus
 
     def set_status(self, number_errors: int, number_warnings: int) -> None:
@@ -130,9 +138,9 @@ class JsonUploadMixin(Action):
                                 f"Could not parse {entry[field]} expect integer"
                             )
                     elif type_ == "boolean":
-                        if entry[field] in ("1", "true", "True", "T", "t"):
+                        if entry[field].lower() in TRUE_VALUES:
                             entry[field] = True
-                        elif entry[field] in ("0", "false", "False", "F", "f"):
+                        elif entry[field].lower() in FALSE_VALUES:
                             entry[field] = False
                         else:
                             raise ActionException(
