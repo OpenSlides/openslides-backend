@@ -87,14 +87,15 @@ class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
         return {}
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        state, error = None, []
+        state, messages = None, []
         try:
             TopicCreate.schema_validator(entry)
             if self.check_for_duplicate(entry["title"]):
                 state = ImportState.WARNING
+                messages.append("Duplicate")
             else:
                 state = ImportState.NEW
         except fastjsonschema.JsonSchemaException as exception:
             state = ImportState.ERROR
-            error.append(exception.message)
-        return {"state": state, "error": error, "data": entry}
+            messages.append(exception.message)
+        return {"state": state, "messages": messages, "data": entry}

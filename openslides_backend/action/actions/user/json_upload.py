@@ -103,7 +103,7 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
     def generate_entry(
         self, entry: Dict[str, Any], payload_index: int
     ) -> Dict[str, Any]:
-        state, error = None, []
+        state, messages = None, []
         try:
             UserCreate.schema_validator(entry)
             if entry.get("username"):
@@ -118,14 +118,14 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                     else:
                         entry["username"] = {"value": entry["username"], "info": "done"}
                         state = ImportState.ERROR
-                        error.append(f"Duplicate in csv list index: {payload_index}")
+                        messages.append(f"Duplicate in csv list index: {payload_index}")
                 else:
                     state = ImportState.NEW
                     entry["username"] = {"value": entry["username"], "info": "done"}
             else:
                 if not (entry.get("first_name") or entry.get("last_name")):
                     state = ImportState.ERROR
-                    error.append("Cannot generate username.")
+                    messages.append("Cannot generate username.")
                 elif self.check_name_and_email_for_duplicate(
                     *UserJsonUpload._names_and_email(entry), payload_index
                 ):
@@ -138,7 +138,7 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                         }
                     else:
                         state = ImportState.ERROR
-                        error.append("Duplicate in csv list index: {payload_index}")
+                        messages.append("Duplicate in csv list index: {payload_index}")
                 else:
                     state = ImportState.NEW
                     entry["username"] = {
@@ -148,8 +148,8 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
             self.handle_default_password(entry, state)
         except fastjsonschema.JsonSchemaException as exception:
             state = ImportState.ERROR
-            error.append(exception.message)
-        return {"state": state, "error": error, "data": entry}
+            messages.append(exception.message)
+        return {"state": state, "messages": messages, "data": entry}
 
     def handle_default_password(self, entry: Dict[str, Any], state: str) -> None:
         if state == ImportState.NEW:

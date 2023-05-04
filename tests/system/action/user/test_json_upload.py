@@ -26,7 +26,7 @@ class TopicJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.NEW,
-            "error": [],
+            "messages": [],
             "data": {
                 "username": {"value": "test", "info": ImportState.DONE},
                 "default_password": {"value": "secret", "info": ImportState.DONE},
@@ -77,7 +77,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "rows": [
                         {
                             "state": ImportState.NEW,
-                            "error": [],
+                            "messages": [],
                             "data": {
                                 "username": {
                                     "value": "test",
@@ -111,7 +111,7 @@ class TopicJsonUpload(BaseActionTestCase):
             "rows": [
                 {
                     "state": ImportState.NEW,
-                    "error": [],
+                    "messages": [],
                     "data": {
                         "username": {"value": "test", "info": ImportState.DONE},
                         "default_password": {
@@ -146,7 +146,7 @@ class TopicJsonUpload(BaseActionTestCase):
         assert result["rows"] == [
             {
                 "state": ImportState.DONE,
-                "error": [],
+                "messages": [],
                 "data": {
                     "username": {"value": "test", "info": ImportState.DONE, "id": 3},
                 },
@@ -167,7 +167,7 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["rows"][2]["error"] == ["Duplicate in csv list index: 2"]
+        assert result["rows"][2]["messages"] == ["Duplicate in csv list index: 2"]
         assert result["rows"][2]["state"] == ImportState.ERROR
         self.assert_model_exists(
             "action_worker/1",
@@ -177,7 +177,7 @@ class TopicJsonUpload(BaseActionTestCase):
                     "rows": [
                         {
                             "state": ImportState.NEW,
-                            "error": [],
+                            "messages": [],
                             "data": {
                                 "username": {
                                     "value": "test",
@@ -191,7 +191,7 @@ class TopicJsonUpload(BaseActionTestCase):
                         },
                         {
                             "state": ImportState.NEW,
-                            "error": [],
+                            "messages": [],
                             "data": {
                                 "username": {"value": "bla", "info": ImportState.DONE},
                                 "default_password": {
@@ -202,7 +202,7 @@ class TopicJsonUpload(BaseActionTestCase):
                         },
                         {
                             "state": ImportState.ERROR,
-                            "error": ["Duplicate in csv list index: 2"],
+                            "messages": ["Duplicate in csv list index: 2"],
                             "data": {
                                 "username": {
                                     "value": "test",

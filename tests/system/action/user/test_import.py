@@ -14,7 +14,7 @@ class UserJsonImport(BaseActionTestCase):
                         "rows": [
                             {
                                 "state": ImportState.NEW,
-                                "error": [],
+                                "messages": [],
                                 "data": {
                                     "username": {
                                         "value": "test",
@@ -32,7 +32,7 @@ class UserJsonImport(BaseActionTestCase):
                         "rows": [
                             {
                                 "state": ImportState.NEW,
-                                "error": [],
+                                "messages": [],
                                 "data": {
                                     "username": {
                                         "value": "TestyTester",
@@ -53,7 +53,7 @@ class UserJsonImport(BaseActionTestCase):
                         "rows": [
                             {
                                 "state": ImportState.ERROR,
-                                "error": ["test"],
+                                "messages": ["test"],
                                 "data": {"gender": "male"},
                             },
                         ],
@@ -97,7 +97,7 @@ class UserJsonImport(BaseActionTestCase):
                         "rows": [
                             {
                                 "state": ImportState.DONE,
-                                "error": [],
+                                "messages": [],
                                 "data": {
                                     "username": {
                                         "value": "test",

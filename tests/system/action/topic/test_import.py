@@ -14,12 +14,12 @@ class TopicJsonImport(BaseActionTestCase):
                         "rows": [
                             {
                                 "state": ImportState.NEW,
-                                "error": [],
+                                "messages": [],
                                 "data": {"title": "test", "meeting_id": 22},
                             },
                             {
                                 "state": ImportState.ERROR,
-                                "error": ["test"],
+                                "messages": ["test"],
                                 "data": {"title": "broken", "meeting_id": 22},
                             },
                         ],
