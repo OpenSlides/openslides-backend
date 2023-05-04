@@ -26,6 +26,22 @@ class ImportMixin(Action):
     Mixin for import actions. It works together with the json_upload.
     """
 
+    import_name: str
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        store_id = instance["id"]
+        worker = self.datastore.get(
+            fqid_from_collection_and_id("action_worker", store_id),
+            ["result", "state"],
+            lock_result=False,
+        )
+        if (worker.get("result") or {}).get("import") != self.import_name:
+            raise ActionException("Wrong id doesn't point on account import data.")
+        if worker.get("state") == ImportState.ERROR:
+            raise ActionException("Error in import.")
+        self.result = worker["result"]
+        return instance
+
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
         return {}
 

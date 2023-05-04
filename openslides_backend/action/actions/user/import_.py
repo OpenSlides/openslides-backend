@@ -3,7 +3,6 @@ from typing import Any, Dict, List
 from ....models.models import ActionWorker
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException
-from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...mixins.import_mixins import ImportMixin, ImportState
 from ...util.default_schema import DefaultSchema
@@ -28,23 +27,17 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     skip_archived_meeting_check = True
+    import_name = "account"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        store_id = instance["id"]
-        worker = self.datastore.get(
-            fqid_from_collection_and_id("action_worker", store_id), ["result", "state"]
-        )
-        if (worker.get("result") or {}).get("import") != "account":
-            raise ActionException("Wrong id doesn't point on account import data.")
-        if worker.get("state") == ImportState.ERROR:
-            raise ActionException("Error in import.")
+        instance = super().update_instance(instance)
 
         # handle abort in on_success
         if not instance["import"]:
             return {}
 
         # init duplicate mixin
-        data = worker.get("result", {}).get("rows", [])
+        data = self.result.get("rows", [])
         for entry in data:
             # Revert username-info and default-password-info
             for field in ("username", "default_password"):

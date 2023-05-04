@@ -26,24 +26,24 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
         }
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
+    import_name = "topic"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        store_id = instance["id"]
-        if instance["import"]:
-            meeting_id = self.get_meeting_id(instance)
-            self.init_duplicate_set(meeting_id)
-            worker = self.datastore.get(
-                fqid_from_collection_and_id("action_worker", store_id),
-                ["result"],
-                lock_result=False,
-            )
-            action_payload = [
-                entry["data"]
-                for entry in worker.get("result", {}).get("rows", [])
-                if (entry["state"] in (ImportState.NEW, ImportState.WARNING))
-                and not self.check_for_duplicate(entry["data"]["title"])
-            ]
-            self.execute_other_action(TopicCreate, action_payload)
+        instance = super().update_instance(instance)
+
+        # handle abort in on_success
+        if not instance["import"]:
+            return {}
+
+        meeting_id = self.get_meeting_id(instance)
+        self.init_duplicate_set(meeting_id)
+        action_payload = [
+            entry["data"]
+            for entry in self.result.get("rows", [])
+            if (entry["state"] in (ImportState.NEW, ImportState.WARNING))
+            and not self.check_for_duplicate(entry["data"]["title"])
+        ]
+        self.execute_other_action(TopicCreate, action_payload)
         return instance
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
@@ -53,6 +53,6 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
             ["result"],
             lock_result=False,
         )
-        if worker.get("result", {}).get("import") == "topic":
+        if worker.get("result", {}).get("import") == TopicImport.import_name:
             return next(iter(worker["result"]["rows"]))["data"]["meeting_id"]
         raise ActionException("Import data cannot be found.")
