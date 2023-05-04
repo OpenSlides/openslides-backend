@@ -1207,13 +1207,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request("user.update", {"id": 111, "gender": "test"})
         self.assert_status_code(response, 400)
         assert (
-            "data.gender must be one of ['male', 'female', 'diverse', None]"
+            "data.gender must be one of ['male', 'female', 'diverse', 'non-binary', None]"
             in response.json["message"]
         )
 
         response = self.request("user.update", {"id": 111, "gender": "diverse"})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/111", {"gender": "diverse"})
+
+        response = self.request("user.update", {"id": 111, "gender": "non-binary"})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/111", {"gender": "non-binary"})
 
     def test_update_not_in_update_is_present_in_meeting_ids(self) -> None:
         self.create_model(

@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "e7b2e449cbf41620cfb26189db495095"
+MODELS_YML_CHECKSUM = "e247a09ae7936a306de9cc95776dc19b"
 
 
 class Organization(Model):
@@ -82,7 +82,9 @@ class User(Model):
     password = fields.CharField()
     default_password = fields.CharField()
     can_change_own_password = fields.BooleanField(default=True)
-    gender = fields.CharField(constraints={"enum": ["male", "female", "diverse"]})
+    gender = fields.CharField(
+        constraints={"enum": ["male", "female", "diverse", "non-binary"]}
+    )
     email = fields.CharField()
     default_number = fields.CharField()
     default_structure_level = fields.CharField()
