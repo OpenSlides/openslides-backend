@@ -84,7 +84,7 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
                     raise ActionException(
                         "Error: want to update, but found search data are wrong."
                     )
-                elif search_data["username"] != entry["data"]["username"]:
+                elif search_data["id"] != entry["data"]["id"]:
                     raise ActionException(
                         "Error: want to update, but found search data doesn't match."
                     )
