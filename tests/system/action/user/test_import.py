@@ -181,7 +181,9 @@ class UserJsonImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
-        assert entry["messages"] == ["Error: could not find username"]
+        assert entry["messages"] == [
+            "Error: Want to create user, but missing username in import data."
+        ]
 
         response = self.request("user.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
@@ -205,7 +207,9 @@ class UserJsonImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
-        assert entry["messages"] == ["Error: could not find username"]
+        assert entry["messages"] == [
+            "Error: Want to update user, but missing username in import data."
+        ]
 
     def test_import_error_state_done_missing_user_in_db(self) -> None:
         self.set_models(

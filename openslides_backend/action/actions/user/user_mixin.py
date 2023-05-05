@@ -226,3 +226,10 @@ class DuplicateCheckMixin(Action):
         if len(self.users_in_double_lists[payload_index]) == 1:
             return self.users_in_double_lists[payload_index][0]
         return None
+
+    def has_multiple_search_data(self, payload_index: int) -> List[str]:
+        if len(self.users_in_double_lists[payload_index]) >= 2:
+            return [
+                entry["username"] for entry in self.users_in_double_lists[payload_index]
+            ]
+        return []

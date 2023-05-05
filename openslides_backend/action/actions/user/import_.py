@@ -63,7 +63,9 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
                 if not entry["data"].get("username"):
                     self.error = True
                     entry["state"] = ImportState.ERROR
-                    entry["messages"].append("Error: could not find username")
+                    entry["messages"].append(
+                        "Error: Want to create user, but missing username in import data."
+                    )
                 elif self.check_username_for_duplicate(
                     entry["data"]["username"], payload_index
                 ):
@@ -79,7 +81,9 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
                 if not entry["data"].get("username"):
                     self.error = True
                     entry["state"] = ImportState.ERROR
-                    entry["messages"].append("Error: could not find username")
+                    entry["messages"].append(
+                        "Error: Want to update user, but missing username in import data."
+                    )
                 elif not self.check_username_for_duplicate(
                     entry["data"]["username"], payload_index
                 ):

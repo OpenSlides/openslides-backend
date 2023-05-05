@@ -153,6 +153,49 @@ class TopicJsonUpload(BaseActionTestCase):
             }
         ]
 
+    def test_json_upload_multiple_duplicates(self) -> None:
+        self.set_models(
+            {
+                "user/3": {
+                    "username": "test",
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "max@mustermann.org",
+                },
+                "user/4": {
+                    "username": "test2",
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "max@mustermann.org",
+                },
+            }
+        )
+        response = self.request(
+            "user.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "max@mustermann.org",
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"] == [
+            {
+                "state": ImportState.ERROR,
+                "messages": ["Found more than one user: test, test2"],
+                "data": {
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "max@mustermann.org",
+                },
+            }
+        ]
+
     def test_json_upload_duplicate_in_data(self) -> None:
         self.maxDiff = None
         response = self.request(

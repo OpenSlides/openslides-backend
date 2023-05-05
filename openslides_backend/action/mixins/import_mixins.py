@@ -40,7 +40,9 @@ class ImportMixin(Action):
             lock_result=False,
         )
         if (worker.get("result") or {}).get("import") != self.import_name:
-            raise ActionException("Wrong id doesn't point on account import data.")
+            raise ActionException(
+                f"Wrong id doesn't point on {self.import_name} import data."
+            )
         if worker.get("state") == ImportState.ERROR:
             raise ActionException("Error in import.")
         self.result = worker["result"]

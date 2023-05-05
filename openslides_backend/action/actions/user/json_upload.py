@@ -138,7 +138,14 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                         }
                     else:
                         state = ImportState.ERROR
-                        messages.append("Duplicate in csv list index: {payload_index}")
+                        if usernames := self.has_multiple_search_data(payload_index):
+                            messages.append(
+                                "Found more than one user: " + ", ".join(usernames)
+                            )
+                        else:
+                            messages.append(
+                                f"Duplicate in csv list index: {payload_index}"
+                            )
                 else:
                     state = ImportState.NEW
                     entry["username"] = {
