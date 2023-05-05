@@ -44,6 +44,7 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
             and not self.check_for_duplicate(entry["data"]["title"])
         ]
         self.execute_other_action(TopicCreate, action_payload)
+        self.error = False
         return instance
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:

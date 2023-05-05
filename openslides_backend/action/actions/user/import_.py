@@ -2,7 +2,6 @@ from typing import Any, Dict, List
 
 from ....models.models import ActionWorker
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.exceptions import ActionException
 from ....shared.schema import required_id_schema
 from ...mixins.import_mixins import ImportMixin, ImportState
 from ...util.default_schema import DefaultSchema
@@ -58,14 +57,19 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
         # Recheck and update data, update needs "id"
         create_action_payload: List[Dict[str, Any]] = []
         update_action_payload: List[Dict[str, Any]] = []
+        self.error = False
         for payload_index, entry in enumerate(data):
             if entry["state"] == ImportState.NEW:
                 if not entry["data"].get("username"):
-                    raise ActionException("Error: could not find username")
+                    self.error = True
+                    entry["state"] = ImportState.ERROR
+                    entry["messages"].append("Error: could not find username")
                 elif self.check_username_for_duplicate(
                     entry["data"]["username"], payload_index
                 ):
-                    raise ActionException(
+                    self.error = True
+                    entry["state"] = ImportState.ERROR
+                    entry["messages"].append(
                         "Error: want to create a new user, but username already exists."
                     )
                 else:
@@ -73,31 +77,42 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
             elif entry["state"] == ImportState.DONE:
                 search_data = self.get_search_data(payload_index)
                 if not entry["data"].get("username"):
-                    raise ActionException("Error: could not find username")
+                    self.error = True
+                    entry["state"] = ImportState.ERROR
+                    entry["messages"].append("Error: could not find username")
                 elif not self.check_username_for_duplicate(
                     entry["data"]["username"], payload_index
                 ):
-                    raise ActionException(
+                    self.error = True
+                    entry["state"] = ImportState.ERROR
+                    entry["messages"].append(
                         "Error: want to update, but missing user in db."
                     )
                 elif search_data is None:
-                    raise ActionException(
+                    self.error = True
+                    entry["state"] = ImportState.ERROR
+                    entry["messages"].append(
                         "Error: want to update, but found search data are wrong."
                     )
                 elif search_data["id"] != entry["data"]["id"]:
-                    raise ActionException(
+                    self.error = True
+                    entry["state"] = ImportState.ERROR
+                    entry["messages"].append(
                         "Error: want to update, but found search data doesn't match."
                     )
-
                 else:
                     del entry["data"]["username"]
                     update_action_payload.append(entry["data"])
             else:
-                raise ActionException("Error in import.")
+                self.error = True
+                entry["messages"].append("Error in import.")
 
         # execute the actions
-        if create_action_payload:
-            self.execute_other_action(UserCreate, create_action_payload)
-        if update_action_payload:
-            self.execute_other_action(UserUpdate, update_action_payload)
+        if not self.error:
+            if create_action_payload:
+                self.execute_other_action(UserCreate, create_action_payload)
+            if update_action_payload:
+                self.execute_other_action(UserUpdate, update_action_payload)
+        else:
+            self.error_store_ids.append(instance["id"])
         return {}

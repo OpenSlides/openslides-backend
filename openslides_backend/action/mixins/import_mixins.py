@@ -28,6 +28,10 @@ class ImportMixin(Action):
 
     import_name: str
 
+    def prepare_action_data(self, action_data: ActionData) -> ActionData:
+        self.error_store_ids: List[int] = []
+        return action_data
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         store_id = instance["id"]
         worker = self.datastore.get(
@@ -48,10 +52,19 @@ class ImportMixin(Action):
     def create_events(self, instance: Dict[str, Any]) -> Any:
         return []
 
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        return {
+            "rows": self.result.get("rows", []),
+        }
+
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:
             for instance in action_data:
                 store_id = instance["id"]
+                if store_id in self.error_store_ids:
+                    continue
                 self.datastore.write_action_worker(
                     WriteRequest(
                         events=[

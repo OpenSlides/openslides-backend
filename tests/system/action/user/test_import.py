@@ -178,15 +178,18 @@ class UserJsonImport(BaseActionTestCase):
             }
         )
         response = self.request("user.import", {"id": 6, "import": True})
-        self.assert_status_code(response, 400)
-        assert "Error: could not find username" in response.json["message"]
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == ["Error: could not find username"]
 
         response = self.request("user.import", {"id": 7, "import": True})
-        self.assert_status_code(response, 400)
-        assert (
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == [
             "Error: want to create a new user, but username already exists."
-            in response.json["message"]
-        )
+        ]
 
     def test_import_error_state_done_missing_username(self) -> None:
         self.set_models(
@@ -199,8 +202,10 @@ class UserJsonImport(BaseActionTestCase):
             )
         )
         response = self.request("user.import", {"id": 6, "import": True})
-        self.assert_status_code(response, 400)
-        assert "Error: could not find username" in response.json["message"]
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == ["Error: could not find username"]
 
     def test_import_error_state_done_missing_user_in_db(self) -> None:
         self.set_models(
@@ -214,10 +219,10 @@ class UserJsonImport(BaseActionTestCase):
             )
         )
         response = self.request("user.import", {"id": 6, "import": True})
-        self.assert_status_code(response, 400)
-        assert (
-            "Error: want to update, but missing user in db." in response.json["message"]
-        )
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == ["Error: want to update, but missing user in db."]
 
     def test_import_error_state_done_search_data_error(self) -> None:
         self.set_models(
@@ -252,11 +257,12 @@ class UserJsonImport(BaseActionTestCase):
             }
         )
         response = self.request("user.import", {"id": 6, "import": True})
-        self.assert_status_code(response, 400)
-        assert (
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][1]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == [
             "Error: want to update, but found search data are wrong."
-            in response.json["message"]
-        )
+        ]
 
     def test_import_error_state_done_not_matching_ids(self) -> None:
         self.set_models(
@@ -277,16 +283,20 @@ class UserJsonImport(BaseActionTestCase):
             }
         )
         response = self.request("user.import", {"id": 6, "import": True})
-        self.assert_status_code(response, 400)
-        assert (
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == [
             "Error: want to update, but found search data doesn't match."
-            in response.json["message"]
-        )
+        ]
 
     def test_import_error_state(self) -> None:
         response = self.request("user.import", {"id": 4, "import": True})
-        self.assert_status_code(response, 400)
-        assert "Error in import." in response.json["message"]
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == ["test", "Error in import."]
+        self.assert_model_exists("action_worker/4")
 
     def test_import_no_permission(self) -> None:
         self.base_permission_test({}, "user.import", {"id": 2, "import": True})
