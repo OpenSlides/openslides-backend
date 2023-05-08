@@ -85,7 +85,7 @@ For completeness your username: {username}"""
                             html=False,
                         )
                         if ok:
-                            yield {"id": user["id"], "last_email_send": round(time())}
+                            yield {"id": user["id"], "last_email_sent": round(time())}
             except Exception as e:
                 self.logger.error(f"General send mail exception: {str(e)}")
                 raise ActionException(

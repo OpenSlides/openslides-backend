@@ -1,5 +1,5 @@
 {
-    "_migration_index": 40,
+    "_migration_index": 41,
     "organization": {
         "1": {
             "id": 1,
@@ -436,7 +436,7 @@
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
-            "motion_poll_default_100_percent_base": "YNA",
+            "motion_poll_default_onehundred_percent_base": "YNA",
             "motion_poll_default_group_ids": [
                 2,
                 3
@@ -459,7 +459,7 @@
             "assignment_poll_sort_poll_result_by_votes": true,
             "assignment_poll_default_type": "pseudoanonymous",
             "assignment_poll_default_method": "Y",
-            "assignment_poll_default_100_percent_base": "valid",
+            "assignment_poll_default_onehundred_percent_base": "valid",
             "assignment_poll_default_group_ids": [
                 2,
                 3
@@ -470,7 +470,7 @@
             "poll_sort_poll_result_by_votes": true,
             "poll_default_type": "nominal",
             "poll_default_method": "votes",
-            "poll_default_100_percent_base": "valid",
+            "poll_default_onehundred_percent_base": "valid",
             "poll_default_group_ids": [
                 3
             ],

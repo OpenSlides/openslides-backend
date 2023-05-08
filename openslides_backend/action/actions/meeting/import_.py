@@ -211,7 +211,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 "user": [
                     "password",
                     "default_password",
-                    "last_email_send",
+                    "last_email_sent",
                     "last_login",
                 ],
             },
