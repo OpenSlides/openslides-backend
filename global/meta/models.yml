@@ -215,7 +215,7 @@ user:
     type: string
     restriction_mode: A
   pronoun:
-    type: string
+    type: short_string
     restriction_mode: A
   title:
     type: string

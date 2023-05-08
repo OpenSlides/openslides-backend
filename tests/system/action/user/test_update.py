@@ -386,6 +386,20 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/1", {"username": "admin"})
 
+    def test_update_check_short_string(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request(
+            "user.update", {"id": 111, "pronoun": "123456789012345678901234567890123"}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.pronoun must be shorter than or equal to 32 characters"
+            in response.json["message"]
+        )
+
     def test_perm_nothing(self) -> None:
         self.permission_setup()
         response = self.request(
