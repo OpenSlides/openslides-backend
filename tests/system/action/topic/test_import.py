@@ -1,4 +1,4 @@
-from openslides_backend.action.actions.topic.json_upload import ImportStatus
+from openslides_backend.action.mixins.import_mixins import ImportState
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -13,13 +13,13 @@ class TopicJsonImport(BaseActionTestCase):
                         "import": "topic",
                         "rows": [
                             {
-                                "status": ImportStatus.NEW,
-                                "error": [],
+                                "state": ImportState.NEW,
+                                "messages": [],
                                 "data": {"title": "test", "meeting_id": 22},
                             },
                             {
-                                "status": ImportStatus.ERROR,
-                                "error": ["test"],
+                                "state": ImportState.ERROR,
+                                "messages": ["test"],
                                 "data": {"title": "broken", "meeting_id": 22},
                             },
                         ],

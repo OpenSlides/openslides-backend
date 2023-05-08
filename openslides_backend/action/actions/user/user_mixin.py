@@ -1,3 +1,4 @@
+import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
@@ -6,6 +7,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
+from ....presenter.search_users import SearchUsers
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
@@ -39,6 +41,17 @@ class UsernameMixin(Action):
                 break
             used_usernames.append(username)
         return used_usernames
+
+    def generate_username(self, entry: Dict[str, Any]) -> str:
+        return self.generate_usernames(
+            [
+                re.sub(
+                    r"\W",
+                    "",
+                    entry.get("first_name", "") + entry.get("last_name", ""),
+                )
+            ]
+        )[0]
 
 
 class LimitOfUserMixin(Action):
@@ -173,3 +186,50 @@ class UpdateHistoryMixin(Action):
                     fqid_from_collection_and_id("user", instance["id"])
                 ] = instance_information
         return information
+
+
+class DuplicateCheckMixin(Action):
+    def init_duplicate_set(self, data: List[Any]) -> None:
+        self.users_in_double_lists = self.execute_presenter(
+            SearchUsers,
+            {
+                "permission_type": "organization",
+                "permission_id": 1,
+                "search": data,
+            },
+        )
+        self.used_usernames: List[str] = []
+        self.used_names_and_email: List[Any] = []
+
+    def check_username_for_duplicate(self, username: str, payload_index: int) -> bool:
+        result = (
+            bool(self.users_in_double_lists[payload_index])
+            or username in self.used_usernames
+        )
+        if username not in self.used_usernames:
+            self.used_usernames.append(username)
+        return result
+
+    def check_name_and_email_for_duplicate(
+        self, first_name: str, last_name: str, email: str, payload_index: int
+    ) -> bool:
+        entry = (first_name, last_name, email)
+        result = (
+            self.users_in_double_lists[payload_index]
+            or entry in self.used_names_and_email
+        )
+        if entry not in self.used_names_and_email:
+            self.used_names_and_email.append(entry)
+        return result
+
+    def get_search_data(self, payload_index: int) -> Optional[Dict[str, Any]]:
+        if len(self.users_in_double_lists[payload_index]) == 1:
+            return self.users_in_double_lists[payload_index][0]
+        return None
+
+    def has_multiple_search_data(self, payload_index: int) -> List[str]:
+        if len(self.users_in_double_lists[payload_index]) >= 2:
+            return [
+                entry["username"] for entry in self.users_in_double_lists[payload_index]
+            ]
+        return []

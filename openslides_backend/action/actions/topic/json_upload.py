@@ -1,32 +1,20 @@
-from enum import Enum
-from time import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import fastjsonschema
 
 from ....models.models import Topic
 from ....permissions.permissions import Permissions
-from ....shared.interfaces.event import Event, EventType
-from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
-from ...action import Action
+from ...mixins.import_mixins import ImportState, JsonUploadMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionResultElement
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create import TopicCreate
 from .mixins import DuplicateCheckMixin
 
 
-class ImportStatus(str, Enum):
-    NEW = "new"
-    ERROR = "error"
-    DONE = "done"
-
-
 @register_action("topic.json_upload")
-class TopicJsonUpload(DuplicateCheckMixin, Action):
+class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -64,7 +52,7 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
         {"property": "text", "type": "string"},
         {"property": "agenda_comment", "type": "string"},
         {"property": "agenda_type", "type": "string"},
-        {"proptery": "agenda_duration", "type": "number"},
+        {"property": "agenda_duration", "type": "integer"},
     ]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -79,69 +67,35 @@ class TopicJsonUpload(DuplicateCheckMixin, Action):
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
-        itemCount, itemNew, itemError = len(self.rows), 0, 0
+        itemCount = len(self.rows)
+        state_to_count = {state: 0 for state in ImportState}
         for entry in self.rows:
-            if entry["status"] == ImportStatus.NEW:
-                itemNew += 1
-            if entry["status"] == ImportStatus.ERROR:
-                itemError += 1
-        self.statistics = {
-            "total": itemCount,
-            "created": itemNew,
-            "omitted": itemError,
-        }
+            state_to_count[entry["state"]] += 1
 
-        # store rows in the action_worker
-        self.new_store_id = self.datastore.reserve_id(collection="action_worker")
-        fqid = fqid_from_collection_and_id("action_worker", self.new_store_id)
-        time_created = int(time())
-        self.datastore.write_action_worker(
-            WriteRequest(
-                events=[
-                    Event(
-                        type=EventType.Create,
-                        fqid=fqid,
-                        fields={
-                            "id": self.new_store_id,
-                            "result": {"import": "topic", "rows": self.rows},
-                            "created": time_created,
-                            "timestamp": time_created,
-                            "state": "running",
-                        },
-                    )
-                ],
-                user_id=self.user_id,
-                locked_fields={},
-            )
+        self.statistics = [
+            {"name": "total", "value": itemCount},
+            {"name": "created", "value": state_to_count[ImportState.NEW]},
+            {"name": "updated", "value": state_to_count[ImportState.DONE]},
+            {"name": "error", "value": state_to_count[ImportState.ERROR]},
+            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
+        ]
+
+        self.set_state(
+            state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )
+        self.store_rows_in_the_action_worker("topic")
         return {}
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        status, error = None, []
+        state, messages = None, []
         try:
             TopicCreate.schema_validator(entry)
             if self.check_for_duplicate(entry["title"]):
-                status = ImportStatus.ERROR
-                error.append("Duplicate")
+                state = ImportState.WARNING
+                messages.append("Duplicate")
             else:
-                status = ImportStatus.NEW
+                state = ImportState.NEW
         except fastjsonschema.JsonSchemaException as exception:
-            status = ImportStatus.ERROR
-            error.append(exception.message)
-        return {"status": status, "error": error, "data": entry}
-
-    def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
-        return {}
-
-    def create_events(self, instance: Dict[str, Any]) -> Any:
-        return []
-
-    def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
-        return {
-            "id": self.new_store_id,
-            "headers": self.headers,
-            "rows": self.rows,
-            "statistics": self.statistics,
-        }
+            state = ImportState.ERROR
+            messages.append(exception.message)
+        return {"state": state, "messages": messages, "data": entry}
