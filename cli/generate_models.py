@@ -26,6 +26,7 @@ DESTINATION = os.path.abspath(
 
 COMMON_FIELD_CLASSES = {
     "string": "CharField",
+    "short_string": "ShortCharField",
     "number": "IntegerField",
     "boolean": "BooleanField",
     "JSON": "JSONField",
