@@ -1,21 +1,24 @@
 ---
 # Types:
-#     - Nativ datatypes: text, string (text with maxLength=256), number, boolean, JSON
+#     - Nativ datatypes: string, text, number, boolean, JSON
+#     - string: String with length 50 as default, otherwise use length
 #     - HTMLStrict: A string with HTML content.
 #     - HTMLPermissive: A string with HTML content (with video tags).
 #     - float: Numbers that are expected to be non-integer. Formatted as in rfc7159.
-#     - decimal(X): Decimal values represented as a string with X decimal places.
-#       At the moment we support only X == 6.
+#     - decimal: Decimal values represented as a string with X decimal places.
+#       Without length, the default is X=6.
 #     - timestamp: Datetime as a unix timestamp. Why a number? This enables queries
 #       in the DB. And we do not need more precision than 1 second.
 #     - <T>[]: This indicates and arbitrary array of the given type. At the moment
 #       we support only some types. You can add JSON Schema properties for items
 #       using the extra property `items`
 #     - color: string that must match ^#[0-9a-f]{6}$
+#     - Xsqlview: table/field, where <boolean expression> results as a list of fields
 # Relations:
 #     - We have the following types: `relation`, `relation-list`, `generic-relation`
 #       and `generic-relation-list`.
 #     - Non-generic relations: The simple syntax for such a field
+#       `references: table(field)`. Target of foreign key.
 #       `to: <collection>/<field>`. This is a reference to a collection. The reverse
 #       relation field in this collection is <field>. E. g. in a motion the field
 #       `category_id` links to one category where the field `motion_ids` contains the
@@ -23,6 +26,7 @@
 #       The reverse field has type `relation-list` and is related back to
 #       `motion/category_id`. The type indicates that there are many
 #       motion ids.
+
 #     - Generic relations: The difference to non-generic relations is that you have a
 #       list of possible fields, so `to` can either hold multiple collections (if the
 #       field name is the same):
@@ -36,7 +40,7 @@
 #         to:
 #           - motion/option_ids
 #           - user/option_$_ids
-#     - on_delete: This fields determines what should happen with the foreign model if
+#     - os3_on_delete: This fields determines what should happen with the foreign model if
 #       this model gets deleted. Possible values are:
 #           - SET_NULL (default): delete the id from the foreign key
 #           - PROTECT: if the foreign key is not empty, throw an error instead of
@@ -46,6 +50,7 @@
 #     - You can add JSON Schema properties to the fields like `enum`, `description`,
 #       `items`, `maxLength` and `minimum`
 # Additional properties:
+#     - The property `length`: for types decimal, string and string[] you could define the length
 #     - The property `read_only` describes a field that can not be changed by an action.
 #     - The property `default` describes the default value that is used for new objects.
 #     - The property `required` describes that this field can not be null or an empty
@@ -53,16 +58,20 @@
 #       fields the value as to be an id of an existing object.
 #     - The property `equal_fields` describes fields that must have the same value in
 #       the instance and the related instance.
+#     - The property `indexed` creates an index on database for faster access
 # Restriction Mode:
 #   The field `restriction_mode` is required for every field. It puts the field into a
 #   restriction group. See https://github.com/OpenSlides/OpenSlides/wiki/Restrictions-Overview
 
-organization:
+organizationT:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
   name:
     type: string
+    length: 50
     restriction_mode: A
   description:
     type: HTMLStrict
@@ -148,44 +157,11 @@ organization:
     calculated: true
     restriction_mode: A
 
-  committee_ids:
-    type: relation-list
-    restriction_mode: B
-    to: committee/organization_id
-  active_meeting_ids:
-    type: relation-list
-    restriction_mode: B
-    to: meeting/is_active_in_organization_id
-  archived_meeting_ids:
-    type: relation-list
-    restriction_mode: B
-    to: meeting/is_archived_in_organization_id
-  template_meeting_ids:
-    type: relation-list
-    to: meeting/template_for_organization_id
-    restriction_mode: A
-  organization_tag_ids:
-    type: relation-list
-    restriction_mode: B
-    to: organization_tag/organization_id
   theme_id:
     type: relation
     required: true
     restriction_mode: A
-    to: theme/theme_for_organization_id
-  theme_ids:
-    type: relation-list
-    restriction_mode: A
-    to: theme/organization_id
-  mediafile_ids:
-    type: relation-list
-    to: mediafile/owner_id
-    on_delete: CASCADE
-    restriction_mode: A
-  user_ids:
-    type: relation-list
-    restriction_mode: C
-    to: user/organization_id
+    references: theme(id)
   users_email_sender:
     type: string
     default: OpenSlides
@@ -221,7 +197,47 @@ organization:
     default: https://example.com
     restriction_mode: A
 
-user:
+organization:
+  entity_description:
+    type: view
+    table: organizationT
+    table_letter: c
+  committee_ids:
+    type: number[]
+    restriction_mode: B
+    Xsqlview: committee/id
+  active_meeting_ids:
+    type: number[]
+    restriction_mode: B
+    Xsqlview: meeting/id, where state = "active"
+  archived_meeting_ids:
+    type: number[]
+    restriction_mode: B
+    Xsqlview: meeting/id, where state = "archived"
+  template_meeting_ids:
+    type: number[]
+    Xsqlview: meeting/id, where template_for_organization_id
+    restriction_mode: A
+  organization_tag_ids:
+    type: number[]
+    restriction_mode: B
+    Xsqlview: organization_tag/id
+  theme_ids:
+    type: number[]
+    restriction_mode: A
+    Xsqlview: theme/id
+  mediafile_ids:
+    type: number[]
+    restriction_mode: A
+    Xsqlview: mediafile/id, where mediafile.owner_organization_id = 1
+  user_ids:
+    type: number[]
+    restriction_mode: C
+    Xsqlview: user/id
+
+userT:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -277,7 +293,7 @@ user:
     type: string
     restriction_mode: A
   default_vote_weight:
-    type: decimal(6)
+    type: decimal
     default: "1.000000"
     minimum: "0.000001"
     restriction_mode: A
@@ -292,78 +308,109 @@ user:
     restriction_mode: A
     read_only: true
 
-  # Organization, meeting and committee
-  organization_management_level:
-    type: string
-    description: Hierarchical permission level for the whole organization.
-    enum:
-      - superadmin
-      - can_manage_organization
-      - can_manage_users
-    restriction_mode: E
+# TODO: We'll use groups for this one
+#   # Organization, meeting and committee
+#   organization_management_level:
+#     type: string
+#     description: Hierarchical permission level for the whole organization.
+#     enum:
+#       - superadmin
+#       - can_manage_organization
+#       - can_manage_users
+#     restriction_mode: E
+#   # committee specific permissions
+#   committee_management_ids:
+#     type: xrelation-list
+#     to: committee/manager_ids
+#     restriction_mode: E
+
+user_:
+  entity_description:
+    type: view
+    table: userT
+    table_letter: c
   is_present_in_meeting_ids:
-    type: relation-list
+    type: number[]
     to: meeting/present_user_ids
     restriction_mode: A
+    Xsqlview: presence_user_in_meeting/meeting_id, where presence_user_in_meeting.user_id = id
 
   # Calculates all committee's where the user is
   # - committee-manager (= committees in committee_management_ids)
   # - is member (= has group-rights) of a meeting in the committee
   committee_ids:
-    type: relation-list
+    type: number[]
     to: committee/user_ids
     restriction_mode: E
     read_only: true
-    description: "Calculated field."
-
-  # committee specific permissions
-  committee_management_ids:
-    type: relation-list
-    to: committee/manager_ids
-    restriction_mode: E
+    description: "Backend calculated field with trigger."
 
   # for the motion forwarding
   forwarding_committee_ids:
-    type: relation-list
-    to: committee/forwarding_user_id
+    type: number[]
     restriction_mode: E
+    Xsqlview: committee/id, where committee.forwarding_user_id = id
 
   meeting_user_ids:
     type: relation-list
     to: meeting_user/user_id
     restriction_mode: A
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
   poll_voted_ids:
-    type: relation-list
+    type: number[]
     to: poll/voted_ids
     restriction_mode: A
+    Xsqlview: poll_to_user/poll_id, where poll_to_user.user_id = id
   option_ids:
-    type: relation-list
-    to: option/content_object_id
+    type: number[]
     restriction_mode: A
+    Xsqlview: option/id, where option.content_user_id = id
   vote_ids:
-    type: relation-list
-    to: vote/user_id
+    type: number[]
     restriction_mode: A
+    Xsqlview: vote/id, where vote.user_id = id
   delegated_vote_ids:
-    type: relation-list
+    type: number[]
     to: vote/delegated_user_id
     restriction_mode: A
+    Xsqlview: vote/id, where vote.delegated_user_id = id
   poll_candidate_ids:
-    type: relation-list
-    to: poll_candidate/user_id
+    type: number[]
     restriction_mode: A
+    Xsqlview: poll_candidate/id, where poll_candidate.user_id = id
 
   meeting_ids:
     type: number[]
     description: Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.
     read_only: true
     restriction_mode: E
-  organization_id:
+    todo: sqlview or backend calculated fields, but from userT, not view
+
+poll_to_user:
+  entity_description:
+    type: table
+  user_id:
     type: relation
-    to: organization/user_ids
-    required: True
-    restriction_mode: F
+    references: userT(id)
+    required: true
+  poll_id:
+    type: relation
+    references: poll(id)
+    required: true
+
+presence_user_in_meeting:
+  entity_description:
+    type: table
+    description: if exist, user is present in meeting. meeting_id and user_id together as unique primary key
+  meeting_id:
+    type: relation
+    required: true
+  user_id:
+    type: relation
+    required: true
+  begin:
+    type: timestamp
+    required: true
 
 meeting_user:
   id:
@@ -391,11 +438,13 @@ meeting_user:
   user_id:
     type: relation
     to: user/meeting_user_ids
+    references: userT(id)
     required: true
     restriction_mode: A
   meeting_id:
     type: relation
     to: meeting/meeting_user_ids
+    references: meetingT(id)
     required: true
     restriction_mode: A
 
@@ -471,18 +520,28 @@ organization_tag:
     restriction_mode: A
 
   tagged_ids:
-    type: generic-relation-list
+    type: string[]
     to:
       collections:
         - committee
         - meeting
       field: organization_tag_ids
     restriction_mode: A
-  organization_id:
-    type: relation
-    to: organization/organization_tag_ids
-    restriction_mode: A
-    required: true
+    Xsqlview: uses table organization_tag_to_committee_meeting to construct a list of fqids where this tag is used
+organization_tag_to_committee_meeting:
+    entity_description:
+      type: table
+      todo: one of meeting_id or committee_required, other empty
+    organization_tag_id:
+      type: number
+      references: organization_tag(id)
+      required: true
+    meeting_id:
+      type: number
+      references: meetingT(id)
+    committee_id:
+      type: number
+      references: committee(id)
 
 theme:
   id:
@@ -638,11 +697,7 @@ theme:
     restriction_mode: A
     to: organization/theme_id
     type: relation
-  organization_id:
-    required: true
-    restriction_mode: A
-    to: organization/theme_ids
-    type: relation
+    references: organizationT(id)
 
 committee:
   id:
@@ -660,48 +715,68 @@ committee:
     restriction_mode: A
     description: unique
   meeting_ids:
-    type: relation-list
-    to: meeting/committee_id
-    on_delete: PROTECT
+    type: number[]
     restriction_mode: A
+    Xsqlview: meeting/id, where meeting.committee_id = id
   default_meeting_id:
     type: relation
     to: meeting/default_meeting_for_committee_id
+    references: meetingT(id)
     restriction_mode: A
   user_ids:
-    type: relation-list
+    type: number[]
     to: user/committee_ids
     restriction_mode: A
     read_only: true
-    description: "Calculated field."
+    description: "Backend calculated field with trigger."
   manager_ids:
-    type: relation-list
+    type: number[]
     to: user/committee_management_ids
     restriction_mode: B
+    sqlview TODO: user/id; where IMO with groups, but still not designed
 
-  forward_to_committee_ids:
-    type: relation-list
-    to: committee/receive_forwardings_from_committee_ids
-    restriction_mode: B
-  receive_forwardings_from_committee_ids:
-    type: relation-list
-    to: committee/forward_to_committee_ids
-    restriction_mode: B
   forwarding_user_id:
     type: relation
     to: user/forwarding_committee_ids
+    references: userT(id)
     restriction_mode: B
   organization_tag_ids:
-    type: relation-list
+    type: number[]
     to: organization_tag/tagged_ids
     restriction_mode: A
-  organization_id:
-    type: relation
-    to: organization/committee_ids
-    required: true
-    restriction_mode: A
+    Xsqlview: organization_tag/id, where organization_tag_to_committee_meeting.committee_id = id join organization_tag_to_committee_meeting.organization_tag_id = organization_tag.id
 
-meeting:
+committeeV:
+  entity_description:
+    type: view
+    table: committee
+    table_letter: c
+  forward_to_committee_ids:
+    type: number[]
+    restriction_mode: B
+    select: "select array_agg(f.receiving_committee_id) from forwarding_committee_to_committee f where f.forwarding_committee_id = c.id"
+  receive_from_committee_ids:
+    type: number[]
+    restriction_mode: B
+    select: "select array_agg(f.forwarding_committee_id) from forwarding_committee_to_committee f where f.receiving_committee_id = c.id"
+
+forwarding_committee_to_committee:
+  entity_description:
+    type: table
+  forwarding_committee_id:
+    type: relation
+    required: True
+    references: committee(id)
+    on_delete: CASCADE
+  receiving_committee_id:
+    type: relation
+    required: True
+    references: committee(id)
+    on_delete: CASCADE
+
+meetingT:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -725,16 +800,14 @@ meeting:
     default: OpenSlides
     restriction_mode: A
     required: true
-  is_active_in_organization_id:
-    type: relation
-    to: organization/active_meeting_ids
+  state:
+    type: string
+    enum:
+      - active
+      - archived
+    default: active
+    indexed: true
     restriction_mode: A
-    description: Backrelation and boolean flag at once
-  is_archived_in_organization_id:
-    type: relation
-    to: organization/archived_meeting_ids
-    restriction_mode: A
-    description: Backrelation and boolean flag at once
   description:
     type: string
     maxLength: 100
@@ -779,6 +852,7 @@ meeting:
   template_for_organization_id:
     type: relation
     to: organization/template_meeting_ids
+    references: organizationT(id)
     restriction_mode: B
   enable_anonymous:
     type: boolean
@@ -1032,17 +1106,20 @@ meeting:
   # Motions
   motions_default_workflow_id:
     type: relation
-    to: motion_workflow/default_workflow_meeting_id
+    references: motion_workflow(id)
+    on_delete: RESTRICT
     required: true
     restriction_mode: B
   motions_default_amendment_workflow_id:
     type: relation
-    to: motion_workflow/default_amendment_workflow_meeting_id
+    references: motion_workflow(id)
+    on_delete: RESTRICT
     required: true
     restriction_mode: B
   motions_default_statute_amendment_workflow_id:
     type: relation
-    to: motion_workflow/default_statute_amendment_workflow_meeting_id
+    references: motion_workflow(id)
+    on_delete: RESTRICT
     required: true
     restriction_mode: B
   motions_preamble:
@@ -1212,10 +1289,6 @@ meeting:
     type: string
     default: YNA
     restriction_mode: B
-  motion_poll_default_group_ids:
-    type: relation-list
-    to: group/used_as_motion_poll_default_id
-    restriction_mode: B
   motion_poll_default_backend:
     type: string
     default: fast
@@ -1224,22 +1297,7 @@ meeting:
       - fast
     restriction_mode: B
 
-  # poll list election
-  poll_candidate_list_ids:
-    type: relation-list
-    to: poll_candidate_list/meeting_id
-    restriction_mode: B
-  poll_candidate_ids:
-    type: relation-list
-    to: poll_candidate/meeting_id
-    restriction_mode: B
-
   # Users
-  meeting_user_ids:
-    type: relation-list
-    to: meeting_user/meeting_id
-    restriction_mode: B
-    on_delete: CASCADE
   users_enable_presence_view:
     type: boolean
     default: False
@@ -1355,10 +1413,6 @@ meeting:
     type: string
     default: valid
     restriction_mode: B
-  assignment_poll_default_group_ids:
-    type: relation-list
-    to: group/used_as_assignment_poll_default_id
-    restriction_mode: B
   assignment_poll_default_backend:
     type: string
     default: fast
@@ -1391,10 +1445,6 @@ meeting:
   poll_default_onehundred_percent_base:
     type: string
     default: YNA
-    restriction_mode: B
-  poll_default_group_ids:
-    type: relation-list
-    to: group/used_as_poll_default_id
     restriction_mode: B
   poll_default_backend:
     type: string
@@ -1574,190 +1624,415 @@ meeting:
   # Logos and Fonts
   logo_projector_main_id:
     type: relation
-    to: mediafile/used_as_logo_projector_main_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   logo_projector_header_id:
     type: relation
-    to: mediafile/used_as_logo_projector_header_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   logo_web_header_id:
     type: relation
-    to: mediafile/used_as_logo_web_header_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   logo_pdf_header_l_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   logo_pdf_header_r_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_header_r_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   logo_pdf_footer_l_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_footer_l_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   logo_pdf_footer_r_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_footer_r_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   logo_pdf_ballot_paper_id:
     type: relation
-    to: mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   font_regular_id:
     type: relation
-    to: mediafile/used_as_font_regular_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   font_italic_id:
     type: relation
-    to: mediafile/used_as_font_italic_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   font_bold_id:
     type: relation
-    to: mediafile/used_as_font_bold_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   font_bold_italic_id:
     type: relation
-    to: mediafile/used_as_font_bold_italic_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   font_monospace_id:
     type: relation
-    to: mediafile/used_as_font_monospace_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   font_chyron_speaker_name_id:
     type: relation
-    to: mediafile/used_as_font_chyron_speaker_name_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   font_projector_h1_id:
     type: relation
-    to: mediafile/used_as_font_projector_h1_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
   font_projector_h2_id:
     type: relation
-    to: mediafile/used_as_font_projector_h2_in_meeting_id
+    references: mediafile(id)
     restriction_mode: B
+
   # Other relations
   committee_id:
     type: relation
     to: committee/meeting_ids
+    references: committee(id)
     required: true
     restriction_mode: B
-  default_meeting_for_committee_id:
+  reference_projector_id:
     type: relation
-    to: committee/default_meeting_id
+    references: projector(id)
+    required: true
     restriction_mode: B
-  organization_tag_ids:
+  default_group_id:
+    type: relation
+    references: groupT(id)
+    required: true
+    restriction_mode: B
+  admin_group_id:
+    type: relation
+    references: groupT(id)
+    restriction_mode: B
+
+meeting:
+  entity_description:
+    type: view
+    table: meetingT
+    table_letter: c
+  # Motion poll
+  motion_poll_default_group_ids:
+    type: number[]
+    to: group/used_as_motion_poll_default_id
+    restriction_mode: B
+    Xsqlview: group/id, where group.used_as_motion_poll_default_id = id
+
+  # poll list election
+  poll_candidate_list_ids:
+    type: number[]
+    to: poll_candidate_list/meeting_id
+    restriction_mode: B
+    Xsqlview: poll_candidate_list/id; where poll_candidate_list.meeting_id = id
+  poll_candidate_ids:
+    type: number[]
+    to: poll_candidate/meeting_id
+    restriction_mode: B
+    Xsqlview: poll_candidate/id, where poll_candidate.meeting_id = id
+
+  # Users
+  meeting_user_ids:
+    type: number[]
+    restriction_mode: B
+    os3_on_delete: CASCADE
+    Xsqlview: meeting_user/id, where meeting_user.meeting_id = id
+
+  # Assignment polls
+  assignment_poll_default_group_ids:
+    type: number[]
+    to: group/used_as_assignment_poll_default_id
+    restriction_mode: B
+    Xsqlview: group/id, where group.used_as_assignment_poll_default_id = id
+
+  # Polls
+  poll_default_group_ids:
+    type: number[]
+    to: group/used_as_poll_default_id
+    restriction_mode: B
+    Xsqlview: group/id, where group.used_as_poll_default_id = id
+
+  # Topic poll
+  topic_poll_default_group_ids:
+    type: number[]
+    to: group/used_as_topic_poll_default_id
+    restriction_mode: B
+    Xsqlview: group/id, where group.used_as_topic_poll_default_id = id
+
+  # Relations
+  projector_ids:
+    type: number[]
+    to: projector/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: projector/id, where meeting_id = id
+  all_projection_ids:
+    type: number[]
+    to: projection/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: projection/id, where meeting_id = id
+  projector_message_ids:
+    type: number[]
+    restriction_mode: B
+    Xsqlview: projector_message/id, where projector_message.meeting_id = id
+  projector_countdown_ids:
+    type: number[]
+    restriction_mode: B
+    Xsqlview: projector_countdown/id, where projector_countdown.meeting_id = id
+  tag_ids:
+    type: number[]
+    restriction_mode: B
+    Xsqlview: tag/id, where tag.meeting_id = id
+  agenda_item_ids:
     type: relation-list
+    restriction_mode: B
+    Xsqlview: agenda_item/id, where agenda_item.meeting_id = id
+  list_of_speakers_ids:
+    type: relation-list
+    to: list_of_speakers/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: list_of_speakers/id, where meeting_id = id
+  speaker_ids:
+    type: relation-list
+    to: speaker/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: speaker/id, where meeting_id = id
+  topic_ids:
+    type: relation-list
+    to: topic/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: topic/id, where meeting_id = id
+  group_ids:
+    type: relation-list
+    to: group/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: group/id, where meeting_id = id
+  mediafile_ids:
+    type: number[]
+    restriction_mode: B
+    Xsqlview: mediafile/id, where mediafile.owner_meeting_id = id
+  motion_ids:
+    type: number[]
+    restriction_mode: A
+    Xsqlview: motion/id, where motion.meeting_id = id
+  forwarded_motion_ids:
+    type: relation-list
+    to: motion/origin_meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: A
+    Xsqlview: motion/id, where origin_meeting_id = id
+  motion_comment_section_ids:
+    type: relation-list
+    to: motion_comment_section/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: motion_comment_section/id, where meeting_id = id
+  motion_category_ids:
+    type: relation-list
+    to: motion_category/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: motion_category/id, where meeting_id = id
+  motion_block_ids:
+    type: relation-list
+    to: motion_block/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: motion_block/id, where meeting_id = id
+  motion_workflow_ids:
+    type: relation-list
+    to: motion_workflow/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: motion_workflow/id, where meeting_id = id
+  motion_statute_paragraph_ids:
+    type: relation-list
+    to: motion_statute_paragraph/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: motion_statute_paragraph/id, where meeting_id = id
+  motion_comment_ids:
+    type: relation-list
+    to: motion_comment/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: motion_comment/id, where meeting_id = id
+  motion_submitter_ids:
+    type: relation-list
+    to: motion_submitter/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: motion_submitter/id, where meeting_id = id
+  motion_change_recommendation_ids:
+    type: relation-list
+    to: motion_change_recommendation/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: motion_change_recommendation/id, where meeting_id = id
+  motion_state_ids:
+    type: relation-list
+    to: motion_state/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: motion_state/id, where meeting_id = id
+  poll_ids:
+    type: relation-list
+    to: poll/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: poll/id, where meeting_id = id
+  option_ids:
+    type: relation-list
+    to: option/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: option/id, where meeting_id = id
+  vote_ids:
+    type: relation-list
+    to: vote/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: vote/id, where meeting_id = id
+  assignment_ids:
+    type: relation-list
+    to: assignment/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: assignment/id, where meeting_id = id
+  assignment_candidate_ids:
+    type: relation-list
+    to: assignment_candidate/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: assignment_candidate/id, where meeting_id = id
+  personal_note_ids:
+    type: relation-list
+    to: personal_note/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: personal_note/id, where meeting_id = id
+  chat_group_ids:
+    type: relation-list
+    to: chat_group/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: chat_group/id, where meeting_id = id
+  chat_message_ids:
+    type: relation-list
+    to: chat_message/meeting_id
+    os3_on_delete: CASCADE
+    restriction_mode: B
+    Xsqlview: chat_message/id, where meeting_id = id
+
+  # Other relations
+  organization_tag_ids:
+    type: number[]
     to: organization_tag/tagged_ids
     restriction_mode: B
+    Xsqlview: organization_tag/id, where organization_tag_to_committee_meeting.meeting_id = id join organization_tag_to_committee_meeting.organization_tag_id = organization_tag.id
   present_user_ids:
-    type: relation-list
-    to: user/is_present_in_meeting_ids
+    type: number[]
     restriction_mode: B
+    Xsqlview: presence_user_in_meeting/user_id, where presence_user_in_meeting.meeting_id = id
   user_ids:
     type: number[]
     description: Calculated. All user ids from all users assigned to groups of this meeting.
     read_only: true
     restriction_mode: B
-  reference_projector_id:
-    type: relation
-    to: projector/used_as_reference_projector_meeting_id
-    required: true
-    restriction_mode: B
+    Xsqlview: user/id, where ...
   list_of_speakers_countdown_id:
-    type: relation
-    to: projector_countdown/used_as_list_of_speakers_countdown_meeting_id
+    type: number
     restriction_mode: B
+    Xsqlview: projector_countdown/id, where projector_countdown.used_as_list_of_speakers_countdown_meeting_id = id
   poll_countdown_id:
-    type: relation
-    to: projector_countdown/used_as_poll_countdown_meeting_id
+    type: number
     restriction_mode: B
+    Xsqlview: projector_countdown/id, where projector_countdown.used_as_poll_countdown_meeting_id = id
   projection_ids:
-    type: relation-list
+    type: number[]
     to: projection/content_object_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     restriction_mode: B
   default_projector_agenda_item_list_ids:
     type: relation-list
     to: projector/used_as_default_projector_for_agenda_item_list_in_meeting_id
     restriction_mode: B
     required: true
-  default_projector_topic_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_topic_in_meeting_id
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_agenda_all_items_in_meeting_id = id
+  default_projector_topics_ids:
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_topics_in_meeting_id = id
   default_projector_list_of_speakers_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_list_of_speakers_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_list_of_speakers_in_meeting_id = id
   default_projector_current_list_of_speakers_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_current_list_of_speakers_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_cur_list_of_speakers_in_meeting_id = id
   default_projector_motion_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_motion_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_motion_in_meeting_id = id
   default_projector_amendment_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_amendment_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_amendment_in_meeting_id = id
   default_projector_motion_block_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_motion_block_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_motion_block_in_meeting_id = id
   default_projector_assignment_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_assignment_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_assignment_in_meeting_id = id
   default_projector_mediafile_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_mediafile_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
-  default_projector_message_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_message_in_meeting_id
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_mediafile_in_meeting_id = id
+  default_projector_projector_message_ids:
+    type: number[]
     restriction_mode: B
     required: true
-  default_projector_countdown_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_countdown_in_meeting_id
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_projector_message_in_meeting_id = id
+  default_projector_projector_countdowns_ids:
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_projector_countdowns_in_meeting_id = id
   default_projector_assignment_poll_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_assignment_poll_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_assignment_poll_in_meeting_id = id
   default_projector_motion_poll_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_motion_poll_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_motion_poll_in_meeting_id = id
   default_projector_poll_ids:
-    type: relation-list
-    to: projector/used_as_default_projector_for_poll_in_meeting_id
+    type: number[]
     restriction_mode: B
     required: true
-  default_group_id:
-    type: relation
-    to: group/default_group_for_meeting_id
-    required: true
-    restriction_mode: B
-  admin_group_id:
-    type: relation
-    to: group/admin_group_for_meeting_id
-    restriction_mode: B
+    Xsqlview: projector/id, where projector.used_as_default_projector_for_poll_in_meeting_id = id
 
-group:
+groupT:
   id:
     type: number
     restriction_mode: A
@@ -1813,21 +2088,6 @@ group:
     type: number
     restriction_mode: A
 
-  meeting_user_ids:
-    type: relation-list
-    to: meeting_user/group_ids
-    restriction_mode: A
-    equal_fields: meeting_id
-  default_group_for_meeting_id:
-    type: relation
-    to: meeting/default_group_id
-    on_delete: PROTECT
-    restriction_mode: A
-  admin_group_for_meeting_id:
-    type: relation
-    to: meeting/admin_group_id
-    on_delete: PROTECT
-    restriction_mode: A
   mediafile_access_group_ids:
     type: relation-list
     to: mediafile/access_group_ids
@@ -1866,25 +2126,53 @@ group:
     restriction_mode: A
   used_as_motion_poll_default_id:
     type: relation
+    references: meetingT(id)
+    on_delete: CASCADE
     to: meeting/motion_poll_default_group_ids
     restriction_mode: A
   used_as_assignment_poll_default_id:
     type: relation
+    references: meetingT(id)
     to: meeting/assignment_poll_default_group_ids
     restriction_mode: A
   used_as_topic_poll_default_id:
     type: relation
+    references: meetingT(id)
     to: meeting/topic_poll_default_group_ids
     restriction_mode: A
   used_as_poll_default_id:
     type: relation
+    references: meetingT(id)
     to: meeting/poll_default_group_ids
     restriction_mode: A
   meeting_id:
     type: relation
     to: meeting/group_ids
+    references: meetingT(id)
     required: true
     restriction_mode: A
+
+group_:
+  entity_description:
+    type: view
+    table: groupT
+    table_letter: c
+  meeting_user_ids:
+    type: number[]
+    restriction_mode: A
+    equal_fields: meeting_id
+    select: select array_agg(f.id) from meeting_user m where m.meeting_id = c.id
+  default_group_for_meeting_id:
+    type: number
+    to: meeting/default_group_id
+    restriction_mode: A
+    Xsqlview: meeting(id), where meeting.default_group_id = id
+  admin_group_for_meeting_id:
+    type: relation
+    to: meeting/admin_group_id
+    os3_on_delete: PROTECT
+    restriction_mode: A
+    Xsqlview: meeting(id), where meeting.admin_group_id = id
 
 personal_note:
   id:
@@ -1897,7 +2185,7 @@ personal_note:
     type: boolean
     restriction_mode: A
 
-  meeting_user_id:
+  user_id:
     type: relation
     to: meeting_user/personal_note_ids
     equal_fields: meeting_id
@@ -1913,7 +2201,7 @@ personal_note:
     restriction_mode: A
   meeting_id:
     type: relation
-    to: meeting/personal_note_ids
+    references: meetingT(id)
     required: true
     restriction_mode: A
 
@@ -1939,6 +2227,7 @@ tag:
   meeting_id:
     type: relation
     to: meeting/tag_ids
+    references: meetingT(id)
     required: true
     restriction_mode: A
 
@@ -2002,12 +2291,7 @@ agenda_item:
     restriction_mode: A
   parent_id:
     type: relation
-    to: agenda_item/child_ids
-    equal_fields: meeting_id
-    restriction_mode: A
-  child_ids:
-    type: relation-list
-    to: agenda_item/parent_id
+    references: agenda_item(id)
     equal_fields: meeting_id
     restriction_mode: A
   tag_ids:
@@ -2016,14 +2300,13 @@ agenda_item:
     equal_fields: meeting_id
     restriction_mode: A
   projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    equal_fields: meeting_id
-    on_delete: CASCADE
+    type: number[]
     restriction_mode: A
+    Xsqlview: projection/id, where projection.projection_agenda_item_id = id
   meeting_id:
     type: relation
     to: meeting/agenda_item_ids
+    references: meetingT(id)
     required: true
     restriction_mode: A
 
@@ -2058,18 +2341,17 @@ list_of_speakers:
   speaker_ids:
     type: relation-list
     to: speaker/list_of_speakers_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    equal_fields: meeting_id
-    on_delete: CASCADE
+    type: number[]
     restriction_mode: A
+    Xsqlview: projection/id, where projection.projection_list_of_speakers_id = id
   meeting_id:
     type: relation
     to: meeting/list_of_speakers_ids
+    references: meetingT(id)
     required: true
     restriction_mode: A
 
@@ -2126,14 +2408,14 @@ speaker:
   point_of_order:
     type: boolean
     restriction_mode: A
-
   list_of_speakers_id:
     type: relation
     to: list_of_speakers/speaker_ids
+    references: list_of_speakers(id)
     required: true
     equal_fields: meeting_id
     restriction_mode: A
-  meeting_user_id:
+  user_id:
     type: relation
     to: meeting_user/speaker_ids
     equal_fields: meeting_id
@@ -2175,32 +2457,33 @@ topic:
   agenda_item_id:
     type: relation
     to: agenda_item/content_object_id
+    references: agenda_item(id)
     required: true
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   list_of_speakers_id:
     type: relation
     to: list_of_speakers/content_object_id
+    references: list_of_speakers(id)
     required: true
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   poll_ids:
     type: relation-list
     to: poll/content_object_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    equal_fields: meeting_id
-    on_delete: CASCADE
+    type: number[]
     restriction_mode: A
+    Xsqlview: projection/id, where projection.projection_topic_id = id
   meeting_id:
     type: relation
     to: meeting/topic_ids
+    references: meetingT(id)
     required: true
     restriction_mode: A
 
@@ -2276,6 +2559,7 @@ motion:
   lead_motion_id:
     type: relation
     to: motion/amendment_ids
+    references: motion(id)
     equal_fields: meeting_id
     restriction_mode: C
   amendment_ids:
@@ -2286,20 +2570,18 @@ motion:
   sort_parent_id:
     type: relation
     to: motion/sort_child_ids
-    equal_fields: meeting_id
-    restriction_mode: C
-  sort_child_ids:
-    type: relation-list
-    to: motion/sort_parent_id
+    references: motion(id)
     equal_fields: meeting_id
     restriction_mode: C
   origin_id:
     type: relation
     to: motion/derived_motion_ids # Note: The related motions may not be in the same meeting
+    references: motion(id)
     restriction_mode: A
   origin_meeting_id: # The meeting of the motion in origin_id, if any
     type: relation
     to: meeting/forwarded_motion_ids
+    references: meetingT(id)
     restriction_mode: A
   derived_motion_ids:
     type: relation-list
@@ -2315,12 +2597,14 @@ motion:
     restriction_mode: A
   state_id:
     type: relation
+    references: motion_state(id)
     to: motion_state/motion_ids
     required: true
     equal_fields: meeting_id
     restriction_mode: C
   recommendation_id:
     type: relation
+    references: motion_state(id)
     to: motion_state/motion_recommendation_ids
     equal_fields: meeting_id
     restriction_mode: C
@@ -2352,18 +2636,20 @@ motion:
     restriction_mode: C
   category_id:
     type: relation
+    references: motion_category(id)
     to: motion_category/motion_ids
     equal_fields: meeting_id
     restriction_mode: C
   block_id:
     type: relation
+    references: motion_block(id)
     to: motion_block/motion_ids
     equal_fields: meeting_id
     restriction_mode: C
   submitter_ids:
     type: relation-list
     to: motion_submitter/motion_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: C
   supporter_meeting_user_ids:
@@ -2384,43 +2670,44 @@ motion:
   poll_ids:
     type: relation-list
     to: poll/content_object_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: C
   option_ids:
-    type: relation-list
-    to: option/content_object_id
-    on_delete: CASCADE
-    equal_fields: meeting_id
+    type: number[]
     restriction_mode: C
+    Xsqlview: option/id, where option.content_motion_id = id
   change_recommendation_ids:
     type: relation-list
     to: motion_change_recommendation/motion_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: C
   statute_paragraph_id:
     type: relation
+    references: motion_statute_paragraph(id)
     to: motion_statute_paragraph/motion_ids
     equal_fields: meeting_id
     restriction_mode: C
   comment_ids:
     type: relation-list
     to: motion_comment/motion_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: C
   agenda_item_id:
     type: relation
+    references: agenda_item(id)
     to: agenda_item/content_object_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: C
   list_of_speakers_id:
     type: relation
+    references: list_of_speakers(id)
     to: list_of_speakers/content_object_id
     required: true
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: C
   tag_ids:
@@ -2434,19 +2721,21 @@ motion:
     equal_fields: meeting_id
     restriction_mode: C
   projection_ids:
-    type: relation-list
+    type: number[]
     to: projection/content_object_id
     equal_fields: meeting_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     restriction_mode: C
+    Xsqlview: projection/id, where projection.projection_motion_id = id
   personal_note_ids:
     type: relation-list
     to: personal_note/content_object_id
     equal_fields: meeting_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     restriction_mode: C
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/motion_ids
     required: true
     restriction_mode: A
@@ -2458,19 +2747,22 @@ motion_submitter:
   weight:
     type: number
     restriction_mode: A
-  meeting_user_id:
+  user_id:
     type: relation
     to: meeting_user/motion_submitter_ids
+    references: userT(id)
     restriction_mode: A
     required: true
   motion_id:
     type: relation
+    references: motion(id)
     to: motion/submitter_ids
     equal_fields: meeting_id
     restriction_mode: A
     required: true
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/motion_submitter_ids
     required: true
     restriction_mode: A
@@ -2485,19 +2777,21 @@ motion_comment:
 
   motion_id:
     type: relation
+    references: motion(id)
     to: motion/comment_ids
     required: true
     equal_fields: meeting_id
     restriction_mode: A
   section_id:
     type: relation
+    references: motion_comment_section(id)
     to: motion_comment_section/comment_ids
     required: true
     equal_fields: meeting_id
     restriction_mode: A
   meeting_id:
     type: relation
-    to: meeting/motion_comment_ids
+    references: meetingT(id)
     required: true
     restriction_mode: A
 
@@ -2526,7 +2820,7 @@ motion_comment_section:
   comment_ids:
     type: relation-list
     to: motion_comment/section_id
-    on_delete: PROTECT
+    os3_on_delete: PROTECT
     equal_fields: meeting_id
     restriction_mode: A
   read_group_ids:
@@ -2538,11 +2832,6 @@ motion_comment_section:
     type: relation-list
     to: group/write_comment_section_ids
     equal_fields: meeting_id
-    restriction_mode: A
-  meeting_id:
-    type: relation
-    to: meeting/motion_comment_section_ids
-    required: true
     restriction_mode: A
 
 motion_category:
@@ -2574,21 +2863,11 @@ motion_category:
 
   parent_id:
     type: relation
-    to: motion_category/child_ids
-    equal_fields: meeting_id
-    restriction_mode: A
-  child_ids:
-    type: relation-list
-    to: motion_category/parent_id
-    equal_fields: meeting_id
-    restriction_mode: A
-  motion_ids:
-    type: relation-list
-    to: motion/category_id
-    equal_fields: meeting_id
+    references: motion_category(id)
     restriction_mode: A
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/motion_category_ids
     required: true
     restriction_mode: A
@@ -2618,25 +2897,26 @@ motion_block:
     restriction_mode: A
   agenda_item_id:
     type: relation
+    references: agenda_item(id)
     to: agenda_item/content_object_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   list_of_speakers_id:
     type: relation
+    references: list_of_speakers(id)
     to: list_of_speakers/content_object_id
     required: true
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    equal_fields: meeting_id
-    on_delete: CASCADE
+    type: number[]
     restriction_mode: A
+    Xsqlview: projection/id, where projection.projection_motion_block_id = id
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/motion_block_ids
     required: true
     restriction_mode: A
@@ -2683,12 +2963,14 @@ motion_change_recommendation:
 
   motion_id:
     type: relation
+    references: motion(id)
     to: motion/change_recommendation_ids
     required: true
     equal_fields: meeting_id
     restriction_mode: A
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/motion_change_recommendation_ids
     required: true
     restriction_mode: A
@@ -2774,6 +3056,7 @@ motion_state:
     default: false
   submitter_withdraw_state_id:
     type: relation
+    references: motion_state(id)
     to: motion_state/submitter_withdraw_back_ids
     equal_fields:
       - meeting_id
@@ -2804,7 +3087,7 @@ motion_state:
   motion_ids:
     type: relation-list
     to: motion/state_id
-    on_delete: PROTECT
+    os3_on_delete: PROTECT
     equal_fields: meeting_id
     restriction_mode: A
   motion_recommendation_ids:
@@ -2814,18 +3097,14 @@ motion_state:
     restriction_mode: A
   workflow_id:
     type: relation
+    references: motion_workflow(id)
     to: motion_workflow/state_ids
     required: true
     equal_fields: meeting_id
     restriction_mode: A
-  first_state_of_workflow_id:
-    type: relation
-    to: motion_workflow/first_state_id
-    on_delete: PROTECT
-    equal_fields: meeting_id
-    restriction_mode: A
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/motion_state_ids
     required: true
     restriction_mode: A
@@ -2848,29 +3127,19 @@ motion_workflow:
   state_ids:
     type: relation-list
     to: motion_state/workflow_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   first_state_id:
     type: relation
+    references: motion_state(id)
     to: motion_state/first_state_of_workflow_id
     required: true
     equal_fields: meeting_id
     restriction_mode: A
-  default_workflow_meeting_id:
-    type: relation
-    to: meeting/motions_default_workflow_id
-    restriction_mode: A
-  default_amendment_workflow_meeting_id:
-    type: relation
-    to: meeting/motions_default_amendment_workflow_id
-    restriction_mode: A
-  default_statute_amendment_workflow_meeting_id:
-    type: relation
-    to: meeting/motions_default_statute_amendment_workflow_id
-    restriction_mode: A
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/motion_workflow_ids
     required: true
     restriction_mode: A
@@ -2904,6 +3173,7 @@ motion_statute_paragraph:
     restriction_mode: A
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/motion_statute_paragraph_ids
     required: true
     restriction_mode: A
@@ -2999,13 +3269,13 @@ poll:
     default: disabled
     restriction_mode: A
   votesvalid:
-    type: decimal(6)
+    type: decimal
     restriction_mode: B
   votesinvalid:
-    type: decimal(6)
+    type: decimal
     restriction_mode: B
   votescast:
-    type: decimal(6)
+    type: decimal
     restriction_mode: D
   entitled_users_at_stop:
     type: JSON
@@ -3055,32 +3325,33 @@ poll:
   option_ids:
     type: relation-list
     to: option/poll_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   global_option_id:
     type: relation
+    references: option(id)
     to: option/used_as_global_option_in_poll_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   voted_ids:
-    type: relation-list
+    type: number[]
     to: user/poll_voted_ids
     restriction_mode: A
+    Xsqlview: poll_to_user/user_id, where poll_to_user.poll_id = id
   entitled_group_ids:
     type: relation-list
     to: group/poll_ids
     equal_fields: meeting_id
     restriction_mode: A
   projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    equal_fields: meeting_id
-    on_delete: CASCADE
+    type: number[]
     restriction_mode: A
+    Xsqlview: projection/id, where projection.projection_poll_id = id
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/poll_ids
     restriction_mode: A
     required: true
@@ -3097,51 +3368,49 @@ option:
     type: HTMLStrict
     restriction_mode: A
   "yes":
-    type: decimal(6)
+    type: decimal
     restriction_mode: B
   "no":
-    type: decimal(6)
+    type: decimal
     restriction_mode: B
   abstain:
-    type: decimal(6)
+    type: decimal
     restriction_mode: B
 
   poll_id:
     type: relation
+    references: poll(id)
+    on_delete: CASCADE
     to: poll/option_ids
-    equal_fields: meeting_id
-    restriction_mode: A
-  used_as_global_option_in_poll_id:
-    type: relation
-    to: poll/global_option_id
     equal_fields: meeting_id
     restriction_mode: A
   vote_ids:
     type: relation-list
     to: vote/option_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
-    restriction_mode: A
-  content_object_id:
-    type: generic-relation
-    to:
-      - motion/option_ids
-      - user/option_ids
-      - poll_candidate_list/option_id
-    equal_fields: meeting_id
-    restriction_mode: A
-  meeting_id:
-    type: relation
-    to: meeting/option_ids
-    required: true
     restriction_mode: A
 
+  # todo: only 1 of the next 3 should be filled, but is not required. Replaces a content_object
+  content_motion_id:
+    type: relation
+    references: motion(id)
+    restriction_mode: A
+  content_user_id:
+    type: relation
+    references: userT(id)
+    restriction_mode: A
+  content_poll_candidate_list_id:
+    type: relation
+    references: poll_candidate_list(id)
+    restriction_mode: A
+    description: poll_candidate_list.option_id must be filled also, because it is required and not modelled as sqlview
 vote:
   id:
     type: number
     restriction_mode: A
   weight:
-    type: decimal(6)
+    type: decimal
     restriction_mode: A
   value:
     type: string
@@ -3153,22 +3422,19 @@ vote:
 
   option_id:
     type: relation
+    references: option(id)
+    on_delete: CASCADE
     to: option/vote_ids
     equal_fields: meeting_id
     required: true
     restriction_mode: A
   user_id:
     type: relation
-    to: user/vote_ids
+    references: userT(id)
     restriction_mode: A
   delegated_user_id:
     type: relation
-    to: user/delegated_vote_ids
-    restriction_mode: A
-  meeting_id:
-    type: relation
-    to: meeting/vote_ids
-    required: true
+    references: userT(id)
     restriction_mode: A
 
 assignment:
@@ -3211,26 +3477,28 @@ assignment:
   candidate_ids:
     type: relation-list
     to: assignment_candidate/assignment_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   poll_ids:
     type: relation-list
     to: poll/content_object_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   agenda_item_id:
     type: relation
+    references: agenda_item(id)
     to: agenda_item/content_object_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   list_of_speakers_id:
     type: relation
+    references: list_of_speakers(id)
     to: list_of_speakers/content_object_id
     required: true
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   tag_ids:
@@ -3244,13 +3512,13 @@ assignment:
     equal_fields: meeting_id
     restriction_mode: A
   projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    equal_fields: meeting_id
-    on_delete: CASCADE
+    type: number[]
     restriction_mode: A
+    Xsqlview: projection/id, where projection.projection_assignment_id = id
   meeting_id:
     type: relation
+    references: meetingT(id)
+    on_delete: CASCADE
     to: meeting/assignment_ids
     required: true
     restriction_mode: A
@@ -3266,18 +3534,16 @@ assignment_candidate:
 
   assignment_id:
     type: relation
+    references: assignment(id)
+    on_delete: CASCADE
     to: assignment/candidate_ids
     equal_fields: meeting_id
     restriction_mode: A
     required: true
-  meeting_user_id:
+  user_id:
     type: relation
+    references: userT(id)
     to: meeting_user/assignment_candidate_ids
-    restriction_mode: A
-  meeting_id:
-    type: relation
-    to: meeting/assignment_candidate_ids
-    required: true
     restriction_mode: A
 
 # models for the poll list election
@@ -3286,22 +3552,17 @@ poll_candidate_list:
     type: number
     restriction_mode: A
   poll_candidate_ids:
-    type: relation-list
-    to: poll_candidate/poll_candidate_list_id
-    on_delete: CASCADE
+    type: number[]
+    os3_on_delete: CASCADE
     restriction_mode: A
-    equal_fields: meeting_id
-  meeting_id:
-    type: relation
-    to: meeting/poll_candidate_list_ids
-    required: true
-    restriction_mode: A
+    Xsqlview: poll_candidate/id, where poll_candidate_list_id = id
   option_id:
-    type: relation
-    to: option/content_object_id
-    equal_fields: meeting_id
+    type: number
+    references: option(id)
+    on_delete: CASCADE
     required: true
     restriction_mode: A
+    description: option.content_poll_candidate_list_id must be filled also, because it is an old content_object-field
 
 poll_candidate:
   id:
@@ -3309,21 +3570,17 @@ poll_candidate:
     restriction_mode: A
   poll_candidate_list_id:
     type: relation
-    to: poll_candidate_list/poll_candidate_ids
-    equal_fields: meeting_id
+    references: poll_candidate_list(id)
+    on_delete: CASCADE
     restriction_mode: A
     required: true
   user_id:
     type: relation
+    references: userT(id)
     to: user/poll_candidate_ids
     restriction_mode: A
   weight:
     type: number
-    required: true
-    restriction_mode: A
-  meeting_id:
-    type: relation
-    to: meeting/poll_candidate_ids
     required: true
     restriction_mode: A
 
@@ -3379,24 +3636,19 @@ mediafile:
     restriction_mode: A
   parent_id:
     type: relation
-    to: mediafile/child_ids
-    equal_fields: owner_id
-    restriction_mode: A
-  child_ids:
-    type: relation-list
-    to: mediafile/parent_id
+    references: mediafile(id)
     equal_fields: owner_id
     restriction_mode: A
   list_of_speakers_id:
     type: relation
+    references: list_of_speakers(id)
     to: list_of_speakers/content_object_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     restriction_mode: A
   projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    on_delete: CASCADE
+    type: number[]
     restriction_mode: A
+    Xsqlview: projection/id, where projection.projection_mediafile_id = id
   attachment_ids:
     type: generic-relation-list
     to:
@@ -3406,79 +3658,14 @@ mediafile:
         - assignment
       field: attachment_ids
     restriction_mode: A
-  owner_id:
-    type: generic-relation
-    to:
-      - meeting/mediafile_ids
-      - organization/mediafile_ids
-    restriction_mode: A
-    required: true
-
-  # Reverse relations for meetings, if a mediafile is used as a special resource
-  used_as_logo_projector_main_in_meeting_id:
+  owner_meeting_id:
     type: relation
-    to: meeting/logo_projector_main_id
-    restriction_mode: A
-  used_as_logo_projector_header_in_meeting_id:
+    references: meetingT(id)
+    todo: constraint for only meeting_id or organization_id filled, but one is required
+  owner_organization_id:
     type: relation
-    to: meeting/logo_projector_header_id
-    restriction_mode: A
-  used_as_logo_web_header_in_meeting_id:
-    type: relation
-    to: meeting/logo_web_header_id
-    restriction_mode: A
-  used_as_logo_pdf_header_l_in_meeting_id:
-    type: relation
-    to: meeting/logo_pdf_header_l_id
-    restriction_mode: A
-  used_as_logo_pdf_header_r_in_meeting_id:
-    type: relation
-    to: meeting/logo_pdf_header_r_id
-    restriction_mode: A
-  used_as_logo_pdf_footer_l_in_meeting_id:
-    type: relation
-    to: meeting/logo_pdf_footer_l_id
-    restriction_mode: A
-  used_as_logo_pdf_footer_r_in_meeting_id:
-    type: relation
-    to: meeting/logo_pdf_footer_r_id
-    restriction_mode: A
-  used_as_logo_pdf_ballot_paper_in_meeting_id:
-    type: relation
-    to: meeting/logo_pdf_ballot_paper_id
-    restriction_mode: A
-  used_as_font_regular_in_meeting_id:
-    type: relation
-    to: meeting/font_regular_id
-    restriction_mode: A
-  used_as_font_italic_in_meeting_id:
-    type: relation
-    to: meeting/font_italic_id
-    restriction_mode: A
-  used_as_font_bold_in_meeting_id:
-    type: relation
-    to: meeting/font_bold_id
-    restriction_mode: A
-  used_as_font_bold_italic_in_meeting_id:
-    type: relation
-    to: meeting/font_bold_italic_id
-    restriction_mode: A
-  used_as_font_monospace_in_meeting_id:
-    type: relation
-    to: meeting/font_monospace_id
-    restriction_mode: A
-  used_as_font_chyron_speaker_name_in_meeting_id:
-    type: relation
-    to: meeting/font_chyron_speaker_name_id
-    restriction_mode: A
-  used_as_font_projector_h1_in_meeting_id:
-    type: relation
-    to: meeting/font_projector_h1_id
-    restriction_mode: A
-  used_as_font_projector_h2_in_meeting_id:
-    type: relation
-    to: meeting/font_projector_h2_id
-    restriction_mode: A
+    references: organizationT(id)
+    todo: constraint for only meeting_id or organization_id filled, but one is required
 
 projector:
   id:
@@ -3569,23 +3756,23 @@ projector:
   current_projection_ids:
     type: relation-list
     to: projection/current_projector_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   preview_projection_ids:
     type: relation-list
     to: projection/preview_projector_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   history_projection_ids:
     type: relation-list
     to: projection/history_projector_id
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   used_as_reference_projector_meeting_id:
-    type: relation
+    type: number
     to: meeting/reference_projector_id
     restriction_mode: A
   used_as_default_projector_for_agenda_item_list_in_meeting_id:
@@ -3594,58 +3781,60 @@ projector:
     restriction_mode: A
   used_as_default_projector_for_topic_in_meeting_id:
     type: relation
-    to: meeting/default_projector_topic_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_list_of_speakers_in_meeting_id:
     type: relation
-    to: meeting/default_projector_list_of_speakers_ids
+    references: meetingT(id)
     restriction_mode: A
-  used_as_default_projector_for_current_list_of_speakers_in_meeting_id:
+  used_as_default_projector_for_cur_list_of_speaker_in_meeting_id:
     type: relation
-    to: meeting/default_projector_current_list_of_speakers_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_motion_in_meeting_id:
     type: relation
-    to: meeting/default_projector_motion_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_amendment_in_meeting_id:
     type: relation
-    to: meeting/default_projector_amendment_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_motion_block_in_meeting_id:
     type: relation
-    to: meeting/default_projector_motion_block_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_assignment_in_meeting_id:
     type: relation
-    to: meeting/default_projector_assignment_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_mediafile_in_meeting_id:
     type: relation
-    to: meeting/default_projector_mediafile_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_message_in_meeting_id:
     type: relation
-    to: meeting/default_projector_message_ids
+    references: meetingT(id)
     restriction_mode: A
-  used_as_default_projector_for_countdown_in_meeting_id:
+  used_as_default_projector_for_projector_countdown_in_meeting_id:
     type: relation
-    to: meeting/default_projector_countdown_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_assignment_poll_in_meeting_id:
     type: relation
-    to: meeting/default_projector_assignment_poll_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_motion_poll_in_meeting_id:
     type: relation
-    to: meeting/default_projector_motion_poll_ids
+    references: meetingT(id)
     restriction_mode: A
   used_as_default_projector_for_poll_in_meeting_id:
     type: relation
-    to: meeting/default_projector_poll_ids
+    references: meetingT(id)
     restriction_mode: A
   meeting_id:
     type: relation
+    references: meetingT(id)
+    on_delete: CASCADE
     to: meeting/projector_ids
     restriction_mode: A
     required: true
@@ -3680,38 +3869,71 @@ projection:
 
   current_projector_id:
     type: relation
+    references: projector(id)
     to: projector/current_projection_ids
     equal_fields: meeting_id
     restriction_mode: A
+    todo: only one of current_projector_id, preview_projector_id and history_projector_id, but this is required
   preview_projector_id:
     type: relation
+    references: projector(id)
     to: projector/preview_projection_ids
     equal_fields: meeting_id
     restriction_mode: A
   history_projector_id:
     type: relation
+    references: projector(id)
     to: projector/history_projection_ids
     equal_fields: meeting_id
     restriction_mode: A
-  content_object_id:
-    type: generic-relation
-    to:
-      - meeting/projection_ids
-      - motion/projection_ids
-      - mediafile/projection_ids
-      - list_of_speakers/projection_ids
-      - motion_block/projection_ids
-      - assignment/projection_ids
-      - agenda_item/projection_ids
-      - topic/projection_ids
-      - poll/projection_ids
-      - projector_message/projection_ids
-      - projector_countdown/projection_ids
-    equal_fields: meeting_id
+  projection_meeting_id:
+    type: relation
+    references: meetingT(id)
     restriction_mode: A
-    required: true
+    todo: only one of the projection_xxx_id, but this is required
+  projection_motion_id:
+    type: relation
+    references: motion(id)
+    restriction_mode: A
+  projection_mediafile_id:
+    type: relation
+    references: mediafile(id)
+    restriction_mode: A
+  projection_list_of_speakers_id:
+    type: relation
+    references: list_of_speakers(id)
+    restriction_mode: A
+  projection_motion_block_id:
+    type: relation
+    references: motion_block(id)
+    restriction_mode: A
+  projection_assignment_id:
+    type: relation
+    references: assignment(id)
+    restriction_mode: A
+  projection_agenda_item_id:
+    type: relation
+    references: agenda_item(id)
+    restriction_mode: A
+  projection_topic_id:
+    type: relation
+    references: topic(id)
+    restriction_mode: A
+  projection_poll_id:
+    type: relation
+    references: poll(id)
+    restriction_mode: A
+  projection_projector_message_id:
+    type: relation
+    references: projector_message(id)
+    restriction_mode: A
+  projection_projector_countdown_id:
+    type: relation
+    references: projector_countdown(id)
+    restriction_mode: A
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/all_projection_ids
     required: true
     restriction_mode: A
@@ -3725,13 +3947,12 @@ projector_message:
     restriction_mode: A
 
   projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    equal_fields: meeting_id
-    on_delete: CASCADE
+    type: number[]
     restriction_mode: A
+    Xsqlview: projection/id, where projection.projection_projector_message_id = id
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/projector_message_ids
     restriction_mode: A
     required: true
@@ -3761,21 +3982,22 @@ projector_countdown:
     restriction_mode: A
 
   projection_ids:
-    type: relation-list
-    to: projection/content_object_id
-    equal_fields: meeting_id
-    on_delete: CASCADE
+    type: number[]
     restriction_mode: A
+    Xsqlview: projection/id, where projection.projection_projector_countdown_id = id
   used_as_list_of_speakers_countdown_meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/list_of_speakers_countdown_id
     restriction_mode: A
   used_as_poll_countdown_meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/poll_countdown_id
     restriction_mode: A
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/projector_countdown_ids
     restriction_mode: A
     required: true
@@ -3798,7 +4020,7 @@ chat_group:
     to: chat_message/chat_group_id
     equal_fields: meeting_id
     restriction_mode: A
-    on_delete: CASCADE
+    os3_on_delete: CASCADE
   read_group_ids:
     type: relation-list
     to: group/read_chat_group_ids
@@ -3827,18 +4049,21 @@ chat_message:
     type: timestamp
     required: true
     restriction_mode: A
-  meeting_user_id:
+  user_id:
     type: relation
+    references: userT(id)
     to: meeting_user/chat_message_ids
     restriction_mode: A
     required: true
   chat_group_id:
     type: relation
+    references: chat_group(id)
     to: chat_group/chat_message_ids
     restriction_mode: A
     required: true
   meeting_id:
     type: relation
+    references: meetingT(id)
     to: meeting/chat_message_ids
     required: true
     restriction_mode: A
