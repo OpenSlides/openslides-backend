@@ -35,5 +35,7 @@ LABEL org.opencontainers.image.description="Backend service for OpenSlides which
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-backend"
 
+HEALTHCHECK CMD curl --fail http://localhost:9002/system/action/health/ || curl --fail http://localhost:9003/system/presenter/health/ || exit 1
+
 ENTRYPOINT ["./entrypoint.sh"]
 CMD exec python -m openslides_backend
