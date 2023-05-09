@@ -29,7 +29,7 @@ services:
         volumes:
             - ./tests:/app/tests
     postgres:
-        image: postgres:11
+        image: postgres:13
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides
