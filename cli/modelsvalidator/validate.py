@@ -28,7 +28,6 @@ RELATION_TYPES = (
 
 DATA_TYPES = (
     "string",
-    "short_string",
     "number",
     "string[]",
     "number[]",
@@ -260,7 +259,6 @@ class Checker:
     ) -> None:
         basic_types = {
             "string": str,
-            "short_string": str,
             "number": int,
             "boolean": bool,
             "HTMLStrict": str,
