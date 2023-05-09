@@ -2,7 +2,7 @@
 -- schema.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
--- MODELS_YML_CHECKSUM = 'ca4dea3322316872a715c50ad7e67a20'
+-- MODELS_YML_CHECKSUM = 'c01dacbecf026d934347543af19b827f'
 
 CREATE TABLE IF NOT EXISTS organizationT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -45,6 +45,12 @@ CREATE TABLE IF NOT EXISTS userT (
     last_email_send timestamptz,
     is_demo_user boolean,
     last_login timestamptz
+);
+
+
+CREATE TABLE IF NOT EXISTS group_to_user (
+    user_id integer NOT NULL,
+    group_id integer NOT NULL
 );
 
 
@@ -149,7 +155,7 @@ CREATE TABLE IF NOT EXISTS theme (
 );
 
 
-CREATE TABLE IF NOT EXISTS committee (
+CREATE TABLE IF NOT EXISTS committeeT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(50) NOT NULL,
     description text,
@@ -182,7 +188,7 @@ CREATE TABLE IF NOT EXISTS meetingT (
     jitsi_domain varchar(50),
     jitsi_room_name varchar(50),
     jitsi_room_password varchar(50),
-    template_for_organization_id integer,
+    template_for_organization boolean,
     enable_anonymous boolean,
     custom_translations jsonb,
     conference_show boolean,
@@ -333,8 +339,6 @@ CREATE TABLE IF NOT EXISTS groupT (
     mediafile_inherited_access_group_ids integer[],
     read_comment_section_ids integer[],
     write_comment_section_ids integer[],
-    read_chat_group_ids integer[],
-    write_chat_group_ids integer[],
     poll_ids integer[],
     used_as_motion_poll_default_id integer,
     used_as_assignment_poll_default_id integer,
@@ -349,7 +353,7 @@ CREATE TABLE IF NOT EXISTS personal_note (
     note text,
     star boolean,
     user_id integer NOT NULL,
-    content_object_id integer,
+    motion_id integer,
     meeting_id integer NOT NULL
 );
 
@@ -420,7 +424,7 @@ CREATE TABLE IF NOT EXISTS topic (
 );
 
 
-CREATE TABLE IF NOT EXISTS motion (
+CREATE TABLE IF NOT EXISTS motionT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     number varchar(50),
     number_value integer,
@@ -803,14 +807,19 @@ CREATE TABLE IF NOT EXISTS projector_countdown (
 );
 
 
-CREATE TABLE IF NOT EXISTS chat_group (
+CREATE TABLE IF NOT EXISTS chat_groupT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(50) NOT NULL,
     weight integer,
-    chat_message_ids integer[],
-    read_group_ids integer[],
-    write_group_ids integer[],
     meeting_id integer NOT NULL
+);
+
+
+CREATE TABLE IF NOT EXISTS chat_group_to_group (
+    chat_group_id integer NOT NULL,
+    group_id integer NOT NULL,
+    read boolean,
+    write boolean
 );
 
 
@@ -819,8 +828,7 @@ CREATE TABLE IF NOT EXISTS chat_message (
     content text NOT NULL,
     created timestamptz NOT NULL,
     user_id integer NOT NULL,
-    chat_group_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    chat_group_id integer NOT NULL
 );
 
 
@@ -834,6 +842,8 @@ CREATE TABLE IF NOT EXISTS action_worker (
 );
 
 ALTER TABLE organizationT ADD FOREIGN KEY (theme_id) REFERENCES theme(id);
+ALTER TABLE group_to_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
+ALTER TABLE group_to_user ADD FOREIGN KEY (group_id) REFERENCES groupT(id);
 ALTER TABLE poll_to_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
 ALTER TABLE poll_to_user ADD FOREIGN KEY (poll_id) REFERENCES poll(id);
 ALTER TABLE meeting_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
@@ -841,13 +851,12 @@ ALTER TABLE meeting_user ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
 ALTER TABLE meeting_user ADD FOREIGN KEY (vote_delegated_to_id) REFERENCES meeting_user(id);
 ALTER TABLE organization_tag_to_committee_meeting ADD FOREIGN KEY (organization_tag_id) REFERENCES organization_tag(id);
 ALTER TABLE organization_tag_to_committee_meeting ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE organization_tag_to_committee_meeting ADD FOREIGN KEY (committee_id) REFERENCES committee(id);
+ALTER TABLE organization_tag_to_committee_meeting ADD FOREIGN KEY (committee_id) REFERENCES committeeT(id);
 ALTER TABLE theme ADD FOREIGN KEY (theme_for_organization_id) REFERENCES organizationT(id);
-ALTER TABLE committee ADD FOREIGN KEY (default_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE committee ADD FOREIGN KEY (forwarding_user_id) REFERENCES userT(id);
-ALTER TABLE forwarding_committee_to_committee ADD FOREIGN KEY (forwarding_committee_id) REFERENCES committee(id);
-ALTER TABLE forwarding_committee_to_committee ADD FOREIGN KEY (receiving_committee_id) REFERENCES committee(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (template_for_organization_id) REFERENCES organizationT(id);
+ALTER TABLE committeeT ADD FOREIGN KEY (default_meeting_id) REFERENCES meetingT(id);
+ALTER TABLE committeeT ADD FOREIGN KEY (forwarding_user_id) REFERENCES userT(id);
+ALTER TABLE forwarding_committee_to_committee ADD FOREIGN KEY (forwarding_committee_id) REFERENCES committeeT(id);
+ALTER TABLE forwarding_committee_to_committee ADD FOREIGN KEY (receiving_committee_id) REFERENCES committeeT(id);
 ALTER TABLE meetingT ADD FOREIGN KEY (motions_default_workflow_id) REFERENCES motion_workflow(id);
 ALTER TABLE meetingT ADD FOREIGN KEY (motions_default_amendment_workflow_id) REFERENCES motion_workflow(id);
 ALTER TABLE meetingT ADD FOREIGN KEY (motions_default_statute_amendment_workflow_id) REFERENCES motion_workflow(id);
@@ -867,7 +876,7 @@ ALTER TABLE meetingT ADD FOREIGN KEY (font_monospace_id) REFERENCES mediafile(id
 ALTER TABLE meetingT ADD FOREIGN KEY (font_chyron_speaker_name_id) REFERENCES mediafile(id);
 ALTER TABLE meetingT ADD FOREIGN KEY (font_projector_h1_id) REFERENCES mediafile(id);
 ALTER TABLE meetingT ADD FOREIGN KEY (font_projector_h2_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (committee_id) REFERENCES committee(id);
+ALTER TABLE meetingT ADD FOREIGN KEY (committee_id) REFERENCES committeeT(id);
 ALTER TABLE meetingT ADD FOREIGN KEY (reference_projector_id) REFERENCES projector(id);
 ALTER TABLE meetingT ADD FOREIGN KEY (default_group_id) REFERENCES groupT(id);
 ALTER TABLE meetingT ADD FOREIGN KEY (admin_group_id) REFERENCES groupT(id);
@@ -877,6 +886,7 @@ ALTER TABLE groupT ADD FOREIGN KEY (used_as_topic_poll_default_id) REFERENCES me
 ALTER TABLE groupT ADD FOREIGN KEY (used_as_poll_default_id) REFERENCES meetingT(id);
 ALTER TABLE groupT ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
 ALTER TABLE personal_note ADD FOREIGN KEY (user_id) REFERENCES userT(id);
+ALTER TABLE personal_note ADD FOREIGN KEY (motion_id) REFERENCES motionT(id);
 ALTER TABLE personal_note ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
 ALTER TABLE tag ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
 ALTER TABLE agenda_item ADD FOREIGN KEY (parent_id) REFERENCES agenda_item(id);
@@ -887,22 +897,22 @@ ALTER TABLE speaker ADD FOREIGN KEY (user_id) REFERENCES userT(id);
 ALTER TABLE topic ADD FOREIGN KEY (agenda_item_id) REFERENCES agenda_item(id);
 ALTER TABLE topic ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
 ALTER TABLE topic ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion ADD FOREIGN KEY (lead_motion_id) REFERENCES motion(id);
-ALTER TABLE motion ADD FOREIGN KEY (sort_parent_id) REFERENCES motion(id);
-ALTER TABLE motion ADD FOREIGN KEY (origin_id) REFERENCES motion(id);
-ALTER TABLE motion ADD FOREIGN KEY (origin_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion ADD FOREIGN KEY (state_id) REFERENCES motion_state(id);
-ALTER TABLE motion ADD FOREIGN KEY (recommendation_id) REFERENCES motion_state(id);
-ALTER TABLE motion ADD FOREIGN KEY (category_id) REFERENCES motion_category(id);
-ALTER TABLE motion ADD FOREIGN KEY (block_id) REFERENCES motion_block(id);
-ALTER TABLE motion ADD FOREIGN KEY (statute_paragraph_id) REFERENCES motion_statute_paragraph(id);
-ALTER TABLE motion ADD FOREIGN KEY (agenda_item_id) REFERENCES agenda_item(id);
-ALTER TABLE motion ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
-ALTER TABLE motion ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
+ALTER TABLE motionT ADD FOREIGN KEY (lead_motion_id) REFERENCES motionT(id);
+ALTER TABLE motionT ADD FOREIGN KEY (sort_parent_id) REFERENCES motionT(id);
+ALTER TABLE motionT ADD FOREIGN KEY (origin_id) REFERENCES motionT(id);
+ALTER TABLE motionT ADD FOREIGN KEY (origin_meeting_id) REFERENCES meetingT(id);
+ALTER TABLE motionT ADD FOREIGN KEY (state_id) REFERENCES motion_state(id);
+ALTER TABLE motionT ADD FOREIGN KEY (recommendation_id) REFERENCES motion_state(id);
+ALTER TABLE motionT ADD FOREIGN KEY (category_id) REFERENCES motion_category(id);
+ALTER TABLE motionT ADD FOREIGN KEY (block_id) REFERENCES motion_block(id);
+ALTER TABLE motionT ADD FOREIGN KEY (statute_paragraph_id) REFERENCES motion_statute_paragraph(id);
+ALTER TABLE motionT ADD FOREIGN KEY (agenda_item_id) REFERENCES agenda_item(id);
+ALTER TABLE motionT ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
+ALTER TABLE motionT ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
 ALTER TABLE motion_submitter ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE motion_submitter ADD FOREIGN KEY (motion_id) REFERENCES motion(id);
+ALTER TABLE motion_submitter ADD FOREIGN KEY (motion_id) REFERENCES motionT(id);
 ALTER TABLE motion_submitter ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_comment ADD FOREIGN KEY (motion_id) REFERENCES motion(id);
+ALTER TABLE motion_comment ADD FOREIGN KEY (motion_id) REFERENCES motionT(id);
 ALTER TABLE motion_comment ADD FOREIGN KEY (section_id) REFERENCES motion_comment_section(id);
 ALTER TABLE motion_comment ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
 ALTER TABLE motion_category ADD FOREIGN KEY (parent_id) REFERENCES motion_category(id);
@@ -910,7 +920,7 @@ ALTER TABLE motion_category ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id)
 ALTER TABLE motion_block ADD FOREIGN KEY (agenda_item_id) REFERENCES agenda_item(id);
 ALTER TABLE motion_block ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
 ALTER TABLE motion_block ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_change_recommendation ADD FOREIGN KEY (motion_id) REFERENCES motion(id);
+ALTER TABLE motion_change_recommendation ADD FOREIGN KEY (motion_id) REFERENCES motionT(id);
 ALTER TABLE motion_change_recommendation ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
 ALTER TABLE motion_state ADD FOREIGN KEY (submitter_withdraw_state_id) REFERENCES motion_state(id);
 ALTER TABLE motion_state ADD FOREIGN KEY (workflow_id) REFERENCES motion_workflow(id);
@@ -921,7 +931,7 @@ ALTER TABLE motion_statute_paragraph ADD FOREIGN KEY (meeting_id) REFERENCES mee
 ALTER TABLE poll ADD FOREIGN KEY (global_option_id) REFERENCES option(id);
 ALTER TABLE poll ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
 ALTER TABLE option ADD FOREIGN KEY (poll_id) REFERENCES poll(id);
-ALTER TABLE option ADD FOREIGN KEY (content_motion_id) REFERENCES motion(id);
+ALTER TABLE option ADD FOREIGN KEY (content_motion_id) REFERENCES motionT(id);
 ALTER TABLE option ADD FOREIGN KEY (content_user_id) REFERENCES userT(id);
 ALTER TABLE option ADD FOREIGN KEY (content_poll_candidate_list_id) REFERENCES poll_candidate_list(id);
 ALTER TABLE vote ADD FOREIGN KEY (option_id) REFERENCES option(id);
@@ -958,7 +968,7 @@ ALTER TABLE projection ADD FOREIGN KEY (current_projector_id) REFERENCES project
 ALTER TABLE projection ADD FOREIGN KEY (preview_projector_id) REFERENCES projector(id);
 ALTER TABLE projection ADD FOREIGN KEY (history_projector_id) REFERENCES projector(id);
 ALTER TABLE projection ADD FOREIGN KEY (projection_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_motion_id) REFERENCES motion(id);
+ALTER TABLE projection ADD FOREIGN KEY (projection_motion_id) REFERENCES motionT(id);
 ALTER TABLE projection ADD FOREIGN KEY (projection_mediafile_id) REFERENCES mediafile(id);
 ALTER TABLE projection ADD FOREIGN KEY (projection_list_of_speakers_id) REFERENCES list_of_speakers(id);
 ALTER TABLE projection ADD FOREIGN KEY (projection_motion_block_id) REFERENCES motion_block(id);
@@ -973,28 +983,46 @@ ALTER TABLE projector_message ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(i
 ALTER TABLE projector_countdown ADD FOREIGN KEY (used_as_list_of_speakers_countdown_meeting_id) REFERENCES meetingT(id);
 ALTER TABLE projector_countdown ADD FOREIGN KEY (used_as_poll_countdown_meeting_id) REFERENCES meetingT(id);
 ALTER TABLE projector_countdown ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
+ALTER TABLE chat_group_to_group ADD FOREIGN KEY (chat_group_id) REFERENCES chat_groupT(id);
+ALTER TABLE chat_group_to_group ADD FOREIGN KEY (group_id) REFERENCES groupT(id);
 ALTER TABLE chat_message ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE chat_message ADD FOREIGN KEY (chat_group_id) REFERENCES chat_group(id);
-ALTER TABLE chat_message ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
+ALTER TABLE chat_message ADD FOREIGN KEY (chat_group_id) REFERENCES chat_groupT(id);
 
-CREATE OR REPLACE VIEW organization AS SELECT id
-FROM organizationT c;
+CREATE OR REPLACE VIEW organization AS SELECT id,
+(select array_agg(c.id) from committeeT c) as committee_ids,
+(select array_agg(m.id) from meetingT m where m.state = 'active') as active_meeting_ids,
+(select array_agg(m.id) from meetingT m where m.state = 'archived') as archived_meeting_ids,
+(select array_agg(m.id) from meetingT m where m.template_for_organization) as template_meeting_ids
+FROM organizationT o;
 
 
-CREATE OR REPLACE VIEW user_ AS SELECT id
-FROM userT c;
+CREATE OR REPLACE VIEW user_ AS SELECT id,
+(select array_agg(g.meeting_id) from group_to_user gtu join groupT g on g.id = gtu.group_id where gtu.user_id = u.id) as meeting_ids
+FROM userT u;
 
 
-CREATE OR REPLACE VIEW committeeV AS SELECT id,
+CREATE OR REPLACE VIEW committee AS SELECT id,
 (select array_agg(f.receiving_committee_id) from forwarding_committee_to_committee f where f.forwarding_committee_id = c.id) as forward_to_committee_ids,
 (select array_agg(f.forwarding_committee_id) from forwarding_committee_to_committee f where f.receiving_committee_id = c.id) as receive_from_committee_ids
-FROM committee c;
+FROM committeeT c;
 
 
-CREATE OR REPLACE VIEW meeting AS SELECT id
-FROM meetingT c;
+CREATE OR REPLACE VIEW meeting AS SELECT id,
+(select array_agg(gtu.user_id) from groupT g join group_to_user gtu on gtu.group_id = g.id where g.meeting_id = m.id) as user_ids
+FROM meetingT m;
 
 
-CREATE OR REPLACE VIEW group_ AS SELECT id
-FROM groupT c;
+CREATE OR REPLACE VIEW group_ AS SELECT id,
+(select m.id from meetingT m where m.default_group_id = g.id) as default_group_for_meeting_id,
+(select m.id from meetingT m where m.admin_group_id = g.id) as admin_group_for_meeting_id,
+(select array_agg(gtg.chat_group_id) from chat_group_to_group gtg where gtg.group_id = g.id and gtg.read) as read_chat_group_ids,
+(select array_agg(gtg.chat_group_id) from chat_group_to_group gtg where gtg.group_id = g.id and gtg.write) as write_chat_group_ids
+FROM groupT g;
+
+
+CREATE OR REPLACE VIEW chat_group AS SELECT id,
+(select array_agg(m.id) from chat_message m where m.chat_group_id = cg.id) as chat_message_ids,
+(select array_agg(gtg.group_id) from chat_group_to_group gtg where gtg.chat_group_id = cg.id and gtg.read) as read_group_ids,
+(select array_agg(gtg.group_id) from chat_group_to_group gtg where gtg.chat_group_id = cg.id and gtg.write) as write_group_ids
+FROM chat_groupT cg;
 
