@@ -201,22 +201,22 @@ organization:
   entity_description:
     type: view
     table: organizationT
-    table_letter: c
+    table_letter: o
   committee_ids:
     type: number[]
     restriction_mode: B
-    Xsqlview: committee/id
+    select: select array_agg(c.id) from committeeT c
   active_meeting_ids:
     type: number[]
     restriction_mode: B
-    Xsqlview: meeting/id, where state = "active"
+    select: select array_agg(m.id) from meetingT m where m.state = 'active'
   archived_meeting_ids:
     type: number[]
     restriction_mode: B
-    Xsqlview: meeting/id, where state = "archived"
+    select: select array_agg(m.id) from meetingT m where m.state = 'archived'
   template_meeting_ids:
     type: number[]
-    Xsqlview: meeting/id, where template_for_organization_id
+    select: select array_agg(m.id) from meetingT m where m.template_for_organization
     restriction_mode: A
   organization_tag_ids:
     type: number[]
@@ -328,7 +328,7 @@ user_:
   entity_description:
     type: view
     table: userT
-    table_letter: c
+    table_letter: u
   is_present_in_meeting_ids:
     type: number[]
     to: meeting/present_user_ids
@@ -385,6 +385,19 @@ user_:
     read_only: true
     restriction_mode: E
     todo: sqlview or backend calculated fields, but from userT, not view
+    select: select array_agg(g.meeting_id) from group_to_user gtu join groupT g on g.id = gtu.group_id where gtu.user_id = u.id
+
+group_to_user:
+  entity_description:
+    type: table
+  user_id:
+    type: relation
+    references: userT(id)
+    required: true
+  group_id:
+    type: relation
+    references: groupT(id)
+    required: true
 
 poll_to_user:
   entity_description:
@@ -413,6 +426,8 @@ presence_user_in_meeting:
     required: true
 
 meeting_user:
+  entity_description:
+    type: table
   id:
     type: number
     required: true
@@ -507,6 +522,8 @@ meeting_user:
     restriction_mode: A
 
 organization_tag:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -528,6 +545,7 @@ organization_tag:
       field: organization_tag_ids
     restriction_mode: A
     Xsqlview: uses table organization_tag_to_committee_meeting to construct a list of fqids where this tag is used
+
 organization_tag_to_committee_meeting:
     entity_description:
       type: table
@@ -541,9 +559,11 @@ organization_tag_to_committee_meeting:
       references: meetingT(id)
     committee_id:
       type: number
-      references: committee(id)
+      references: committeeT(id)
 
 theme:
+  entity_description:
+    type: table
   id:
     restriction_mode: A
     type: number
@@ -699,7 +719,9 @@ theme:
     type: relation
     references: organizationT(id)
 
-committee:
+committeeT:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -746,10 +768,10 @@ committee:
     restriction_mode: A
     Xsqlview: organization_tag/id, where organization_tag_to_committee_meeting.committee_id = id join organization_tag_to_committee_meeting.organization_tag_id = organization_tag.id
 
-committeeV:
+committee:
   entity_description:
     type: view
-    table: committee
+    table: committeeT
     table_letter: c
   forward_to_committee_ids:
     type: number[]
@@ -766,12 +788,12 @@ forwarding_committee_to_committee:
   forwarding_committee_id:
     type: relation
     required: True
-    references: committee(id)
+    references: committeeT(id)
     on_delete: CASCADE
   receiving_committee_id:
     type: relation
     required: True
-    references: committee(id)
+    references: committeeT(id)
     on_delete: CASCADE
 
 meetingT:
@@ -849,10 +871,9 @@ meetingT:
     restriction_mode: B
 
   # System
-  template_for_organization_id:
-    type: relation
-    to: organization/template_meeting_ids
-    references: organizationT(id)
+  template_for_organization:
+    type: boolean
+    default: false
     restriction_mode: B
   enable_anonymous:
     type: boolean
@@ -1690,8 +1711,7 @@ meetingT:
   # Other relations
   committee_id:
     type: relation
-    to: committee/meeting_ids
-    references: committee(id)
+    references: committeeT(id)
     required: true
     restriction_mode: B
   reference_projector_id:
@@ -1713,7 +1733,7 @@ meeting:
   entity_description:
     type: view
     table: meetingT
-    table_letter: c
+    table_letter: m
   # Motion poll
   motion_poll_default_group_ids:
     type: number[]
@@ -1946,6 +1966,7 @@ meeting:
     description: Calculated. All user ids from all users assigned to groups of this meeting.
     read_only: true
     restriction_mode: B
+    select: select array_agg(gtu.user_id) from groupT g join group_to_user gtu on gtu.group_id = g.id where g.meeting_id = m.id
     Xsqlview: user/id, where ...
   list_of_speakers_countdown_id:
     type: number
@@ -2033,6 +2054,8 @@ meeting:
     Xsqlview: projector/id, where projector.used_as_default_projector_for_poll_in_meeting_id = id
 
 groupT:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2109,16 +2132,6 @@ groupT:
     to: motion_comment_section/write_group_ids
     equal_fields: meeting_id
     restriction_mode: A
-  read_chat_group_ids:
-    type: relation-list
-    to: chat_group/read_group_ids
-    equal_fields: meeting_id
-    restriction_mode: A
-  write_chat_group_ids:
-    type: relation-list
-    to: chat_group/write_group_ids
-    equal_fields: meeting_id
-    restriction_mode: A
   poll_ids:
     type: relation-list
     to: poll/entitled_group_ids
@@ -2156,25 +2169,32 @@ group_:
   entity_description:
     type: view
     table: groupT
-    table_letter: c
+    table_letter: g
   meeting_user_ids:
     type: number[]
     restriction_mode: A
     equal_fields: meeting_id
-    select: select array_agg(f.id) from meeting_user m where m.meeting_id = c.id
+    Xsqlview: select array_agg(m.id) from meeting_user m where m.group_id = g.id
   default_group_for_meeting_id:
     type: number
-    to: meeting/default_group_id
     restriction_mode: A
-    Xsqlview: meeting(id), where meeting.default_group_id = id
+    select: select m.id from meetingT m where m.default_group_id = g.id
   admin_group_for_meeting_id:
-    type: relation
-    to: meeting/admin_group_id
-    os3_on_delete: PROTECT
+    type: number
     restriction_mode: A
-    Xsqlview: meeting(id), where meeting.admin_group_id = id
+    select: select m.id from meetingT m where m.admin_group_id = g.id
+  read_chat_group_ids:
+    type: number[]
+    restriction_mode: A
+    select: select array_agg(gtg.chat_group_id) from chat_group_to_group gtg where gtg.group_id = g.id and gtg.read
+  write_chat_group_ids:
+    type: number[]
+    restriction_mode: A
+    select: select array_agg(gtg.chat_group_id) from chat_group_to_group gtg where gtg.group_id = g.id and gtg.write
 
 personal_note:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2184,21 +2204,17 @@ personal_note:
   star:
     type: boolean
     restriction_mode: A
-
   user_id:
     type: relation
     to: meeting_user/personal_note_ids
     equal_fields: meeting_id
     restriction_mode: A
     required: true
-  content_object_id:
-    type: generic-relation
-    to:
-      collections:
-        - motion
-      field: personal_note_ids
-    equal_fields: meeting_id
+  motion_id:
+    type: relation
+    references: motionT(id)
     restriction_mode: A
+    todo: more content_objects possible, 0 or 1 allowed
   meeting_id:
     type: relation
     references: meetingT(id)
@@ -2206,6 +2222,8 @@ personal_note:
     restriction_mode: A
 
 tag:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2232,6 +2250,8 @@ tag:
     restriction_mode: A
 
 agenda_item:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2311,6 +2331,8 @@ agenda_item:
     restriction_mode: A
 
 list_of_speakers:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2379,6 +2401,8 @@ point_of_order_category:
     restriction_mode: A
 
 speaker:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2432,6 +2456,8 @@ speaker:
     restriction_mode: A
 
 topic:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2487,7 +2513,9 @@ topic:
     required: true
     restriction_mode: A
 
-motion:
+motionT:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2559,7 +2587,7 @@ motion:
   lead_motion_id:
     type: relation
     to: motion/amendment_ids
-    references: motion(id)
+    references: motionT(id)
     equal_fields: meeting_id
     restriction_mode: C
   amendment_ids:
@@ -2570,13 +2598,13 @@ motion:
   sort_parent_id:
     type: relation
     to: motion/sort_child_ids
-    references: motion(id)
+    references: motionT(id)
     equal_fields: meeting_id
     restriction_mode: C
   origin_id:
     type: relation
     to: motion/derived_motion_ids # Note: The related motions may not be in the same meeting
-    references: motion(id)
+    references: motionT(id)
     restriction_mode: A
   origin_meeting_id: # The meeting of the motion in origin_id, if any
     type: relation
@@ -2741,6 +2769,8 @@ motion:
     restriction_mode: A
 
 motion_submitter:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2755,7 +2785,7 @@ motion_submitter:
     required: true
   motion_id:
     type: relation
-    references: motion(id)
+    references: motionT(id)
     to: motion/submitter_ids
     equal_fields: meeting_id
     restriction_mode: A
@@ -2768,6 +2798,8 @@ motion_submitter:
     restriction_mode: A
 
 motion_comment:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2777,7 +2809,7 @@ motion_comment:
 
   motion_id:
     type: relation
-    references: motion(id)
+    references: motionT(id)
     to: motion/comment_ids
     required: true
     equal_fields: meeting_id
@@ -2796,6 +2828,8 @@ motion_comment:
     restriction_mode: A
 
 motion_comment_section:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2835,6 +2869,8 @@ motion_comment_section:
     restriction_mode: A
 
 motion_category:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2873,6 +2909,8 @@ motion_category:
     restriction_mode: A
 
 motion_block:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2922,6 +2960,8 @@ motion_block:
     restriction_mode: A
 
 motion_change_recommendation:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -2963,7 +3003,7 @@ motion_change_recommendation:
 
   motion_id:
     type: relation
-    references: motion(id)
+    references: motionT(id)
     to: motion/change_recommendation_ids
     required: true
     equal_fields: meeting_id
@@ -2976,6 +3016,8 @@ motion_change_recommendation:
     restriction_mode: A
 
 motion_state:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3110,6 +3152,8 @@ motion_state:
     restriction_mode: A
 
 motion_workflow:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3145,6 +3189,8 @@ motion_workflow:
     restriction_mode: A
 
 motion_statute_paragraph:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3179,6 +3225,8 @@ motion_statute_paragraph:
     restriction_mode: A
 
 poll:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3357,6 +3405,8 @@ poll:
     required: true
 
 option:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3394,7 +3444,7 @@ option:
   # todo: only 1 of the next 3 should be filled, but is not required. Replaces a content_object
   content_motion_id:
     type: relation
-    references: motion(id)
+    references: motionT(id)
     restriction_mode: A
   content_user_id:
     type: relation
@@ -3406,6 +3456,8 @@ option:
     restriction_mode: A
     description: poll_candidate_list.option_id must be filled also, because it is required and not modelled as sqlview
 vote:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3438,6 +3490,8 @@ vote:
     restriction_mode: A
 
 assignment:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3524,6 +3578,8 @@ assignment:
     restriction_mode: A
 
 assignment_candidate:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3548,6 +3604,8 @@ assignment_candidate:
 
 # models for the poll list election
 poll_candidate_list:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3565,6 +3623,8 @@ poll_candidate_list:
     description: option.content_poll_candidate_list_id must be filled also, because it is an old content_object-field
 
 poll_candidate:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3587,6 +3647,8 @@ poll_candidate:
 # Mediafiles are delivered by the mediafile server with the URL
 # `<media-prefix>/media/<meeting_id>/path`
 mediafile:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3668,6 +3730,8 @@ mediafile:
     todo: constraint for only meeting_id or organization_id filled, but one is required
 
 projector:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3845,6 +3909,8 @@ projector:
 # projector-specific, meaning that once a projection is created for a projector
 # and element, these references will not change.
 projection:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3893,7 +3959,7 @@ projection:
     todo: only one of the projection_xxx_id, but this is required
   projection_motion_id:
     type: relation
-    references: motion(id)
+    references: motionT(id)
     restriction_mode: A
   projection_mediafile_id:
     type: relation
@@ -3939,6 +4005,8 @@ projection:
     restriction_mode: A
 
 projector_message:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -3958,6 +4026,8 @@ projector_message:
     required: true
 
 projector_countdown:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -4002,7 +4072,9 @@ projector_countdown:
     restriction_mode: A
     required: true
 
-chat_group:
+chat_groupT:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -4014,30 +4086,51 @@ chat_group:
     type: number
     default: 10000
     restriction_mode: A
-  
-  chat_message_ids:
-    type: relation-list
-    to: chat_message/chat_group_id
-    equal_fields: meeting_id
-    restriction_mode: A
-    os3_on_delete: CASCADE
-  read_group_ids:
-    type: relation-list
-    to: group/read_chat_group_ids
-    equal_fields: meeting_id
-    restriction_mode: A
-  write_group_ids:
-    type: relation-list
-    to: group/write_chat_group_ids
-    equal_fields: meeting_id
-    restriction_mode: A
   meeting_id:
     type: relation
     to: meeting/chat_group_ids
     required: true
     restriction_mode: A
 
+chat_group:
+  entity_description:
+    type: view
+    table: chat_groupT
+    table_letter: cg
+  chat_message_ids:
+    type: number[]
+    restriction_mode: A
+    select: "select array_agg(m.id) from chat_message m where m.chat_group_id = cg.id"
+  read_group_ids:
+    type: number[]
+    restriction_mode: A
+    select: select array_agg(gtg.group_id) from chat_group_to_group gtg where gtg.chat_group_id = cg.id and gtg.read
+  write_group_ids:
+    type: number[]
+    restriction_mode: A
+    select: select array_agg(gtg.group_id) from chat_group_to_group gtg where gtg.chat_group_id = cg.id and gtg.write
+
+chat_group_to_group:
+  entity_description:
+    type: table
+  chat_group_id:
+    type: relation
+    references: chat_groupT(id)
+    required: true
+  group_id:
+    type: relation
+    references: groupT(id)
+    required: true
+  read:
+    type: boolean
+    default: true
+  write:
+    type: boolean
+    default: false
+
 chat_message:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
@@ -4052,23 +4145,17 @@ chat_message:
   user_id:
     type: relation
     references: userT(id)
-    to: meeting_user/chat_message_ids
     restriction_mode: A
     required: true
   chat_group_id:
     type: relation
-    references: chat_group(id)
-    to: chat_group/chat_message_ids
+    references: chat_groupT(id)
     restriction_mode: A
     required: true
-  meeting_id:
-    type: relation
-    references: meetingT(id)
-    to: meeting/chat_message_ids
-    required: true
-    restriction_mode: A
 
 action_worker:
+  entity_description:
+    type: table
   id:
     type: number
     restriction_mode: A
