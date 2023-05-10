@@ -137,6 +137,48 @@ class CommitteeJsonUpload(BaseActionTestCase):
             },
         }
 
+    def test_json_upload_committee_managers(self) -> None:
+        self.set_models({"user/23": {"username": "test"}})
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "committee A",
+                        "committee_managers": '"test", "new"',
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": "committee A",
+                "committee_managers": [
+                    {"value": "test", "info": ImportState.DONE, "id": 23},
+                    {"value": "new", "info": ImportState.WARNING},
+                ],
+            },
+        }
+
+    def test_json_upload_committee_managers_wrong_json(self) -> None:
+        self.set_models({"user/23": {"username": "test"}})
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "committee A",
+                        "committee_managers": "blapzb",
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Could not parse blapzb except string[]" in response.json["message"]
+
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
             {}, "committee.json_upload", {"data": [{"name": "test"}]}

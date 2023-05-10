@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Set
 
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -22,9 +22,17 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     "type": "object",
                     "properties": {
                         **model.get_properties("name", "description"),
+                        "committee_managers": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
                         "meeting_name": {"type": "string"},
                         "start_date": {"type": "integer"},
                         "end_date": {"type": "integer"},
+                        "meeting_admins": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
                         "meeting_template": {"type": "string"},
                     },
                     "required": ["name"],
@@ -40,8 +48,10 @@ class CommitteeJsonUpload(JsonUploadMixin):
         {"property": "name", "type": "string"},
         {"property": "description", "type": "string"},
         {"property": "meeting_name", "type": "string"},
+        {"property": "committee_managers", "type": "string[]"},
         {"property": "start_date", "type": "date"},
         {"property": "end_date", "type": "date"},
+        {"property": "meeting_admins", "type": "string[]"},
         {"property": "meeting_template", "type": "string"},
     ]
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
@@ -61,8 +71,20 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 if entry.get("meeting_template")
             ],
         )
+        usernames: Set[str] = set()
+        for entry in data:
+            if entry.get("committee_managers"):
+                usernames.update(entry["committee_managers"])
+            if entry.get("meeting_admins"):
+                usernames.update(entry["meeting_admins"])
+        username_lookup = Lookup(
+            self.datastore, "user", list(usernames), field="username"
+        )
+
         self.rows = [
-            self.validate_entry(entry, duplicate_checker, meeting_lookup)
+            self.validate_entry(
+                entry, duplicate_checker, meeting_lookup, username_lookup
+            )
             for entry in data
         ]
         self.statistics = []
@@ -71,7 +93,11 @@ class CommitteeJsonUpload(JsonUploadMixin):
         return {}
 
     def validate_entry(
-        self, entry: Dict[str, Any], duplicate_checker: Lookup, meeting_lookup: Lookup
+        self,
+        entry: Dict[str, Any],
+        duplicate_checker: Lookup,
+        meeting_lookup: Lookup,
+        username_lookup: Lookup,
     ) -> Dict[str, Any]:
         state, messages = None, []
         if duplicate_checker.check_duplicate(entry["name"]):
@@ -99,4 +125,20 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     "value": entry["meeting_template"],
                     "info": ImportState.WARNING,
                 }
+        self.check_users_field("committee_managers", entry, username_lookup)
+        self.check_users_field("meeting_admins", entry, username_lookup)
         return {"state": state, "messages": messages, "data": entry}
+
+    def check_users_field(
+        self, field: str, entry: Dict[str, Any], user_lookup: Lookup
+    ) -> None:
+        if entry.get(field):
+            new_list: List[Dict[str, Any]] = []
+            for username in entry[field]:
+                if user_id := user_lookup.get_id_by_name(username):
+                    new_list.append(
+                        {"value": username, "info": ImportState.DONE, "id": user_id}
+                    )
+                else:
+                    new_list.append({"value": username, "info": ImportState.WARNING})
+            entry[field] = new_list
