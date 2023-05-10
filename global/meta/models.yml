@@ -101,6 +101,17 @@ organization:
     restriction_mode: B
     default: 0
     minimum: 0
+  default_language:
+    type: string
+    restriction_mode: A
+    enum:
+      - en
+      - de
+      - it
+      - es
+      - ru
+      - cs
+    required: true
 
   vote_decrypt_public_main_key:
     type: string
@@ -189,8 +200,11 @@ user:
     type: string
     required: true
     restriction_mode: A
-  pronoun:
+  saml_id:
     type: string
+    restriction_mode: A
+  pronoun:
+    type: short_string
     restriction_mode: A
   title:
     type: string
@@ -224,6 +238,7 @@ user:
       - male
       - female
       - diverse
+      - non-binary
     restriction_mode: A
   email:
     type: string
@@ -239,7 +254,7 @@ user:
     default: "1.000000"
     minimum: 0
     restriction_mode: A
-  last_email_send:
+  last_email_sent:
     type: timestamp
     restriction_mode: D
   is_demo_user:
@@ -691,6 +706,17 @@ meeting:
   imported_at:
     type: timestamp
     restriction_mode: B
+  language:
+    type: string
+    restriction_mode: A
+    enum:
+      - en
+      - de
+      - it
+      - es
+      - ru
+      - cs
+    read_only: true
 
   # Configuration (only for the server owner)
   jitsi_domain:
@@ -1122,7 +1148,7 @@ meeting:
     type: string
     default: pseudoanonymous
     restriction_mode: B
-  motion_poll_default_100_percent_base:
+  motion_poll_default_onehundred_percent_base:
     type: string
     default: YNA
     restriction_mode: B
@@ -1264,7 +1290,7 @@ meeting:
     type: string
     default: Y
     restriction_mode: B
-  assignment_poll_default_100_percent_base:
+  assignment_poll_default_onehundred_percent_base:
     type: string
     default: valid
     restriction_mode: B
@@ -1301,7 +1327,7 @@ meeting:
   poll_default_method:
     type: string
     restriction_mode: B
-  poll_default_100_percent_base:
+  poll_default_onehundred_percent_base:
     type: string
     default: YNA
     restriction_mode: B

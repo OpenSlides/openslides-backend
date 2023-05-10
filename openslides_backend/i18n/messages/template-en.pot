@@ -1,0 +1,106 @@
+msgid "Acceptance"
+msgstr ""
+
+msgid "Adjournment"
+msgstr ""
+
+msgid "Admin"
+msgstr ""
+
+msgid "Committees"
+msgstr ""
+
+msgid "Complex Workflow"
+msgstr ""
+
+msgid "Default"
+msgstr ""
+
+msgid "Default projector"
+msgstr ""
+
+msgid "Delegates"
+msgstr ""
+
+msgid "No concernment"
+msgstr ""
+
+msgid "No decision"
+msgstr ""
+
+msgid "Permission"
+msgstr ""
+
+msgid "Referral to committee"
+msgstr ""
+
+msgid "Rejection"
+msgstr ""
+
+msgid "Rejection (not authorized)"
+msgstr ""
+
+msgid "Reset your OpenSlides password"
+msgstr ""
+
+msgid "Simple Workflow"
+msgstr ""
+
+msgid "Speaking time"
+msgstr ""
+
+msgid "Staff"
+msgstr ""
+
+msgid "Voting"
+msgstr ""
+
+msgid ""
+"You are receiving this email because you have requested a new password "
+"for your OpenSlides-account.\n"
+"\n"
+"Please open the following link and choose a new password:\n"
+"{url}/login/forget-password-confirm?user_id={user_id}&token={token}\n"
+"\n"
+"For completeness your username: {username}"
+msgstr ""
+
+msgid "accepted"
+msgstr ""
+
+msgid "adjourned"
+msgstr ""
+
+msgid "in progress"
+msgstr ""
+
+msgid "name"
+msgstr ""
+
+msgid "needs review"
+msgstr ""
+
+msgid "not concerned"
+msgstr ""
+
+msgid "not decided"
+msgstr ""
+
+msgid "permitted"
+msgstr ""
+
+msgid "referred to committee"
+msgstr ""
+
+msgid "rejected"
+msgstr ""
+
+msgid "rejected (not authorized)"
+msgstr ""
+
+msgid "submitted"
+msgstr ""
+
+msgid "withdrawn"
+msgstr ""
+

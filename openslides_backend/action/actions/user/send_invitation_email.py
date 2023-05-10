@@ -215,7 +215,7 @@ class UserSendInvitationMail(UpdateAction):
             html=False,
         )
         result["sent"] = True
-        instance["last_email_send"] = round(time())
+        instance["last_email_sent"] = round(time())
         return super().update_instance(instance)
 
     def get_data_from_meeting_or_organization(

@@ -1086,7 +1086,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "data.gender must be one of ['male', 'female', 'diverse', None]"
+            "data.gender must be one of ['male', 'female', 'diverse', 'non-binary', None]"
             in response.json["message"]
         )
 

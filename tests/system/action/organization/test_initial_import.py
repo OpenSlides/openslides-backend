@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from openslides_backend.i18n.translator import Translator
 from openslides_backend.migrations import (
     assert_migration_index,
     get_backend_migration_index,
@@ -32,15 +33,28 @@ class OrganizationInitialImport(BaseActionTestCase):
     def test_initial_import_with_example_data_file(self) -> None:
         self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file("global/data/example-data.json")}
+        request_data["data"]["organization"]["1"]["default_language"] = "de"
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
+        Translator.set_translation_language("de")
         for collection in request_data["data"]:
             if collection == "_migration_index":
                 continue
             for id_ in request_data["data"][collection]:
-                self.assert_model_exists(
-                    f"{collection}/{id_}", request_data["data"][collection][id_]
-                )
+                entry = request_data["data"][collection][id_]
+                if collection == "organization":
+                    for field in (
+                        "login_text",
+                        "legal_notice",
+                        "users_email_subject",
+                        "users_email_body",
+                    ):
+                        if entry.get(field):
+                            entry[field] = Translator.translate(entry[field])
+                if collection == "theme":
+                    if entry.get("name"):
+                        entry["name"] = Translator.translate(entry["name"])
+                self.assert_model_exists(f"{collection}/{id_}", entry)
 
     def test_initial_import_wrong_field(self) -> None:
         self.datastore.truncate_db()
@@ -50,6 +64,17 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "organization/1: Invalid fields test_field (value: test)",
+            response.json["message"],
+        )
+
+    def test_initial_import_missing_default_language(self) -> None:
+        self.datastore.truncate_db()
+        request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
+        del request_data["data"]["organization"]["1"]["default_language"]
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "organization/1: Missing fields default_language",
             response.json["message"],
         )
 

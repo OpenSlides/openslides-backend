@@ -25,7 +25,7 @@ class UserForgetPassword(BaseActionTestCase):
             response = self.request("user.forget_password", {"email": "test@ntvtn.de"})
         self.assert_status_code(response, 200)
         user = self.get_model("user/1")
-        assert user.get("last_email_send", 0) >= start_time
+        assert user.get("last_email_sent", 0) >= start_time
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
         assert "Reset your OpenSlides password" in handler.emails[0]["data"]
 
@@ -41,7 +41,7 @@ class UserForgetPassword(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         user = self.get_model("user/1")
-        assert user.get("last_email_send", 0) >= start_time
+        assert user.get("last_email_sent", 0) >= start_time
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
         assert "Ihres Openslides-Passworts" in handler.emails[0]["data"]
 
@@ -84,11 +84,11 @@ class UserForgetPassword(BaseActionTestCase):
             response = self.request("user.forget_password", {"email": "test@ntvtn.de"})
         self.assert_status_code(response, 200)
         user = self.get_model("user/1")
-        assert user.get("last_email_send", 0) >= start_time
+        assert user.get("last_email_sent", 0) >= start_time
         user2 = self.get_model("user/2")
-        assert user2.get("last_email_send", 0) >= start_time
+        assert user2.get("last_email_sent", 0) >= start_time
         user3 = self.get_model("user/3")
-        assert user3.get("last_email_send", 0) == 0
+        assert user3.get("last_email_sent", 0) == 0
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
         assert handler.emails[0]["to"][0] == "test@ntvtn.de"
         assert (

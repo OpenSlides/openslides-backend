@@ -1,5 +1,7 @@
 from typing import Any, Dict
 
+from openslides_backend.i18n.translator import Translator
+from openslides_backend.i18n.translator import translate as _
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -7,7 +9,9 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MeetingCreateActionTest(BaseActionTestCase):
-    def basic_test(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def basic_test(
+        self, datapart: Dict[str, Any], set_400_str: str = ""
+    ) -> Dict[str, Any]:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -31,11 +35,17 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "name": "test_name",
                 "committee_id": 1,
                 "organization_tag_ids": [3],
+                "language": "en",
                 **datapart,
             },
         )
-        self.assert_status_code(response, 200)
-        return self.get_model("meeting/1")
+        if set_400_str:
+            self.assert_status_code(response, 400)
+            assert set_400_str == response.json["message"]
+            return {}
+        else:
+            self.assert_status_code(response, 200)
+            return self.get_model("meeting/1")
 
     def test_create_simple_and_complex_workflow(self) -> None:
         self.basic_test(dict())
@@ -250,6 +260,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "committee_id": 1,
                 "user_ids": [2, 3],
                 "admin_ids": [1],
+                "language": "en",
             },
         )
         self.assert_status_code(response, 200)
@@ -290,6 +301,18 @@ class MeetingCreateActionTest(BaseActionTestCase):
         assert meeting.get("template_for_organization_id") == 1
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": [1]})
 
+    def test_create_set_only_one_time_1(self) -> None:
+        self.basic_test(
+            {"start_time": 160000},
+            set_400_str="Only one of start_time and end_time is not allowed.",
+        )
+
+    def test_create_set_only_one_time_2(self) -> None:
+        self.basic_test(
+            {"end_time": 170000},
+            set_400_str="Only one of start_time and end_time is not allowed.",
+        )
+
     def test_create_no_permissions(self) -> None:
         self.set_models(
             {
@@ -307,6 +330,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_name",
                 "committee_id": 1,
+                "language": "en",
             },
         )
         self.assert_status_code(response, 403)
@@ -376,6 +400,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_name",
                 "committee_id": 1,
+                "language": "en",
             },
         )
         self.assert_status_code(response, 400)
@@ -383,3 +408,35 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "You cannot create a new meeting, because you reached your limit of 1 active meetings.",
             response.json["message"],
         )
+
+    def test_create_language(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                    "default_language": "en",
+                },
+                "committee/1": {
+                    "name": "test_committee",
+                    "user_ids": [2],
+                    "organization_id": 1,
+                },
+                "group/1": {},
+                "user/2": {},
+                "organization_tag/3": {},
+            }
+        )
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "organization_tag_ids": [3],
+                "language": "de",
+            },
+        )
+        self.assert_status_code(response, 200)
+        Translator.set_translation_language("de")
+        self.assert_model_exists("group/2", {"name": _("Default")})

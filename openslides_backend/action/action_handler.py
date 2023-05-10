@@ -216,8 +216,14 @@ class ActionHandler(BaseHandler):
         action_name = action_payload_element["action"]
         ActionClass = actions_map.get(action_name)
         if ActionClass is None or (
-            ActionClass.action_type == ActionType.BACKEND_INTERNAL
-            and not self.env.is_dev_mode()
+            not self.env.is_dev_mode()
+            and (
+                ActionClass.action_type == ActionType.BACKEND_INTERNAL
+                or (
+                    not self.internal
+                    and ActionClass.action_type == ActionType.STACK_INTERNAL
+                )
+            )
         ):
             raise View400Exception(f"Action {action_name} does not exist.")
         if not relation_manager:

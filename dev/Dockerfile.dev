@@ -39,5 +39,6 @@ ENV EMAIL_TIMEOUT 5
 ENV EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE false
 ENV DEFAULT_FROM_EMAIL noreply@example.com
 
+STOPSIGNAL SIGKILL
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "openslides_backend"]
+CMD exec python -m debugpy --listen 0.0.0.0:5678 openslides_backend

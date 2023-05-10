@@ -7,6 +7,9 @@ Backend service for OpenSlides which
 
 Use docker to build and start the application with your favorite tools. See [Dockerfile](Dockerfile) for steps to setup the production build.
 
+## Translations
+
+We recently updated the source language in the database from english to the user's language. To migrate your data from english to your preferred language, use the provided [translation script](cli/translate.py).
 
 ## Development
 

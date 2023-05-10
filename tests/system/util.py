@@ -117,6 +117,13 @@ def mock_datastore_method(method: str, verbose: bool = False) -> Tuple[Mock, Any
     return mock, patcher
 
 
+def disable_dev_mode(fn: Callable) -> Callable:
+    return patch(
+        "openslides_backend.shared.env.Environment.is_dev_mode",
+        MagicMock(return_value=False),
+    )(fn)
+
+
 def performance(func: Callable) -> Callable:
     return pytest.mark.skipif(
         not is_truthy(os.environ.get("OPENSLIDES_PERFORMANCE_TESTS", "")),

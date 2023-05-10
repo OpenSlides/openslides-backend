@@ -136,6 +136,11 @@ class CharField(TextField):
         return self.extend_schema(super().get_schema(), maxLength=256)
 
 
+class ShortCharField(TextField):
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), maxLength=32)
+
+
 class JSONField(Field):
     def get_schema(self) -> Schema:
         types = ["object", "array"]
