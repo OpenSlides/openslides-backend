@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from time import mktime, strptime, time
 from typing import Any, Callable, Dict, List, Optional, TypedDict
@@ -188,7 +189,13 @@ class JsonUploadMixin(Action):
                             raise ActionException(
                                 f"Could not parse {entry[field]} except date"
                             )
-                        print(field, entry[field])
+                    elif type_ == "string[]":
+                        try:
+                            entry[field] = json.loads("[" + entry[field] + "]")
+                        except Exception:
+                            raise ActionException(
+                                f"Could not parse {entry[field]} except string[]"
+                            )
 
         super().validate_instance(instance)
 
