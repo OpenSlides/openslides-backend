@@ -179,6 +179,32 @@ class CommitteeJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Could not parse blapzb except string[]" in response.json["message"]
 
+    def test_json_upload_organization_tags(self) -> None:
+        self.set_models({"organization_tag/37": {"name": "test"}})
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "committee A",
+                        "organization_tags": '"test", "new"',
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": "committee A",
+                "organization_tags": [
+                    {"value": "test", "info": ImportState.DONE, "id": 37},
+                    {"value": "new", "info": ImportState.NEW},
+                ],
+            },
+        }
+
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
             {}, "committee.json_upload", {"data": [{"name": "test"}]}

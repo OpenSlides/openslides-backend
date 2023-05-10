@@ -22,6 +22,10 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     "type": "object",
                     "properties": {
                         **model.get_properties("name", "description"),
+                        "organization_tags": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
                         "committee_managers": {
                             "type": "array",
                             "items": {"type": "string"},
@@ -48,6 +52,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
         {"property": "name", "type": "string"},
         {"property": "description", "type": "string"},
         {"property": "meeting_name", "type": "string"},
+        {"property": "organization_tags", "type": "string[]"},
         {"property": "committee_managers", "type": "string[]"},
         {"property": "start_date", "type": "date"},
         {"property": "end_date", "type": "date"},
@@ -72,18 +77,28 @@ class CommitteeJsonUpload(JsonUploadMixin):
             ],
         )
         usernames: Set[str] = set()
+        organization_tags: Set[str] = set()
         for entry in data:
             if entry.get("committee_managers"):
                 usernames.update(entry["committee_managers"])
             if entry.get("meeting_admins"):
                 usernames.update(entry["meeting_admins"])
+            if entry.get("organization_tags"):
+                organization_tags.update(entry["organization_tags"])
         username_lookup = Lookup(
             self.datastore, "user", list(usernames), field="username"
+        )
+        organization_tag_lookup = Lookup(
+            self.datastore, "organization_tag", list(organization_tags)
         )
 
         self.rows = [
             self.validate_entry(
-                entry, duplicate_checker, meeting_lookup, username_lookup
+                entry,
+                duplicate_checker,
+                meeting_lookup,
+                username_lookup,
+                organization_tag_lookup,
             )
             for entry in data
         ]
@@ -98,6 +113,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
         duplicate_checker: Lookup,
         meeting_lookup: Lookup,
         username_lookup: Lookup,
+        organization_tag_lookup: Lookup,
     ) -> Dict[str, Any]:
         state, messages = None, []
         if duplicate_checker.check_duplicate(entry["name"]):
@@ -125,12 +141,22 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     "value": entry["meeting_template"],
                     "info": ImportState.WARNING,
                 }
-        self.check_users_field("committee_managers", entry, username_lookup)
-        self.check_users_field("meeting_admins", entry, username_lookup)
+        self.check_list_field("committee_managers", entry, username_lookup)
+        self.check_list_field("meeting_admins", entry, username_lookup)
+        self.check_list_field(
+            "organization_tags",
+            entry,
+            organization_tag_lookup,
+            not_found_state=ImportState.NEW,
+        )
         return {"state": state, "messages": messages, "data": entry}
 
-    def check_users_field(
-        self, field: str, entry: Dict[str, Any], user_lookup: Lookup
+    def check_list_field(
+        self,
+        field: str,
+        entry: Dict[str, Any],
+        user_lookup: Lookup,
+        not_found_state: ImportState = ImportState.WARNING,
     ) -> None:
         if entry.get(field):
             new_list: List[Dict[str, Any]] = []
@@ -140,5 +166,5 @@ class CommitteeJsonUpload(JsonUploadMixin):
                         {"value": username, "info": ImportState.DONE, "id": user_id}
                     )
                 else:
-                    new_list.append({"value": username, "info": ImportState.WARNING})
+                    new_list.append({"value": username, "info": not_found_state})
             entry[field] = new_list
