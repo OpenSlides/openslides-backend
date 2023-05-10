@@ -731,6 +731,7 @@ meeting:
     maxLength: 100
     default: OpenSlides
     restriction_mode: A
+    required: true
   is_active_in_organization_id:
     type: relation
     to: organization/active_meeting_ids
