@@ -2,10 +2,9 @@ from typing import Any, Dict
 
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
-from ...mixins.import_mixins import ImportState, JsonUploadMixin
+from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .helper import Lookup
 
 
 @register_action("committee.json_upload")
