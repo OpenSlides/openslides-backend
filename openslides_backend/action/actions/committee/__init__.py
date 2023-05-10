@@ -1,1 +1,1 @@
-from . import create, delete, update  # noqa
+from . import create, delete, json_upload, update  # noqa
