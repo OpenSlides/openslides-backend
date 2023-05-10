@@ -424,13 +424,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "username": "username_Neu",
-                "vote_weight_$": {1: "1.000000"},
-                "group_$_ids": {1: [1]},
+                "meeting_id": 1,
+                "vote_weight": "1.000000",
+                "group_ids": [1],
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {1}",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 1",
             response.json["message"],
         )
 
