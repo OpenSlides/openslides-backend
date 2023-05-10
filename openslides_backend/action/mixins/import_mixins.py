@@ -1,5 +1,5 @@
 from enum import Enum
-from time import time
+from time import mktime, strptime, time
 from typing import Any, Callable, Dict, List, Optional, TypedDict
 
 from ...shared.exceptions import ActionException
@@ -177,5 +177,15 @@ class JsonUploadMixin(Action):
                             raise ActionException(
                                 f"Could not parse {entry[field]} expect boolean"
                             )
+                    elif type_ == "date":
+                        try:
+                            entry[field] = int(
+                                mktime(strptime(entry[field], "%Y-%m-%d"))
+                            )
+                        except Exception:
+                            raise ActionException(
+                                f"Could not parse {entry[field]} except date"
+                            )
+                        print(field, entry[field])
 
         super().validate_instance(instance)
