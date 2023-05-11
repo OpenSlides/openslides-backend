@@ -205,6 +205,32 @@ class CommitteeJsonUpload(BaseActionTestCase):
             },
         }
 
+    def test_json_upload_forward_to_committees(self) -> None:
+        self.set_models({"committee/37": {"name": "test"}})
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "committee A",
+                        "forward_to_committees": '"test", "new"',
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": "committee A",
+                "forward_to_committees": [
+                    {"value": "test", "info": ImportState.DONE, "id": 37},
+                    {"value": "new", "info": ImportState.WARNING},
+                ],
+            },
+        }
+
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
             {}, "committee.json_upload", {"data": [{"name": "test"}]}

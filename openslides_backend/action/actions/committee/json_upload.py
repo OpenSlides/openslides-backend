@@ -22,6 +22,10 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     "type": "object",
                     "properties": {
                         **model.get_properties("name", "description"),
+                        "forward_to_committees": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
                         "organization_tags": {
                             "type": "array",
                             "items": {"type": "string"},
@@ -51,9 +55,10 @@ class CommitteeJsonUpload(JsonUploadMixin):
     headers = [
         {"property": "name", "type": "string"},
         {"property": "description", "type": "string"},
-        {"property": "meeting_name", "type": "string"},
+        {"property": "forward_to_committees", "type": "string[]"},
         {"property": "organization_tags", "type": "string[]"},
         {"property": "committee_managers", "type": "string[]"},
+        {"property": "meeting_name", "type": "string"},
         {"property": "start_date", "type": "date"},
         {"property": "end_date", "type": "date"},
         {"property": "meeting_admins", "type": "string[]"},
@@ -78,6 +83,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
         )
         usernames: Set[str] = set()
         organization_tags: Set[str] = set()
+        committee_names: Set[str] = set()
         for entry in data:
             if entry.get("committee_managers"):
                 usernames.update(entry["committee_managers"])
@@ -85,12 +91,15 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 usernames.update(entry["meeting_admins"])
             if entry.get("organization_tags"):
                 organization_tags.update(entry["organization_tags"])
+            if entry.get("forward_to_committees"):
+                committee_names.update(entry["forward_to_committees"])
         username_lookup = Lookup(
             self.datastore, "user", list(usernames), field="username"
         )
         organization_tag_lookup = Lookup(
             self.datastore, "organization_tag", list(organization_tags)
         )
+        committee_lookup = Lookup(self.datastore, "committee", list(committee_names))
 
         self.rows = [
             self.validate_entry(
@@ -99,6 +108,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 meeting_lookup,
                 username_lookup,
                 organization_tag_lookup,
+                committee_lookup,
             )
             for entry in data
         ]
@@ -114,6 +124,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
         meeting_lookup: Lookup,
         username_lookup: Lookup,
         organization_tag_lookup: Lookup,
+        committee_lookup: Lookup,
     ) -> Dict[str, Any]:
         state, messages = None, []
         if duplicate_checker.check_duplicate(entry["name"]):
@@ -149,6 +160,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
             organization_tag_lookup,
             not_found_state=ImportState.NEW,
         )
+        self.check_list_field("forward_to_committees", entry, committee_lookup)
         return {"state": state, "messages": messages, "data": entry}
 
     def check_list_field(
