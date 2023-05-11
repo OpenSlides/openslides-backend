@@ -112,8 +112,45 @@ class CommitteeJsonUpload(JsonUploadMixin):
             )
             for entry in data
         ]
-        self.statistics = []
-        self.set_state(0, 0)
+
+        without_template = sum(
+            1
+            for entry in self.rows
+            if entry["data"].get("meeting_name")
+            and not entry["data"].get("meeting_template")
+        )
+        with_template = sum(
+            1
+            for entry in self.rows
+            if entry["data"].get("meeting_name")
+            and entry["data"].get("meeting_template")
+        )
+
+        self.statistics = [
+            {
+                "name": "Tags created",
+                "value": self.count_info("organization_tags", ImportState.NEW),
+            },
+            {"name": "Committees created", "value": self.count_state(ImportState.NEW)},
+            {"name": "Committees updated", "value": self.count_state(ImportState.DONE)},
+            {
+                "name": "Additional committees have been created, because they are mentioned in the forwardings",
+                "value": self.count_info("forward_to_committees", ImportState.WARNING),
+            },
+            {"name": "Meetings created without template", "value": without_template},
+            {"name": "Meetings copied from template", "value": with_template},
+            {
+                "name": "Committee managers relations",
+                "value": self.count_len("committee_managers"),
+            },
+            {
+                "name": "Meeting administrator relations",
+                "value": self.count_len("meeting_admins"),
+            },
+        ]
+        self.set_state(
+            self.count_state(ImportState.ERROR), self.count_state(ImportState.WARNING)
+        )
         self.store_rows_in_the_action_worker("committee")
         return {}
 
@@ -180,3 +217,17 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 else:
                     new_list.append({"value": username, "info": not_found_state})
             entry[field] = new_list
+
+    def count_info(self, field: str, state: ImportState) -> int:
+        return sum(
+            1
+            for entry in self.rows
+            for fieldentry in (entry["data"].get(field) or [])
+            if fieldentry["info"] == state
+        )
+
+    def count_state(self, state: ImportState) -> int:
+        return sum(1 for entry in self.rows if entry["state"] == state)
+
+    def count_len(self, field: str) -> int:
+        return sum(len(entry["data"].get(field) or []) for entry in self.rows)

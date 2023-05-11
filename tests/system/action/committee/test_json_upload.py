@@ -30,6 +30,14 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 },
             },
         )
+        assert response.json["results"][0][0]["statistics"][1] == {
+            "name": "Committees created",
+            "value": 1,
+        }
+        assert response.json["results"][0][0]["statistics"][2] == {
+            "name": "Committees updated",
+            "value": 0,
+        }
 
     def test_json_upload_duplicate_in_db(self) -> None:
         self.set_models({"committee/7": {"name": "test"}})
@@ -136,6 +144,14 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 },
             },
         }
+        assert response.json["results"][0][0]["statistics"][5] == {
+            "name": "Meetings copied from template",
+            "value": 1,
+        }
+        assert response.json["results"][0][0]["statistics"][4] == {
+            "name": "Meetings created without template",
+            "value": 0,
+        }
 
     def test_json_upload_committee_managers(self) -> None:
         self.set_models({"user/23": {"username": "test"}})
@@ -161,6 +177,10 @@ class CommitteeJsonUpload(BaseActionTestCase):
                     {"value": "new", "info": ImportState.WARNING},
                 ],
             },
+        }
+        assert response.json["results"][0][0]["statistics"][6] == {
+            "name": "Committee managers relations",
+            "value": 2,
         }
 
     def test_json_upload_committee_managers_wrong_json(self) -> None:
@@ -204,6 +224,10 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 ],
             },
         }
+        assert response.json["results"][0][0]["statistics"][0] == {
+            "name": "Tags created",
+            "value": 1,
+        }
 
     def test_json_upload_forward_to_committees(self) -> None:
         self.set_models({"committee/37": {"name": "test"}})
@@ -229,6 +253,10 @@ class CommitteeJsonUpload(BaseActionTestCase):
                     {"value": "new", "info": ImportState.WARNING},
                 ],
             },
+        }
+        assert response.json["results"][0][0]["statistics"][3] == {
+            "name": "Additional committees have been created, because they are mentioned in the forwardings",
+            "value": 1,
         }
 
     def test_json_upload_no_permission(self) -> None:
