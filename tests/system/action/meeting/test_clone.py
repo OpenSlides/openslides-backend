@@ -910,13 +910,21 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
 
-    def test_meeting_name_too_long(self) -> None:
-        long_name = "0123456789" * 10
+    def test_meeting_name_exact_fit(self) -> None:
+        long_name = "A" * 93
         self.test_models["meeting/1"]["name"] = long_name
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"name": long_name + " - Copy"})
+
+    def test_meeting_name_too_long(self) -> None:
+        long_name = "A" * 100
+        self.test_models["meeting/1"]["name"] = long_name
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/2", {"name": "A" * 90 + "... - Copy"})
 
     def test_permissions_both_okay(self) -> None:
         self.set_models(self.test_models)

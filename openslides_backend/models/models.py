@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "b12d530c9385e56a4f4b6bf18965c633"
+MODELS_YML_CHECKSUM = "52fd248a0f0407e73542b9d416e4cc26"
 
 
 class Organization(Model):
@@ -73,7 +73,7 @@ class User(Model):
     id = fields.IntegerField()
     username = fields.CharField(required=True)
     saml_id = fields.CharField()
-    pronoun = fields.ShortCharField()
+    pronoun = fields.CharField(constraints={"maxLength": 32})
     title = fields.CharField()
     first_name = fields.CharField()
     last_name = fields.CharField()
@@ -335,7 +335,9 @@ class Meeting(Model):
     id = fields.IntegerField()
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
-    name = fields.CharField(default="OpenSlides", constraints={"maxLength": 100})
+    name = fields.CharField(
+        required=True, default="OpenSlides", constraints={"maxLength": 100}
+    )
     is_active_in_organization_id = fields.RelationField(
         to={"organization": "active_meeting_ids"},
         constraints={"description": "Backrelation and boolean flag at once"},
