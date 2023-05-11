@@ -1,12 +1,11 @@
 ---
 # Types:
-#     - Nativ datatypes: string, text, number, boolean, JSON
-#     - string: String with length 50 as default, otherwise use length
+#     - Nativ datatypes: text, string (text with maxLength=256), number, boolean, JSON
 #     - HTMLStrict: A string with HTML content.
 #     - HTMLPermissive: A string with HTML content (with video tags).
 #     - float: Numbers that are expected to be non-integer. Formatted as in rfc7159.
 #     - decimal: Decimal values represented as a string with X decimal places.
-#       Without length, the default is X=6.
+#       Without maxLength, the default is X=6.
 #     - timestamp: Datetime as a unix timestamp. Why a number? This enables queries
 #       in the DB. And we do not need more precision than 1 second.
 #     - <T>[]: This indicates and arbitrary array of the given type. At the moment
@@ -50,7 +49,7 @@
 #     - You can add JSON Schema properties to the fields like `enum`, `description`,
 #       `items`, `maxLength` and `minimum`
 # Additional properties:
-#     - The property `length`: for types decimal, string and string[] you could define the length
+#     - The property `maxLength`: for types decimal, text, string and string[] you could define the maxLength
 #     - The property `read_only` describes a field that can not be changed by an action.
 #     - The property `default` describes the default value that is used for new objects.
 #     - The property `required` describes that this field can not be null or an empty
@@ -71,7 +70,7 @@ organizationT:
     restriction_mode: A
   name:
     type: string
-    length: 50
+    maxLength: 50
     restriction_mode: A
   description:
     type: HTMLStrict
@@ -307,22 +306,14 @@ userT:
     type: timestamp
     restriction_mode: A
     read_only: true
-
-# TODO: We'll use groups for this one
-#   # Organization, meeting and committee
-#   organization_management_level:
-#     type: string
-#     description: Hierarchical permission level for the whole organization.
-#     enum:
-#       - superadmin
-#       - can_manage_organization
-#       - can_manage_users
-#     restriction_mode: E
-#   # committee specific permissions
-#   committee_management_ids:
-#     type: xrelation-list
-#     to: committee/manager_ids
-#     restriction_mode: E
+  organization_management_level:
+    type: string
+    description: Hierarchical permission level for the whole organization.
+    enum:
+      - superadmin
+      - can_manage_organization
+      - can_manage_users
+    restriction_mode: E
 
 user_:
   entity_description:
@@ -335,15 +326,19 @@ user_:
     restriction_mode: A
     Xsqlview: presence_user_in_meeting/meeting_id, where presence_user_in_meeting.user_id = id
 
-  # Calculates all committee's where the user is
-  # - committee-manager (= committees in committee_management_ids)
-  # - is member (= has group-rights) of a meeting in the committee
   committee_ids:
     type: number[]
-    to: committee/user_ids
     restriction_mode: E
-    read_only: true
-    description: "Backend calculated field with trigger."
+    description: Returns committee_ids, where the user is manager or member in a meeting
+    select: >-
+      select array_agg(committee_id) from (
+          select m.committee_id as committee_id from group_to_user gtu
+            join groupT g on g.id = gtu.group_id
+            join meetingT m on m.id = g.meeting_id
+            where gtu.user_id = u.id
+          union
+          select ctu.committee_id as committee_id from committee_to_user ctu where ctu.user_id = u.id
+        ) as cs
 
   # for the motion forwarding
   forwarding_committee_ids:
@@ -386,6 +381,18 @@ user_:
     restriction_mode: E
     todo: sqlview or backend calculated fields, but from userT, not view
     select: select array_agg(g.meeting_id) from group_to_user gtu join groupT g on g.id = gtu.group_id where gtu.user_id = u.id
+
+committee_to_user:
+  entity_description:
+    type: table
+  user_id:
+    type: relation
+    references: userT(id)
+    required: true
+  committee_id:
+    type: relation
+    references: committeeT(id)
+    required: true
 
 group_to_user:
   entity_description:
@@ -713,11 +720,6 @@ theme:
   abstain:
     restriction_mode: A
     type: color
-  theme_for_organization_id:
-    restriction_mode: A
-    to: organization/theme_id
-    type: relation
-    references: organizationT(id)
 
 committeeT:
   entity_description:
@@ -1130,18 +1132,21 @@ meetingT:
     references: motion_workflow(id)
     on_delete: RESTRICT
     required: true
+    deferred_foreign_key: true
     restriction_mode: B
   motions_default_amendment_workflow_id:
     type: relation
     references: motion_workflow(id)
     on_delete: RESTRICT
     required: true
+    deferred_foreign_key: true
     restriction_mode: B
   motions_default_statute_amendment_workflow_id:
     type: relation
     references: motion_workflow(id)
     on_delete: RESTRICT
     required: true
+    deferred_foreign_key: true
     restriction_mode: B
   motions_preamble:
     type: text
@@ -1717,16 +1722,19 @@ meetingT:
   reference_projector_id:
     type: relation
     references: projector(id)
+    deferred_foreign_key: true
     required: true
     restriction_mode: B
   default_group_id:
     type: relation
     references: groupT(id)
+    deferred_foreign_key: true
     required: true
     restriction_mode: B
   admin_group_id:
     type: relation
     references: groupT(id)
+    deferred_foreign_key: true
     restriction_mode: B
 
 meeting:
@@ -3054,7 +3062,6 @@ motion_state:
         - motion.can_manage_metadata
         - motion.can_manage
         - is_submitter
-    default: []
     restriction_mode: A
   allow_support:
     type: boolean
@@ -3151,6 +3158,18 @@ motion_state:
     required: true
     restriction_mode: A
 
+motion_state_to_state:
+  entity_description:
+    type: table
+  previous_state_id:
+    type: relation
+    references: motion_state(id)
+    required: true
+  next_state_id:
+    type: relation
+    references: motion_state(id)
+    required: true
+
 motion_workflow:
   entity_description:
     type: table
@@ -3167,7 +3186,6 @@ motion_workflow:
     read_only: true
     required: true
     restriction_mode: A
-
   state_ids:
     type: relation-list
     to: motion_state/workflow_id
@@ -3177,14 +3195,12 @@ motion_workflow:
   first_state_id:
     type: relation
     references: motion_state(id)
-    to: motion_state/first_state_of_workflow_id
+    deferred_foreign_key: true
     required: true
-    equal_fields: meeting_id
     restriction_mode: A
   meeting_id:
     type: relation
     references: meetingT(id)
-    to: meeting/motion_workflow_ids
     required: true
     restriction_mode: A
 

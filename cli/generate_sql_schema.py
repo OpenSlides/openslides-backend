@@ -38,17 +38,17 @@ RELATION_FIELD_CLASSES = {
 }
 
 POSTGRES_FROM_YML = {
-    "string": string.Template("varchar(${length})"),
+    "string": string.Template("varchar(${maxLength})"),
     "number": "integer",
     "boolean": "boolean",
     "JSON": "jsonb",
     "HTMLStrict": "text",
     "HTMLPermissive": "text",
     "float": "real",
-    "decimal": string.Template("decimal(${length})"),
+    "decimal": string.Template("decimal(${maxLength})"),
     "timestamp": "timestamptz",
-    "color": "varchar(7)",
-    "string[]": string.Template("varchar(${length})[]"),
+    "color": string.Template("integer CHECK (${field_name} >= 0 and ${field_name} <= 16777215)"),
+    "string[]": string.Template("varchar(${maxLength})[]"),
     "number[]": "integer[]",
     "text": "text",
     "relation": "integer",
@@ -161,7 +161,7 @@ class TableCreator(Creator):
 class ViewCreator(Creator):
     def get_code(self) -> tuple[str, str]:
         assert self.obj_description.get('table') and self.obj_description.get('table_letter'), f"View {self.name} needs table and table_letter attribute in entity description"
-        code = f"\nCREATE OR REPLACE VIEW {self.name} AS SELECT id,\n"
+        code = f"\nCREATE OR REPLACE VIEW {self.name} AS SELECT *,\n"
         for field_name, attribute in self.attributes.items():
             if attribute.select:
                 code += attribute.get_create_view_code(field_name)
@@ -179,13 +179,14 @@ class OnDelete(str, Enum):
 
 class Attribute():
     type: str
-    length: int
+    maxLength: int
     replacement_collection: Optional[str] = None
     replacement_enum: Optional[List[str]] = None
     fields: Optional["Attribute"] = None
     references: Optional[str] = None
     required: bool = False
     read_only: bool = False
+    deferred_foreign_key: bool = False
     default: Any = None
     on_delete: Optional[OnDelete] = None
     equal_fields: Optional[Union[str, List[str]]] = None
@@ -193,7 +194,7 @@ class Attribute():
     select: Optional[str] = None
 
     FIELD_TEMPLATE = string.Template(
-        "    ${field_name} ${type}${primary_key}${required},\n"
+        "    ${field_name} ${type}${primary_key}${required}${default},\n"
     )
     REFERENCES_TEMPLATE = " REFERENCES %s"
 
@@ -214,10 +215,11 @@ class Attribute():
                 assert self.type in COMMON_FIELD_CLASSES.keys(), (
                     "Invalid type: " + self.type
                 )
-            self.length = value.get("length")
+            self.maxLength = value.get("maxLength")
             self.references = value.get("references")
             self.required = value.get("required", False)
             self.read_only = value.get("read_only", False)
+            self.deferred_foreign_key = value.get("deferred_foreign_key", False)
             self.default = value.get("default")
             self.select = value.get("select")
             self.equal_fields = value.get("equal_fields")
@@ -239,32 +241,41 @@ class Attribute():
     def get_create_table_code(self, field_name: str) -> str:
         type_:str = POSTGRES_FROM_YML[self.type]
         if isinstance(type_, string.Template):
-            if self.length:
-                type_ = type_.substitute({"length": self.length})
-            elif self.type == "decimal":
-                type_ = type_.substitute({"length": 6})
-            else:  # string
-                type_ = type_.substitute({"length": 50})
+            if self.type == "color":
+                type_ = type_.substitute({"field_name": field_name})
+            else:
+                if self.maxLength:
+                    type_ = type_.substitute({"maxLength": self.maxLength})
+                elif self.type == "decimal":
+                    type_ = type_.substitute({"maxLength": 6})
+                else:  # string
+                    type_ = type_.substitute({"maxLength": 256})
         subst_dict = {
             "field_name": field_name,
             "type": type_,
             "primary_key": "",
             "required": "",
-            #"default": ""
+            "default": "",
         }
         if field_name == "id":
             subst_dict["primary_key"] = " PRIMARY KEY GENERATED ALWAYS AS IDENTITY"
         else:
             if self.required:
                 subst_dict["required"] = " NOT NULL"
-            if self.default:
-                subst_dict["default"] = f" DEFAULT {self.default}"
+            if self.default is not None:
+                if self.type == "color":
+                    subst_dict["default"] = f" DEFAULT {int(self.default[1:], 16)}"
+                else:
+                    subst_dict["default"] = f" DEFAULT '{self.default}'"
 
         return self.FIELD_TEMPLATE.substitute(subst_dict)
 
     def get_alter_table_code(self, table_name: str, field_name: str) -> Optional[str]:
         if self.references:
-            return f"ALTER TABLE {table_name} ADD FOREIGN KEY ({field_name}) REFERENCES {self.references};\n"
+            if self.deferred_foreign_key:
+                return f"ALTER TABLE {table_name} ADD FOREIGN KEY ({field_name}) REFERENCES {self.references} INITIALLY DEFERRED;\n"
+            else:
+                return f"ALTER TABLE {table_name} ADD FOREIGN KEY ({field_name}) REFERENCES {self.references};\n"
         return
 
     def get_create_view_code(self, field_name: str) -> str:
