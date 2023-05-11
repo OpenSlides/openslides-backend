@@ -135,7 +135,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
             {"name": "Committees updated", "value": self.count_state(ImportState.DONE)},
             {
                 "name": "Additional committees have been created, because they are mentioned in the forwardings",
-                "value": self.count_info("forward_to_committees", ImportState.WARNING),
+                "value": self.count_info("forward_to_committees", ImportState.NEW),
             },
             {"name": "Meetings created without template", "value": without_template},
             {"name": "Meetings copied from template", "value": with_template},
@@ -173,10 +173,18 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 messages.append("Found name and didn't found id.")
         else:
             state = ImportState.NEW
-        if "start_date" in entry or "end_date" in entry:
+        if any(
+            field in entry
+            for field in (
+                "start_date",
+                "end_date",
+                "meeting_admins",
+                "meeting_template",
+            )
+        ):
             if "meeting_name" not in entry:
                 state = ImportState.ERROR
-                messages.append("Start_date or end_date given, but no meeting_name")
+                messages.append("Meeting field given, but no meeting_name")
         if "meeting_template" in entry:
             if meeting_id := meeting_lookup.get_id_by_name(entry["meeting_template"]):
                 entry["meeting_template"] = {
@@ -197,7 +205,12 @@ class CommitteeJsonUpload(JsonUploadMixin):
             organization_tag_lookup,
             not_found_state=ImportState.NEW,
         )
-        self.check_list_field("forward_to_committees", entry, committee_lookup)
+        self.check_list_field(
+            "forward_to_committees",
+            entry,
+            committee_lookup,
+            not_found_state=ImportState.NEW,
+        )
         return {"state": state, "messages": messages, "data": entry}
 
     def check_list_field(

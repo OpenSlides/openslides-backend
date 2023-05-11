@@ -92,6 +92,31 @@ class CommitteeJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Could not parse 12XX-broken except date" in response.json["message"]
 
+    def test_json_upload_meeting_field_but_no_meeting_name(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "test",
+                        "meeting_template": "testtemplate",
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.ERROR,
+            "messages": ["Meeting field given, but no meeting_name"],
+            "data": {
+                "name": "test",
+                "meeting_template": {
+                    "value": "testtemplate",
+                    "info": ImportState.WARNING,
+                },
+            },
+        }
+
     def test_json_upload_meeting_template_not_found(self) -> None:
         response = self.request(
             "committee.json_upload",
@@ -250,7 +275,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 "name": "committee A",
                 "forward_to_committees": [
                     {"value": "test", "info": ImportState.DONE, "id": 37},
-                    {"value": "new", "info": ImportState.WARNING},
+                    {"value": "new", "info": ImportState.NEW},
                 ],
             },
         }
