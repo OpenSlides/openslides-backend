@@ -32,7 +32,19 @@
             "users_email_subject": "OpenSlides access data",
             "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
             "url": "https://example.com",
-            "user_ids": [1, 2, 3]
+            "user_ids": [1, 2, 3],
+            "sso_enabled": false,
+            "login_button_text": "SAML Login",
+            "save_attr_config": {
+                "username": "saml_id",
+                "title": "title",
+                "firstName": "first_name",
+                "lastName": "last_name",
+                "email": "email",
+                "pronomen": "pronoun",
+                "is_active": "is_active",
+                "is_person": "is_physical_person"
+              }
         }
     },
     "user": {

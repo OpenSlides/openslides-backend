@@ -123,6 +123,30 @@ organization:
       - cs
     required: true
 
+  # SSO settings
+  sso_enabled:
+    type: boolean
+    default: False
+    restriction_mode: A
+  login_button_text:
+    type: string
+    default: SAML login
+    restriction_mode: A
+  save_attr_config:
+    type: JSON
+    restriction_mode: A
+    default: >-
+      {
+        "username": "saml_id",
+        "title": "title",
+        "firstName": "first_name",
+        "lastName": "last_name",
+        "email": "email",
+        "pronomen": "pronoun",
+        "is_active": "is_active",
+        "is_person": "is_physical_person"
+      }
+
   vote_decrypt_public_main_key:
     type: string
     description: Public key from vote decrypt to validate cryptographic votes.

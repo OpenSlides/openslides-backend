@@ -18,7 +18,19 @@
             "url": "https://example.com",
             "template_meeting_ids": [],
             "mediafile_ids": [],
-            "user_ids": [1]
+            "user_ids": [1],
+            "sso_enabled": false,
+            "login_button_text": "SAML Login",
+            "save_attr_config": {
+                "username": "saml_id",
+                "title": "title",
+                "firstName": "first_name",
+                "lastName": "last_name",
+                "email": "email",
+                "pronomen": "pronoun",
+                "is_active": "is_active",
+                "is_person": "is_physical_person"
+              }
         }
     },
     "user": {
