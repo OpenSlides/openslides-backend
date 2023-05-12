@@ -103,15 +103,20 @@ class MeetingClone(MeetingImport):
             meeting["committee_id"] = committee_id
 
         # pre update the meeting
-        name_set = False
+        if "name" not in instance:
+            suffix = " - Copy"
+            max_length = Meeting().name.constraints.get("maxLength")
+            old_name = meeting["name"]
+            if max_length and len(old_name) + len(suffix) > max_length:
+                meeting["name"] = (
+                    old_name[: max_length - len(suffix) - 3] + "..." + suffix
+                )
+            else:
+                meeting["name"] = old_name + suffix
+
         for field in updatable_fields:
             if field in instance:
-                if field == "name":
-                    name_set = True
-                value = instance.pop(field)
-                meeting[field] = value
-        if not name_set:
-            meeting["name"] = meeting.get("name", "") + " - Copy"
+                meeting[field] = instance.pop(field)
 
         # reset mediafile/attachment_ids to [] if None.
         for mediafile_id in instance["meeting"].get("mediafile", []):
