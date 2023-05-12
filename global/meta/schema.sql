@@ -2,7 +2,7 @@
 -- schema.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
--- MODELS_YML_CHECKSUM = '7a49bae25562cb83f661ff04271fc966'
+-- MODELS_YML_CHECKSUM = 'f1842d0f88bf29f159ecd509881e486d'
 
 CREATE TABLE IF NOT EXISTS organizationT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -174,12 +174,8 @@ CREATE TABLE IF NOT EXISTS committeeT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256) NOT NULL,
     description text,
-    meeting_ids integer[],
     default_meeting_id integer,
-    user_ids integer[],
-    manager_ids integer[],
-    forwarding_user_id integer,
-    organization_tag_ids integer[]
+    forwarding_user_id integer
 );
 
 
@@ -1044,7 +1040,15 @@ FROM userT u;
 
 CREATE OR REPLACE VIEW committee AS SELECT *,
 (select array_agg(f.receiving_committee_id) from forwarding_committee_to_committee f where f.forwarding_committee_id = c.id) as forward_to_committee_ids,
-(select array_agg(f.forwarding_committee_id) from forwarding_committee_to_committee f where f.receiving_committee_id = c.id) as receive_from_committee_ids
+(select array_agg(f.forwarding_committee_id) from forwarding_committee_to_committee f where f.receiving_committee_id = c.id) as receive_from_committee_ids,
+(select array_agg(user_id) from (
+  select gtu.user_id as user_id from meetingT m
+    join groupT g on g.meeting_id = m.id
+    join group_to_user gtu on gtu.group_id = g.id
+    where m.committee_id = c.id
+  union
+  select ctu.user_id as user_id from committee_to_user ctu where ctu.committee_id = c.id
+) as x) as user_ids
 FROM committeeT c;
 
 

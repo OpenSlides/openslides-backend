@@ -747,28 +747,11 @@ committeeT:
     to: meeting/default_meeting_for_committee_id
     references: meetingT(id)
     restriction_mode: A
-  user_ids:
-    type: number[]
-    to: user/committee_ids
-    restriction_mode: A
-    read_only: true
-    description: "Backend calculated field with trigger."
-  manager_ids:
-    type: number[]
-    to: user/committee_management_ids
-    restriction_mode: B
-    sqlview TODO: user/id; where IMO with groups, but still not designed
-
   forwarding_user_id:
     type: relation
     to: user/forwarding_committee_ids
     references: userT(id)
     restriction_mode: B
-  organization_tag_ids:
-    type: number[]
-    to: organization_tag/tagged_ids
-    restriction_mode: A
-    Xsqlview: organization_tag/id, where organization_tag_to_committee_meeting.committee_id = id join organization_tag_to_committee_meeting.organization_tag_id = organization_tag.id
 
 committee:
   entity_description:
@@ -783,6 +766,33 @@ committee:
     type: number[]
     restriction_mode: B
     select: "select array_agg(f.forwarding_committee_id) from forwarding_committee_to_committee f where f.receiving_committee_id = c.id"
+  user_ids:
+    type: number[]
+    restriction_mode: A
+    select: >-
+      select array_agg(user_id) from (
+        select gtu.user_id as user_id from meetingT m
+          join groupT g on g.meeting_id = m.id
+          join group_to_user gtu on gtu.group_id = g.id
+          where m.committee_id = c.id
+        union
+        select ctu.user_id as user_id from committee_to_user ctu where ctu.committee_id = c.id
+      ) as x
+  meeting_ids:
+    type: number[]
+    restriction_mode: A
+    Xsqlview: meeting/id, where meeting.committee_id = id
+  manager_ids:
+    type: number[]
+    to: user/committee_management_ids
+    restriction_mode: B
+    sqlview TODO: user/id; where IMO with groups, but still not designed
+  organization_tag_ids:
+    type: number[]
+    to: organization_tag/tagged_ids
+    restriction_mode: A
+    Xsqlview: organization_tag/id, where organization_tag_to_committee_meeting.committee_id = id join organization_tag_to_committee_meeting.organization_tag_id = organization_tag.id
+
 
 forwarding_committee_to_committee:
   entity_description:
