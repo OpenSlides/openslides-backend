@@ -217,6 +217,7 @@ class Lookup:
                     collection,
                     Or(*[FilterOperator(field, "=", name) for name in names]),
                     ["id", field],
+                    lock_result=False,
                 ).values()
             }
 
