@@ -86,7 +86,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "lead_motion_id": 1,
-                "amendment_paragraph": {4: "text"},
+                "amendment_paragraphs": {4: "text"},
             },
         )
         self.assert_status_code(response, 200)
@@ -95,7 +95,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         assert model.get("meeting_id") == 222
         assert model.get("lead_motion_id") == 1
         assert model.get("state_id") == 34
-        assert model.get("amendment_paragraph") == {"4": "text"}
+        assert model.get("amendment_paragraphs") == {"4": "text"}
 
     def test_create_with_amendment_paragraphs_0(self) -> None:
         self.set_models(
@@ -111,12 +111,12 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "lead_motion_id": 1,
-                "amendment_paragraph": {0: "text"},
+                "amendment_paragraphs": {0: "text"},
             },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/2")
-        assert model.get("amendment_paragraph") == {"0": "text"}
+        assert model.get("amendment_paragraphs") == {"0": "text"}
 
     def test_create_with_amendment_paragraphs_string(self) -> None:
         self.set_models(
@@ -132,12 +132,12 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "lead_motion_id": 1,
-                "amendment_paragraph": {"0": "text"},
+                "amendment_paragraphs": {"0": "text"},
             },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/2")
-        assert model.get("amendment_paragraph") == {"0": "text"}
+        assert model.get("amendment_paragraphs") == {"0": "text"}
 
     def test_create_with_amendment_paragraphs_invalid(self) -> None:
         self.set_models(
@@ -153,11 +153,11 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "lead_motion_id": 1,
-                "amendment_paragraph": {"a4": "text"},
+                "amendment_paragraphs": {"a4": "text"},
             },
         )
         self.assert_status_code(response, 400)
-        assert "data.amendment_paragraph must not contain {'a4'} properties" in str(
+        assert "data.amendment_paragraphs must not contain {'a4'} properties" in str(
             response.json["message"]
         )
 
@@ -175,11 +175,11 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "lead_motion_id": 1,
-                "amendment_paragraph": ["test"],
+                "amendment_paragraphs": ["test"],
             },
         )
         self.assert_status_code(response, 400)
-        assert "data.amendment_paragraph must be object" in response.json["message"]
+        assert "data.amendment_paragraphs must be object" in response.json["message"]
 
     def test_create_with_amendment_paragraphs_html(self) -> None:
         self.set_models(
@@ -195,7 +195,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "lead_motion_id": 1,
-                "amendment_paragraph": {
+                "amendment_paragraphs": {
                     "0": "<it>test</it>",
                     "1": "</><</>broken>",
                 },
@@ -205,7 +205,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "motion/2",
             {
-                "amendment_paragraph": {
+                "amendment_paragraphs": {
                     "0": "&lt;it&gt;test&lt;/it&gt;",
                     "1": "&lt;broken&gt;",
                 }
@@ -229,7 +229,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Text or amendment_paragraph is required in this context." in str(
+        assert "Text or amendment_paragraphs is required in this context." in str(
             response.json["message"]
         )
 
@@ -248,11 +248,11 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "workflow_id": 12,
                 "lead_motion_id": 1,
                 "text": "text",
-                "amendment_paragraph": {4: "text"},
+                "amendment_paragraphs": {4: "text"},
             },
         )
         self.assert_status_code(response, 400)
-        assert "give both of text and amendment_paragraph" in response.json["message"]
+        assert "give both of text and amendment_paragraphs" in response.json["message"]
 
     def test_create_missing_reason(self) -> None:
         self.set_models(

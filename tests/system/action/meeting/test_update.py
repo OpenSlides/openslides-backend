@@ -139,13 +139,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             }
         )
         self.basic_test(
-            {"reference_projector_id": 2, "default_projector_topics_ids": [2]}
+            {"reference_projector_id": 2, "default_projector_topic_ids": [2]}
         )
         self.assert_model_exists(
             "meeting/1",
             {
                 "reference_projector_id": 2,
-                "default_projector_topics_ids": [2],
+                "default_projector_topic_ids": [2],
                 "default_projector_motion_ids": [1],
             },
         )
@@ -153,7 +153,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "projector/1",
             {
                 "used_as_reference_projector_meeting_id": None,
-                "used_as_default_projector_for_topics_in_meeting_id": None,
+                "used_as_default_projector_for_topic_in_meeting_id": None,
                 "used_as_default_projector_for_motion_in_meeting_id": 1,
             },
         )
@@ -161,7 +161,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "projector/2",
             {
                 "used_as_reference_projector_meeting_id": 1,
-                "used_as_default_projector_for_topics_in_meeting_id": 1,
+                "used_as_default_projector_for_topic_in_meeting_id": 1,
                 "used_as_default_projector_for_motion_in_meeting_id": None,
             },
         )
@@ -231,17 +231,17 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_update_default_projector_to_null_error(self) -> None:
         _, response = self.basic_test(
-            {"default_projector_topics_ids": None}, check_200=False
+            {"default_projector_topic_ids": None}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.default_projector_topics_ids must be array",
+            "data.default_projector_topic_ids must be array",
             response.json["message"],
         )
 
     def test_update_default_projector_to_not_existing_projector_error(self) -> None:
         _, response = self.basic_test(
-            {"default_projector_topics_ids": [2]}, check_200=False
+            {"default_projector_topic_ids": [2]}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -261,7 +261,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             }
         )
         _, response = self.basic_test(
-            {"default_projector_topics_ids": [2]}, check_200=False
+            {"default_projector_topic_ids": [2]}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(

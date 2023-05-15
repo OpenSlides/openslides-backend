@@ -1584,7 +1584,7 @@ class MeetingClone(BaseActionTestCase):
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
 
-    def test_clone_amendment_paragraph(self) -> None:
+    def test_clone_amendment_paragraphs(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["meeting_user_ids"] = [1]
@@ -1597,7 +1597,7 @@ class MeetingClone(BaseActionTestCase):
                     "state_id": 1,
                     "submitter_ids": [1],
                     "title": "dummy",
-                    "amendment_paragraph": {
+                    "amendment_paragraphs": {
                         "1": "<it>test</it>",
                         "2": "</>broken",
                     },
@@ -1629,6 +1629,6 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
         assert (
-            "motion/1/amendment_paragraph error: Invalid html in 1\n\tmotion/1/amendment_paragraph error: Invalid html in 2"
+            "motion/1/amendment_paragraphs error: Invalid html in 1\n\tmotion/1/amendment_paragraphs error: Invalid html in 2"
             in response.json["message"]
         )

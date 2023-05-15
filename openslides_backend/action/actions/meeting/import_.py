@@ -174,15 +174,15 @@ class MeetingImport(
         # remove None values from amendment paragraph, os3 exports have those.
         # and validate the html.
         for entry in meeting_json.get("motion", {}).values():
-            if "amendment_paragraph" in entry and isinstance(
-                entry["amendment_paragraph"], dict
+            if "amendment_paragraphs" in entry and isinstance(
+                entry["amendment_paragraphs"], dict
             ):
                 res = {}
-                for key, html in entry["amendment_paragraph"].items():
+                for key, html in entry["amendment_paragraphs"].items():
                     if html is None:
                         continue
                     res[key] = validate_html(html, ALLOWED_HTML_TAGS_STRICT)
-                entry["amendment_paragraph"] = res
+                entry["amendment_paragraphs"] = res
 
         # check datavalidation
         checker = Checker(
@@ -692,6 +692,7 @@ class MeetingImport(
             organization = self.datastore.get(
                 ONE_ORGANIZATION_FQID,
                 [
+                    "id",
                     "committee_ids",
                     "active_meeting_ids",
                     "archived_meeting_ids",
@@ -705,7 +706,7 @@ class MeetingImport(
             )
             committee = self.datastore.get(
                 committee_fqid,
-                ["meeting_ids"],
+                ["id", "meeting_ids"],
                 lock_result=False,
             )
 
