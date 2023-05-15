@@ -1,4 +1,5 @@
-from typing import Any, Dict
+import simplejson as json
+from typing import Any, Dict, Optional
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -13,7 +14,6 @@ from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
-
 @register_action("organization.update")
 class OrganizationUpdate(
     EmailCheckMixin, EmailSenderCheckMixin, UpdateAction, CheckForArchivedMeetingMixin
@@ -21,45 +21,44 @@ class OrganizationUpdate(
     """
     Action to update a organization.
     """
+    group_A_fields = (
+        "name",
+        "description",
+        "legal_notice",
+        "privacy_policy",
+        "login_text",
+        "theme_id",
+        "default_language",
+        "users_email_sender",
+        "users_email_replyto",
+        "users_email_subject",
+        "users_email_body",
+    )
+
+    group_B_fields = (
+        "enable_electronic_voting",
+        "enable_chat",
+        "reset_password_verbose_errors",
+        "limit_of_meetings",
+        "limit_of_users",
+        "url",
+        "sso_enabled",
+        "login_button_text",
+        "save_attr_config",
+
+    )
 
     model = Organization()
     schema = DefaultSchema(Organization()).get_update_schema(
-        optional_properties=[
-            "name",
-            "description",
-            "legal_notice",
-            "privacy_policy",
-            "login_text",
-            "theme_id",
-            "enable_electronic_voting",
-            "enable_chat",
-            "reset_password_verbose_errors",
-            "limit_of_meetings",
-            "limit_of_users",
-            "url",
-            "users_email_sender",
-            "users_email_replyto",
-            "users_email_subject",
-            "users_email_body",
-            "default_language",
-        ]
+        optional_properties=group_A_fields + group_B_fields
     )
     check_email_field = "users_email_replyto"
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        # check group A fields
         if any(
             [
                 field in instance
-                for field in [
-                    "name",
-                    "description",
-                    "legal_notice",
-                    "privacy_policy",
-                    "login_text",
-                    "theme_id",
-                    "default_language",
-                ]
+                for field in __class__.group_A_fields
             ]
         ) and not has_organization_management_level(
             self.datastore,
@@ -68,18 +67,10 @@ class OrganizationUpdate(
         ):
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
 
-        # check group B fields
         if any(
             [
                 field in instance
-                for field in [
-                    "enable_electronic_voting",
-                    "enable_chat",
-                    "reset_password_verbose_errors",
-                    "limit_of_meetings",
-                    "limit_of_users",
-                    "url",
-                ]
+                for field in __class__.group_B_fields
             ]
         ) and not has_organization_management_level(
             self.datastore,
@@ -87,6 +78,27 @@ class OrganizationUpdate(
             OrganizationManagementLevel.SUPERADMIN,
         ):
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
+
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        if "save_attr_config" in instance:
+            save_attr_config: Optional[Dict] = instance.get("save_attr_config")
+            if isinstance(save_attr_config, str):
+                try:
+                    save_attr_config = json.loads(save_attr_config)
+                    instance["save_attr_config"] = save_attr_config
+                except:
+                    raise ActionException(
+                        "save_attr_config must be a valid configuration dictionary for SSO"
+                    )
+            if not isinstance(instance.get("save_attr_config"), dict):
+                raise ActionException(
+                    "save_attr_config must be a valid configuration dictionary for SSO"
+                )
+            if "saml_id" not in save_attr_config.values():
+                raise ActionException(
+                    "save_attr_config must contain the OpenSlides field 'saml_id'"
+                )
+        return super().validate_instance(instance)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

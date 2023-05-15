@@ -8,6 +8,7 @@ from . import (  # noqa
     generate_new_password,
     merge_together,
     reset_password_to_default,
+    save_saml_account,
     send_invitation_email,
     set_password,
     set_password_self,

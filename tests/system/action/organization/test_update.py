@@ -1,21 +1,43 @@
+import simplejson as json
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
 class OrganizationUpdateActionTest(BaseActionTestCase):
+    save_attr_config = {
+        "username": "saml_id",
+        "title": "title",
+        "firstName": "first_name",
+        "lastName": "last_name",
+        "email": "email",
+        "pronomen": "pronoun",
+        "is_active": "is_active",
+        "is_person": "is_physical_person"
+    }
+
     def test_update(self) -> None:
         self.create_model(
             "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
         )
         response = self.request(
             "organization.update",
-            {"id": 3, "name": "testtest", "description": "blablabla"},
+            {
+                "id": 3,
+                "name": "testtest",
+                "description": "blablabla",
+                "save_attr_config": self.save_attr_config,
+            }
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("organization/3")
-        assert model.get("name") == "testtest"
-        assert model.get("description") == "blablabla"
+        self.assert_model_exists(
+            "organization/3",
+            {
+                "name": "testtest",
+                "description": "blablabla",
+                "save_attr_config": self.save_attr_config,
+            }
+        )
 
     def test_update_some_more_fields(self) -> None:
         self.update_model(
@@ -57,26 +79,33 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "users_email_replyto": " email@replyto.de  ",
                 "users_email_subject": "email subject",
                 "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
+                "sso_enabled": True,
+                "login_button_text": "Text for SAML login button",
+                "save_attr_config": json.dumps(self.save_attr_config),
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model(ONE_ORGANIZATION_FQID)
-        assert model.get("name") == "testtest"
-        assert model.get("description") == "blablabla"
-        assert model.get("legal_notice") == "GYjDABmD"
-        assert model.get("privacy_policy") == "test1"
-        assert model.get("login_text") == "test2"
-        assert model.get("theme_id") == 2
-        assert model.get("theme_ids") == [1, 2]
-        assert model.get("reset_password_verbose_errors") is False
-        assert model.get("enable_chat") is True
-        assert model.get("url") == "https://openslides.example.com"
-        assert model.get("users_email_sender") == "email_sender"
-        assert model.get("users_email_replyto") == "email@replyto.de"
-        assert model.get("users_email_subject") == "email subject"
-        assert (
-            model.get("users_email_body")
-            == "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
+        self.assert_model_exists(
+            ONE_ORGANIZATION_FQID,
+            {
+                "name": "testtest",
+                "description": "blablabla",
+                "legal_notice": "GYjDABmD",
+                "privacy_policy": "test1",
+                "login_text": "test2",
+                "theme_id": 2,
+                "theme_ids": [1, 2],
+                "reset_password_verbose_errors":False,
+                "enable_chat": True,
+                "url": "https://openslides.example.com",
+                "users_email_sender": "email_sender",
+                "users_email_replyto": "email@replyto.de",
+                "users_email_subject": "email subject",
+                "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
+                "sso_enabled": True,
+                "login_button_text": "Text for SAML login button",
+                "save_attr_config": self.save_attr_config,
+            }
         )
         self.assert_model_exists(
             "theme/1", {"organization_id": 1, "theme_for_organization_id": None}
@@ -123,6 +152,36 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             "users_email_sender must not contain '[', ']', '\\'."
             in response.json["message"]
         )
+
+    def test_update_broken_save_attr_config1(self) -> None:
+        self.create_model(
+            "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+        )
+        response = self.request(
+            "organization.update", {"id": 3, "save_attr_config": "This is not a valid JSON formated sso-configuration"}
+        )
+        self.assert_status_code(response, 400)
+        assert "save_attr_config must be a valid configuration dictionary for SSO" in response.json["message"]
+
+    def test_update_broken_save_attr_config2(self) -> None:
+        self.create_model(
+            "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+        )
+        response = self.request(
+            "organization.update", {"id": 3, "save_attr_config": ["f1", "f2"]}
+        )
+        self.assert_status_code(response, 400)
+        assert "save_attr_config must be a valid configuration dictionary for SSO" in response.json["message"]
+
+    def test_update_broken_save_attr_config_missing_saml_id(self) -> None:
+        self.create_model(
+            "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+        )
+        response = self.request(
+            "organization.update", {"id": 3, "save_attr_config": {"x": "y"}}
+        )
+        self.assert_status_code(response, 400)
+        assert "save_attr_config must contain the OpenSlides field 'saml_id'" in response.json["message"]
 
     def test_update_default_language(self) -> None:
         response = self.request(
