@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Set
 
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
-from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup
+from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, ResultType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
@@ -164,15 +164,15 @@ class CommitteeJsonUpload(JsonUploadMixin):
         committee_lookup: Lookup,
     ) -> Dict[str, Any]:
         state, messages = None, []
-        if duplicate_checker.check_duplicate(entry["name"]):
+        duplicate_checker_result_type = duplicate_checker.check_duplicate(entry["name"])
+        if duplicate_checker_result_type == ResultType.FOUND_ID:
             state = ImportState.DONE
-            if committee_id := duplicate_checker.get_id_by_name(entry["name"]):
-                entry["id"] = committee_id
-            else:
-                state = ImportState.ERROR
-                messages.append("Found name and didn't found id.")
-        else:
+            entry["id"] = duplicate_checker.get_id_by_name(entry["name"])
+        elif duplicate_checker_result_type == ResultType.NOT_FOUND:
             state = ImportState.NEW
+        else:
+            state = ImportState.ERROR
+
         if any(
             field in entry
             for field in (
@@ -186,11 +186,12 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 state = ImportState.ERROR
                 messages.append("Meeting field given, but no meeting_name")
         if "meeting_template" in entry:
-            if meeting_id := meeting_lookup.get_id_by_name(entry["meeting_template"]):
+            result_type = meeting_lookup.check_duplicate(entry["meeting_template"])
+            if result_type == ResultType.FOUND_ID:
                 entry["meeting_template"] = {
                     "value": entry["meeting_template"],
                     "info": ImportState.DONE,
-                    "id": meeting_id,
+                    "id": meeting_lookup.get_id_by_name(entry["meeting_template"]),
                 }
             else:
                 entry["meeting_template"] = {
