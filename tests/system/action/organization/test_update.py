@@ -1,4 +1,5 @@
 import simplejson as json
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
@@ -13,7 +14,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         "email": "email",
         "pronomen": "pronoun",
         "is_active": "is_active",
-        "is_person": "is_physical_person"
+        "is_person": "is_physical_person",
     }
 
     def test_update(self) -> None:
@@ -27,7 +28,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "name": "testtest",
                 "description": "blablabla",
                 "save_attr_config": self.save_attr_config,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -36,7 +37,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "name": "testtest",
                 "description": "blablabla",
                 "save_attr_config": self.save_attr_config,
-            }
+            },
         )
 
     def test_update_some_more_fields(self) -> None:
@@ -95,7 +96,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "login_text": "test2",
                 "theme_id": 2,
                 "theme_ids": [1, 2],
-                "reset_password_verbose_errors":False,
+                "reset_password_verbose_errors": False,
                 "enable_chat": True,
                 "url": "https://openslides.example.com",
                 "users_email_sender": "email_sender",
@@ -105,7 +106,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "sso_enabled": True,
                 "login_button_text": "Text for SAML login button",
                 "save_attr_config": self.save_attr_config,
-            }
+            },
         )
         self.assert_model_exists(
             "theme/1", {"organization_id": 1, "theme_for_organization_id": None}
@@ -158,10 +159,17 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
         )
         response = self.request(
-            "organization.update", {"id": 3, "save_attr_config": "This is not a valid JSON formated sso-configuration"}
+            "organization.update",
+            {
+                "id": 3,
+                "save_attr_config": "This is not a valid JSON formated sso-configuration",
+            },
         )
         self.assert_status_code(response, 400)
-        assert "save_attr_config must be a valid configuration dictionary for SSO" in response.json["message"]
+        assert (
+            "save_attr_config must be a valid configuration dictionary for SSO"
+            in response.json["message"]
+        )
 
     def test_update_broken_save_attr_config2(self) -> None:
         self.create_model(
@@ -171,7 +179,10 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             "organization.update", {"id": 3, "save_attr_config": ["f1", "f2"]}
         )
         self.assert_status_code(response, 400)
-        assert "save_attr_config must be a valid configuration dictionary for SSO" in response.json["message"]
+        assert (
+            "save_attr_config must be a valid configuration dictionary for SSO"
+            in response.json["message"]
+        )
 
     def test_update_broken_save_attr_config_missing_saml_id(self) -> None:
         self.create_model(
@@ -181,7 +192,10 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             "organization.update", {"id": 3, "save_attr_config": {"x": "y"}}
         )
         self.assert_status_code(response, 400)
-        assert "save_attr_config must contain the OpenSlides field 'saml_id'" in response.json["message"]
+        assert (
+            "save_attr_config must contain the OpenSlides field 'saml_id'"
+            in response.json["message"]
+        )
 
     def test_update_default_language(self) -> None:
         response = self.request(

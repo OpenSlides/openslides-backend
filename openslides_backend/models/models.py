@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "8716da2918b930b3dafbab6fb57b87e1"
+MODELS_YML_CHECKSUM = "9013b2b21f7a117aba0d38e2aee6eeb7"
 
 
 class Organization(Model):
@@ -38,9 +38,7 @@ class Organization(Model):
     )
     sso_enabled = fields.BooleanField(default=False)
     login_button_text = fields.CharField(default="SAML login")
-    save_attr_config = fields.JSONField(
-        default='{\n  "username": "saml_id",\n  "title": "title",\n  "firstName": "first_name",\n  "lastName": "last_name",\n  "email": "email",\n  "pronomen": "pronoun",\n  "is_active": "is_active",\n  "is_person": "is_physical_person"\n}'
-    )
+    save_attr_config = fields.JSONField()
     committee_ids = fields.RelationListField(to={"committee": "organization_id"})
     active_meeting_ids = fields.RelationListField(
         to={"meeting": "is_active_in_organization_id"}
@@ -77,7 +75,9 @@ class User(Model):
 
     id = fields.IntegerField()
     username = fields.CharField(required=True)
-    saml_id = fields.CharField()
+    saml_id = fields.CharField(
+        constraints={"description": "unique-key from IdP for SignleSignOn"}
+    )
     pronoun = fields.CharField(constraints={"maxLength": 32})
     title = fields.CharField()
     first_name = fields.CharField()

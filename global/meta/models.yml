@@ -227,6 +227,7 @@ user:
   saml_id:
     type: string
     restriction_mode: A
+    description: unique-key from IdP for SignleSignOn
   pronoun:
     type: string
     maxLength: 32

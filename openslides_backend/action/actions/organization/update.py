@@ -1,5 +1,6 @@
-import simplejson as json
 from typing import Any, Dict, Optional
+
+import simplejson as json
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -14,6 +15,7 @@ from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
+
 @register_action("organization.update")
 class OrganizationUpdate(
     EmailCheckMixin, EmailSenderCheckMixin, UpdateAction, CheckForArchivedMeetingMixin
@@ -21,6 +23,7 @@ class OrganizationUpdate(
     """
     Action to update a organization.
     """
+
     group_A_fields = (
         "name",
         "description",
@@ -45,7 +48,6 @@ class OrganizationUpdate(
         "sso_enabled",
         "login_button_text",
         "save_attr_config",
-
     )
 
     model = Organization()
@@ -56,10 +58,7 @@ class OrganizationUpdate(
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if any(
-            [
-                field in instance
-                for field in __class__.group_A_fields
-            ]
+            [field in instance for field in __class__.group_A_fields]
         ) and not has_organization_management_level(
             self.datastore,
             self.user_id,
@@ -68,10 +67,7 @@ class OrganizationUpdate(
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
 
         if any(
-            [
-                field in instance
-                for field in __class__.group_B_fields
-            ]
+            [field in instance for field in __class__.group_B_fields]
         ) and not has_organization_management_level(
             self.datastore,
             self.user_id,
@@ -86,9 +82,9 @@ class OrganizationUpdate(
                 try:
                     save_attr_config = json.loads(save_attr_config)
                     instance["save_attr_config"] = save_attr_config
-                except:
+                except json.JSONDecodeError as e:
                     raise ActionException(
-                        "save_attr_config must be a valid configuration dictionary for SSO"
+                        f"save_attr_config must be a valid configuration dictionary for SSO: {str(e)}"
                     )
             if not isinstance(instance.get("save_attr_config"), dict):
                 raise ActionException(
