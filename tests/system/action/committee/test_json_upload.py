@@ -4,7 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class CommitteeJsonUpload(BaseActionTestCase):
-    def test_json_upload_correct(self) -> None:
+    def test_json_upload_create_correct(self) -> None:
         response = self.request(
             "committee.json_upload",
             {"data": [{"name": "test", "description": "A long text"}]},
@@ -39,7 +39,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "value": 0,
         }
 
-    def test_json_upload_duplicate_in_db(self) -> None:
+    def test_json_upload_update_correct(self) -> None:
         self.set_models({"committee/7": {"name": "test"}})
         response = self.request("committee.json_upload", {"data": [{"name": "test"}]})
         self.assert_status_code(response, 200)
@@ -47,6 +47,18 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "state": ImportState.DONE,
             "messages": [],
             "data": {"name": "test", "id": 7},
+        }
+
+    def test_json_upload_duplicate_error(self) -> None:
+        self.set_models(
+            {"committee/7": {"name": "test"}, "committee/8": {"name": "test"}}
+        )
+        response = self.request("committee.json_upload", {"data": [{"name": "test"}]})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.ERROR,
+            "messages": ["Found more committees with the same name in db."],
+            "data": {"name": "test"},
         }
 
     def test_json_upload_date(self) -> None:

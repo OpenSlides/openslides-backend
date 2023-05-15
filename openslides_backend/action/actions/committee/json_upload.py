@@ -164,14 +164,18 @@ class CommitteeJsonUpload(JsonUploadMixin):
         committee_lookup: Lookup,
     ) -> Dict[str, Any]:
         state, messages = None, []
-        duplicate_checker_result_type = duplicate_checker.check_duplicate(entry["name"])
-        if duplicate_checker_result_type == ResultType.FOUND_ID:
+        check_result = duplicate_checker.check_duplicate(entry["name"])
+        if check_result == ResultType.FOUND_ID:
             state = ImportState.DONE
             entry["id"] = duplicate_checker.get_id_by_name(entry["name"])
-        elif duplicate_checker_result_type == ResultType.NOT_FOUND:
+        elif check_result == ResultType.NOT_FOUND:
             state = ImportState.NEW
+        elif check_result == ResultType.FOUND_MORE_IDS:
+            state = ImportState.ERROR
+            messages.append("Found more committees with the same name in db.")
         else:
             state = ImportState.ERROR
+            messages.append("Found more committees with the same name in csv file.")
 
         if any(
             field in entry
