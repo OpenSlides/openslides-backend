@@ -4,7 +4,7 @@ from ....models.models import ActionWorker
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.schema import required_id_schema
 from ....shared.util import ONE_ORGANIZATION_ID
-from ...mixins.import_mixins import ImportMixin, ImportState, Lookup
+from ...mixins.import_mixins import ImportMixin, ImportState, Lookup, ResultType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import CommitteeCreate
@@ -51,7 +51,10 @@ class CommitteeImport(ImportMixin):
             if entry["state"] == ImportState.NEW:
                 new_committee = self.get_committee_data_from_entry(entry)
                 new_committee["organization_id"] = ONE_ORGANIZATION_ID
-                if committee_lookup.check_duplicate(new_committee["name"]):
+                if (
+                    committee_lookup.check_duplicate(new_committee["name"])
+                    != ResultType.NOT_FOUND
+                ):
                     entry["state"] = ImportState.ERROR
                     entry["messages"].append(
                         "Want to create new committee, but name exists."
@@ -61,7 +64,8 @@ class CommitteeImport(ImportMixin):
                     create_committee_payload.append(new_committee)
             elif entry["state"] == ImportState.DONE:
                 edit_committee = self.get_committee_data_from_entry(entry)
-                if not committee_lookup.check_duplicate(edit_committee["name"]):
+                result_type = committee_lookup.check_duplicate(edit_committee["name"])
+                if result_type == ResultType.NOT_FOUND:
                     entry["state"] = ImportState.ERROR
                     entry["messages"].append(
                         "Want to update committee, but could not find it."

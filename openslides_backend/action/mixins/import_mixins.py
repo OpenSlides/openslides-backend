@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from enum import Enum
 from time import mktime, strptime, time
 from typing import Any, Callable, Dict, List, Optional, TypedDict
@@ -200,6 +201,15 @@ class JsonUploadMixin(Action):
         super().validate_instance(instance)
 
 
+class ResultType(Enum):
+    """Used by Lookup to differ the possible results in check_duplicate."""
+
+    FOUND_ID = 1
+    FOUND_MORE_IDS = 2
+    NOT_FOUND = 3
+    FOUND_NO_ID = 4
+
+
 class Lookup:
     def __init__(
         self,
@@ -208,24 +218,28 @@ class Lookup:
         names: List[str],
         field: str = "name",
     ) -> None:
-        if not names:
-            self.name_to_id: Dict[str, Optional[int]] = {}
-        else:
-            self.name_to_id = {
-                entry[field]: entry["id"]
-                for entry in datastore.filter(
-                    collection,
-                    Or(*[FilterOperator(field, "=", name) for name in names]),
-                    ["id", field],
-                    lock_result=False,
-                ).values()
-            }
+        self.name_to_ids: Dict[str, List[int]] = defaultdict(list)
+        if names:
+            for entry in datastore.filter(
+                collection,
+                Or(*[FilterOperator(field, "=", name) for name in names]),
+                ["id", field],
+                lock_result=False,
+            ).values():
+                self.name_to_ids[entry[field]].append(entry["id"])
 
-    def check_duplicate(self, name: str) -> bool:
-        result = name in self.name_to_id
-        if not result:
-            self.name_to_id[name] = None
-        return result
+    def check_duplicate(self, name: str) -> ResultType:
+        if name not in self.name_to_ids:
+            self.name_to_ids[name]
+            return ResultType.NOT_FOUND
+        elif not self.name_to_ids[name]:
+            return ResultType.FOUND_NO_ID
+        elif len(self.name_to_ids) > 1:
+            return ResultType.FOUND_MORE_IDS
+        else:
+            return ResultType.FOUND_ID
 
     def get_id_by_name(self, name: str) -> Optional[int]:
-        return self.name_to_id.get(name)
+        if name in self.name_to_ids and len(self.name_to_ids[name]) == 1:
+            return self.name_to_ids[name][0]
+        return None
