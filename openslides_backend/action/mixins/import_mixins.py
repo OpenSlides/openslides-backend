@@ -416,7 +416,7 @@ class Lookup:
             return ResultType.NOT_FOUND
         elif not self.name_to_ids[name]:
             return ResultType.FOUND_NO_ID
-        elif len(self.name_to_ids) > 1:
+        elif len(self.name_to_ids[name]) > 1:
             return ResultType.FOUND_MORE_IDS
         else:
             return ResultType.FOUND_ID
