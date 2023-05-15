@@ -73,42 +73,45 @@ jobs:
 
     - name: Check flake8
       if: always()
-      run: flake8 openslides_backend/ tests/ cli/
+      run: make flake8
 
     - name: Check mypy
       if: always()
-      run: mypy openslides_backend/ tests/ cli/
+      run: make mypy
 
   check-models-all:
     name: Check from models.yml up to permissions and jsons
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
+
     steps:
     - uses: actions/checkout@v2
 
     - name: Set up Python
-      id: python
       uses: actions/setup-python@v2
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install requirements
-      id: requirements
       run: . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
 
     - name: Validate models.yml
-      run: PYTHONPATH=. python cli/modelsvalidator/validate.py
+      if: always()
+      run: make validate-models-yml
 
-    - name: Check for up tp date models.py
-      id: models_py
-      run: PYTHONPATH=. python cli/generate_models.py check
-
-    - name: Check initial-data.json
-      run: PYTHONPATH=. python cli/check_json.py global/data/initial-data.json
-
-    - name: Check example-data.json
-      if: ${{ always() && steps.models_py.outcome == 'success' }}
-      run: PYTHONPATH=. python cli/check_json.py global/data/example-data.json
+    - name: Check for up to date models.py
+      if: always()
+      run: make check-models
 
     - name: Check for up to date permissions.py
-      if: ${{ always() && steps.python.outcome == 'success' && steps.requirements.outcome == 'success' }}
-      run: PYTHONPATH=. python3 cli/generate_permissions.py check
+      if: always()
+      run: make check-permissions
+
+    - name: Check initial-data.json
+      if: always()
+      run: make check-initial-data-json
+
+    - name: Check example-data.json
+      if: always()
+      run: make check-example-data-json
