@@ -251,7 +251,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.NEW,
-            "messages": [],
+            "messages": ["Missing committee manager"],
             "data": {
                 "name": "committee A",
                 "committee_managers": [
@@ -262,7 +262,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
         }
         assert response.json["results"][0][0]["statistics"][6] == {
             "name": "Committee managers relations",
-            "value": 2,
+            "value": 1,
         }
 
     def test_json_upload_committee_managers_wrong_json(self) -> None:
