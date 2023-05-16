@@ -158,7 +158,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.WARNING,
-            "messages": ["Meeting field given, but no meeting_name"],
+            "messages": ["No meeting will be created without meeting_name"],
             "data": {
                 "name": "test",
                 "meeting_template": {
