@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, Sized, cast
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -62,6 +62,7 @@ class UserSaveSamlAccount(EmailCheckMixin, UsernameMixin, CreateAction):
             attr_config[key]: value
             for key, value in instance.items()
             if key in attr_config
+            and attr_config[key] in self.schema["properties"].keys()
         }
         instance.clear()
         instance.update(new_instance)
@@ -72,29 +73,29 @@ class UserSaveSamlAccount(EmailCheckMixin, UsernameMixin, CreateAction):
         super().validate_instance(instance)
 
     def prefetch(self, action_data: ActionData) -> None:
-        if len(action_data) != 1:
+        if len(cast(Sized, action_data)) != 1:
             raise ActionException(
-                "The sample save_saml_account action accepts only one user instance!"
+                "The save_saml_account action accepts only one user instance!"
             )
 
     def prepare_action_data(self, action_data: ActionData) -> ActionData:
-        instance = action_data[0]
-        users = self.datastore.filter(
-            "user", FilterOperator("saml_id", "=", instance["saml_id"]), ["id"]
-        )
-        if len(users) == 1:
-            instance["id"] = next(iter(users.values()))["id"]
-        elif len(users) == 0:
-            new_id = self.datastore.reserve_ids(self.model.collection, 1)
-            instance["id"] = new_id
-            instance["can_change_own_password"] = False
-            instance["organization_id"] = ONE_ORGANIZATION_ID
-            instance["username"] = self.generate_usernames([instance["saml_id"]])[0]
-            instance["meta_new"] = True
-        else:
-            ActionException(
-                f"More than one existing user found in database with saml_id {instance['aml_id']}"
+        for instance in action_data:
+            users = self.datastore.filter(
+                "user", FilterOperator("saml_id", "=", instance["saml_id"]), ["id"]
             )
+            if len(users) == 1:
+                instance["id"] = next(iter(users.values()))["id"]
+            elif len(users) == 0:
+                new_id = self.datastore.reserve_ids(self.model.collection, 1)[0]
+                instance["id"] = new_id
+                instance["can_change_own_password"] = False
+                instance["organization_id"] = ONE_ORGANIZATION_ID
+                instance["username"] = self.generate_usernames([instance["saml_id"]])[0]
+                instance["meta_new"] = True
+            else:
+                ActionException(
+                    f"More than one existing user found in database with saml_id {instance['aml_id']}"
+                )
         return action_data
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

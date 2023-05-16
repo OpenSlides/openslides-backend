@@ -27,6 +27,7 @@
                 "firstName": "first_name",
                 "lastName": "last_name",
                 "email": "email",
+                "gender": "gender",
                 "pronomen": "pronoun",
                 "is_active": "is_active",
                 "is_person": "is_physical_person"

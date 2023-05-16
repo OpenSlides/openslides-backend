@@ -10,7 +10,7 @@ class UserBaseSamlAccount(BaseActionTestCase):
             "last_name": "Mustermann",
             "email": "test@example.com",
             "gender": "male",
-            "pronounX": "er",
+            "pronoun": "er",
             "is_active": True,
             "is_physical_person": True,
         }
@@ -71,8 +71,29 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The sample save_saml_account action accepts only one user instance!",
+            "The save_saml_account action accepts only one user instance!",
             response.json["message"],
+        )
+
+    def test_suppress_not_allowed_field(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "sso_enabled": True,
+                    "save_attr_config": {
+                        "username": "saml_id",
+                        "default_structure_level": "default_structure_level",
+                    },
+                }
+            }
+        )
+        response = self.request(
+            "user.save_saml_account",
+            {"username": "Joe", "default_structure_level": "Cartwright"},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"username": "Joe", "default_structure_level": None}
         )
 
 
@@ -109,15 +130,6 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
             },
         )
 
-    def test_create_saml_account_saml_id_exists(self) -> None:
-        self.set_models({"user/78": {"username": "111222333", "saml_id": "111222333"}})
-        response = self.request(
-            "user.save_saml_account",
-            {"saml_id": "111222333", "first_name": "Max", "last_name": "Mustermann"},
-        )
-        self.assert_status_code(response, 400)
-        assert "Saml_id already exists." in response.json["message"]
-
     def test_create_saml_account_username_exists(self) -> None:
         self.set_models(
             {
@@ -129,9 +141,9 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
         response = self.request(
             "user.save_saml_account",
             {
-                "saml_id": "SAMLID",
-                "first_name": "Max",
-                "last_name": "Mustermann",
+                "username": "SAMLID",
+                "firstName": "Max",
+                "lastName": "Mustermann",
                 "email": "max@mustermann.com",
             },
         )
@@ -146,6 +158,13 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
                 "email": "max@mustermann.com",
             },
         )
+        self.assert_model_exists(
+            "user/78",
+            {
+                "saml_id": None,
+                "username": "SAMLID",
+            },
+        )
 
 
 class UserUpdateSamlAccount(UserBaseSamlAccount):
@@ -154,10 +173,10 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         response = self.request(
             "user.save_saml_account",
             {
-                "saml_id": "111222333",
+                "username": "111222333",
                 "title": "Dr.",
-                "first_name": "Max",
-                "last_name": "Mustermann",
+                "firstName": "Max",
+                "lastName": "Mustermann",
             },
         )
         self.assert_status_code(response, 200)
@@ -165,6 +184,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
             "user/78",
             {
                 "saml_id": "111222333",
+                "username": "111222333",
                 "title": "Dr.",
                 "first_name": "Max",
                 "last_name": "Mustermann",
@@ -176,15 +196,15 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         response = self.request(
             "user.save_saml_account",
             {
-                "saml_id": "111222333",
+                "username": "111222333",
                 "title": "Dr.",
-                "first_name": "Max",
-                "last_name": "Mustermann",
+                "firstName": "Max",
+                "lastName": "Mustermann",
                 "email": "test@example.com",
                 "gender": "male",
-                "pronoun": "er",
+                "pronomen": "er",
                 "is_active": True,
-                "is_physical_person": True,
+                "is_person": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -203,16 +223,3 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "is_physical_person": True,
             },
         )
-
-    def test_update_saml_account_missing_user(self) -> None:
-        response = self.request(
-            "user.save_saml_account",
-            {
-                "saml_id": "111222333",
-                "title": "Dr.",
-                "first_name": "Max",
-                "last_name": "Mustermann",
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert "Wrong saml_id." in response.json["message"]

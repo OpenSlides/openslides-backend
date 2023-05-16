@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import simplejson as json
 
@@ -58,7 +58,7 @@ class OrganizationUpdate(
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if any(
-            [field in instance for field in __class__.group_A_fields]
+            [field in instance for field in OrganizationUpdate.group_A_fields]
         ) and not has_organization_management_level(
             self.datastore,
             self.user_id,
@@ -67,7 +67,7 @@ class OrganizationUpdate(
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
 
         if any(
-            [field in instance for field in __class__.group_B_fields]
+            [field in instance for field in OrganizationUpdate.group_B_fields]
         ) and not has_organization_management_level(
             self.datastore,
             self.user_id,
@@ -90,7 +90,7 @@ class OrganizationUpdate(
                 raise ActionException(
                     "save_attr_config must be a valid configuration dictionary for SSO"
                 )
-            if "saml_id" not in save_attr_config.values():
+            if "saml_id" not in cast(Dict[Any, Any], save_attr_config).values():
                 raise ActionException(
                     "save_attr_config must contain the OpenSlides field 'saml_id'"
                 )
