@@ -187,8 +187,16 @@ class CommitteeJsonUpload(JsonUploadMixin):
             )
         ):
             if "meeting_name" not in entry:
-                state = ImportState.ERROR
+                state = ImportState.WARNING
                 messages.append("Meeting field given, but no meeting_name")
+        if (
+            entry.get("start_date")
+            and not entry.get("end_date")
+            or not entry.get("start_date")
+            and entry.get("end_date")
+        ):
+            state = ImportState.ERROR
+            messages.append("Only one of start_date and end_date is not allowed.")
         if "meeting_template" in entry:
             result_type = meeting_lookup.check_duplicate(entry["meeting_template"])
             if result_type == ResultType.FOUND_ID:
