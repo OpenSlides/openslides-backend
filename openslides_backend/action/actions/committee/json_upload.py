@@ -176,7 +176,6 @@ class CommitteeJsonUpload(JsonUploadMixin):
         else:
             state = ImportState.ERROR
             messages.append("Found more committees with the same name in csv file.")
-
         if any(
             field in entry
             for field in (
@@ -187,8 +186,9 @@ class CommitteeJsonUpload(JsonUploadMixin):
             )
         ):
             if "meeting_name" not in entry:
-                state = ImportState.WARNING
-                messages.append("Meeting field given, but no meeting_name")
+                state = ImportState.WARNING if state != ImportState.ERROR else state
+                messages.append("No meeting will be created without meeting_name")
+
         if (
             entry.get("start_date")
             and not entry.get("end_date")
