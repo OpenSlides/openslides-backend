@@ -141,11 +141,11 @@ class CommitteeJsonUpload(JsonUploadMixin):
             {"name": "Meetings copied from template", "value": with_template},
             {
                 "name": "Committee managers relations",
-                "value": self.count_len("committee_managers"),
+                "value": self.count_info("committee_managers", ImportState.DONE),
             },
             {
                 "name": "Meeting administrator relations",
-                "value": self.count_len("meeting_admins"),
+                "value": self.count_info("meeting_admins", ImportState.DONE),
             },
         ]
         self.set_state(
@@ -214,6 +214,11 @@ class CommitteeJsonUpload(JsonUploadMixin):
         if "meeting_name" in entry and "meeting_template" not in entry:
             messages.append("Meeting will be created with meeting.create.")
         self.check_list_field("committee_managers", entry, username_lookup)
+        if any(
+            inner["info"] == ImportState.WARNING
+            for inner in (entry.get("committee_managers") or [])
+        ):
+            messages.append("Missing committee manager")
         self.check_list_field("meeting_admins", entry, username_lookup)
         self.check_list_field(
             "organization_tags",
@@ -257,6 +262,3 @@ class CommitteeJsonUpload(JsonUploadMixin):
 
     def count_state(self, state: ImportState) -> int:
         return sum(1 for entry in self.rows if entry["state"] == state)
-
-    def count_len(self, field: str) -> int:
-        return sum(len(entry["data"].get(field) or []) for entry in self.rows)
