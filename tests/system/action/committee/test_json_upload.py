@@ -78,7 +78,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.NEW,
-            "messages": [],
+            "messages": ["Meeting will be created with meeting.create."],
             "data": {
                 "name": "test",
                 "meeting_name": "test meeting",
@@ -109,7 +109,10 @@ class CommitteeJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.ERROR,
-            "messages": ["Only one of start_date and end_date is not allowed."],
+            "messages": [
+                "Only one of start_date and end_date is not allowed.",
+                "Meeting will be created with meeting.create.",
+            ],
             "data": {
                 "name": "test",
                 "meeting_name": "test meeting",
@@ -118,7 +121,10 @@ class CommitteeJsonUpload(BaseActionTestCase):
         }
         assert response.json["results"][0][0]["rows"][1] == {
             "state": ImportState.ERROR,
-            "messages": ["Only one of start_date and end_date is not allowed."],
+            "messages": [
+                "Only one of start_date and end_date is not allowed.",
+                "Meeting will be created with meeting.create.",
+            ],
             "data": {
                 "name": "test2",
                 "meeting_name": "test meeting 2",
