@@ -197,6 +197,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
         ):
             state = ImportState.ERROR
             messages.append("Only one of start_date and end_date is not allowed.")
+
         if "meeting_template" in entry:
             result_type = meeting_lookup.check_duplicate(entry["meeting_template"])
             if result_type == ResultType.FOUND_ID:
@@ -210,6 +211,8 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     "value": entry["meeting_template"],
                     "info": ImportState.WARNING,
                 }
+        if "meeting_name" in entry and "meeting_template" not in entry:
+            messages.append("Meeting will be created with meeting.create.")
         self.check_list_field("committee_managers", entry, username_lookup)
         self.check_list_field("meeting_admins", entry, username_lookup)
         self.check_list_field(
