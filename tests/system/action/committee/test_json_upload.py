@@ -61,6 +61,14 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "data": {"name": "test"},
         }
 
+    def test_json_upload_empty_data(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {"data": []},
+        )
+        self.assert_status_code(response, 400)
+        assert "data.data must contain at least 1 items" in response.json["message"]
+
     def test_json_upload_date(self) -> None:
         response = self.request(
             "committee.json_upload",
