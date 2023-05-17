@@ -1,7 +1,6 @@
 from . import (  # noqa
     assign_meetings,
     create,
-    create_saml_account,
     delete,
     forget_password,
     forget_password_confirm,
@@ -15,6 +14,5 @@ from . import (  # noqa
     set_present,
     toggle_presence_by_number,
     update,
-    update_saml_account,
     update_self,
 )
