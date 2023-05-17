@@ -389,7 +389,6 @@ class ResultType(Enum):
     FOUND_ID = 1
     FOUND_MORE_IDS = 2
     NOT_FOUND = 3
-    FOUND_NO_ID = 4
 
 
 class Lookup:
@@ -411,17 +410,14 @@ class Lookup:
                 self.name_to_ids[entry[field]].append(entry["id"])
 
     def check_duplicate(self, name: str) -> ResultType:
-        if name not in self.name_to_ids:
-            self.name_to_ids[name]
+        if not self.name_to_ids[name]:
             return ResultType.NOT_FOUND
-        elif not self.name_to_ids[name]:
-            return ResultType.FOUND_NO_ID
         elif len(self.name_to_ids[name]) > 1:
             return ResultType.FOUND_MORE_IDS
         else:
             return ResultType.FOUND_ID
 
     def get_id_by_name(self, name: str) -> Optional[int]:
-        if name in self.name_to_ids and len(self.name_to_ids[name]) == 1:
+        if len(self.name_to_ids[name]) == 1:
             return self.name_to_ids[name][0]
         return None
