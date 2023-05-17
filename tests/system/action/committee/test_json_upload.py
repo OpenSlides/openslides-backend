@@ -259,7 +259,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.NEW,
-            "messages": ["Missing committee manager"],
+            "messages": ["Missing committee manager(s): new"],
             "data": {
                 "name": "committee A",
                 "committee_managers": [
