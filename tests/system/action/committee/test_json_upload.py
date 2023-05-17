@@ -61,6 +61,105 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "data": {"name": "test"},
         }
 
+    def test_json_upload_create_duplicate_in_rows(self) -> None:
+        """Special case where the same name is in two data entries."""
+        response = self.request(
+            "committee.json_upload", {"data": [{"name": "n1"}, {"name": "n1"}]}
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {"name": "n1"},
+        }
+        assert response.json["results"][0][0]["rows"][1] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {"name": "n1"},
+        }
+
+    def test_json_upload_update_duplicate_in_rows_and_db(self) -> None:
+        """Special case where the same name is in the db and in two entries."""
+        self.set_models({"committee/7": {"name": "n1"}})
+        response = self.request(
+            "committee.json_upload", {"data": [{"name": "n1"}, {"name": "n1"}]}
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {"name": "n1", "id": 7},
+        }
+        assert response.json["results"][0][0]["rows"][1] == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {"name": "n1", "id": 7},
+        }
+
+    def test_json_upload_organization_tags_duplicates(self) -> None:
+        """Duplicate tags in same entry and in a second entry."""
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {"name": "n1", "organization_tags": '"ot1", "ot2", "ot1"'},
+                    {"name": "n2", "organization_tags": '"ot1"'},
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": "n1",
+                "organization_tags": [
+                    {"info": ImportState.NEW, "value": "ot1"},
+                    {"info": ImportState.NEW, "value": "ot2"},
+                    {"info": ImportState.NEW, "value": "ot1"},
+                ],
+            },
+        }
+        assert response.json["results"][0][0]["rows"][1] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": "n2",
+                "organization_tags": [{"info": ImportState.NEW, "value": "ot1"}],
+            },
+        }
+
+    def test_json_upload_organization_tags_special_cases(self) -> None:
+        """Duplicate tags in same entry and db."""
+        self.set_models(
+            {
+                "committee/7": {"name": "n1", "organization_tag_ids": [8]},
+                "organization_tag/8": {"name": "ot1", "tagged_ids": ["committee/7"]},
+            }
+        )
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {"name": "n1", "organization_tags": '"ot1", "ot2", "ot1"'},
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "name": "n1",
+                "id": 7,
+                "organization_tags": [
+                    {"info": ImportState.DONE, "value": "ot1", "id": 8},
+                    {"info": ImportState.NEW, "value": "ot2"},
+                    {"info": ImportState.DONE, "value": "ot1", "id": 8},
+                ],
+            },
+        }
+
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
             "committee.json_upload",
