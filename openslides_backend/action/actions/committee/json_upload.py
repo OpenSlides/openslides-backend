@@ -173,9 +173,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
         elif check_result == ResultType.FOUND_MORE_IDS:
             state = ImportState.ERROR
             messages.append("Found more committees with the same name in db.")
-        else:
-            state = ImportState.ERROR
-            messages.append("Found more committees with the same name in csv file.")
+
         if any(
             field in entry
             for field in (
