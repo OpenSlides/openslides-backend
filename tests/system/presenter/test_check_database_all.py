@@ -139,7 +139,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "committee_ids": [1],
                     "default_language": "en",
                     "sso_enabled": False,
-                    "login_button_text": "Login button text",   
+                    "login_button_text": "Login button text",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -555,7 +555,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "default_language": "en",
                     "sso_enabled": True,
                     "login_button_text": "SAML Login",
-
                 },
                 "theme/1": {
                     "name": "Test Theme",
