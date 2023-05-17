@@ -216,7 +216,14 @@ class CommitteeJsonUpload(JsonUploadMixin):
             inner["info"] == ImportState.WARNING
             for inner in (entry.get("committee_managers") or [])
         ):
-            messages.append("Missing committee manager")
+            missing_managers = ", ".join(
+                [
+                    inner["value"]
+                    for inner in entry["committee_managers"]
+                    if inner["info"] == ImportState.WARNING
+                ]
+            )
+            messages.append("Missing committee manager(s): " + missing_managers)
         self.check_list_field("meeting_admins", entry, username_lookup)
         self.check_list_field(
             "organization_tags",
