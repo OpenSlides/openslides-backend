@@ -160,6 +160,119 @@ class CommitteeJsonUpload(BaseActionTestCase):
             },
         }
 
+    def test_json_upload_empty_field(self) -> None:
+        self.set_models(
+            {
+                "committee/7": {"name": "bar", "user_ids": [4, 5]},
+                "user/4": {"username": "bla", "committee_ids": [7]},
+                "user/5": {"username": "foo", "committee_ids": [7]},
+            }
+        )
+        response = self.request(
+            "committee.json_upload",
+            {"data": [{"name": "bar", "committee_managers": ""}]},
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "name": "bar",
+                "id": 7,
+                "committee_managers": [],
+            },
+        }
+
+    def test_json_upload_dict_in_string_list(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {"data": [{"name": "bar", "committee_managers": "{}"}]},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.data[0].committee_managers[0] must be string"
+            in response.json["message"]
+        )
+
+    def test_json_upload_two_instances(self) -> None:
+        response = self.request_multi(
+            "committee.json_upload",
+            [{"data": [{"name": "bar"}]}, {"data": [{"name": "bar"}]}],
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": "bar",
+            },
+        }
+        assert response.json["results"][0][1]["rows"][0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": "bar",
+            },
+        }
+
+    def test_json_upload_update_list_fields(self) -> None:
+        self.set_models(
+            {
+                "organization_tag/1": {"name": "ot1", "tagged_ids": ["committee/8"]},
+                "organization_tag/2": {"name": "ot2", "tagged_ids": ["committee/8"]},
+                "committee/3": {
+                    "name": "fc1",
+                    "receive_forwardings_from_committee_ids": [8],
+                },
+                "committee/4": {
+                    "name": "fc2",
+                    "receive_forwardings_from_committee_ids": [8],
+                },
+                "user/5": {"username": "m1", "committee_ids": [8]},
+                "user/6": {"username": "m2", "committee_ids": [8]},
+                "committee/8": {
+                    "name": "n1",
+                    "organization_tag_ids": [1, 2],
+                    "user_ids": [5, 6],
+                    "forward_to_committee_ids": [3, 4],
+                },
+            }
+        )
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "n1",
+                        "organization_tags": '"ot1", "ot3"',
+                        "committee_managers": '"m1", "m3"',
+                        "forward_to_committees": '"fc2", "fc3"',
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.DONE,
+            "messages": ["Missing committee manager(s): m3"],
+            "data": {
+                "name": "n1",
+                "id": 8,
+                "organization_tags": [
+                    {"value": "ot1", "info": ImportState.DONE, "id": 1},
+                    {"value": "ot3", "info": ImportState.NEW},
+                ],
+                "committee_managers": [
+                    {"value": "m1", "info": ImportState.DONE, "id": 5},
+                    {"value": "m3", "info": ImportState.WARNING},
+                ],
+                "forward_to_committees": [
+                    {"value": "fc2", "info": ImportState.DONE, "id": 4},
+                    {"value": "fc3", "info": ImportState.NEW},
+                ],
+            },
+        }
+
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
             "committee.json_upload",
