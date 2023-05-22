@@ -55,13 +55,13 @@ class CommitteeJsonUpload(JsonUploadMixin):
     headers = [
         {"property": "name", "type": "string"},
         {"property": "description", "type": "string"},
-        {"property": "forward_to_committees", "type": "string[]"},
-        {"property": "organization_tags", "type": "string[]"},
-        {"property": "committee_managers", "type": "string[]"},
+        {"property": "forward_to_committees", "type": "string", "is_list": True},
+        {"property": "organization_tags", "type": "string", "is_list": True},
+        {"property": "committee_managers", "type": "string", "is_list": True},
         {"property": "meeting_name", "type": "string"},
         {"property": "start_date", "type": "date"},
         {"property": "end_date", "type": "date"},
-        {"property": "meeting_admins", "type": "string[]"},
+        {"property": "meeting_admins", "type": "string", "is_list": True},
         {"property": "meeting_template", "type": "string"},
     ]
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
