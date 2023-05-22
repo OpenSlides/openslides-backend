@@ -1,12 +1,12 @@
 from collections import defaultdict
 from typing import Dict, List, Optional, cast
 
-from datastore.migrations import BaseEvent, BaseMigration, CreateEvent
+from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
 from datastore.shared.typing import JSON
 from datastore.shared.util import KEYSEPARATOR, collection_from_fqid
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     This migration adds `<collection>/sequential_number` with a added up number.
     """

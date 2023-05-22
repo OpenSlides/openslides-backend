@@ -1,25 +1,25 @@
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from datastore.migrations.core.base_migration import BaseMigration
-from datastore.migrations.core.events import (
+from datastore.migrations import (
     BaseEvent,
+    BaseEventMigration,
     CreateEvent,
     DeleteEvent,
     ListUpdateEvent,
     UpdateEvent,
 )
-from datastore.shared.util import (
+
+from openslides_backend.shared.patterns import (
     collection_and_id_from_fqid,
     fqid_from_collection_and_id,
+    id_from_fqid,
 )
-
-from openslides_backend.shared.patterns import id_from_fqid
 
 EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[motion[:/](?P<id>\d+)\]")
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     Updates `motion/{state|recommendation}_extension` fields to use fqids instead of colons in the
     replacements and fills the `motion/{state|recommendation}_extension_reference_ids` relations

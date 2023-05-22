@@ -1,11 +1,11 @@
 from typing import List, Optional
 
-from datastore.migrations import BaseEvent, BaseMigration, CreateEvent, UpdateEvent
+from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent, UpdateEvent
 
 ONE_ORGANIZATION_FQID = "organization/1"
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     target_migration_index = 7
 
     def position_init(self) -> None:

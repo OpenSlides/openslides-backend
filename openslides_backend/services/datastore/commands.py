@@ -71,9 +71,7 @@ class Command:
         raise NotImplementedError()
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Command):
-            return NotImplemented
-        return self.data == other.data
+        return isinstance(other, Command) and self.data == other.data
 
 
 class ReserveIds(Command):

@@ -17,7 +17,7 @@ WSGIEnvironment = Dict[Text, Any]
 ResponseBody = Any
 
 
-class View(Protocol):  # pragma: no cover
+class View(Protocol):
     """
     Interface for views of this service.
     """
@@ -31,7 +31,7 @@ class View(Protocol):  # pragma: no cover
         ...
 
 
-class WSGIApplication(Protocol):  # pragma: no cover
+class WSGIApplication(Protocol):
     """
     Interface for main WSGI application class.
     """

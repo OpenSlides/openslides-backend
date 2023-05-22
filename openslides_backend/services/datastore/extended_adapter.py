@@ -1,10 +1,8 @@
 import builtins
-import re
 from collections import defaultdict
-from copy import deepcopy
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
-from datastore.shared.postgresql_backend import SqlQueryHelper
+from datastore.shared.postgresql_backend import filter_models, is_comparable
 from datastore.shared.util import DeletedModelsBehaviour
 
 from ...shared.exceptions import DatastoreException
@@ -212,8 +210,8 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 collection, results, mapped_fields, get_deleted_models
             )
             # find results which are only present in the changed_models
-            changed_results = self._filter_changed_models(
-                collection, filter, mapped_fields
+            changed_results = filter_models(
+                self.changed_models, collection, filter, mapped_fields
             )
             # apply these results and find fields which are missing in the changed_models
             missing_fields_per_fqid = self._update_results_and_get_missing_fields(
@@ -319,7 +317,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
             comparable_results = [
                 model[field]
                 for model in models.values()
-                if self._comparable(model.get(field), 0)
+                if is_comparable(model.get(field), 0)
             ]
             if comparable_results:
                 return getattr(builtins, mode)(comparable_results)
@@ -336,90 +334,6 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         super().reset()
         if hard:
             self.changed_models.clear()
-
-    def _filter_changed_models(
-        self,
-        collection: Collection,
-        filter: Filter,
-        mapped_fields: List[str],
-    ) -> Dict[int, Dict[str, Any]]:
-        """
-        Uses the datastore's SqlQueryHelper to build an SQL query for the given filter, transforms it into valid python
-        code and then executes it.
-        """
-        # Build sql query for this filter. The arguments array contains the replacements for all %s in the query in the
-        # correct order.
-        query_helper = SqlQueryHelper()
-        arguments: List[str] = []
-        sql_query = query_helper.build_filter_str(filter, arguments)
-
-        # transform query into valid python code
-        filter_code = sql_query.lower().replace("null", "None").replace(" = ", " == ")
-        # regex for all FilterOperators which were translated by the SqlQueryHelper
-        regex = rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)|{MODEL_FIELD_NUMERIC_SQL}|lower\({MODEL_FIELD_NUMERIC_SQL}\)) (<|<=|>=|>|==|!=|is|is not) ({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|{COMPARISON_VALUE_TEXT_SQL}|lower\({COMPARISON_VALUE_TEXT_SQL}\)|None)"
-        matches = re.findall(regex, filter_code)
-        # this will hold all items from arguments, but correctly formatted for python and enhanced with validity checks
-        formatted_args = []
-        i = 0
-        for match in matches:
-            # for these operators, ensure that the model field is actually comparable to prevent TypeErrors
-            if match[0] in ("<", "<=", ">=", ">"):
-                val_str = (
-                    arguments[i + 1]
-                    if isinstance(arguments[i + 1], (int, float))
-                    else repr(arguments[i + 1])
-                )
-                formatted_args.append(
-                    f'self._comparable(model.get("{arguments[i]}"), {val_str}) and model.get("{arguments[i]}")'
-                )
-            else:
-                formatted_args.append(f'model.get("{arguments[i]}")')
-            i += 1
-            # if comparison happens with a value, append it as well
-            if match[1] in (
-                COMPARISON_VALUE_SQL,
-                f"lower({COMPARISON_VALUE_SQL})",
-                COMPARISON_VALUE_TEXT_SQL,
-                f"lower({COMPARISON_VALUE_TEXT_SQL})",
-            ):
-                formatted_args.append(repr(arguments[i]))
-                i += 1
-        # replace SQL placeholders and SQL specific code with the formatted python snippets
-        filter_code = (
-            filter_code.replace(MODEL_FIELD_NUMERIC_REPLACE, "{}")
-            .replace(COMPARISON_VALUE_TEXT_SQL, "{}")
-            .replace(MODEL_FIELD_SQL, "{}")
-            .replace(COMPARISON_VALUE_SQL, "{}")
-        )
-        filter_code = filter_code.format(*formatted_args)
-
-        # needed for generated code since postgres uses it
-        def lower(s: str) -> str:
-            return s.lower()
-
-        # run eval with the generated code
-        filter_code = (
-            "{model['id']: {field: model[field] for field in mapped_fields if field in model} for fqid, model in self.changed_models.items() if collection_from_fqid(fqid) == collection and ("
-            + filter_code
-            + ")}"
-        )
-        scope = locals()
-        scope["collection_from_fqid"] = collection_from_fqid
-        scope["id_from_fqid"] = id_from_fqid
-        results = eval(filter_code, scope)
-        return deepcopy(results)
-
-    def _comparable(self, a: Any, b: Any) -> bool:
-        """
-        Tries to compare a and b. If they are not comparable, the resulting TypeError is caught and False is returned.
-        Only < is tested since generally either all comparisons are implemented or none, so it is sufficient to only
-        test one.
-        """
-        try:
-            a < b
-            return True
-        except TypeError:
-            return False
 
     def _get_many_from_changed_models(
         self,

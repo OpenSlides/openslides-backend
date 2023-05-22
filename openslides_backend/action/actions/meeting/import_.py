@@ -1,12 +1,10 @@
 import re
 import time
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
-from datastore.migrations import BaseEvent, CreateEvent, ListUpdateEvent, UpdateEvent
-
 from openslides_backend.migrations import get_backend_migration_index
-from openslides_backend.migrations.migrate import MigrationWrapper
+from openslides_backend.migrations.migration_wrapper import MigrationWrapperMemory
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (
@@ -35,9 +33,9 @@ from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
     collection_and_id_from_fqid,
-    collection_from_fqid,
     fqid_from_collection_and_id,
 )
+from openslides_backend.shared.schema import models_map_object
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....shared.interfaces.event import Event, ListFields
@@ -62,7 +60,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
     schema = DefaultSchema(Meeting()).get_default_schema(
         required_properties=["committee_id"],
         additional_required_fields={
-            "meeting": {"type": "object"},
+            "meeting": {
+                **models_map_object,
+                "required": ["_migration_index", "meeting"],
+            },
         },
         title="Import meeting",
         description="Import a meeting into the committee.",
@@ -82,8 +83,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
 
         action_data = self.get_updated_instances(action_data)
         instance = next(iter(action_data))
-        instance = self.preprocess_data(instance)
         self.validate_instance(instance)
+        instance = self.preprocess_data(instance)
         try:
             self.check_permissions(instance)
         except MissingPermission as e:
@@ -104,6 +105,14 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 [
                     "active_meeting_ids",
                     "archived_meeting_ids",
+                    "committee_ids",
+                    "active_meeting_ids",
+                    "archived_meeting_ids",
+                    "template_meeting_ids",
+                    "organization_tag_ids",
+                    "limit_of_users",
+                    "limit_of_meetings",
+                    "user_ids",
                 ],
             ),
             GetManyRequest(
@@ -139,28 +148,20 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         return instance
 
     def check_one_meeting(self, instance: Dict[str, Any]) -> None:
-        meeting_json = instance.get("meeting", {})
-        if not len(meeting_json.get("meeting", {}).values()) == 1:
+        if len(instance["meeting"]["meeting"]) != 1:
             raise ActionException("Need exactly one meeting in meeting collection.")
 
     def remove_not_allowed_fields(self, instance: Dict[str, Any]) -> None:
         json_data = instance["meeting"]
         regex_cml = re.compile(r"^committee_\$(\D)*_management_level$")
 
-        def remove_from_collection(
-            model: Dict[str, Any], regex: re.Pattern[str]
-        ) -> None:
-            keys: List[str] = []
-            for key in model.keys():
-                if regex.search(key):
-                    keys.append(key)
-            for key in keys:
-                model.pop(key)
-
         for user in json_data.get("user", {}).values():
             user.pop("organization_management_level", None)
             user.pop("committee_ids", None)
-            remove_from_collection(user, regex_cml)
+            for key in list(user.keys()):
+                if regex_cml.search(key):
+                    del user[key]
+
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
         json_data.pop("action_worker", None)
 
@@ -168,13 +169,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         meeting_json = instance["meeting"]
         self.generate_merge_user_map(meeting_json)
         self.check_usernames_and_generate_new_ones(meeting_json)
-        active_new_users_in_json = len(
-            [
-                key
-                for key in meeting_json.get("user", [])
-                if meeting_json["user"][key].get("is_active")
-                and int(key) not in self.merge_user_map
-            ]
+        active_new_users_in_json = sum(
+            bool(meeting_json["user"][key].get("is_active"))
+            and int(key) not in self.merge_user_map
+            for key in meeting_json.get("user", [])
         )
         self.check_limit_of_user(active_new_users_in_json)
 
@@ -213,6 +211,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                     "default_password",
                     "last_email_sent",
                     "last_login",
+                    "committee_ids",
                 ],
             },
         )
@@ -707,46 +706,24 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         ):
             raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)
 
-    def create_import_create_events(
-        self, instance: Dict[str, Any]
-    ) -> List[CreateEvent]:
-        json_data = instance["meeting"]
-        import_create_events = []
-        for collection in json_data:
-            for entry in json_data[collection].values():
-                # Necessary to remove None-values in event
-                for k, v in list(entry.items()):
-                    if v is None:
-                        entry.pop(k)
-                fqid = fqid_from_collection_and_id(collection, entry["id"])
-                import_create_events.append(CreateEvent(str(fqid), entry))
-        return import_create_events
-
     def migrate_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        1. Method checks instance for valid migration_index
-        2. convert the instance json-data to datastore create events
-        3. do the migrations
-        4. get the migrated events from migration wrapper
-        5. Convert only create events back to json-data
+        1. Check for valid migration index
+        2. Build models map from data and prepend organization and committee
+        3. Do the migrations
+        4. Get the migrated models from migration wrapper
+        5. Change the mapping back to collection->id->model
         """
-        start_migration_index = instance.get("meeting", {}).pop(
-            "_migration_index", None
-        )
-        if not start_migration_index or start_migration_index < 0:
-            raise ActionException(
-                f"The data must have a valid migration index, but '{start_migration_index}' is not valid!"
-            )
+        start_migration_index = instance["meeting"].pop("_migration_index")
         backend_migration_index = get_backend_migration_index()
         if backend_migration_index < start_migration_index:
             raise ActionException(
                 f"Your data migration index '{start_migration_index}' is higher than the migration index of this backend '{backend_migration_index}'! Please, update your backend!"
             )
         if backend_migration_index > start_migration_index:
-            migration_wrapper = MigrationWrapper(
-                verbose=True,
-                memory_only=True,
-            )
+            migration_wrapper = MigrationWrapperMemory()
+
+            # fetch necessary data
             organization = self.datastore.get(
                 ONE_ORGANIZATION_FQID,
                 [
@@ -754,64 +731,46 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                     "active_meeting_ids",
                     "archived_meeting_ids",
                     "template_meeting_ids",
-                    "resource_ids",
                     "organization_tag_ids",
                 ],
                 lock_result=False,
             )
+            committee_fqid = fqid_from_collection_and_id(
+                "committee", instance["committee_id"]
+            )
             committee = self.datastore.get(
-                fqid_from_collection_and_id("committee", instance["committee_id"]),
+                committee_fqid,
                 ["meeting_ids"],
                 lock_result=False,
             )
-            models = {
-                ONE_ORGANIZATION_FQID: organization,
-                f"committee/{instance['committee_id']}": committee,
-            }
-            migration_wrapper.set_additional_data(
-                self.create_import_create_events(instance),
+
+            # Build import models. Use OrderedDict to ensure that organization and committee are
+            # available for the migration
+            models = OrderedDict(
+                [
+                    (ONE_ORGANIZATION_FQID, organization),
+                    (committee_fqid, committee),
+                ]
+            )
+            models.update(
+                (fqid_from_collection_and_id(collection, id), model)
+                for collection, models in instance["meeting"].items()
+                for id, model in models.items()
+            )
+            migration_wrapper.set_import_data(
                 models,
                 start_migration_index,
             )
-            migration_wrapper.execute_command("finalize")
-            migrated_events = migration_wrapper.get_migrated_events()
-            instance = self.create_instance_from_migrated_events(
-                instance, migrated_events
-            )
-        instance["meeting"]["_migration_index"] = backend_migration_index
-        return instance
 
-    def create_instance_from_migrated_events(
-        self, instance: Dict[str, Any], migrated_events: List[BaseEvent]
-    ) -> Dict[str, Any]:
-        data: Dict[str, Dict] = defaultdict(dict)
-        for event in migrated_events:
-            collection, id_ = collection_and_id_from_fqid(event.fqid)
-            str_id = str(id_)
-            if event.type == CreateEvent.type:
-                data[collection].update({str_id: event.data})
-            elif event.type == UpdateEvent.type:
-                data[collection][str_id].update(event.data)
-            elif collection_from_fqid(event.fqid) in (
-                "organization",
-                "committee",
-                "user",
-            ):
-                continue
-            elif isinstance(event, ListUpdateEvent):
-                if event.add:
-                    for k, v in event.add.items():
-                        data[collection][str_id][k] = list(
-                            set(data[collection][str_id][k]).union(v)
-                        )
-                if event.remove:
-                    for k, v in event.remove.items():
-                        data[collection][str_id][k] = list(
-                            set(data[collection][str_id][k]).difference(v)
-                        )
-            else:
-                raise ActionException(
-                    f"ActionType {event.type} for {event.fqid} not implemented!"
-                )
-        instance["meeting"] = data
+            # finalize and read back migrated models
+            migration_wrapper.execute_command("finalize")
+            migrated_models = migration_wrapper.get_migrated_models()
+
+            instance["meeting"] = defaultdict(dict)
+            for fqid, model in migrated_models.items():
+                collection, id = collection_and_id_from_fqid(fqid)
+                if collection not in ("organization", "committee", "theme"):
+                    instance["meeting"][collection][str(id)] = model
+
+        instance["meeting"]["_migration_index"] = backend_migration_index
         return instance

@@ -1,10 +1,10 @@
 from typing import List, Optional
 
-from datastore.migrations import BaseEvent, BaseMigration, CreateEvent
+from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
 from datastore.shared.util import collection_and_id_from_fqid
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     This migration decriments motion_change_recommendation line_to, if
     line_from < line_to.
