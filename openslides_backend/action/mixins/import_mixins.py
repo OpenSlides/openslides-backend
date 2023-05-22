@@ -1,4 +1,4 @@
-import json
+import csv
 from collections import defaultdict
 from enum import Enum
 from time import mktime, strptime, time
@@ -188,10 +188,13 @@ class JsonUploadMixin(Action):
                             )
                     elif type_ == "string" and is_list:
                         try:
-                            entry[field] = json.loads("[" + entry[field] + "]")
+                            entry[field] = [
+                                item.strip()
+                                for item in list(csv.reader([entry[field]]))[0]
+                            ]
                         except Exception:
                             raise ActionException(
-                                f"Could not parse {entry[field]} except string[]"
+                                f"Could not parse {entry[field]} as string[]"
                             )
 
         super().validate_instance(instance)

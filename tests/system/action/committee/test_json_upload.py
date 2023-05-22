@@ -102,8 +102,8 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "committee.json_upload",
             {
                 "data": [
-                    {"name": "n1", "organization_tags": '"ot1", "ot2", "ot1"'},
-                    {"name": "n2", "organization_tags": '"ot1"'},
+                    {"name": "n1", "organization_tags": "ot1, ot2, ot1"},
+                    {"name": "n2", "organization_tags": "ot1"},
                 ]
             },
         )
@@ -141,7 +141,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "committee.json_upload",
             {
                 "data": [
-                    {"name": "n1", "organization_tags": '"ot1", "ot2", "ot1"'},
+                    {"name": "n1", "organization_tags": "ot1, ot2, ot1"},
                 ]
             },
         )
@@ -182,17 +182,6 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 "committee_managers": [],
             },
         }
-
-    def test_json_upload_dict_in_string_list(self) -> None:
-        response = self.request(
-            "committee.json_upload",
-            {"data": [{"name": "bar", "committee_managers": "{}"}]},
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "data.data[0].committee_managers[0] must be string"
-            in response.json["message"]
-        )
 
     def test_json_upload_two_instances(self) -> None:
         response = self.request_multi(
@@ -244,9 +233,9 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 "data": [
                     {
                         "name": "n1",
-                        "organization_tags": '"ot1", "ot3"',
-                        "committee_managers": '"m1", "m3"',
-                        "forward_to_committees": '"fc2", "fc3"',
+                        "organization_tags": "ot1, ot3",
+                        "committee_managers": "m1, m3",
+                        "forward_to_committees": "fc2, fc3",
                     }
                 ]
             },
@@ -463,7 +452,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 "data": [
                     {
                         "name": "committee A",
-                        "committee_managers": '"test", "new"',
+                        "committee_managers": "test, new",
                     }
                 ]
             },
@@ -485,22 +474,6 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "value": 1,
         }
 
-    def test_json_upload_committee_managers_wrong_json(self) -> None:
-        self.set_models({"user/23": {"username": "test"}})
-        response = self.request(
-            "committee.json_upload",
-            {
-                "data": [
-                    {
-                        "name": "committee A",
-                        "committee_managers": "blapzb",
-                    }
-                ]
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert "Could not parse blapzb except string[]" in response.json["message"]
-
     def test_json_upload_organization_tags(self) -> None:
         self.set_models({"organization_tag/37": {"name": "test"}})
         response = self.request(
@@ -509,7 +482,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 "data": [
                     {
                         "name": "committee A",
-                        "organization_tags": '"test", "new"',
+                        "organization_tags": "test, new",
                     }
                 ]
             },
@@ -539,7 +512,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 "data": [
                     {
                         "name": "committee A",
-                        "forward_to_committees": '"test", "new"',
+                        "forward_to_committees": "test, new",
                     }
                 ]
             },
