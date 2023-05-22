@@ -14,7 +14,7 @@ from openslides_backend.shared.patterns import (
     FullQualifiedId,
     fqid_from_collection_and_id,
 )
-from openslides_backend.shared.schema import id_list_schema
+from openslides_backend.shared.schema import id_list_schema, required_id_schema
 
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -42,7 +42,7 @@ class MeetingClone(MeetingImport):
 
     schema = DefaultSchema(Meeting()).get_default_schema(
         optional_properties=updatable_fields,
-        additional_required_fields={"meeting_id": {"type": "integer"}},
+        additional_required_fields={"meeting_id": required_id_schema},
         additional_optional_fields={
             "user_ids": id_list_schema,
             "admin_ids": id_list_schema,
@@ -103,15 +103,20 @@ class MeetingClone(MeetingImport):
             meeting["committee_id"] = committee_id
 
         # pre update the meeting
-        name_set = False
+        if "name" not in instance:
+            suffix = " - Copy"
+            max_length = Meeting().name.constraints.get("maxLength")
+            old_name = meeting["name"]
+            if max_length and len(old_name) + len(suffix) > max_length:
+                meeting["name"] = (
+                    old_name[: max_length - len(suffix) - 3] + "..." + suffix
+                )
+            else:
+                meeting["name"] = old_name + suffix
+
         for field in updatable_fields:
             if field in instance:
-                if field == "name":
-                    name_set = True
-                value = instance.pop(field)
-                meeting[field] = value
-        if not name_set:
-            meeting["name"] = meeting.get("name", "") + " - Copy"
+                meeting[field] = instance.pop(field)
 
         # reset mediafile/attachment_ids to [] if None.
         for mediafile_id in instance["meeting"].get("mediafile", []):

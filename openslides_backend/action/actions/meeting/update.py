@@ -19,7 +19,7 @@ from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import GetMeetingIdFromIdMixin
+from .mixins import GetMeetingIdFromIdMixin, MeetingCheckTimesMixin
 
 meeting_settings_keys = [
     "welcome_title",
@@ -111,7 +111,7 @@ meeting_settings_keys = [
     "motion_poll_ballot_paper_selection",
     "motion_poll_ballot_paper_number",
     "motion_poll_default_type",
-    "motion_poll_default_100_percent_base",
+    "motion_poll_default_onehundred_percent_base",
     "motion_poll_default_group_ids",
     "motion_poll_default_backend",
     "users_enable_presence_view",
@@ -136,16 +136,21 @@ meeting_settings_keys = [
     "assignment_poll_sort_poll_result_by_votes",
     "assignment_poll_default_type",
     "assignment_poll_default_method",
-    "assignment_poll_default_100_percent_base",
+    "assignment_poll_default_onehundred_percent_base",
     "assignment_poll_default_group_ids",
     "assignment_poll_default_backend",
+    "topic_poll_default_group_ids",
     "poll_default_backend",
 ]
 
 
 @register_action("meeting.update")
 class MeetingUpdate(
-    EmailCheckMixin, EmailSenderCheckMixin, UpdateAction, GetMeetingIdFromIdMixin
+    EmailCheckMixin,
+    EmailSenderCheckMixin,
+    UpdateAction,
+    GetMeetingIdFromIdMixin,
+    MeetingCheckTimesMixin,
 ):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
@@ -202,6 +207,8 @@ class MeetingUpdate(
                 )
             if instance["jitsi_domain"].strip().endswith("/"):
                 raise ActionException("It is not allowed to end jitsi_domain with '/'.")
+
+        self.check_start_and_end_time(instance)
         instance = super().update_instance(instance)
         return instance
 

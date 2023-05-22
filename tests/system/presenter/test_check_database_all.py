@@ -94,7 +94,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "motion_poll_ballot_paper_number": 8,
             "motion_poll_default_type": "pseudoanonymous",
-            "motion_poll_default_100_percent_base": "YNA",
+            "motion_poll_default_onehundred_percent_base": "YNA",
             "motion_poll_default_backend": "fast",
             "users_enable_presence_view": False,
             "users_enable_vote_weight": False,
@@ -113,10 +113,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "assignment_poll_sort_poll_result_by_votes": True,
             "assignment_poll_default_type": "pseudoanonymous",
             "assignment_poll_default_method": "Y",
-            "assignment_poll_default_100_percent_base": "valid",
+            "assignment_poll_default_onehundred_percent_base": "valid",
             "assignment_poll_default_backend": "fast",
             "poll_default_type": "analog",
-            "poll_default_100_percent_base": "YNA",
+            "poll_default_onehundred_percent_base": "YNA",
             "poll_default_backend": "fast",
             "poll_couple_countdown": True,
         }
@@ -137,6 +137,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "url": "foo",
                     "theme_ids": [1],
                     "committee_ids": [1],
+                    "default_language": "en",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -289,6 +290,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "url": "foo",
                     "theme_ids": [1],
                     "committee_ids": [1],
+                    "default_language": "en",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -546,6 +548,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "url": "foo",
                     "theme_ids": [1],
                     "committee_ids": [1],
+                    "default_language": "en",
                 },
                 "theme/1": {
                     "name": "Test Theme",

@@ -802,7 +802,7 @@ class MeetingClone(BaseActionTestCase):
             "motion_poll_ballot_paper_selection": "NUMBER_OF_DELEGATES",
             "motion_poll_ballot_paper_number": 42,
             "motion_poll_default_type": "pseudoanonymous",
-            "motion_poll_default_100_percent_base": "YN",
+            "motion_poll_default_onehundred_percent_base": "YN",
             "users_enable_presence_view": True,
             "users_enable_vote_weight": True,
             "users_enable_vote_delegations": True,
@@ -825,7 +825,7 @@ class MeetingClone(BaseActionTestCase):
             "assignment_poll_sort_poll_result_by_votes": True,
             "assignment_poll_default_type": "pseudoanonymous",
             "assignment_poll_default_method": "YNA",
-            "assignment_poll_default_100_percent_base": "YNA",
+            "assignment_poll_default_onehundred_percent_base": "YNA",
         }
         self.update_model("meeting/1", settings)
         response = self.request("meeting.clone", {"meeting_id": 1})
@@ -904,18 +904,27 @@ class MeetingClone(BaseActionTestCase):
                 "user_ids": [2, 3],
                 "admin_ids": [],
                 "organization_tag_ids": [],
+                "language": "en",
             },
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
 
-    def test_meeting_name_too_long(self) -> None:
-        long_name = "0123456789" * 10
+    def test_meeting_name_exact_fit(self) -> None:
+        long_name = "A" * 93
         self.test_models["meeting/1"]["name"] = long_name
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"name": long_name + " - Copy"})
+
+    def test_meeting_name_too_long(self) -> None:
+        long_name = "A" * 100
+        self.test_models["meeting/1"]["name"] = long_name
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/2", {"name": "A" * 90 + "... - Copy"})
 
     def test_permissions_both_okay(self) -> None:
         self.set_models(self.test_models)
@@ -1127,7 +1136,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request(
             "meeting.clone", {"meeting_id": 1, "_collection": "testtest"}
         )
-        self.assert_status_code(response, 200)
+        self.assert_status_code(response, 400)
 
     def test_clone_vote_delegation(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1, 2]
@@ -1336,6 +1345,7 @@ class MeetingClone(BaseActionTestCase):
                 "user_ids": [2, 3],
                 "admin_ids": [],
                 "organization_tag_ids": [],
+                "language": "en",
             },
         )
 

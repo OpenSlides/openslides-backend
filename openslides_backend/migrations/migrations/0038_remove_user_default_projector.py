@@ -1,13 +1,11 @@
 from typing import Any, Dict, List, Optional
 
-from datastore.migrations.core.events import (
+from datastore.migrations import (
     BaseEvent,
     CreateEvent,
     ListUpdateEvent,
-    UpdateEvent,
-)
-from datastore.migrations.migrations.remove_fields_migration import (
     RemoveFieldsMigration,
+    UpdateEvent,
 )
 from datastore.shared.util import collection_from_fqid
 

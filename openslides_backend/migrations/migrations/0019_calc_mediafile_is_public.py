@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from datastore.migrations import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     ListUpdateEvent,
     UpdateEvent,
@@ -11,7 +11,7 @@ from datastore.migrations import (
 from datastore.shared.util import collection_and_id_from_fqid
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     This migration should check for complete mediafile fields "is_public" and
     "inherited_access_group_ids" and should fill them.

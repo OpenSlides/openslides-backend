@@ -9,7 +9,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException
+from ....shared.exceptions import ActionException, DatastoreException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import (
     FullQualifiedId,
@@ -268,11 +268,15 @@ class UpdateHistoryMixin(Action):
                             resolved_instance_fields.append(
                                 model_field.get_structured_field_name(replacement)
                             )
-            db_instance = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                resolved_instance_fields,
-                use_changed_models=False,
-            )
+            try:
+                db_instance = self.datastore.get(
+                    fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                    resolved_instance_fields,
+                    use_changed_models=False,
+                )
+            except DatastoreException:
+                continue
+
             # Compare db version with payload
             for field in instance_fields:
                 model_field = self.model.try_get_field(field)

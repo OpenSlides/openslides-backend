@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Any, Callable, Dict, Iterable, Optional, Protocol, Text, Tuple
 
 from openslides_backend.http.request import Request
+from openslides_backend.shared.env import Environment
 
 from . import Headers  # noqa
 from .logging import LoggingModule
@@ -16,7 +17,7 @@ WSGIEnvironment = Dict[Text, Any]
 ResponseBody = Any
 
 
-class View(Protocol):  # pragma: no cover
+class View(Protocol):
     """
     Interface for views of this service.
     """
@@ -30,12 +31,13 @@ class View(Protocol):  # pragma: no cover
         ...
 
 
-class WSGIApplication(Protocol):  # pragma: no cover
+class WSGIApplication(Protocol):
     """
     Interface for main WSGI application class.
     """
 
     services: Services
+    env: Environment
 
     @abstractmethod
     def __init__(self, logging: LoggingModule, view: View, services: Services) -> None:

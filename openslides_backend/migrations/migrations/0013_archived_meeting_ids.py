@@ -2,7 +2,7 @@ from typing import Any, List, Optional, Set
 
 from datastore.migrations import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     DeleteEvent,
     DeleteFieldsEvent,
@@ -16,7 +16,7 @@ ONE_ORGANIZATION_FQID = "organization/1"
 ONE_ORGANIZATION_ID = 1
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     This migration adds the 1:N relation `organization/archived_meeting_ids` <-> `meeting/is_archived_in_organization_id`.
 

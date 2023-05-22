@@ -1,8 +1,8 @@
 from typing import List, Optional
 
-from datastore.migrations.core.base_migration import BaseMigration
-from datastore.migrations.core.events import (
+from datastore.migrations import (
     BaseEvent,
+    BaseEventMigration,
     CreateEvent,
     DeleteFieldsEvent,
     UpdateEvent,
@@ -10,7 +10,7 @@ from datastore.migrations.core.events import (
 from datastore.shared.util import collection_from_fqid
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     This migration removes `organization/theme`.
     """

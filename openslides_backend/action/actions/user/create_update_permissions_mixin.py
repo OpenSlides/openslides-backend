@@ -198,14 +198,11 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             return
 
         # store scope, id and OML-permission for requested user
-        if uid := instance.get("id"):
-            self.apply_instance(instance)
-
         (
             self.instance_user_scope,
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
-        ) = self.get_user_scope(uid, None if uid else instance)
+        ) = self.get_user_scope(instance.get("id") or instance)
 
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
         self._check_for_higher_OML(permstore, actual_group_fields, instance)

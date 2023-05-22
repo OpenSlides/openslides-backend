@@ -1,6 +1,6 @@
 ---
 # Types:
-#     - Nativ datatypes: string, text, number, boolean, JSON
+#     - Nativ datatypes: text, string (text with maxLength=256), number, boolean, JSON
 #     - HTMLStrict: A string with HTML content.
 #     - HTMLPermissive: A string with HTML content (with video tags).
 #     - float: Numbers that are expected to be non-integer. Formatted as in rfc7159.
@@ -111,6 +111,17 @@ organization:
     restriction_mode: B
     default: 0
     minimum: 0
+  default_language:
+    type: string
+    restriction_mode: A
+    enum:
+      - en
+      - de
+      - it
+      - es
+      - ru
+      - cs
+    required: true
 
   vote_decrypt_public_main_key:
     type: string
@@ -200,8 +211,12 @@ user:
     type: string
     required: true
     restriction_mode: A
+  saml_id:
+    type: string
+    restriction_mode: A
   pronoun:
     type: string
+    maxLength: 32
     restriction_mode: A
   title:
     type: string
@@ -235,6 +250,7 @@ user:
       - male
       - female
       - diverse
+      - non-binary
     restriction_mode: A
   email:
     type: string
@@ -250,7 +266,7 @@ user:
     default: "1.000000"
     minimum: 0
     restriction_mode: A
-  last_email_send:
+  last_email_sent:
     type: timestamp
     restriction_mode: D
   is_demo_user:
@@ -613,6 +629,18 @@ theme:
   warn_a700:
     restriction_mode: A
     type: color
+  headbar:
+    restriction_mode: A
+    type: color
+  "yes":
+    restriction_mode: A
+    type: color
+  "no":
+    restriction_mode: A
+    type: color
+  abstain:
+    restriction_mode: A
+    type: color
   theme_for_organization_id:
     restriction_mode: A
     to: organization/theme_id
@@ -703,6 +731,7 @@ meeting:
     maxLength: 100
     default: OpenSlides
     restriction_mode: A
+    required: true
   is_active_in_organization_id:
     type: relation
     to: organization/active_meeting_ids
@@ -732,6 +761,17 @@ meeting:
   imported_at:
     type: timestamp
     restriction_mode: B
+  language:
+    type: string
+    restriction_mode: A
+    enum:
+      - en
+      - de
+      - it
+      - es
+      - ru
+      - cs
+    read_only: true
 
   # Configuration (only for the server owner)
   jitsi_domain:
@@ -1164,7 +1204,7 @@ meeting:
     type: string
     default: pseudoanonymous
     restriction_mode: B
-  motion_poll_default_100_percent_base:
+  motion_poll_default_onehundred_percent_base:
     type: string
     default: YNA
     restriction_mode: B
@@ -1301,7 +1341,7 @@ meeting:
     type: string
     default: Y
     restriction_mode: B
-  assignment_poll_default_100_percent_base:
+  assignment_poll_default_onehundred_percent_base:
     type: string
     default: valid
     restriction_mode: B
@@ -1338,7 +1378,7 @@ meeting:
   poll_default_method:
     type: string
     restriction_mode: B
-  poll_default_100_percent_base:
+  poll_default_onehundred_percent_base:
     type: string
     default: YNA
     restriction_mode: B
@@ -1356,6 +1396,12 @@ meeting:
   poll_couple_countdown:
     type: boolean
     default: True
+    restriction_mode: B
+
+  # Topic poll
+  topic_poll_default_group_ids:
+    type: relation-list
+    to: group/used_as_topic_poll_default_id
     restriction_mode: B
 
   # Relations
@@ -1733,6 +1779,11 @@ group:
   used_as_assignment_poll_default_id:
     type: relation
     to: meeting/assignment_poll_default_group_ids
+    restriction_mode: A
+    required: false
+  used_as_topic_poll_default_id:
+    type: relation
+    to: meeting/topic_poll_default_group_ids
     restriction_mode: A
     required: false
   used_as_poll_default_id:
@@ -3291,6 +3342,7 @@ projector:
   scroll:
     type: number
     default: 0
+    minimum: 0
     restriction_mode: A
   width:
     type: number

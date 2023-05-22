@@ -8,7 +8,7 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .base import base_check_100_percent_base
+from .base import base_check_onehundred_percent_base
 from .mixins import PollHistoryMixin, PollPermissionMixin
 
 
@@ -54,7 +54,7 @@ class PollUpdateAction(
 
         state_change = self.check_state_change(instance, poll)
 
-        self.check_100_percent_base(instance)
+        self.check_onehundred_percent_base(instance)
 
         not_allowed = []
         if not poll.get("state") == Poll.STATE_CREATED:
@@ -120,7 +120,7 @@ class PollUpdateAction(
         instance.pop("publish_immediately", None)
         return instance
 
-    def check_100_percent_base(self, instance: Dict[str, Any]) -> None:
+    def check_onehundred_percent_base(self, instance: Dict[str, Any]) -> None:
         onehundred_percent_base = instance.get("onehundred_percent_base")
         if "pollmethod" in instance:
             pollmethod = instance["pollmethod"]
@@ -130,7 +130,7 @@ class PollUpdateAction(
                 ["pollmethod"],
             )
             pollmethod = poll.get("pollmethod")
-        base_check_100_percent_base(pollmethod, onehundred_percent_base)
+        base_check_onehundred_percent_base(pollmethod, onehundred_percent_base)
 
     def check_state_change(
         self, instance: Dict[str, Any], poll: Dict[str, Any]

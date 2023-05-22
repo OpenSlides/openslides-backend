@@ -11,7 +11,7 @@ from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.create import OptionCreateAction
-from .base import base_check_100_percent_base
+from .base import base_check_onehundred_percent_base
 from .mixins import PollHistoryMixin, PollPermissionMixin
 
 options_schema = {
@@ -87,7 +87,7 @@ class PollCreateAction(
         # check entitled_group_ids and analog
         if instance["type"] == Poll.TYPE_ANALOG and "entitled_group_ids" in instance:
             raise ActionException("entitled_group_ids is not allowed for analog.")
-        # check analog and 100percentbase entitled
+        # check analog and onehundredpercentbase entitled
         if (
             instance["type"] == Poll.TYPE_ANALOG
             and instance.get("onehundred_percent_base") == "entitled"
@@ -95,7 +95,7 @@ class PollCreateAction(
             raise ActionException(
                 "onehundred_percent_base: value entitled is not allowed for analog."
             )
-        self.check_100_percent_base(instance)
+        self.check_onehundred_percent_base(instance)
 
         # check non-analog and publish_immediately
         if instance["type"] != Poll.TYPE_ANALOG and "publish_immediately" in instance:
@@ -194,10 +194,10 @@ class PollCreateAction(
     def parse_vote_value(self, data: Dict[str, Any], field: str) -> Any:
         return data.get(field, "-2.000000")
 
-    def check_100_percent_base(self, instance: Dict[str, Any]) -> None:
+    def check_onehundred_percent_base(self, instance: Dict[str, Any]) -> None:
         pollmethod = instance["pollmethod"]
         onehundred_percent_base = instance.get("onehundred_percent_base")
-        base_check_100_percent_base(pollmethod, onehundred_percent_base)
+        base_check_onehundred_percent_base(pollmethod, onehundred_percent_base)
 
     def check_state_change(self, instance: Dict[str, Any]) -> bool:
         if instance["type"] != Poll.TYPE_ANALOG:

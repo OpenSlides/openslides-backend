@@ -4,7 +4,7 @@ from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.schema import required_id_schema
+from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...mixins.weight_mixin import WeightMixin
@@ -28,7 +28,7 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
         required_properties=["content_object_id", "meeting_id"],
         optional_properties=["options", "stable", "type"],
         additional_required_fields={
-            "ids": {"type": "array", "items": required_id_schema, "uniqueItems": True}
+            "ids": id_list_schema,
         },
         title="Projector project schema",
     )

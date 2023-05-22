@@ -3,7 +3,7 @@ import copy
 import cProfile
 import os
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Type
+from typing import Any, Callable, Dict, List, Tuple, Type
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -163,6 +163,31 @@ def get_route_path(route_function: RouteFunction, name: str = "") -> str:
     raise ValueError(f"Route {name} does not exist")
 
 
+def mock_datastore_method(method: str, verbose: bool = False) -> Tuple[Mock, Any]:
+    """
+    Patches the given method of the DatastoreAdapter and returns the created mock as well as the
+    patcher.
+    """
+    orig_method = getattr(DatastoreAdapter, method)
+
+    def mock_method(inner_self: DatastoreAdapter, *args: Any, **kwargs: Any) -> Any:
+        if verbose:
+            print(orig_method.__name__, args, kwargs)
+        return orig_method(inner_self, *args, **kwargs)
+
+    patcher = patch.object(DatastoreAdapter, method, autospec=True)
+    mock = patcher.start()
+    mock.side_effect = mock_method
+    return mock, patcher
+
+
+def disable_dev_mode(fn: Callable) -> Callable:
+    return patch(
+        "openslides_backend.shared.env.Environment.is_dev_mode",
+        MagicMock(return_value=False),
+    )(fn)
+
+
 def performance(func: Callable) -> Callable:
     return pytest.mark.skipif(
         not is_truthy(os.environ.get("OPENSLIDES_PERFORMANCE_TESTS", "")),
@@ -171,8 +196,10 @@ def performance(func: Callable) -> Callable:
 
 
 class Profiler:
-    """Helper class to profile a block of code. Use as context manager and provide filename to save
-    the output to."""
+    """
+    Helper class to profile a block of code. Use as context manager and provide filename to save the
+    output to.
+    """
 
     def __init__(self, filename: str) -> None:
         self.filename = filename
@@ -187,8 +214,10 @@ class Profiler:
 
 
 class CountDatastoreCalls:
-    """Helper class to track the amount of datastore calls (= cache misses). Use as context manager
-    and access the result via the `count` property."""
+    """
+    Helper class to track the amount of datastore calls (= cache misses). Use as context manager and
+    access the result via the `count` property.
+    """
 
     def __init__(self, verbose: bool = False) -> None:
         self.verbose = verbose
@@ -197,26 +226,14 @@ class CountDatastoreCalls:
         self.patcher: List[Any] = []
         self.mocks: List[Mock] = []
         for method in ("get", "get_many"):
-            self.mock_datastore_method(method)
+            mock, patcher = mock_datastore_method(method, self.verbose)
+            self.mocks.append(mock)
+            self.patcher.append(patcher)
         return self
 
     def __exit__(self, *args: Any, **kwargs: Any) -> None:
         for patcher in self.patcher:
             patcher.stop()
-
-    def mock_datastore_method(self, method: str) -> None:
-        orig_method = getattr(DatastoreAdapter, method)
-
-        def mock_method(inner_self: DatastoreAdapter, *args: Any, **kwargs: Any) -> Any:
-            if self.verbose:
-                print(orig_method.__name__, args, kwargs)
-            return orig_method(inner_self, *args, **kwargs)
-
-        patcher = patch.object(DatastoreAdapter, method, autospec=True)
-        mock = patcher.start()
-        mock.side_effect = mock_method
-        self.mocks.append(mock)
-        self.patcher.append(patcher)
 
     @property
     def calls(self) -> int:

@@ -315,6 +315,54 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("meeting/1", {"motions_block_slide_columns": 2})
 
+    def test_update_topic_poll_default_group(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models({"group/5": {"meeting_id": 1}})
+        response = self.request(
+            "meeting.update", {"id": 1, "topic_poll_default_group_ids": [5]}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"topic_poll_default_group_ids": [5]})
+        self.assert_model_exists("group/5", {"used_as_topic_poll_default_id": 1})
+
+    def test_update_only_one_time_1(self) -> None:
+        _, response = self.basic_test({"start_time": 150000}, check_200=False)
+        assert (
+            "Only one of start_time and end_time is not allowed."
+            in response.json["message"]
+        )
+
+    def test_update_only_one_time_2(self) -> None:
+        _, response = self.basic_test({"end_time": 156000}, check_200=False)
+        assert (
+            "Only one of start_time and end_time is not allowed."
+            in response.json["message"]
+        )
+
+    def test_update_only_one_time_one_removal_from_db(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "test_name",
+                    "is_active_in_organization_id": 1,
+                    "start_time": 160000,
+                    "end_time": 170000,
+                },
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "start_time": None,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Only one of start_time and end_time is not allowed."
+            in response.json["message"]
+        )
+
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}

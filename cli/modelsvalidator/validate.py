@@ -183,7 +183,7 @@ class Checker:
                 self.errors.append(f"'minimum' for {collectionfield} is not a number.")
         if type == "decimal(6)":
             valid_attributes.append("minimum")
-        if type == "string":
+        if type in ("string", "text"):
             valid_attributes.append("maxLength")
             if not isinstance(field.get("maxLength", 0), int):
                 self.errors.append(

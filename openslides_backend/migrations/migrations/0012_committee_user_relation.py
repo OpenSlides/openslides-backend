@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from datastore.migrations import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     DeleteEvent,
     ListUpdateEvent,
@@ -23,7 +23,7 @@ class AddRemove:
         self.remove: Set[int] = set()
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     This migration changes the user.committee_$_management_level-field
     from type TemplateChar to a TemplateRelationListField. The added

@@ -386,6 +386,20 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/1", {"username": "admin"})
 
+    def test_update_check_pronoun_too_long(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request(
+            "user.update", {"id": 111, "pronoun": "123456789012345678901234567890123"}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.pronoun must be shorter than or equal to 32 characters"
+            in response.json["message"]
+        )
+
     def test_perm_nothing(self) -> None:
         self.permission_setup()
         response = self.request(
@@ -1132,7 +1146,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to change a user with a Level of can_manage_organization!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization!",
             response.json["message"],
         )
 
@@ -1207,13 +1221,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request("user.update", {"id": 111, "gender": "test"})
         self.assert_status_code(response, 400)
         assert (
-            "data.gender must be one of ['male', 'female', 'diverse', None]"
+            "data.gender must be one of ['male', 'female', 'diverse', 'non-binary', None]"
             in response.json["message"]
         )
 
         response = self.request("user.update", {"id": 111, "gender": "diverse"})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/111", {"gender": "diverse"})
+
+        response = self.request("user.update", {"id": 111, "gender": "non-binary"})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/111", {"gender": "non-binary"})
 
     def test_update_not_in_update_is_present_in_meeting_ids(self) -> None:
         self.create_model(
@@ -1257,6 +1275,28 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "first_name": "Testy",
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Your organization management level is not high enough to change a user with a Level of superadmin!"
+            in response.json["message"]
+        )
+
+    def test_update_demote_superadmin(self) -> None:
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, 111
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
             },
         )
         self.assert_status_code(response, 403)

@@ -52,4 +52,4 @@ jobs:
           event-type: models-update
           repository: OpenSlides/openslides-autoupdate-service
           token: ${{ secrets.AUTOUPDATE_ACCESS_TOKEN }}
-          client-payload: '{"body": "Triggered by commit [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/{{ github.sha }})"}'
+          client-payload: '{"body": "Triggered by commit [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})"}'

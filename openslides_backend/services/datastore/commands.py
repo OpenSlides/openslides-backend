@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Set, Union
 
 import simplejson as json
 
-from ...shared.filters import FilterBase as FilterInterface
+from ...shared.filters import _FilterBase as FilterInterface
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection
 
@@ -71,9 +71,7 @@ class Command:
         raise NotImplementedError()
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Command):
-            return NotImplemented
-        return self.data == other.data
+        return isinstance(other, Command) and self.data == other.data
 
 
 class ReserveIds(Command):

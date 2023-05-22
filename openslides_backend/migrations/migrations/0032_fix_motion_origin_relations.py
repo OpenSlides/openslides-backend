@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Optional
 
-from datastore.migrations.core.base_migration import BaseMigration
-from datastore.migrations.core.events import (
+from datastore.migrations import (
     BaseEvent,
+    BaseEventMigration,
     CreateEvent,
     DeleteEvent,
     ListUpdateEvent,
@@ -14,7 +14,7 @@ from datastore.shared.util import (
 )
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     target_migration_index = 33
 
     def migrate_event(

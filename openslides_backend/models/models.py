@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "6be27b303de7a1de74514fc3b89f242d"
+MODELS_YML_CHECKSUM = "52fd248a0f0407e73542b9d416e4cc26"
 
 
 class Organization(Model):
@@ -32,6 +32,9 @@ class Organization(Model):
             "description": "Maximum of active users for the whole organization. 0 means no limitation at all",
             "minimum": 0,
         },
+    )
+    default_language = fields.CharField(
+        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
     )
     committee_ids = fields.RelationListField(to={"committee": "organization_id"})
     active_meeting_ids = fields.RelationListField(
@@ -69,7 +72,8 @@ class User(Model):
 
     id = fields.IntegerField()
     username = fields.CharField(required=True)
-    pronoun = fields.CharField()
+    saml_id = fields.CharField()
+    pronoun = fields.CharField(constraints={"maxLength": 32})
     title = fields.CharField()
     first_name = fields.CharField()
     last_name = fields.CharField()
@@ -78,14 +82,16 @@ class User(Model):
     password = fields.CharField()
     default_password = fields.CharField()
     can_change_own_password = fields.BooleanField(default=True)
-    gender = fields.CharField(constraints={"enum": ["male", "female", "diverse"]})
+    gender = fields.CharField(
+        constraints={"enum": ["male", "female", "diverse", "non-binary"]}
+    )
     email = fields.CharField()
     default_number = fields.CharField()
     default_structure_level = fields.CharField()
     default_vote_weight = fields.DecimalField(
         default="1.000000", constraints={"minimum": 0}
     )
-    last_email_send = fields.TimestampField()
+    last_email_sent = fields.TimestampField()
     is_demo_user = fields.BooleanField()
     last_login = fields.TimestampField(read_only=True)
     organization_management_level = fields.CharField(
@@ -274,6 +280,10 @@ class Theme(Model):
     warn_a200 = fields.ColorField()
     warn_a400 = fields.ColorField()
     warn_a700 = fields.ColorField()
+    headbar = fields.ColorField()
+    yes = fields.ColorField()
+    no = fields.ColorField()
+    abstain = fields.ColorField()
     theme_for_organization_id = fields.RelationField(to={"organization": "theme_id"})
     organization_id = fields.OrganizationField(
         to={"organization": "theme_ids"}, required=True
@@ -325,7 +335,9 @@ class Meeting(Model):
     id = fields.IntegerField()
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
-    name = fields.CharField(default="OpenSlides", constraints={"maxLength": 100})
+    name = fields.CharField(
+        required=True, default="OpenSlides", constraints={"maxLength": 100}
+    )
     is_active_in_organization_id = fields.RelationField(
         to={"organization": "active_meeting_ids"},
         constraints={"description": "Backrelation and boolean flag at once"},
@@ -341,6 +353,9 @@ class Meeting(Model):
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
     imported_at = fields.TimestampField()
+    language = fields.CharField(
+        read_only=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
+    )
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
     jitsi_room_password = fields.CharField()
@@ -497,7 +512,7 @@ class Meeting(Model):
     )
     motion_poll_ballot_paper_number = fields.IntegerField(default=8)
     motion_poll_default_type = fields.CharField(default="pseudoanonymous")
-    motion_poll_default_100_percent_base = fields.CharField(default="YNA")
+    motion_poll_default_onehundred_percent_base = fields.CharField(default="YNA")
     motion_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_motion_poll_default_id"}
     )
@@ -547,7 +562,7 @@ class Meeting(Model):
     assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
     assignment_poll_default_type = fields.CharField(default="pseudoanonymous")
     assignment_poll_default_method = fields.CharField(default="Y")
-    assignment_poll_default_100_percent_base = fields.CharField(default="valid")
+    assignment_poll_default_onehundred_percent_base = fields.CharField(default="valid")
     assignment_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_assignment_poll_default_id"}
     )
@@ -567,7 +582,7 @@ class Meeting(Model):
     poll_sort_poll_result_by_votes = fields.BooleanField()
     poll_default_type = fields.CharField(default="analog")
     poll_default_method = fields.CharField()
-    poll_default_100_percent_base = fields.CharField(default="YNA")
+    poll_default_onehundred_percent_base = fields.CharField(default="YNA")
     poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_poll_default_id"}
     )
@@ -575,6 +590,9 @@ class Meeting(Model):
         default="fast", constraints={"enum": ["long", "fast"]}
     )
     poll_couple_countdown = fields.BooleanField(default=True)
+    topic_poll_default_group_ids = fields.RelationListField(
+        to={"group": "used_as_topic_poll_default_id"}
+    )
     projector_ids = fields.RelationListField(
         to={"projector": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -832,6 +850,9 @@ class Group(Model):
     )
     used_as_assignment_poll_default_id = fields.RelationField(
         to={"meeting": "assignment_poll_default_group_ids"}
+    )
+    used_as_topic_poll_default_id = fields.RelationField(
+        to={"meeting": "topic_poll_default_group_ids"}
     )
     used_as_poll_default_id = fields.RelationField(
         to={"meeting": "poll_default_group_ids"}
@@ -1789,7 +1810,7 @@ class Projector(Model):
     id = fields.IntegerField()
     name = fields.CharField()
     scale = fields.IntegerField(default=0)
-    scroll = fields.IntegerField(default=0)
+    scroll = fields.IntegerField(default=0, constraints={"minimum": 0})
     width = fields.IntegerField(default=1200, constraints={"minimum": 1})
     aspect_ratio_numerator = fields.IntegerField(default=16, constraints={"minimum": 1})
     aspect_ratio_denominator = fields.IntegerField(

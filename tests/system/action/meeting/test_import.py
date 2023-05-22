@@ -151,7 +151,7 @@ class MeetingImport(BaseActionTestCase):
                         "motion_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "motion_poll_ballot_paper_number": 8,
                         "motion_poll_default_type": "pseudoanonymous",
-                        "motion_poll_default_100_percent_base": "YNA",
+                        "motion_poll_default_onehundred_percent_base": "YNA",
                         "motion_poll_default_group_ids": [],
                         "motion_poll_default_backend": "fast",
                         "users_enable_presence_view": True,
@@ -176,7 +176,7 @@ class MeetingImport(BaseActionTestCase):
                         "assignment_poll_sort_poll_result_by_votes": True,
                         "assignment_poll_default_type": "pseudoanonymous",
                         "assignment_poll_default_method": "votes",
-                        "assignment_poll_default_100_percent_base": "valid",
+                        "assignment_poll_default_onehundred_percent_base": "valid",
                         "assignment_poll_default_group_ids": [],
                         "assignment_poll_default_backend": "fast",
                         "poll_ballot_paper_selection": "CUSTOM_NUMBER",
@@ -184,7 +184,7 @@ class MeetingImport(BaseActionTestCase):
                         "poll_sort_poll_result_by_votes": True,
                         "poll_default_type": "pseudoanonymous",
                         "poll_default_method": "votes",
-                        "poll_default_100_percent_base": "valid",
+                        "poll_default_onehundred_percent_base": "valid",
                         "poll_default_group_ids": [],
                         "poll_default_backend": "fast",
                         "poll_couple_countdown": True,
@@ -365,7 +365,7 @@ class MeetingImport(BaseActionTestCase):
             "default_number": "",
             "default_structure_level": "",
             "default_vote_weight": "1.000000",
-            "last_email_send": None,
+            "last_email_sent": None,
             "is_demo_user": False,
             "organization_management_level": None,
             "is_present_in_meeting_ids": [],
@@ -1682,14 +1682,14 @@ class MeetingImport(BaseActionTestCase):
     def test_without_default_password(self) -> None:
         request_data = self.create_request_data()
         request_data["meeting"]["user"]["1"]["default_password"] = ""
-        request_data["meeting"]["user"]["1"]["last_email_send"] = int(time.time())
+        request_data["meeting"]["user"]["1"]["last_email_sent"] = int(time.time())
         request_data["meeting"]["user"]["1"]["last_login"] = int(time.time())
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
         assert len(user["default_password"]) == 10
         assert self.auth.is_equals(user["default_password"], user["password"])
-        assert "last_email_send" not in user
+        assert "last_email_sent" not in user
         assert "last_login" not in user
 
     def test_merge_users_template_fields(self) -> None:
@@ -1845,13 +1845,75 @@ class MeetingImport(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_with_listfields_from_migration(self) -> None:
+        """test for listFields in event.data after migration. Uses migration 0035 to create one"""
+        data = self.create_request_data(
+            {
+                "motion": {
+                    "5": self.get_motion_data(
+                        5,
+                        {
+                            "title": "motion/5",
+                            "referenced_in_motion_state_extension_ids": [],
+                        },
+                    ),
+                    "6": self.get_motion_data(
+                        6,
+                        {
+                            "title": "motion/6",
+                            "state_extension": "[motion/5]",
+                            "list_of_speakers_id": 2,
+                        },
+                    ),
+                },
+                "list_of_speakers": {
+                    "1": {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/5",
+                        "closed": False,
+                        "sequential_number": 1,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    },
+                    "2": {
+                        "id": 2,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/6",
+                        "closed": False,
+                        "sequential_number": 2,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    },
+                },
+            }
+        )
+        data["meeting"]["meeting"]["1"]["motion_ids"] = [5, 6]
+        data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1, 2]
+        data["meeting"]["motion_state"]["1"]["motion_ids"] = [5, 6]
+        data["meeting"]["_migration_index"] = 35
+        assert (
+            data["meeting"]["motion"]["5"]["referenced_in_motion_state_extension_ids"]
+            == []
+        )
+
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/2",
+            {"title": "motion/5", "referenced_in_motion_state_extension_ids": [3]},
+        )
+        self.assert_model_exists(
+            "motion/3", {"title": "motion/6", "state_extension": "[motion/2]"}
+        )
+
     def test_without_migration_index(self) -> None:
         data = self.create_request_data({})
         del data["meeting"]["_migration_index"]
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The data must have a valid migration index, but 'None' is not valid!",
+            "data.meeting must contain ['_migration_index', 'meeting'] properties",
             response.json["message"],
         )
 
@@ -1861,7 +1923,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The data must have a valid migration index, but '-1' is not valid!",
+            "data.meeting._migration_index must be bigger than or equal to 1",
             response.json["message"],
         )
 
@@ -1879,14 +1941,25 @@ class MeetingImport(BaseActionTestCase):
         data = self.create_request_data({})
         data["meeting"]["_migration_index"] = 1
         del data["meeting"]["user"]["1"]["organization_id"]
+        data["meeting"]["meeting"]["1"]["motion_poll_default_100_percent_base"] = "80"
+        data["meeting"]["meeting"]["1"][
+            "assignment_poll_default_100_percent_base"
+        ] = "81"
+        data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "82"
 
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
-        assert counter.calls == 7
+        assert counter.calls == 3
         self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
         meeting = self.assert_model_exists(
-            "meeting/2", {"assignment_poll_enable_max_votes_per_option": False}
+            "meeting/2",
+            {
+                "assignment_poll_enable_max_votes_per_option": False,
+                "motion_poll_default_onehundred_percent_base": "80",
+                "assignment_poll_default_onehundred_percent_base": "81",
+                "poll_default_onehundred_percent_base": "82",
+            },
         )  # checker repair
         self.assertCountEqual(meeting["user_ids"], [1, 2])
         group2 = self.assert_model_exists("group/2")
