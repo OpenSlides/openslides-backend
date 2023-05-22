@@ -126,13 +126,12 @@ organization:
   # SSO settings
   sso_enabled:
     type: boolean
-    default: False
     restriction_mode: A
-  login_button_text:
+  sso_login_button_text:
     type: string
     default: SAML login
     restriction_mode: A
-  save_attr_config:
+  sso_attr_mapping:
     type: JSON
     restriction_mode: A
 

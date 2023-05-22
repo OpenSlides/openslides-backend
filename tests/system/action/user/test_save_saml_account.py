@@ -20,7 +20,7 @@ class UserBaseSamlAccount(BaseActionTestCase):
             {
                 "organization/1": {
                     "sso_enabled": True,
-                    "save_attr_config": {
+                    "sso_attr_mapping": {
                         "username": "saml_id",
                         "title": "title",
                         "firstName": "first_name",
@@ -46,8 +46,8 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
             response.json["message"],
         )
 
-    def test_save_attr_config_empty(self) -> None:
-        self.update_model("organization/1", {"save_attr_config": {}})
+    def test_sso_attr_mapping_empty(self) -> None:
+        self.update_model("organization/1", {"sso_attr_mapping": {}})
         response = self.request("user.save_saml_account", {})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -61,7 +61,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "There is no field of user's data mapped to the required 'saml_id'",
+            "data must contain ['saml_id'] properties",
             response.json["message"],
         )
 
@@ -71,7 +71,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The save_saml_account action accepts only one user instance!",
+            "data must contain less than or equal to 1 items",
             response.json["message"],
         )
 
@@ -80,7 +80,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
             {
                 "organization/1": {
                     "sso_enabled": True,
-                    "save_attr_config": {
+                    "sso_attr_mapping": {
                         "username": "saml_id",
                         "default_structure_level": "default_structure_level",
                     },

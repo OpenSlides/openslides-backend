@@ -1,7 +1,5 @@
 from typing import Any, Dict, Optional, cast
 
-import simplejson as json
-
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
@@ -46,13 +44,14 @@ class OrganizationUpdate(
         "limit_of_users",
         "url",
         "sso_enabled",
-        "login_button_text",
-        "save_attr_config",
+        "sso_login_button_text",
+        "sso_attr_mapping",
     )
 
     model = Organization()
     schema = DefaultSchema(Organization()).get_update_schema(
-        optional_properties=group_A_fields + group_B_fields
+        optional_properties=group_A_fields + group_B_fields,
+        additional_optional_fields={"sso_attr_mapping": {"type": "object"}},
     )
     check_email_field = "users_email_replyto"
 
@@ -76,23 +75,12 @@ class OrganizationUpdate(
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
-        if "save_attr_config" in instance:
-            save_attr_config: Optional[Dict] = instance.get("save_attr_config")
-            if isinstance(save_attr_config, str):
-                try:
-                    save_attr_config = json.loads(save_attr_config)
-                    instance["save_attr_config"] = save_attr_config
-                except json.JSONDecodeError as e:
-                    raise ActionException(
-                        f"save_attr_config must be a valid configuration dictionary for SSO: {str(e)}"
-                    )
-            if not isinstance(instance.get("save_attr_config"), dict):
+        super().validate_instance(instance)
+        if "sso_attr_mapping" in instance:
+            sso_attr_mapping: Optional[Dict] = instance["sso_attr_mapping"]
+            if "saml_id" not in cast(Dict[Any, Any], sso_attr_mapping).values():
                 raise ActionException(
-                    "save_attr_config must be a valid configuration dictionary for SSO"
-                )
-            if "saml_id" not in cast(Dict[Any, Any], save_attr_config).values():
-                raise ActionException(
-                    "save_attr_config must contain the OpenSlides field 'saml_id'"
+                    "sso_attr_mapping must contain the OpenSlides field 'saml_id'"
                 )
         return super().validate_instance(instance)
 

@@ -37,8 +37,8 @@ class Organization(Model):
         required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
     )
     sso_enabled = fields.BooleanField(default=False)
-    login_button_text = fields.CharField(default="SAML login")
-    save_attr_config = fields.JSONField()
+    sso_login_button_text = fields.CharField(default="SAML login")
+    sso_attr_mapping = fields.JSONField()
     committee_ids = fields.RelationListField(to={"committee": "organization_id"})
     active_meeting_ids = fields.RelationListField(
         to={"meeting": "is_active_in_organization_id"}

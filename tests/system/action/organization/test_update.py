@@ -1,4 +1,3 @@
-import simplejson as json
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -6,7 +5,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class OrganizationUpdateActionTest(BaseActionTestCase):
-    save_attr_config = {
+    sso_attr_mapping = {
         "username": "saml_id",
         "title": "title",
         "firstName": "first_name",
@@ -27,7 +26,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "id": 3,
                 "name": "testtest",
                 "description": "blablabla",
-                "save_attr_config": self.save_attr_config,
+                "sso_attr_mapping": self.sso_attr_mapping,
             },
         )
         self.assert_status_code(response, 200)
@@ -36,7 +35,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             {
                 "name": "testtest",
                 "description": "blablabla",
-                "save_attr_config": self.save_attr_config,
+                "sso_attr_mapping": self.sso_attr_mapping,
             },
         )
 
@@ -81,8 +80,8 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "users_email_subject": "email subject",
                 "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
                 "sso_enabled": True,
-                "login_button_text": "Text for SAML login button",
-                "save_attr_config": json.dumps(self.save_attr_config),
+                "sso_login_button_text": "Text for SAML login button",
+                "sso_attr_mapping": self.sso_attr_mapping,
             },
         )
         self.assert_status_code(response, 200)
@@ -104,8 +103,8 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "users_email_subject": "email subject",
                 "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
                 "sso_enabled": True,
-                "login_button_text": "Text for SAML login button",
-                "save_attr_config": self.save_attr_config,
+                "sso_login_button_text": "Text for SAML login button",
+                "sso_attr_mapping": self.sso_attr_mapping,
             },
         )
         self.assert_model_exists(
@@ -154,7 +153,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_update_broken_save_attr_config1(self) -> None:
+    def test_update_broken_sso_attr_mapping1(self) -> None:
         self.create_model(
             "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
         )
@@ -162,38 +161,32 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             "organization.update",
             {
                 "id": 3,
-                "save_attr_config": "This is not a valid JSON formated sso-configuration",
+                "sso_attr_mapping": "This is not a valid JSON formated sso-configuration",
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "save_attr_config must be a valid configuration dictionary for SSO"
-            in response.json["message"]
-        )
+        assert "data.sso_attr_mapping must be object" in response.json["message"]
 
-    def test_update_broken_save_attr_config2(self) -> None:
+    def test_update_broken_sso_attr_mapping2(self) -> None:
         self.create_model(
             "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
         )
         response = self.request(
-            "organization.update", {"id": 3, "save_attr_config": ["f1", "f2"]}
+            "organization.update", {"id": 3, "sso_attr_mapping": ["f1", "f2"]}
         )
         self.assert_status_code(response, 400)
-        assert (
-            "save_attr_config must be a valid configuration dictionary for SSO"
-            in response.json["message"]
-        )
+        assert "data.sso_attr_mapping must be object" in response.json["message"]
 
-    def test_update_broken_save_attr_config_missing_saml_id(self) -> None:
+    def test_update_broken_sso_attr_mapping_missing_saml_id(self) -> None:
         self.create_model(
             "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
         )
         response = self.request(
-            "organization.update", {"id": 3, "save_attr_config": {"x": "y"}}
+            "organization.update", {"id": 3, "sso_attr_mapping": {"x": "y"}}
         )
         self.assert_status_code(response, 400)
         assert (
-            "save_attr_config must contain the OpenSlides field 'saml_id'"
+            "sso_attr_mapping must contain the OpenSlides field 'saml_id'"
             in response.json["message"]
         )
 
