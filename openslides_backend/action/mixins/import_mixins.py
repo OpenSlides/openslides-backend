@@ -89,18 +89,13 @@ class ImportMixin(Action):
         return on_success
 
 
-class HeaderEntry(TypedDict):
-    property: str
-    type: str
-
-
 class StatisticEntry(TypedDict):
     name: str
     value: int
 
 
 class JsonUploadMixin(Action):
-    headers: List[HeaderEntry]
+    headers: List[Dict[str, Any]]
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
     state: ImportState
@@ -157,14 +152,15 @@ class JsonUploadMixin(Action):
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields
         property_to_type = {
-            header["property"]: header["type"] for header in self.headers
+            header["property"]: (header["type"], header.get("is_list", False))
+            for header in self.headers
         }
         for entry in list(instance.get("data", [])):
             for field in dict(entry):
                 if field not in property_to_type:
                     del entry[field]
                 else:
-                    type_ = property_to_type[field]
+                    type_, is_list = property_to_type[field]
                     if type_ == "integer":
                         try:
                             entry[field] = int(entry[field])
@@ -190,7 +186,7 @@ class JsonUploadMixin(Action):
                             raise ActionException(
                                 f"Could not parse {entry[field]} except date"
                             )
-                    elif type_ == "string[]":
+                    elif type_ == "string" and is_list:
                         try:
                             entry[field] = json.loads("[" + entry[field] + "]")
                         except Exception:
