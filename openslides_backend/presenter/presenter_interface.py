@@ -8,7 +8,7 @@ Payload = List[PresenterBlob]
 PresenterResponse = List[Dict[Any, Any]]
 
 
-class Presenter(Protocol):  # pragma: no cover
+class Presenter(Protocol):
     """
     Interface for presenter component.
 

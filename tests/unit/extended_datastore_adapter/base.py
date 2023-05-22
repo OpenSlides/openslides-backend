@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+from datastore.shared.postgresql_backend import filter_models
+
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.extended_adapter import (
     ExtendedDatastoreAdapter,
@@ -34,7 +36,14 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
             )
 
         self.adapter = ExtendedDatastoreAdapter(MagicMock(), MagicMock(), MagicMock())
-        self.add_filter_mock = self.add_mock_to_method("_filter_changed_models")
+
+        patcher = patch(
+            "openslides_backend.services.datastore.extended_adapter.filter_models",
+            side_effect=filter_models,
+        )
+        self.add_filter_mock = patcher.start()
+        self.addCleanup(patcher.stop)
+
         self.add_get_many_mock = self.add_mock_to_method(
             "_get_many_from_changed_models"
         )

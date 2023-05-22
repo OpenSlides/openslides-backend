@@ -1136,7 +1136,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request(
             "meeting.clone", {"meeting_id": 1, "_collection": "testtest"}
         )
-        self.assert_status_code(response, 200)
+        self.assert_status_code(response, 400)
 
     def test_clone_vote_delegation(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1, 2]

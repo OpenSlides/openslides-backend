@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Protocol
 
 
-class Env(Protocol):  # pragma: no cover
+class Env(Protocol):
     """
     Interface for the object containing all environment variables and some
     helper methods.

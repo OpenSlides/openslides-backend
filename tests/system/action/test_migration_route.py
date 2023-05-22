@@ -65,7 +65,7 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
     def test_progress_no_migration(self) -> None:
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.MIGRATION_REQUIRED
+        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert "output" not in response.json
 
 
@@ -120,13 +120,13 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         self.wait_for_migration_thread()
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.MIGRATION_REQUIRED
+        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert response.json["output"] == "start\nfinish\n"
 
         # check that the output is preserved for future progress requests
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
-        assert response.json["status"] == MigrationState.MIGRATION_REQUIRED
+        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert response.json["output"] == "start\nfinish\n"
 
     def test_double_migration(self, execute_command: Mock) -> None:
@@ -161,7 +161,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True
-        assert response.json["status"] == MigrationState.MIGRATION_REQUIRED
+        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert response.json["output"] == "start\n"
         assert response.json["exception"] == "test"
 

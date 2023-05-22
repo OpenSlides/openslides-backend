@@ -2,7 +2,7 @@ from typing import Any, List, Optional, Set
 
 from datastore.migrations import (
     BaseEvent,
-    BaseMigration,
+    BaseEventMigration,
     CreateEvent,
     DeleteEvent,
     ListUpdateEvent,
@@ -13,7 +13,7 @@ from datastore.shared.util import collection_and_id_from_fqid
 ONE_ORGANIZATION_FQID = "organization/1"
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     This migration adds the 1:N relation `organization/active_meeting_ids` <-> `meeting/is_active_in_organization_id`.
     This relation must be set for every meeting and link them to the one organization.

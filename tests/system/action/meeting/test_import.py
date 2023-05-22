@@ -1913,7 +1913,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The data must have a valid migration index, but 'None' is not valid!",
+            "data.meeting must contain ['_migration_index', 'meeting'] properties",
             response.json["message"],
         )
 
@@ -1923,7 +1923,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The data must have a valid migration index, but '-1' is not valid!",
+            "data.meeting._migration_index must be bigger than or equal to 1",
             response.json["message"],
         )
 
@@ -1950,7 +1950,7 @@ class MeetingImport(BaseActionTestCase):
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
-        assert counter.calls == 7
+        assert counter.calls == 3
         self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
         meeting = self.assert_model_exists(
             "meeting/2",
