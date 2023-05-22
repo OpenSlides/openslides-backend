@@ -1,10 +1,10 @@
 from typing import List, Optional
 
-from datastore.migrations import BaseEvent, BaseMigration, CreateEvent
+from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
 from datastore.shared.util import collection_from_fqid
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     """
     This migration adds some defaults of organization.
     """

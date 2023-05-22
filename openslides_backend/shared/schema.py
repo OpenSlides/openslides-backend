@@ -1,3 +1,5 @@
+from datastore.shared.util.key_types import _collection_regex, _field_regex, _id_regex
+
 from .patterns import DECIMAL_REGEX, FQID_REGEX, POSITIVE_NUMBER_REGEX
 from .typing import Schema
 
@@ -40,5 +42,28 @@ decimal_schema: Schema = {"type": "string", "pattern": DECIMAL_REGEX}
 number_string_json_schema: Schema = {
     "type": "object",
     "patternProperties": {POSITIVE_NUMBER_REGEX: {"type": "string"}},
+    "additionalProperties": False,
+}
+models_map_object: Schema = {
+    "type": "object",
+    "properties": {
+        "_migration_index": {"type": "integer", "minimum": 1},
+    },
+    "patternProperties": {
+        rf"^{_collection_regex}$": {
+            "type": "object",
+            "patternProperties": {
+                rf"^{_id_regex}$": {
+                    "type": "object",
+                    "properties": {"id": {"type": "number"}},
+                    "propertyNames": {"pattern": rf"^{_field_regex}$"},
+                    "required": ["id"],
+                    "additionalProperties": True,
+                }
+            },
+            "additionalProperties": False,
+        },
+    },
+    "required": ["_migration_index"],
     "additionalProperties": False,
 }

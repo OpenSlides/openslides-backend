@@ -1,6 +1,6 @@
 ---
 # Types:
-#     - Nativ datatypes: string, text, number, boolean, JSON
+#     - Nativ datatypes: text, string (text with maxLength=256), number, boolean, JSON
 #     - HTMLStrict: A string with HTML content.
 #     - HTMLPermissive: A string with HTML content (with video tags).
 #     - float: Numbers that are expected to be non-integer. Formatted as in rfc7159.
@@ -204,7 +204,8 @@ user:
     type: string
     restriction_mode: A
   pronoun:
-    type: short_string
+    type: string
+    maxLength: 32
     restriction_mode: A
   title:
     type: string
@@ -679,6 +680,7 @@ meeting:
     maxLength: 100
     default: OpenSlides
     restriction_mode: A
+    required: true
   is_active_in_organization_id:
     type: relation
     to: organization/active_meeting_ids

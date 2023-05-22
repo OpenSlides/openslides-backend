@@ -28,7 +28,6 @@ RELATION_TYPES = (
 
 DATA_TYPES = (
     "string",
-    "short_string",
     "number",
     "string[]",
     "number[]",
@@ -174,7 +173,7 @@ class Checker:
                 self.errors.append(f"'minimum' for {collectionfield} is not a number.")
         if type == "decimal(6)":
             valid_attributes.append("minimum")
-        if type == "string":
+        if type in ("string", "text"):
             valid_attributes.append("maxLength")
             if not isinstance(field.get("maxLength", 0), int):
                 self.errors.append(
@@ -218,7 +217,6 @@ class Checker:
     ) -> None:
         basic_types = {
             "string": str,
-            "short_string": str,
             "number": int,
             "boolean": bool,
             "HTMLStrict": str,

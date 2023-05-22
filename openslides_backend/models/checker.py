@@ -35,33 +35,17 @@ from openslides_backend.shared.patterns import (
     EXTENSION_REFERENCE_IDS_PATTERN,
     collection_and_id_from_fqid,
 )
-from openslides_backend.shared.schema import number_string_json_schema
+from openslides_backend.shared.schema import (
+    models_map_object,
+    number_string_json_schema,
+)
 from openslides_backend.shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
 
 SCHEMA = fastjsonschema.compile(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "Schema for initial and example data.",
-        "type": "object",
-        "properties": {
-            "_migration_index": {"type": "integer", "minimum": 1},
-        },
-        "patternProperties": {
-            "^[a-z][a-z_]*$": {
-                "type": "object",
-                "patternProperties": {
-                    "^[1-9][0-9]*$": {
-                        "type": "object",
-                        "properties": {"id": {"type": "number"}},
-                        "required": ["id"],
-                        "additionalProperties": True,
-                    }
-                },
-                "additionalProperties": False,
-            },
-        },
-        "required": ["_migration_index"],
-        "additionalProperties": False,
+        **models_map_object,
     }
 )
 NUMBER_STRING_JSON_SCHEMA = fastjsonschema.compile(

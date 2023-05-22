@@ -313,6 +313,12 @@ class MeetingCreateActionTest(BaseActionTestCase):
             set_400_str="Only one of start_time and end_time is not allowed.",
         )
 
+    def test_create_name_too_long(self) -> None:
+        self.basic_test(
+            {"name": "A" * 101},
+            set_400_str="data.name must be shorter than or equal to 100 characters",
+        )
+
     def test_create_no_permissions(self) -> None:
         self.set_models(
             {

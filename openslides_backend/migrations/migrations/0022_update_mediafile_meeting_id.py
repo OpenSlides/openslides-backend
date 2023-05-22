@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
-from datastore.migrations.migrations.rename_field_migration import RenameFieldMigration
-from datastore.shared.util import KEYSEPARATOR
+from datastore.migrations import RenameFieldMigration
+from datastore.shared.util import fqid_from_collection_and_id
 
 
 class Migration(RenameFieldMigration):
@@ -21,7 +21,7 @@ class Migration(RenameFieldMigration):
 
     def modify(self, object: Dict[str, Any]) -> None:
         if self.old_field in object:
-            object[self.new_field] = (
-                "meeting" + KEYSEPARATOR + str(object[self.old_field])
+            object[self.new_field] = fqid_from_collection_and_id(
+                "meeting", object[self.old_field]
             )
             del object[self.old_field]

@@ -1,4 +1,4 @@
-from datastore.migrations.migrations.rename_field_migration import RenameFieldMigration
+from datastore.migrations import RenameFieldMigration
 
 
 class Migration(RenameFieldMigration):

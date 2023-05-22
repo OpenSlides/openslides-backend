@@ -1,15 +1,15 @@
 from typing import List, Optional
 
-from datastore.migrations.core.base_migration import BaseMigration
-from datastore.migrations.core.events import (
+from datastore.migrations import (
     BaseEvent,
+    BaseEventMigration,
     DeleteFieldsEvent,
     ListUpdateEvent,
     UpdateEvent,
 )
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     target_migration_index = 35
 
     def migrate_event(

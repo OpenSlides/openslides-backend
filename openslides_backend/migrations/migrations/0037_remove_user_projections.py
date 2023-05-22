@@ -1,8 +1,8 @@
 from typing import Iterable, List, Optional
 
-from datastore.migrations.core.base_migration import BaseMigration
-from datastore.migrations.core.events import (
+from datastore.migrations import (
     BaseEvent,
+    BaseEventMigration,
     CreateEvent,
     DeleteFieldsEvent,
     UpdateEvent,
@@ -10,7 +10,7 @@ from datastore.migrations.core.events import (
 from datastore.shared.util import collection_from_fqid, fqid_from_collection_and_id
 
 
-class Migration(BaseMigration):
+class Migration(BaseEventMigration):
     target_migration_index = 38
 
     def order_events(self, events: List[BaseEvent]) -> Iterable[BaseEvent]:

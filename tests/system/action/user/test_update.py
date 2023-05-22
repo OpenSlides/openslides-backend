@@ -403,7 +403,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/1", {"username": "admin"})
 
-    def test_update_check_short_string(self) -> None:
+    def test_update_check_pronoun_too_long(self) -> None:
         self.create_model(
             "user/111",
             {"username": "username_srtgb123"},
