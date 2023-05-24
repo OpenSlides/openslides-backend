@@ -82,7 +82,6 @@ class OrganizationUpdate(
                 raise ActionException(
                     "saml_attr_mapping must contain the OpenSlides field 'saml_id'"
                 )
-        return super().validate_instance(instance)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
