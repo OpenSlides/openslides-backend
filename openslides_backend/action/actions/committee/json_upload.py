@@ -41,8 +41,8 @@ class CommitteeJsonUpload(JsonUploadMixin):
                             "items": {"type": "string"},
                         },
                         "meeting_name": {"type": "string"},
-                        "start_date": {"type": "integer"},
-                        "end_date": {"type": "integer"},
+                        "start_time": {"type": "integer"},
+                        "end_time": {"type": "integer"},
                         "meeting_admins": {
                             "type": "array",
                             "items": {"type": "string"},
@@ -65,8 +65,8 @@ class CommitteeJsonUpload(JsonUploadMixin):
         {"property": "organization_tags", "type": "string", "is_list": True},
         {"property": "committee_managers", "type": "string", "is_list": True},
         {"property": "meeting_name", "type": "string"},
-        {"property": "start_date", "type": "date"},
-        {"property": "end_date", "type": "date"},
+        {"property": "start_time", "type": "date"},
+        {"property": "end_time", "type": "date"},
         {"property": "meeting_admins", "type": "string", "is_list": True},
         {"property": "meeting_template", "type": "string"},
     ]
@@ -185,8 +185,8 @@ class CommitteeJsonUpload(JsonUploadMixin):
         if any(
             field in entry
             for field in (
-                "start_date",
-                "end_date",
+                "start_time",
+                "end_time",
                 "meeting_admins",
                 "meeting_template",
             )
@@ -196,13 +196,13 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 messages.append("No meeting will be created without meeting_name")
 
         if (
-            entry.get("start_date")
-            and not entry.get("end_date")
-            or not entry.get("start_date")
-            and entry.get("end_date")
+            entry.get("start_time")
+            and not entry.get("end_time")
+            or not entry.get("start_time")
+            and entry.get("end_time")
         ):
             state = ImportState.ERROR
-            messages.append("Only one of start_date and end_date is not allowed.")
+            messages.append("Only one of start_time and end_time is not allowed.")
 
         if "meeting_template" in entry:
             result_type = meeting_lookup.check_duplicate(entry["meeting_template"])
