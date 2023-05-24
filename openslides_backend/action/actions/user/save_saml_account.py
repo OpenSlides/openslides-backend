@@ -78,6 +78,7 @@ class UserSaveSamlAccount(
             },
             title="create saml account schema",
         )
+        self.schema["additionalProperties"] = True
         self.__class__.schema_validator = fastjsonschema.compile(self.schema)
         super().validate_instance(instance)
 
