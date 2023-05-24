@@ -228,6 +228,7 @@ class Lookup:
 
     def check_duplicate(self, name: str) -> ResultType:
         if not self.name_to_ids[name]:
+            self.name_to_ids[name].append(0)
             return ResultType.NOT_FOUND
         elif len(self.name_to_ids[name]) > 1:
             return ResultType.FOUND_MORE_IDS
