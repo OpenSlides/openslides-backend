@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "9013b2b21f7a117aba0d38e2aee6eeb7"
+MODELS_YML_CHECKSUM = "5456eb3b2fdcf3b794d387177b67e7e6"
 
 
 class Organization(Model):
@@ -36,9 +36,9 @@ class Organization(Model):
     default_language = fields.CharField(
         required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
     )
-    sso_enabled = fields.BooleanField(default=False)
-    sso_login_button_text = fields.CharField(default="SAML login")
-    sso_attr_mapping = fields.JSONField()
+    saml_enabled = fields.BooleanField()
+    saml_login_button_text = fields.CharField(default="SAML login")
+    saml_attr_mapping = fields.JSONField()
     committee_ids = fields.RelationListField(to={"committee": "organization_id"})
     active_meeting_ids = fields.RelationListField(
         to={"meeting": "is_active_in_organization_id"}

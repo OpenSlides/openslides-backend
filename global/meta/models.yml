@@ -123,15 +123,15 @@ organization:
       - cs
     required: true
 
-  # SSO settings
-  sso_enabled:
+  # Saml settings
+  saml_enabled:
     type: boolean
     restriction_mode: A
-  sso_login_button_text:
+  saml_login_button_text:
     type: string
     default: SAML login
     restriction_mode: A
-  sso_attr_mapping:
+  saml_attr_mapping:
     type: JSON
     restriction_mode: A
 

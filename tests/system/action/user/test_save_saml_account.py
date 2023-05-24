@@ -19,8 +19,8 @@ class UserBaseSamlAccount(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {
-                    "sso_enabled": True,
-                    "sso_attr_mapping": {
+                    "saml_enabled": True,
+                    "saml_attr_mapping": {
                         "username": "saml_id",
                         "title": "title",
                         "firstName": "first_name",
@@ -38,7 +38,7 @@ class UserBaseSamlAccount(BaseActionTestCase):
 
 class UserCommonSamlAccount(UserBaseSamlAccount):
     def test_sso_disabled_error(self) -> None:
-        self.update_model("organization/1", {"sso_enabled": False})
+        self.update_model("organization/1", {"saml_enabled": False})
         response = self.request("user.save_saml_account", {})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -46,8 +46,8 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
             response.json["message"],
         )
 
-    def test_sso_attr_mapping_empty(self) -> None:
-        self.update_model("organization/1", {"sso_attr_mapping": {}})
+    def test_saml_attr_mapping_empty(self) -> None:
+        self.update_model("organization/1", {"saml_attr_mapping": {}})
         response = self.request("user.save_saml_account", {})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -56,12 +56,13 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         )
 
     def test_save_attr_no_saml_id_provided(self) -> None:
+        """error message: example data username from IdP maps to saml_id as OpenSlides name"""
         response = self.request(
             "user.save_saml_account", {"firstName": "Joe", "lastName": "Cartwright"}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['saml_id'] properties",
+            "data must contain ['username'] properties",
             response.json["message"],
         )
 
@@ -79,8 +80,8 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         self.set_models(
             {
                 "organization/1": {
-                    "sso_enabled": True,
-                    "sso_attr_mapping": {
+                    "saml_enabled": True,
+                    "saml_attr_mapping": {
                         "username": "saml_id",
                         "default_structure_level": "default_structure_level",
                     },
@@ -114,6 +115,9 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
             },
         )
         self.assert_status_code(response, 200)
+        assert (
+            response.json["results"][0][0]["user_id"] == 2
+        ), "Missing user_id in result"
         self.assert_model_exists(
             "user/2",
             {
@@ -180,6 +184,9 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
             },
         )
         self.assert_status_code(response, 200)
+        assert (
+            response.json["results"][0][0]["user_id"] == 78
+        ), "Missing user_id in result"
         self.assert_model_exists(
             "user/78",
             {
