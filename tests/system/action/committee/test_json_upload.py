@@ -73,7 +73,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "data": {"name": "n1"},
         }
         assert response.json["results"][0][0]["rows"][1] == {
-            "state": ImportState.NEW,
+            "state": ImportState.DONE,
             "messages": [],
             "data": {"name": "n1"},
         }
@@ -116,7 +116,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
                 "organization_tags": [
                     {"info": ImportState.NEW, "value": "ot1"},
                     {"info": ImportState.NEW, "value": "ot2"},
-                    {"info": ImportState.NEW, "value": "ot1"},
+                    {"info": ImportState.DONE, "value": "ot1"},
                 ],
             },
         }
@@ -125,7 +125,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "messages": [],
             "data": {
                 "name": "n2",
-                "organization_tags": [{"info": ImportState.NEW, "value": "ot1"}],
+                "organization_tags": [{"info": ImportState.DONE, "value": "ot1"}],
             },
         }
 
@@ -197,7 +197,7 @@ class CommitteeJsonUpload(BaseActionTestCase):
             },
         }
         assert response.json["results"][0][1]["rows"][0] == {
-            "state": ImportState.NEW,
+            "state": ImportState.DONE,
             "messages": [],
             "data": {
                 "name": "bar",
