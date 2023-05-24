@@ -167,7 +167,9 @@ class CommitteeJsonUpload(JsonUploadMixin):
         check_result = duplicate_checker.check_duplicate(entry["name"])
         if check_result == ResultType.FOUND_ID:
             state = ImportState.DONE
-            entry["id"] = duplicate_checker.get_id_by_name(entry["name"])
+            id_ = duplicate_checker.get_id_by_name(entry["name"])
+            if id_:
+                entry["id"] = duplicate_checker.get_id_by_name(entry["name"])
         elif check_result == ResultType.NOT_FOUND:
             state = ImportState.NEW
         elif check_result == ResultType.FOUND_MORE_IDS:
@@ -249,10 +251,14 @@ class CommitteeJsonUpload(JsonUploadMixin):
         if entry.get(field):
             new_list: List[Dict[str, Any]] = []
             for username in entry[field]:
-                if user_id := user_lookup.get_id_by_name(username):
-                    new_list.append(
-                        {"value": username, "info": ImportState.DONE, "id": user_id}
-                    )
+                check_duplicate = user_lookup.check_duplicate(username)
+                if check_duplicate == ResultType.FOUND_ID:
+                    if user_id := user_lookup.get_id_by_name(username):
+                        new_list.append(
+                            {"value": username, "info": ImportState.DONE, "id": user_id}
+                        )
+                    else:
+                        new_list.append({"value": username, "info": ImportState.DONE})
                 else:
                     new_list.append({"value": username, "info": not_found_state})
             entry[field] = new_list
