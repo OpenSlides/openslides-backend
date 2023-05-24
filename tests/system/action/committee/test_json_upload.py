@@ -278,8 +278,8 @@ class CommitteeJsonUpload(BaseActionTestCase):
                     {
                         "name": "test",
                         "meeting_name": "test meeting",
-                        "start_date": "2023-08-09",
-                        "end_date": "2023-08-10",
+                        "start_time": "2023-08-09",
+                        "end_time": "2023-08-10",
                     }
                 ]
             },
@@ -291,12 +291,12 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "data": {
                 "name": "test",
                 "meeting_name": "test meeting",
-                "start_date": 1691539200,
-                "end_date": 1691625600,
+                "start_time": 1691539200,
+                "end_time": 1691625600,
             },
         }
 
-    def test_json_upload_start_date_xor_end_date_error_case(self) -> None:
+    def test_json_upload_start_time_xor_end_time_error_case(self) -> None:
         """check meeting start_time/end_time condition"""
         response = self.request(
             "committee.json_upload",
@@ -305,12 +305,12 @@ class CommitteeJsonUpload(BaseActionTestCase):
                     {
                         "name": "test",
                         "meeting_name": "test meeting",
-                        "start_date": "2023-08-09",
+                        "start_time": "2023-08-09",
                     },
                     {
                         "name": "test2",
                         "meeting_name": "test meeting 2",
-                        "end_date": "2023-08-10",
+                        "end_time": "2023-08-10",
                     },
                 ]
             },
@@ -319,25 +319,25 @@ class CommitteeJsonUpload(BaseActionTestCase):
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.ERROR,
             "messages": [
-                "Only one of start_date and end_date is not allowed.",
+                "Only one of start_time and end_time is not allowed.",
                 "Meeting will be created with meeting.create.",
             ],
             "data": {
                 "name": "test",
                 "meeting_name": "test meeting",
-                "start_date": 1691539200,
+                "start_time": 1691539200,
             },
         }
         assert response.json["results"][0][0]["rows"][1] == {
             "state": ImportState.ERROR,
             "messages": [
-                "Only one of start_date and end_date is not allowed.",
+                "Only one of start_time and end_time is not allowed.",
                 "Meeting will be created with meeting.create.",
             ],
             "data": {
                 "name": "test2",
                 "meeting_name": "test meeting 2",
-                "end_date": 1691625600,
+                "end_time": 1691625600,
             },
         }
 
@@ -349,8 +349,8 @@ class CommitteeJsonUpload(BaseActionTestCase):
                     {
                         "name": "test",
                         "meeting_name": "test meeting",
-                        "start_date": "2023-08-09",
-                        "end_date": "12XX-broken",
+                        "start_time": "2023-08-09",
+                        "end_time": "12XX-broken",
                     }
                 ]
             },
