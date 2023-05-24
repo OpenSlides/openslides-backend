@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -51,7 +51,12 @@ class OrganizationUpdate(
     model = Organization()
     schema = DefaultSchema(Organization()).get_update_schema(
         optional_properties=group_A_fields + group_B_fields,
-        additional_optional_fields={"saml_attr_mapping": {"type": "object"}},
+        additional_optional_fields={
+            "saml_attr_mapping": {
+                "type": "object",
+                "additionalProperties": {"type": "string"},
+            }
+        },
     )
     check_email_field = "users_email_replyto"
 
@@ -77,8 +82,8 @@ class OrganizationUpdate(
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         super().validate_instance(instance)
         if "saml_attr_mapping" in instance:
-            saml_attr_mapping: Optional[Dict] = instance["saml_attr_mapping"]
-            if "saml_id" not in cast(Dict[Any, Any], saml_attr_mapping).values():
+            saml_attr_mapping = instance["saml_attr_mapping"]
+            if "saml_id" not in saml_attr_mapping.values():
                 raise ActionException(
                     "saml_attr_mapping must contain the OpenSlides field 'saml_id'"
                 )

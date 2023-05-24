@@ -10,6 +10,7 @@ from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import Event, EventType
 from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.schema import schema_version
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...generics.update import UpdateAction
@@ -31,7 +32,7 @@ class UserSaveSamlAccount(
     It should be called from the auth service.
     """
 
-    saml_attr_mapping: Dict[str, Any]
+    saml_attr_mapping: Dict[str, str]
     check_email_field = "email"
     model = User()
     schema = DefaultSchema(User()).get_default_schema()
@@ -58,29 +59,36 @@ class UserSaveSamlAccount(
             raise ActionException(
                 "SingleSignOn is not enabled in OpenSlides configuration"
             )
-        if not (
-            saml_attr_mapping := organization.get("saml_attr_mapping")
-        ) or not isinstance(saml_attr_mapping, dict):
+        self.saml_attr_mapping = organization.get("saml_attr_mapping", {})
+        if not self.saml_attr_mapping or not isinstance(self.saml_attr_mapping, dict):
             raise ActionException(
                 "SingleSignOn field attributes are not configured in OpenSlides"
             )
-        self.saml_attr_mapping = saml_attr_mapping
-        self.schema = DefaultSchema(User()).get_default_schema(
-            additional_required_fields={
-                key: self.model.saml_id.get_payload_schema()
-                for key, value in self.saml_attr_mapping.items()
-                if value == "saml_id"
+        additional_required_fields = {
+            key: self.model.saml_id.get_payload_schema()
+            for key, value in self.saml_attr_mapping.items()
+            if value == "saml_id"
+        }
+        additional_optional_fields = {
+            key: cast(Field, getattr(self.model, value, {})).get_payload_schema()
+            for key, value in self.saml_attr_mapping.items()
+            if value != "saml_id" and value in self.allowed_user_fields
+        }
+        self.schema = {
+            "$schema": schema_version,
+            "title": "create saml account schema",
+            "type": "object",
+            "properties": {
+                **additional_required_fields,
+                **additional_optional_fields,
             },
-            additional_optional_fields={
-                key: cast(Field, getattr(self.model, value, {})).get_payload_schema()
-                for key, value in self.saml_attr_mapping.items()
-                if value != "saml_id" and value in self.allowed_user_fields
-            },
-            title="create saml account schema",
-        )
-        self.schema["additionalProperties"] = True
-        self.__class__.schema_validator = fastjsonschema.compile(self.schema)
-        super().validate_instance(instance)
+            "required": list(additional_required_fields.keys()),
+            "additionalProperties": True,
+        }
+        try:
+            fastjsonschema.validate(self.schema, instance)
+        except fastjsonschema.JsonSchemaException as exception:
+            raise ActionException(exception.message)
 
     def prepare_action_data(self, action_data: ActionData) -> ActionData:
         """Necessary to prevent id reservation in CreateAction's prepare_action_data"""

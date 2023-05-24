@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "5456eb3b2fdcf3b794d387177b67e7e6"
+MODELS_YML_CHECKSUM = "341b4468d5927fb52614e4feeab5b6d3"
 
 
 class Organization(Model):
@@ -76,7 +76,7 @@ class User(Model):
     id = fields.IntegerField()
     username = fields.CharField(required=True)
     saml_id = fields.CharField(
-        constraints={"description": "unique-key from IdP for SignleSignOn"}
+        constraints={"description": "unique-key from IdP for SAML login"}
     )
     pronoun = fields.CharField(constraints={"maxLength": 32})
     title = fields.CharField()
