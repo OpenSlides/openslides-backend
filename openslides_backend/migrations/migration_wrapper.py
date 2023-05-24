@@ -79,7 +79,7 @@ class MigrationWrapper:
         elif command == "clear-collectionfield-tables":
             self.handler.delete_collectionfield_aux_tables()
         elif command == "stats":
-            return self.handler.get_stats()
+            self.handler.print_stats()
         else:
             raise InvalidMigrationCommand(command)
 
