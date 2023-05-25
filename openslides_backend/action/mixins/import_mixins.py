@@ -10,8 +10,8 @@ from ...shared.interfaces.event import Event, EventType
 from ...shared.interfaces.services import DatastoreService
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
-from ..action import Action
 from ..util.typing import ActionData, ActionResultElement
+from .singular_action_mixin import SingularActionMixin
 
 TRUE_VALUES = ("1", "true", "yes", "t")
 FALSE_VALUES = ("0", "false", "no", "f")
@@ -25,7 +25,7 @@ class ImportState(str, Enum):
     GENERATED = "generated"
 
 
-class ImportMixin(Action):
+class ImportMixin(SingularActionMixin):
     """
     Mixin for import actions. It works together with the json_upload.
     """
@@ -94,7 +94,7 @@ class StatisticEntry(TypedDict):
     value: int
 
 
-class JsonUploadMixin(Action):
+class JsonUploadMixin(SingularActionMixin):
     headers: List[Dict[str, Any]]
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
