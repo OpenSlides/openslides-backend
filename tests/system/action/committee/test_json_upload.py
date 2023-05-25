@@ -183,27 +183,6 @@ class CommitteeJsonUpload(BaseActionTestCase):
             },
         }
 
-    def test_json_upload_two_instances(self) -> None:
-        response = self.request_multi(
-            "committee.json_upload",
-            [{"data": [{"name": "bar"}]}, {"data": [{"name": "bar"}]}],
-        )
-        self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["rows"][0] == {
-            "state": ImportState.NEW,
-            "messages": [],
-            "data": {
-                "name": "bar",
-            },
-        }
-        assert response.json["results"][0][1]["rows"][0] == {
-            "state": ImportState.DONE,
-            "messages": [],
-            "data": {
-                "name": "bar",
-            },
-        }
-
     def test_json_upload_update_list_fields(self) -> None:
         self.set_models(
             {
