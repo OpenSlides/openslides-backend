@@ -2,13 +2,7 @@ from typing import Any, Dict, List, Set
 
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
-from ...mixins.import_mixins import (
-    NEW_CREATED_ID,
-    ImportState,
-    JsonUploadMixin,
-    Lookup,
-    ResultType,
-)
+from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, ResultType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
@@ -173,9 +167,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
         check_result = duplicate_checker.check_duplicate(entry["name"])
         if check_result == ResultType.FOUND_ID:
             state = ImportState.DONE
-            id_ = duplicate_checker.get_id_by_name(entry["name"])
-            if id_ is not None and id_ != NEW_CREATED_ID:
-                entry["id"] = duplicate_checker.get_id_by_name(entry["name"])
+            entry["id"] = duplicate_checker.get_id_by_name(entry["name"])
         elif check_result == ResultType.NOT_FOUND:
             state = ImportState.NEW
         elif check_result == ResultType.FOUND_MORE_IDS:
@@ -260,12 +252,9 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 check_duplicate = user_lookup.check_duplicate(username)
                 if check_duplicate == ResultType.FOUND_ID:
                     user_id = user_lookup.get_id_by_name(username)
-                    if user_id is not None and user_id != NEW_CREATED_ID:
-                        new_list.append(
-                            {"value": username, "info": ImportState.DONE, "id": user_id}
-                        )
-                    else:
-                        new_list.append({"value": username, "info": ImportState.DONE})
+                    new_list.append(
+                        {"value": username, "info": ImportState.DONE, "id": user_id}
+                    )
                 else:
                     new_list.append({"value": username, "info": not_found_state})
             entry[field] = new_list

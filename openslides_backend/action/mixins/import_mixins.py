@@ -391,9 +391,6 @@ class ResultType(Enum):
     NOT_FOUND = 3
 
 
-NEW_CREATED_ID = 0
-
-
 class Lookup:
     def __init__(
         self,
@@ -414,7 +411,6 @@ class Lookup:
 
     def check_duplicate(self, name: str) -> ResultType:
         if not self.name_to_ids[name]:
-            self.name_to_ids[name].append(NEW_CREATED_ID)
             return ResultType.NOT_FOUND
         elif len(self.name_to_ids[name]) > 1:
             return ResultType.FOUND_MORE_IDS
