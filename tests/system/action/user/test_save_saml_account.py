@@ -1,3 +1,6 @@
+from datastore.shared.di import injector
+from datastore.shared.postgresql_backend import ConnectionHandler
+
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -172,6 +175,15 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
 
 
 class UserUpdateSamlAccount(UserBaseSamlAccount):
+    connection_handler = injector.get(ConnectionHandler)
+
+    @classmethod
+    def get_current_db_position(cls) -> int:
+        with cls.connection_handler.get_connection_context():
+            with cls.connection_handler.get_current_connection().cursor() as cursor:
+                cursor.execute("select max(position) from positions;")
+                return cursor.fetchone()[0]
+
     def test_update_saml_account_correct(self) -> None:
         self.set_models({"user/78": {"username": "111222333", "saml_id": "111222333"}})
         response = self.request(
@@ -230,3 +242,38 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "is_physical_person": True,
             },
         )
+
+    def test_update_saml_account_change_nothing(self) -> None:
+        user_data = {
+            "saml_id": "111222333",
+            "username": "Saml",
+            "title": "Dr.",
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "email": "test@example.com",
+            "gender": "male",
+            "pronoun": "er",
+            "is_active": True,
+            "is_physical_person": True,
+        }
+
+        self.set_models({"user/78": user_data})
+        old_position = self.get_current_db_position()
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": "111222333",
+                "title": "Dr.",
+                "firstName": "Max",
+                "lastName": "Mustermann",
+                "email": "test@example.com",
+                "gender": "male",
+                "pronomen": "er",
+                "is_active": True,
+                "is_person": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/78", user_data)
+        new_position = self.get_current_db_position()
+        assert new_position == old_position

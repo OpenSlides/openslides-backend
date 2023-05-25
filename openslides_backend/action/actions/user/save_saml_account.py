@@ -32,6 +32,7 @@ class UserSaveSamlAccount(
     It should be called from the auth service.
     """
 
+    user: Dict[str, Any] = {}
     saml_attr_mapping: Dict[str, str]
     check_email_field = "email"
     model = User()
@@ -105,10 +106,13 @@ class UserSaveSamlAccount(
             and self.saml_attr_mapping[key] in self.allowed_user_fields
         }
         users = self.datastore.filter(
-            "user", FilterOperator("saml_id", "=", instance["saml_id"]), ["id"]
+            "user",
+            FilterOperator("saml_id", "=", instance["saml_id"]),
+            ["id", *self.allowed_user_fields],
         )
         if len(users) == 1:
-            instance["id"] = next(iter(users.values()))["id"]
+            self.user = next(iter(users.values()))
+            instance["id"] = self.user["id"]
         elif len(users) == 0:
             instance["id"] = self.datastore.reserve_ids(self.model.collection, 1)[0]
             instance["can_change_own_password"] = False
@@ -139,6 +143,9 @@ class UserSaveSamlAccount(
             yield self.build_event(EventType.Create, fqid, instance)
         else:
             fields = UpdateAction.create_events_for_reuse(instance)
+            if not fields:
+                return []
+            fields = {k: v for k, v in instance.items() if v != self.user.get(k)}
             if not fields:
                 return []
             yield self.build_event(EventType.Update, fqid, fields)
