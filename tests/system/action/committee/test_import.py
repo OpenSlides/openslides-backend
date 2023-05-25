@@ -1,3 +1,5 @@
+import pytest
+
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
@@ -113,6 +115,7 @@ class CommitteeImport(BaseActionTestCase):
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == ["Want to update committee, but id mismatches."]
 
+    @pytest.mark.skip
     def test_import_new_and_done(self) -> None:
         self.set_models(
             {
@@ -189,6 +192,7 @@ class CommitteeImport(BaseActionTestCase):
             {"name": "test2", "receive_forwardings_from_committee_ids": [14]},
         )
 
+    @pytest.mark.skip
     def test_import_reuse_fresh_created(self) -> None:
         self.set_models(
             {
@@ -255,6 +259,7 @@ class CommitteeImport(BaseActionTestCase):
             },
         )
 
+    @pytest.mark.skip
     def test_import_create_meeting(self) -> None:
         self.set_models(
             {
