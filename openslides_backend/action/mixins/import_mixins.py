@@ -23,6 +23,7 @@ class ImportState(str, Enum):
     WARNING = "warning"
     DONE = "done"
     GENERATED = "generated"
+    REMOVE = "remove"
 
 
 class ImportMixin(SingularActionMixin):
