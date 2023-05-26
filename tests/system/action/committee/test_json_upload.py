@@ -484,7 +484,19 @@ class CommitteeJsonUpload(BaseActionTestCase):
         }
 
     def test_json_upload_forward_to_committees(self) -> None:
-        self.set_models({"committee/37": {"name": "test"}})
+        self.set_models(
+            {
+                "committee/36": {
+                    "name": "committee A",
+                    "forward_to_committee_ids": [38],
+                },
+                "committee/37": {"name": "test"},
+                "committee/38": {
+                    "name": "should be removed",
+                    "receive_forwardings_from_committee_ids": [36],
+                },
+            }
+        )
         response = self.request(
             "committee.json_upload",
             {
@@ -498,13 +510,19 @@ class CommitteeJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
-            "state": ImportState.NEW,
+            "state": ImportState.DONE,
             "messages": [],
             "data": {
                 "name": "committee A",
+                "id": 36,
                 "forward_to_committees": [
                     {"value": "test", "info": ImportState.DONE, "id": 37},
-                    {"value": "new", "info": ImportState.NEW},
+                    {"value": "new", "info": ImportState.WARNING},
+                    {
+                        "value": "should be removed",
+                        "info": ImportState.REMOVE,
+                        "id": 38,
+                    },
                 ],
             },
         }
@@ -512,6 +530,47 @@ class CommitteeJsonUpload(BaseActionTestCase):
             "name": "Additional committees have been created, because they are mentioned in the forwardings",
             "value": 1,
         }
+
+    def test_json_upload_forward_to_committees_circular(self) -> None:
+        self.set_models(
+            {
+                "committee/3": {"name": "committee A"},
+                "committee/4": {"name": "committee B"},
+            }
+        )
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "committee A",
+                        "forward_to_committees": "committee B",
+                    },
+                    {
+                        "name": "committee B",
+                        "forward_to_committees": "committee A",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0]["data"] == {
+            "name": "committee A",
+            "id": 3,
+            "forward_to_committees": [
+                {"value": "committee B", "info": ImportState.DONE, "id": 4},
+            ],
+        }
+        assert response.json["results"][0][0]["rows"][1]["data"] == {
+            "name": "committee B",
+            "id": 4,
+            "forward_to_committees": [
+                {"value": "committee A", "info": ImportState.ERROR, "id": 3},
+            ],
+        }
+        assert response.json["results"][0][0]["rows"][1]["messages"] == [
+            "circular forwarding"
+        ]
 
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
