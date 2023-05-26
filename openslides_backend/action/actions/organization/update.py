@@ -12,6 +12,7 @@ from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..user.save_saml_account import allowed_user_fields
 
 
 @register_action("organization.update")
@@ -54,8 +55,13 @@ class OrganizationUpdate(
         additional_optional_fields={
             "saml_attr_mapping": {
                 "type": "object",
-                "additionalProperties": {"type": "string"},
-            }
+                "properties": {
+                    field: {"type": ["string", "null"], "maxLength": 256}
+                    for field in allowed_user_fields
+                },
+                "required": ["saml_id"],
+                "additionalProperties": False,
+            },
         },
     )
     check_email_field = "users_email_replyto"
@@ -78,15 +84,6 @@ class OrganizationUpdate(
             OrganizationManagementLevel.SUPERADMIN,
         ):
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
-
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
-        super().validate_instance(instance)
-        if "saml_attr_mapping" in instance:
-            saml_attr_mapping = instance["saml_attr_mapping"]
-            if "saml_id" not in saml_attr_mapping.values():
-                raise ActionException(
-                    "saml_attr_mapping must contain the OpenSlides field 'saml_id'"
-                )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

@@ -5,14 +5,15 @@ from tests.system.action.base import BaseActionTestCase
 
 class OrganizationUpdateActionTest(BaseActionTestCase):
     saml_attr_mapping = {
-        "username": "saml_id",
+        "saml_id": "username",
         "title": "title",
-        "firstName": "first_name",
-        "lastName": "last_name",
+        "first_name": "firstName",
+        "last_name": "lastName",
         "email": "email",
-        "pronomen": "pronoun",
+        "gender": "gender",
+        "pronoun": "pronoun",
         "is_active": "is_active",
-        "is_person": "is_physical_person",
+        "is_physical_person": "is_person",
     }
 
     def test_update(self) -> None:
@@ -185,7 +186,21 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "saml_attr_mapping must contain the OpenSlides field 'saml_id'"
+            "data.saml_attr_mapping must contain ['saml_id'] properties"
+            in response.json["message"]
+        )
+
+    def test_update_broken_saml_attr_mapping_unknown_field(self) -> None:
+        self.create_model(
+            "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+        )
+        response = self.request(
+            "organization.update",
+            {"id": 3, "saml_attr_mapping": {"saml_id": "111", "unkown_field": "xxx"}},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.saml_attr_mapping must not contain {'unkown_field'} properties"
             in response.json["message"]
         )
 

@@ -22,6 +22,18 @@ from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement
 from .user_mixin import UsernameMixin
 
+allowed_user_fields = [
+    "saml_id",
+    "title",
+    "first_name",
+    "last_name",
+    "email",
+    "gender",
+    "pronoun",
+    "is_active",
+    "is_physical_person",
+]
+
 
 @register_action("user.save_saml_account", action_type=ActionType.STACK_INTERNAL)
 class UserSaveSamlAccount(
@@ -38,17 +50,6 @@ class UserSaveSamlAccount(
     model = User()
     schema = DefaultSchema(User()).get_default_schema()
     skip_archived_meeting_check = True
-    allowed_user_fields = [
-        "saml_id",
-        "title",
-        "first_name",
-        "last_name",
-        "email",
-        "gender",
-        "pronoun",
-        "is_active",
-        "is_physical_person",
-    ]
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         organization = self.datastore.get(
@@ -66,14 +67,14 @@ class UserSaveSamlAccount(
                 "SingleSignOn field attributes are not configured in OpenSlides"
             )
         additional_required_fields = {
-            key: self.model.saml_id.get_payload_schema()
+            value: self.model.saml_id.get_payload_schema()
             for key, value in self.saml_attr_mapping.items()
-            if value == "saml_id"
+            if key == "saml_id"
         }
         additional_optional_fields = {
-            key: cast(Field, getattr(self.model, value, {})).get_payload_schema()
+            value: cast(Field, getattr(self.model, key, {})).get_payload_schema()
             for key, value in self.saml_attr_mapping.items()
-            if value != "saml_id" and value in self.allowed_user_fields
+            if key != "saml_id" and key in allowed_user_fields
         }
         self.schema = {
             "$schema": schema_version,
@@ -99,16 +100,17 @@ class UserSaveSamlAccount(
         pass
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        inverted_attr_mapping = {v: k for k, v in self.saml_attr_mapping.items()}
         instance = {
-            self.saml_attr_mapping[key]: value
+            inverted_attr_mapping[key]: value
             for key, value in instance.items()
-            if key in self.saml_attr_mapping
-            and self.saml_attr_mapping[key] in self.allowed_user_fields
+            if key in inverted_attr_mapping
+            and inverted_attr_mapping[key] in allowed_user_fields
         }
         users = self.datastore.filter(
             "user",
             FilterOperator("saml_id", "=", instance["saml_id"]),
-            ["id", *self.allowed_user_fields],
+            ["id", *allowed_user_fields],
         )
         if len(users) == 1:
             self.user = next(iter(users.values()))
@@ -142,7 +144,7 @@ class UserSaveSamlAccount(
             del instance["meta_new"]
             yield self.build_event(EventType.Create, fqid, instance)
         else:
-            fields = UpdateAction.create_events_for_reuse(instance)
+            fields = UpdateAction.create_update_events(instance)
             if not fields:
                 return []
             fields = {k: v for k, v in instance.items() if v != self.user.get(k)}

@@ -25,13 +25,13 @@ class UpdateAction(Action):
         Creates events for one instance of the current model.
         """
         fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
-        fields = UpdateAction.create_events_for_reuse(instance)
+        fields = UpdateAction.create_update_events(instance)
         if not fields:
             return []
         yield self.build_event(EventType.Update, fqid, fields)
 
     @staticmethod
-    def create_events_for_reuse(instance: Dict[str, Any]) -> Dict[str, Any]:
+    def create_update_events(instance: Dict[str, Any]) -> Dict[str, Any]:
         return {
             k: v for k, v in instance.items() if k != "id" and not k.startswith("meta_")
         }

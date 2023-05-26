@@ -24,15 +24,15 @@ class UserBaseSamlAccount(BaseActionTestCase):
                 "organization/1": {
                     "saml_enabled": True,
                     "saml_attr_mapping": {
-                        "username": "saml_id",
+                        "saml_id": "username",
                         "title": "title",
-                        "firstName": "first_name",
-                        "lastName": "last_name",
+                        "first_name": "firstName",
+                        "last_name": "lastName",
                         "email": "email",
                         "gender": "gender",
-                        "pronomen": "pronoun",
+                        "pronoun": "pronoun",
                         "is_active": "is_active",
-                        "is_person": "is_physical_person",
+                        "is_physical_person": "is_person",
                     },
                 }
             }
@@ -85,7 +85,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
                 "organization/1": {
                     "saml_enabled": True,
                     "saml_attr_mapping": {
-                        "username": "saml_id",
+                        "saml_id": "username",
                         "default_structure_level": "default_structure_level",
                     },
                 }
@@ -112,7 +112,7 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
                 "lastName": "Mustermann",
                 "email": "test@example.com",
                 "gender": "male",
-                "pronomen": "er",
+                "pronoun": "er",
                 "is_active": True,
                 "is_person": True,
             },
@@ -221,7 +221,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "lastName": "Mustermann",
                 "email": "test@example.com",
                 "gender": "male",
-                "pronomen": "er",
+                "pronoun": "er",
                 "is_active": True,
                 "is_person": True,
             },
