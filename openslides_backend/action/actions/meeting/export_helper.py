@@ -26,6 +26,8 @@ from ....shared.patterns import (
     id_from_fqid,
 )
 
+FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
+
 
 def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, Any]:
     export: Dict[str, Any] = {}
@@ -37,6 +39,8 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         lock_result=False,
         use_changed_models=False,
     )
+    for forbidden_field in FORBIDDEN_FIELDS:
+        meeting.pop(forbidden_field, None)
     export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))
     export["_migration_index"] = get_backend_migration_index()
 

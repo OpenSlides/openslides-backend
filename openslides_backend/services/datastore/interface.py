@@ -176,7 +176,7 @@ class DatastoreService(BaseDatastoreService):
     def get(
         self,
         fqid: FullQualifiedId,
-        mapped_fields: Optional[List[str]] = None,
+        mapped_fields: List[str],
         position: Optional[int] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
@@ -201,7 +201,7 @@ class DatastoreService(BaseDatastoreService):
         self,
         collection: Collection,
         filter: Filter,
-        mapped_fields: List[str] = [],
+        mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
         use_changed_models: bool = True,
