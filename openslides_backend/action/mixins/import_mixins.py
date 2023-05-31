@@ -24,6 +24,7 @@ class ImportState(str, Enum):
     DONE = "done"
     GENERATED = "generated"
     REMOVE = "remove"
+    NONE = "none"
 
 
 class ImportMixin(SingularActionMixin):
