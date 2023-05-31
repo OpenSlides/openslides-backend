@@ -50,7 +50,6 @@ class OrganizationUpdate(
         "saml_metadata_idp",
         "saml_metadata_sp",
         "saml_private_key",
-
     )
 
     model = Organization()
