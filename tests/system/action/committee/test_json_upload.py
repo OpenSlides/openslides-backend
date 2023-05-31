@@ -544,7 +544,6 @@ class CommitteeJsonUploadDate(BaseActionTestCase):
             "state": ImportState.ERROR,
             "messages": [
                 "Only one of start_time and end_time is not allowed.",
-                "Meeting will be created with meeting.create.",
             ],
             "data": {
                 "name": "test2",
