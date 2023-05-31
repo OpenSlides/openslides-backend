@@ -1,7 +1,8 @@
+from textwrap import dedent
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
-from textwrap import dedent
 
 
 class OrganizationUpdateActionTest(BaseActionTestCase):
@@ -130,8 +131,11 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_private_key": "private key dependency",
             },
         )
-        assert 'xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"' in organization["saml_metadata_idp"]
-        assert 'http://www.w3.org/2000/09/xmldsig#' in organization["saml_metadata_sp"]
+        assert (
+            'xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"'
+            in organization["saml_metadata_idp"]
+        )
+        assert "http://www.w3.org/2000/09/xmldsig#" in organization["saml_metadata_sp"]
 
         self.assert_model_exists(
             "theme/1", {"organization_id": 1, "theme_for_organization_id": None}
