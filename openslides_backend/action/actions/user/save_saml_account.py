@@ -11,13 +11,13 @@ from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import Event, EventType
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import schema_version
+from ....shared.typing import Schema
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.action_type import ActionType
-from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement
 from .user_mixin import UsernameMixin
@@ -48,7 +48,7 @@ class UserSaveSamlAccount(
     saml_attr_mapping: Dict[str, str]
     check_email_field = "email"
     model = User()
-    schema = DefaultSchema(User()).get_default_schema()
+    schema: Schema
     skip_archived_meeting_check = True
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
@@ -67,12 +67,26 @@ class UserSaveSamlAccount(
                 "SingleSignOn field attributes are not configured in OpenSlides"
             )
         additional_required_fields = {
-            value: self.model.saml_id.get_payload_schema()
+            value: {
+                "oneOf": [
+                    (type_def := self.model.saml_id.get_payload_schema()),
+                    {"type": "array", "items": type_def},
+                ]
+            }
             for key, value in self.saml_attr_mapping.items()
             if key == "saml_id"
         }
         additional_optional_fields = {
-            value: cast(Field, getattr(self.model, key, {})).get_payload_schema()
+            value: {
+                "oneOf": [
+                    (
+                        type_def := cast(
+                            Field, getattr(self.model, key, {})
+                        ).get_payload_schema()
+                    ),
+                    {"type": "array", "items": type_def},
+                ]
+            }
             for key, value in self.saml_attr_mapping.items()
             if key != "saml_id" and key in allowed_user_fields
         }
@@ -102,7 +116,7 @@ class UserSaveSamlAccount(
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         inverted_attr_mapping = {v: k for k, v in self.saml_attr_mapping.items()}
         instance = {
-            inverted_attr_mapping[key]: value
+            inverted_attr_mapping[key]: value[0] if isinstance(value, list) else value
             for key, value in instance.items()
             if key in inverted_attr_mapping
             and inverted_attr_mapping[key] in allowed_user_fields
