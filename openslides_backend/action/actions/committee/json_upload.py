@@ -117,35 +117,31 @@ class CommitteeJsonUpload(JsonUploadMixin):
             1
             for entry in self.rows
             if entry["data"].get("meeting_name")
-            and not entry["data"].get("meeting_template")
+            and (
+                not entry["data"].get("meeting_template")
+                or entry["data"]["meeting_template"]["info"] != ImportState.DONE
+            )
         )
         with_template = sum(
             1
             for entry in self.rows
             if entry["data"].get("meeting_name")
             and entry["data"].get("meeting_template")
+            and entry["data"]["meeting_template"]["info"] == ImportState.DONE
         )
 
         self.statistics = [
             {
-                "name": "Tags created",
-                "value": self.count_info("organization_tags", ImportState.NEW),
+                "name": "Committees created",
+                "value": self.count_state(ImportState.NEW)
+                + self.count_state(ImportState.WARNING),
             },
-            {"name": "Committees created", "value": self.count_state(ImportState.NEW)},
             {"name": "Committees updated", "value": self.count_state(ImportState.DONE)},
-            {
-                "name": "Additional committees have been created, because they are mentioned in the forwardings",
-                "value": self.count_info("forward_to_committees", ImportState.NEW),
-            },
             {"name": "Meetings created without template", "value": without_template},
             {"name": "Meetings copied from template", "value": with_template},
             {
-                "name": "Committee managers relations",
-                "value": self.count_info("committee_managers", ImportState.DONE),
-            },
-            {
-                "name": "Meeting administrator relations",
-                "value": self.count_info("meeting_admins", ImportState.DONE),
+                "name": "Organization tags created",
+                "value": self.count_info("organization_tags", ImportState.NEW),
             },
         ]
         self.set_state(
@@ -204,12 +200,20 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     "info": ImportState.DONE,
                     "id": meeting_lookup.get_id_by_name(entry["meeting_template"]),
                 }
+            elif entry["meeting_template"] == "":
+                entry["meeting_template"] = {
+                    "value": entry["meeting_template"],
+                    "info": ImportState.NONE,
+                }
             else:
                 entry["meeting_template"] = {
                     "value": entry["meeting_template"],
                     "info": ImportState.WARNING,
                 }
-        if "meeting_name" in entry and "meeting_template" not in entry:
+        if "meeting_name" in entry and (
+            "meeting_template" not in entry
+            or entry["meeting_template"]["info"] == ImportState.WARNING
+        ):
             messages.append("Meeting will be created with meeting.create.")
         self.check_list_field("committee_managers", entry, username_lookup)
         if any(
