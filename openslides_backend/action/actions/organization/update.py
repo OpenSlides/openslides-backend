@@ -47,6 +47,10 @@ class OrganizationUpdate(
         "saml_enabled",
         "saml_login_button_text",
         "saml_attr_mapping",
+        "saml_metadata_idp",
+        "saml_metadata_sp",
+        "saml_private_key",
+
     )
 
     model = Organization()

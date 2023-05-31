@@ -1,6 +1,7 @@
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
+from textwrap import dedent
 
 
 class OrganizationUpdateActionTest(BaseActionTestCase):
@@ -82,10 +83,31 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_enabled": True,
                 "saml_login_button_text": "Text for SAML login button",
                 "saml_attr_mapping": self.saml_attr_mapping,
+                "saml_metadata_idp": dedent(
+                    """
+                    <md:EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+                        xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+                        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                        entityID="https://auth.digiv.de/auth/realms/demo">
+                        </md:IDPSSODescriptor>
+                    </md:EntityDescriptor>
+                    """
+                ),
+                "saml_metadata_sp": dedent(
+                    """
+                    <EntityDescriptor
+                    xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+                    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+                    xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                    entityID="http://localhost:9004/saml/metadata">
+                    </EntityDescriptor>
+                    """
+                ),
+                "saml_private_key": "private key dependency",
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
+        organization = self.assert_model_exists(
             ONE_ORGANIZATION_FQID,
             {
                 "name": "testtest",
@@ -105,8 +127,12 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_enabled": True,
                 "saml_login_button_text": "Text for SAML login button",
                 "saml_attr_mapping": self.saml_attr_mapping,
+                "saml_private_key": "private key dependency",
             },
         )
+        assert 'xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"' in organization["saml_metadata_idp"]
+        assert 'http://www.w3.org/2000/09/xmldsig#' in organization["saml_metadata_sp"]
+
         self.assert_model_exists(
             "theme/1", {"organization_id": 1, "theme_for_organization_id": None}
         )
