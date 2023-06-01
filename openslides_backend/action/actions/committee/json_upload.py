@@ -243,10 +243,22 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     if inner["info"] == ImportState.WARNING
                 ]
             )
-            messages.append("Missing committee manager(s): " + missing_managers)
+            messages.append(f"Missing committee manager(s): [{missing_managers}]")
         state = self.check_list_field(
             "meeting_admins", entry, username_lookup, state, messages
         )
+        if any(
+            inner["info"] == ImportState.WARNING
+            for inner in (entry.get("meeting_admins") or [])
+        ):
+            missing_admins = ", ".join(
+                [
+                    inner["value"]
+                    for inner in entry["meeting_admins"]
+                    if inner["info"] == ImportState.WARNING
+                ]
+            )
+            messages.append(f"Missing meeting admin(s): [{missing_admins}]")
         state = self.check_list_field(
             "organization_tags",
             entry,
@@ -279,16 +291,26 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 messages.append(f"Could not parse {entry[field]}: expected string[]")
                 return ImportState.ERROR
             new_list: List[Dict[str, Any]] = []
+            found_list: List[str] = []
+            remove_list: List[str] = []
             for username in entry[field]:
                 check_duplicate = user_lookup.check_duplicate(username)
-                if check_duplicate == ResultType.FOUND_ID:
+                if username in found_list:
+                    remove_list.append(username)
+                elif check_duplicate == ResultType.FOUND_ID:
                     user_id = user_lookup.get_id_by_name(username)
                     new_list.append(
                         {"value": username, "info": ImportState.DONE, "id": user_id}
                     )
                 else:
                     new_list.append({"value": username, "info": not_found_state})
+                found_list.append(username)
             entry[field] = new_list
+            if remove_list:
+                remove_list_str = ", ".join(remove_list)
+                messages.append(
+                    f"Removed duplicated {field.replace('_', ' ')}: [{remove_list_str}]"
+                )
         return state
 
     def count_info(self, field: str, state: ImportState) -> int:
