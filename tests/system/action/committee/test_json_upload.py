@@ -515,12 +515,14 @@ class CommitteeJsonUploadDate(BaseActionTestCase):
                     {
                         "name": "test",
                         "meeting_name": "test meeting",
+                        "meeting_template": "",
                         "start_time": "2023-08-09",
                         "end_time": "",
                     },
                     {
                         "name": "test2",
                         "meeting_name": "test meeting 2",
+                        "meeting_template": "",
                         "start_time": "",
                         "end_time": "2023-08-10",
                     },
@@ -537,7 +539,8 @@ class CommitteeJsonUploadDate(BaseActionTestCase):
                 "name": "test",
                 "meeting_name": "test meeting",
                 "start_time": 1691539200,
-                "end_state": "",
+                "end_time": "",
+                "meeting_template": {"info": ImportState.NONE, "value": ""},
             },
         }
         assert response.json["results"][0][0]["rows"][1] == {
@@ -548,7 +551,9 @@ class CommitteeJsonUploadDate(BaseActionTestCase):
             "data": {
                 "name": "test2",
                 "meeting_name": "test meeting 2",
+                "start_time": "",
                 "end_time": 1691625600,
+                "meeting_template": {"info": ImportState.NONE, "value": ""},
             },
         }
 
@@ -578,6 +583,7 @@ class CommitteeJsonUploadDate(BaseActionTestCase):
                 "meeting_name": "test meeting",
                 "start_time": 1691539200,
                 "end_time": "12XX-broken",
+                "meeting_template": {"info": ImportState.NONE, "value": ""},
             },
         }
 
