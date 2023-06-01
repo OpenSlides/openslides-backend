@@ -185,9 +185,7 @@ class JsonUploadMixin(SingularActionMixin):
                                 mktime(strptime(entry[field], "%Y-%m-%d"))
                             )
                         except Exception:
-                            raise ActionException(
-                                f"Could not parse {entry[field]} except date"
-                            )
+                            pass
                     elif type_ == "string" and is_list:
                         try:
                             entry[field] = [
@@ -195,10 +193,7 @@ class JsonUploadMixin(SingularActionMixin):
                                 for item in list(csv.reader([entry[field]]))[0]
                             ]
                         except Exception:
-                            raise ActionException(
-                                f"Could not parse {entry[field]} as string[]"
-                            )
-
+                            pass
         super().validate_instance(instance)
 
 

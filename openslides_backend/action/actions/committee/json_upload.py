@@ -1,10 +1,20 @@
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, ResultType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+
+LIST_TYPE = {
+    "anyOf": [
+        {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        {"type": "string"},
+    ]
+}
 
 
 @register_action("committee.json_upload")
@@ -22,25 +32,13 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     "type": "object",
                     "properties": {
                         **model.get_properties("name", "description"),
-                        "forward_to_committees": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                        "organization_tags": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
-                        "committee_managers": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
+                        "forward_to_committees": LIST_TYPE,
+                        "organization_tags": LIST_TYPE,
+                        "committee_managers": LIST_TYPE,
                         "meeting_name": {"type": "string"},
-                        "start_time": {"type": "integer"},
-                        "end_time": {"type": "integer"},
-                        "meeting_admins": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                        },
+                        "start_time": {"type": ["integer", "string"]},
+                        "end_time": {"type": ["integer", "string"]},
+                        "meeting_admins": LIST_TYPE,
                         "meeting_template": {"type": "string"},
                     },
                     "required": ["name"],
@@ -85,13 +83,21 @@ class CommitteeJsonUpload(JsonUploadMixin):
         organization_tags: Set[str] = set()
         committee_names: Set[str] = set()
         for entry in data:
-            if entry.get("committee_managers"):
+            if entry.get("committee_managers") and not isinstance(
+                entry["committee_managers"], str
+            ):
                 usernames.update(entry["committee_managers"])
-            if entry.get("meeting_admins"):
+            if entry.get("meeting_admins") and not isinstance(
+                entry["meeting_admins"], str
+            ):
                 usernames.update(entry["meeting_admins"])
-            if entry.get("organization_tags"):
+            if entry.get("organization_tags") and not isinstance(
+                entry["organization_tags"], str
+            ):
                 organization_tags.update(entry["organization_tags"])
-            if entry.get("forward_to_committees"):
+            if entry.get("forward_to_committees") and not isinstance(
+                entry["forward_to_committees"], str
+            ):
                 committee_names.update(entry["forward_to_committees"])
         username_lookup = Lookup(
             self.datastore, "user", list(usernames), field="username"
@@ -183,14 +189,22 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 state = ImportState.WARNING if state != ImportState.ERROR else state
                 messages.append("No meeting will be created without meeting_name")
 
+        if entry.get("start_time") and isinstance(entry.get("start_time"), str):
+            state = ImportState.ERROR
+            messages.append(f"Could not parse {entry['start_time']}: expected date")
+        if entry.get("end_time") and isinstance(entry.get("end_time"), str):
+            state = ImportState.ERROR
+            messages.append(f"Could not parse {entry['end_time']}: expected date")
+
         if (
             entry.get("start_time")
             and not entry.get("end_time")
             or not entry.get("start_time")
             and entry.get("end_time")
         ):
-            state = ImportState.ERROR
-            messages.append("Only one of start_time and end_time is not allowed.")
+            if state != ImportState.ERROR:
+                state = ImportState.ERROR
+                messages.append("Only one of start_time and end_time is not allowed.")
 
         if "meeting_template" in entry:
             result_type = meeting_lookup.check_duplicate(entry["meeting_template"])
@@ -215,7 +229,9 @@ class CommitteeJsonUpload(JsonUploadMixin):
             or entry["meeting_template"]["info"] == ImportState.WARNING
         ):
             messages.append("Meeting will be created with meeting.create.")
-        self.check_list_field("committee_managers", entry, username_lookup)
+        state = self.check_list_field(
+            "committee_managers", entry, username_lookup, state, messages
+        )
         if any(
             inner["info"] == ImportState.WARNING
             for inner in (entry.get("committee_managers") or [])
@@ -228,17 +244,23 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 ]
             )
             messages.append("Missing committee manager(s): " + missing_managers)
-        self.check_list_field("meeting_admins", entry, username_lookup)
-        self.check_list_field(
+        state = self.check_list_field(
+            "meeting_admins", entry, username_lookup, state, messages
+        )
+        state = self.check_list_field(
             "organization_tags",
             entry,
             organization_tag_lookup,
+            state,
+            messages,
             not_found_state=ImportState.NEW,
         )
-        self.check_list_field(
+        state = self.check_list_field(
             "forward_to_committees",
             entry,
             committee_lookup,
+            state,
+            messages,
             not_found_state=ImportState.NEW,
         )
         return {"state": state, "messages": messages, "data": entry}
@@ -248,9 +270,14 @@ class CommitteeJsonUpload(JsonUploadMixin):
         field: str,
         entry: Dict[str, Any],
         user_lookup: Lookup,
+        state: Optional[ImportState],
+        messages: List[str],
         not_found_state: ImportState = ImportState.WARNING,
-    ) -> None:
-        if entry.get(field):
+    ) -> Optional[ImportState]:
+        if field in entry:
+            if isinstance(entry[field], str):
+                messages.append(f"Could not parse {entry[field]}: expected string[]")
+                return ImportState.ERROR
             new_list: List[Dict[str, Any]] = []
             for username in entry[field]:
                 check_duplicate = user_lookup.check_duplicate(username)
@@ -262,6 +289,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 else:
                     new_list.append({"value": username, "info": not_found_state})
             entry[field] = new_list
+        return state
 
     def count_info(self, field: str, state: ImportState) -> int:
         return sum(
