@@ -234,6 +234,7 @@ user:
     restriction_mode: A
   saml_id:
     type: string
+    minLength: 1
     restriction_mode: A
     description: unique-key from IdP for SAML login
   pronoun:

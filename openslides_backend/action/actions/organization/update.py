@@ -8,6 +8,7 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import FilterOperator
+from ....shared.schema import optional_str_schema
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.default_schema import DefaultSchema
@@ -59,7 +60,7 @@ class OrganizationUpdate(
             "saml_attr_mapping": {
                 "type": "object",
                 "properties": {
-                    field: {"type": ["string", "null"], "maxLength": 256}
+                    field: {**optional_str_schema, "max_length": 256}
                     for field in allowed_user_fields
                 },
                 "required": ["saml_id"],

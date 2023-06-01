@@ -68,6 +68,26 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
             response.json["message"],
         )
 
+    def test_save_attr_empty_saml_id_provided(self) -> None:
+        response = self.request(
+            "user.save_saml_account", {"username": [], "lastName": "Cartwright"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data.username must be valid exactly by one definition (0 matches found)",
+            response.json["message"],
+        )
+
+    def test_save_attr_empty_saml_id_list_provided(self) -> None:
+        response = self.request(
+            "user.save_saml_account", {"username": [], "lastName": "Cartwright"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data.username must be valid exactly by one definition (0 matches found)",
+            response.json["message"],
+        )
+
     def test_save_more_than_one_user_instances_provided(self) -> None:
         response = self.request_multi(
             "user.save_saml_account", [{"username": "Joe"}, {"username": "Ben"}]

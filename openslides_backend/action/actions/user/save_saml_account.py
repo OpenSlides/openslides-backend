@@ -4,7 +4,6 @@ import fastjsonschema
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....models.fields import Field
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
@@ -65,39 +64,27 @@ class UserSaveSamlAccount(
             raise ActionException(
                 "SingleSignOn field attributes are not configured in OpenSlides"
             )
-        additional_required_fields = {
-            value: {
-                "oneOf": [
-                    (type_def := self.model.saml_id.get_payload_schema()),
-                    {"type": "array", "items": type_def, "minItems": 1},
-                ]
-            }
-            for key, value in self.saml_attr_mapping.items()
-            if key == "saml_id"
-        }
-        additional_optional_fields = {
-            value: {
-                "oneOf": [
-                    (
-                        type_def := cast(
-                            Field, getattr(self.model, key, {})
-                        ).get_payload_schema()
-                    ),
-                    {"type": "array", "items": type_def},
-                ]
-            }
-            for key, value in self.saml_attr_mapping.items()
-            if key != "saml_id" and key in allowed_user_fields
-        }
         self.schema = {
             "$schema": schema_version,
             "title": "create saml account schema",
             "type": "object",
             "properties": {
-                **additional_required_fields,
-                **additional_optional_fields,
+                payload_field: {
+                    "oneOf": [
+                        (
+                            type_def := self.model.get_field(
+                                model_field
+                            ).get_payload_schema()
+                        ),
+                        {"type": "array", "items": type_def}
+                        if model_field != "saml_id"
+                        else {"type": "array", "items": type_def, "minItems": 1},
+                    ]
+                }
+                for model_field, payload_field in self.saml_attr_mapping.items()
+                if model_field in allowed_user_fields
             },
-            "required": list(additional_required_fields.keys()),
+            "required": [self.saml_attr_mapping["saml_id"]],
             "additionalProperties": True,
         }
         try:
@@ -125,7 +112,7 @@ class UserSaveSamlAccount(
                     instance[model_field] = value
         users = self.datastore.filter(
             "user",
-            FilterOperator("saml_id", "=", instance["saml_id"]),
+            FilterOperator("saml_id", "=", instance.get("saml_id", "")),
             ["id", *allowed_user_fields],
         )
         if len(users) == 1:
@@ -135,7 +122,9 @@ class UserSaveSamlAccount(
             instance["id"] = self.datastore.reserve_ids(self.model.collection, 1)[0]
             instance["can_change_own_password"] = False
             instance["organization_id"] = ONE_ORGANIZATION_ID
-            instance["username"] = self.generate_usernames([instance["saml_id"]])[0]
+            instance["username"] = self.generate_usernames(
+                [instance.get("saml_id", "")]
+            )[0]
             instance["meta_new"] = True
             instance = self.set_defaults(instance)
         else:
