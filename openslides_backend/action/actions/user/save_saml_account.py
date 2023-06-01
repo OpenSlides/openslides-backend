@@ -8,8 +8,7 @@ from ....models.fields import Field
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.interfaces.event import Event, EventType
-from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.interfaces.event import Event
 from ....shared.schema import schema_version
 from ....shared.typing import Schema
 from ....shared.util import ONE_ORGANIZATION_ID
@@ -156,18 +155,13 @@ class UserSaveSamlAccount(
         """
         Handles create and update
         """
-        fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         if "meta_new" in instance:
-            del instance["meta_new"]
-            yield self.build_event(EventType.Create, fqid, instance)
+            yield from super().create_events(instance)
         else:
-            fields = UpdateAction.create_update_events(instance)
-            if not fields:
-                return []
-            fields = {k: v for k, v in instance.items() if v != self.user.get(k)}
-            if not fields:
-                return []
-            yield self.build_event(EventType.Update, fqid, fields)
+            fields = {
+                k: v for k, v in instance.items() if k == "id" or v != self.user.get(k)
+            }
+            yield from UpdateAction.create_events(cast(UpdateAction, self), fields)
 
     def create_action_result_element(
         self, instance: Dict[str, Any]
