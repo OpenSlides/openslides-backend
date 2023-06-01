@@ -67,6 +67,8 @@ class CommitteeJsonUpload(JsonUploadMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
+
+        # setup the lookups
         duplicate_checker = Lookup(
             self.datastore, "committee", [entry["name"] for entry in data]
         )
@@ -107,6 +109,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
         )
         committee_lookup = Lookup(self.datastore, "committee", list(committee_names))
 
+        # main work, see validate_entry
         self.rows = [
             self.validate_entry(
                 entry,
@@ -119,6 +122,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
             for entry in data
         ]
 
+        # calculate statistics
         without_template = sum(
             1
             for entry in self.rows
@@ -150,6 +154,8 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 "value": self.count_info("organization_tags", ImportState.NEW),
             },
         ]
+
+        # set state and store in action worker
         self.set_state(
             self.count_state(ImportState.ERROR), self.count_state(ImportState.WARNING)
         )
@@ -166,6 +172,8 @@ class CommitteeJsonUpload(JsonUploadMixin):
         committee_lookup: Lookup,
     ) -> Dict[str, Any]:
         state, messages = None, []
+
+        # committee state handling
         check_result = duplicate_checker.check_duplicate(entry["name"])
         if check_result == ResultType.FOUND_ID:
             state = ImportState.DONE
@@ -176,6 +184,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
             state = ImportState.ERROR
             messages.append("Found more committees with the same name in db.")
 
+        # meeting special cases
         if any(
             field in entry
             for field in (
@@ -229,21 +238,8 @@ class CommitteeJsonUpload(JsonUploadMixin):
             or entry["meeting_template"]["info"] == ImportState.WARNING
         ):
             messages.append("Meeting will be created with meeting.create.")
-        state = self.check_list_field(
-            "committee_managers", entry, username_lookup, state, messages
-        )
-        if any(
-            inner["info"] == ImportState.WARNING
-            for inner in (entry.get("committee_managers") or [])
-        ):
-            missing_managers = ", ".join(
-                [
-                    inner["value"]
-                    for inner in entry["committee_managers"]
-                    if inner["info"] == ImportState.WARNING
-                ]
-            )
-            messages.append(f"Missing committee manager(s): [{missing_managers}]")
+
+        # handle meeting_admins
         state = self.check_list_field(
             "meeting_admins", entry, username_lookup, state, messages
         )
@@ -259,6 +255,25 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 ]
             )
             messages.append(f"Missing meeting admin(s): [{missing_admins}]")
+
+        # handle committee managers (string list)
+        state = self.check_list_field(
+            "committee_managers", entry, username_lookup, state, messages
+        )
+        if any(
+            inner["info"] == ImportState.WARNING
+            for inner in (entry.get("committee_managers") or [])
+        ):
+            missing_managers = ", ".join(
+                [
+                    inner["value"]
+                    for inner in entry["committee_managers"]
+                    if inner["info"] == ImportState.WARNING
+                ]
+            )
+            messages.append(f"Missing committee manager(s): [{missing_managers}]")
+
+        # handle organization tags
         state = self.check_list_field(
             "organization_tags",
             entry,
@@ -267,6 +282,8 @@ class CommitteeJsonUpload(JsonUploadMixin):
             messages,
             not_found_state=ImportState.NEW,
         )
+
+        # handle forward_to_committees
         state = self.check_list_field(
             "forward_to_committees",
             entry,
@@ -275,37 +292,43 @@ class CommitteeJsonUpload(JsonUploadMixin):
             messages,
             not_found_state=ImportState.NEW,
         )
+
         return {"state": state, "messages": messages, "data": entry}
 
     def check_list_field(
         self,
         field: str,
         entry: Dict[str, Any],
-        user_lookup: Lookup,
+        lookup: Lookup,
         state: Optional[ImportState],
         messages: List[str],
         not_found_state: ImportState = ImportState.WARNING,
     ) -> Optional[ImportState]:
         if field in entry:
+            # check for parse error
             if isinstance(entry[field], str):
                 messages.append(f"Could not parse {entry[field]}: expected string[]")
                 return ImportState.ERROR
+
+            # new_list is the new list of object
             new_list: List[Dict[str, Any]] = []
+            # found_list and remove_list are used to cut duplicates
             found_list: List[str] = []
             remove_list: List[str] = []
-            for username in entry[field]:
-                check_duplicate = user_lookup.check_duplicate(username)
-                if username in found_list:
-                    remove_list.append(username)
+            for name in entry[field]:
+                check_duplicate = lookup.check_duplicate(name)
+                if name in found_list:
+                    remove_list.append(name)
                 elif check_duplicate == ResultType.FOUND_ID:
-                    user_id = user_lookup.get_id_by_name(username)
+                    id_ = lookup.get_id_by_name(name)
                     new_list.append(
-                        {"value": username, "info": ImportState.DONE, "id": user_id}
+                        {"value": name, "info": ImportState.DONE, "id": id_}
                     )
                 else:
-                    new_list.append({"value": username, "info": not_found_state})
-                found_list.append(username)
+                    new_list.append({"value": name, "info": not_found_state})
+                found_list.append(name)
             entry[field] = new_list
+
             if remove_list:
                 remove_list_str = ", ".join(remove_list)
                 messages.append(
