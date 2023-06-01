@@ -59,7 +59,6 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         )
 
     def test_save_attr_no_saml_id_provided(self) -> None:
-        """error message: example data username from IdP maps to saml_id as OpenSlides name"""
         response = self.request(
             "user.save_saml_account", {"firstName": "Joe", "lastName": "Cartwright"}
         )
@@ -309,3 +308,50 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         self.assert_model_exists("user/78", user_data)
         new_position = self.get_current_db_position()
         assert new_position == old_position
+
+    def test_create_saml_account_all_fields_mixed_changes(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "saml_id": "111222333",
+                    "username": "Saml",
+                    "title": "Dr.",
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "test@example.com",
+                    "gender": "male",
+                    "pronoun": "er",
+                    "is_active": True,
+                    "is_physical_person": True,
+                }
+            }
+        )
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": ["111222333"],
+                "title": "Drx.",
+                "firstName": ["Maxx"],
+                "lastName": [],  # don't change
+                "email": [""],
+                "pronoun": [None],  # don't change
+                "is_active": False,
+                "is_person": None,  # don't change
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "Saml",
+                "saml_id": "111222333",
+                "title": "Drx.",
+                "first_name": "Maxx",
+                "last_name": "Mustermann",
+                "email": "",
+                "gender": "male",
+                "pronoun": "er",
+                "is_active": False,
+                "is_physical_person": True,
+            },
+        )

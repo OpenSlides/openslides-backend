@@ -70,7 +70,7 @@ class UserSaveSamlAccount(
             value: {
                 "oneOf": [
                     (type_def := self.model.saml_id.get_payload_schema()),
-                    {"type": "array", "items": type_def},
+                    {"type": "array", "items": type_def, "minItems": 1},
                 ]
             }
             for key, value in self.saml_attr_mapping.items()
@@ -113,14 +113,17 @@ class UserSaveSamlAccount(
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         pass
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        inverted_attr_mapping = {v: k for k, v in self.saml_attr_mapping.items()}
-        instance = {
-            inverted_attr_mapping[key]: value[0] if isinstance(value, list) else value
-            for key, value in instance.items()
-            if key in inverted_attr_mapping
-            and inverted_attr_mapping[key] in allowed_user_fields
-        }
+    def base_update_instance(self, instance_old: Dict[str, Any]) -> Dict[str, Any]:
+        instance: Dict[str, Any] = dict()
+        for model_field, payload_field in self.saml_attr_mapping.items():
+            if payload_field in instance_old and model_field in allowed_user_fields:
+                value = (
+                    tx[0]
+                    if isinstance((tx := instance_old[payload_field]), list) and len(tx)
+                    else tx
+                )
+                if value not in (None, []):
+                    instance[model_field] = value
         users = self.datastore.filter(
             "user",
             FilterOperator("saml_id", "=", instance["saml_id"]),
