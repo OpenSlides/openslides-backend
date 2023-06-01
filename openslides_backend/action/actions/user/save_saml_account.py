@@ -46,7 +46,7 @@ class UserSaveSamlAccount(
     saml_attr_mapping: Dict[str, str]
     check_email_field = "email"
     model = User()
-    schema: Schema
+    schema: Schema = {}
     skip_archived_meeting_check = True
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
