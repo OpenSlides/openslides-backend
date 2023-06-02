@@ -316,11 +316,11 @@ class CommitteeJsonUploadListFields(BaseActionTestCase):
                 "data": [
                     {
                         "name": "committee A",
-                        "forward_to_committees": '"committee B","committee C"',
+                        "forward_to_committees": "committee B,committee C",
                     },
                     {
                         "name": "committee B",
-                        "forward_to_committees": '"committee C", "committee A"',
+                        "forward_to_committees": "committee C, committee A",
                     },
                     {
                         "name": "committee C",
@@ -345,7 +345,7 @@ class CommitteeJsonUploadListFields(BaseActionTestCase):
                 {"value": "committee A", "info": ImportState.NEW},
             ],
         }
-        assert response.json["results"][0][0]["rows"][1]["data"] == {
+        assert response.json["results"][0][0]["rows"][2]["data"] == {
             "name": "committee C",
             "forward_to_committees": [
                 {"value": "committee A", "info": ImportState.NEW},

@@ -15,6 +15,7 @@ LIST_TYPE = {
         {"type": "string"},
     ]
 }
+NEW_COMMITEE_ID = 0
 
 
 @register_action("committee.json_upload")
@@ -108,6 +109,15 @@ class CommitteeJsonUpload(JsonUploadMixin):
             self.datastore, "organization_tag", list(organization_tags)
         )
         committee_lookup = Lookup(self.datastore, "committee", list(committee_names))
+        found_committee = [
+            entry["name"]
+            for entry in data
+            if committee_lookup.check_duplicate(entry["name"]) == ResultType.NOT_FOUND
+        ]
+        # special case: we want to find committees, which are new created
+        # for the forwarding. Handled in check_list_field().
+        for name in found_committee:
+            committee_lookup.name_to_ids[name].append(NEW_COMMITEE_ID)
 
         # main work, see validate_entry
         self.rows = [
@@ -321,9 +331,13 @@ class CommitteeJsonUpload(JsonUploadMixin):
                     remove_list.append(name)
                 elif check_duplicate == ResultType.FOUND_ID:
                     id_ = lookup.get_id_by_name(name)
-                    new_list.append(
-                        {"value": name, "info": ImportState.DONE, "id": id_}
-                    )
+                    if id_:
+                        new_list.append(
+                            {"value": name, "info": ImportState.DONE, "id": id_}
+                        )
+                    else:
+                        new_list.append({"value": name, "info": not_found_state})
+
                 else:
                     new_list.append({"value": name, "info": not_found_state})
                 found_list.append(name)
