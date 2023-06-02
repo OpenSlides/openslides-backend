@@ -2,7 +2,7 @@
 -- schema.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
--- MODELS_YML_CHECKSUM = 'f1842d0f88bf29f159ecd509881e486d'
+-- MODELS_YML_CHECKSUM = '9c485092b6516914134f32fe623bba9b'
 
 CREATE TABLE IF NOT EXISTS organizationT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS organizationT (
     enable_chat boolean,
     limit_of_meetings integer DEFAULT '0',
     limit_of_users integer DEFAULT '0',
+    default_language varchar(256) NOT NULL,
     theme_id integer NOT NULL,
     users_email_sender varchar(256) DEFAULT 'OpenSlides',
     users_email_replyto varchar(256),
@@ -37,7 +38,8 @@ This email was generated automatically.',
 CREATE TABLE IF NOT EXISTS userT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     username varchar(256) NOT NULL,
-    pronoun varchar(256),
+    saml_id varchar(256),
+    pronoun varchar(32),
     title varchar(256),
     first_name varchar(256),
     last_name varchar(256),
@@ -51,14 +53,14 @@ CREATE TABLE IF NOT EXISTS userT (
     default_number varchar(256),
     default_structure_level varchar(256),
     default_vote_weight decimal(6) DEFAULT '1.000000',
-    last_email_send timestamptz,
+    last_email_sent timestamptz,
     is_demo_user boolean,
     last_login timestamptz,
     organization_management_level varchar(256)
 );
 
 
-CREATE TABLE IF NOT EXISTS committee_to_user (
+CREATE TABLE IF NOT EXISTS committee_manager_to_user (
     user_id integer NOT NULL,
     committee_id integer NOT NULL
 );
@@ -196,6 +198,7 @@ CREATE TABLE IF NOT EXISTS meetingT (
     start_time timestamptz,
     end_time timestamptz,
     imported_at timestamptz,
+    language varchar(256),
     jitsi_domain varchar(256),
     jitsi_room_name varchar(256),
     jitsi_room_password varchar(256),
@@ -284,7 +287,7 @@ CREATE TABLE IF NOT EXISTS meetingT (
     motion_poll_ballot_paper_selection varchar(256) DEFAULT 'CUSTOM_NUMBER',
     motion_poll_ballot_paper_number integer DEFAULT '8',
     motion_poll_default_type varchar(256) DEFAULT 'pseudoanonymous',
-    motion_poll_default_100_percent_base varchar(256) DEFAULT 'YNA',
+    motion_poll_default_onehundred_percent_base varchar(256) DEFAULT 'YNA',
     motion_poll_default_backend varchar(256) DEFAULT 'fast',
     users_enable_presence_view boolean DEFAULT 'False',
     users_enable_vote_weight boolean DEFAULT 'False',
@@ -317,14 +320,14 @@ This email was generated automatically.',
     assignment_poll_sort_poll_result_by_votes boolean DEFAULT 'True',
     assignment_poll_default_type varchar(256) DEFAULT 'pseudoanonymous',
     assignment_poll_default_method varchar(256) DEFAULT 'Y',
-    assignment_poll_default_100_percent_base varchar(256) DEFAULT 'valid',
+    assignment_poll_default_onehundred_percent_base varchar(256) DEFAULT 'valid',
     assignment_poll_default_backend varchar(256) DEFAULT 'fast',
     poll_ballot_paper_selection varchar(256),
     poll_ballot_paper_number integer,
     poll_sort_poll_result_by_votes boolean,
     poll_default_type varchar(256) DEFAULT 'analog',
     poll_default_method varchar(256),
-    poll_default_100_percent_base varchar(256) DEFAULT 'YNA',
+    poll_default_onehundred_percent_base varchar(256) DEFAULT 'YNA',
     poll_default_backend varchar(256) DEFAULT 'fast',
     poll_couple_countdown boolean DEFAULT 'True',
     logo_projector_main_id integer,
@@ -868,8 +871,8 @@ CREATE TABLE IF NOT EXISTS action_worker (
 );
 
 ALTER TABLE organizationT ADD FOREIGN KEY (theme_id) REFERENCES theme(id);
-ALTER TABLE committee_to_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE committee_to_user ADD FOREIGN KEY (committee_id) REFERENCES committeeT(id);
+ALTER TABLE committee_manager_to_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
+ALTER TABLE committee_manager_to_user ADD FOREIGN KEY (committee_id) REFERENCES committeeT(id);
 ALTER TABLE group_to_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
 ALTER TABLE group_to_user ADD FOREIGN KEY (group_id) REFERENCES groupT(id);
 ALTER TABLE poll_to_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
@@ -1021,7 +1024,8 @@ CREATE OR REPLACE VIEW organization AS SELECT *,
 (select array_agg(c.id) from committeeT c) as committee_ids,
 (select array_agg(m.id) from meetingT m where m.state = 'active') as active_meeting_ids,
 (select array_agg(m.id) from meetingT m where m.state = 'archived') as archived_meeting_ids,
-(select array_agg(m.id) from meetingT m where m.template_for_organization) as template_meeting_ids
+(select array_agg(m.id) from meetingT m where m.template_for_organization) as template_meeting_ids,
+(select array_agg(u.id) from userT u) as user_ids
 FROM organizationT o;
 
 
@@ -1032,7 +1036,7 @@ CREATE OR REPLACE VIEW user_ AS SELECT *,
       join meetingT m on m.id = g.meeting_id
       where gtu.user_id = u.id
     union
-    select ctu.committee_id as committee_id from committee_to_user ctu where ctu.user_id = u.id
+    select ctu.committee_id as committee_id from committee_manager_to_user ctu where ctu.user_id = u.id
   ) as cs) as committee_ids,
 (select array_agg(g.meeting_id) from group_to_user gtu join groupT g on g.id = gtu.group_id where gtu.user_id = u.id) as meeting_ids
 FROM userT u;
@@ -1047,7 +1051,7 @@ CREATE OR REPLACE VIEW committee AS SELECT *,
     join group_to_user gtu on gtu.group_id = g.id
     where m.committee_id = c.id
   union
-  select ctu.user_id as user_id from committee_to_user ctu where ctu.committee_id = c.id
+  select ctu.user_id as user_id from committee_manager_to_user ctu where ctu.committee_id = c.id
 ) as x) as user_ids
 FROM committeeT c;
 

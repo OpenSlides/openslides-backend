@@ -232,7 +232,7 @@ organization:
   user_ids:
     type: number[]
     restriction_mode: C
-    Xsqlview: user/id
+    select: select array_agg(u.id) from userT u
 
 userT:
   entity_description:
@@ -337,7 +337,7 @@ user_:
             join meetingT m on m.id = g.meeting_id
             where gtu.user_id = u.id
           union
-          select ctu.committee_id as committee_id from committee_to_user ctu where ctu.user_id = u.id
+          select ctu.committee_id as committee_id from committee_manager_to_user ctu where ctu.user_id = u.id
         ) as cs
 
   # for the motion forwarding
@@ -382,9 +382,10 @@ user_:
     todo: sqlview or backend calculated fields, but from userT, not view
     select: select array_agg(g.meeting_id) from group_to_user gtu join groupT g on g.id = gtu.group_id where gtu.user_id = u.id
 
-committee_to_user:
+committee_manager_to_user:
   entity_description:
     type: table
+    description: Committee Manager
   user_id:
     type: relation
     references: userT(id)
@@ -776,7 +777,7 @@ committee:
           join group_to_user gtu on gtu.group_id = g.id
           where m.committee_id = c.id
         union
-        select ctu.user_id as user_id from committee_to_user ctu where ctu.committee_id = c.id
+        select ctu.user_id as user_id from committee_manager_to_user ctu where ctu.committee_id = c.id
       ) as x
   meeting_ids:
     type: number[]
