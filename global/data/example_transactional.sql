@@ -1,7 +1,7 @@
 -- this script can only be used for an empty database without used sequences
 BEGIN;
 INSERT INTO theme (name, accent_500, primary_500, warn_500) values ('standard theme', 2201331, 3241878, 15754240);
-INSERT INTO organizationT (name, theme_id) values ('Intevation', 1);
+INSERT INTO organizationT (name, theme_id, default_language) values ('Intevation', 1, 'en');
 
 INSERT INTO committeeT (name) VALUES ('c1'), ('c2'), ('c3'), ('c4');
 INSERT INTO forwarding_committee_to_committee values (1, 2), (1, 3), (4, 1);
