@@ -259,10 +259,14 @@ class CommitteeImport(BaseActionTestCase):
             },
         )
 
-    @pytest.mark.skip
     def test_import_create_meeting(self) -> None:
         self.set_models(
             {
+                "organization/1": {
+                    "default_language": "de",
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                },
                 "user/5": {"username": "u1"},
                 "action_worker/1": {
                     "result": {
@@ -301,6 +305,7 @@ class CommitteeImport(BaseActionTestCase):
                 "start_time": 1684844525,
                 "end_time": 1684844546,
                 "committee_id": 1,
+                "language": "de",
             },
         )
         self.assert_model_exists("user/5", {"username": "u1", "meeting_ids": [1]})
