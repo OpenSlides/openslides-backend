@@ -15,6 +15,7 @@ class ProjectorUpdate(UpdateAction):
     schema = DefaultSchema(Projector()).get_update_schema(
         optional_properties=[
             "name",
+            "is_internal",
             "width",
             "aspect_ratio_numerator",
             "aspect_ratio_denominator",

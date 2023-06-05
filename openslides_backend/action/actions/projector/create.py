@@ -16,6 +16,7 @@ class ProjectorCreateAction(SequentialNumbersMixin, CreateAction):
     schema = DefaultSchema(Projector()).get_create_schema(
         ["name", "meeting_id"],
         [
+            "is_internal",
             "width",
             "aspect_ratio_numerator",
             "aspect_ratio_denominator",

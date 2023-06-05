@@ -23,6 +23,7 @@ class ProjectorUpdate(BaseActionTestCase):
             {
                 "id": 111,
                 "name": "name_Xcdfgee",
+                "is_internal": True,
                 "width": 100,
                 "aspect_ratio_numerator": 3,
                 "aspect_ratio_denominator": 4,
@@ -57,6 +58,7 @@ class ProjectorUpdate(BaseActionTestCase):
         ):
             assert model.get(color_field) == "#ffffff"
         for bool_field in (
+            "is_internal",
             "show_header_footer",
             "show_title",
             "show_logo",
