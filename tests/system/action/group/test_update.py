@@ -23,22 +23,21 @@ class GroupUpdateActionTest(BaseActionTestCase):
         assert model.get("name") == "name_Xcdfgee"
 
     def test_update_permissions(self) -> None:
+        data = [
+            Permissions.User.CAN_MANAGE,
+            Permissions.Motion.CAN_MANAGE,
+            Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+        ]
         response = self.request(
             "group.update",
             {
                 "id": 111,
-                "permissions": [
-                    Permissions.User.CAN_MANAGE,
-                    Permissions.Motion.CAN_MANAGE,
-                ],
+                "permissions": data,
             },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("group/111")
-        assert model.get("permissions") == [
-            Permissions.User.CAN_MANAGE,
-            Permissions.Motion.CAN_MANAGE,
-        ]
+        assert model.get("permissions") == data
 
     def test_update_permissions_remove(self) -> None:
         response = self.request(
