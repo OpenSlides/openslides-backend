@@ -76,9 +76,11 @@ class UserSaveSamlAccount(
                                 model_field
                             ).get_payload_schema()
                         ),
-                        {"type": "array", "items": type_def}
-                        if model_field != "saml_id"
-                        else {"type": "array", "items": type_def, "minItems": 1},
+                        {
+                            "type": "array",
+                            "items": type_def,
+                            "minItems": 1 if model_field == "saml_id" else 0,
+                        },
                     ]
                 }
                 for model_field, payload_field in self.saml_attr_mapping.items()
