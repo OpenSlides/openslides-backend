@@ -2459,6 +2459,7 @@
         "1": {
             "id": 1,
             "name": "Default projector",
+            "is_internal": false,
             "scale": 0,
             "scroll": 0,
             "width": 1220,
@@ -2516,6 +2517,7 @@
         "2": {
             "id": 2,
             "name": "Nebenprojektor",
+            "is_internal": false,
             "scale": 0,
             "scroll": 0,
             "width": 1024,
