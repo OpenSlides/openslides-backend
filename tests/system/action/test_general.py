@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend.sql_read_database_backend_service import (
-    MIGRATION_INDEX_NOT_INITIALIZED,
     SqlReadDatabaseBackendService,
 )
 from datastore.shared.services import ReadDatabase
@@ -103,7 +102,6 @@ class TestWSGIWithMigrations(BaseActionTestCase):
     def reset_read_db(self) -> None:
         read_db = injector.get(ReadDatabase)
         assert isinstance(read_db, SqlReadDatabaseBackendService)
-        read_db.current_migration_index = MIGRATION_INDEX_NOT_INITIALIZED
 
     def setUp(self) -> None:
         super().setUp()
@@ -132,7 +130,6 @@ class TestWSGIWithMigrations(BaseActionTestCase):
         )
         read_db = injector.get(ReadDatabase)
         assert isinstance(read_db, SqlReadDatabaseBackendService)
-        read_db.current_migration_index = MIGRATION_INDEX_NOT_INITIALIZED
 
     @patch("openslides_backend.migrations.get_backend_migration_index")
     def test_request_misconfigured_migrations(self, gbmi: Any) -> None:
@@ -153,4 +150,3 @@ class TestWSGIWithMigrations(BaseActionTestCase):
         )
         read_db = injector.get(ReadDatabase)
         assert isinstance(read_db, SqlReadDatabaseBackendService)
-        read_db.current_migration_index = MIGRATION_INDEX_NOT_INITIALIZED
