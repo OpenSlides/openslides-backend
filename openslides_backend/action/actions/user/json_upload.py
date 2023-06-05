@@ -172,7 +172,9 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
             messages.append(exception.message)
         return {"state": state, "messages": messages, "data": entry}
 
-    def handle_default_password(self, entry: Dict[str, Any], state: str) -> None:
+    def handle_default_password(
+        self, entry: Dict[str, Any], state: ImportState
+    ) -> None:
         if state == ImportState.NEW:
             if "default_password" in entry:
                 value = entry["default_password"]

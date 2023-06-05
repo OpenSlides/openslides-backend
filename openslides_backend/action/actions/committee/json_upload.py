@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set, Tuple
 
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -54,38 +54,32 @@ class CommitteeJsonUpload(JsonUploadMixin):
     headers = [
         {"property": "name", "type": "string"},
         {"property": "description", "type": "string"},
-        {"property": "forward_to_committees", "type": "string", "is_list": True},
-        {"property": "organization_tags", "type": "string", "is_list": True},
-        {"property": "committee_managers", "type": "string", "is_list": True},
+        {"property": "forward_to_committees", "type": "string", "is_object": True, "is_list": True},
+        {"property": "organization_tags", "type": "string", "is_object": True, "is_list": True},
+        {"property": "committee_managers", "type": "string", "is_object": True, "is_list": True},
         {"property": "meeting_name", "type": "string"},
         {"property": "start_time", "type": "date"},
         {"property": "end_time", "type": "date"},
-        {"property": "meeting_admins", "type": "string", "is_list": True},
-        {"property": "meeting_template", "type": "string"},
+        {"property": "meeting_admins", "type": "string", "is_object": True, "is_list": True},
+        {"property": "meeting_template", "type": "string",  "is_object": True},
     ]
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
+    row_state: ImportState
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
 
         # setup the lookups
-        duplicate_checker = Lookup(
-            self.datastore, "committee", [entry["name"] for entry in data]
-        )
-        meeting_lookup = Lookup(
-            self.datastore,
-            "meeting",
-            [
-                entry.get("meeting_template")
-                for entry in data
-                if entry.get("meeting_template")
-            ],
-        )
         usernames: Set[str] = set()
         organization_tags: Set[str] = set()
         committee_names: Set[str] = set()
         for entry in data:
+            committee_names.add(entry["name"])
+            if entry.get("forward_to_committees") and not isinstance(
+                entry["forward_to_committees"], str
+            ):
+                committee_names.update(entry["forward_to_committees"])
             if entry.get("committee_managers") and not isinstance(
                 entry["committee_managers"], str
             ):
@@ -98,39 +92,41 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 entry["organization_tags"], str
             ):
                 organization_tags.update(entry["organization_tags"])
-            if entry.get("forward_to_committees") and not isinstance(
-                entry["forward_to_committees"], str
-            ):
-                committee_names.update(entry["forward_to_committees"])
-        username_lookup = Lookup(
+
+        self.committee_lookup = Lookup(
+            self.datastore, "committee", list(committee_names)
+        )
+        self.username_lookup = Lookup(
             self.datastore, "user", list(usernames), field="username"
         )
-        organization_tag_lookup = Lookup(
+        self.organization_tag_lookup = Lookup(
             self.datastore, "organization_tag", list(organization_tags)
         )
-        committee_lookup = Lookup(self.datastore, "committee", list(committee_names))
-        found_committee = [
-            entry["name"]
-            for entry in data
-            if committee_lookup.check_duplicate(entry["name"]) == ResultType.NOT_FOUND
-        ]
+        self.meeting_lookup = Lookup(
+            self.datastore,
+            "meeting",
+            list(
+                set(
+                    (
+                        entry.get("meeting_template")
+                        for entry in data
+                        if entry.get("meeting_template")
+                    )
+                )
+            ),
+        )
+        # found_committee = [
+        #     entry["name"]
+        #     for entry in data
+        #     if committee_lookup.check_duplicate(entry["name"]) == ResultType.NOT_FOUND
+        # ]
         # special case: we want to find committees, which are new created
         # for the forwarding. Handled in check_list_field().
-        for name in found_committee:
-            committee_lookup.name_to_ids[name].append(NEW_COMMITEE_ID)
+        # for name in found_committee:
+        #    committee_lookup.name_to_ids[name].append(NEW_COMMITEE_ID)
 
         # main work, see validate_entry
-        self.rows = [
-            self.validate_entry(
-                entry,
-                duplicate_checker,
-                meeting_lookup,
-                username_lookup,
-                organization_tag_lookup,
-                committee_lookup,
-            )
-            for entry in data
-        ]
+        self.rows = [self.validate_entry(entry) for entry in data]
 
         # calculate statistics
         without_template = sum(
@@ -161,7 +157,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
             {"name": "Meetings copied from template", "value": with_template},
             {
                 "name": "Organization tags created",
-                "value": self.count_info("organization_tags", ImportState.NEW),
+                "value": len([v for v in self.organization_tag_lookup.name_to_ids.values() if not v]),
             },
         ]
 
@@ -175,100 +171,38 @@ class CommitteeJsonUpload(JsonUploadMixin):
     def validate_entry(
         self,
         entry: Dict[str, Any],
-        duplicate_checker: Lookup,
-        meeting_lookup: Lookup,
-        username_lookup: Lookup,
-        organization_tag_lookup: Lookup,
-        committee_lookup: Lookup,
     ) -> Dict[str, Any]:
-        state, messages = None, []
+        messages: List[str] = []
 
         # committee state handling
-        check_result = duplicate_checker.check_duplicate(entry["name"])
+        check_result = self.committee_lookup.check_duplicate(entry["name"])
         if check_result == ResultType.FOUND_ID:
-            state = ImportState.DONE
-            entry["id"] = duplicate_checker.get_id_by_name(entry["name"])
+            self.row_state = ImportState.DONE
+            entry["id"] = self.committee_lookup.get_id_by_name(entry["name"])
         elif check_result == ResultType.NOT_FOUND:
-            state = ImportState.NEW
+            self.row_state = ImportState.NEW
         elif check_result == ResultType.FOUND_MORE_IDS:
-            state = ImportState.ERROR
+            self.row_state = ImportState.ERROR
             messages.append("Found more committees with the same name in db.")
 
-        # meeting special cases
-        if any(
-            field in entry
-            for field in (
-                "start_time",
-                "end_time",
-                "meeting_admins",
-                "meeting_template",
-            )
-        ):
-            if "meeting_name" not in entry:
-                state = ImportState.WARNING if state != ImportState.ERROR else state
+        if not entry.get("meeting_name"):
+            if any(
+                entry.get(field)
+                for field in (
+                    "start_time",
+                    "end_time",
+                    "meeting_admins",
+                    "meeting_template",
+                )
+            ):
                 messages.append("No meeting will be created without meeting_name")
-
-        if entry.get("start_time") and isinstance(entry.get("start_time"), str):
-            state = ImportState.ERROR
-            messages.append(f"Could not parse {entry['start_time']}: expected date")
-        if entry.get("end_time") and isinstance(entry.get("end_time"), str):
-            state = ImportState.ERROR
-            messages.append(f"Could not parse {entry['end_time']}: expected date")
-
-        if (
-            entry.get("start_time")
-            and not entry.get("end_time")
-            or not entry.get("start_time")
-            and entry.get("end_time")
-        ):
-            if state != ImportState.ERROR:
-                state = ImportState.ERROR
-                messages.append("Only one of start_time and end_time is not allowed.")
-
-        if "meeting_template" in entry:
-            result_type = meeting_lookup.check_duplicate(entry["meeting_template"])
-            if result_type == ResultType.FOUND_ID:
-                entry["meeting_template"] = {
-                    "value": entry["meeting_template"],
-                    "info": ImportState.DONE,
-                    "id": meeting_lookup.get_id_by_name(entry["meeting_template"]),
-                }
-            elif entry["meeting_template"] == "":
-                entry["meeting_template"] = {
-                    "value": entry["meeting_template"],
-                    "info": ImportState.NONE,
-                }
-            else:
-                entry["meeting_template"] = {
-                    "value": entry["meeting_template"],
-                    "info": ImportState.WARNING,
-                }
-        if "meeting_name" in entry and (
-            "meeting_template" not in entry
-            or entry["meeting_template"]["info"] == ImportState.WARNING
-        ):
-            messages.append("Meeting will be created with meeting.create.")
-
-        # handle meeting_admins
-        state = self.check_list_field(
-            "meeting_admins", entry, username_lookup, state, messages
-        )
-        if any(
-            inner["info"] == ImportState.WARNING
-            for inner in (entry.get("meeting_admins") or [])
-        ):
-            missing_admins = ", ".join(
-                [
-                    inner["value"]
-                    for inner in entry["meeting_admins"]
-                    if inner["info"] == ImportState.WARNING
-                ]
-            )
-            messages.append(f"Missing meeting admin(s): [{missing_admins}]")
+        else:
+            entry, check_messages = self.meeting_checks(entry)
+            messages.extend(check_messages)
 
         # handle committee managers (string list)
-        state = self.check_list_field(
-            "committee_managers", entry, username_lookup, state, messages
+        self.check_list_field(
+            "committee_managers", entry, self.username_lookup, messages
         )
         if any(
             inner["info"] == ImportState.WARNING
@@ -284,41 +218,39 @@ class CommitteeJsonUpload(JsonUploadMixin):
             messages.append(f"Missing committee manager(s): [{missing_managers}]")
 
         # handle organization tags
-        state = self.check_list_field(
+        self.check_list_field(
             "organization_tags",
             entry,
-            organization_tag_lookup,
-            state,
+            self.organization_tag_lookup,
             messages,
             not_found_state=ImportState.NEW,
         )
 
         # handle forward_to_committees
-        state = self.check_list_field(
+        self.check_list_field(
             "forward_to_committees",
             entry,
-            committee_lookup,
-            state,
+            self.committee_lookup,
             messages,
             not_found_state=ImportState.NEW,
         )
-
-        return {"state": state, "messages": messages, "data": entry}
+        return {"state": self.row_state, "messages": messages, "data": entry}
 
     def check_list_field(
         self,
         field: str,
         entry: Dict[str, Any],
         lookup: Lookup,
-        state: Optional[ImportState],
         messages: List[str],
         not_found_state: ImportState = ImportState.WARNING,
-    ) -> Optional[ImportState]:
+    ) -> None:
+        # TODO überarbeiten das ganze, not_found_state, remove etc.
         if field in entry:
             # check for parse error
             if isinstance(entry[field], str):
                 messages.append(f"Could not parse {entry[field]}: expected string[]")
-                return ImportState.ERROR
+                self.row_state = ImportState.ERROR
+                return
 
             # new_list is the new list of object
             new_list: List[Dict[str, Any]] = []
@@ -348,15 +280,69 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 messages.append(
                     f"Removed duplicated {field.replace('_', ' ')}: [{remove_list_str}]"
                 )
-        return state
 
-    def count_info(self, field: str, state: ImportState) -> int:
-        return sum(
-            1
-            for entry in self.rows
-            for fieldentry in (entry["data"].get(field) or [])
-            if fieldentry["info"] == state
-        )
+    def date_checks(self, entry: Dict[str, Any]) -> List[str]:
+        messages: List[str] = []
+        parse_error = False
+        if (starttime := entry.get("start_time")) and not isinstance(starttime, int):
+            parse_error = True
+            self.row_state = ImportState.ERROR
+            messages.append(f"Could not parse start_time {starttime}: expected date")
+        if (endtime := entry.get("end_time")) and not isinstance(endtime, int):
+            parse_error = True
+            self.row_state = ImportState.ERROR
+            messages.append(f"Could not parse end_time {starttime}: expected date")
+        if not parse_error:
+            if bool(starttime) ^ bool(endtime):
+                self.row_state = ImportState.ERROR
+                messages.append("Only one of start_time and end_time is not allowed.")
+            elif isinstance(starttime, int) and starttime > endtime:
+                self.row_state = ImportState.ERROR
+                messages.append("Start time may not be after end time.")
+        return messages
+
+    def meeting_checks(self, entry: Dict[str, Any]) -> Tuple[Dict[str, Any], List[str]]:
+        messages: List[str] = []
+
+        check_messages = self.date_checks(entry)
+        messages.extend(check_messages)
+
+        if not (meeting_template := entry.get("meeting_template")):
+            entry["meeting_template"] = {
+                "value": meeting_template,
+                "info": ImportState.NONE,
+            }
+        else:
+            result_type = self.meeting_lookup.check_duplicate(meeting_template)
+            if result_type == ResultType.FOUND_ID:
+                entry["meeting_template"] = {
+                    "value": meeting_template,
+                    "info": ImportState.DONE,
+                    "id": self.meeting_lookup.get_id_by_name(meeting_template),
+                }
+            else:
+                entry["meeting_template"] = {
+                    "value": "meeting_template",
+                    "info": ImportState.WARNING,
+                }
+                messages.append("Meeting will be created with meeting.create.")
+
+        # handle meeting_admins
+        self.check_list_field("meeting_admins", entry, self.username_lookup, messages)
+        if any(
+            inner["info"] == ImportState.WARNING
+            for inner in (entry.get("meeting_admins") or [])
+        ):
+            missing_admins = ", ".join(
+                [
+                    inner["value"]
+                    for inner in entry["meeting_admins"]
+                    if inner["info"] == ImportState.WARNING
+                ]
+            )
+            messages.append(f"Missing meeting admin(s): [{missing_admins}]")
+
+        return entry, messages
 
     def count_state(self, state: ImportState) -> int:
         return sum(1 for entry in self.rows if entry["state"] == state)

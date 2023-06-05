@@ -1,5 +1,4 @@
 import csv
-from collections import defaultdict
 from enum import Enum
 from time import mktime, strptime, time
 from typing import Any, Callable, Dict, List, Optional, TypedDict
@@ -13,18 +12,18 @@ from ...shared.patterns import fqid_from_collection_and_id
 from ..util.typing import ActionData, ActionResultElement
 from .singular_action_mixin import SingularActionMixin
 
-TRUE_VALUES = ("1", "true", "yes", "t")
-FALSE_VALUES = ("0", "false", "no", "f")
+TRUE_VALUES = ("1", "true", "yes", "y", "t")
+FALSE_VALUES = ("0", "false", "no", "n", "f")
 
 
 class ImportState(str, Enum):
-    ERROR = "error"
-    NEW = "new"
+    NONE = "none"
     WARNING = "warning"
+    NEW = "new"
     DONE = "done"
     GENERATED = "generated"
     REMOVE = "remove"
-    NONE = "none"
+    ERROR = "error"
 
 
 class ImportMixin(SingularActionMixin):
@@ -100,15 +99,16 @@ class JsonUploadMixin(SingularActionMixin):
     headers: List[Dict[str, Any]]
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
-    state: ImportState
+    import_state: ImportState
 
     def set_state(self, number_errors: int, number_warnings: int) -> None:
+        # todo: wenn das der import state ist, dann geht das einfacher am ende jeder row. WARNING ghet auch nicht als import state, da row state niemals warning ist oder wir wollen das so
         if number_errors > 0:
-            self.state = ImportState.ERROR
+            self.import_state = ImportState.ERROR
         elif number_warnings > 0:
-            self.state = ImportState.WARNING
+            self.import_state = ImportState.WARNING
         else:
-            self.state = ImportState.DONE
+            self.import_state = ImportState.DONE
 
     def store_rows_in_the_action_worker(self, import_name: str) -> None:
         self.new_store_id = self.datastore.reserve_id(collection="action_worker")
@@ -125,7 +125,7 @@ class JsonUploadMixin(SingularActionMixin):
                             "result": {"import": import_name, "rows": self.rows},
                             "created": time_created,
                             "timestamp": time_created,
-                            "state": self.state,
+                            "state": self.import_state,
                         },
                     )
                 ],
@@ -148,13 +148,13 @@ class JsonUploadMixin(SingularActionMixin):
             "headers": self.headers,
             "rows": self.rows,
             "statistics": self.statistics,
-            "state": self.state,
+            "state": self.import_state,
         }
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields
         property_to_type = {
-            header["property"]: (header["type"], header.get("is_list", False))
+            header["property"]: (header["type"], header.get("is_object"), header.get("is_list", False))
             for header in self.headers
         }
         for entry in list(instance.get("data", [])):
@@ -162,8 +162,18 @@ class JsonUploadMixin(SingularActionMixin):
                 if field not in property_to_type:
                     del entry[field]
                 else:
-                    type_, is_list = property_to_type[field]
-                    if type_ == "integer":
+                    type_, is_object, is_list = property_to_type[field]
+                    if type_ == "string" and is_list:
+                        try:
+                            entry[field] = [
+                                item.strip()
+                                for item in list(csv.reader([entry[field]]))[0]
+                            ]
+                        except Exception:
+                            pass
+                    elif type_ == "string":
+                        continue
+                    elif type_ == "integer":
                         try:
                             entry[field] = int(entry[field])
                         except ValueError:
@@ -186,14 +196,8 @@ class JsonUploadMixin(SingularActionMixin):
                             )
                         except Exception:
                             pass
-                    elif type_ == "string" and is_list:
-                        try:
-                            entry[field] = [
-                                item.strip()
-                                for item in list(csv.reader([entry[field]]))[0]
-                            ]
-                        except Exception:
-                            pass
+                    else:
+                        raise ActionException(f"Unknown type in conversion: type:{type_} is_object:{str(is_object)} is_list:{str(is_list)}")
         super().validate_instance(instance)
 
 
@@ -213,7 +217,7 @@ class Lookup:
         names: List[str],
         field: str = "name",
     ) -> None:
-        self.name_to_ids: Dict[str, List[int]] = defaultdict(list)
+        self.name_to_ids: Dict[str, List[int]] = {name: [] for name in names}
         if names:
             for entry in datastore.filter(
                 collection,
@@ -224,7 +228,7 @@ class Lookup:
                 self.name_to_ids[entry[field]].append(entry["id"])
 
     def check_duplicate(self, name: str) -> ResultType:
-        if not self.name_to_ids[name]:
+        if not self.name_to_ids.get(name):
             return ResultType.NOT_FOUND
         elif len(self.name_to_ids[name]) > 1:
             return ResultType.FOUND_MORE_IDS

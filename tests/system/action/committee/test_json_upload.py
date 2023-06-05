@@ -503,6 +503,7 @@ class CommitteeJsonUploadDate(BaseActionTestCase):
                 "meeting_name": "test meeting",
                 "start_time": 1691539200,
                 "end_time": 1691625600,
+                "meeting_template": {"value": None, "info": ImportState.NONE},
             },
         }
 
@@ -584,6 +585,41 @@ class CommitteeJsonUploadDate(BaseActionTestCase):
                 "start_time": 1691539200,
                 "end_time": "12XX-broken",
                 "meeting_template": {"info": ImportState.NONE, "value": ""},
+            },
+        }
+
+    def test_json_upload_start_date_after_end_date(self) -> None:
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "test",
+                        "meeting_name": "",
+                        "meeting_template": "",
+                        "start_time": "2023-08-10",
+                        "end_time": "2023-08-09",
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.ERROR,
+            "messages": [
+                "No meeting will be created without meeting_name",
+                "Start time may not be after end time.",
+            ],
+            "data": {
+                "name": "test",
+                "meeting_name": "",
+                "start_time": 1691539200,
+                "end_time": 1691539200,
+                "meeting_template": {
+                    "info": ImportState.NONE,
+                    "value": "",
+                    "type": "string",
+                },
             },
         }
 
