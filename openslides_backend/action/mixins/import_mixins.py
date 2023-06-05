@@ -399,7 +399,7 @@ class Lookup:
         names: List[str],
         field: str = "name",
     ) -> None:
-        self.name_to_ids: Dict[str, List[int]] = defaultdict(list)
+        self.name_to_ids: Dict[str, List[int]] = {name: [] for name in names}
         if names:
             for entry in datastore.filter(
                 collection,
@@ -410,7 +410,7 @@ class Lookup:
                 self.name_to_ids[entry[field]].append(entry["id"])
 
     def check_duplicate(self, name: str) -> ResultType:
-        if not self.name_to_ids[name]:
+        if not self.name_to_ids.get(name):
             return ResultType.NOT_FOUND
         elif len(self.name_to_ids[name]) > 1:
             return ResultType.FOUND_MORE_IDS
