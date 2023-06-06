@@ -35,7 +35,7 @@ allowed_user_fields = [
 
 @register_action("user.save_saml_account", action_type=ActionType.STACK_INTERNAL)
 class UserSaveSamlAccount(
-    EmailCheckMixin, UsernameMixin, CreateAction, SingularActionMixin
+    EmailCheckMixin, UsernameMixin, CreateAction, UpdateAction, SingularActionMixin
 ):
     """
     Internal action to save (create or update) a saml account.
@@ -114,7 +114,7 @@ class UserSaveSamlAccount(
                     instance[model_field] = value
         users = self.datastore.filter(
             "user",
-            FilterOperator("saml_id", "=", instance.get("saml_id", "")),
+            FilterOperator("saml_id", "=", instance["saml_id"]),
             ["id", *allowed_user_fields],
         )
         if len(users) == 1:
@@ -147,12 +147,12 @@ class UserSaveSamlAccount(
         Handles create and update
         """
         if "meta_new" in instance:
-            yield from super().create_events(instance)
+            yield from CreateAction.create_events(self, instance)
         else:
             fields = {
                 k: v for k, v in instance.items() if k == "id" or v != self.user.get(k)
             }
-            yield from UpdateAction.create_events(cast(UpdateAction, self), fields)
+            yield from UpdateAction.create_events(self, fields)
 
     def create_action_result_element(
         self, instance: Dict[str, Any]
