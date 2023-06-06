@@ -123,6 +123,27 @@ organization:
       - cs
     required: true
 
+  # Saml settings
+  saml_enabled:
+    type: boolean
+    restriction_mode: A
+  saml_login_button_text:
+    type: string
+    default: SAML login
+    restriction_mode: A
+  saml_attr_mapping:
+    type: JSON
+    restriction_mode: A
+  saml_metadata_idp:
+    type: text
+    restriction_mode: A
+  saml_metadata_sp:
+    type: text
+    restriction_mode: A
+  saml_private_key:
+    type: string
+    restriction_mode: A
+
   vote_decrypt_public_main_key:
     type: string
     description: Public key from vote decrypt to validate cryptographic votes.
@@ -213,7 +234,9 @@ user:
     restriction_mode: A
   saml_id:
     type: string
+    minLength: 1
     restriction_mode: A
+    description: unique-key from IdP for SAML login
   pronoun:
     type: string
     maxLength: 32
