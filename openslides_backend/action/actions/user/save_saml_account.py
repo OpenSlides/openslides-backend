@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional, cast
+from typing import Any, Dict, Iterable, Optional
 
 import fastjsonschema
 
