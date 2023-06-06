@@ -228,6 +228,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "projector/1": {
                     "sequential_number": 1,
+                    "is_internal": False,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -439,6 +440,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "projector/1": {
                     "sequential_number": 1,
+                    "is_internal": False,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -646,6 +648,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "projector/1": {
                     "sequential_number": 1,
+                    "is_internal": False,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -732,6 +735,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "projector/2": {
                     "sequential_number": 1,
+                    "is_internal": False,
                     "meeting_id": 2,
                     "used_as_reference_projector_meeting_id": 2,
                     "name": "Default projector",
