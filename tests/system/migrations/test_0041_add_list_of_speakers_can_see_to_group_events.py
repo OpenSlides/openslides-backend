@@ -24,21 +24,16 @@ def test_migration(write, finalize, assert_model):
         {
             "type": "update",
             "fqid": "group/1",
-            "fields": {"permissions": []},
-        }
-    )
-    write(
-        {
-            "type": "update",
-            "fqid": "group/1",
-            "list_fields": {
-                "add": {"permissions": ["list_of_speakers.can_be_speaker"]},
-                "remove": {},
+            "fields": {
+                "permissions": [
+                    "list_of_speakers.can_manage",
+                    "list_of_speakers.can_be_speaker",
+                ]
             },
         }
     )
 
-    finalize("0041_add_ListOfSpeakers_CAN_SEE_to_group_events")
+    finalize("0041_add_list_of_speakers_can_see_to_group_events")
 
     assert_model(
         "group/1",
@@ -71,18 +66,13 @@ def test_migration(write, finalize, assert_model):
     )
     assert_model(
         "group/1",
-        {"permissions": [], "meta_deleted": False, "meta_position": 4},
-        position=4,
-    )
-    assert_model(
-        "group/1",
         {
             "permissions": [
+                "list_of_speakers.can_manage",
                 "list_of_speakers.can_be_speaker",
-                "list_of_speakers.can_see",
             ],
             "meta_deleted": False,
-            "meta_position": 5,
+            "meta_position": 4,
         },
-        position=5,
+        position=4,
     )
