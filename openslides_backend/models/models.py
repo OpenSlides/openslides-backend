@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "52fd248a0f0407e73542b9d416e4cc26"
+MODELS_YML_CHECKSUM = "c0e5b73b17f50960f478915db3f17cdf"
 
 
 class Organization(Model):
@@ -36,6 +36,12 @@ class Organization(Model):
     default_language = fields.CharField(
         required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
     )
+    saml_enabled = fields.BooleanField()
+    saml_login_button_text = fields.CharField(default="SAML login")
+    saml_attr_mapping = fields.JSONField()
+    saml_metadata_idp = fields.TextField()
+    saml_metadata_sp = fields.TextField()
+    saml_private_key = fields.CharField()
     committee_ids = fields.RelationListField(to={"committee": "organization_id"})
     active_meeting_ids = fields.RelationListField(
         to={"meeting": "is_active_in_organization_id"}
@@ -72,7 +78,12 @@ class User(Model):
 
     id = fields.IntegerField()
     username = fields.CharField(required=True)
-    saml_id = fields.CharField()
+    saml_id = fields.CharField(
+        constraints={
+            "minLength": 1,
+            "description": "unique-key from IdP for SAML login",
+        }
+    )
     pronoun = fields.CharField(constraints={"maxLength": 32})
     title = fields.CharField()
     first_name = fields.CharField()

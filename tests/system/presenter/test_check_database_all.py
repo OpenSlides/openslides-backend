@@ -138,6 +138,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "theme_ids": [1],
                     "committee_ids": [1],
                     "default_language": "en",
+                    "saml_enabled": False,
+                    "saml_login_button_text": "Login button text",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -291,6 +293,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "theme_ids": [1],
                     "committee_ids": [1],
                     "default_language": "en",
+                    "saml_enabled": True,
+                    "saml_login_button_text": "SAML Login",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -549,6 +553,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "theme_ids": [1],
                     "committee_ids": [1],
                     "default_language": "en",
+                    "saml_enabled": True,
+                    "saml_login_button_text": "SAML Login",
                 },
                 "theme/1": {
                     "name": "Test Theme",
