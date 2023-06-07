@@ -189,7 +189,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         _, response = self.basic_test({"reference_projector_id": 10}, check_200=False)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: ['projector/10']",
+            "Model 'projector/10' does not exist.",
             response.json["message"],
         )
 

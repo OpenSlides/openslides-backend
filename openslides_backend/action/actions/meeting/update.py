@@ -183,10 +183,16 @@ class MeetingUpdate(
         meeting_check = []
         if "reference_projector_id" in instance:
             if reference_projector_id := instance["reference_projector_id"]:
-                reference_projector_fqid = fqid_from_collection_and_id("projector", reference_projector_id)
-                projector = self.datastore.get(reference_projector_fqid, ["is_internal"])
+                reference_projector_fqid = fqid_from_collection_and_id(
+                    "projector", reference_projector_id
+                )
+                projector = self.datastore.get(
+                    reference_projector_fqid, ["is_internal"]
+                )
                 if projector.get("is_internal"):
-                    raise ActionException("An internal projector cannot be set as reference projector.")
+                    raise ActionException(
+                        "An internal projector cannot be set as reference projector."
+                    )
                 meeting_check.append(reference_projector_fqid)
         if "default_projector_$_ids" in instance:
             meeting_check.extend(
