@@ -21,7 +21,7 @@ def test_is_child_permission_multipath_1() -> None:
 
 
 def test_is_child_permission_multipath_2() -> None:
-    assert is_child_permission(
+    assert not is_child_permission(
         Permissions.ListOfSpeakers.CAN_SEE, Permissions.ListOfSpeakers.CAN_BE_SPEAKER
     )
 

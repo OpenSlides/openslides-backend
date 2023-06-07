@@ -3403,6 +3403,10 @@ projector:
   name:
     type: string
     restriction_mode: A
+  is_internal:
+    type: boolean
+    default: false
+    restriction_mode: A
   scale:
     type: number
     default: 0

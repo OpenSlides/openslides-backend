@@ -1918,6 +1918,7 @@ class Projector(Model):
 
     id = fields.IntegerField()
     name = fields.CharField()
+    is_internal = fields.BooleanField(default=False)
     scale = fields.IntegerField(default=0)
     scroll = fields.IntegerField(default=0, constraints={"minimum": 0})
     width = fields.IntegerField(default=1200, constraints={"minimum": 1})
