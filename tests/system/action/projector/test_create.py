@@ -30,6 +30,7 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         data = {
             "name": "Test",
             "meeting_id": 222,
+            "is_internal": True,
             "width": 100,
             "aspect_ratio_numerator": 101,
             "aspect_ratio_denominator": 102,
