@@ -179,6 +179,11 @@ class Checker:
                 self.errors.append(
                     f"'maxLength' for {collectionfield} is not a number."
                 )
+            valid_attributes.append("minLength")
+            if not isinstance(field.get("minLength", 0), int):
+                self.errors.append(
+                    f"'minLength' for {collectionfield} is not a number."
+                )
         if type in DATA_TYPES:
             valid_attributes.append("default")
             if "default" in field:
