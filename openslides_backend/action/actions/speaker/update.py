@@ -35,11 +35,12 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState):
             ["user_id"],
             lock_result=False,
         )
-        if meeting_user.get("user_id") == self.user_id and (has_perm(
-            self.datastore,
-            self.user_id,
-            Permissions.ListOfSpeakers.CAN_SEE,
-            speaker["meeting_id"],
+        if meeting_user.get("user_id") == self.user_id and (
+            has_perm(
+                self.datastore,
+                self.user_id,
+                Permissions.ListOfSpeakers.CAN_SEE,
+                speaker["meeting_id"],
             )
             or has_perm(
                 self.datastore,

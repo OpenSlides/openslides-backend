@@ -213,7 +213,8 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"organization_management_level": None},
-                "speaker/890": {"user_id": 1},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1, "speaker_ids": [890]},
+                "speaker/890": {"meeting_user_id": 1},
             }
         )
         self.set_user_groups(1, [3])
