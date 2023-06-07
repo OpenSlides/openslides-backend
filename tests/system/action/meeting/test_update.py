@@ -193,6 +193,26 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_update_reference_projector_to_internal_projector_error(self) -> None:
+        self.set_models(
+            {
+                "projector/2": {
+                    "name": "Projector 2",
+                    "is_internal": True,
+                    "meeting_id": 1,
+                },
+                "meeting/1": {
+                    "projector_ids": [1, 2],
+                },
+            }
+        )
+        _, response = self.basic_test({"reference_projector_id": 2}, check_200=False)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "An internal projector cannot be set as reference projector.",
+            response.json["message"],
+        )
+
     def test_update_reference_projector_to_projector_from_wrong_meeting_error(
         self,
     ) -> None:
