@@ -177,7 +177,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
         self.assert_status_code(response, 403)
 
-    def test_update_check_request_user_is_user_permission(self) -> None:
+    def test_update_check_request_user_is_user_permission_can_see(self) -> None:
         self.create_meeting()
         self.set_models(self.permission_test_models)
         self.set_models(
@@ -188,6 +188,20 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         )
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
+        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        self.assert_status_code(response, 200)
+
+    def test_update_check_request_user_is_user_permission_can_be_speaker(self) -> None:
+        self.create_meeting()
+        self.set_models(self.permission_test_models)
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None},
+                "speaker/890": {"user_id": 1},
+            }
+        )
+        self.set_user_groups(1, [3])
+        self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
         response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
         self.assert_status_code(response, 200)
 
