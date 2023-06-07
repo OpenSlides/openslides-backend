@@ -1,12 +1,6 @@
 from typing import Any
 from unittest.mock import patch
 
-from datastore.shared.di import injector
-from datastore.shared.postgresql_backend.sql_read_database_backend_service import (
-    SqlReadDatabaseBackendService,
-)
-from datastore.shared.services import ReadDatabase
-
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.shared.interfaces.write_request import (
     WriteRequestWithMigrationIndex,
@@ -99,18 +93,9 @@ class GeneralActionWSGITester(BaseActionTestCase):
 
 
 class TestWSGIWithMigrations(BaseActionTestCase):
-    def reset_read_db(self) -> None:
-        read_db = injector.get(ReadDatabase)
-        assert isinstance(read_db, SqlReadDatabaseBackendService)
-
     def setUp(self) -> None:
         super().setUp()
         self.datastore.truncate_db()
-        self.reset_read_db()
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        self.reset_read_db()
 
     @patch("openslides_backend.migrations.get_backend_migration_index")
     def test_request_missing_migrations(self, gbmi: Any) -> None:
@@ -128,8 +113,6 @@ class TestWSGIWithMigrations(BaseActionTestCase):
             "Missing 1 migrations to apply.",
             response.json["message"],
         )
-        read_db = injector.get(ReadDatabase)
-        assert isinstance(read_db, SqlReadDatabaseBackendService)
 
     @patch("openslides_backend.migrations.get_backend_migration_index")
     def test_request_misconfigured_migrations(self, gbmi: Any) -> None:
@@ -148,5 +131,3 @@ class TestWSGIWithMigrations(BaseActionTestCase):
             "Migration indices do not match: Datastore has 6 and the backend has 5",
             response.json["message"],
         )
-        read_db = injector.get(ReadDatabase)
-        assert isinstance(read_db, SqlReadDatabaseBackendService)
