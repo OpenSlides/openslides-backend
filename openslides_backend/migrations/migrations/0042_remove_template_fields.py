@@ -2,7 +2,7 @@ from collections import defaultdict
 from enum import Enum, auto
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, TypedDict
 
-from datastore.migrations import BaseModelMigration
+from datastore.migrations import BaseModelMigration, MigrationException
 from datastore.writer.core import (
     BaseRequestEvent,
     RequestCreateEvent,
@@ -59,7 +59,7 @@ FieldNameFunc = Callable[[str], str]
 
 class ParametrizedFieldStrategy(TypedDict):
     strategy: FieldStrategy
-    name: str | Dict[str, str] | FieldNameFunc
+    name: str | Dict[str, str]
 
 
 TEMPLATE_FIELDS: Dict[
@@ -337,7 +337,7 @@ class Migration(BaseModelMigration):
                             else get_meeting_user_ids(meeting_id, structured_value)
                         )
                     else:
-                        raise ValueError()
+                        raise MigrationException("Invalid strategy")
 
             if new_value:
                 if strategy is FieldStrategy.MergeToJSON:
@@ -347,38 +347,43 @@ class Migration(BaseModelMigration):
                     update[new_field] = new_value
         return update
 
-    def resolve_strategy(  # noqa: E731
+    def resolve_strategy(
         self, strategy: FieldStrategy | ParametrizedFieldStrategy
     ) -> Tuple[FieldStrategy, FieldNameFunc]:
         """
         Resolves a (parametrized) strategy to a tuple of strategy and the new field name.
         """
         if isinstance(strategy, dict):
-            resolved_strategy = strategy["strategy"]
-            if isinstance(strategy["name"], str):
-                name_func = lambda _: strategy["name"]  # noqa: E731
-            elif isinstance(strategy["name"], dict):
-                name_map = strategy["name"]
-                name_func = (  # noqa: E731
-                    lambda field: name_map[field]
-                    if field in name_map
-                    else field.replace("$", "")
-                )
-            else:
-                name_func = strategy["name"]
+            return (strategy["strategy"], self.get_name_func_from_parameters(strategy))
         else:
-            resolved_strategy = strategy
-            if resolved_strategy is FieldStrategy.Rename:
-                name_func = lambda field: field.replace("$", "")  # noqa: E731
-            elif resolved_strategy in (
-                FieldStrategy.Merge,
-                FieldStrategy.MergeToJSON,
-                FieldStrategy.MoveToMeetingUser,
-                FieldStrategy.MoveToMeetingUserAndReplace,
-            ):
-                name_func = lambda field: field.replace("_$", "")  # noqa: E731
-            elif resolved_strategy is FieldStrategy.ReplaceWithMeetingUsers:
-                name_func = lambda field: f"meeting_{field}"  # noqa: E731
-            else:
-                name_func = lambda field: field  # noqa: E731
-        return resolved_strategy, name_func
+            return (strategy, self.get_name_func_for_strategy(strategy))
+
+    def get_name_func_from_parameters(
+        self, strategy: ParametrizedFieldStrategy
+    ) -> FieldNameFunc:
+        # see https://github.com/python/mypy/issues/4297 for an explanation for the redundant variables
+        if isinstance(strategy["name"], str):
+            name = strategy["name"]
+            return lambda _: name
+        elif isinstance(strategy["name"], dict):
+            name_map = strategy["name"]
+            return lambda field: (
+                name_map[field] if field in name_map else field.replace("$", "")
+            )
+        else:
+            raise MigrationException("Invalid name parameter")
+
+    def get_name_func_for_strategy(self, strategy: FieldStrategy) -> FieldNameFunc:
+        if strategy is FieldStrategy.Rename:
+            return lambda field: field.replace("$", "")
+        elif strategy in (
+            FieldStrategy.Merge,
+            FieldStrategy.MergeToJSON,
+            FieldStrategy.MoveToMeetingUser,
+            FieldStrategy.MoveToMeetingUserAndReplace,
+        ):
+            return lambda field: field.replace("_$", "")
+        elif strategy is FieldStrategy.ReplaceWithMeetingUsers:
+            return lambda field: f"meeting_{field}"
+        else:
+            raise MigrationException("Invalid strategy")

@@ -1,7 +1,7 @@
 from tests.system.migrations.conftest import DoesNotExist
 
 
-def test_migration(write, finalize, assert_model):
+def test_migration(write, finalize, assert_model, read_model):
     """
     ids for collections:
      1x meeting_user (will be created)
@@ -961,6 +961,8 @@ def test_migration(write, finalize, assert_model):
             "motions_default_statute_amendment_workflow_id": 212,
         },
     )
+    meeting = read_model("meeting/43")
+    assert meeting["meta_deleted"] is True
     assert_model(
         "motion/61",
         {
