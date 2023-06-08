@@ -41,14 +41,14 @@ from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
-from ..meeting_user.helper import MeetingUserHelper
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..motion.update import EXTENSION_REFERENCE_IDS_PATTERN
 from ..user.user_mixin import LimitOfUserMixin, UsernameMixin
 
 
 @register_action("meeting.import")
 class MeetingImport(
-    SingularActionMixin, LimitOfUserMixin, UsernameMixin, MeetingUserHelper
+    SingularActionMixin, LimitOfUserMixin, UsernameMixin, MeetingUserHelperMixin
 ):
     """
     Action to import a meeting.

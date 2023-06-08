@@ -12,13 +12,13 @@ from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
-from ..meeting_user.helper import MeetingUserHelper
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from .set_number_mixin import SetNumberMixin
 
 
 class MotionCreateBase(
-    MeetingUserHelper,
+    MeetingUserHelperMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     SequentialNumbersMixin,

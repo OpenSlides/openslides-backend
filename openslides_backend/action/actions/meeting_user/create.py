@@ -6,8 +6,8 @@ from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MeetingUser
 from ....permissions.permissions import Permissions
-from ....shared.filters import And, FilterOperator
 from ...generics.create import CreateAction
+from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .mixin import MeetingUserMixin
@@ -31,11 +31,10 @@ class MeetingUserCreate(MeetingUserMixin, CreateAction):
     permission = Permissions.User.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        filter_ = And(
-            FilterOperator("meeting_id", "=", instance["meeting_id"]),
-            FilterOperator("user_id", "=", instance["user_id"]),
-        )
-        if self.datastore.exists("meeting_user", filter_):
+        if self.datastore.exists(
+            "meeting_user",
+            get_meeting_user_filter(instance["meeting_id"], instance["user_id"]),
+        ):
             raise ActionException(
                 f"MeetingUser instance with user {instance['user_id']} and meeting {instance['meeting_id']} already exists"
             )

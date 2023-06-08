@@ -1,21 +1,21 @@
 from typing import Any, Dict
 
-from openslides_backend.action.actions.meeting_user.mixin import MeetingUserHistoryMixin
-from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
-
 from ....models.models import MeetingUser
 from ....shared.exceptions import ActionException
-from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
+from ...mixins.extend_history_mixin import ExtendHistoryMixin
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .create import MeetingUserCreate
+from .helper_mixin import MeetingUserHelperMixin
+from .mixin import MeetingUserHistoryMixin
 
 
 @register_action("meeting_user.set_data", action_type=ActionType.BACKEND_INTERNAL)
-class MeetingUserSetData(MeetingUserHistoryMixin, ExtendHistoryMixin, UpdateAction):
+class MeetingUserSetData(
+    MeetingUserHistoryMixin, ExtendHistoryMixin, MeetingUserHelperMixin, UpdateAction
+):
     """
     Action to create, update or delete a meeting_user.
     """
@@ -55,21 +55,7 @@ class MeetingUserSetData(MeetingUserHistoryMixin, ExtendHistoryMixin, UpdateActi
                     user_id == meeting_user["user_id"]
                 ), "Not permitted to change user_id."
         elif meeting_id and user_id:
-            meeting_users = self.datastore.filter(
-                "meeting_user",
-                And(
-                    FilterOperator("meeting_id", "=", meeting_id),
-                    FilterOperator("user_id", "=", user_id),
-                ),
-                ["id"],
-            ).values()
-            if not meeting_users:
-                res = self.execute_other_action(
-                    MeetingUserCreate, [{"meeting_id": meeting_id, "user_id": user_id}]
-                )
-                instance["id"] = res[0]["id"]  # type: ignore
-            else:
-                instance["id"] = next(iter(meeting_users))["id"]
+            instance["id"] = self.create_or_get_meeting_user(meeting_id, user_id)
         return instance
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:

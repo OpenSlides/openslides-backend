@@ -1,7 +1,8 @@
 from typing import Any, Dict, List, Set
 
+from openslides_backend.action.mixins.meeting_user_helper import get_meeting_user
+
 from ...models.fields import Field
-from ...shared.filters import And, FilterOperator
 from ...shared.patterns import (
     fqfield_from_collection_and_id_and_field,
     fqid_from_collection_and_id,
@@ -46,17 +47,10 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         for id_ in list(removed_ids):
             user_fqid = fqid_from_collection_and_id("user", id_)
             if not self.datastore.is_deleted(user_fqid):
-                filtered_results = self.datastore.filter(
-                    "meeting_user",
-                    And(
-                        FilterOperator("meeting_id", "=", meeting_id),
-                        FilterOperator("user_id", "=", id_),
-                    ),
-                    ["id", "group_ids"],
+                meeting_user = get_meeting_user(
+                    self.datastore, meeting_id, id_, ["id", "group_ids"]
                 )
-                if filtered_results and list(filtered_results.values())[0].get(
-                    "group_ids"
-                ):
+                if meeting_user and meeting_user.get("group_ids"):
                     removed_ids.remove(id_)
 
         if not added_ids and not removed_ids:

@@ -2,12 +2,12 @@ from typing import Any, Dict, List
 
 import fastjsonschema
 
+from openslides_backend.action.mixins.meeting_user_helper import get_meeting_user
 from openslides_backend.shared.mixins.user_scope_mixin import UserScopeMixin
 from openslides_backend.shared.schema import id_list_schema
 
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PresenterException
-from ..shared.filters import And, FilterOperator
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -95,20 +95,16 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
         )
         meetings = self.datastore.get_many([gmr]).get("meeting", {}).values()
         for meeting in meetings:
-            filter_ = And(
-                FilterOperator("meeting_id", "=", meeting["id"]),
-                FilterOperator("user_id", "=", user_id),
-            )
-            meeting_users = self.datastore.filter(
-                "meeting_user",
-                filter_,
+            meeting_user = get_meeting_user(
+                self.datastore,
+                meeting["id"],
+                user_id,
                 ["speaker_ids", "motion_submitter_ids", "assignment_candidate_ids"],
             )
             speaker_ids = []
             submitter_ids = []
             candidate_ids = []
-            if meeting_users:
-                meeting_user = list(meeting_users.values())[0]
+            if meeting_user:
                 speaker_ids = meeting_user.get("speaker_ids", [])
                 submitter_ids = meeting_user.get("motion_submitter_ids", [])
                 candidate_ids = meeting_user.get("assignment_candidate_ids", [])

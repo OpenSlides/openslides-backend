@@ -11,17 +11,17 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...util.default_schema import DefaultSchema
-from ...util.group_mixins import GroupHelper
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..meeting_user.create import MeetingUserCreate
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..meeting_user.update import MeetingUserUpdate
 from ..user.create import UserCreate
 from .create_base import MotionCreateBase
 
 
 @register_action("motion.create_forwarded")
-class MotionCreateForwarded(GroupHelper, MotionCreateBase):
+class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
     """
     Create action for forwarded motions.
     """
@@ -92,7 +92,9 @@ class MotionCreateForwarded(GroupHelper, MotionCreateBase):
                 meeting_id, forwarding_user_id
             )
             if target_meeting["default_group_id"] not in forwarding_user_groups:
-                meeting_user = self.get_meeting_user(meeting_id, forwarding_user_id)
+                meeting_user = self.get_meeting_user(
+                    meeting_id, forwarding_user_id, ["id", "group_ids"]
+                )
                 if not meeting_user:
                     self.execute_other_action(
                         MeetingUserCreate,
