@@ -2,7 +2,7 @@ import fastjsonschema
 
 from ...shared.exceptions import ActionException
 from ...shared.schema import schema_version
-from ..action import Action
+from ..action import Action, original_instances
 from ..util.typing import ActionData
 
 singular_schema = fastjsonschema.compile(
@@ -25,6 +25,7 @@ class SingularActionMixin(Action):
 
     is_singular = True
 
+    @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         self.assert_singular_action_data(action_data)
         return super().get_updated_instances(action_data)
