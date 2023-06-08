@@ -274,10 +274,8 @@ class MeetingCreate(
                     "meeting_id": instance["id"],
                     "used_as_reference_projector_meeting_id": instance["id"],
                     **{
-                        f"used_as_default_projector_for_{name}_in_meeting_id": instance[
-                            "id"
-                        ]
-                        for name in Meeting.DEFAULT_PROJECTOR_ENUM
+                        field: instance["id"]
+                        for field in Meeting.reverse_default_projectors()
                     },
                 }
             ]

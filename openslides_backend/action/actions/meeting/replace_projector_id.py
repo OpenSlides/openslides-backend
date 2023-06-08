@@ -26,10 +26,7 @@ class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
     def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             projector_id = instance.pop("projector_id")
-            fields = [
-                "default_projector_{}_ids".format(replacement)
-                for replacement in Meeting.DEFAULT_PROJECTOR_ENUM
-            ]
+            fields = Meeting.all_default_projectors()
             meeting = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 fields + ["reference_projector_id"],

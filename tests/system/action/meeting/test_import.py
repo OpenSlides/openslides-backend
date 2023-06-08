@@ -223,10 +223,7 @@ class MeetingImport(BaseActionTestCase):
                         "present_user_ids": [],
                         "list_of_speakers_countdown_id": None,
                         "poll_countdown_id": None,
-                        **{
-                            f"default_projector_{name}_ids": [1]
-                            for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                        },
+                        **{field: [1] for field in Meeting.all_default_projectors()},
                         "projection_ids": [],
                         "meeting_user_ids": [11],
                     }
@@ -324,10 +321,7 @@ class MeetingImport(BaseActionTestCase):
                         "current_projection_ids": [],
                         "preview_projection_ids": [],
                         "history_projection_ids": [],
-                        **{
-                            f"used_as_default_projector_for_{name}_in_meeting_id": 1
-                            for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                        },
+                        **{field: 1 for field in Meeting.reverse_default_projectors()},
                         "sequential_number": 1,
                     }
                 },

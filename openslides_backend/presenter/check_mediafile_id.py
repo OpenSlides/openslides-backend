@@ -55,18 +55,12 @@ class CheckMediafileId(BasePresenter):
                     "owner_id",
                     "token",
                     "mimetype",
-                    *(
-                        f"used_as_logo_{part}_in_meeting_id"
-                        for part in Meeting.LOGO_ENUM
-                    ),
-                    *(
-                        f"used_as_font_{part}_in_meeting_id"
-                        for part in Meeting.FONT_ENUM
-                    ),
                     "projection_ids",
                     "is_public",
                     "inherited_access_group_ids",
-                ],
+                ]
+                + Meeting.reverse_logo_places()
+                + Meeting.reverse_font_places(),
             )
         except DatastoreException:
             return {"ok": False}
@@ -111,12 +105,12 @@ class CheckMediafileId(BasePresenter):
         #    or used_as_font_xxx_in_meeting_id is not empty)
         can_see_meeting = self.check_can_see_meeting(meeting)
         if can_see_meeting:
-            for field_part in Meeting.LOGO_ENUM:
-                if mediafile.get(f"used_as_logo_{field_part}_in_meeting_id"):
-                    return
-            for field_part in Meeting.FONT_ENUM:
-                if mediafile.get(f"used_as_font_{field_part}_in_meeting_id"):
-                    return
+            if any(
+                mediafile.get(field)
+                for field in Meeting.reverse_logo_places()
+                + Meeting.reverse_font_places()
+            ):
+                return
         # The user has projector.can_see
         # and there exists a mediafile/projection_ids with
         # projection/current_projector_id set

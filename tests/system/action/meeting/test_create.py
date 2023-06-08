@@ -70,10 +70,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "assignment_poll_default_group_ids": [4],
                 "motion_poll_default_group_ids": [4],
                 "topic_poll_default_group_ids": [4],
-                **{
-                    f"default_projector_{name}_ids": [1]
-                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                },
+                **{field: [1] for field in Meeting.all_default_projectors()},
             },
         )
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1]})
@@ -162,10 +159,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "name": "Default projector",
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
-                **{
-                    f"used_as_default_projector_for_{name}_in_meeting_id": 1
-                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                },
+                **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
         )
         self.assert_model_exists(

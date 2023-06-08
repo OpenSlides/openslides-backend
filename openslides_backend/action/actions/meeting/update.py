@@ -171,20 +171,7 @@ class MeetingUpdate(
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
-            "default_projector_agenda_item_list_ids",
-            "default_projector_topic_ids",
-            "default_projector_list_of_speakers_ids",
-            "default_projector_current_list_of_speakers_ids",
-            "default_projector_motion_ids",
-            "default_projector_amendment_ids",
-            "default_projector_motion_block_ids",
-            "default_projector_assignment_ids",
-            "default_projector_mediafile_ids",
-            "default_projector_message_ids",
-            "default_projector_countdown_ids",
-            "default_projector_assignment_poll_ids",
-            "default_projector_motion_poll_ids",
-            "default_projector_poll_ids",
+            *Meeting.all_default_projectors(),
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
@@ -243,8 +230,8 @@ class MeetingUpdate(
         meeting_check.extend(
             [
                 fqid_from_collection_and_id("projector", projector_id)
-                for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                for projector_id in instance.get(f"default_projector_{part}_ids", [])
+                for field in Meeting.all_default_projectors()
+                for projector_id in instance.get(field, [])
             ]
         )
 
@@ -281,10 +268,7 @@ class MeetingUpdate(
         # group C check
         if (
             "reference_projector_id" in instance
-            or any(
-                f"default_projector_{part}_ids" in instance
-                for part in Meeting.DEFAULT_PROJECTOR_ENUM
-            )
+            or any(field in instance for field in Meeting.all_default_projectors())
         ) and not has_perm(
             self.datastore,
             self.user_id,
