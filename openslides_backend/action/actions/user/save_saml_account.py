@@ -134,13 +134,7 @@ class UserSaveSamlAccount(
                 f"More than one existing user found in database with saml_id {instance['saml_id']}"
             )
 
-        instance = self.validate_fields(instance)
-        instance = self.update_instance(instance)
-        self.apply_instance(instance)
-        self.validate_relation_fields(instance)
-        # Return id of user anyway
-        self.results.append(self.create_action_result_element(instance))
-        return instance
+        return UpdateAction.base_update_instance(self, instance)
 
     def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         """
