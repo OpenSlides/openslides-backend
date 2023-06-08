@@ -36,11 +36,6 @@ class MigrationChecker(Checker):
     def check_normal_fields(self, model: Dict[str, Any], collection: str) -> bool:
         return False
 
-    def check_template_fields(self, model: Dict[str, Any], collection: str) -> bool:
-        if collection not in model_registry:
-            return False
-        return super().check_template_fields(model, collection)
-
     def check_types(self, *args, **kwargs) -> None:
         pass
 

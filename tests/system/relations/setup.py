@@ -91,7 +91,6 @@ class FakeModelC(Model):
         to={"fake_model_a": "fake_model_generic_multitype"},
     )
 
-    # nested structured field
     foreign_key_field = fields.RelationField(
         to={"fake_model_b": "fake_model_c_ids"},
     )

@@ -83,9 +83,7 @@ class Model(metaclass=ModelMetaClass):
             if isinstance(model_field, fields.BaseRelationField):
                 yield model_field
 
-    def get_property(
-        self, field_name: str, replacement_pattern: Optional[str] = None
-    ) -> fields.Schema:
+    def get_property(self, field_name: str) -> fields.Schema:
         """
         Returns JSON schema for the given field. Throws an error if it's read_only.
         """
@@ -94,7 +92,7 @@ class Model(metaclass=ModelMetaClass):
             raise ActionException(
                 f"The field {field_name} is read_only and cannot be used in a payload schema."
             )
-        return {field_name: field.get_payload_schema(replacement_pattern)}
+        return {field_name: field.get_schema()}
 
     def get_properties(self, *fields: str) -> Dict[str, fields.Schema]:
         """
