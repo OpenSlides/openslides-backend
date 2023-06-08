@@ -430,11 +430,11 @@ class CommitteeJsonUploadListFields(BaseActionTestCase):
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.DONE,
             "messages": [
-                "Missing committee manager(s): user8",
+                "Missing meeting admin(s): [user8]",
+                "Missing committee manager(s): [user8]",
+                "Missing forward to committee(s): [c5]",
                 "Removed committee manager(s): user6",
                 "Removed Organization tag(s): [ot2]",
-                "Missing meeting admin(s): user8",
-                "Missing committee(s): [c5]",
             ],
             "data": {
                 "name": "c8",

@@ -63,69 +63,20 @@ class CommitteeJsonUpload(JsonUploadMixin):
         {"property": "meeting_admins", "type": "string", "is_object": True, "is_list": True},
         {"property": "meeting_template", "type": "string",  "is_object": True},
     ]
+    payload_db_field = {
+        "forward_to_committees": "forward_to_committee_ids",
+        "organization_tags": "organization_tag_ids",
+        "committee_managers": "manager_ids",
+    }
+
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
     row_state: ImportState
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
-
-        # setup the lookups
-        usernames: Set[str] = set()
-        organization_tags: Set[str] = set()
-        committee_names: Set[str] = set()
-        for entry in data:
-            committee_names.add(entry["name"])
-            if entry.get("forward_to_committees") and not isinstance(
-                entry["forward_to_committees"], str
-            ):
-                committee_names.update(entry["forward_to_committees"])
-            if entry.get("committee_managers") and not isinstance(
-                entry["committee_managers"], str
-            ):
-                usernames.update(entry["committee_managers"])
-            if entry.get("meeting_admins") and not isinstance(
-                entry["meeting_admins"], str
-            ):
-                usernames.update(entry["meeting_admins"])
-            if entry.get("organization_tags") and not isinstance(
-                entry["organization_tags"], str
-            ):
-                organization_tags.update(entry["organization_tags"])
-
-        self.committee_lookup = Lookup(
-            self.datastore, "committee", list(committee_names)
-        )
-        self.username_lookup = Lookup(
-            self.datastore, "user", list(usernames), field="username"
-        )
-        self.organization_tag_lookup = Lookup(
-            self.datastore, "organization_tag", list(organization_tags)
-        )
-        self.meeting_lookup = Lookup(
-            self.datastore,
-            "meeting",
-            list(
-                set(
-                    (
-                        entry.get("meeting_template")
-                        for entry in data
-                        if entry.get("meeting_template")
-                    )
-                )
-            ),
-        )
-        # found_committee = [
-        #     entry["name"]
-        #     for entry in data
-        #     if committee_lookup.check_duplicate(entry["name"]) == ResultType.NOT_FOUND
-        # ]
-        # special case: we want to find committees, which are new created
-        # for the forwarding. Handled in check_list_field().
-        # for name in found_committee:
-        #    committee_lookup.name_to_ids[name].append(NEW_COMMITEE_ID)
-
-        # main work, see validate_entry
+        self.setup_lookups(data)
+        self.fill_committees_to_add_with_pseudo_id(data)
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # calculate statistics
@@ -166,7 +117,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
             self.count_state(ImportState.ERROR), self.count_state(ImportState.WARNING)
         )
         self.store_rows_in_the_action_worker("committee")
-        return {}
+        return {} # do not create any write_requests, this is just for preview
 
     def validate_entry(
         self,
@@ -175,14 +126,17 @@ class CommitteeJsonUpload(JsonUploadMixin):
         messages: List[str] = []
 
         # committee state handling
+
         check_result = self.committee_lookup.check_duplicate(entry["name"])
         if check_result == ResultType.FOUND_ID:
             self.row_state = ImportState.DONE
-            entry["id"] = self.committee_lookup.get_id_by_name(entry["name"])
+            entry["name"] = {"value": entry["name"], "info": ImportState.DONE, "id":self.committee_lookup.get_id_by_name(entry["name"])}
         elif check_result == ResultType.NOT_FOUND:
             self.row_state = ImportState.NEW
+            entry["name"] = {"value": entry["name"], "info": ImportState.NEW}
         elif check_result == ResultType.FOUND_MORE_IDS:
             self.row_state = ImportState.ERROR
+            entry["name"] = {"value": entry["name"], "info": ImportState.ERROR}
             messages.append("Found more committees with the same name in db.")
 
         if not entry.get("meeting_name"):
@@ -202,20 +156,20 @@ class CommitteeJsonUpload(JsonUploadMixin):
 
         # handle committee managers (string list)
         self.check_list_field(
-            "committee_managers", entry, self.username_lookup, messages
+            "committee_managers", entry, self.username_lookup, messages, ImportState.WARNING
         )
-        if any(
-            inner["info"] == ImportState.WARNING
-            for inner in (entry.get("committee_managers") or [])
-        ):
-            missing_managers = ", ".join(
-                [
-                    inner["value"]
-                    for inner in entry["committee_managers"]
-                    if inner["info"] == ImportState.WARNING
-                ]
-            )
-            messages.append(f"Missing committee manager(s): [{missing_managers}]")
+        # if any(
+        #     inner["info"] == ImportState.WARNING
+        #     for inner in (entry.get("committee_managers") or [])
+        # ):
+        #     missing_managers = ", ".join(
+        #         [
+        #             inner["value"]
+        #             for inner in entry["committee_managers"]
+        #             if inner["info"] == ImportState.WARNING
+        #         ]
+        #     )
+        #     messages.append(f"Missing committee manager(s): [{missing_managers}]")
 
         # handle organization tags
         self.check_list_field(
@@ -232,7 +186,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
             entry,
             self.committee_lookup,
             messages,
-            not_found_state=ImportState.NEW,
+            not_found_state=ImportState.WARNING,
         )
         return {"state": self.row_state, "messages": messages, "data": entry}
 
@@ -242,44 +196,41 @@ class CommitteeJsonUpload(JsonUploadMixin):
         entry: Dict[str, Any],
         lookup: Lookup,
         messages: List[str],
-        not_found_state: ImportState = ImportState.WARNING,
+        not_found_state: ImportState = ImportState.ERROR,
     ) -> None:
-        # TODO überarbeiten das ganze, not_found_state, remove etc.
         if field in entry:
             # check for parse error
             if isinstance(entry[field], str):
-                messages.append(f"Could not parse {entry[field]}: expected string[]")
-                self.row_state = ImportState.ERROR
-                return
+                entry[field] = [entry[field]]
 
-            # new_list is the new list of object
-            new_list: List[Dict[str, Any]] = []
             # found_list and remove_list are used to cut duplicates
             found_list: List[str] = []
+            remove_duplicate_list: List[str] = []
             remove_list: List[str] = []
-            for name in entry[field]:
-                check_duplicate = lookup.check_duplicate(name)
+            not_unique_list: List[str] = []
+            missing_list: List[str] = []
+            for i, name in enumerate(entry[field]):
                 if name in found_list:
-                    remove_list.append(name)
-                elif check_duplicate == ResultType.FOUND_ID:
+                    remove_duplicate_list.append(name)
+                    entry[field][i] = {"value": name, "info": ImportState.WARNING}
+                    continue
+                check_duplicate = lookup.check_duplicate(name)
+                if check_duplicate == ResultType.FOUND_ID:
                     id_ = lookup.get_id_by_name(name)
-                    if id_:
-                        new_list.append(
-                            {"value": name, "info": ImportState.DONE, "id": id_}
-                        )
-                    else:
-                        new_list.append({"value": name, "info": not_found_state})
-
+                    entry[field][i] = {"value": name, "info": ImportState.DONE, "id": id_}
+                elif check_duplicate == ResultType.FOUND_MORE_IDS:
+                    entry[field][i] = {"value": name, "info": ImportState.WARNING}
+                    not_unique_list.append(name)
                 else:
-                    new_list.append({"value": name, "info": not_found_state})
+                    entry[field][i] = {"value": name, "info": not_found_state}
+                    if not_found_state != ImportState.NEW:
+                        missing_list.append(name)
                 found_list.append(name)
-            entry[field] = new_list
 
-            if remove_list:
-                remove_list_str = ", ".join(remove_list)
-                messages.append(
-                    f"Removed duplicated {field.replace('_', ' ')}: [{remove_list_str}]"
-                )
+            self.append_message_for_list_fields(not_unique_list, "Not identifiable {field}, because name not unique: [{incorrects}]", field, messages)
+            self.append_message_for_list_fields(missing_list, "Missing {field}: [{incorrects}]", field, messages)
+            self.append_message_for_list_fields(remove_list, "Removed {field}: [{incorrects}]", field, messages)
+            self.append_message_for_list_fields(remove_duplicate_list, "Removed duplicated {field}: [{incorrects}]", field, messages)
 
     def date_checks(self, entry: Dict[str, Any]) -> List[str]:
         messages: List[str] = []
@@ -328,21 +279,65 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 messages.append("Meeting will be created with meeting.create.")
 
         # handle meeting_admins
-        self.check_list_field("meeting_admins", entry, self.username_lookup, messages)
-        if any(
-            inner["info"] == ImportState.WARNING
-            for inner in (entry.get("meeting_admins") or [])
-        ):
-            missing_admins = ", ".join(
-                [
-                    inner["value"]
-                    for inner in entry["meeting_admins"]
-                    if inner["info"] == ImportState.WARNING
-                ]
-            )
-            messages.append(f"Missing meeting admin(s): [{missing_admins}]")
+        self.check_list_field("meeting_admins", entry, self.username_lookup, messages, ImportState.WARNING)
+        # if any(
+        #     inner["info"] == ImportState.WARNING
+        #     for inner in (entry.get("meeting_admins") or [])
+        # ):
+        #     missing_admins = ", ".join(
+        #         [
+        #             inner["value"]
+        #             for inner in entry["meeting_admins"]
+        #             if inner["info"] == ImportState.WARNING
+        #         ]
+        #     )
+        #     messages.append(f"Missing meeting admin(s): [{missing_admins}]")
 
         return entry, messages
 
     def count_state(self, state: ImportState) -> int:
         return sum(1 for entry in self.rows if entry["state"] == state)
+
+    def append_message_for_list_fields(self, list_names: List[str], template:str, field:str, messages: List[str]) -> str:
+        if list_names:
+            list_str = ", ".join(list_names)
+            object = field.replace("_"," ")[:-1] + "(s)"
+            messages.append(template.format(field=object, incorrects=list_str))
+
+    def setup_lookups(self, data: List[Dict[str, Any]]) -> None:
+        usernames: Set[str] = set()
+        organization_tags: Set[str] = set()
+        committee_names: Set[str] = set()
+        meeting_template_names: Set[str] = set()
+        for entry in data:
+            committee_names.add(entry["name"])
+            if entry.get("forward_to_committees") and not isinstance(
+                entry["forward_to_committees"], str
+            ):
+                committee_names.update(entry["forward_to_committees"])
+            if entry.get("committee_managers") and not isinstance(
+                entry["committee_managers"], str
+            ):
+                usernames.update(entry["committee_managers"])
+            if entry.get("meeting_admins") and not isinstance(
+                entry["meeting_admins"], str
+            ):
+                usernames.update(entry["meeting_admins"])
+            if entry.get("organization_tags") and not isinstance(
+                entry["organization_tags"], str
+            ):
+                organization_tags.update(entry["organization_tags"])
+            if meeting_template := entry.get("meeting_template"):
+                meeting_template_names.add(meeting_template)
+
+        self.committee_lookup = Lookup(
+            self.datastore, "committee", list(committee_names), mapped_fields=["forward_to_committee_ids", "manager_ids", "organization_tag_ids"]
+        )
+        self.username_lookup = Lookup(
+            self.datastore, "user", list(usernames), field="username"
+        )
+        self.organization_tag_lookup = Lookup(
+            self.datastore, "organization_tag", list(organization_tags)
+        )
+        self.meeting_lookup = Lookup(
+            self.datastore, "meeting", list(meeting_template_names))
