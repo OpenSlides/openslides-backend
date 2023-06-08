@@ -216,16 +216,21 @@ class Lookup:
         collection: str,
         names: List[str],
         field: str = "name",
+        mapped_fields: List[str] = [],
     ) -> None:
-        self.name_to_ids: Dict[str, List[int]] = {name: [] for name in names}
+        self.name_to_ids: Dict[str, List[Dict[str, Any]]] = {name: [] for name in names}
+        if "id" not in mapped_fields:
+            mapped_fields.append("id")
+        if field not in mapped_fields:
+            mapped_fields.append(field)
         if names:
             for entry in datastore.filter(
                 collection,
                 Or(*[FilterOperator(field, "=", name) for name in names]),
-                ["id", field],
+                mapped_fields,
                 lock_result=False,
             ).values():
-                self.name_to_ids[entry[field]].append(entry["id"])
+                self.name_to_ids[entry[field]].append(entry)
 
     def check_duplicate(self, name: str) -> ResultType:
         if not self.name_to_ids.get(name):
@@ -237,5 +242,5 @@ class Lookup:
 
     def get_id_by_name(self, name: str) -> Optional[int]:
         if len(self.name_to_ids[name]) == 1:
-            return self.name_to_ids[name][0]
+            return self.name_to_ids[name][0]["id"]
         return None
