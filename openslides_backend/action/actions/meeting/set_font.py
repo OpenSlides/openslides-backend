@@ -8,7 +8,7 @@ class MeetingSetFontAction(BaseMeetingSetMediafileAction):
     Action to set a mediafile as font.
     """
 
-    field = "font_$_id"
+    file_type = "font"
     allowed_mimetypes = [
         "font/ttf",
         "font/woff",
