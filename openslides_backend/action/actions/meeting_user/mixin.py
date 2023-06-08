@@ -116,21 +116,22 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
         even needed, if there is no data at all exempt the required fields.
         Special fields like about_me and group_ids could be managed also with other permissions.
         Details see https://github.com/OpenSlides/OpenSlides/wiki/meeting_user.create"""
-        if any(fname in self.standard_fields for fname in instance.keys()) or not any(
-            fname in ["about_me", "group_ids"] for fname in instance
+        if any(field in self.standard_fields for field in instance.keys()) or not any(
+            field in ["about_me", "group_ids"] for field in instance
         ):
             return super().check_permissions(instance)
 
         def get_user_and_meeting_id() -> Tuple[int, int]:
             fields = ["user_id", "meeting_id"]
-            if any(fname not in instance for fname in fields):
+            if any(field not in instance for field in fields):
                 mu = self.datastore.get(
                     fqid_from_collection_and_id("meeting_user", instance["id"]),
                     ["user_id", "meeting_id"],
                     lock_result=False,
                 )
-                return cast(Tuple[int, int], ([mu[fname] for fname in fields]))
-            return cast(Tuple[int, int], (instance[fname] for fname in fields))
+            else:
+                mu = instance
+            return cast(Tuple[int, int], tuple(mu[field] for field in fields))
 
         def get_request_user_data() -> Dict[str, Any]:
             return self.datastore.get(
