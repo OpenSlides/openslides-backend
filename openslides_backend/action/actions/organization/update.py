@@ -8,10 +8,12 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import FilterOperator
+from ....shared.schema import optional_str_schema
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..user.save_saml_account import allowed_user_fields
 
 
 @register_action("organization.update")
@@ -22,45 +24,55 @@ class OrganizationUpdate(
     Action to update a organization.
     """
 
+    group_A_fields = (
+        "name",
+        "description",
+        "legal_notice",
+        "privacy_policy",
+        "login_text",
+        "theme_id",
+        "default_language",
+        "users_email_sender",
+        "users_email_replyto",
+        "users_email_subject",
+        "users_email_body",
+    )
+
+    group_B_fields = (
+        "enable_electronic_voting",
+        "enable_chat",
+        "reset_password_verbose_errors",
+        "limit_of_meetings",
+        "limit_of_users",
+        "url",
+        "saml_enabled",
+        "saml_login_button_text",
+        "saml_attr_mapping",
+        "saml_metadata_idp",
+        "saml_metadata_sp",
+        "saml_private_key",
+    )
+
     model = Organization()
     schema = DefaultSchema(Organization()).get_update_schema(
-        optional_properties=[
-            "name",
-            "description",
-            "legal_notice",
-            "privacy_policy",
-            "login_text",
-            "theme_id",
-            "enable_electronic_voting",
-            "enable_chat",
-            "reset_password_verbose_errors",
-            "limit_of_meetings",
-            "limit_of_users",
-            "url",
-            "users_email_sender",
-            "users_email_replyto",
-            "users_email_subject",
-            "users_email_body",
-            "default_language",
-        ]
+        optional_properties=group_A_fields + group_B_fields,
+        additional_optional_fields={
+            "saml_attr_mapping": {
+                "type": "object",
+                "properties": {
+                    field: {**optional_str_schema, "max_length": 256}
+                    for field in allowed_user_fields
+                },
+                "required": ["saml_id"],
+                "additionalProperties": False,
+            },
+        },
     )
     check_email_field = "users_email_replyto"
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        # check group A fields
         if any(
-            [
-                field in instance
-                for field in [
-                    "name",
-                    "description",
-                    "legal_notice",
-                    "privacy_policy",
-                    "login_text",
-                    "theme_id",
-                    "default_language",
-                ]
-            ]
+            [field in instance for field in OrganizationUpdate.group_A_fields]
         ) and not has_organization_management_level(
             self.datastore,
             self.user_id,
@@ -68,19 +80,8 @@ class OrganizationUpdate(
         ):
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
 
-        # check group B fields
         if any(
-            [
-                field in instance
-                for field in [
-                    "enable_electronic_voting",
-                    "enable_chat",
-                    "reset_password_verbose_errors",
-                    "limit_of_meetings",
-                    "limit_of_users",
-                    "url",
-                ]
-            ]
+            [field in instance for field in OrganizationUpdate.group_B_fields]
         ) and not has_organization_management_level(
             self.datastore,
             self.user_id,

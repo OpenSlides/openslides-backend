@@ -138,6 +138,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "theme_ids": [1],
                     "committee_ids": [1],
                     "default_language": "en",
+                    "saml_enabled": False,
+                    "saml_login_button_text": "Login button text",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -226,6 +228,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "projector/1": {
                     "sequential_number": 1,
+                    "is_internal": False,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -291,6 +294,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "theme_ids": [1],
                     "committee_ids": [1],
                     "default_language": "en",
+                    "saml_enabled": True,
+                    "saml_login_button_text": "SAML Login",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -435,6 +440,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "projector/1": {
                     "sequential_number": 1,
+                    "is_internal": False,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -549,6 +555,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "theme_ids": [1],
                     "committee_ids": [1],
                     "default_language": "en",
+                    "saml_enabled": True,
+                    "saml_login_button_text": "SAML Login",
                 },
                 "theme/1": {
                     "name": "Test Theme",
@@ -640,6 +648,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "projector/1": {
                     "sequential_number": 1,
+                    "is_internal": False,
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
@@ -726,6 +735,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "projector/2": {
                     "sequential_number": 1,
+                    "is_internal": False,
                     "meeting_id": 2,
                     "used_as_reference_projector_meeting_id": 2,
                     "name": "Default projector",

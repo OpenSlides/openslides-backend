@@ -65,7 +65,7 @@ class OpenSlidesBackendWSGIApplication:
             return exception
         if type(response_body) == dict:
             status_code = response_body.get("status_code", 200)
-        elif request.path == r"/system/presenter/handle_request":
+        elif request.path == "/system/presenter/handle_request":
             status_code = Response.default_status
         else:
             raise ViewException(f"Unknown type of response_body:{response_body}.")

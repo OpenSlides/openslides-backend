@@ -23,6 +23,7 @@ class ProjectorUpdate(BaseActionTestCase):
             {
                 "id": 111,
                 "name": "name_Xcdfgee",
+                "is_internal": True,
                 "width": 100,
                 "aspect_ratio_numerator": 3,
                 "aspect_ratio_denominator": 4,
@@ -57,6 +58,7 @@ class ProjectorUpdate(BaseActionTestCase):
         ):
             assert model.get(color_field) == "#ffffff"
         for bool_field in (
+            "is_internal",
             "show_header_footer",
             "show_title",
             "show_logo",
@@ -244,6 +246,45 @@ class ProjectorUpdate(BaseActionTestCase):
             "data.used_as_default_$_in_meeting_id must not contain {'xxxtopics'} properties",
             response.json["message"],
         )
+
+    def test_update_reference_projector_internal_error(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                    "reference_projector_id": 111,
+                },
+                "projector/111": {
+                    "name": "name_srtgb123",
+                    "meeting_id": 1,
+                    "used_as_reference_projector_meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("projector.update", {"id": 111, "is_internal": True})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Projector cannot be set to internal, because it is the reference projector of the meeting.",
+            response.json["message"],
+        )
+
+    def test_update_reference_projector_internal_okay(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                    "reference_projector_id": 111,
+                },
+                "projector/111": {
+                    "name": "name_srtgb123",
+                    "meeting_id": 1,
+                    "used_as_reference_projector_meeting_id": 1,
+                    "is_internal": False,
+                },
+            }
+        )
+        response = self.request("projector.update", {"id": 111, "is_internal": False})
+        self.assert_status_code(response, 200)
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(

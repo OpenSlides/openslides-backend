@@ -20,7 +20,13 @@ from ...shared.typing import DeletedModel, ModelMap
 from .cache_adapter import CacheDatastoreAdapter
 from .commands import GetManyRequest
 from .handle_datastore_errors import raise_datastore_error
-from .interface import Engine, LockResult, MappedFieldsPerFqid, PartialModel
+from .interface import (
+    DatastoreService,
+    Engine,
+    LockResult,
+    MappedFieldsPerFqid,
+    PartialModel,
+)
 
 MODEL_FIELD_SQL = "data->>%s"
 MODEL_FIELD_NUMERIC_SQL = r"\(data->%s\)::numeric"
@@ -29,7 +35,7 @@ COMPARISON_VALUE_TEXT_SQL = "%s::text"
 COMPARISON_VALUE_SQL = "%s"
 
 
-class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
+class ExtendedDatastoreAdapter(CacheDatastoreAdapter, DatastoreService):
     """
     Subclass of the datastore adapter to extend the functions with the usage of the changed_models.
 
