@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "1cec4f0fac1dcc4259519eaf29f20e79"
+MODELS_YML_CHECKSUM = "a2f115ab02a3eee0c5456c3e96fe183a"
 
 
 class Organization(Model):
@@ -723,14 +723,12 @@ class Meeting(Model):
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    default_projector_agenda_all_items_ids = fields.RelationListField(
-        to={
-            "projector": "used_as_default_projector_for_agenda_all_items_in_meeting_id"
-        },
+    default_projector_agenda_item_ids = fields.RelationListField(
+        to={"projector": "used_as_default_projector_for_agenda_item_in_meeting_id"},
         required=True,
     )
-    default_projector_topics_ids = fields.RelationListField(
-        to={"projector": "used_as_default_projector_for_topics_in_meeting_id"},
+    default_projector_topic_ids = fields.RelationListField(
+        to={"projector": "used_as_default_projector_for_topic_in_meeting_id"},
         required=True,
     )
     default_projector_list_of_speakers_ids = fields.RelationListField(
@@ -765,16 +763,12 @@ class Meeting(Model):
         to={"projector": "used_as_default_projector_for_mediafile_in_meeting_id"},
         required=True,
     )
-    default_projector_projector_message_ids = fields.RelationListField(
-        to={
-            "projector": "used_as_default_projector_for_projector_message_in_meeting_id"
-        },
+    default_projector_message_ids = fields.RelationListField(
+        to={"projector": "used_as_default_projector_for_message_in_meeting_id"},
         required=True,
     )
-    default_projector_projector_countdowns_ids = fields.RelationListField(
-        to={
-            "projector": "used_as_default_projector_for_projector_countdowns_in_meeting_id"
-        },
+    default_projector_countdown_ids = fields.RelationListField(
+        to={"projector": "used_as_default_projector_for_countdown_in_meeting_id"},
         required=True,
     )
     default_projector_assignment_poll_ids = fields.RelationListField(
@@ -815,8 +809,8 @@ class Meeting(Model):
         "projector_h2",
     )
     DEFAULT_PROJECTOR_ENUM = (
-        "agenda_all_items",
-        "topics",
+        "agenda_item",
+        "topic",
         "list_of_speakers",
         "current_list_of_speakers",
         "motion",
@@ -824,8 +818,8 @@ class Meeting(Model):
         "motion_block",
         "assignment",
         "mediafile",
-        "projector_message",
-        "projector_countdowns",
+        "message",
+        "countdown",
         "assignment_poll",
         "motion_poll",
         "poll",
@@ -1145,7 +1139,7 @@ class Motion(Model):
     )
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
-    amendment_paragraph = fields.JSONField()
+    amendment_paragraphs = fields.JSONField()
     modified_final_version = fields.HTMLStrictField()
     reason = fields.HTMLStrictField()
     category_weight = fields.IntegerField(default=10000)
@@ -1962,11 +1956,11 @@ class Projector(Model):
     used_as_reference_projector_meeting_id = fields.RelationField(
         to={"meeting": "reference_projector_id"}
     )
-    used_as_default_projector_for_agenda_all_items_in_meeting_id = fields.RelationField(
-        to={"meeting": "default_projector_agenda_all_items_ids"}
+    used_as_default_projector_for_agenda_item_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_agenda_item_ids"}
     )
-    used_as_default_projector_for_topics_in_meeting_id = fields.RelationField(
-        to={"meeting": "default_projector_topics_ids"}
+    used_as_default_projector_for_topic_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_topic_ids"}
     )
     used_as_default_projector_for_list_of_speakers_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_list_of_speakers_ids"}
@@ -1991,13 +1985,11 @@ class Projector(Model):
     used_as_default_projector_for_mediafile_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_mediafile_ids"}
     )
-    used_as_default_projector_for_projector_message_in_meeting_id = (
-        fields.RelationField(to={"meeting": "default_projector_projector_message_ids"})
+    used_as_default_projector_for_message_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_message_ids"}
     )
-    used_as_default_projector_for_projector_countdowns_in_meeting_id = (
-        fields.RelationField(
-            to={"meeting": "default_projector_projector_countdowns_ids"}
-        )
+    used_as_default_projector_for_countdown_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_countdown_ids"}
     )
     used_as_default_projector_for_assignment_poll_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_assignment_poll_ids"}

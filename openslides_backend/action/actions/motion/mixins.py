@@ -35,8 +35,8 @@ class PermissionHelperMixin(Action):
 
 
 class AmendmentParagraphHelper:
-    def validate_amendment_paragraph(self, instance: Dict[str, Any]) -> None:
-        for key, html in instance["amendment_paragraph"].items():
-            instance["amendment_paragraph"][key] = validate_html(
+    def validate_amendment_paragraphs(self, instance: Dict[str, Any]) -> None:
+        for key, html in instance["amendment_paragraphs"].items():
+            instance["amendment_paragraphs"][key] = validate_html(
                 html, ALLOWED_HTML_TAGS_STRICT
             )

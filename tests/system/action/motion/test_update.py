@@ -17,7 +17,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "text": "<i>test</i>",
                 "reason": "<b>test2</b>",
                 "modified_final_version": "blablabla",
-                "amendment_paragraph": {"3": "testtesttest"},
+                "amendment_paragraphs": {"3": "testtesttest"},
                 "submitter_ids": [1],
                 "state_id": 1,
             },
@@ -50,7 +50,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "text": "<i>test</i>",
                     "reason": "<b>test2</b>",
                     "modified_final_version": "blablabla",
-                    "amendment_paragraph": {"3": "testtesttest"},
+                    "amendment_paragraphs": {"3": "testtesttest"},
                 },
             }
         )
@@ -64,7 +64,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "text": "text_eNPkDVuq",
                     "reason": "reason_ukWqADfE",
                     "modified_final_version": "mfv_ilVvBsUi",
-                    "amendment_paragraph": {
+                    "amendment_paragraphs": {
                         3: "<html>test</html>",
                         4: "</><</>broken>",
                     },
@@ -78,7 +78,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("text") == "text_eNPkDVuq"
         assert model.get("reason") == "reason_ukWqADfE"
         assert model.get("modified_final_version") == "mfv_ilVvBsUi"
-        assert model.get("amendment_paragraph") == {
+        assert model.get("amendment_paragraphs") == {
             "3": "&lt;html&gt;test&lt;/html&gt;",
             "4": "&lt;broken&gt;",
         }
@@ -151,12 +151,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "title": "title_bDFsWtKL",
                 "number": "124",
-                "amendment_paragraph": {3: "<html>test</html>"},
+                "amendment_paragraphs": {3: "<html>test</html>"},
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot update amendment_paragraph, because it was not set in the old values.",
+            "Cannot update amendment_paragraphs, because it was not set in the old values.",
             response.json["message"],
         )
 

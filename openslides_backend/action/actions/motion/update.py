@@ -51,7 +51,7 @@ class MotionUpdate(
         ],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
-            "amendment_paragraph": number_string_json_schema,
+            "amendment_paragraphs": number_string_json_schema,
         },
     )
 
@@ -81,7 +81,7 @@ class MotionUpdate(
                         "state_id",
                         "submitter_ids",
                         "text",
-                        "amendment_paragraph",
+                        "amendment_paragraphs",
                     ],
                 )
             ]
@@ -92,12 +92,12 @@ class MotionUpdate(
         instance["last_modified"] = timestamp
         if (
             instance.get("text")
-            or instance.get("amendment_paragraph")
+            or instance.get("amendment_paragraphs")
             or instance.get("reason") == ""
         ):
             motion = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["text", "amendment_paragraph", "meeting_id"],
+                ["text", "amendment_paragraphs", "meeting_id"],
             )
 
         if instance.get("text"):
@@ -105,12 +105,12 @@ class MotionUpdate(
                 raise ActionException(
                     "Cannot update text, because it was not set in the old values."
                 )
-        if instance.get("amendment_paragraph"):
-            if not motion.get("amendment_paragraph"):
+        if instance.get("amendment_paragraphs"):
+            if not motion.get("amendment_paragraphs"):
                 raise ActionException(
-                    "Cannot update amendment_paragraph, because it was not set in the old values."
+                    "Cannot update amendment_paragraphs, because it was not set in the old values."
                 )
-            self.validate_amendment_paragraph(instance)
+            self.validate_amendment_paragraphs(instance)
         if instance.get("reason") == "":
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", motion["meeting_id"]),
@@ -214,7 +214,7 @@ class MotionUpdate(
                 "title",
                 "text",
                 "reason",
-                "amendment_paragraph",
+                "amendment_paragraphs",
             ]
 
         forbidden_fields = [field for field in instance if field not in allowed_fields]
@@ -255,7 +255,7 @@ class MotionUpdate(
                 "text",
                 "reason",
                 "attachment_ids",
-                "amendment_paragraph",
+                "amendment_paragraphs",
                 "workflow_id",
                 "start_line_number",
                 "state_extension",

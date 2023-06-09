@@ -86,19 +86,19 @@ class ProjectorCreateActionTest(BaseActionTestCase):
             {
                 "name": "Test",
                 "meeting_id": 222,
-                "used_as_default_projector_for_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topic_in_meeting_id": 222,
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "projector/1",
             {
-                "used_as_default_projector_for_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topic_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(
             "meeting/222",
-            {"default_projector_topics_ids": [1]},
+            {"default_projector_topic_ids": [1]},
         )
 
     def test_create_set_wrong_used_as_default__in_meeting_id(self) -> None:

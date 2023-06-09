@@ -206,8 +206,8 @@ class Model(Node):
                 "projector_h2",
             )
             DEFAULT_PROJECTOR_ENUM = (
-                "agenda_all_items",
-                "topics",
+                "agenda_item",
+                "topic",
                 "list_of_speakers",
                 "current_list_of_speakers",
                 "motion",
@@ -215,8 +215,8 @@ class Model(Node):
                 "motion_block",
                 "assignment",
                 "mediafile",
-                "projector_message",
-                "projector_countdowns",
+                "message",
+                "countdown",
                 "assignment_poll",
                 "motion_poll",
                 "poll",
