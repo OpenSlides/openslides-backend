@@ -133,7 +133,7 @@ class CommitteeJsonUploadCommittee(BackendImportBaseTest):
         )
         self.assert_row(
             1,
-            response.json["results"][0][0]["rows"][0],
+            response.json["results"][0][0]["rows"][1],
             {
                 "state": ImportState.NEW,
                 "messages": [],
@@ -159,7 +159,7 @@ class CommitteeJsonUploadCommittee(BackendImportBaseTest):
         )
         self.assert_row(
             1,
-            response.json["results"][0][0]["rows"][0],
+            response.json["results"][0][0]["rows"][1],
             {
                 "state": ImportState.DONE,
                 "messages": [],
