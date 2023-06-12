@@ -95,6 +95,7 @@ class CommitteeJsonUploadCommittee(BackendImportBaseTest):
             },
         )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 1},
             {"name": "Committees updated", "value": 0},
             {"name": "Meetings created without template", "value": 0},
@@ -223,6 +224,7 @@ class CommitteeJsonUploadListFields(BackendImportBaseTest):
             },
         )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 1},
             {"name": "Committees updated", "value": 0},
             {"name": "Meetings created without template", "value": 0},
@@ -264,6 +266,7 @@ class CommitteeJsonUploadListFields(BackendImportBaseTest):
             },
         )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 0},
             {"name": "Committees updated", "value": 1},
             {"name": "Meetings created without template", "value": 0},
@@ -309,6 +312,7 @@ class CommitteeJsonUploadListFields(BackendImportBaseTest):
             },
         )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 0},
             {"name": "Committees updated", "value": 1},
             {"name": "Meetings created without template", "value": 0},
@@ -346,6 +350,7 @@ class CommitteeJsonUploadListFields(BackendImportBaseTest):
             },
         )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 1},
             {"name": "Committees updated", "value": 0},
             {"name": "Meetings created without template", "value": 0},
@@ -403,6 +408,7 @@ class CommitteeJsonUploadListFields(BackendImportBaseTest):
             },
         )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 0},
             {"name": "Committees updated", "value": 1},
             {"name": "Meetings created without template", "value": 0},
@@ -481,6 +487,7 @@ class CommitteeJsonUploadListFields(BackendImportBaseTest):
             },
         )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 2},
             {"name": "Committees updated", "value": 1},
             {"name": "Meetings created without template", "value": 0},
@@ -611,6 +618,7 @@ class CommitteeJsonUploadListFields(BackendImportBaseTest):
             },
         )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 1},
             {"name": "Committees updated", "value": 1},
             {"name": "Meetings created without template", "value": 1},
@@ -735,7 +743,7 @@ class CommitteeJsonUploadDate(BackendImportBaseTest):
                     "Could not parse end_time 12XX-broken: expected date",
                 ],
                 "data": {
-                    "name": {"value":"test", "info": ImportState.NEW},
+                    "name": {"value": "test", "info": ImportState.NEW},
                     "meeting_name": "test meeting",
                     "start_time": 1691539200,
                     "end_time": "12XX-broken",
@@ -760,23 +768,34 @@ class CommitteeJsonUploadDate(BackendImportBaseTest):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_row(0, response.json["results"][0][0]["rows"][0],
-        {
-            "state": ImportState.ERROR,
-            "messages": [
-                "Start time may not be after end time.",
-            ],
-            "data": {
-                "name": {"value": "test", "info":ImportState.NEW},
-                "meeting_name": "test meeting",
-                "start_time": 1691625600,
-                "end_time": 1691539200,
-                "meeting_template": {
-                    "info": ImportState.NONE,
-                    "value": "",
+        self.assert_row(
+            0,
+            response.json["results"][0][0]["rows"][0],
+            {
+                "state": ImportState.ERROR,
+                "messages": [
+                    "Start time may not be after end time.",
+                ],
+                "data": {
+                    "name": {"value": "test", "info": ImportState.NEW},
+                    "meeting_name": "test meeting",
+                    "start_time": 1691625600,
+                    "end_time": 1691539200,
+                    "meeting_template": {
+                        "info": ImportState.NONE,
+                        "value": "",
+                    },
                 },
             },
-        })
+        )
+        assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 1},
+            {"name": "Committees created", "value": 0},
+            {"name": "Committees updated", "value": 0},
+            {"name": "Meetings created without template", "value": 0},
+            {"name": "Meetings copied from template", "value": 0},
+            {"name": "Organization tags created", "value": 0},
+        ]
 
 
 class CommitteeJsonUploadMeeting(BackendImportBaseTest):
@@ -793,15 +812,20 @@ class CommitteeJsonUploadMeeting(BackendImportBaseTest):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_row(0, response.json["results"][0][0]["rows"][0], {
-            "state": ImportState.NEW,
-            "messages": ["No meeting will be created without meeting_name"],
-            "data": {
-                "name": {"value": "test", "info": ImportState.NEW},
-                "meeting_template": "testtemplate",
+        self.assert_row(
+            0,
+            response.json["results"][0][0]["rows"][0],
+            {
+                "state": ImportState.NEW,
+                "messages": ["No meeting will be created without meeting_name"],
+                "data": {
+                    "name": {"value": "test", "info": ImportState.NEW},
+                    "meeting_template": "testtemplate",
+                },
             },
-        })
+        )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 1},
             {"name": "Committees updated", "value": 0},
             {"name": "Meetings created without template", "value": 0},
@@ -824,20 +848,24 @@ class CommitteeJsonUploadMeeting(BackendImportBaseTest):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_row(0, response.json["results"][0][0]["rows"][0],
-        {
-            "state": ImportState.NEW,
-            "messages": [],
-            "data": {
-                "name": {"value": "test", "info": ImportState.NEW},
-                "meeting_name": "test meeting",
-                "meeting_template": {
-                    "value": "",
-                    "info": ImportState.NONE,
+        self.assert_row(
+            0,
+            response.json["results"][0][0]["rows"][0],
+            {
+                "state": ImportState.NEW,
+                "messages": [],
+                "data": {
+                    "name": {"value": "test", "info": ImportState.NEW},
+                    "meeting_name": "test meeting",
+                    "meeting_template": {
+                        "value": "",
+                        "info": ImportState.NONE,
+                    },
                 },
             },
-        })
+        )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 1},
             {"name": "Committees updated", "value": 0},
             {"name": "Meetings created without template", "value": 1},
@@ -859,17 +887,21 @@ class CommitteeJsonUploadMeeting(BackendImportBaseTest):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_row(0, response.json["results"][0][0]["rows"][0],
-        {
-            "state": ImportState.NEW,
-            "messages": ["Meeting will be created with meeting.create."],
-            "data": {
-                "name": {"value": "test", "info": ImportState.NEW},
-                "meeting_name": "test meeting",
-                "meeting_template": {"value": "test", "info": ImportState.WARNING},
+        self.assert_row(
+            0,
+            response.json["results"][0][0]["rows"][0],
+            {
+                "state": ImportState.NEW,
+                "messages": ["Meeting will be created with meeting.create."],
+                "data": {
+                    "name": {"value": "test", "info": ImportState.NEW},
+                    "meeting_name": "test meeting",
+                    "meeting_template": {"value": "test", "info": ImportState.WARNING},
+                },
             },
-        })
+        )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 1},
             {"name": "Committees updated", "value": 0},
             {"name": "Meetings created without template", "value": 1},
@@ -892,21 +924,25 @@ class CommitteeJsonUploadMeeting(BackendImportBaseTest):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_row(0, response.json["results"][0][0]["rows"][0], 
-        {
-            "state": ImportState.NEW,
-            "messages": [],
-            "data": {
-                "name": {"value": "test", "info": ImportState.NEW},
-                "meeting_name": "test meeting",
-                "meeting_template": {
-                    "value": "test",
-                    "info": ImportState.DONE,
-                    "id": 23,
+        self.assert_row(
+            0,
+            response.json["results"][0][0]["rows"][0],
+            {
+                "state": ImportState.NEW,
+                "messages": [],
+                "data": {
+                    "name": {"value": "test", "info": ImportState.NEW},
+                    "meeting_name": "test meeting",
+                    "meeting_template": {
+                        "value": "test",
+                        "info": ImportState.DONE,
+                        "id": 23,
+                    },
                 },
             },
-        })
+        )
         assert response.json["results"][0][0]["statistics"] == [
+            {"name": "Row errors", "value": 0},
             {"name": "Committees created", "value": 1},
             {"name": "Committees updated", "value": 0},
             {"name": "Meetings created without template", "value": 0},
