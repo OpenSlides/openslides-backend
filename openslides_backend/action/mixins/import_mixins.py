@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 from typing_extensions import NotRequired, TypedDict
 
+from ...services.datastore.commands import GetManyRequest
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
@@ -400,7 +401,11 @@ class Lookup:
         field: str = "name",
         mapped_fields: List[str] = [],
     ) -> None:
+        self.datastore = datastore
+        self.collection = collection
+        self.field = field
         self.name_to_ids: Dict[str, List[Dict[str, Any]]] = {name: [] for name in names}
+        self.id_to_name: Dict[int, str] = {}
         if "id" not in mapped_fields:
             mapped_fields.append("id")
         if field not in mapped_fields:
@@ -413,6 +418,7 @@ class Lookup:
                 lock_result=False,
             ).values():
                 self.name_to_ids[entry[field]].append(entry)
+                self.id_to_name[entry["id"]] = entry[field]
 
     def check_duplicate(self, name: str) -> ResultType:
         if not self.name_to_ids.get(name):
@@ -426,3 +432,21 @@ class Lookup:
         if len(self.name_to_ids[name]) == 1:
             return self.name_to_ids[name][0]["id"]
         return None
+
+    def get_name_by_id(self, id_: int) -> Optional[str]:
+        if name := self.id_to_name.get(id_):
+            return name
+        return None
+
+    def read_missing_ids(self, ids: List[int]) -> None:
+        result = self.datastore.get_many(
+            [GetManyRequest(self.collection, ids, [self.field])],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        self.id_to_name.update(
+            {
+                key: value.get(self.field, "")
+                for key, value in result[self.collection].items()
+            }
+        )
