@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "c0e5b73b17f50960f478915db3f17cdf"
+MODELS_YML_CHECKSUM = "116ab31bec2a925218e94a4c44716053"
 
 
 class Organization(Model):
@@ -1816,6 +1816,7 @@ class Projector(Model):
 
     id = fields.IntegerField()
     name = fields.CharField()
+    is_internal = fields.BooleanField(default=False)
     scale = fields.IntegerField(default=0)
     scroll = fields.IntegerField(default=0, constraints={"minimum": 0})
     width = fields.IntegerField(default=1200, constraints={"minimum": 1})

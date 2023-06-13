@@ -22,7 +22,6 @@ list_of_speakers:
     can_manage:
         can_see:
     can_be_speaker:
-        can_see:
 mediafile:
     can_manage:
         can_see:

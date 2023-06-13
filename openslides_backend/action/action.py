@@ -73,8 +73,15 @@ class SchemaProvider(type):
         return super().__new__(cls, name, bases, attrs)
 
 
+ORIGINAL_INSTANCES_FLAG = "_original_instances"
+
+
 def original_instances(method: Callable) -> Callable:
-    setattr(method, "_original_instances", True)
+    """
+    Marker decorator for get_updated_instances to indicate that the method returns the original
+    instances from the action data in the same order. Must be set to create action result.
+    """
+    setattr(method, ORIGINAL_INSTANCES_FLAG, True)
     return method
 
 
@@ -164,7 +171,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self.action_data = deepcopy(action_data)
         self.instances = list(self.get_updated_instances(action_data))
         is_original_instances = hasattr(
-            self.get_updated_instances, "_original_instances"
+            self.get_updated_instances, ORIGINAL_INSTANCES_FLAG
         )
         for instance in self.instances:
             # only increment index if the instances which are iterated here are the
@@ -286,7 +293,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         By default this does nothing. Override in subclasses to adjust the updates
         to all instances of the action data. You can only update instances of the model
-        of this action.
+        of this action. If overridden and not decorated with @original_instances, no
+        action results will be created.
         If needed, this can also be used to do additional validation on the whole
         action data.
         """
