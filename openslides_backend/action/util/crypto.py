@@ -13,6 +13,6 @@ def get_random_string(length: int, allowed_chars: str = RANDOM_STRING_CHARS) -> 
 
 def get_random_password(length: int = 10, allowed_chars: str = PASSWORD_CHARS) -> str:
     """
-    Return a securely generated random password which uses only uses easily identifiable characters.
+    Return a securely generated random password which only uses easily identifiable characters.
     """
     return get_random_string(length, allowed_chars)
