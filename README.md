@@ -11,7 +11,8 @@ database.
 - `MEDIA_DATABASE_USER`: Name of the database user (default: `openslides`)
 - `MEDIA_DATABASE_PASSWORD_FILE`: Path to the (secret) file, which contains the
 password (default: `/run/secrets/postgres_password`; in dev mode the password is always assumed to be `openslides`)
-- `BLOCK_SIZE`: The size of the blocks, the file is chunked into (default: `4096`)
+- `MEDIA_BLOCK_SIZE`: The size of the blocks, the file is chunked into (default: `4096`)
+- `MEDIA_CLIENT_CACHE_DURATION`: The duration in seconds a file should be cached by a client (default: `86400`; disabled when: `0`)
 - `PRESENTER_HOST`: Host of the presenter service (default: `backend`)
 - `PRESENTER_PORT`: Port of the presenter service (default: `9003`)
 

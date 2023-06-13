@@ -5,7 +5,7 @@ import json
 from flask import Flask, Response, jsonify, request
 
 from .auth import AUTH_HEADER, check_file_id
-from .config_handling import init_config
+from .config_handling import init_config, is_dev_mode
 from .database import Database
 from .exceptions import BadRequestError, HttpError, NotFoundError
 from .logging import init_logging
@@ -68,6 +68,11 @@ def serve_files(file_id, file_type):
     # http headers can only be encoded using latin1
     filename_latin1 = filename.encode("latin1", errors="replace").decode("latin1")
     response.headers["Content-Disposition"] = f'inline; filename="{filename_latin1}"'
+
+    client_cache_duration = int(app.config["MEDIA_CLIENT_CACHE_DURATION"])
+    if client_cache_duration > 0 and not is_dev_mode():
+        response.headers["Cache-Control"] = f"private, max-age={client_cache_duration}"
+
     if auth_header:
         response.headers[AUTH_HEADER] = auth_header
     return response
