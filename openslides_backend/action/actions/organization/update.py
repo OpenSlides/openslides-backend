@@ -25,6 +25,7 @@ class OrganizationUpdate(
     """
 
     group_A_fields = (
+        "external_id",
         "name",
         "description",
         "legal_notice",

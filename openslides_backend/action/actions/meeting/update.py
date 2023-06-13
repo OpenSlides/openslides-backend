@@ -156,6 +156,7 @@ class MeetingUpdate(
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
             *meeting_settings_keys,
+            "external_id",
             "reference_projector_id",
             "organization_tag_ids",
             "jitsi_domain",
@@ -251,6 +252,7 @@ class MeetingUpdate(
             [
                 field in instance
                 for field in [
+                    "external_id",
                     "enable_anonymous",
                     "custom_translations",
                 ]

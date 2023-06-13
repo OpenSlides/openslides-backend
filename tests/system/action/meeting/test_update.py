@@ -446,12 +446,16 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             {
                 "id": 1,
                 "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/1",
-            {"custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"}},
+            {
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
         )
 
     def test_update_group_e_no_permission(self) -> None:

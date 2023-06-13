@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "116ab31bec2a925218e94a4c44716053"
+MODELS_YML_CHECKSUM = "291a6452dcb76d06930a5b8bf5d728ed"
 
 
 class Organization(Model):
@@ -11,6 +11,7 @@ class Organization(Model):
     verbose_name = "organization"
 
     id = fields.IntegerField()
+    external_id = fields.CharField()
     name = fields.CharField()
     description = fields.HTMLStrictField()
     legal_notice = fields.TextField()
@@ -344,6 +345,7 @@ class Meeting(Model):
     verbose_name = "meeting"
 
     id = fields.IntegerField()
+    external_id = fields.CharField()
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
     name = fields.CharField(
@@ -783,6 +785,7 @@ class Group(Model):
     verbose_name = "group"
 
     id = fields.IntegerField()
+    external_id = fields.CharField()
     name = fields.CharField(required=True)
     permissions = fields.CharArrayField(
         in_array_constraints={
