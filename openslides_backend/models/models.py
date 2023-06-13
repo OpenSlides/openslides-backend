@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "c7b0deee8f8e4f5841dcb490c90c8781"
+MODELS_YML_CHECKSUM = "291a6452dcb76d06930a5b8bf5d728ed"
 
 
 class Organization(Model):
@@ -11,6 +11,7 @@ class Organization(Model):
     verbose_name = "organization"
 
     id = fields.IntegerField()
+    external_id = fields.CharField()
     name = fields.CharField()
     description = fields.HTMLStrictField()
     legal_notice = fields.TextField()
