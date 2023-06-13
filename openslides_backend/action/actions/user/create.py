@@ -6,10 +6,11 @@ from ....shared.schema import optional_id_schema
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
+from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .password_mixin import PasswordCreateMixin
+from .password_mixin import PasswordMixin
 from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin
 
 
@@ -19,7 +20,7 @@ class UserCreate(
     CreateAction,
     UserMixin,
     CreateUpdatePermissionsMixin,
-    PasswordCreateMixin,
+    PasswordMixin,
     LimitOfUserMixin,
     UsernameMixin,
 ):
@@ -73,8 +74,7 @@ class UserCreate(
         if not instance.get("username"):
             instance["username"] = self.generate_username(instance)
         if not instance.get("default_password"):
-            instance = self.generate_and_set_password(instance)
-        else:
-            instance = self.set_password(instance)
+            instance["default_password"] = get_random_password()
+        instance = self.set_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
         return instance

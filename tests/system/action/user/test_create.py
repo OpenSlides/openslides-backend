@@ -1,3 +1,4 @@
+from openslides_backend.action.util.crypto import PASSWORD_CHARS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
@@ -23,10 +24,9 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/2")
         assert model.get("username") == "test Xcdfgee"
-        assert model.get("default_password") is not None
-        assert self.auth.is_equals(
-            model.get("default_password", ""), model.get("password", "")
-        )
+        assert (password := model.get("default_password")) is not None
+        assert all(char in PASSWORD_CHARS for char in password)
+        assert self.auth.is_equals(password, model.get("password", ""))
         self.assert_history_information("user/2", ["Account created"])
 
     def test_create_first_and_last_name(self) -> None:
