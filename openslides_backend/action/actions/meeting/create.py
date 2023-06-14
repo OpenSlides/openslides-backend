@@ -36,6 +36,7 @@ class MeetingCreate(
             "start_time",
             "end_time",
             "organization_tag_ids",
+            "external_id",
         ],
         additional_optional_fields={
             "user_ids": id_list_schema,

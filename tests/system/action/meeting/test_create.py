@@ -206,19 +206,21 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
 
     def test_check_action_data_fields(self) -> None:
+        external_id = "external"
         meeting = self.basic_test(
             {
                 "description": "RRfnzxHA",
                 "location": "LSFHPTgE",
                 "start_time": 1608120653,
                 "end_time": 1608121653,
+                "external_id": external_id,
             }
         )
         assert meeting.get("description") == "RRfnzxHA"
         assert meeting.get("location") == "LSFHPTgE"
         assert meeting.get("start_time") == 1608120653
         assert meeting.get("end_time") == 1608121653
-
+        assert meeting.get("external_id") == external_id
         # check two defaults:
         assert meeting.get("assignment_poll_default_type") == "pseudoanonymous"
         assert meeting.get("assignment_poll_default_method") == "Y"

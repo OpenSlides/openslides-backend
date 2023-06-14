@@ -685,6 +685,9 @@ committee:
   description:
     type: HTMLStrict
     restriction_mode: A
+  external_id:
+    type: string
+    restriction_mode: A
 
   meeting_ids:
     type: relation-list
@@ -738,6 +741,9 @@ committee:
 meeting:
   id:
     type: number
+    restriction_mode: A
+  external_id:
+    type: string
     restriction_mode: A
   welcome_title:
     type: string
@@ -1693,6 +1699,9 @@ meeting:
 group:
   id:
     type: number
+    restriction_mode: A
+  external_id:
+    type: string
     restriction_mode: A
   name:
     type: string
