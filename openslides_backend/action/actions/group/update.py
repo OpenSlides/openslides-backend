@@ -8,10 +8,11 @@ from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .group_mixin import GroupMixin
 
 
 @register_action("group.update")
-class GroupUpdateAction(UpdateAction):
+class GroupUpdateAction(GroupMixin, UpdateAction):
     """
     Action to update a group.
     """
