@@ -71,9 +71,6 @@ organization:
   id:
     type: number
     restriction_mode: A
-  external_id:
-    type: string
-    restriction_mode: A
   name:
     type: string
     restriction_mode: A
@@ -687,6 +684,9 @@ committee:
     restriction_mode: A
   description:
     type: HTMLStrict
+    restriction_mode: A
+  external_id:
+    type: string
     restriction_mode: A
 
   meeting_ids:

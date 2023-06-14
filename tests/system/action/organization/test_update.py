@@ -224,20 +224,11 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         response = self.request("organization.update", {"id": 1, "name": "blablabla"})
         self.assert_status_code(response, 403)
 
-    def test_update_external_id_no_permissions(self) -> None:
-        self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_USERS
-        )
-        response = self.request("organization.update", {"id": 1, "external_id": "test"})
-        self.assert_status_code(response, 403)
-
     def test_update_group_a_permissions(self) -> None:
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
         )
-        response = self.request(
-            "organization.update", {"id": 1, "name": "blablabla", "external_id": "test"}
-        )
+        response = self.request("organization.update", {"id": 1, "name": "blablabla"})
         self.assert_status_code(response, 200)
 
     def test_update_group_b_no_permissions(self) -> None:

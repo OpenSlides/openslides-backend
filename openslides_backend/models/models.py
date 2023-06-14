@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "291a6452dcb76d06930a5b8bf5d728ed"
+MODELS_YML_CHECKSUM = "c7b0deee8f8e4f5841dcb490c90c8781"
 
 
 class Organization(Model):
@@ -11,7 +11,6 @@ class Organization(Model):
     verbose_name = "organization"
 
     id = fields.IntegerField()
-    external_id = fields.CharField()
     name = fields.CharField()
     description = fields.HTMLStrictField()
     legal_notice = fields.TextField()
@@ -309,6 +308,7 @@ class Committee(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     description = fields.HTMLStrictField()
+    external_id = fields.CharField()
     meeting_ids = fields.RelationListField(
         to={"meeting": "committee_id"}, on_delete=fields.OnDelete.PROTECT
     )
