@@ -860,3 +860,32 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "committee_$can_manage_management_level": [2],
             },
         )
+
+    def test_update_external_id_not_unique(self) -> None:
+        external_id = "external"
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "c1",
+                    "external_id": external_id,
+                },
+                "committee/2": {
+                    "organization_id": 1,
+                    "name": "c2",
+                },
+            }
+        )
+
+        response = self.request(
+            "committee.update",
+            {
+                "id": 2,
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the committee is not unique.", response.json["message"]
+        )

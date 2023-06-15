@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "c7b0deee8f8e4f5841dcb490c90c8781"
+MODELS_YML_CHECKSUM = "4926667fbf41432ca0957342eb309f5a"
 
 
 class Organization(Model):
@@ -308,7 +308,7 @@ class Committee(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     description = fields.HTMLStrictField()
-    external_id = fields.CharField()
+    external_id = fields.CharField(constraints={"description": "unique"})
     meeting_ids = fields.RelationListField(
         to={"meeting": "committee_id"}, on_delete=fields.OnDelete.PROTECT
     )
@@ -345,7 +345,7 @@ class Meeting(Model):
     verbose_name = "meeting"
 
     id = fields.IntegerField()
-    external_id = fields.CharField()
+    external_id = fields.CharField(constraints={"description": "unique in committee"})
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
     name = fields.CharField(
@@ -785,7 +785,7 @@ class Group(Model):
     verbose_name = "group"
 
     id = fields.IntegerField()
-    external_id = fields.CharField()
+    external_id = fields.CharField(constraints={"description": "unique in meeting"})
     name = fields.CharField(required=True)
     permissions = fields.CharArrayField(
         in_array_constraints={

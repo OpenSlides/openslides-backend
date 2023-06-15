@@ -444,3 +444,25 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         Translator.set_translation_language("de")
         self.assert_model_exists("group/2", {"name": _("Default")})
+
+    def test_create_external_id_not_unique(self) -> None:
+        external_id = "external"
+        self.set_models(
+            {
+                "meeting/1": {"committee_id": 1, "external_id": external_id},
+            }
+        )
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "meeting2",
+                "committee_id": 1,
+                "language": "pt",
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the meeting is not unique in the committee scope.",
+            response.json["message"],
+        )

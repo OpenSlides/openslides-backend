@@ -688,7 +688,7 @@ committee:
   external_id:
     type: string
     restriction_mode: A
-
+    description: unique
   meeting_ids:
     type: relation-list
     to: meeting/committee_id
@@ -745,6 +745,7 @@ meeting:
   external_id:
     type: string
     restriction_mode: A
+    description: unique in committee
   welcome_title:
     type: string
     default: Welcome to OpenSlides
@@ -1703,6 +1704,7 @@ group:
   external_id:
     type: string
     restriction_mode: A
+    description: unique in meeting
   name:
     type: string
     required: true

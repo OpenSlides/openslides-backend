@@ -1,12 +1,30 @@
 from typing import Any, Dict
 
+from openslides_backend.action.mixins.check_unique_name_mixin import (
+    CheckUniqueInContextMixin,
+)
 from openslides_backend.shared.exceptions import PermissionDenied
 
 from ....permissions.permission_helper import is_admin
 from ...action import Action
 
 
-class GroupMixin(Action):
+class GroupMixin(CheckUniqueInContextMixin, Action):
+    check_unique_error_text = (
+        "The external_id of the group is not unique in the meeting scope."
+    )
+
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if "external_id" in instance:
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                self.__class__.check_unique_error_text,
+                "meeting_id",
+                self.get_meeting_id(instance),
+            )
+
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         super().check_permissions(instance)
         # external id is only allowed for admins

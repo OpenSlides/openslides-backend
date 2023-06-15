@@ -1,5 +1,9 @@
 from typing import Any, Dict
 
+from openslides_backend.action.mixins.check_unique_name_mixin import (
+    CheckUniqueInContextMixin,
+)
+
 from ....models.models import Meeting
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -146,6 +150,7 @@ meeting_settings_keys = [
 
 @register_action("meeting.update")
 class MeetingUpdate(
+    CheckUniqueInContextMixin,
     EmailCheckMixin,
     EmailSenderCheckMixin,
     UpdateAction,
@@ -172,6 +177,20 @@ class MeetingUpdate(
         },
     )
     check_email_field = "users_email_replyto"
+    check_unique_error_text = (
+        "The external_id of the meeting is not unique in the committee scope."
+    )
+
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if "external_id" in instance:
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                self.__class__.check_unique_error_text,
+                "committee_id",
+                self.get_committee_id(instance["id"]),
+            )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # handle set_as_template
@@ -263,16 +282,11 @@ class MeetingUpdate(
 
         # group E check
         if "organization_tag_ids" in instance:
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["committee_id"],
-                lock_result=False,
-            )
             is_manager = has_committee_management_level(
                 self.datastore,
                 self.user_id,
                 CommitteeManagementLevel.CAN_MANAGE,
-                meeting["committee_id"],
+                self.get_committee_id(instance["id"]),
             )
             if not is_manager:
                 raise PermissionDenied(
@@ -295,3 +309,12 @@ class MeetingUpdate(
             )
             if not is_superadmin:
                 raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
+
+    def get_committee_id(self, meeting_id: int) -> int:
+        if not hasattr(self, "__committee_id"):
+            self.__committee_id = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, meeting_id),
+                ["committee_id"],
+                lock_result=False,
+            ).get("committee_id", 0)
+        return self.__committee_id
