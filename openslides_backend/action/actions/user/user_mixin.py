@@ -11,6 +11,7 @@ from ....presenter.search_users import SearchUsers
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
+from ....shared.functions.count_users_for_limit import count_users_for_limit
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, optional_id_schema
 from ..meeting_user.set_data import MeetingUserSetData
@@ -63,8 +64,7 @@ class LimitOfUserMixin(Action):
             lock_result=False,
         )
         if limit_of_users := organization.get("limit_of_users"):
-            filter_ = FilterOperator("is_active", "=", True)
-            count_of_active_users = self.datastore.count("user", filter_)
+            count_of_active_users = count_users_for_limit(self.datastore)
             if number + count_of_active_users > limit_of_users:
                 raise ActionException(
                     "The number of active users cannot exceed the limit of users."

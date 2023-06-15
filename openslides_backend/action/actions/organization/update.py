@@ -8,6 +8,7 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import FilterOperator, Or
+from ....shared.functions.count_users_for_limit import count_users_for_limit
 from ....shared.schema import optional_str_schema
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
@@ -108,8 +109,7 @@ class OrganizationUpdate(
                 )
 
         if limit_of_users := instance.get("limit_of_users"):
-            filter_ = FilterOperator("is_active", "=", True)
-            count_active_users = self.datastore.count("user", filter_)
+            count_active_users = count_users_for_limit(self.datastore)
             if count_active_users > limit_of_users:
                 raise ActionException(
                     f"Active users: {count_active_users}. You cannot set the limit lower."

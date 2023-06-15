@@ -4,7 +4,7 @@ import fastjsonschema
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ..shared.filters import FilterOperator
+from ..shared.functions.count_users_for_limit import count_users_for_limit
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -38,8 +38,8 @@ class NumberOfUsers(BasePresenter):
         limit_of_users = organization.get("limit_of_users")
         if limit_of_users == 0:
             return {"possible": True}
-        filter_ = FilterOperator("is_active", "=", True)
-        count_of_users = self.datastore.count("user", filter_)
+
+        count_of_users = count_users_for_limit(self.datastore)
         if (
             count_of_users + self.data["number_of_users_to_add_or_activate"]
             > limit_of_users
