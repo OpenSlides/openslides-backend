@@ -22,9 +22,13 @@ def count_users_for_limit(datastore: DatastoreService) -> int:
             "active_meeting_ids", []
         )
     )
-    return len([
-        user["id"] for user in active_users if user.get("organization_management_level")
-        or user.get("committee_$_management_level")
-        or not (meeting_ids := set(user.get("meeting_ids", set()) or set()))
-        or meeting_ids.intersection(active_meeting_ids)
-    ])
+    return len(
+        [
+            user["id"]
+            for user in active_users
+            if user.get("organization_management_level")
+            or user.get("committee_$_management_level")
+            or not (meeting_ids := set(user.get("meeting_ids", set()) or set()))
+            or meeting_ids.intersection(active_meeting_ids)
+        ]
+    )
