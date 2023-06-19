@@ -10,7 +10,7 @@ def test_migration(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "motion_workflow/1",
+            "fqid": "motion_state/1",
             "fields": {"b": 1, "set_created_timestamp": True},
         },
     )
@@ -25,17 +25,17 @@ def test_migration(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "motion_workflow/1",
+            "fqid": "motion_state/1",
             "fields": {"b": 2, "set_created_timestamp": False},
         },
     )
     write(
         {"type": "delete", "fqid": "motion/1"},
-        {"type": "delete", "fqid": "motion_workflow/1"},
+        {"type": "delete", "fqid": "motion_state/1"},
     )
     write(
         {"type": "restore", "fqid": "motion/1"},
-        {"type": "restore", "fqid": "motion_workflow/1"},
+        {"type": "restore", "fqid": "motion_state/1"},
     )
 
     finalize("0043_update_workflow_timestamp")
@@ -52,7 +52,7 @@ def test_migration(write, finalize, assert_model):
         position=1,
     )
     assert_model(
-        "motion_workflow/1",
+        "motion_state/1",
         {
             "b": 1,
             "set_workflow_timestamp": True,
@@ -73,7 +73,7 @@ def test_migration(write, finalize, assert_model):
         position=2,
     )
     assert_model(
-        "motion_workflow/1",
+        "motion_state/1",
         {
             "b": 2,
             "set_workflow_timestamp": False,
@@ -94,7 +94,7 @@ def test_migration(write, finalize, assert_model):
         position=3,
     )
     assert_model(
-        "motion_workflow/1",
+        "motion_state/1",
         {
             "b": 2,
             "set_workflow_timestamp": False,
@@ -115,7 +115,7 @@ def test_migration(write, finalize, assert_model):
         position=4,
     )
     assert_model(
-        "motion_workflow/1",
+        "motion_state/1",
         {
             "b": 2,
             "set_workflow_timestamp": False,

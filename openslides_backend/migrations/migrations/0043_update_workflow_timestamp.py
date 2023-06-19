@@ -18,7 +18,7 @@ class Migration(BaseEventMigration):
 
     target_migration_index = 44
     collection_to_old_and_new_field_and_type = {
-        "motion_workflow": [
+        "motion_state": [
             ("set_created_timestamp", "set_workflow_timestamp", "rename"),
         ],
         "motion": [
