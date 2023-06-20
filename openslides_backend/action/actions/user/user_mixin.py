@@ -11,7 +11,7 @@ from ....presenter.search_users import SearchUsers
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
-from ....shared.schema import decimal_schema, id_list_schema, required_id_schema
+from ....shared.schema import decimal_schema, id_list_schema, optional_id_schema
 from ..meeting_user.set_data import MeetingUserSetData
 
 
@@ -77,7 +77,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "structure_level": {"type": "string"},
         "about_me": {"type": "string"},
         "vote_weight": decimal_schema,
-        "vote_delegated_to_id": required_id_schema,
+        "vote_delegated_to_id": optional_id_schema,
         "vote_delegations_from_ids": id_list_schema,
         "group_ids": id_list_schema,
     }
