@@ -21,6 +21,7 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
             "user_$_management_level",
+            "external_id",
         ],
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION

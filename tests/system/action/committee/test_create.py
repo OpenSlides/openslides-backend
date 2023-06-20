@@ -21,6 +21,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.set_models({"committee/1": {"organization_id": 1, "name": "c1"}})
         committee_name = "test_committee2"
         description = "<p>Test Committee</p>"
+        external_id = "external"
 
         response = self.request(
             "committee.create",
@@ -31,6 +32,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "organization_tag_ids": [12],
                 "forward_to_committee_ids": [1],
                 "receive_forwardings_from_committee_ids": [1],
+                "external_id": external_id,
             },
         )
         self.assert_status_code(response, 200)
@@ -38,6 +40,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         assert model.get("name") == committee_name
         assert model.get("description") == description
         assert model.get("meeting_ids") is None
+        assert model.get("external_id") == external_id
         assert model.get("organization_tag_ids") == [12]
         assert model.get("forward_to_committee_ids") == [1]
         assert model.get("receive_forwardings_from_committee_ids") == [1]

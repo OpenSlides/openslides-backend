@@ -182,3 +182,48 @@ class GroupCreateActionTest(BaseActionTestCase):
             {"name": "test_Xcdfgee", "meeting_id": 1},
             Permissions.User.CAN_MANAGE,
         )
+
+    def test_create_external_id_forbidden(self) -> None:
+        self.set_models(
+            {
+                "meeting/22": {
+                    "name": "name_vJxebUwo",
+                    "is_active_in_organization_id": 1,
+                },
+                "group/3": {"name": "test", "meeting_id": 22},
+            }
+        )
+        self.set_organization_management_level(None)
+        self.set_user_groups(1, [3])
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        response = self.request(
+            "group.create",
+            {"name": "test name", "external_id": "test", "meeting_id": 22},
+        )
+        self.assert_status_code(response, 403)
+
+    def test_create_external_id_allowed(self) -> None:
+        self.set_models(
+            {
+                "meeting/22": {
+                    "name": "name_vJxebUwo",
+                    "admin_group_id": 3,
+                    "is_active_in_organization_id": 1,
+                },
+                "group/3": {
+                    "name": "test",
+                    "admin_group_for_meeting_id": 22,
+                    "meeting_id": 22,
+                },
+            }
+        )
+        self.set_organization_management_level(None)
+        self.set_user_groups(1, [3])
+        response = self.request(
+            "group.create",
+            {"name": "test_name", "external_id": "test", "meeting_id": 22},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "group/4", {"external_id": "test", "name": "test_name", "meeting_id": 22}
+        )
