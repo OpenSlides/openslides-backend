@@ -375,3 +375,44 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "is_physical_person": True,
             },
         )
+
+class UserSamlAccountBoolean(UserBaseSamlAccount):
+    def test_create_saml_account_boolean_defaults(self) -> None:
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": ["111222333"],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "111222333",
+                "saml_id": "111222333",
+                "title": None,
+                "first_name": None,
+                "last_name": None,
+                "email": None,
+                "gender": None,
+                "pronoun": None,
+                "is_active": True,
+                "is_physical_person": True,
+            },
+        )
+
+    def test_create_saml_account_boolean_true_N(self) -> None:
+        response = self.request(
+            "user.save_saml_account",
+            {"username": ["111"], "is_active": "true", "is_person": "N"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "111",
+                "saml_id": "111",
+                "is_active": True,
+                "is_physical_person": False,
+            },
+        )

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, List, Optional, cast
 
 import fastjsonschema
 
@@ -122,12 +122,6 @@ class UserSaveSamlAccount(
             instance["id"] = self.user["id"]
         elif len(users) == 0:
             instance["id"] = self.datastore.reserve_ids(self.model.collection, 1)[0]
-            instance["can_change_own_password"] = False
-            instance["organization_id"] = ONE_ORGANIZATION_ID
-            instance["username"] = self.generate_usernames(
-                [instance.get("saml_id", "")]
-            )[0]
-            instance["meta_new"] = True
             instance = self.set_defaults(instance)
         else:
             ActionException(
@@ -152,3 +146,17 @@ class UserSaveSamlAccount(
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
         return {"user_id": instance["id"]}
+
+    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if "is_active" not in instance:
+            instance["is_active"] = True
+        if "is_physical_person" not in instance:
+            instance["is_physical_person"] = True
+        instance["can_change_own_password"] = False
+        instance["organization_id"] = ONE_ORGANIZATION_ID
+        instance["username"] = self.generate_usernames(
+            [instance.get("saml_id", "")]
+        )[0]
+        instance["meta_new"] = True
+        return super().set_defaults(instance)
+
