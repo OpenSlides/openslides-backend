@@ -401,7 +401,7 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
             },
         )
 
-    def test_create_saml_account_boolean_true_N(self) -> None:
+    def test_create_saml_account_boolean_string_types_true_N(self) -> None:
         response = self.request(
             "user.save_saml_account",
             {"username": ["111"], "is_active": "true", "is_person": "N"}
@@ -416,3 +416,35 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
                 "is_physical_person": False,
             },
         )
+
+    def test_create_saml_account_boolean_string_types_error(self) -> None:
+        response = self.request(
+            "user.save_saml_account",
+            {"username": ["111"], "is_active": "tru"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("Could not parse tru, expect boolean", response.json["message"])
+
+    def test_create_saml_account_boolean_integer_types_1_0(self) -> None:
+        response = self.request(
+            "user.save_saml_account",
+            {"username": ["111"], "is_active": 1, "is_person": 0}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "111",
+                "saml_id": "111",
+                "is_active": True,
+                "is_physical_person": False,
+            },
+        )
+
+    def test_create_saml_account_boolean_integer_types_error(self) -> None:
+        response = self.request(
+            "user.save_saml_account",
+            {"username": ["111"], "is_active": 2}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("Could not parse 2, expect boolean", response.json["message"])
