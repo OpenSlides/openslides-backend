@@ -13,6 +13,7 @@ from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
 from ..motion_submitter.create import MotionSubmitterCreateAction
+from .mixins import set_workflow_timestamp_helper
 from .set_number_mixin import SetNumberMixin
 
 
@@ -70,12 +71,7 @@ class MotionCreateBase(
 
     def set_created_last_modified_and_number(self, instance: Dict[str, Any]) -> None:
         timestamp = round(time.time())
-        state = self.datastore.get(
-            fqid_from_collection_and_id("motion_state", instance["state_id"]),
-            ["set_workflow_timestamp"],
-        )
-        if state.get("set_workflow_timestamp"):
-            instance["workflow_timestamp"] = timestamp
+        set_workflow_timestamp_helper(self.datastore, instance, timestamp)
         instance["last_modified"] = timestamp
         instance["created"] = timestamp
         self.set_number(

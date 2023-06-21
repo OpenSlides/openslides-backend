@@ -21,7 +21,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .mixins import PermissionHelperMixin
+from .mixins import PermissionHelperMixin, set_workflow_timestamp_helper
 from .set_number_mixin import SetNumberMixin
 
 
@@ -135,15 +135,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                 )
                 instance["state_id"] = workflow["first_state_id"]
                 instance["recommendation_id"] = None
-                if not motion.get("workflow_timestamp"):
-                    first_state = self.datastore.get(
-                        fqid_from_collection_and_id(
-                            "motion_state", instance["state_id"]
-                        ),
-                        ["set_workflow_timestamp"],
-                    )
-                    if first_state.get("set_workflow_timestamp"):
-                        instance["workflow_timestamp"] = timestamp
+                set_workflow_timestamp_helper(self.datastore, instance, timestamp)
 
         for prefix in ("recommendation", "state"):
             if f"{prefix}_extension" in instance:

@@ -8,6 +8,7 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import set_workflow_timestamp_helper
 from .set_number_mixin import SetNumberMixin
 
 
@@ -68,11 +69,5 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
         if not motion.get("workflow_timestamp"):
-            state = self.datastore.get(
-                fqid_from_collection_and_id("motion_state", instance["state_id"]),
-                ["set_workflow_timestamp"],
-                lock_result=False,
-            )
-            if state.get("set_workflow_timestamp"):
-                instance["workflow_timestamp"] = timestamp
+            set_workflow_timestamp_helper(self.datastore, instance, timestamp)
         return instance
