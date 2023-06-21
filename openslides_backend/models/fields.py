@@ -146,12 +146,8 @@ class BooleanField(Field):
                 return True
             elif value.lower() in FALSE_VALUES:
                 return False
-            raise ActionException(f"Could not parse {value}, expect boolean")
-        elif isinstance(value, int):
-            if value == 1:
-                return True
-            elif value == 0:
-                return False
+        elif isinstance(value, int) and value in (0, 1):
+            return bool(value)
         elif value is None:
             return None
         raise ActionException(f"Could not parse {value}, expect boolean")
