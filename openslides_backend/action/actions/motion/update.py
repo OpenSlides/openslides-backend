@@ -197,6 +197,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                 "start_line_number",
                 "tag_ids",
                 "state_extension",
+                "created",
             ]
 
         # check for self submitter and whitelist

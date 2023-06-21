@@ -470,6 +470,23 @@ class MotionUpdateActionTest(BaseActionTestCase):
             Permissions.Motion.CAN_MANAGE,
         )
 
+    def test_update_permission_created(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "created": 11223344,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/111", {"created": 11223344})
+
     def test_update_permission_metadata_no_wl(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
