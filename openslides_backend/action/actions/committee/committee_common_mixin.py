@@ -34,5 +34,9 @@ class CommitteeCommonCreateUpdateMixin(
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         super().validate_instance(instance)
         if "external_id" in instance:
-            text = "The external_id of the committee is not unique."
-            self.check_unique_in_context("external_id", instance["external_id"], text)
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                "The external_id of the committee is not unique.",
+                instance.get("id"),
+            )

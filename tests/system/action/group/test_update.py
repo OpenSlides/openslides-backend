@@ -77,6 +77,17 @@ class GroupUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_update_external_id_self(self) -> None:
+        external_id = "external_id"
+        self.update_model("group/2", {"external_id": external_id, "name": "group2"})
+        response = self.request(
+            "group.update", {"id": 2, "external_id": external_id, "name": "grp2"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "group/2", {"external_id": external_id, "name": "grp2"}
+        )
+
     def test_update_forbidden(self) -> None:
         self.base_permission_test(
             {},

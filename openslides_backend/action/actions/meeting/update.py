@@ -177,9 +177,6 @@ class MeetingUpdate(
         },
     )
     check_email_field = "users_email_replyto"
-    check_unique_error_text = (
-        "The external_id of the meeting is not unique in the committee scope."
-    )
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         super().validate_instance(instance)
@@ -187,7 +184,8 @@ class MeetingUpdate(
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],
-                self.__class__.check_unique_error_text,
+                "The external_id of the meeting is not unique in the committee scope.",
+                instance["id"],
                 "committee_id",
                 self.get_committee_id(instance["id"]),
             )
@@ -316,5 +314,5 @@ class MeetingUpdate(
                 fqid_from_collection_and_id(self.model.collection, meeting_id),
                 ["committee_id"],
                 lock_result=False,
-            ).get("committee_id", 0)
+            )["committee_id"]
         return self.__committee_id

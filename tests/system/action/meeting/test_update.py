@@ -630,3 +630,23 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "The external_id of the meeting is not unique in the committee scope.",
             response.json["message"],
         )
+
+    def test_update_external_id_self(self) -> None:
+        external_id = "external"
+        self.set_models(
+            {
+                "meeting/1": {
+                    "committee_id": 1,
+                    "external_id": external_id,
+                    "is_active_in_organization_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 200)

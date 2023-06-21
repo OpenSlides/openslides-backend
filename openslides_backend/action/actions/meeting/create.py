@@ -73,9 +73,6 @@ class MeetingCreate(
         "users_email_subject",
         "users_email_body",
     ]
-    check_unique_error_text = (
-        "The external_id of the meeting is not unique in the committee scope."
-    )
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         super().validate_instance(instance)
@@ -83,7 +80,8 @@ class MeetingCreate(
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],
-                self.__class__.check_unique_error_text,
+                "The external_id of the meeting is not unique in the committee scope.",
+                None,
                 "committee_id",
                 instance["committee_id"],
             )

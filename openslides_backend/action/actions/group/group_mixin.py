@@ -10,17 +10,14 @@ from ...action import Action
 
 
 class GroupMixin(CheckUniqueInContextMixin, Action):
-    check_unique_error_text = (
-        "The external_id of the group is not unique in the meeting scope."
-    )
-
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         super().validate_instance(instance)
         if "external_id" in instance:
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],
-                self.__class__.check_unique_error_text,
+                "The external_id of the group is not unique in the meeting scope.",
+                instance.get("id"),
                 "meeting_id",
                 self.get_meeting_id(instance),
             )
