@@ -71,6 +71,7 @@ class MotionResetStateActionTest(BaseActionTestCase):
                     "title": "test1",
                     "state_id": 77,
                     "number": "001",
+                    "created": 1687339000,
                 },
             }
         )
@@ -81,6 +82,7 @@ class MotionResetStateActionTest(BaseActionTestCase):
         assert model.get("number") == "001"
         assert model.get("last_modified", 0) >= check_time
         assert model.get("workflow_timestamp", 0) >= check_time
+        assert model.get("created") == 1687339000
 
     def test_reset_state_correct_number_value(self) -> None:
         self.set_models(

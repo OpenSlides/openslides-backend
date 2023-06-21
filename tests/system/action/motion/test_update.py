@@ -42,6 +42,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "modified_final_version": "blablabla",
                     "amendment_paragraph_$": ["3"],
                     "amendment_paragraph_$3": "testtesttest",
+                    "created": 1687339000,
                 },
             }
         )
@@ -69,6 +70,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("amendment_paragraph_$3") == "&lt;html&gt;test&lt;/html&gt;"
         assert model.get("amendment_paragraph_$") == ["3"]
         assert model.get("start_line_number") == 13
+        assert model.get("created") == 1687339000
         self.assert_history_information("motion/111", ["Motion updated"])
         assert counter.calls == 3
 
