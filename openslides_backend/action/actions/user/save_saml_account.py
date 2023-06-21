@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, cast
+from typing import Any, Dict, Iterable, Optional
 
 import fastjsonschema
 
@@ -154,9 +154,6 @@ class UserSaveSamlAccount(
             instance["is_physical_person"] = True
         instance["can_change_own_password"] = False
         instance["organization_id"] = ONE_ORGANIZATION_ID
-        instance["username"] = self.generate_usernames(
-            [instance.get("saml_id", "")]
-        )[0]
+        instance["username"] = self.generate_usernames([instance.get("saml_id", "")])[0]
         instance["meta_new"] = True
         return super().set_defaults(instance)
-

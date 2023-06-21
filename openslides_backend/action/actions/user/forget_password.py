@@ -58,7 +58,7 @@ For completeness your username: {username}"""
             # search for users with email
             filter_ = FilterOperator("email", "=", email)
             results = self.datastore.filter(
-                self.model.collection, filter_, ["id", "username"]
+                self.model.collection, filter_, ["id", "username", "saml_id"]
             )
 
             organization = self.datastore.get(
@@ -70,6 +70,10 @@ For completeness your username: {username}"""
             try:
                 with EmailUtils.get_mail_connection() as mail_client:
                     for user in results.values():
+                        if user["saml_id"]:
+                            raise ActionException(
+                                f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+                            )
                         ok, errors = EmailUtils.send_email_safe(
                             mail_client,
                             self.logger,
@@ -86,6 +90,9 @@ For completeness your username: {username}"""
                         )
                         if ok:
                             yield {"id": user["id"], "last_email_sent": round(time())}
+            except ActionException as e:
+                self.logger.error(f"send mail action exception: {str(e)}")
+                raise
             except Exception as e:
                 self.logger.error(f"General send mail exception: {str(e)}")
                 raise ActionException(

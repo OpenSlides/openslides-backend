@@ -153,6 +153,9 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
                 "pronoun": "er",
                 "is_active": True,
                 "is_physical_person": True,
+                "can_change_own_password": False,
+                "default_password": None,
+                "password": None,
             },
         )
 
@@ -376,6 +379,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
             },
         )
 
+
 class UserSamlAccountBoolean(UserBaseSamlAccount):
     def test_create_saml_account_boolean_defaults(self) -> None:
         response = self.request(
@@ -404,7 +408,7 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
     def test_create_saml_account_boolean_string_types_true_N(self) -> None:
         response = self.request(
             "user.save_saml_account",
-            {"username": ["111"], "is_active": "true", "is_person": "N"}
+            {"username": ["111"], "is_active": "true", "is_person": "N"},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -419,8 +423,7 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
 
     def test_create_saml_account_boolean_string_types_error(self) -> None:
         response = self.request(
-            "user.save_saml_account",
-            {"username": ["111"], "is_active": "tru"}
+            "user.save_saml_account", {"username": ["111"], "is_active": "tru"}
         )
         self.assert_status_code(response, 400)
         self.assertIn("Could not parse tru, expect boolean", response.json["message"])
@@ -428,7 +431,7 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
     def test_create_saml_account_boolean_integer_types_1_0(self) -> None:
         response = self.request(
             "user.save_saml_account",
-            {"username": ["111"], "is_active": 1, "is_person": 0}
+            {"username": ["111"], "is_active": 1, "is_person": 0},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -443,8 +446,7 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
 
     def test_create_saml_account_boolean_integer_types_error(self) -> None:
         response = self.request(
-            "user.save_saml_account",
-            {"username": ["111"], "is_active": 2}
+            "user.save_saml_account", {"username": ["111"], "is_active": 2}
         )
         self.assert_status_code(response, 400)
         self.assertIn("Could not parse 2, expect boolean", response.json["message"])
