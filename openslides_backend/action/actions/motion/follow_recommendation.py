@@ -17,7 +17,7 @@ from .set_state import MotionSetStateAction
 class MotionFollowRecommendationAction(MotionSetStateAction):
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema()
-    permission = Permissions.Motion.CAN_MANAGE
+    permission = Permissions.Motion.CAN_MANAGE_METADATA
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         ids = [instance["id"] for instance in action_data]
