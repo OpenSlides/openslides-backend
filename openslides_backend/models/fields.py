@@ -124,6 +124,7 @@ class BooleanField(Field):
     """
     Allow boolean fields with sring and int, converted by validate method
     """
+
     def get_schema(self) -> Schema:
         if self.required:
             return self.extend_schema(super().get_schema(), type=["boolean", "string", "integer"])
