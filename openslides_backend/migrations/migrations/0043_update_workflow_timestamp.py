@@ -5,7 +5,6 @@ from datastore.migrations import (
     BaseEventMigration,
     CreateEvent,
     DeleteFieldsEvent,
-    ListUpdateEvent,
     UpdateEvent,
 )
 from datastore.shared.util import collection_from_fqid
@@ -58,13 +57,5 @@ class Migration(BaseEventMigration):
                     if type_ == "rename":
                         event.data.remove(old_field)
                     event.data.append(new_field)
-
-        elif isinstance(event, ListUpdateEvent):
-            self.modify(
-                event.add, self.collection_to_old_and_new_field_and_type[collection]
-            )
-            self.modify(
-                event.remove, self.collection_to_old_and_new_field_and_type[collection]
-            )
 
         return [event]
