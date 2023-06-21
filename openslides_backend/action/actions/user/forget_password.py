@@ -70,7 +70,7 @@ For completeness your username: {username}"""
             try:
                 with EmailUtils.get_mail_connection() as mail_client:
                     for user in results.values():
-                        if user["saml_id"]:
+                        if user.get("saml_id"):
                             raise ActionException(
                                 f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
                             )

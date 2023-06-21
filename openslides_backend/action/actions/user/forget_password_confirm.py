@@ -32,7 +32,7 @@ class UserForgetPasswordConfirm(UpdateAction):
         user_id = instance.pop("user_id")
         user = self.datastore.get(f"user/{user_id}", ["saml_id"], lock_result=False)
         new_password = instance.pop("new_password")
-        if user["saml_id"]:
+        if user.get("saml_id"):
             raise ActionException(
                 f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
             )
