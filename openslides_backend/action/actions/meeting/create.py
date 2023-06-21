@@ -114,6 +114,7 @@ class MeetingCreate(
         action_data = [
             {
                 "name": _("Default"),
+                "external_id": "Default",
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -128,10 +129,12 @@ class MeetingCreate(
             },
             {
                 "name": _("Admin"),
+                "external_id": "Admin",
                 "meeting_id": instance["id"],
             },
             {
                 "name": _("Delegates"),
+                "external_id": "Delegates",
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -150,6 +153,7 @@ class MeetingCreate(
             },
             {
                 "name": _("Staff"),
+                "external_id": "Staff",
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_MANAGE,
@@ -168,6 +172,7 @@ class MeetingCreate(
             },
             {
                 "name": _("Committees"),
+                "external_id": "Committees",
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
