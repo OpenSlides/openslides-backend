@@ -7,6 +7,7 @@
             "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly.",
             "login_text": "Good Morning!",
             "default_language": "en",
+            "genders": ["male", "female", "diverse", "non-binary"],
             "enable_electronic_voting": true,
             "enable_chat": true,
             "reset_password_verbose_errors": true,

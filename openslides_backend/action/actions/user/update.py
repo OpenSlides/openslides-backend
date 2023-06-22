@@ -9,7 +9,12 @@ from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .user_mixin import LimitOfUserMixin, UpdateHistoryMixin, UserMixin
+from .user_mixin import (
+    LimitOfUserMixin,
+    UpdateHistoryMixin,
+    UserMixin,
+    check_gender_helper,
+)
 
 
 @register_action("user.update")
@@ -86,6 +91,7 @@ class UserUpdate(
         if instance.get("is_active") and not user.get("is_active"):
             self.check_limit_of_user(1)
 
+        check_gender_helper(self.datastore, instance)
         return instance
 
     def apply_instance(

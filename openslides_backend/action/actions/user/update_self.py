@@ -7,7 +7,7 @@ from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_mixin import UpdateHistoryMixin, UserMixin
+from .user_mixin import UpdateHistoryMixin, UserMixin, check_gender_helper
 
 
 @register_action("user.update_self")
@@ -44,6 +44,7 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
                 raise ActionException(
                     f"User may update about_me_$ only in his meetings, but tries in {not_supported_meetings}"
                 )
+        check_gender_helper(self.datastore, instance)
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

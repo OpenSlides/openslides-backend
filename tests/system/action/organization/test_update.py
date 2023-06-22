@@ -102,6 +102,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                     """
                 ),
                 "saml_private_key": "private key dependency",
+                "genders": ["male", "female", "rabbit"],
             },
         )
         self.assert_status_code(response, 200)
@@ -126,6 +127,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_login_button_text": "Text for SAML login button",
                 "saml_attr_mapping": self.saml_attr_mapping,
                 "saml_private_key": "private key dependency",
+                "genders": ["male", "female", "rabbit"],
             },
         )
         assert (
