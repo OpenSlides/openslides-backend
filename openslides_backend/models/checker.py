@@ -46,6 +46,14 @@ SCHEMA = fastjsonschema.compile(
     }
 )
 
+external_motion_fields = [
+    "origin_id",
+    "origin_meeting_id",
+    "derived_motion_ids",
+    "all_origin_ids",
+    "all_derived_motion_ids",
+]
+
 
 class CheckException(Exception):
     pass
@@ -830,4 +838,19 @@ class Checker:
 
         raise CheckException(
             f"The collection {foreign_collection} is not supported as a reverse relation in {collection}/{field}"
+        )
+
+
+class InternalChecker(Checker):
+    def __init__(
+        self,
+        data: Dict[str, Dict[str, Any]],
+    ) -> None:
+        super().__init__(
+            data=data,
+            mode="internal",
+            repair=True,
+            fields_to_remove={
+                "motion": external_motion_fields,
+            },
         )

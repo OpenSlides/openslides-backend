@@ -314,7 +314,10 @@ class RelationListField(BaseRelationField):
     is_list_field = True
 
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), **id_list_schema)
+        schema = self.extend_schema(super().get_schema(), **id_list_schema)
+        if not self.required:
+            schema["type"] = ["array", "null"]
+        return schema
 
 
 class BaseGenericRelationField(BaseRelationField):

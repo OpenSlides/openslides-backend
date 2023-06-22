@@ -4,7 +4,7 @@ import fastjsonschema
 from datastore.shared.util import DeletedModelsBehaviour
 
 from ..action.actions.meeting.export_helper import export_meeting
-from ..models.checker import Checker, CheckException
+from ..models.checker import CheckException, InternalChecker
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..services.datastore.interface import DatastoreService
@@ -42,22 +42,8 @@ def check_meetings(
     errors: Dict[int, str] = {}
     for meeting_id in meeting_ids:
         export = export_meeting(datastore, meeting_id)
-        checker = Checker(
-            data=export,
-            mode="internal",
-            repair=True,
-            fields_to_remove={
-                "motion": [
-                    "origin_id",
-                    "origin_meeting_id",
-                    "derived_motion_ids",
-                    "all_origin_ids",
-                    "all_derived_motion_ids",
-                ]
-            },
-        )
         try:
-            checker.run_check()
+            InternalChecker(export).run_check()
         except CheckException as ce:
             errors[meeting_id] = str(ce)
     return errors
