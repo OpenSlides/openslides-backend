@@ -107,7 +107,7 @@ TEMPLATE_FIELDS: Dict[
         "default_projector_$_ids": {
             "strategy": FieldStrategy.Rename,
             "name": {
-                "default_projector_$agenda_all_items_ids": "default_projector_agenda_item_ids",
+                "default_projector_$agenda_all_items_ids": "default_projector_agenda_item_list_ids",
                 "default_projector_$topics_ids": "default_projector_topic_ids",
                 "default_projector_$projector_countdowns_ids": "default_projector_countdown_ids",
                 "default_projector_$projector_message_ids": "default_projector_message_ids",
@@ -135,7 +135,7 @@ TEMPLATE_FIELDS: Dict[
         "used_as_default_$_in_meeting_id": {
             "strategy": FieldStrategy.Rename,
             "name": {
-                "used_as_default_$agenda_all_items_in_meeting_id": "used_as_default_projector_for_agenda_item_in_meeting_id",
+                "used_as_default_$agenda_all_items_in_meeting_id": "used_as_default_projector_for_agenda_item_list_in_meeting_id",
                 "used_as_default_$topics_in_meeting_id": "used_as_default_projector_for_topic_in_meeting_id",
                 "used_as_default_$list_of_speakers_in_meeting_id": "used_as_default_projector_for_list_of_speakers_in_meeting_id",
                 "used_as_default_$current_list_of_speakers_in_meeting_id": "used_as_default_projector_for_current_list_of_speakers_in_meeting_id",

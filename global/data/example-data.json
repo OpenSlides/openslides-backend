@@ -562,7 +562,7 @@
             "reference_projector_id": 1,
             "list_of_speakers_countdown_id": 1,
             "poll_countdown_id": 2,
-            "default_projector_agenda_item_ids": [1],
+            "default_projector_agenda_item_list_ids": [1],
             "default_projector_topic_ids": [1],
             "default_projector_list_of_speakers_ids": [2],
             "default_projector_current_list_of_speakers_ids": [2],
@@ -2347,7 +2347,7 @@
                 2
             ],
             "used_as_reference_projector_meeting_id": 1,
-            "used_as_default_projector_for_agenda_item_in_meeting_id": 1,
+            "used_as_default_projector_for_agenda_item_list_in_meeting_id": 1,
             "used_as_default_projector_for_topic_in_meeting_id": 1,
             "used_as_default_projector_for_motion_in_meeting_id": 1,
             "used_as_default_projector_for_amendment_in_meeting_id": 1,
