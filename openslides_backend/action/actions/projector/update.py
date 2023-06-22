@@ -34,7 +34,7 @@ class ProjectorUpdate(UpdateAction):
             "show_title",
             "show_logo",
             "show_clock",
-            "used_as_default_projector_for_agenda_item_in_meeting_id",
+            "used_as_default_projector_for_agenda_item_list_in_meeting_id",
             "used_as_default_projector_for_topic_in_meeting_id",
             "used_as_default_projector_for_list_of_speakers_in_meeting_id",
             "used_as_default_projector_for_current_list_of_speakers_in_meeting_id",

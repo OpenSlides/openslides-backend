@@ -1636,9 +1636,9 @@ meeting:
     to: projection/content_object_id
     on_delete: CASCADE
     restriction_mode: B
-  default_projector_agenda_item_ids:
+  default_projector_agenda_item_list_ids:
     type: relation-list
-    to: projector/used_as_default_projector_for_agenda_item_in_meeting_id
+    to: projector/used_as_default_projector_for_agenda_item_list_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_topic_ids:
@@ -3504,9 +3504,9 @@ projector:
     type: relation
     to: meeting/reference_projector_id
     restriction_mode: A
-  used_as_default_projector_for_agenda_item_in_meeting_id:
+  used_as_default_projector_for_agenda_item_list_in_meeting_id:
     type: relation
-    to: meeting/default_projector_agenda_item_ids
+    to: meeting/default_projector_agenda_item_list_ids
     restriction_mode: A
   used_as_default_projector_for_topic_in_meeting_id:
     type: relation

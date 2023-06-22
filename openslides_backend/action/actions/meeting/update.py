@@ -164,7 +164,7 @@ class MeetingUpdate(
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
-            "default_projector_agenda_item_ids",
+            "default_projector_agenda_item_list_ids",
             "default_projector_topic_ids",
             "default_projector_list_of_speakers_ids",
             "default_projector_current_list_of_speakers_ids",

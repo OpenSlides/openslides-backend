@@ -206,7 +206,7 @@ class Model(Node):
                 "projector_h2",
             )
             DEFAULT_PROJECTOR_ENUM = (
-                "agenda_item",
+                "agenda_item_list",
                 "topic",
                 "list_of_speakers",
                 "current_list_of_speakers",

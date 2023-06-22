@@ -923,7 +923,7 @@ def test_migration(write, finalize, assert_model, read_model):
             "font_chyron_speaker_name_id": 33,
             "font_projector_h1_id": 33,
             "font_projector_h2_id": 33,
-            "default_projector_agenda_item_ids": [71, 72],
+            "default_projector_agenda_item_list_ids": [71, 72],
             "default_projector_topic_ids": [71],
             "default_projector_list_of_speakers_ids": [71],
             "default_projector_current_list_of_speakers_ids": [71],
@@ -1044,7 +1044,7 @@ def test_migration(write, finalize, assert_model, read_model):
             "sequential_number": 1,
             "meeting_id": 41,
             "used_as_reference_projector_meeting_id": 41,
-            "used_as_default_projector_for_agenda_item_in_meeting_id": 41,
+            "used_as_default_projector_for_agenda_item_list_in_meeting_id": 41,
             "used_as_default_projector_for_topic_in_meeting_id": 41,
             "used_as_default_projector_for_list_of_speakers_in_meeting_id": 41,
             "used_as_default_projector_for_current_list_of_speakers_in_meeting_id": 41,
@@ -1066,7 +1066,7 @@ def test_migration(write, finalize, assert_model, read_model):
             "id": 72,
             "sequential_number": 2,
             "meeting_id": 41,
-            "used_as_default_projector_for_agenda_item_in_meeting_id": 41,
+            "used_as_default_projector_for_agenda_item_list_in_meeting_id": 41,
         },
     )
     assert_model(

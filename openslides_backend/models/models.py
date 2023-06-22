@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "a2f115ab02a3eee0c5456c3e96fe183a"
+MODELS_YML_CHECKSUM = "e8157fce0f2d22ac81f30fdb23c011bd"
 
 
 class Organization(Model):
@@ -723,8 +723,10 @@ class Meeting(Model):
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    default_projector_agenda_item_ids = fields.RelationListField(
-        to={"projector": "used_as_default_projector_for_agenda_item_in_meeting_id"},
+    default_projector_agenda_item_list_ids = fields.RelationListField(
+        to={
+            "projector": "used_as_default_projector_for_agenda_item_list_in_meeting_id"
+        },
         required=True,
     )
     default_projector_topic_ids = fields.RelationListField(
@@ -809,7 +811,7 @@ class Meeting(Model):
         "projector_h2",
     )
     DEFAULT_PROJECTOR_ENUM = (
-        "agenda_item",
+        "agenda_item_list",
         "topic",
         "list_of_speakers",
         "current_list_of_speakers",
@@ -1956,8 +1958,8 @@ class Projector(Model):
     used_as_reference_projector_meeting_id = fields.RelationField(
         to={"meeting": "reference_projector_id"}
     )
-    used_as_default_projector_for_agenda_item_in_meeting_id = fields.RelationField(
-        to={"meeting": "default_projector_agenda_item_ids"}
+    used_as_default_projector_for_agenda_item_list_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_agenda_item_list_ids"}
     )
     used_as_default_projector_for_topic_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_topic_ids"}
