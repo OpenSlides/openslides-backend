@@ -493,12 +493,21 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.set_models(self.permission_test_models)
-        self.set_models({"motion_category/2": {"meeting_id": 1, "name": "test"}})
+        self.set_models(
+            {
+                "motion_category/2": {"meeting_id": 1, "name": "test"},
+                "motion_block/4": {"meeting_id": 1, "title": "blocky"},
+                "tag/3": {"meeting_id": 1, "name": "bla"},
+            }
+        )
         response = self.request(
             "motion.update",
             {
                 "id": 111,
                 "category_id": 2,
+                "state_extension": "testtesttest",
+                "tag_ids": [3],
+                "block_id": 4,
             },
         )
         self.assert_status_code(response, 200)
