@@ -642,11 +642,5 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 },
             }
         )
-        response = self.request(
-            "meeting.update",
-            {
-                "id": 1,
-                "external_id": external_id, "organization_tag_ids": []
-            },
-        )
+        response = self.request("meeting.update", {"id": 1, "external_id": external_id})
         self.assert_status_code(response, 200)
