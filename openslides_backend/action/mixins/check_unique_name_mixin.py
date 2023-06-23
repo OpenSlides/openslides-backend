@@ -17,7 +17,8 @@ class CheckUniqueInContextMixin(Action):
     ) -> None:
         """
         checks uniqueness of a string_value in context, i.e. in meeting, committee or organisation
-        Leave context_name empty to look without context
+        Leave context_name empty to look without context. On case of update put the id of your object
+        to self_id to excude the object itself from search.
         """
         filter: Filter = FilterOperator(unique_name, "=", unique_value)
         if context_name:
@@ -26,7 +27,7 @@ class CheckUniqueInContextMixin(Action):
                 FilterOperator(context_name, "=", context_id),
             )
         if self_id:
-            filter = And(filter, Not(FilterOperator("id", "=", self_id)))
+            filter = And(filter, FilterOperator("id", "!=", self_id))
 
         name_exists = self.datastore.exists(
             self.model.collection,

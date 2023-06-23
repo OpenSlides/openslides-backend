@@ -309,10 +309,10 @@ class MeetingUpdate(
                 raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 
     def get_committee_id(self, meeting_id: int) -> int:
-        if not hasattr(self, "__committee_id"):
-            self.__committee_id = self.datastore.get(
+        if not hasattr(self, "_committee_id"):
+            self._committee_id = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, meeting_id),
                 ["committee_id"],
                 lock_result=False,
             )["committee_id"]
-        return self.__committee_id
+        return self._committee_id
