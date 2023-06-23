@@ -227,3 +227,30 @@ class GroupCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "group/4", {"external_id": "test", "name": "test_name", "meeting_id": 22}
         )
+
+    def test_create_external_id_not_unique(self) -> None:
+        external_id = "external_id"
+        self.set_models(
+            {
+                "meeting/22": {
+                    "name": "name_vJxebUwo",
+                    "admin_group_id": 3,
+                    "is_active_in_organization_id": 1,
+                },
+                "group/3": {
+                    "name": "test",
+                    "admin_group_for_meeting_id": 22,
+                    "meeting_id": 22,
+                    "external_id": external_id,
+                },
+            }
+        )
+        response = self.request(
+            "group.create",
+            {"name": "test_name", "external_id": external_id, "meeting_id": 22},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the group is not unique in the meeting scope.",
+            response.json["message"],
+        )

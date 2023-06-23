@@ -1,5 +1,8 @@
 from typing import Any, Dict, List, Type, cast
 
+from openslides_backend.action.mixins.check_unique_name_mixin import (
+    CheckUniqueInContextMixin,
+)
 from openslides_backend.models.models import Meeting
 
 from ....i18n.translator import Translator
@@ -25,7 +28,10 @@ from .mixins import MeetingCheckTimesMixin, MeetingPermissionMixin
 
 @register_action("meeting.create")
 class MeetingCreate(
-    CreateActionWithDependencies, MeetingPermissionMixin, MeetingCheckTimesMixin
+    CheckUniqueInContextMixin,
+    CreateActionWithDependencies,
+    MeetingPermissionMixin,
+    MeetingCheckTimesMixin,
 ):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_create_schema(
@@ -67,6 +73,18 @@ class MeetingCreate(
         "users_email_subject",
         "users_email_body",
     ]
+
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if "external_id" in instance:
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                "The external_id of the meeting is not unique in the committee scope.",
+                None,
+                "committee_id",
+                instance["committee_id"],
+            )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         Translator.set_translation_language(instance["language"])

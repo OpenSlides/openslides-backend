@@ -67,6 +67,27 @@ class GroupUpdateActionTest(BaseActionTestCase):
         response = self.request("group.update", {"id": 3, "external_id": "test"})
         self.assert_status_code(response, 200)
 
+    def test_update_external_id_not_unique(self) -> None:
+        external_id = "external_id"
+        self.update_model("group/2", {"external_id": external_id})
+        response = self.request("group.update", {"id": 3, "external_id": external_id})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the group is not unique in the meeting scope.",
+            response.json["message"],
+        )
+
+    def test_update_external_id_self(self) -> None:
+        external_id = "external_id"
+        self.update_model("group/2", {"external_id": external_id, "name": "group2"})
+        response = self.request(
+            "group.update", {"id": 2, "external_id": external_id, "name": "grp2"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "group/2", {"external_id": external_id, "name": "grp2"}
+        )
+
     def test_update_forbidden(self) -> None:
         self.base_permission_test(
             {},
