@@ -219,6 +219,26 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"default_language": "it"})
 
+    def test_update_genders_with_rm_a_gender(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"genders": ["male", "female", "test"]},
+                "user/6": {"username": "with_test_gender", "gender": "test"},
+                "user/7": {"username": "not_changed", "gender": "male"},
+            }
+        )
+        response = self.request(
+            "organization.update", {"id": 1, "genders": ["male", "female"]}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"genders": ["male", "female"]})
+        self.assert_model_exists(
+            "user/6", {"username": "with_test_gender", "gender": None}
+        )
+        self.assert_model_exists(
+            "user/7", {"username": "not_changed", "gender": "male"}
+        )
+
     def test_update_group_a_no_permissions(self) -> None:
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS
