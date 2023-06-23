@@ -143,6 +143,9 @@ The action component listens to port 9002. The presenter component listens to po
 
   Implicitly used by the authlib to get the endpoint for the auth-service
 
+* USER_COUNT_MODE
+
+  Determines the way, active users are counted. Options: standard and no_archived_meetings. Default: standard
 
 # Some curl examples
 

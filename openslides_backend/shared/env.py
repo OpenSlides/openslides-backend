@@ -47,6 +47,7 @@ class Environment:
         "OPENSLIDES_LOGLEVEL": Loglevel.NOTSET.name,
         "OPENTELEMETRY_ENABLED": "false",
         "PRESENTER_PORT": "9003",
+        "USER_COUNT_MODE": "standard",
         "VOTE_HOST": "vote",
         "VOTE_PATH": "/internal/vote",
         "VOTE_PORT": "9013",
@@ -102,3 +103,6 @@ class Environment:
             name = "_".join((service, suffix))
             parts[suffix] = self.vars[name]
         return f"{parts['PROTOCOL']}://{parts['HOST']}:{parts['PORT']}{parts['PATH']}"
+
+    def get_user_count_mode(self) -> str:
+        return self.vars["USER_COUNT_MODE"]
