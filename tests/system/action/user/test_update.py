@@ -1805,7 +1805,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {"username": "srtgb123", "saml_id": "111"},
         )
-        response = self.request("user.update", {"id": 111, "default_password": True})
+        response = self.request("user.update", {"id": 111, "default_password": "secret"})
         self.assert_status_code(response, 400)
         self.assertIn(
             "user 111 is a Single Sign On user and may not set the local default_passwort or the right to change it locally.",
