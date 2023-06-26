@@ -61,6 +61,7 @@ class UserCreate(
             "vote_weight_$",
             "is_demo_user",
             "forwarding_committee_ids",
+            "saml_id",
         ],
     )
     check_email_field = "email"
@@ -76,11 +77,20 @@ class UserCreate(
         ):
             raise ActionException("Need username or first_name or last_name")
 
-        if not instance.get("username"):
+        if not instance.get("username") and not instance.get("saml_id"):
             instance["username"] = self.generate_username(instance)
-        if not instance.get("default_password"):
+        if not instance.get("default_password") and not instance.get("saml_id"):
             instance["default_password"] = get_random_password()
-        instance = self.set_password(instance)
+        if not instance.get("saml_id"):
+            instance = self.set_password(instance)
+        if instance.get("saml_id"):
+            instance["can_change_own_password"] = False
+        if instance.get("saml_id") and (
+            instance.get("can_change_own_password") or instance.get("default_password")
+        ):
+            raise ActionException(
+                f"user {instance['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
+            )
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_helper(self.datastore, instance)
         return instance

@@ -177,7 +177,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         ],
         "C": ["group_$_ids"],
         "D": ["committee_ids", "committee_$_management_level"],
-        "E": ["organization_management_level"],
+        "E": ["organization_management_level", "saml_id"],
         "F": ["default_password"],
         "G": ["is_demo_user"],
     }
@@ -310,7 +310,7 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             )
             if expected_oml > permstore.user_oml:
                 raise PermissionDenied(
-                    f"Your organization management level is not high enough to set a Level of {instance.get('organization_management_level', OrganizationManagementLevel.CAN_MANAGE_USERS.get_verbose_type())}!"
+                    f"Your organization management level is not high enough to set a Level of {instance.get('organization_management_level', OrganizationManagementLevel.CAN_MANAGE_USERS.get_verbose_type())} or the saml_id!"
                 )
 
     def check_group_F(

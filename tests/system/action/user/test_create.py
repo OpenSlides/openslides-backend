@@ -377,6 +377,21 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_create_smal_id_and_default_pasword(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "username": " username test ",
+                "saml_id": "123saml",
+                "default_password": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "user 123saml is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
+            in response.json["message"]
+        )
+
     def test_create_permission_nothing(self) -> None:
         self.permission_setup()
         response = self.request(
@@ -826,6 +841,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "usersname",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                "saml_id": "123samlid",
             },
         )
         self.assert_status_code(response, 200)
@@ -853,7 +869,22 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of can_manage_organization!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization or the saml_id!",
+            response.json["message"],
+        )
+
+    def test_create_permission_group_E_no_OML_and_saml_id(self) -> None:
+        self.permission_setup()
+        response = self.request(
+            "user.create",
+            {
+                "username": "username",
+                "saml_id": "123saml",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Your organization management level is not high enough to set a Level of OrganizationManagementLevel or the saml_id!",
             response.json["message"],
         )
 
