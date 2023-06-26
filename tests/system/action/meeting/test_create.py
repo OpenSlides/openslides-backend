@@ -443,8 +443,12 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         Translator.set_translation_language("de")
-        for i, name in enumerate(["Default", "Admin", "Delegates", "Staff", "Committees"], 2):
-            self.assert_model_exists(f"group/{i}", {"name": _(name), "external_id": name})
+        for i, name in enumerate(
+            ["Default", "Admin", "Delegates", "Staff", "Committees"], 2
+        ):
+            self.assert_model_exists(
+                f"group/{i}", {"name": _(name), "external_id": name}
+            )
 
     def test_create_external_id_not_unique(self) -> None:
         external_id = "external"

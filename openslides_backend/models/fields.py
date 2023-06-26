@@ -127,8 +127,12 @@ class BooleanField(Field):
 
     def get_schema(self) -> Schema:
         if self.required:
-            return self.extend_schema(super().get_schema(), type=["boolean", "string", "integer"])
-        return self.extend_schema(super().get_schema(), type=["boolean", "string", "integer", "null"])
+            return self.extend_schema(
+                super().get_schema(), type=["boolean", "string", "integer"]
+            )
+        return self.extend_schema(
+            super().get_schema(), type=["boolean", "string", "integer", "null"]
+        )
 
     def check_required_not_fulfilled(
         self, instance: Dict[str, Any], is_create: bool
@@ -151,7 +155,7 @@ class BooleanField(Field):
             return bool(value)
         elif value is None:
             return None
-        raise ActionException(f"Could not parse {value}, expect boolean")
+        raise ValueError(f"Could not parse {value}, expect boolean")
 
 
 class TextField(Field):

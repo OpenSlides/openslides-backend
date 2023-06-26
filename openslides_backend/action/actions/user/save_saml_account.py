@@ -94,14 +94,10 @@ class UserSaveSamlAccount(
         except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(exception.message)
 
-    def prepare_action_data(self, action_data: ActionData) -> ActionData:
-        """Necessary to prevent id reservation in CreateAction's prepare_action_data"""
-        return action_data
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        pass
-
-    def base_update_instance(self, instance_old: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_fields(self, instance_old: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Transforms the payload fields into model fields, removes the possible array-wrapped format
+        """
         instance: Dict[str, Any] = dict()
         for model_field, payload_field in self.saml_attr_mapping.items():
             if payload_field in instance_old and model_field in allowed_user_fields:
@@ -112,6 +108,17 @@ class UserSaveSamlAccount(
                 )
                 if value not in (None, []):
                     instance[model_field] = value
+
+        return super().validate_fields(instance)
+
+    def prepare_action_data(self, action_data: ActionData) -> ActionData:
+        """Necessary to prevent id reservation in CreateAction's prepare_action_data"""
+        return action_data
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        pass
+
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         users = self.datastore.filter(
             "user",
             FilterOperator("saml_id", "=", instance["saml_id"]),
