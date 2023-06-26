@@ -178,3 +178,14 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
             "You are not allowed to perform action user.set_password. Missing permission: OrganizationManagementLevel superadmin in organization 1",
             response.json["message"],
         )
+
+    def test_saml_id_error(self) -> None:
+        self.create_model("user/2", {"password": "pw", "saml_id": "111"})
+        response = self.request(
+            "user.set_password", {"id": 2, "password": self.PASSWORD}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            response.json["message"],
+        )
