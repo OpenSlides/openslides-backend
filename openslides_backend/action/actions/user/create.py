@@ -14,7 +14,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixin import PasswordMixin
-from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin
+from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
 
 
 @register_action("user.create")
@@ -82,6 +82,7 @@ class UserCreate(
             instance["default_password"] = get_random_password()
         instance = self.set_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
+        check_gender_helper(self.datastore, instance)
         return instance
 
     def generate_username(self, instance: Dict[str, Any]) -> str:

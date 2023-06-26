@@ -450,6 +450,9 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
+        self.set_models(
+            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+        )
 
         response = self.request(
             "user.create",
@@ -910,6 +913,7 @@ class UserCreateActionTest(BaseActionTestCase):
         assert "This username is forbidden." in response.json["message"]
 
     def test_create_gender(self) -> None:
+        self.set_models({"organization/1": {"genders": ["male", "female"]}})
         response = self.request(
             "user.create",
             {
@@ -919,7 +923,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "data.gender must be one of ['male', 'female', 'diverse', 'non-binary', None]"
+            "Gender 'test' is not in the allowed gender list."
             in response.json["message"]
         )
 

@@ -526,6 +526,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_user_groups(111, [1, 6])
+        self.set_models(
+            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+        )
 
         response = self.request(
             "user.update",
@@ -1218,10 +1221,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123"},
         )
+        self.set_models(
+            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+        )
         response = self.request("user.update", {"id": 111, "gender": "test"})
         self.assert_status_code(response, 400)
         assert (
-            "data.gender must be one of ['male', 'female', 'diverse', 'non-binary', None]"
+            "Gender 'test' is not in the allowed gender list."
             in response.json["message"]
         )
 
