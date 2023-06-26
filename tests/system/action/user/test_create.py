@@ -377,7 +377,7 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_create_smal_id_and_default_pasword(self) -> None:
+    def test_create_saml_id_and_default_pasword(self) -> None:
         response = self.request(
             "user.create",
             {
@@ -390,6 +390,29 @@ class UserCreateActionTest(BaseActionTestCase):
         assert (
             "user 123saml is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
             in response.json["message"]
+        )
+
+    def test_create_saml_id_and_empty_values(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "saml_id": "123saml",
+                "default_password": "",
+                "can_change_own_password": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "123saml",
+                "saml_id": "123saml",
+                "default_password": "",
+                "can_change_own_password": False,
+                "password": None,
+                "is_physical_person": True,
+                "is_active": None,  # optional field and not set
+            },
         )
 
     def test_create_permission_nothing(self) -> None:
