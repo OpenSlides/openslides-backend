@@ -1149,7 +1149,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of can_manage_organization!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization or the saml_id!",
             response.json["message"],
         )
 
