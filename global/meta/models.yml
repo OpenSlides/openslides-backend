@@ -1064,6 +1064,11 @@ meeting:
     default: False
     restriction_mode: B
 
+  # Point of order category
+  point_of_order_category_enabled:
+    type: boolean
+    restriction_mode: C
+
   # Motions
   motions_default_workflow_id:
     type: relation
@@ -1473,6 +1478,11 @@ meeting:
     to: list_of_speakers/meeting_id
     on_delete: CASCADE
     restriction_mode: B
+  point_of_order_category_ids:
+    type: relation-list
+    to: point_of_order_category/meeting_id
+    on_delete: CASCADE
+    restriction_mode: C
   speaker_ids:
     type: relation-list
     to: speaker/meeting_id
@@ -2024,6 +2034,29 @@ list_of_speakers:
     required: true
     restriction_mode: A
 
+point_of_order_category:
+  id:
+    type: number
+    restriction_mode: A
+  text:
+    type: string
+    required: true
+    restriction_mode: A
+  rank:
+    type: number
+    required: true
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    to: meeting/point_of_order_category_ids
+    required: true
+    restriction_mode: A
+  speaker_ids:
+    type: relation-list
+    to: speaker/point_of_order_category_id
+    equal_fields: meeting_id
+    restriction_mode: A
+
 speaker:
   id:
     type: number
@@ -2059,6 +2092,11 @@ speaker:
     type: relation
     to: list_of_speakers/speaker_ids
     required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+  point_of_order_category_id:
+    type: relation
+    to: point_of_order_category/speaker_ids
     equal_fields: meeting_id
     restriction_mode: A
   user_id:

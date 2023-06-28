@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "ef3786ffceb4f86538b7ce9f10e28a2c"
+MODELS_YML_CHECKSUM = "c3b96c56cdc5d9fb8642d71b1e1bd4bc"
 
 
 class Organization(Model):
@@ -458,6 +458,7 @@ class Meeting(Model):
     list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)
     list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
     list_of_speakers_initially_closed = fields.BooleanField(default=False)
+    point_of_order_category_enabled = fields.BooleanField()
     motions_default_workflow_id = fields.RelationField(
         to={"motion_workflow": "default_workflow_meeting_id"}, required=True
     )
@@ -625,6 +626,9 @@ class Meeting(Model):
     )
     list_of_speakers_ids = fields.RelationListField(
         to={"list_of_speakers": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    point_of_order_category_ids = fields.RelationListField(
+        to={"point_of_order_category": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     speaker_ids = fields.RelationListField(
         to={"speaker": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
@@ -1001,6 +1005,21 @@ class ListOfSpeakers(Model):
     )
 
 
+class PointOfOrderCategory(Model):
+    collection = "point_of_order_category"
+    verbose_name = "point of order category"
+
+    id = fields.IntegerField()
+    text = fields.CharField(required=True)
+    rank = fields.IntegerField(required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "point_of_order_category_ids"}, required=True
+    )
+    speaker_ids = fields.RelationListField(
+        to={"speaker": "point_of_order_category_id"}, equal_fields="meeting_id"
+    )
+
+
 class Speaker(Model):
     collection = "speaker"
     verbose_name = "speaker"
@@ -1016,6 +1035,9 @@ class Speaker(Model):
     point_of_order = fields.BooleanField()
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "speaker_ids"}, required=True, equal_fields="meeting_id"
+    )
+    point_of_order_category_id = fields.RelationField(
+        to={"point_of_order_category": "speaker_ids"}, equal_fields="meeting_id"
     )
     user_id = fields.RelationField(
         to={"user": "speaker_$_ids"}, required=True, equal_fields="meeting_id"
