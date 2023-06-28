@@ -72,11 +72,12 @@ class MotionCreateBase(
         timestamp = round(time.time())
         state = self.datastore.get(
             fqid_from_collection_and_id("motion_state", instance["state_id"]),
-            ["set_created_timestamp"],
+            ["set_workflow_timestamp"],
         )
-        if state.get("set_created_timestamp"):
-            instance["created"] = timestamp
+        if state.get("set_workflow_timestamp"):
+            instance["workflow_timestamp"] = timestamp
         instance["last_modified"] = timestamp
+        instance["created"] = timestamp
         self.set_number(
             instance,
             instance["meeting_id"],

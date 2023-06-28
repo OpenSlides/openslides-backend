@@ -2184,9 +2184,12 @@ motion:
     restriction_mode: C
   created:
     type: timestamp
-    read_only: true
     restriction_mode: C
   last_modified:
+    type: timestamp
+    read_only: true
+    restriction_mode: C
+  workflow_timestamp:
     type: timestamp
     read_only: true
     restriction_mode: C
@@ -2690,7 +2693,7 @@ motion_state:
   allow_motion_forwarding:
     type: boolean
     restriction_mode: A
-  set_created_timestamp:
+  set_workflow_timestamp:
     type: boolean
     restriction_mode: A
   submitter_withdraw_state_id:

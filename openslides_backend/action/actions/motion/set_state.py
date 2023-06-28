@@ -44,7 +44,7 @@ class MotionSetStateAction(
                 "category_id",
                 "number",
                 "number_value",
-                "created",
+                "workflow_timestamp",
             ],
             lock_result=["state_id"],
         )
@@ -76,14 +76,14 @@ class MotionSetStateAction(
         )
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
-        if not motion.get("created"):
+        if not motion.get("workflow_timestamp"):
             state = self.datastore.get(
                 fqid_from_collection_and_id("motion_state", instance["state_id"]),
-                ["set_created_timestamp"],
+                ["set_workflow_timestamp"],
                 lock_result=False,
             )
-            if state.get("set_created_timestamp"):
-                instance["created"] = timestamp
+            if state.get("set_workflow_timestamp"):
+                instance["workflow_timestamp"] = timestamp
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

@@ -264,7 +264,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "name": "name_state_23",
                     "meeting_id": 2538,
                     "motion_ids": [],
-                    "set_created_timestamp": True,
+                    "set_workflow_timestamp": True,
                 },
                 "motion_workflow/35": {
                     "name": "name_workflow_35",
@@ -278,7 +278,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         model = self.get_model("motion/111")
         assert model.get("state_id") == 23
         assert model.get("recommendation_id") is None
-        assert model.get("created")
+        assert model.get("workflow_timestamp")
 
     def test_update_workflow_id_no_change(self) -> None:
         self.set_models(
@@ -299,7 +299,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "workflow_id": 22,
                     "motion_ids": [111],
                     "motion_recommendation_ids": [111],
-                    "set_created_timestamp": True,
+                    "set_workflow_timestamp": True,
                 },
             }
         )
@@ -308,7 +308,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         model = self.get_model("motion/111")
         assert model.get("state_id") == 88
         assert model.get("recommendation_id") == 88
-        assert not model.get("created")
+        assert not model.get("workflow_timestamp")
 
     def test_update_wrong_id_2(self) -> None:
         self.create_model("motion/111")
@@ -463,6 +463,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "title": "title_bDFsWtKL",
                 "text": "text_eNPkDVuq",
                 "reason": "reason_ukWqADfE",
+                "created": 1686735327,
             },
             Permissions.Motion.CAN_MANAGE,
         )

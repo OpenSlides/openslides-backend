@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "a61c77fb4c3b3f250143b09a8501cfe0"
+MODELS_YML_CHECKSUM = "ef3786ffceb4f86538b7ce9f10e28a2c"
 
 
 class Organization(Model):
@@ -1098,8 +1098,9 @@ class Motion(Model):
     state_extension = fields.CharField()
     recommendation_extension = fields.CharField()
     sort_weight = fields.IntegerField(default=10000)
-    created = fields.TimestampField(read_only=True)
+    created = fields.TimestampField()
     last_modified = fields.TimestampField(read_only=True)
+    workflow_timestamp = fields.TimestampField(read_only=True)
     start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
     lead_motion_id = fields.RelationField(
@@ -1399,7 +1400,7 @@ class MotionState(Model):
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
     allow_motion_forwarding = fields.BooleanField()
-    set_created_timestamp = fields.BooleanField()
+    set_workflow_timestamp = fields.BooleanField()
     submitter_withdraw_state_id = fields.RelationField(
         to={"motion_state": "submitter_withdraw_back_ids"},
         equal_fields=["meeting_id", "workflow_id"],
