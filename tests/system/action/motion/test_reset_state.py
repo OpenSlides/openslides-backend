@@ -81,7 +81,7 @@ class MotionResetStateActionTest(BaseActionTestCase):
         assert model.get("state_id") == 76
         assert model.get("number") == "001"
         assert model.get("last_modified", 0) >= check_time
-        assert model.get("workflow_timestamp", 0) >= check_time
+        assert model.get("workflow_timestamp") == model.get("last_modified")
         assert model.get("created") == 1687339000
 
     def test_reset_state_correct_number_value(self) -> None:
@@ -104,7 +104,7 @@ class MotionResetStateActionTest(BaseActionTestCase):
                     "first_state_of_workflow_id": 1,
                     "set_number": True,
                     "meeting_id": 222,
-                    "set_workflow_timestamp": True,
+                    "set_workflow_timestamp": False,
                 },
                 "motion_state/77": {
                     "meeting_id": 222,
@@ -126,7 +126,7 @@ class MotionResetStateActionTest(BaseActionTestCase):
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
         assert model.get("number_value") == 23
-        assert model.get("workflow_timestamp") == 1111111
+        assert model.get("workflow_timestamp") is None
 
     def test_reset_state_missing_first_state(self) -> None:
         self.set_models(

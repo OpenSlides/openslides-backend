@@ -68,6 +68,6 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
         )
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
-        if not motion.get("workflow_timestamp"):
-            set_workflow_timestamp_helper(self.datastore, instance, timestamp)
+        instance["workflow_timestamp"] = None
+        set_workflow_timestamp_helper(self.datastore, instance, timestamp)
         return instance
