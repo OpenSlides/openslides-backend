@@ -12,7 +12,6 @@ class UpdateAction(Action):
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # Primary instance manipulation for defaults and extra fields.
-        instance = self.validate_fields(instance)
         instance = self.update_instance(instance)
         self.apply_instance(instance)
 

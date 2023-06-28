@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "e8157fce0f2d22ac81f30fdb23c011bd"
+MODELS_YML_CHECKSUM = "965853d41c21effd88e9f0f20723a638"
 
 
 class Organization(Model):
@@ -17,6 +17,7 @@ class Organization(Model):
     privacy_policy = fields.TextField()
     login_text = fields.TextField()
     reset_password_verbose_errors = fields.BooleanField()
+    genders = fields.CharArrayField(default=["male", "female", "diverse", "non-binary"])
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
@@ -93,9 +94,7 @@ class User(Model):
     password = fields.CharField()
     default_password = fields.CharField()
     can_change_own_password = fields.BooleanField(default=True)
-    gender = fields.CharField(
-        constraints={"enum": ["male", "female", "diverse", "non-binary"]}
-    )
+    gender = fields.CharField()
     email = fields.CharField()
     default_number = fields.CharField()
     default_structure_level = fields.CharField()
@@ -261,6 +260,7 @@ class Committee(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     description = fields.HTMLStrictField()
+    external_id = fields.CharField(constraints={"description": "unique"})
     meeting_ids = fields.RelationListField(
         to={"meeting": "committee_id"}, on_delete=fields.OnDelete.PROTECT
     )
@@ -293,6 +293,7 @@ class Meeting(Model):
     verbose_name = "meeting"
 
     id = fields.IntegerField()
+    external_id = fields.CharField(constraints={"description": "unique in committee"})
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
     name = fields.CharField(
@@ -833,6 +834,7 @@ class Group(Model):
     verbose_name = "group"
 
     id = fields.IntegerField()
+    external_id = fields.CharField(constraints={"description": "unique in meeting"})
     name = fields.CharField(required=True)
     permissions = fields.CharArrayField(
         in_array_constraints={

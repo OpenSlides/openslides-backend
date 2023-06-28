@@ -210,7 +210,7 @@ class Migration(BaseModelMigration):
     created along the way.
     """
 
-    target_migration_index = 43
+    target_migration_index = 44
 
     def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
         self.meeting_users = MeetingUsersDict()

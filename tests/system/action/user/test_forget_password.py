@@ -45,6 +45,24 @@ class UserForgetPassword(BaseActionTestCase):
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
         assert "Ihres Openslides-Passworts" in handler.emails[0]["data"]
 
+    def test_forget_password_saml_sso_user_error(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"url": None},
+                "user/1": {"email": "test@ntvtn.de", "saml_id": "111"},
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.forget_password", {"email": "test@ntvtn.de"}, lang="de_DE"
+            )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            response.json["message"],
+        )
+
     def test_forget_password_send_mail_correct_translated_not_normalized(self) -> None:
         self.set_models(
             {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}

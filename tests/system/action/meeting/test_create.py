@@ -190,19 +190,21 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
 
     def test_check_action_data_fields(self) -> None:
+        external_id = "external"
         meeting = self.basic_test(
             {
                 "description": "RRfnzxHA",
                 "location": "LSFHPTgE",
                 "start_time": 1608120653,
                 "end_time": 1608121653,
+                "external_id": external_id,
             }
         )
         assert meeting.get("description") == "RRfnzxHA"
         assert meeting.get("location") == "LSFHPTgE"
         assert meeting.get("start_time") == 1608120653
         assert meeting.get("end_time") == 1608121653
-
+        assert meeting.get("external_id") == external_id
         # check two defaults:
         assert meeting.get("assignment_poll_default_type") == "pseudoanonymous"
         assert meeting.get("assignment_poll_default_method") == "Y"
@@ -415,7 +417,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_create_language(self) -> None:
+    def test_create_language_and_external_id(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -445,4 +447,31 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         Translator.set_translation_language("de")
-        self.assert_model_exists("group/2", {"name": _("Default")})
+        for i, name in enumerate(
+            ["Default", "Admin", "Delegates", "Staff", "Committees"], 2
+        ):
+            self.assert_model_exists(
+                f"group/{i}", {"name": _(name), "external_id": name}
+            )
+
+    def test_create_external_id_not_unique(self) -> None:
+        external_id = "external"
+        self.set_models(
+            {
+                "meeting/1": {"committee_id": 1, "external_id": external_id},
+            }
+        )
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "meeting2",
+                "committee_id": 1,
+                "language": "pt",
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the meeting is not unique in the committee scope.",
+            response.json["message"],
+        )

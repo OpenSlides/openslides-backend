@@ -151,8 +151,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         # prefetch as much data as possible
         self.prefetch(action_data)
 
-        for instance in action_data:
+        for i, instance in enumerate(action_data):
             self.validate_instance(instance)
+            cast(List[Dict[str, Any]], action_data)[i] = self.validate_fields(instance)
             self.check_for_archived_meeting(instance)
             # perform permission check not for internal requests or backend_internal actions
             if not internal and self.action_type != ActionType.BACKEND_INTERNAL:
@@ -604,7 +605,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Validates all model fields according to the model definition.
+        Validates and sanitizes all model fields according to the model definition.
         """
         try:
             for field_name in instance:
@@ -612,6 +613,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     field = self.model.get_field(field_name)
                     instance[field_name] = field.validate(instance[field_name])
         except AssertionError as e:
+            raise ActionException(str(e))
+        except ValueError as e:
             raise ActionException(str(e))
         return instance
 

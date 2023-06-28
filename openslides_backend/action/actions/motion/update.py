@@ -199,11 +199,13 @@ class MotionUpdate(
         if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
             allowed_fields += [
                 "category_id",
-                "motion_block_id",
+                "block_id",
                 "origin",
                 "supporters_id",
                 "recommendation_extension",
                 "start_line_number",
+                "tag_ids",
+                "state_extension",
             ]
 
         # check for self submitter and whitelist

@@ -140,3 +140,12 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
             "You are not allowed to perform action user.generate_new_password. Missing permission: OrganizationManagementLevel superadmin in organization 1",
             response.json["message"],
         )
+
+    def test_saml_user_error(self) -> None:
+        self.update_model("user/1", {"password": "pw", "saml_id": "111"})
+        response = self.request("user.generate_new_password", {"id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            response.json["message"],
+        )
