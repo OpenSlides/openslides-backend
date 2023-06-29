@@ -1,3 +1,4 @@
+from time import time
 from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
@@ -253,6 +254,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 2538,
                     "state_id": 88,
                     "recommendation_id": 88,
+                    "created": int(time()),
                 },
                 "motion_workflow/22": {"name": "name_workflow_22", "meeting_id": 2538},
                 "motion_state/88": {
@@ -280,7 +282,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         model = self.get_model("motion/111")
         assert model.get("state_id") == 23
         assert model.get("recommendation_id") is None
-        assert model.get("workflow_timestamp")
+        assert model.get("created", 0) < model.get("workflow_timestamp", 0)
 
     def test_update_workflow_id_no_change(self) -> None:
         self.set_models(
