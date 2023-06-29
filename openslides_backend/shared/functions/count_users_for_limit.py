@@ -34,7 +34,7 @@ def count_users_for_limit(datastore: DatastoreService) -> int:
         [
             user["id"]
             for user in active_users
-            if (meeting_ids := set(user.get("meeting_ids", set())))
+            if (meeting_ids := set(user.get("meeting_ids", set()) or set()))
             and meeting_ids.intersection(active_meeting_ids)
         ]
     )
