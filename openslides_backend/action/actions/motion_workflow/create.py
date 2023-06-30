@@ -36,7 +36,7 @@ class MotionWorkflowCreateAction(SequentialNumbersMixin, CreateActionWithDepende
                 "weight": 1,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
-                "set_created_timestamp": True,
+                "set_workflow_timestamp": True,
             }
         ]
 
@@ -69,7 +69,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
                 "allow_support": True,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
-                "set_created_timestamp": True,
+                "set_workflow_timestamp": True,
             },
             {
                 "name": _("accepted"),
@@ -140,7 +140,7 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "set_number": False,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
-                "set_created_timestamp": True,
+                "set_workflow_timestamp": True,
             },
             {
                 "name": _("submitted"),

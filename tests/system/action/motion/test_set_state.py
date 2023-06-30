@@ -31,6 +31,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
                     "state_id": 77,
                     "number_value": 23,
                     "submitter_ids": [12],
+                    "created": 1687339000,
                 },
                 "motion_submitter/12": {
                     "meeting_id": 1,
@@ -46,14 +47,15 @@ class MotionSetStateActionTest(BaseActionTestCase):
 
     def test_set_state_correct_previous_state(self) -> None:
         check_time = round(time.time())
-        self.update_model("motion_state/76", {"set_created_timestamp": True})
+        self.update_model("motion_state/76", {"set_workflow_timestamp": True})
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
         assert model.get("number_value") == 23
         assert model.get("last_modified", 0) >= check_time
-        assert model.get("created", 0) >= check_time
+        assert model.get("workflow_timestamp", 0) >= check_time
+        assert model.get("created") == 1687339000
         self.assert_history_information(
             "motion/22", ["State set to {}", "motion_state/76"]
         )
