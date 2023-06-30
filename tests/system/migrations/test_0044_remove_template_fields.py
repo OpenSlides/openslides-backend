@@ -751,11 +751,7 @@ def test_migration(write, finalize, assert_model, read_model):
             "fqid": "meeting/43",
         }
     )
-<<<<<<< HEAD:tests/system/migrations/test_0044_remove_template_fields.py
     finalize("0044_remove_template_fields")
-=======
-    finalize("0043_remove_template_fields")
->>>>>>> 7515d67d4e1e357f976fd8461f04dbb0fb79bede:tests/system/migrations/test_0043_remove_template_fields.py
 
     assert_model(
         "organization/1",
