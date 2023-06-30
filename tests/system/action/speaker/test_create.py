@@ -442,3 +442,98 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Self contribution is not allowed" in response.json["message"]
+
+    def test_create_missing_category_id(self) -> None:
+        self.test_models["meeting/1"]["point_of_order_category_enabled"] = True
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_point_of_order_speakers"
+        ] = True
+        self.test_models["group/3"] = {"name": "permission group", "meeting_id": 1}
+        self.test_models["meeting/1"]["group_ids"] = [3]
+        self.set_models(self.test_models)
+        self.login(7)
+        self.set_user_groups(7, [3])
+        self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
+        response = self.request(
+            "speaker.create",
+            {"user_id": 7, "list_of_speakers_id": 23, "point_of_order": True},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Point of order category is enabled, but category id is missing."
+            in response.json["message"]
+        )
+
+    def test_create_category_weights_with_ranks(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_asdewqasd",
+                    "is_active_in_organization_id": 1,
+                    "point_of_order_category_enabled": True,
+                    "list_of_speakers_enable_point_of_order_speakers": True,
+                    "point_of_order_category_ids": [2, 3, 5],
+                },
+                "user/1": {
+                    "meeting_ids": [1],
+                },
+                "point_of_order_category/2": {
+                    "rank": 2,
+                    "meeting_id": 1,
+                },
+                "point_of_order_category/3": {
+                    "rank": 3,
+                    "meeting_id": 1,
+                },
+                "point_of_order_category/5": {
+                    "rank": 5,
+                    "meeting_id": 1,
+                },
+                "speaker/1": {
+                    "weight": 1,
+                    "point_of_order": True,
+                    "point_of_order_category_id": 2,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+                "speaker/2": {
+                    "weight": 2,
+                    "point_of_order": True,
+                    "point_of_order_category_id": 3,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+                "speaker/3": {
+                    "weight": 3,
+                    "point_of_order": False,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+                "speaker/4": {
+                    "weight": 4,
+                    "point_of_order": True,
+                    "point_of_order_category_id": 5,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {"speaker_ids": [1, 2, 3, 4], "meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "speaker.create",
+            {
+                "user_id": 1,
+                "list_of_speakers_id": 23,
+                "point_of_order": True,
+                "point_of_order_category_id": 3,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/1", {"weight": 1})
+        self.assert_model_exists("speaker/2", {"weight": 2})
+        self.assert_model_exists(
+            "speaker/5",
+            {"weight": 3, "point_of_order_category_id": 3, "point_of_order": True},
+        )
+        self.assert_model_exists("speaker/3", {"weight": 4})
+        self.assert_model_exists("speaker/4", {"weight": 5})

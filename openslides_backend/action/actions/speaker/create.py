@@ -22,7 +22,12 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
         required_properties=["list_of_speakers_id", "user_id"],
-        optional_properties=["point_of_order", "note", "speech_state"],
+        optional_properties=[
+            "point_of_order",
+            "note",
+            "speech_state",
+            "point_of_order_category_id",
+        ],
     )
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
@@ -56,21 +61,56 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
             instance["weight"] = weight_max + 1
             return instance
 
+        meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", instance["meeting_id"]),
+            ["point_of_order_category_enabled"],
+        )
         list_of_speakers_id = instance["list_of_speakers_id"]
-        weight_no_poos_min = self._get_no_poo_min(
-            list_of_speakers_id, instance["meeting_id"]
-        )
-        if weight_no_poos_min is None:
-            instance["weight"] = weight_max + 1
-            return instance
+        if meeting.get("point_of_order_category_enabled"):
+            filter = And(
+                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                FilterOperator("begin_time", "=", None),
+                FilterOperator("meeting_id", "=", instance["meeting_id"]),
+            )
+            speakers = self.datastore.filter(
+                self.model.collection,
+                filter=filter,
+                mapped_fields=[
+                    "id",
+                    "weight",
+                    "point_of_order",
+                    "point_of_order_category_id",
+                ],
+            )
+            los = sorted(speakers.values(), key=lambda k: k["weight"])
+            index = len(los) - 1
+            new_speaker_rank = self.get_rank(instance["point_of_order_category_id"])
+            while index >= 0:
+                speaker = los[index]
+                if (
+                    speaker.get("point_of_order")
+                    and self.get_rank(speaker["point_of_order_category_id"])
+                    <= new_speaker_rank
+                ):
+                    break
+                index -= 1
+            los.insert(index + 1, {"id": instance["id"]})
+            speaker_ids: List[int] = [speaker["id"] for speaker in los]
+        else:
+            weight_no_poos_min = self._get_no_poo_min(
+                list_of_speakers_id, instance["meeting_id"]
+            )
+            if weight_no_poos_min is None:
+                instance["weight"] = weight_max + 1
+                return instance
 
-        instance["weight"] = weight_no_poos_min
-        speaker_ids = self._insert_before_weight(
-            instance["id"],
-            weight_no_poos_min,
-            list_of_speakers_id,
-            instance["meeting_id"],
-        )
+            instance["weight"] = weight_no_poos_min
+            speaker_ids = self._insert_before_weight(
+                instance["id"],
+                weight_no_poos_min,
+                list_of_speakers_id,
+                instance["meeting_id"],
+            )
         self.apply_instance(instance)
         action_data = [
             {
@@ -136,6 +176,13 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
             field="weight",
         )
 
+    def get_rank(self, category_id: int) -> int:
+        category = self.datastore.get(
+            fqid_from_collection_and_id("point_of_order_category", category_id),
+            ["rank"],
+        )
+        return category["rank"]
+
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Checks
@@ -161,6 +208,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
             [
                 "list_of_speakers_enable_point_of_order_speakers",
                 "list_of_speakers_present_users_only",
+                "point_of_order_category_enabled",
             ],
         )
         if instance.get("point_of_order") and not meeting.get(
@@ -168,6 +216,14 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
         ):
             raise ActionException(
                 "Point of order speakers are not enabled for this meeting."
+            )
+        if (
+            meeting.get("point_of_order_category_enabled")
+            and instance.get("point_of_order")
+            and not instance.get("point_of_order_category_id")
+        ):
+            raise ActionException(
+                "Point of order category is enabled, but category id is missing."
             )
 
         if (
