@@ -20,7 +20,11 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .mixins import AmendmentParagraphHelper, PermissionHelperMixin
+from .mixins import (
+    AmendmentParagraphHelper,
+    PermissionHelperMixin,
+    set_workflow_timestamp_helper,
+)
 from .set_number_mixin import SetNumberMixin
 
 
@@ -48,6 +52,7 @@ class MotionUpdate(
             "supporter_meeting_user_ids",
             "tag_ids",
             "attachment_ids",
+            "created",
         ],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
@@ -123,7 +128,7 @@ class MotionUpdate(
             workflow_id = instance.pop("workflow_id")
             motion = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["state_id", "created"],
+                ["state_id", "workflow_timestamp"],
             )
             state = self.datastore.get(
                 fqid_from_collection_and_id("motion_state", motion["state_id"]),
@@ -136,15 +141,7 @@ class MotionUpdate(
                 )
                 instance["state_id"] = workflow["first_state_id"]
                 instance["recommendation_id"] = None
-                if not motion.get("created"):
-                    first_state = self.datastore.get(
-                        fqid_from_collection_and_id(
-                            "motion_state", instance["state_id"]
-                        ),
-                        ["set_created_timestamp"],
-                    )
-                    if first_state.get("set_created_timestamp"):
-                        instance["created"] = timestamp
+                set_workflow_timestamp_helper(self.datastore, instance, timestamp)
 
         for prefix in ("recommendation", "state"):
             if f"{prefix}_extension" in instance:
@@ -206,6 +203,7 @@ class MotionUpdate(
                 "start_line_number",
                 "tag_ids",
                 "state_extension",
+                "created",
             ]
 
         # check for self submitter and whitelist

@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from ....services.datastore.commands import GetManyRequest
+from ....services.datastore.interface import DatastoreService
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
 from ...action import Action
@@ -40,3 +41,14 @@ class AmendmentParagraphHelper:
             instance["amendment_paragraphs"][key] = validate_html(
                 html, ALLOWED_HTML_TAGS_STRICT
             )
+
+
+def set_workflow_timestamp_helper(
+    datastore: DatastoreService, instance: Dict[str, Any], timestamp: int
+) -> None:
+    state = datastore.get(
+        fqid_from_collection_and_id("motion_state", instance["state_id"]),
+        ["set_workflow_timestamp"],
+    )
+    if state.get("set_workflow_timestamp"):
+        instance["workflow_timestamp"] = timestamp
