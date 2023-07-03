@@ -2,14 +2,19 @@ from typing import Any, Dict, Optional
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.exceptions import PermissionException
+from ....shared.exceptions import ActionException, PermissionException
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .user_mixin import LimitOfUserMixin, UpdateHistoryMixin, UserMixin
+from .user_mixin import (
+    LimitOfUserMixin,
+    UpdateHistoryMixin,
+    UserMixin,
+    check_gender_helper,
+)
 
 
 @register_action("user.update")
@@ -64,8 +69,16 @@ class UserUpdate(
             mapped_fields=[
                 "is_active",
                 "organization_management_level",
+                "saml_id",
             ],
         )
+        if user.get("saml_id") and (
+            instance.get("can_change_own_password") or instance.get("default_password")
+        ):
+            raise ActionException(
+                f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
+            )
+
         if (
             instance["id"] == self.user_id
             and user.get("organization_management_level")
@@ -86,6 +99,7 @@ class UserUpdate(
         if instance.get("is_active") and not user.get("is_active"):
             self.check_limit_of_user(1)
 
+        check_gender_helper(self.datastore, instance)
         return instance
 
     def apply_instance(

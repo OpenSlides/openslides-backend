@@ -91,6 +91,14 @@ organization:
   reset_password_verbose_errors:
     type: boolean
     restriction_mode: B
+  genders:
+    type: string[]
+    default:
+      - male
+      - female
+      - diverse
+      - non-binary
+    restriction_mode: A
 
   # Configuration (only for the server owner)
   enable_electronic_voting:
@@ -269,11 +277,6 @@ user:
     restriction_mode: D
   gender:
     type: string
-    enum:
-      - male
-      - female
-      - diverse
-      - non-binary
     restriction_mode: A
   email:
     type: string
@@ -688,7 +691,7 @@ committee:
   external_id:
     type: string
     restriction_mode: A
-
+    description: unique
   meeting_ids:
     type: relation-list
     to: meeting/committee_id
@@ -745,6 +748,7 @@ meeting:
   external_id:
     type: string
     restriction_mode: A
+    description: unique in committee
   welcome_title:
     type: string
     default: Welcome to OpenSlides
@@ -1703,6 +1707,7 @@ group:
   external_id:
     type: string
     restriction_mode: A
+    description: unique in meeting
   name:
     type: string
     required: true
@@ -2179,9 +2184,12 @@ motion:
     restriction_mode: C
   created:
     type: timestamp
-    read_only: true
     restriction_mode: C
   last_modified:
+    type: timestamp
+    read_only: true
+    restriction_mode: C
+  workflow_timestamp:
     type: timestamp
     read_only: true
     restriction_mode: C
@@ -2685,7 +2693,7 @@ motion_state:
   allow_motion_forwarding:
     type: boolean
     restriction_mode: A
-  set_created_timestamp:
+  set_workflow_timestamp:
     type: boolean
     restriction_mode: A
   submitter_withdraw_state_id:

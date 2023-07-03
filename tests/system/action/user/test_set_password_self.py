@@ -64,3 +64,14 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
             "You cannot change your password.",
             response.json["message"],
         )
+
+    def test_set_password_saml_id_error(self) -> None:
+        self.update_model("user/1", {"saml_id": "111", "can_change_own_password": True})
+        response = self.request(
+            "user.set_password_self", {"old_password": "old", "new_password": "new"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            response.json["message"],
+        )

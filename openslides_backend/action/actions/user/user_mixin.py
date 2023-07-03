@@ -9,6 +9,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....services.datastore.commands import GetManyRequest
+from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import ActionException, DatastoreException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import (
@@ -443,3 +444,13 @@ class UpdateHistoryMixin(Action):
         for field in fields:
             group_ids.update(instance.get(field) or [])
         return group_ids
+
+
+def check_gender_helper(datastore: DatastoreService, instance: Dict[str, Any]) -> None:
+    if instance.get("gender"):
+        organization = datastore.get(ONE_ORGANIZATION_FQID, ["genders"])
+        if organization.get("genders"):
+            if not instance["gender"] in organization["genders"]:
+                raise ActionException(
+                    f"Gender '{instance['gender']}' is not in the allowed gender list."
+                )

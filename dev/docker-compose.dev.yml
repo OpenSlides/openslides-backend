@@ -77,6 +77,8 @@ services:
         ports:
             - "9004:9004"
         environment:
+            - ACTION_HOST=backend
+            - ACTION_PORT=9002
             - MESSAGE_BUS_HOST=redis
             - CACHE_HOST=redis
             - DATASTORE_READER_HOST=datastore-reader
