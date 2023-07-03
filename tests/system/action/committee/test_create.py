@@ -392,3 +392,34 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assertIn(
             "The external_id of the committee is not unique.", response.json["message"]
         )
+
+    def test_create_external_id_empty_special_case(self) -> None:
+        external_id = ""
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "c1",
+                    "external_id": external_id,
+                },
+            }
+        )
+
+        response = self.request(
+            "committee.create",
+            {
+                "name": "committee_name",
+                "organization_id": 1,
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "name": "committee_name",
+                "organization_id": 1,
+                "external_id": external_id,
+            },
+        )
