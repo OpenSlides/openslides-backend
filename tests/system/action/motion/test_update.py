@@ -1,4 +1,4 @@
-from time import sleep, time
+from time import time
 from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
@@ -277,13 +277,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 },
             }
         )
-        sleep(1)
         response = self.request("motion.update", {"id": 111, "workflow_id": 35})
         self.assert_status_code(response, 200)
         model = self.get_model("motion/111")
         assert model.get("state_id") == 23
         assert model.get("recommendation_id") is None
-        assert model.get("created", 0) < model.get("workflow_timestamp", 0)
+        assert model.get("created", 0) <= model.get("workflow_timestamp", 0)
 
     def test_update_workflow_id_no_change(self) -> None:
         self.set_models(

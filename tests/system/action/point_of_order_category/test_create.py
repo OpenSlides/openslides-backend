@@ -1,7 +1,11 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class PointOfOrderCategoryCreate(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
     def test_create_correct(self) -> None:
         self.set_models(
             {
@@ -21,3 +25,18 @@ class PointOfOrderCategoryCreate(BaseActionTestCase):
             {"text": "blablabla", "rank": 11, "meeting_id": 110},
         )
         self.assert_model_exists("meeting/110", {"point_of_order_category_ids": [1]})
+
+    def test_create_no_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "point_of_order_category.create",
+            {"text": "blablabla", "rank": 11, "meeting_id": 1},
+        )
+
+    def test_create_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "point_of_order_category.create",
+            {"text": "blablabla", "rank": 11, "meeting_id": 1},
+            Permissions.ListOfSpeakers.CAN_MANAGE,
+        )
