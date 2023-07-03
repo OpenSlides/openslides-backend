@@ -6,16 +6,14 @@ import fastjsonschema
 
 from openslides_backend.shared.exceptions import ActionException
 
-from ..shared.patterns import COLOR_REGEX, Collection, FullQualifiedId
-from ..shared.schema import (
-    decimal_schema,
-    fqid_list_schema,
-    id_list_schema,
-    optional_fqid_schema,
-    optional_id_schema,
-    required_fqid_schema,
-    required_id_schema,
+from ..shared.patterns import (
+    COLOR_REGEX,
+    DECIMAL_REGEX,
+    FQID_REGEX,
+    Collection,
+    FullQualifiedId,
 )
+from ..shared.schema import fqid_list_schema, id_list_schema
 from ..shared.typing import Schema
 from ..shared.util import (
     ALLOWED_HTML_TAGS_PERMISSIVE,
@@ -39,6 +37,9 @@ class Field:
     own_collection: Collection
     own_field_name: str
 
+    # the jsonschema base type of the field
+    type: str
+
     def __init__(
         self,
         required: bool = False,
@@ -58,7 +59,12 @@ class Field:
         """
         Returns a JSON schema for this field.
         """
-        return dict(**self.constraints)
+        schema = dict(self.constraints)
+        if self.required:
+            schema["type"] = self.type
+        else:
+            schema["type"] = [self.type, "null"]
+        return schema
 
     def extend_schema(self, schema: Schema, **kwargs: Any) -> Schema:
         """
@@ -93,10 +99,7 @@ class Field:
 
 
 class IntegerField(Field):
-    def get_schema(self) -> Schema:
-        if self.required:
-            return self.extend_schema(super().get_schema(), type="integer")
-        return self.extend_schema(super().get_schema(), type=["integer", "null"])
+    type = "integer"
 
     def check_required_not_fulfilled(
         self, instance: Dict[str, Any], is_create: bool
@@ -108,8 +111,10 @@ class IntegerField(Field):
 
 class BooleanField(Field):
     """
-    Allow boolean fields with sring and int, converted by validate method
+    Allow boolean fields with string and int, converted by validate method
     """
+
+    type = "boolean"
 
     def get_schema(self) -> Schema:
         if self.required:
@@ -145,10 +150,13 @@ class BooleanField(Field):
 
 
 class TextField(Field):
+    type = "string"
+
     def get_schema(self) -> Schema:
+        schema = super().get_schema()
         if self.required:
-            return self.extend_schema(super().get_schema(), type="string", minLength=1)
-        return self.extend_schema(super().get_schema(), type=["string", "null"])
+            schema.setdefault("minLength", 1)
+        return schema
 
 
 class CharField(TextField):
@@ -159,6 +167,8 @@ class CharField(TextField):
 
 
 class JSONField(Field):
+    type = "object"
+
     def get_schema(self) -> Schema:
         types = ["object", "array"]
         if not self.required:
@@ -192,10 +202,7 @@ class HTMLPermissiveField(HTMLStrictField):
 
 
 class FloatField(Field):
-    def get_schema(self) -> Schema:
-        if self.required:
-            return self.extend_schema(super().get_schema(), type="number")
-        return self.extend_schema(super().get_schema(), type=["number", "null"])
+    type = "number"
 
     def check_required_not_fulfilled(
         self, instance: Dict[str, Any], is_create: bool
@@ -212,11 +219,10 @@ class DecimalField(Field):
     utmost importance.
     """
 
+    type = "string"
+
     def get_schema(self) -> Schema:
-        schema = self.extend_schema(super().get_schema(), **decimal_schema)
-        if not self.required:
-            schema["type"] = ["string", "null"]
-        return schema
+        return self.extend_schema(super().get_schema(), pattern=DECIMAL_REGEX)
 
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
@@ -248,6 +254,10 @@ class ArrayField(Field):
     Used for arbitrary arrays.
     """
 
+    type = "array"
+
+    item_field: Field
+
     def __init__(
         self, in_array_constraints: Optional[Dict] = None, **kwargs: Any
     ) -> None:
@@ -255,25 +265,18 @@ class ArrayField(Field):
         super().__init__(**kwargs)
 
     def get_schema(self) -> Schema:
-        if self.required:
-            return self.extend_schema(super().get_schema(), type="array", default=[])
-        return self.extend_schema(super().get_schema(), type=["array", "null"])
+        items = self.item_field.get_schema()
+        if self.in_array_constraints is not None:
+            items.update(self.in_array_constraints)
+        return self.extend_schema(super().get_schema(), items=items)
 
 
 class CharArrayField(ArrayField):
-    def get_schema(self) -> Schema:
-        items = dict(type="string", maxLength=256)
-        if self.in_array_constraints is not None:
-            items.update(self.in_array_constraints)
-        return self.extend_schema(super().get_schema(), items=items)
+    item_field = CharField()
 
 
 class NumberArrayField(ArrayField):
-    def get_schema(self) -> Schema:
-        items = dict(type="integer")
-        if self.in_array_constraints is not None:
-            items.update(self.in_array_constraints)
-        return self.extend_schema(super().get_schema(), items=items)
+    item_field = IntegerField()
 
 
 class BaseRelationField(Field):
@@ -311,17 +314,15 @@ class BaseRelationField(Field):
 
 class RelationField(BaseRelationField):
     is_list_field = False
+    type = "integer"
 
     def get_schema(self) -> Schema:
-        if self.required:
-            schema = required_id_schema
-        else:
-            schema = optional_id_schema
-        return self.extend_schema(super().get_schema(), **schema)
+        return self.extend_schema(super().get_schema(), minimum=1)
 
 
 class RelationListField(BaseRelationField):
     is_list_field = True
+    type = "array"
 
     def get_schema(self) -> Schema:
         schema = self.extend_schema(super().get_schema(), **id_list_schema)
@@ -336,13 +337,10 @@ class BaseGenericRelationField(BaseRelationField):
 
 class GenericRelationField(BaseGenericRelationField):
     is_list_field = False
+    type = "string"
 
     def get_schema(self) -> Schema:
-        if self.required:
-            schema = required_fqid_schema
-        else:
-            schema = optional_fqid_schema
-        return self.extend_schema(super().get_schema(), **schema)
+        return self.extend_schema(super().get_schema(), pattern=FQID_REGEX)
 
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         assert not isinstance(value, list)
@@ -351,6 +349,7 @@ class GenericRelationField(BaseGenericRelationField):
 
 class GenericRelationListField(BaseGenericRelationField):
     is_list_field = True
+    type = "array"
 
     def get_schema(self) -> Schema:
         return self.extend_schema(super().get_schema(), **fqid_list_schema)
