@@ -482,7 +482,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "title": "title_bDFsWtKL",
                 "text": "text_eNPkDVuq",
                 "reason": "reason_ukWqADfE",
-                # TODO "created": 1686735327,
+                "created": 1686735327,
             },
             Permissions.Motion.CAN_MANAGE,
         )
