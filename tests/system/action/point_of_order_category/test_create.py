@@ -3,9 +3,6 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class PointOfOrderCategoryCreate(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
     def test_create_correct(self) -> None:
         self.set_models(
             {
