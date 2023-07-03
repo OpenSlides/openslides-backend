@@ -1,7 +1,11 @@
 import time
 from typing import Any, Dict, List
 
-from openslides_backend.models.checker import CheckException, InternalChecker
+from openslides_backend.models.checker import (
+    Checker,
+    CheckException,
+    external_motion_fields,
+)
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from openslides_backend.permissions.permission_helper import (
@@ -113,7 +117,14 @@ class MeetingClone(MeetingImport):
                 meeting[field] = instance.pop(field)
 
         # check datavalidation
-        checker = InternalChecker(meeting_json)
+        checker = Checker(
+            data=meeting_json,
+            mode="internal",
+            repair=True,
+            fields_to_remove={
+                "motion": external_motion_fields,
+            },
+        )
         try:
             checker.run_check()
         except CheckException as ce:
