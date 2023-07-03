@@ -12,7 +12,7 @@ from ...action import Action
 class GroupMixin(CheckUniqueInContextMixin, Action):
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         super().validate_instance(instance)
-        if "external_id" in instance:
+        if instance.get("external_id"):
             self.check_unique_in_context(
                 "external_id",
                 instance["external_id"],
