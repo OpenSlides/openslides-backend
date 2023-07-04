@@ -42,7 +42,7 @@ from ....shared.interfaces.event import Event, ListFields
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
-from ...util.crypto import get_random_string
+from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
@@ -330,7 +330,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         # generate passwords
         for entry in json_data["user"].values():
             if entry["id"] not in self.merge_user_map:
-                entry["default_password"] = get_random_string(10)
+                entry["default_password"] = get_random_password()
                 entry["password"] = self.auth.hash(entry["default_password"])
 
         # set enable_anonymous

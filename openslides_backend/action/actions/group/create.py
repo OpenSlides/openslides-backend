@@ -7,10 +7,11 @@ from ...generics.create import CreateAction
 from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .group_mixin import GroupMixin
 
 
 @register_action("group.create")
-class GroupCreate(WeightMixin, CreateAction):
+class GroupCreate(GroupMixin, WeightMixin, CreateAction):
     """
     Action to create a group.
     """
@@ -18,9 +19,7 @@ class GroupCreate(WeightMixin, CreateAction):
     model = Group()
     schema = DefaultSchema(Group()).get_create_schema(
         required_properties=["name", "meeting_id"],
-        optional_properties=[
-            "permissions",
-        ],
+        optional_properties=["permissions", "external_id"],
     )
     permission = Permissions.User.CAN_MANAGE
 

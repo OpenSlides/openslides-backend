@@ -1,3 +1,4 @@
+from openslides_backend.action.util.crypto import PASSWORD_CHARS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -10,10 +11,10 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         response = self.request("user.generate_new_password", {"id": 1})
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")
-        assert model.get("password") is not None
-        assert self.auth.is_equals(
-            model.get("default_password", ""), model.get("password", "")
-        )
+        assert (hash := model.get("password")) is not None
+        assert (password := model.get("default_password")) is not None
+        assert all(char in PASSWORD_CHARS for char in password)
+        assert self.auth.is_equals(password, hash)
 
     def test_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
@@ -137,5 +138,14 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action user.generate_new_password. Missing permission: OrganizationManagementLevel superadmin in organization 1",
+            response.json["message"],
+        )
+
+    def test_saml_user_error(self) -> None:
+        self.update_model("user/1", {"password": "pw", "saml_id": "111"})
+        response = self.request("user.generate_new_password", {"id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and has no local Openslides passwort.",
             response.json["message"],
         )

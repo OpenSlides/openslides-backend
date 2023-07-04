@@ -30,7 +30,12 @@ class UserForgetPasswordConfirm(BaseActionTestCase):
         assert "Failed to verify token." in response.json["message"]
 
     def test_forget_password_confirm_user_id_mismatch(self) -> None:
-        self.update_model("user/1", {"password": "old_pw", "email": self.EMAIL})
+        self.set_models(
+            {
+                "user/1": {"password": "old_pw", "email": self.EMAIL},
+                "user/2": {"username": "u2"},
+            }
+        )
         token = quote(self.auth.create_authorization_token(self.USERID, self.EMAIL))
         response = self.request(
             "user.forget_password_confirm",
@@ -38,3 +43,18 @@ class UserForgetPasswordConfirm(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Failed to verify token." == response.json["message"]
+
+    def test_forget_password_confirm_saml_id_error(self) -> None:
+        self.update_model(
+            "user/1", {"password": "pw", "email": self.EMAIL, "saml_id": "111"}
+        )
+        token = quote(self.auth.create_authorization_token(self.USERID, self.EMAIL))
+        response = self.request(
+            "user.forget_password_confirm",
+            {"user_id": 1, "authorization_token": token, "new_password": self.PW},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            response.json["message"],
+        )

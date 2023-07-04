@@ -526,6 +526,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_user_groups(111, [1, 6])
+        self.set_models(
+            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+        )
 
         response = self.request(
             "user.update",
@@ -1146,7 +1149,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of can_manage_organization!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization or the saml_id!",
             response.json["message"],
         )
 
@@ -1218,10 +1221,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123"},
         )
+        self.set_models(
+            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+        )
         response = self.request("user.update", {"id": 111, "gender": "test"})
         self.assert_status_code(response, 400)
         assert (
-            "data.gender must be one of ['male', 'female', 'diverse', 'non-binary', None]"
+            "Gender 'test' is not in the allowed gender list."
             in response.json["message"]
         )
 
@@ -1778,4 +1784,32 @@ class UserUpdateActionTest(BaseActionTestCase):
             [
                 "Participant data updated in multiple meetings",
             ],
+        )
+
+    def test_update_saml_id__can_change_own_password_error(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "srtgb123", "saml_id": "111"},
+        )
+        response = self.request(
+            "user.update", {"id": 111, "can_change_own_password": True}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and may not set the local default_passwort or the right to change it locally.",
+            response.json["message"],
+        )
+
+    def test_update_saml_id_default_password_error(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "srtgb123", "saml_id": "111"},
+        )
+        response = self.request(
+            "user.update", {"id": 111, "default_password": "secret"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and may not set the local default_passwort or the right to change it locally.",
+            response.json["message"],
         )

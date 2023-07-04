@@ -3,6 +3,7 @@ from typing import Any, Dict
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....shared.exceptions import ActionException
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -14,6 +15,14 @@ class UserSetPasswordMixin(UpdateAction, CheckForArchivedMeetingMixin):
         """
         set hashed password and set default password if set_as_default is True.
         """
+        user = self.datastore.get(
+            f"user/{instance['id']}", ["saml_id"], lock_result=False
+        )
+        if user.get("saml_id"):
+            raise ActionException(
+                f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+            )
+
         password = instance.pop("password")
         set_as_default = False
         if "set_as_default" in instance:

@@ -143,3 +143,12 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
             "You are not allowed to perform action user.reset_password_to_default. Missing permission: OrganizationManagementLevel superadmin in organization 1",
             response.json["message"],
         )
+
+    def test_reset_password_to_default_saml_id_error(self) -> None:
+        self.update_model("user/111", {"saml_id": "111"})
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            response.json["message"],
+        )

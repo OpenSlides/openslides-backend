@@ -21,6 +21,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.set_models({"committee/1": {"organization_id": 1, "name": "c1"}})
         committee_name = "test_committee2"
         description = "<p>Test Committee</p>"
+        external_id = "external"
 
         response = self.request(
             "committee.create",
@@ -31,6 +32,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "organization_tag_ids": [12],
                 "forward_to_committee_ids": [1],
                 "receive_forwardings_from_committee_ids": [1],
+                "external_id": external_id,
             },
         )
         self.assert_status_code(response, 200)
@@ -38,6 +40,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         assert model.get("name") == committee_name
         assert model.get("description") == description
         assert model.get("meeting_ids") is None
+        assert model.get("external_id") == external_id
         assert model.get("organization_tag_ids") == [12]
         assert model.get("forward_to_committee_ids") == [1]
         assert model.get("receive_forwardings_from_committee_ids") == [1]
@@ -362,4 +365,61 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/1",
             {"committee_$can_manage_management_level": [2], "committee_ids": [2]},
+        )
+
+    def test_create_external_id_not_unique(self) -> None:
+        external_id = "external"
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "c1",
+                    "external_id": external_id,
+                },
+            }
+        )
+
+        response = self.request(
+            "committee.create",
+            {
+                "name": "committee_name",
+                "organization_id": 1,
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the committee is not unique.", response.json["message"]
+        )
+
+    def test_create_external_id_empty_special_case(self) -> None:
+        external_id = ""
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "c1",
+                    "external_id": external_id,
+                },
+            }
+        )
+
+        response = self.request(
+            "committee.create",
+            {
+                "name": "committee_name",
+                "organization_id": 1,
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "name": "committee_name",
+                "organization_id": 1,
+                "external_id": external_id,
+            },
         )

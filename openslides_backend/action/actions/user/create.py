@@ -9,11 +9,12 @@ from ....shared.exceptions import ActionException
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
+from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .password_mixin import PasswordCreateMixin
-from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin
+from .password_mixin import PasswordMixin
+from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
 
 
 @register_action("user.create")
@@ -22,7 +23,7 @@ class UserCreate(
     CreateAction,
     UserMixin,
     CreateUpdatePermissionsMixin,
-    PasswordCreateMixin,
+    PasswordMixin,
     LimitOfUserMixin,
     UsernameMixin,
 ):
@@ -60,6 +61,7 @@ class UserCreate(
             "vote_weight_$",
             "is_demo_user",
             "forwarding_committee_ids",
+            "saml_id",
         ],
     )
     check_email_field = "email"
@@ -68,20 +70,32 @@ class UserCreate(
         instance = super().update_instance(instance)
         if instance.get("is_active"):
             self.check_limit_of_user(1)
+        saml_id = instance.get("saml_id")
+        if not instance.get("username"):
+            if saml_id:
+                instance["username"] = saml_id
+            else:
+                instance["username"] = self.generate_username(instance)
+        if saml_id:
+            instance["can_change_own_password"] = False
+            if instance.get("can_change_own_password") or instance.get(
+                "default_password"
+            ):
+                raise ActionException(
+                    f"user {instance['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
+                )
+        else:
+            if not instance.get("default_password"):
+                instance["default_password"] = get_random_password()
+            instance = self.set_password(instance)
         if not (
             instance.get("username")
             or instance.get("first_name")
             or instance.get("last_name")
         ):
             raise ActionException("Need username or first_name or last_name")
-
-        if not instance.get("username"):
-            instance["username"] = self.generate_username(instance)
-        if not instance.get("default_password"):
-            instance = self.generate_and_set_password(instance)
-        else:
-            instance = self.set_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
+        check_gender_helper(self.datastore, instance)
         return instance
 
     def generate_username(self, instance: Dict[str, Any]) -> str:

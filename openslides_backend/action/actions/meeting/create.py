@@ -1,5 +1,8 @@
 from typing import Any, Dict, List, Type, cast
 
+from openslides_backend.action.mixins.check_unique_name_mixin import (
+    CheckUniqueInContextMixin,
+)
 from openslides_backend.models.models import Meeting
 
 from ....i18n.translator import Translator
@@ -25,7 +28,10 @@ from .mixins import MeetingCheckTimesMixin, MeetingPermissionMixin
 
 @register_action("meeting.create")
 class MeetingCreate(
-    CreateActionWithDependencies, MeetingPermissionMixin, MeetingCheckTimesMixin
+    CheckUniqueInContextMixin,
+    CreateActionWithDependencies,
+    MeetingPermissionMixin,
+    MeetingCheckTimesMixin,
 ):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_create_schema(
@@ -36,6 +42,7 @@ class MeetingCreate(
             "start_time",
             "end_time",
             "organization_tag_ids",
+            "external_id",
         ],
         additional_optional_fields={
             "user_ids": id_list_schema,
@@ -67,6 +74,18 @@ class MeetingCreate(
         "users_email_body",
     ]
 
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if instance.get("external_id"):
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                "The external_id of the meeting is not unique in the committee scope.",
+                None,
+                "committee_id",
+                instance["committee_id"],
+            )
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         Translator.set_translation_language(instance["language"])
         instance = super().update_instance(instance)
@@ -95,6 +114,7 @@ class MeetingCreate(
         action_data = [
             {
                 "name": _("Default"),
+                "external_id": "Default",
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -109,10 +129,12 @@ class MeetingCreate(
             },
             {
                 "name": _("Admin"),
+                "external_id": "Admin",
                 "meeting_id": instance["id"],
             },
             {
                 "name": _("Delegates"),
+                "external_id": "Delegates",
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
@@ -131,6 +153,7 @@ class MeetingCreate(
             },
             {
                 "name": _("Staff"),
+                "external_id": "Staff",
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_MANAGE,
@@ -149,6 +172,7 @@ class MeetingCreate(
             },
             {
                 "name": _("Committees"),
+                "external_id": "Committees",
                 "meeting_id": instance["id"],
                 "permissions": [
                     Permissions.AgendaItem.CAN_SEE_INTERNAL,
