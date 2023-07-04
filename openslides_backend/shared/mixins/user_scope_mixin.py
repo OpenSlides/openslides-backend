@@ -36,7 +36,7 @@ class UserScopeMixin(BaseServiceProvider):
         """
         Returns the scope of the given user id together with the relevant scope id (either meeting,
         committee or organization) and the OML level of the user as string (empty string if the user
-        has none). 
+        has none).
         """
         meetings: Set[int] = set()
         committees_manager: Set[int] = set()

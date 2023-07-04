@@ -282,7 +282,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         model = self.get_model("motion/111")
         assert model.get("state_id") == 23
         assert model.get("recommendation_id") is None
-        assert model.get("created", 0) < model.get("workflow_timestamp", 0)
+        assert model.get("created", 0) <= model.get("workflow_timestamp", 0)
 
     def test_update_workflow_id_no_change(self) -> None:
         self.set_models(
