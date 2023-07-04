@@ -96,7 +96,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "user/1": {"meeting_ids": [1]},
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
                 "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
                 "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
                 "speaker/4": {"user_id": 1, "meeting_id": 1},
@@ -124,7 +129,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             {
                 "user/1": {"meeting_ids": [1]},
                 "user/2": {"meeting_ids": [1]},
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
                 "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
                 "motion_submitter/3": {"user_id": 2, "meeting_id": 1},
                 "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
@@ -173,7 +183,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "user/1": {"organization_management_level": None, "meeting_ids": [1]},
-                "meeting/1": {"name": "test"},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
                 "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
             }
         )
@@ -186,7 +201,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "user/2": {"organization_management_level": None, "meeting_ids": [1]},
-                "meeting/1": {"name": "test"},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
             }
         )
         status_code, _ = self.request("get_user_related_models", {"user_ids": [2]})
