@@ -211,10 +211,14 @@ class DuplicateCheckMixin(Action):
             self.used_usernames.append(username)
         return result
 
-    def check_name_and_email_for_duplicate(
-        self, first_name: str, last_name: str, email: str, payload_index: int
+    def check_instance_for_duplicate(
+        self, instance: Dict[str, Any], payload_index: int
     ) -> bool:
-        entry = (first_name, last_name, email)
+        entry = (
+            instance.get("first_name", ""),
+            instance.get("last_name", ""),
+            instance.get("email", ""),
+        )
         result = (
             self.users_in_double_lists[payload_index]
             or entry in self.used_names_and_email

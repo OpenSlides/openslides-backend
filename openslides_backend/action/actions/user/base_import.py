@@ -1,18 +1,15 @@
 from typing import Any, Dict, List
 
 from ....models.models import ActionWorker
-from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.schema import required_id_schema
 from ...mixins.import_mixins import ImportMixin, ImportState
 from ...util.default_schema import DefaultSchema
-from ...util.register import register_action
 from .create import UserCreate
 from .update import UserUpdate
 from .user_mixin import DuplicateCheckMixin
 
 
-@register_action("user.import")
-class UserImport(DuplicateCheckMixin, ImportMixin):
+class BaseUserImport(DuplicateCheckMixin, ImportMixin):
     """
     Action to import a result from the action_worker.
     """
@@ -24,9 +21,7 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
             "import": {"type": "boolean"},
         }
     )
-    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     skip_archived_meeting_check = True
-    import_name = "account"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

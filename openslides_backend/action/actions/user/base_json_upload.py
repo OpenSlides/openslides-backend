@@ -1,52 +1,17 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional
 
 import fastjsonschema
 
 from ....models.models import User
-from ....permissions.management_levels import OrganizationManagementLevel
 from ...mixins.import_mixins import ImportState, JsonUploadMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
-from ...util.register import register_action
 from .create import UserCreate
 from .user_mixin import DuplicateCheckMixin, UsernameMixin
 
 
-@register_action("user.json_upload")
-class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
-    """
-    Action to allow to upload a json. It is used as first step of an import.
-    """
-
+class BaseUserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
     model = User()
-    schema = DefaultSchema(User()).get_default_schema(
-        additional_required_fields={
-            "data": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        **model.get_properties(
-                            "title",
-                            "first_name",
-                            "last_name",
-                            "is_active",
-                            "is_physical_person",
-                            "default_password",
-                            "email",
-                            "username",
-                            "gender",
-                            "pronoun",
-                        ),
-                    },
-                    "required": [],
-                    "additionalProperties": False,
-                },
-                "minItems": 1,
-                "uniqueItems": False,
-            },
-        }
-    )
     headers = [
         {"property": "title", "type": "string"},
         {"property": "first_name", "type": "string"},
@@ -59,8 +24,42 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
         {"property": "gender", "type": "string"},
         {"property": "pronoun", "type": "string"},
     ]
-    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     skip_archived_meeting_check = True
+
+    @classmethod
+    def get_schema(
+        cls,
+        additional_user_fields: Dict[str, Any],
+        additional_required_fields: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        return DefaultSchema(User()).get_default_schema(
+            additional_required_fields={
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            **cls.model.get_properties(
+                                "title",
+                                "first_name",
+                                "last_name",
+                                "is_active",
+                                "is_physical_person",
+                                "default_password",
+                                "email",
+                                "username",
+                                "gender",
+                                "pronoun",
+                            ),
+                            **additional_user_fields,
+                        },
+                        "additionalProperties": False,
+                    },
+                    "minItems": 1,
+                },
+                **(additional_required_fields or {}),
+            }
+        )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
@@ -126,9 +125,7 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                 if not (entry.get("first_name") or entry.get("last_name")):
                     state = ImportState.ERROR
                     messages.append("Cannot generate username.")
-                elif self.check_name_and_email_for_duplicate(
-                    *UserJsonUpload._names_and_email(entry), payload_index
-                ):
+                elif self.check_instance_for_duplicate(entry, payload_index):
                     state = ImportState.DONE
                     if searchdata := self.get_search_data(payload_index):
                         entry["username"] = {
@@ -173,11 +170,3 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                     "value": entry["default_password"],
                     "info": ImportState.DONE,
                 }
-
-    @staticmethod
-    def _names_and_email(entry: Dict[str, Any]) -> Tuple[str, str, str]:
-        return (
-            entry.get("first_name", ""),
-            entry.get("last_name", ""),
-            entry.get("email", ""),
-        )

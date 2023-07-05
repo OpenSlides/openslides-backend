@@ -9,7 +9,7 @@ class TopicJsonUpload(BaseActionTestCase):
     def test_json_upload(self) -> None:
         start_time = int(time())
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {
                 "data": [
                     {
@@ -41,7 +41,7 @@ class TopicJsonUpload(BaseActionTestCase):
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {"data": []},
         )
         self.assert_status_code(response, 400)
@@ -49,7 +49,7 @@ class TopicJsonUpload(BaseActionTestCase):
 
     def test_json_upload_parse_boolean_error(self) -> None:
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {
                 "data": [
                     {
@@ -65,7 +65,7 @@ class TopicJsonUpload(BaseActionTestCase):
 
     def test_json_upload_results(self) -> None:
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {"data": [{"username": "test", "default_password": "secret"}]},
         )
         self.assert_status_code(response, 200)
@@ -107,6 +107,9 @@ class TopicJsonUpload(BaseActionTestCase):
                 {"property": "username", "type": "string"},
                 {"property": "gender", "type": "string"},
                 {"property": "pronoun", "type": "string"},
+                {"property": "default_structure_level", "type": "string"},
+                {"property": "default_number", "type": "string"},
+                {"property": "default_vote_weight", "type": "decimal(6)"},
             ],
             "rows": [
                 {
@@ -138,7 +141,7 @@ class TopicJsonUpload(BaseActionTestCase):
             }
         )
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {"data": [{"username": "test"}]},
         )
         self.assert_status_code(response, 200)
@@ -171,7 +174,7 @@ class TopicJsonUpload(BaseActionTestCase):
             }
         )
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {
                 "data": [
                     {
@@ -199,7 +202,7 @@ class TopicJsonUpload(BaseActionTestCase):
     def test_json_upload_duplicate_in_data(self) -> None:
         self.maxDiff = None
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {
                 "data": [
                     {"username": "test", "default_password": "secret"},
@@ -274,7 +277,7 @@ class TopicJsonUpload(BaseActionTestCase):
         )
 
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {
                 "data": [
                     {
@@ -305,7 +308,7 @@ class TopicJsonUpload(BaseActionTestCase):
             }
         )
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {
                 "data": [
                     {
@@ -328,7 +331,7 @@ class TopicJsonUpload(BaseActionTestCase):
 
     def test_json_upload_generate_default_password(self) -> None:
         response = self.request(
-            "user.json_upload",
+            "account.json_upload",
             {
                 "data": [
                     {
@@ -348,13 +351,13 @@ class TopicJsonUpload(BaseActionTestCase):
 
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
-            {}, "user.json_upload", {"data": [{"username": "test"}]}
+            {}, "account.json_upload", {"data": [{"username": "test"}]}
         )
 
     def test_json_upload_permission(self) -> None:
         self.base_permission_test(
             {},
-            "user.json_upload",
+            "account.json_upload",
             {"data": [{"username": "test"}]},
             OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
