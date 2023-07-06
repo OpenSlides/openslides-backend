@@ -254,7 +254,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 2538,
                     "state_id": 88,
                     "recommendation_id": 88,
-                    "created": int(time()),
+                    "created": int(time()) - 1,
                 },
                 "motion_workflow/22": {"name": "name_workflow_22", "meeting_id": 2538},
                 "motion_state/88": {
@@ -280,9 +280,9 @@ class MotionUpdateActionTest(BaseActionTestCase):
         response = self.request("motion.update", {"id": 111, "workflow_id": 35})
         self.assert_status_code(response, 200)
         model = self.get_model("motion/111")
-        assert model.get("state_id") == 23
+        assert model["state_id"] == 23
         assert model.get("recommendation_id") is None
-        assert model.get("created", 0) <= model.get("workflow_timestamp", 0)
+        assert model["created"] < model["workflow_timestamp"]
 
     def test_update_workflow_id_no_change(self) -> None:
         self.set_models(

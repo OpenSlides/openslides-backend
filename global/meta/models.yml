@@ -1047,6 +1047,10 @@ meeting:
     type: boolean
     default: True
     restriction_mode: B
+  list_of_speakers_enable_point_of_order_categories:
+    type: boolean
+    default: False
+    restriction_mode: B
   list_of_speakers_enable_pro_contra_speech:
     type: boolean
     default: False
@@ -1063,11 +1067,6 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
-
-  # Point of order category
-  point_of_order_category_enabled:
-    type: boolean
-    restriction_mode: C
 
   # Motions
   motions_default_workflow_id:
@@ -1482,7 +1481,7 @@ meeting:
     type: relation-list
     to: point_of_order_category/meeting_id
     on_delete: CASCADE
-    restriction_mode: C
+    restriction_mode: B
   speaker_ids:
     type: relation-list
     to: speaker/meeting_id

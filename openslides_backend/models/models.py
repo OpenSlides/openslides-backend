@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "c3b96c56cdc5d9fb8642d71b1e1bd4bc"
+MODELS_YML_CHECKSUM = "821ae10bd2fcfbea44cd9493bc231220"
 
 
 class Organization(Model):
@@ -454,11 +454,13 @@ class Meeting(Model):
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
+    list_of_speakers_enable_point_of_order_categories = fields.BooleanField(
+        default=False
+    )
     list_of_speakers_enable_pro_contra_speech = fields.BooleanField(default=False)
     list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)
     list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
     list_of_speakers_initially_closed = fields.BooleanField(default=False)
-    point_of_order_category_enabled = fields.BooleanField()
     motions_default_workflow_id = fields.RelationField(
         to={"motion_workflow": "default_workflow_meeting_id"}, required=True
     )
