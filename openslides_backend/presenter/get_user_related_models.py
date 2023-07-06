@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any, Dict, List, cast
 
 import fastjsonschema
@@ -8,7 +9,7 @@ from openslides_backend.shared.schema import id_list_schema
 from ..models.models import Committee
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PresenterException
-from ..shared.filters import And, FilterOperator
+from ..shared.filters import And, FilterOperator, Or
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -38,16 +39,16 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
     schema = get_user_related_models_schema
 
     def get_result(self) -> Any:
-        result: Dict[str, Any] = {}
+        result: Dict[int, Any] = {}
         for user_id in self.data["user_ids"]:
+            result[user_id] = {}
             self.check_permissions_for_scope(user_id)
-            result[str(user_id)] = {}
             committees_data = self.get_committees_data(user_id)
             meetings_data = self.get_meetings_data(user_id)
             if committees_data:
-                result[str(user_id)]["committees"] = committees_data
+                result[user_id]["committees"] = committees_data
             if meetings_data:
-                result[str(user_id)]["meetings"] = meetings_data
+                result[user_id]["meetings"] = meetings_data
         return result
 
     def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
@@ -90,39 +91,42 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
         return committees_data
 
     def get_meetings_data(self, user_id: int) -> List[Dict[str, Any]]:
-        meetings_data = []
         user = self.datastore.get(
             fqid_from_collection_and_id("user", user_id), ["meeting_ids"]
         )
         if not user.get("meeting_ids"):
             return []
+
         gmr = GetManyRequest(
             "meeting",
             user["meeting_ids"],
             ["id", "name", "is_active_in_organization_id"],
         )
         meetings = self.datastore.get_many([gmr]).get("meeting", {}).values()
-        for meeting in meetings:
-            filter_ = And(
-                FilterOperator("meeting_id", "=", meeting["id"]),
-                FilterOperator("user_id", "=", user_id),
-            )
-            submitter_ids = self.datastore.filter("motion_submitter", filter_, ["id"])
-            candidate_ids = self.datastore.filter(
-                "assignment_candidate", filter_, ["id"]
-            )
-            speaker_ids = self.datastore.filter("speaker", filter_, ["id"])
-            if submitter_ids or candidate_ids or speaker_ids:
-                meetings_data.append(
-                    {
-                        "id": meeting["id"],
-                        "name": meeting.get("name"),
-                        "is_active_in_organization_id": meeting.get(
-                            "is_active_in_organization_id"
-                        ),
-                        "submitter_ids": list(submitter_ids),
-                        "candidate_ids": list(candidate_ids),
-                        "speaker_ids": list(speaker_ids),
-                    }
-                )
-        return meetings_data
+
+        filter = And(
+            Or(
+                FilterOperator("meeting_id", "=", meeting_id)
+                for meeting_id in user["meeting_ids"]
+            ),
+            FilterOperator("user_id", "=", user_id),
+        )
+        models_by_meeting: Dict[int, Dict[str, List[int]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+        for collection in ("motion_submitter", "assignment_candidate", "speaker"):
+            models = self.datastore.filter(collection, filter, ["id", "meeting_id"])
+            for id, model in models.items():
+                models_by_meeting[model["meeting_id"]][f"{collection}_ids"].append(id)
+
+        return [
+            {
+                "id": meeting["id"],
+                "name": meeting.get("name"),
+                "is_active_in_organization_id": meeting.get(
+                    "is_active_in_organization_id"
+                ),
+                **models_by_meeting[meeting["id"]],
+            }
+            for meeting in meetings
+        ]
