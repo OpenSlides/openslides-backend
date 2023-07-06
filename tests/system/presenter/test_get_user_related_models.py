@@ -116,8 +116,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                         "id": 1,
                         "name": "test",
                         "is_active_in_organization_id": 1,
-                        "submitter_ids": [2],
-                        "candidate_ids": [3],
+                        "motion_submitter_ids": [2],
+                        "assignment_candidate_ids": [3],
                         "speaker_ids": [4],
                     }
                 ]
@@ -154,8 +154,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                         "id": 1,
                         "name": "test",
                         "is_active_in_organization_id": 1,
-                        "submitter_ids": [2],
-                        "candidate_ids": [3],
+                        "motion_submitter_ids": [2],
+                        "assignment_candidate_ids": [3],
                         "speaker_ids": [4],
                     }
                 ]
@@ -166,8 +166,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                         "id": 1,
                         "name": "test",
                         "is_active_in_organization_id": 1,
-                        "submitter_ids": [3],
-                        "candidate_ids": [4],
+                        "motion_submitter_ids": [3],
+                        "assignment_candidate_ids": [4],
                         "speaker_ids": [5],
                     }
                 ]
@@ -195,7 +195,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         status_code, _ = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 403)
 
-    def test_get_user_related_models_permission_because_no_meeting_included(
+    def test_get_user_related_models_empty_meeting(
         self,
     ) -> None:
         self.set_models(
@@ -209,8 +209,46 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 },
             }
         )
-        status_code, _ = self.request("get_user_related_models", {"user_ids": [2]})
+        status_code, data = self.request("get_user_related_models", {"user_ids": [2]})
         self.assertEqual(status_code, 200)
+        assert data == {
+            "2": {
+                "meetings": [
+                    {
+                        "id": 1,
+                        "name": "test",
+                        "is_active_in_organization_id": 1,
+                    }
+                ]
+            },
+        }
+
+    def test_get_user_related_models_archived_meeting(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "user/2": {"organization_management_level": None, "meeting_ids": [1]},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "committee_id": 1,
+                },
+            }
+        )
+        status_code, data = self.request("get_user_related_models", {"user_ids": [2]})
+        self.assertEqual(status_code, 200)
+        assert data == {
+            "2": {
+                "meetings": [
+                    {
+                        "id": 1,
+                        "name": "test",
+                        "is_active_in_organization_id": None,
+                    }
+                ]
+            },
+        }
 
     def test_get_user_related_models_permissions_user_can_manage(self) -> None:
         self.set_models(
