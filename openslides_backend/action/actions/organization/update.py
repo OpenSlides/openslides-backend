@@ -60,7 +60,7 @@ class OrganizationUpdate(
         optional_properties=group_A_fields + group_B_fields,
         additional_optional_fields={
             "saml_attr_mapping": {
-                "type": "object",
+                "type": ["object", "null"],
                 "properties": {
                     field: {**optional_str_schema, "max_length": 256}
                     for field in allowed_user_fields
