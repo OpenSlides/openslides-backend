@@ -41,6 +41,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
     )
     for forbidden_field in FORBIDDEN_FIELDS:
         meeting.pop(forbidden_field, None)
+
     export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))
     export["_migration_index"] = get_backend_migration_index()
 

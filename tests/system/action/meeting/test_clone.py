@@ -1088,10 +1088,13 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(
             {
                 "committee/1": {"organization_id": 1, "meeting_ids": [1, 2]},
-                "meeting/1": {"motion_ids": [1], "list_of_speakers_ids": [1]},
+                "meeting/1": {
+                    "motion_ids": [1, 4],
+                    "motion_state_ids": [1],
+                    "list_of_speakers_ids": [1, 4],
+                },
                 "meeting/2": {
-                    "name": "forward target",
-                    "motion_ids": [2],
+                    "motion_ids": [2, 3],
                     "is_active_in_organization_id": 1,
                 },
                 "motion/1": {
@@ -1106,28 +1109,69 @@ class MeetingClone(BaseActionTestCase):
                 "motion/2": {
                     "meeting_id": 2,
                     "origin_id": 1,
+                    "origin_meeting_id": 1,
                     "all_origin_ids": [1],
                     "sequential_number": 1,
                     "list_of_speakers_id": 2,
                     "title": "motion1 forwarded",
                     "state_id": 2,
                 },
+                "motion/3": {
+                    "meeting_id": 2,
+                    "derived_motion_ids": [4],
+                    "all_derived_motion_ids": [4],
+                    "sequential_number": 2,
+                    "list_of_speakers_id": 3,
+                    "title": "motion3",
+                    "state_id": 2,
+                },
+                "motion/4": {
+                    "meeting_id": 1,
+                    "origin_id": 3,
+                    "origin_meeting_id": 2,
+                    "all_origin_ids": [3],
+                    "sequential_number": 1,
+                    "list_of_speakers_id": 4,
+                    "title": "motion3 forwarded",
+                    "state_id": 1,
+                },
                 "list_of_speakers/1": {
                     "sequential_number": 1,
                     "content_object_id": "motion/1",
-                    "closed": False,
                     "meeting_id": 1,
                 },
-                "motion_state/1": {"motion_ids": [1]},
+                "list_of_speakers/2": {
+                    "sequential_number": 1,
+                    "content_object_id": "motion/2",
+                    "meeting_id": 2,
+                },
+                "list_of_speakers/3": {
+                    "sequential_number": 2,
+                    "content_object_id": "motion/3",
+                    "meeting_id": 2,
+                },
+                "list_of_speakers/4": {
+                    "sequential_number": 2,
+                    "content_object_id": "motion/4",
+                    "meeting_id": 1,
+                },
+                "motion_state/1": {"motion_ids": [1, 4], "meeting_id": 1},
+                "motion_state/2": {"motion_ids": [2, 3], "meeting_id": 2},
             }
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "meeting/3", {"motion_ids": [3], "name": "Test - Copy"}
+            "meeting/3", {"motion_ids": [5, 6], "name": "Test - Copy"}
         )
         self.assert_model_exists(
-            "motion/3", {"meeting_id": 3, "origin_id": None, "derived_motion_ids": None}
+            "motion/5",
+            {
+                "meeting_id": 3,
+                "origin_id": None,
+                "origin_meeting_id": None,
+                "derived_motion_ids": None,
+            },
         )
 
     def test_clone_with_underscore_attributes(self) -> None:

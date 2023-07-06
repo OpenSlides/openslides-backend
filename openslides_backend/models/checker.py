@@ -46,6 +46,14 @@ SCHEMA = fastjsonschema.compile(
     }
 )
 
+external_motion_fields = [
+    "origin_id",
+    "origin_meeting_id",
+    "derived_motion_ids",
+    "all_origin_ids",
+    "all_derived_motion_ids",
+]
+
 
 class CheckException(Exception):
     pass
