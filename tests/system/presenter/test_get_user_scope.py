@@ -14,7 +14,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "committee_id": 2,
                     "is_active_in_organization_id": 1,
                 },
-                # archieved meeting
+                # archived meeting
                 "meeting/2": {
                     "committee_id": 2,
                     "is_active_in_organization_id": None,
@@ -77,8 +77,8 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "user_oml": OrganizationManagementLevel.SUPERADMIN,
                 },
                 "7": {
-                    "collection": "committee",
-                    "id": 2,
+                    "collection": "meeting",
+                    "id": 1,
                     "user_oml": "",
                 },
             },

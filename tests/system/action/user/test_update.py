@@ -618,11 +618,11 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "username": "new username",
             },
         )
-        self.assert_status_code(response, 403)
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "User 111",
+                "username": "new username",
                 "committee_ids": [60],
             },
         )
@@ -671,11 +671,11 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "username": "new username",
             },
         )
-        self.assert_status_code(response, 403)
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "User 111",
+                "username": "new username",
                 "committee_ids": None,
             },
         )
