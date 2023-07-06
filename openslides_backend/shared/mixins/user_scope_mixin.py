@@ -67,7 +67,7 @@ class UserScopeMixin(BaseServiceProvider):
                 GetManyRequest(
                     "meeting",
                     list(meetings),
-                    ["committee_id"],
+                    ["committee_id", "is_active_in_organization_id"],
                 )
             ]
         ).get("meeting", {})
@@ -75,6 +75,7 @@ class UserScopeMixin(BaseServiceProvider):
         meetings_committee: Dict[int, int] = {
             meeting_id: meeting_data["committee_id"]
             for meeting_id, meeting_data in result.items()
+            if meeting_data.get("is_active_in_organization_id")
         }
         committees = committees_manager | set(meetings_committee.values())
         if len(meetings_committee) == 1 and len(committees) == 1:
