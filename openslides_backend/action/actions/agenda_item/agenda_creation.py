@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Type
 
 from ....models.models import AgendaItem
-from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...action import Action
 
@@ -79,7 +79,9 @@ class CreateActionWithAgendaItemMixin(Action):
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> List[Dict[str, Any]]:
         agenda_item_action_data = {
-            "content_object_id": f"{str(self.model.collection)}{KEYSEPARATOR}{instance['id']}",
+            "content_object_id": fqid_from_collection_and_id(
+                self.model.collection, instance["id"]
+            ),
         }
         for extra_field in agenda_creation_properties.keys():
             if extra_field == f"{AGENDA_PREFIX}create":
