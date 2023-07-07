@@ -597,8 +597,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         self,
     ) -> None:
         """
-        User belongs to one active and one archived meeting and is therefore in organization scope,
-        so a meeting admin cannot update him.
+        May update group A fields on committee scope. User belongs to 1 meeting in 1 committee
+        User is member of an archived meeting in an other committee, but this doesn't may affect the result.
         """
         self.permission_setup()
         self.create_meeting(base=4)
@@ -656,8 +656,8 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_perm_group_A_meeting_manage_user_archived_meeting(self) -> None:
         """
-        User belongs to one active and one archived meeting and is therefore in organization scope,
-        so a meeting admin cannot update him.
+        May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee
+        User is member of an archived meeting in an other committee, but this doesn't may affect the result.
         """
         self.permission_setup()
         self.create_meeting(base=4)

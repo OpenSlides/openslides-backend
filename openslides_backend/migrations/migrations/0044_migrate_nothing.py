@@ -1,13 +1,9 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional
 
 from datastore.migrations import (
     BaseEvent,
     BaseEventMigration,
-    CreateEvent,
-    DeleteFieldsEvent,
-    UpdateEvent,
 )
-from datastore.shared.util import collection_from_fqid
 
 
 class Migration(BaseEventMigration):
