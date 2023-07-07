@@ -1,14 +1,11 @@
 from typing import List, Optional
 
-from datastore.migrations import (
-    BaseEvent,
-    BaseEventMigration,
-)
+from datastore.migrations import BaseEvent, BaseEventMigration
 
 
 class Migration(BaseEventMigration):
     """
-    This migration does nothing but creating anew models collection
+    This migration does nothing, but creates a new models-table
     """
 
     target_migration_index = 45
