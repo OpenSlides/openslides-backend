@@ -993,6 +993,10 @@ meeting:
     type: boolean
     default: True
     restriction_mode: B
+  list_of_speakers_enable_point_of_order_categories:
+    type: boolean
+    default: False
+    restriction_mode: B
   list_of_speakers_enable_pro_contra_speech:
     type: boolean
     default: False
@@ -1422,6 +1426,11 @@ meeting:
   list_of_speakers_ids:
     type: relation-list
     to: list_of_speakers/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  point_of_order_category_ids:
+    type: relation-list
+    to: point_of_order_category/meeting_id
     on_delete: CASCADE
     restriction_mode: B
   speaker_ids:
@@ -2043,6 +2052,29 @@ list_of_speakers:
     required: true
     restriction_mode: A
 
+point_of_order_category:
+  id:
+    type: number
+    restriction_mode: A
+  text:
+    type: string
+    required: true
+    restriction_mode: A
+  rank:
+    type: number
+    required: true
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    to: meeting/point_of_order_category_ids
+    required: true
+    restriction_mode: A
+  speaker_ids:
+    type: relation-list
+    to: speaker/point_of_order_category_id
+    equal_fields: meeting_id
+    restriction_mode: A
+
 speaker:
   id:
     type: number
@@ -2084,6 +2116,11 @@ speaker:
     type: relation
     to: meeting_user/speaker_ids
     required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+  point_of_order_category_id:
+    type: relation
+    to: point_of_order_category/speaker_ids
     equal_fields: meeting_id
     restriction_mode: A
   meeting_id:

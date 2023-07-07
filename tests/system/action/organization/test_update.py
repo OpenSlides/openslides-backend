@@ -143,6 +143,60 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             "theme/2", {"organization_id": 1, "theme_for_organization_id": 1}
         )
 
+    def test_update_remove_saml_configuration(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "saml_enabled": True,
+                    "saml_attr_mapping": self.saml_attr_mapping,
+                    "saml_metadata_idp": dedent(
+                        """
+                    <md:EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+                        xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+                        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                        entityID="https://auth.digiv.de/auth/realms/demo">
+                        </md:IDPSSODescriptor>
+                    </md:EntityDescriptor>
+                    """
+                    ),
+                    "saml_metadata_sp": dedent(
+                        """
+                    <EntityDescriptor
+                    xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+                    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+                    xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                    entityID="http://localhost:9004/saml/metadata">
+                    </EntityDescriptor>
+                    """
+                    ),
+                    "saml_private_key": "private key dependency",
+                }
+            }
+        )
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "saml_enabled": False,
+                "saml_attr_mapping": None,
+                "saml_metadata_idp": "",
+                "saml_metadata_sp": None,
+                "saml_private_key": "",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            ONE_ORGANIZATION_FQID,
+            {
+                "name": "aBuwxoYU",
+                "saml_enabled": False,
+                "saml_attr_mapping": None,
+                "saml_metadata_idp": "",
+                "saml_metadata_sp": None,
+                "saml_private_key": "",
+            },
+        )
+
     def test_update_wrong_field(self) -> None:
         response = self.request(
             "organization.update", {"id": 1, "wrong_name": "testtest"}

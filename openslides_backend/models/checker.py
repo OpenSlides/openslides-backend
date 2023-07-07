@@ -56,6 +56,14 @@ NUMBER_STRING_JSON_SCHEMA = fastjsonschema.compile(
     }
 )
 
+external_motion_fields = [
+    "origin_id",
+    "origin_meeting_id",
+    "derived_motion_ids",
+    "all_origin_ids",
+    "all_derived_motion_ids",
+]
+
 
 class CheckException(Exception):
     pass
@@ -218,6 +226,7 @@ class Checker:
             "projector_countdown",
             "chat_group",
             "chat_message",
+            "point_of_order_category",
         ]
         if self.mode == "all":
             self.allowed_collections = [
