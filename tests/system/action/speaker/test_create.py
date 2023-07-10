@@ -21,48 +21,48 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "default_password": DEFAULT_PASSWORD,
                 "password": self.auth.hash(DEFAULT_PASSWORD),
-                "meeting_user_ids": [7],
+                "meeting_user_ids": [17],
             },
-            "meeting_user/7": {"meeting_id": 1, "user_id": 7},
+            "meeting_user/17": {"meeting_id": 1, "user_id": 7},
             "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 1},
         }
 
     def test_create(self) -> None:
         self.set_models(self.test_models)
         response = self.request(
-            "speaker.create", {"meeting_user_id": 7, "list_of_speakers_id": 23}
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "speaker/1",
             {
-                "meeting_user_id": 7,
+                "meeting_user_id": 17,
                 "list_of_speakers_id": 23,
                 "weight": 1,
             },
         )
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1]})
-        self.assert_model_exists("user/7", {"meeting_user_ids": [7]})
+        self.assert_model_exists("user/7", {"meeting_user_ids": [17]})
 
     def test_create_in_closed_los(self) -> None:
         self.test_models["list_of_speakers/23"]["closed"] = True
         self.set_models(self.test_models)
 
         response = self.request(
-            "speaker.create", {"meeting_user_id": 7, "list_of_speakers_id": 23}
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "speaker/1",
             {
-                "meeting_user_id": 7,
+                "meeting_user_id": 17,
                 "list_of_speakers_id": 23,
                 "weight": 1,
             },
         )
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1]})
-        self.assert_model_exists("user/7", {"meeting_user_ids": [7]})
-        self.assert_model_exists("meeting_user/7", {"speaker_ids": [1]})
+        self.assert_model_exists("user/7", {"meeting_user_ids": [17]})
+        self.assert_model_exists("meeting_user/17", {"speaker_ids": [1]})
 
     def test_create_oneself_in_closed_los(self) -> None:
         self.test_models["list_of_speakers/23"]["closed"] = True
@@ -78,7 +78,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.user_id = 7
         self.login(self.user_id)
         response = self.request(
-            "speaker.create", {"meeting_user_id": 7, "list_of_speakers_id": 23}
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 400)
         self.assertIn("The list of speakers is closed.", response.json["message"])
@@ -98,7 +98,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.user_id = 7
         self.login(self.user_id)
         response = self.request(
-            "speaker.create", {"meeting_user_id": 7, "list_of_speakers_id": 23}
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 200)
 
@@ -124,14 +124,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 **self.test_models,
                 "speaker/42": {
-                    "meeting_user_id": 7,
+                    "meeting_user_id": 17,
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
                 },
             }
         )
         response = self.request(
-            "speaker.create", {"meeting_user_id": 7, "list_of_speakers_id": 23}
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -147,15 +147,15 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "list_of_speakers/23": {"meeting_id": 1},
                 "user/2": {"username": "another user"},
-                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
-                "meeting_user/2": {"meeting_id": 1, "user_id": 2},
+                "meeting_user/11": {"meeting_id": 1, "user_id": 1},
+                "meeting_user/12": {"meeting_id": 1, "user_id": 2},
             }
         )
         response = self.request_multi(
             "speaker.create",
             [
-                {"meeting_user_id": 1, "list_of_speakers_id": 23},
-                {"meeting_user_id": 2, "list_of_speakers_id": 23},
+                {"meeting_user_id": 11, "list_of_speakers_id": 23},
+                {"meeting_user_id": 12, "list_of_speakers_id": 23},
             ],
         )
         self.assert_status_code(response, 400)
@@ -173,15 +173,15 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "user/7": {"meeting_ids": [7844]},
                 "user/8": {"meeting_ids": [7844]},
                 "user/9": {"meeting_ids": [7844]},
-                "meeting_user/7": {
+                "meeting_user/17": {
                     "meeting_id": 7844,
                     "user_id": 7,
                     "speaker_ids": [1],
                 },
-                "meeting_user/8": {"meeting_id": 7844, "user_id": 8},
-                "meeting_user/9": {"meeting_id": 7844, "user_id": 9},
+                "meeting_user/18": {"meeting_id": 7844, "user_id": 8},
+                "meeting_user/19": {"meeting_id": 7844, "user_id": 9},
                 "speaker/1": {
-                    "meeting_user_id": 7,
+                    "meeting_user_id": 17,
                     "list_of_speakers_id": 23,
                     "weight": 10000,
                 },
@@ -193,13 +193,13 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 {
                     "action": "speaker.create",
                     "data": [
-                        {"meeting_user_id": 8, "list_of_speakers_id": 23},
+                        {"meeting_user_id": 18, "list_of_speakers_id": 23},
                     ],
                 },
                 {
                     "action": "speaker.create",
                     "data": [
-                        {"meeting_user_id": 9, "list_of_speakers_id": 23},
+                        {"meeting_user_id": 19, "list_of_speakers_id": 23},
                     ],
                 },
             ],
@@ -220,11 +220,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "user/9": {
                     "username": "user9",
-                    "meeting_user_ids": [9],
+                    "meeting_user_ids": [19],
                     "is_present_in_meeting_ids": [7844],
                     "meeting_ids": [7844],
                 },
-                "meeting_user/9": {
+                "meeting_user/19": {
                     "meeting_id": 7844,
                     "user_id": 9,
                     "speaker_ids": [3],
@@ -235,7 +235,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         response = self.request(
             "speaker.create",
             {
-                "meeting_user_id": 9,
+                "meeting_user_id": 19,
                 "list_of_speakers_id": 23,
             },
         )
@@ -252,10 +252,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
                 "user/9": {
                     "username": "user9",
-                    "meeting_user_ids": [9],
+                    "meeting_user_ids": [19],
                     "meeting_ids": [7844],
                 },
-                "meeting_user/9": {
+                "meeting_user/19": {
                     "meeting_id": 7844,
                     "user_id": 9,
                     "speaker_ids": [3],
@@ -266,7 +266,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         response = self.request(
             "speaker.create",
             {
-                "meeting_user_id": 9,
+                "meeting_user_id": 19,
                 "list_of_speakers_id": 23,
             },
         )
@@ -285,14 +285,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [7844]},
-                "meeting_user/1": {
+                "meeting_user/11": {
                     "meeting_id": 7844,
                     "user_id": 1,
                     "speaker_ids": [1],
                 },
                 "user/7": {"username": "talking", "meeting_ids": [7844]},
                 "speaker/1": {
-                    "meeting_user_id": 7,
+                    "meeting_user_id": 17,
                     "list_of_speakers_id": 23,
                     "begin_time": 100000,
                     "weight": 5,
@@ -302,12 +302,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+            "speaker.create", {"meeting_user_id": 11, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "speaker/2",
-            {"meeting_user_id": 1, "weight": 1},
+            {"meeting_user_id": 11, "weight": 1},
         )
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2]})
 
@@ -321,47 +321,47 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "user/7": {
                     "username": "talking",
                     "meeting_ids": [7844],
-                    "meeting_user_ids": [7],
+                    "meeting_user_ids": [17],
                 },
                 "user/8": {
                     "username": "waiting",
                     "meeting_ids": [7844],
-                    "meeting_user_ids": [8],
+                    "meeting_user_ids": [18],
                 },
                 "user/1": {
-                    "meeting_user_ids": [1],
+                    "meeting_user_ids": [11],
                     "meeting_ids": [7844],
                 },
-                "meeting_user/1": {
+                "meeting_user/11": {
                     "meeting_id": 7844,
                     "user_id": 1,
                     "speaker_ids": [3],
                 },
-                "meeting_user/7": {
+                "meeting_user/17": {
                     "meeting_id": 7844,
                     "user_id": 7,
                     "speaker_ids": [1],
                 },
-                "meeting_user/8": {
+                "meeting_user/18": {
                     "meeting_id": 7844,
                     "user_id": 8,
                     "speaker_ids": [2],
                 },
                 "speaker/1": {
-                    "meeting_user_id": 7,
+                    "meeting_user_id": 17,
                     "list_of_speakers_id": 23,
                     "begin_time": 100000,
                     "weight": 5,
                     "meeting_id": 7844,
                 },
                 "speaker/2": {
-                    "meeting_user_id": 8,
+                    "meeting_user_id": 18,
                     "list_of_speakers_id": 23,
                     "weight": 1,
                     "meeting_id": 7844,
                 },
                 "speaker/3": {
-                    "meeting_user_id": 1,
+                    "meeting_user_id": 11,
                     "list_of_speakers_id": 23,
                     "point_of_order": True,
                     "weight": 2,
@@ -371,16 +371,16 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+            "speaker.create", {"meeting_user_id": 11, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "speaker/3",
-            {"meeting_user_id": 1, "point_of_order": True, "weight": 2},
+            {"meeting_user_id": 11, "point_of_order": True, "weight": 2},
         )
         self.assert_model_exists(
             "speaker/4",
-            {"meeting_user_id": 1, "point_of_order": None, "weight": 3},
+            {"meeting_user_id": 11, "point_of_order": None, "weight": 3},
         )
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2, 3, 4]})
 
@@ -390,12 +390,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "meeting/2": {"is_active_in_organization_id": 1},
                 "user/7": {"meeting_ids": [1]},
-                "meeting_user/7": {"meeting_id": 1, "user_id": 7},
+                "meeting_user/17": {"meeting_id": 1, "user_id": 7},
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 2},
             }
         )
         response = self.request(
-            "speaker.create", {"meeting_user_id": 7, "list_of_speakers_id": 23}
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 400)
 
@@ -403,7 +403,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request(
             "speaker.create",
-            {"meeting_user_id": 7, "list_of_speakers_id": 23, "note": "blablabla"},
+            {"meeting_user_id": 17, "list_of_speakers_id": 23, "note": "blablabla"},
         )
         self.assert_status_code(response, 400)
         assert (
@@ -415,14 +415,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.test_models,
             "speaker.create",
-            {"meeting_user_id": 7, "list_of_speakers_id": 23},
+            {"meeting_user_id": 17, "list_of_speakers_id": 23},
         )
 
     def test_create_permissions(self) -> None:
         self.base_permission_test(
             self.test_models,
             "speaker.create",
-            {"meeting_user_id": 7, "list_of_speakers_id": 23},
+            {"meeting_user_id": 17, "list_of_speakers_id": 23},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
 
@@ -434,7 +434,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
         response = self.request(
-            "speaker.create", {"meeting_user_id": 7, "list_of_speakers_id": 23}
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 200)
 
@@ -461,7 +461,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         response = self.request(
             "speaker.create",
             {
-                "meeting_user_id": 7,
+                "meeting_user_id": 17,
                 "list_of_speakers_id": 23,
                 "speech_state": speech_state,
             },
@@ -517,7 +517,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
         response = self.request(
             "speaker.create",
-            {"user_id": 7, "list_of_speakers_id": 23, "point_of_order": True},
+            {"meeting_user_id": 17, "list_of_speakers_id": 23, "point_of_order": True},
         )
         self.assert_status_code(response, 400)
         assert (
@@ -540,7 +540,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         response = self.request(
             "speaker.create",
             {
-                "user_id": 7,
+                "meeting_user_id": 17,
                 "list_of_speakers_id": 23,
                 "point_of_order": True,
                 "point_of_order_category_id": 1,
@@ -569,7 +569,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
         response = self.request(
             "speaker.create",
-            {"user_id": 7, "list_of_speakers_id": 23, "point_of_order_category_id": 1},
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "point_of_order_category_id": 1,
+            },
         )
         self.assert_status_code(response, 400)
         assert (
@@ -586,10 +590,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "list_of_speakers_enable_point_of_order_categories": True,
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "point_of_order_category_ids": [2, 3, 5],
+                    "meeting_user_ids": [11],
                 },
                 "user/1": {
                     "meeting_ids": [1],
                 },
+                "meeting_user/11": {"user_id": 1, "meeting_id": 1},
                 "point_of_order_category/2": {
                     "rank": 2,
                     "meeting_id": 1,
@@ -629,24 +635,42 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
                 },
-                "list_of_speakers/23": {"speaker_ids": [1, 2, 3, 4], "meeting_id": 1},
+                "speaker/5": {
+                    "begin_time": 100000,
+                    "weight": 2,
+                    "point_of_order": True,
+                    "point_of_order_category_id": 5,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {
+                    "speaker_ids": [1, 2, 3, 4, 5],
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
             "speaker.create",
             {
-                "user_id": 1,
+                "meeting_user_id": 11,
                 "list_of_speakers_id": 23,
                 "point_of_order": True,
                 "point_of_order_category_id": 3,
+                "note": "this is my note",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("speaker/1", {"weight": 1})
         self.assert_model_exists("speaker/2", {"weight": 2})
         self.assert_model_exists(
-            "speaker/5",
-            {"weight": 3, "point_of_order_category_id": 3, "point_of_order": True},
+            "speaker/6",
+            {
+                "weight": 3,
+                "point_of_order_category_id": 3,
+                "point_of_order": True,
+                "note": "this is my note",
+            },
         )
         self.assert_model_exists("speaker/3", {"weight": 4})
         self.assert_model_exists("speaker/4", {"weight": 5})
+        self.assert_model_exists("speaker/5", {"weight": 2})
