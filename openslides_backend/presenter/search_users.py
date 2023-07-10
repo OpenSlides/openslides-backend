@@ -21,7 +21,7 @@ from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
 
-search_fields = [["username"], ["first_name", "last_name", "email"]]
+search_fields = [["username"], ["saml_id"], ["first_name", "last_name", "email"]]
 all_fields = [field for fields in search_fields for field in fields]
 
 search_users_schema = fastjsonschema.compile(
@@ -100,8 +100,10 @@ class SearchUsers(BasePresenter):
                     if all(
                         (instance.get(field) or "").lower() == search[field]
                         for field in search_def
-                    ):
+                    ) and any(search[field] for field in search_def):
                         current_result.append(instance)
+                        break
+                    elif any(search[field] for field in search_def):
                         break
             result.append(current_result)
         return result
