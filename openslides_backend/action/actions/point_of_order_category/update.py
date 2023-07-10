@@ -15,4 +15,4 @@ class PointOfOrderCategoryUpdate(UpdateAction):
     schema = DefaultSchema(PointOfOrderCategory()).get_update_schema(
         optional_properties=["text", "rank"]
     )
-    permission = Permissions.ListOfSpeakers.CAN_MANAGE
+    permission = Permissions.Meeting.CAN_MANAGE_SETTINGS

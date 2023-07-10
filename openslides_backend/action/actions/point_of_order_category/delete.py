@@ -13,4 +13,4 @@ class PointOfOrderCategoryDelete(DeleteAction):
 
     model = PointOfOrderCategory()
     schema = DefaultSchema(PointOfOrderCategory()).get_delete_schema()
-    permission = Permissions.ListOfSpeakers.CAN_MANAGE
+    permission = Permissions.Meeting.CAN_MANAGE_SETTINGS
