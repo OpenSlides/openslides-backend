@@ -46,5 +46,5 @@ class PointOfOrderCategoryDelete(BaseActionTestCase):
             self.permission_test_models,
             "point_of_order_category.delete",
             {"id": 53},
-            Permissions.ListOfSpeakers.CAN_MANAGE,
+            Permissions.Meeting.CAN_MANAGE_SETTINGS,
         )

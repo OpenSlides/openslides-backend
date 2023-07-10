@@ -15,4 +15,4 @@ class PointOfOrderCategoryCreate(CreateAction):
     schema = DefaultSchema(PointOfOrderCategory()).get_create_schema(
         required_properties=["text", "rank", "meeting_id"],
     )
-    permission = Permissions.ListOfSpeakers.CAN_MANAGE
+    permission = Permissions.Meeting.CAN_MANAGE_SETTINGS
