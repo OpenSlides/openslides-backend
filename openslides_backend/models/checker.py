@@ -216,6 +216,7 @@ class Checker:
             "projector_countdown",
             "chat_group",
             "chat_message",
+            "point_of_order_category",
         ]
         if self.mode == "all":
             self.allowed_collections = [
