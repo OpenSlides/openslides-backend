@@ -90,14 +90,10 @@ class UserSaveSamlAccount(
         except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(exception.message)
 
-    def prepare_action_data(self, action_data: ActionData) -> ActionData:
-        """Necessary to prevent id reservation in CreateAction's prepare_action_data"""
-        return action_data
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        pass
-
-    def base_update_instance(self, instance_old: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_fields(self, instance_old: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Transforms the payload fields into model fields, removes the possible array-wrapped format
+        """
         instance: Dict[str, Any] = dict()
         for model_field, payload_field in self.saml_attr_mapping.items():
             if payload_field in instance_old and model_field in allowed_user_fields:
@@ -108,6 +104,17 @@ class UserSaveSamlAccount(
                 )
                 if value not in (None, []):
                     instance[model_field] = value
+
+        return super().validate_fields(instance)
+
+    def prepare_action_data(self, action_data: ActionData) -> ActionData:
+        """Necessary to prevent id reservation in CreateAction's prepare_action_data"""
+        return action_data
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        pass
+
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         users = self.datastore.filter(
             "user",
             FilterOperator("saml_id", "=", instance["saml_id"]),
@@ -118,25 +125,13 @@ class UserSaveSamlAccount(
             instance["id"] = self.user["id"]
         elif len(users) == 0:
             instance["id"] = self.datastore.reserve_ids(self.model.collection, 1)[0]
-            instance["can_change_own_password"] = False
-            instance["organization_id"] = ONE_ORGANIZATION_ID
-            instance["username"] = self.generate_usernames(
-                [instance.get("saml_id", "")]
-            )[0]
-            instance["meta_new"] = True
             instance = self.set_defaults(instance)
         else:
             ActionException(
                 f"More than one existing user found in database with saml_id {instance['saml_id']}"
             )
 
-        instance = self.validate_fields(instance)
-        instance = self.update_instance(instance)
-        self.apply_instance(instance)
-        self.validate_relation_fields(instance)
-        # Return id of user anyway
-        self.results.append(self.create_action_result_element(instance))
-        return instance
+        return UpdateAction.base_update_instance(self, instance)
 
     def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         """
@@ -154,3 +149,14 @@ class UserSaveSamlAccount(
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
         return {"user_id": instance["id"]}
+
+    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if "is_active" not in instance:
+            instance["is_active"] = True
+        if "is_physical_person" not in instance:
+            instance["is_physical_person"] = True
+        instance["can_change_own_password"] = False
+        instance["organization_id"] = ONE_ORGANIZATION_ID
+        instance["username"] = self.generate_usernames([instance.get("saml_id", "")])[0]
+        instance["meta_new"] = True
+        return super().set_defaults(instance)

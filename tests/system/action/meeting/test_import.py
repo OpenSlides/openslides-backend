@@ -404,7 +404,7 @@ class MeetingImport(BaseActionTestCase):
             "number_value": 1,
             "sequential_number": 2,
             "text": "<p>l&ouml;mk</p>",
-            "amendment_paragraph": {},
+            "amendment_paragraphs": {},
             "modified_final_version": "",
             "reason": "",
             "category_weight": 10000,
@@ -2141,7 +2141,7 @@ class MeetingImport(BaseActionTestCase):
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
-        assert counter.calls == 3
+        assert counter.calls == 5
         self.assert_model_exists("user/1", {"meeting_user_ids": [2]})
         self.assert_model_exists(
             "meeting_user/2", {"user_id": 1, "meeting_id": 2, "group_ids": [2]}
@@ -2177,7 +2177,7 @@ class MeetingImport(BaseActionTestCase):
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
 
-    def test_import_amendment_paragraph(self) -> None:
+    def test_import_amendment_paragraphs(self) -> None:
         request_data = self.create_request_data(
             {
                 "motion": {
@@ -2202,7 +2202,7 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
-        request_data["meeting"]["motion"]["1"]["amendment_paragraph"] = {
+        request_data["meeting"]["motion"]["1"]["amendment_paragraphs"] = {
             "0": None,
             "1": "<it>test</it>",
             "2": "</>broken",
@@ -2211,7 +2211,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "motion/2",
-            {"amendment_paragraph": {"1": "&lt;it&gt;test&lt;/it&gt;", "2": "broken"}},
+            {"amendment_paragraphs": {"1": "&lt;it&gt;test&lt;/it&gt;", "2": "broken"}},
         )
 
     def test_import_with_wrong_decimal(self) -> None:

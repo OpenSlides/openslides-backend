@@ -104,5 +104,5 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
             self.permission_test_models,
             "motion.reset_recommendation",
             {"id": 22},
-            Permissions.Motion.CAN_MANAGE,
+            Permissions.Motion.CAN_MANAGE_METADATA,
         )

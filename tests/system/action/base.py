@@ -281,7 +281,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 GetManyRequest(
                     "group",
                     group_ids,
-                    ["id", "meeting_id", "user_ids", "meeting_user_ids"],
+                    ["id", "meeting_id", "meeting_user_ids"],
                 )
             ],
             lock_result=False,
@@ -395,6 +395,8 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
+        if models:
+            self.set_models(models)
         self.set_user_groups(self.user_id, [3])
         if permission:
             if type(permission) == OrganizationManagementLevel:
@@ -403,8 +405,6 @@ class BaseActionTestCase(BaseSystemTestCase):
                 )
             else:
                 self.set_group_permissions(3, [cast(Permission, permission)])
-        if models:
-            self.set_models(models)
         response = self.request(action, action_data)
         if permission:
             self.assert_status_code(response, 200)

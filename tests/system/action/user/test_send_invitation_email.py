@@ -1,5 +1,6 @@
 from time import time
 
+from openslides_backend.action.actions.user.send_invitation_email import EmailErrorType
 from openslides_backend.action.mixins.send_email_mixin import EmailSettings
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
@@ -173,6 +174,9 @@ class SendInvitationMail(BaseActionTestCase):
 
         self.assertEqual(response.json["results"][0][1]["sent"], False)
         self.assertEqual(response.json["results"][0][1]["recipient_user_id"], 3)
+        self.assertEqual(
+            response.json["results"][0][1]["type"], EmailErrorType.USER_ERROR
+        )
         self.assertIn(
             "'Testuser 3 no email' has no email address.",
             response.json["results"][0][1]["message"],
@@ -180,6 +184,9 @@ class SendInvitationMail(BaseActionTestCase):
 
         self.assertEqual(response.json["results"][1][0]["sent"], False)
         self.assertEqual(response.json["results"][1][0]["recipient_user_id"], 4)
+        self.assertEqual(
+            response.json["results"][1][0]["type"], EmailErrorType.USER_ERROR
+        )
         self.assertIn(
             "'Testuser 4 falsy email' has no valid email address.",
             response.json["results"][1][0]["message"],
@@ -187,6 +194,9 @@ class SendInvitationMail(BaseActionTestCase):
 
         self.assertEqual(response.json["results"][1][1]["sent"], False)
         self.assertEqual(response.json["results"][1][1]["recipient_user_id"], 5)
+        self.assertEqual(
+            response.json["results"][1][1]["type"], EmailErrorType.USER_ERROR
+        )
         self.assertIn(
             "'Testuser 5 wrong meeting' does not belong to meeting/2",
             response.json["results"][1][1]["message"],
@@ -194,6 +204,9 @@ class SendInvitationMail(BaseActionTestCase):
 
         self.assertEqual(response.json["results"][1][2]["sent"], False)
         self.assertEqual(response.json["results"][1][2]["recipient_user_id"], 6)
+        self.assertEqual(
+            response.json["results"][1][2]["type"], EmailErrorType.OTHER_ERROR
+        )
         self.assertIn(
             "JsonSchema: data.meeting_id must be integer",
             response.json["results"][1][2]["message"],
@@ -201,6 +214,9 @@ class SendInvitationMail(BaseActionTestCase):
 
         self.assertEqual(response.json["results"][1][3]["sent"], False)
         self.assertEqual(response.json["results"][1][3]["recipient_user_id"], 7)
+        self.assertEqual(
+            response.json["results"][1][3]["type"], EmailErrorType.CONFIGURATION_ERROR
+        )
         self.assertIn(
             "SMTPRecipientsRefused: {'recipient7_create_error551@example.com': (551, b'invalid eMail address from server')}",
             response.json["results"][1][3]["message"],
@@ -209,6 +225,9 @@ class SendInvitationMail(BaseActionTestCase):
         self.assert_model_not_exists("user/8")
         self.assertEqual(response.json["results"][1][4]["sent"], False)
         self.assertEqual(response.json["results"][1][4]["recipient_user_id"], 8)
+        self.assertEqual(
+            response.json["results"][1][4]["type"], EmailErrorType.OTHER_ERROR
+        )
         self.assertIn(
             "DatastoreException:  Model 'user/8' does not exist.",
             response.json["results"][1][4]["message"],
@@ -225,6 +244,9 @@ class SendInvitationMail(BaseActionTestCase):
                 {},
             )
         self.assert_status_code(response, 200)
+        self.assertEqual(
+            response.json["results"][0][0]["type"], EmailErrorType.CONFIGURATION_ERROR
+        )
         self.assertIn(
             "SMTPAuthenticationError: (535, b'5.7.8 Authentication credentials invalid')",
             response.json["results"][0][0]["message"],
@@ -241,6 +263,9 @@ class SendInvitationMail(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
+        self.assertEqual(
+            response.json["results"][0][0]["type"], EmailErrorType.CONFIGURATION_ERROR
+        )
         self.assertIn(
             f"SMTPSenderRefused: (530, b'5.7.0 Authentication required', '{EmailSettings.default_from_email}')",
             response.json["results"][0][0]["message"],
@@ -256,6 +281,9 @@ class SendInvitationMail(BaseActionTestCase):
                 {},
             )
         self.assert_status_code(response, 200)
+        self.assertEqual(
+            response.json["results"][0][0]["type"], EmailErrorType.CONFIGURATION_ERROR
+        )
         self.assertIn(
             "ConnectionRefusedError: [Errno 111] Connection refused",
             response.json["results"][0][0]["message"],
@@ -273,6 +301,9 @@ class SendInvitationMail(BaseActionTestCase):
                 {},
             )
         self.assert_status_code(response, 200)
+        self.assertEqual(
+            response.json["results"][0][0]["type"], EmailErrorType.CONFIGURATION_ERROR
+        )
         self.assertIn(
             "SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate",
             response.json["results"][0][0]["message"],
@@ -337,6 +368,9 @@ class SendInvitationMail(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         self.assertEqual(response.json["results"][0][0]["sent"], False)
+        self.assertEqual(
+            response.json["results"][0][0]["type"], EmailErrorType.CONFIGURATION_ERROR
+        )
         self.assertEqual(len(handler.emails), 0)
         self.assertIn(
             "email wrong_sender@email is not a valid sender email address.",
@@ -383,6 +417,9 @@ class SendInvitationMail(BaseActionTestCase):
         self.assertEqual(response.json["results"][0][0]["sent"], False)
         self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 3)
         self.assertEqual(response.json["results"][0][0]["recipient_meeting_id"], 1)
+        self.assertEqual(
+            response.json["results"][0][0]["type"], EmailErrorType.SETTINGS_ERROR
+        )
         self.assertIn(
             "Invalid characters in the sender name configuration of meeting 'annual general meeting', forbidden characters: '[', ']', '\\'.",
             response.json["results"][0][0]["message"],
@@ -425,6 +462,9 @@ class SendInvitationMail(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         self.assertEqual(response.json["results"][0][0]["sent"], False)
+        self.assertEqual(
+            response.json["results"][0][0]["type"], EmailErrorType.SETTINGS_ERROR
+        )
         self.assertIn(
             "The given reply_to address 'reply@example' is not valid.",
             response.json["results"][0][0]["message"],
@@ -480,6 +520,9 @@ class SendInvitationMail(BaseActionTestCase):
         self.assertEqual(response.json["results"][0][1]["sent"], False)
         self.assertEqual(response.json["results"][0][1]["recipient_user_id"], 2)
         self.assertEqual(response.json["results"][0][1]["recipient_meeting_id"], 4)
+        self.assertEqual(
+            response.json["results"][0][1]["type"], EmailErrorType.USER_ERROR
+        )
         self.assertIn(
             "Missing Permission: user.can_manage",
             response.json["results"][0][1]["message"],
@@ -634,7 +677,7 @@ class SendInvitationMail(BaseActionTestCase):
             handler.emails[0]["data"],
         )
 
-    def test_correct_organization_send_no_permission(self) -> None:
+    def test_organization_send_no_permission(self) -> None:
         self.set_models(
             {
                 "user/1": {"organization_management_level": None},
@@ -656,6 +699,9 @@ class SendInvitationMail(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         self.assertEqual(response.json["results"][0][0]["sent"], False)
+        self.assertEqual(
+            response.json["results"][0][0]["type"], EmailErrorType.USER_ERROR
+        )
         self.assertEqual(
             response.json["results"][0][0]["message"],
             "Missing OrganizationManagementLevel: can_manage_users Mail 1 from 1",

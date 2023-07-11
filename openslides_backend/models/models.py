@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "1cec4f0fac1dcc4259519eaf29f20e79"
+MODELS_YML_CHECKSUM = "361ec1c214a68044cb0f51e6ea71311b"
 
 
 class Organization(Model):
@@ -17,6 +17,7 @@ class Organization(Model):
     privacy_policy = fields.TextField()
     login_text = fields.TextField()
     reset_password_verbose_errors = fields.BooleanField()
+    genders = fields.CharArrayField(default=["male", "female", "diverse", "non-binary"])
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
@@ -93,9 +94,7 @@ class User(Model):
     password = fields.CharField()
     default_password = fields.CharField()
     can_change_own_password = fields.BooleanField(default=True)
-    gender = fields.CharField(
-        constraints={"enum": ["male", "female", "diverse", "non-binary"]}
-    )
+    gender = fields.CharField()
     email = fields.CharField()
     default_number = fields.CharField()
     default_structure_level = fields.CharField()
@@ -261,6 +260,7 @@ class Committee(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     description = fields.HTMLStrictField()
+    external_id = fields.CharField(constraints={"description": "unique"})
     meeting_ids = fields.RelationListField(
         to={"meeting": "committee_id"}, on_delete=fields.OnDelete.PROTECT
     )
@@ -293,6 +293,7 @@ class Meeting(Model):
     verbose_name = "meeting"
 
     id = fields.IntegerField()
+    external_id = fields.CharField(constraints={"description": "unique in committee"})
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
     name = fields.CharField(
@@ -402,6 +403,9 @@ class Meeting(Model):
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
+    list_of_speakers_enable_point_of_order_categories = fields.BooleanField(
+        default=False
+    )
     list_of_speakers_enable_pro_contra_speech = fields.BooleanField(default=False)
     list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)
     list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
@@ -577,6 +581,9 @@ class Meeting(Model):
     list_of_speakers_ids = fields.RelationListField(
         to={"list_of_speakers": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
+    point_of_order_category_ids = fields.RelationListField(
+        to={"point_of_order_category": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
     speaker_ids = fields.RelationListField(
         to={"speaker": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -723,14 +730,14 @@ class Meeting(Model):
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    default_projector_agenda_all_items_ids = fields.RelationListField(
+    default_projector_agenda_item_list_ids = fields.RelationListField(
         to={
-            "projector": "used_as_default_projector_for_agenda_all_items_in_meeting_id"
+            "projector": "used_as_default_projector_for_agenda_item_list_in_meeting_id"
         },
         required=True,
     )
-    default_projector_topics_ids = fields.RelationListField(
-        to={"projector": "used_as_default_projector_for_topics_in_meeting_id"},
+    default_projector_topic_ids = fields.RelationListField(
+        to={"projector": "used_as_default_projector_for_topic_in_meeting_id"},
         required=True,
     )
     default_projector_list_of_speakers_ids = fields.RelationListField(
@@ -765,16 +772,12 @@ class Meeting(Model):
         to={"projector": "used_as_default_projector_for_mediafile_in_meeting_id"},
         required=True,
     )
-    default_projector_projector_message_ids = fields.RelationListField(
-        to={
-            "projector": "used_as_default_projector_for_projector_message_in_meeting_id"
-        },
+    default_projector_message_ids = fields.RelationListField(
+        to={"projector": "used_as_default_projector_for_message_in_meeting_id"},
         required=True,
     )
-    default_projector_projector_countdowns_ids = fields.RelationListField(
-        to={
-            "projector": "used_as_default_projector_for_projector_countdowns_in_meeting_id"
-        },
+    default_projector_countdown_ids = fields.RelationListField(
+        to={"projector": "used_as_default_projector_for_countdown_in_meeting_id"},
         required=True,
     )
     default_projector_assignment_poll_ids = fields.RelationListField(
@@ -815,8 +818,8 @@ class Meeting(Model):
         "projector_h2",
     )
     DEFAULT_PROJECTOR_ENUM = (
-        "agenda_all_items",
-        "topics",
+        "agenda_item_list",
+        "topic",
         "list_of_speakers",
         "current_list_of_speakers",
         "motion",
@@ -824,8 +827,8 @@ class Meeting(Model):
         "motion_block",
         "assignment",
         "mediafile",
-        "projector_message",
-        "projector_countdowns",
+        "message",
+        "countdown",
         "assignment_poll",
         "motion_poll",
         "poll",
@@ -837,6 +840,7 @@ class Group(Model):
     verbose_name = "group"
 
     id = fields.IntegerField()
+    external_id = fields.CharField(constraints={"description": "unique in meeting"})
     name = fields.CharField(required=True)
     permissions = fields.CharArrayField(
         in_array_constraints={
@@ -1057,6 +1061,21 @@ class ListOfSpeakers(Model):
     )
 
 
+class PointOfOrderCategory(Model):
+    collection = "point_of_order_category"
+    verbose_name = "point of order category"
+
+    id = fields.IntegerField()
+    text = fields.CharField(required=True)
+    rank = fields.IntegerField(required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "point_of_order_category_ids"}, required=True
+    )
+    speaker_ids = fields.RelationListField(
+        to={"speaker": "point_of_order_category_id"}, equal_fields="meeting_id"
+    )
+
+
 class Speaker(Model):
     collection = "speaker"
     verbose_name = "speaker"
@@ -1075,6 +1094,9 @@ class Speaker(Model):
     )
     meeting_user_id = fields.RelationField(
         to={"meeting_user": "speaker_ids"}, required=True, equal_fields="meeting_id"
+    )
+    point_of_order_category_id = fields.RelationField(
+        to={"point_of_order_category": "speaker_ids"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(to={"meeting": "speaker_ids"}, required=True)
 
@@ -1145,15 +1167,16 @@ class Motion(Model):
     )
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
-    amendment_paragraph = fields.JSONField()
+    amendment_paragraphs = fields.JSONField()
     modified_final_version = fields.HTMLStrictField()
     reason = fields.HTMLStrictField()
     category_weight = fields.IntegerField(default=10000)
     state_extension = fields.CharField()
     recommendation_extension = fields.CharField()
     sort_weight = fields.IntegerField(default=10000)
-    created = fields.TimestampField(read_only=True)
+    created = fields.TimestampField()
     last_modified = fields.TimestampField(read_only=True)
+    workflow_timestamp = fields.TimestampField(read_only=True)
     start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
     lead_motion_id = fields.RelationField(
@@ -1457,7 +1480,7 @@ class MotionState(Model):
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
     allow_motion_forwarding = fields.BooleanField()
-    set_created_timestamp = fields.BooleanField()
+    set_workflow_timestamp = fields.BooleanField()
     submitter_withdraw_state_id = fields.RelationField(
         to={"motion_state": "submitter_withdraw_back_ids"},
         equal_fields=["meeting_id", "workflow_id"],
@@ -1962,11 +1985,11 @@ class Projector(Model):
     used_as_reference_projector_meeting_id = fields.RelationField(
         to={"meeting": "reference_projector_id"}
     )
-    used_as_default_projector_for_agenda_all_items_in_meeting_id = fields.RelationField(
-        to={"meeting": "default_projector_agenda_all_items_ids"}
+    used_as_default_projector_for_agenda_item_list_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_agenda_item_list_ids"}
     )
-    used_as_default_projector_for_topics_in_meeting_id = fields.RelationField(
-        to={"meeting": "default_projector_topics_ids"}
+    used_as_default_projector_for_topic_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_topic_ids"}
     )
     used_as_default_projector_for_list_of_speakers_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_list_of_speakers_ids"}
@@ -1991,13 +2014,11 @@ class Projector(Model):
     used_as_default_projector_for_mediafile_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_mediafile_ids"}
     )
-    used_as_default_projector_for_projector_message_in_meeting_id = (
-        fields.RelationField(to={"meeting": "default_projector_projector_message_ids"})
+    used_as_default_projector_for_message_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_message_ids"}
     )
-    used_as_default_projector_for_projector_countdowns_in_meeting_id = (
-        fields.RelationField(
-            to={"meeting": "default_projector_projector_countdowns_ids"}
-        )
+    used_as_default_projector_for_countdown_in_meeting_id = fields.RelationField(
+        to={"meeting": "default_projector_countdown_ids"}
     )
     used_as_default_projector_for_assignment_poll_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_assignment_poll_ids"}

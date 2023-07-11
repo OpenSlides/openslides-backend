@@ -8,10 +8,11 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....presenter.search_users import SearchUsers
+from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
-from ....shared.schema import decimal_schema, id_list_schema, required_id_schema
+from ....shared.schema import decimal_schema, id_list_schema, optional_id_schema
 from ..meeting_user.set_data import MeetingUserSetData
 
 
@@ -77,7 +78,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "structure_level": {"type": "string"},
         "about_me": {"type": "string"},
         "vote_weight": decimal_schema,
-        "vote_delegated_to_id": required_id_schema,
+        "vote_delegated_to_id": optional_id_schema,
         "vote_delegations_from_ids": id_list_schema,
         "group_ids": id_list_schema,
     }
@@ -233,3 +234,13 @@ class DuplicateCheckMixin(Action):
                 entry["username"] for entry in self.users_in_double_lists[payload_index]
             ]
         return []
+
+
+def check_gender_helper(datastore: DatastoreService, instance: Dict[str, Any]) -> None:
+    if instance.get("gender"):
+        organization = datastore.get(ONE_ORGANIZATION_FQID, ["genders"])
+        if organization.get("genders"):
+            if not instance["gender"] in organization["genders"]:
+                raise ActionException(
+                    f"Gender '{instance['gender']}' is not in the allowed gender list."
+                )

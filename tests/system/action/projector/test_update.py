@@ -106,19 +106,19 @@ class ProjectorUpdate(BaseActionTestCase):
             "projector.update",
             {
                 "id": 1,
-                "used_as_default_projector_for_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topic_in_meeting_id": 222,
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "projector/1",
             {
-                "used_as_default_projector_for_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topic_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(
             "meeting/222",
-            {"default_projector_topics_ids": [1]},
+            {"default_projector_topic_ids": [1]},
         )
 
     def test_update_add_used_as_default_projector_in_meeting_id(self) -> None:
@@ -127,13 +127,13 @@ class ProjectorUpdate(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "projector_ids": [1],
-                    "default_projector_topics_ids": [1],
+                    "default_projector_topic_ids": [1],
                     "is_active_in_organization_id": 1,
                 },
                 "projector/1": {
                     "name": "Projector1",
                     "meeting_id": 222,
-                    "used_as_default_projector_for_topics_in_meeting_id": 222,
+                    "used_as_default_projector_for_topic_in_meeting_id": 222,
                 },
                 "projector/2": {"name": "Projector2", "meeting_id": 222},
             }
@@ -142,25 +142,25 @@ class ProjectorUpdate(BaseActionTestCase):
             "projector.update",
             {
                 "id": 2,
-                "used_as_default_projector_for_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topic_in_meeting_id": 222,
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "projector/1",
             {
-                "used_as_default_projector_for_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topic_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(
             "projector/2",
             {
-                "used_as_default_projector_for_topics_in_meeting_id": 222,
+                "used_as_default_projector_for_topic_in_meeting_id": 222,
             },
         )
         self.assert_model_exists(
             "meeting/222",
-            {"default_projector_topics_ids": [1, 2]},
+            {"default_projector_topic_ids": [1, 2]},
         )
 
     def test_update_set_wrong_used_as_default_projector_in_meeting_id(self) -> None:
@@ -207,6 +207,24 @@ class ProjectorUpdate(BaseActionTestCase):
             "Projector cannot be set to internal, because it is the reference projector of the meeting.",
             response.json["message"],
         )
+
+    def test_update_reference_projector_internal_okay(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                    "reference_projector_id": 111,
+                },
+                "projector/111": {
+                    "name": "name_srtgb123",
+                    "meeting_id": 1,
+                    "used_as_reference_projector_meeting_id": 1,
+                    "is_internal": False,
+                },
+            }
+        )
+        response = self.request("projector.update", {"id": 111, "is_internal": False})
+        self.assert_status_code(response, 200)
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(

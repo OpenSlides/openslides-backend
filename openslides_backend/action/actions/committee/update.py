@@ -33,6 +33,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             "receive_forwardings_from_committee_ids",
             "organization_tag_ids",
             "manager_ids",
+            "external_id",
         ],
     )
 

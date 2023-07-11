@@ -32,7 +32,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_state/34": {
                     "name": "name_state34",
                     "meeting_id": 222,
-                    "set_created_timestamp": True,
+                    "set_workflow_timestamp": True,
                 },
             }
         )
@@ -50,7 +50,8 @@ class MotionCreateActionTest(BaseActionTestCase):
         model = self.get_model("motion/1")
         assert model.get("title") == "test_Xcdfgee"
         assert model.get("meeting_id") == 222
-        assert model.get("created") is not None
+        assert model.get("workflow_timestamp") is not None
+        assert model.get("workflow_timestamp") == model.get("last_modified")
         assert model.get("created") == model.get("last_modified")
         assert model.get("submitter_ids") == [1]
         assert "agenda_create" not in model
@@ -162,7 +163,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_state/34": {
                     "name": "name_state34",
                     "meeting_id": 222,
-                    "set_created_timestamp": True,
+                    "set_workflow_timestamp": True,
                 },
                 "user/1": {"meeting_ids": [222]},
             }
@@ -179,6 +180,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         motion = self.get_model("motion/1")
         assert motion.get("state_id") == 34
+        assert motion.get("workflow_timestamp")
         assert motion.get("created")
 
     def test_create_workflow_id_from_meeting(self) -> None:
@@ -233,11 +235,11 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "text": "text",
-                "amendment_paragraph": {4: "text"},
+                "amendment_paragraphs": {4: "text"},
             },
         )
         self.assert_status_code(response, 400)
-        assert "give amendment_paragraph in this context" in response.json["message"]
+        assert "give amendment_paragraphs in this context" in response.json["message"]
 
     def test_create_reason_missing(self) -> None:
         self.create_model(

@@ -77,15 +77,20 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assertEqual(model.get("name"), new_name)
 
     def test_update_everything_correct(self) -> None:
-        self.create_data()
-        self.create_meetings_with_users()
         new_name = "committee_testname_updated"
         new_description = "<p>New Test description</p>"
+        external_id = "external"
+
+        self.create_data()
+        self.update_model(self.COMMITTEE_FQID, {"external_id": external_id})
+        self.create_meetings_with_users()
+
         response = self.request(
             "committee.update",
             {
                 "id": self.COMMITTEE_ID,
                 "name": new_name,
+                "external_id": external_id,
                 "description": new_description,
                 "manager_ids": [20, 21],
                 "forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
@@ -95,6 +100,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertEqual(model.get("name"), new_name)
+        self.assertEqual(model.get("external_id"), external_id)
         self.assertEqual(model.get("description"), new_description)
         self.assertEqual(model.get("user_ids"), [20, 21])
         self.assertEqual(model.get("manager_ids"), [20, 21])
@@ -592,7 +598,13 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
+            "committee.update",
+            {
+                "id": 1,
+                "name": "test",
+                "description": "blablabla",
+                "external_id": "test",
+            },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
@@ -611,7 +623,13 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
+            "committee.update",
+            {
+                "id": 1,
+                "name": "test",
+                "description": "blablabla",
+                "external_id": "test",
+            },
         )
         self.assert_status_code(response, 200)
 
@@ -629,7 +647,13 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
+            "committee.update",
+            {
+                "id": 1,
+                "name": "test",
+                "description": "blablabla",
+                "external_id": "test",
+            },
         )
         self.assert_status_code(response, 200)
 
@@ -812,4 +836,33 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {
                 "committee_management_ids": [2],
             },
+        )
+
+    def test_update_external_id_not_unique(self) -> None:
+        external_id = "external"
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
+                "committee/1": {
+                    "organization_id": 1,
+                    "name": "c1",
+                    "external_id": external_id,
+                },
+                "committee/2": {
+                    "organization_id": 1,
+                    "name": "c2",
+                },
+            }
+        )
+
+        response = self.request(
+            "committee.update",
+            {
+                "id": 2,
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the committee is not unique.", response.json["message"]
         )

@@ -34,8 +34,8 @@ class ProjectorUpdate(UpdateAction):
             "show_title",
             "show_logo",
             "show_clock",
-            "used_as_default_projector_for_agenda_all_items_in_meeting_id",
-            "used_as_default_projector_for_topics_in_meeting_id",
+            "used_as_default_projector_for_agenda_item_list_in_meeting_id",
+            "used_as_default_projector_for_topic_in_meeting_id",
             "used_as_default_projector_for_list_of_speakers_in_meeting_id",
             "used_as_default_projector_for_current_list_of_speakers_in_meeting_id",
             "used_as_default_projector_for_motion_in_meeting_id",
@@ -43,8 +43,8 @@ class ProjectorUpdate(UpdateAction):
             "used_as_default_projector_for_motion_block_in_meeting_id",
             "used_as_default_projector_for_assignment_in_meeting_id",
             "used_as_default_projector_for_mediafile_in_meeting_id",
-            "used_as_default_projector_for_projector_message_in_meeting_id",
-            "used_as_default_projector_for_projector_countdowns_in_meeting_id",
+            "used_as_default_projector_for_message_in_meeting_id",
+            "used_as_default_projector_for_countdown_in_meeting_id",
             "used_as_default_projector_for_assignment_poll_in_meeting_id",
             "used_as_default_projector_for_motion_poll_in_meeting_id",
             "used_as_default_projector_for_poll_in_meeting_id",
@@ -54,11 +54,14 @@ class ProjectorUpdate(UpdateAction):
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         super().validate_instance(instance)
-        projector = self.datastore.get(
-            fqid_from_collection_and_id("projector", instance["id"]),
-            ["used_as_reference_projector_meeting_id"],
-        )
-        if projector.get("used_as_reference_projector_meeting_id"):
-            raise ActionException(
-                "Projector cannot be set to internal, because it is the reference projector of the meeting."
+        if instance.get("is_internal"):
+            projector = self.datastore.get(
+                fqid_from_collection_and_id("projector", instance["id"]),
+                ["is_internal", "used_as_reference_projector_meeting_id"],
             )
+            if projector.get(
+                "used_as_reference_projector_meeting_id"
+            ) and not projector.get("is_internal"):
+                raise ActionException(
+                    "Projector cannot be set to internal, because it is the reference projector of the meeting."
+                )

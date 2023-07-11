@@ -1,5 +1,9 @@
 from typing import Any, Dict
 
+from openslides_backend.action.mixins.check_unique_name_mixin import (
+    CheckUniqueInContextMixin,
+)
+
 from ....models.models import Meeting
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -71,6 +75,7 @@ meeting_settings_keys = [
     "list_of_speakers_present_users_only",
     "list_of_speakers_show_first_contribution",
     "list_of_speakers_enable_point_of_order_speakers",
+    "list_of_speakers_enable_point_of_order_categories",
     "list_of_speakers_enable_pro_contra_speech",
     "list_of_speakers_can_set_contribution_self",
     "list_of_speakers_speaker_note_for_everyone",
@@ -146,6 +151,7 @@ meeting_settings_keys = [
 
 @register_action("meeting.update")
 class MeetingUpdate(
+    CheckUniqueInContextMixin,
     EmailCheckMixin,
     EmailSenderCheckMixin,
     UpdateAction,
@@ -156,6 +162,7 @@ class MeetingUpdate(
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
             *meeting_settings_keys,
+            "external_id",
             "reference_projector_id",
             "organization_tag_ids",
             "jitsi_domain",
@@ -164,8 +171,8 @@ class MeetingUpdate(
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
-            "default_projector_agenda_all_items_ids",
-            "default_projector_topics_ids",
+            "default_projector_agenda_item_list_ids",
+            "default_projector_topic_ids",
             "default_projector_list_of_speakers_ids",
             "default_projector_current_list_of_speakers_ids",
             "default_projector_motion_ids",
@@ -173,8 +180,8 @@ class MeetingUpdate(
             "default_projector_motion_block_ids",
             "default_projector_assignment_ids",
             "default_projector_mediafile_ids",
-            "default_projector_projector_message_ids",
-            "default_projector_projector_countdowns_ids",
+            "default_projector_message_ids",
+            "default_projector_countdown_ids",
             "default_projector_assignment_poll_ids",
             "default_projector_motion_poll_ids",
             "default_projector_poll_ids",
@@ -185,6 +192,18 @@ class MeetingUpdate(
     )
     check_email_field = "users_email_replyto"
 
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if instance.get("external_id"):
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                "The external_id of the meeting is not unique in the committee scope.",
+                instance["id"],
+                "committee_id",
+                self.get_committee_id(instance["id"]),
+            )
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # handle set_as_template
         set_as_template = instance.pop("set_as_template", None)
@@ -192,6 +211,19 @@ class MeetingUpdate(
             instance["template_for_organization_id"] = 1
         elif set_as_template is False:
             instance["template_for_organization_id"] = None
+
+        # check point of order settings consistency
+        poo_setting = "list_of_speakers_enable_point_of_order_speakers"
+        categories_setting = "list_of_speakers_enable_point_of_order_categories"
+        _instance = self.datastore.get(
+            fqid_from_collection_and_id("meeting", instance["id"]),
+            [poo_setting, categories_setting],
+        )
+        _instance.update(instance)
+        if not _instance.get(poo_setting) and _instance.get(categories_setting):
+            raise ActionException(
+                "You cannot enable point of order categories without enabling point of order speakers."
+            )
 
         meeting_check = []
         if "reference_projector_id" in instance:
@@ -266,6 +298,7 @@ class MeetingUpdate(
             [
                 field in instance
                 for field in [
+                    "external_id",
                     "enable_anonymous",
                     "custom_translations",
                 ]
@@ -276,16 +309,11 @@ class MeetingUpdate(
 
         # group E check
         if "organization_tag_ids" in instance:
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["committee_id"],
-                lock_result=False,
-            )
             is_manager = has_committee_management_level(
                 self.datastore,
                 self.user_id,
                 CommitteeManagementLevel.CAN_MANAGE,
-                meeting["committee_id"],
+                self.get_committee_id(instance["id"]),
             )
             if not is_manager:
                 raise PermissionDenied(
@@ -308,3 +336,12 @@ class MeetingUpdate(
             )
             if not is_superadmin:
                 raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
+
+    def get_committee_id(self, meeting_id: int) -> int:
+        if not hasattr(self, "_committee_id"):
+            self._committee_id = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, meeting_id),
+                ["committee_id"],
+                lock_result=False,
+            )["committee_id"]
+        return self._committee_id

@@ -24,7 +24,6 @@ class CreateAction(Action):
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # Primary instance manipulation for defaults and extra fields.
         instance = self.set_defaults(instance)
-        instance = self.validate_fields(instance)
 
         instance["meta_new"] = True  # mark as a new model
         instance = self.update_instance(instance)

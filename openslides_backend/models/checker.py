@@ -57,6 +57,14 @@ NUMBER_STRING_JSON_SCHEMA = fastjsonschema.compile(
     }
 )
 
+external_motion_fields = [
+    "origin_id",
+    "origin_meeting_id",
+    "derived_motion_ids",
+    "all_origin_ids",
+    "all_derived_motion_ids",
+]
+
 
 class CheckException(Exception):
     pass
@@ -219,6 +227,7 @@ class Checker:
             "projector_countdown",
             "chat_group",
             "chat_message",
+            "point_of_order_category",
         ]
         if self.mode == "all":
             self.allowed_collections = [
@@ -402,17 +411,17 @@ class Checker:
     def check_special_fields(self, model: Dict[str, Any], collection: str) -> None:
         if collection != "motion":
             return
-        if "amendment_paragraph" in model:
-            msg = f"{collection}/{model['id']}/amendment_paragraph error: "
+        if "amendment_paragraphs" in model:
+            msg = f"{collection}/{model['id']}/amendment_paragraphs error: "
             try:
-                NUMBER_STRING_JSON_SCHEMA(model["amendment_paragraph"])
+                NUMBER_STRING_JSON_SCHEMA(model["amendment_paragraphs"])
             except fastjsonschema.exceptions.JsonSchemaException as e:
                 self.errors.append(
                     msg + str(e),
                 )
                 return
-            for key, html in model["amendment_paragraph"].items():
-                if model["amendment_paragraph"][key] != validate_html(
+            for key, html in model["amendment_paragraphs"].items():
+                if model["amendment_paragraphs"][key] != validate_html(
                     html, ALLOWED_HTML_TAGS_STRICT
                 ):
                     self.errors.append(msg + f"Invalid html in {key}")

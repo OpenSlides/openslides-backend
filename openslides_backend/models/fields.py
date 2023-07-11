@@ -107,10 +107,18 @@ class IntegerField(Field):
 
 
 class BooleanField(Field):
+    """
+    Allow boolean fields with sring and int, converted by validate method
+    """
+
     def get_schema(self) -> Schema:
         if self.required:
-            return self.extend_schema(super().get_schema(), type="boolean")
-        return self.extend_schema(super().get_schema(), type=["boolean", "null"])
+            return self.extend_schema(
+                super().get_schema(), type=["boolean", "string", "integer"]
+            )
+        return self.extend_schema(
+            super().get_schema(), type=["boolean", "string", "integer", "null"]
+        )
 
     def check_required_not_fulfilled(
         self, instance: Dict[str, Any], is_create: bool
@@ -118,6 +126,22 @@ class BooleanField(Field):
         if self.own_field_name not in instance:
             return is_create
         return instance[self.own_field_name] is None
+
+    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
+        TRUE_VALUES = ("1", "true", "yes", "t", "y")
+        FALSE_VALUES = ("0", "false", "no", "f", "n")
+        if isinstance(value, bool):
+            return value
+        elif isinstance(value, str):
+            if value.lower() in TRUE_VALUES:
+                return True
+            elif value.lower() in FALSE_VALUES:
+                return False
+        elif isinstance(value, int) and value in (0, 1):
+            return bool(value)
+        elif value is None:
+            return None
+        raise ValueError(f"Could not parse {value}, expect boolean")
 
 
 class TextField(Field):
@@ -300,7 +324,10 @@ class RelationListField(BaseRelationField):
     is_list_field = True
 
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), **id_list_schema)
+        schema = self.extend_schema(super().get_schema(), **id_list_schema)
+        if not self.required:
+            schema["type"] = ["array", "null"]
+        return schema
 
 
 class BaseGenericRelationField(BaseRelationField):

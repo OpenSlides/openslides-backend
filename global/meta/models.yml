@@ -81,6 +81,14 @@ organization:
   reset_password_verbose_errors:
     type: boolean
     restriction_mode: B
+  genders:
+    type: string[]
+    default:
+      - male
+      - female
+      - diverse
+      - non-binary
+    restriction_mode: A
 
   # Configuration (only for the server owner)
   enable_electronic_voting:
@@ -258,11 +266,6 @@ user:
     restriction_mode: D
   gender:
     type: string
-    enum:
-      - male
-      - female
-      - diverse
-      - non-binary
     restriction_mode: A
   email:
     type: string
@@ -641,7 +644,10 @@ committee:
   description:
     type: HTMLStrict
     restriction_mode: A
-
+  external_id:
+    type: string
+    restriction_mode: A
+    description: unique
   meeting_ids:
     type: relation-list
     to: meeting/committee_id
@@ -688,6 +694,10 @@ meeting:
   id:
     type: number
     restriction_mode: A
+  external_id:
+    type: string
+    restriction_mode: A
+    description: unique in committee
   welcome_title:
     type: string
     default: Welcome to OpenSlides
@@ -982,6 +992,10 @@ meeting:
   list_of_speakers_enable_point_of_order_speakers:
     type: boolean
     default: True
+    restriction_mode: B
+  list_of_speakers_enable_point_of_order_categories:
+    type: boolean
+    default: False
     restriction_mode: B
   list_of_speakers_enable_pro_contra_speech:
     type: boolean
@@ -1414,6 +1428,11 @@ meeting:
     to: list_of_speakers/meeting_id
     on_delete: CASCADE
     restriction_mode: B
+  point_of_order_category_ids:
+    type: relation-list
+    to: point_of_order_category/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
   speaker_ids:
     type: relation-list
     to: speaker/meeting_id
@@ -1636,14 +1655,14 @@ meeting:
     to: projection/content_object_id
     on_delete: CASCADE
     restriction_mode: B
-  default_projector_agenda_all_items_ids:
+  default_projector_agenda_item_list_ids:
     type: relation-list
-    to: projector/used_as_default_projector_for_agenda_all_items_in_meeting_id
+    to: projector/used_as_default_projector_for_agenda_item_list_in_meeting_id
     restriction_mode: B
     required: true
-  default_projector_topics_ids:
+  default_projector_topic_ids:
     type: relation-list
-    to: projector/used_as_default_projector_for_topics_in_meeting_id
+    to: projector/used_as_default_projector_for_topic_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_list_of_speakers_ids:
@@ -1681,14 +1700,14 @@ meeting:
     to: projector/used_as_default_projector_for_mediafile_in_meeting_id
     restriction_mode: B
     required: true
-  default_projector_projector_message_ids:
+  default_projector_message_ids:
     type: relation-list
-    to: projector/used_as_default_projector_for_projector_message_in_meeting_id
+    to: projector/used_as_default_projector_for_message_in_meeting_id
     restriction_mode: B
     required: true
-  default_projector_projector_countdowns_ids:
+  default_projector_countdown_ids:
     type: relation-list
-    to: projector/used_as_default_projector_for_projector_countdowns_in_meeting_id
+    to: projector/used_as_default_projector_for_countdown_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_assignment_poll_ids:
@@ -1720,6 +1739,10 @@ group:
   id:
     type: number
     restriction_mode: A
+  external_id:
+    type: string
+    restriction_mode: A
+    description: unique in meeting
   name:
     type: string
     required: true
@@ -2029,6 +2052,29 @@ list_of_speakers:
     required: true
     restriction_mode: A
 
+point_of_order_category:
+  id:
+    type: number
+    restriction_mode: A
+  text:
+    type: string
+    required: true
+    restriction_mode: A
+  rank:
+    type: number
+    required: true
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    to: meeting/point_of_order_category_ids
+    required: true
+    restriction_mode: A
+  speaker_ids:
+    type: relation-list
+    to: speaker/point_of_order_category_id
+    equal_fields: meeting_id
+    restriction_mode: A
+
 speaker:
   id:
     type: number
@@ -2070,6 +2116,11 @@ speaker:
     type: relation
     to: meeting_user/speaker_ids
     required: true
+    equal_fields: meeting_id
+    restriction_mode: A
+  point_of_order_category_id:
+    type: relation
+    to: point_of_order_category/speaker_ids
     equal_fields: meeting_id
     restriction_mode: A
   meeting_id:
@@ -2163,7 +2214,7 @@ motion:
   text:
     type: HTMLStrict
     restriction_mode: C
-  amendment_paragraph:
+  amendment_paragraphs:
     type: JSON
     restriction_mode: C
   modified_final_version:
@@ -2188,9 +2239,12 @@ motion:
     restriction_mode: C
   created:
     type: timestamp
-    read_only: true
     restriction_mode: C
   last_modified:
+    type: timestamp
+    read_only: true
+    restriction_mode: C
+  workflow_timestamp:
     type: timestamp
     read_only: true
     restriction_mode: C
@@ -2684,7 +2738,7 @@ motion_state:
   allow_motion_forwarding:
     type: boolean
     restriction_mode: A
-  set_created_timestamp:
+  set_workflow_timestamp:
     type: boolean
     restriction_mode: A
   submitter_withdraw_state_id:
@@ -3504,13 +3558,13 @@ projector:
     type: relation
     to: meeting/reference_projector_id
     restriction_mode: A
-  used_as_default_projector_for_agenda_all_items_in_meeting_id:
+  used_as_default_projector_for_agenda_item_list_in_meeting_id:
     type: relation
-    to: meeting/default_projector_agenda_all_items_ids
+    to: meeting/default_projector_agenda_item_list_ids
     restriction_mode: A
-  used_as_default_projector_for_topics_in_meeting_id:
+  used_as_default_projector_for_topic_in_meeting_id:
     type: relation
-    to: meeting/default_projector_topics_ids
+    to: meeting/default_projector_topic_ids
     restriction_mode: A
   used_as_default_projector_for_list_of_speakers_in_meeting_id:
     type: relation
@@ -3540,13 +3594,13 @@ projector:
     type: relation
     to: meeting/default_projector_mediafile_ids
     restriction_mode: A
-  used_as_default_projector_for_projector_message_in_meeting_id:
+  used_as_default_projector_for_message_in_meeting_id:
     type: relation
-    to: meeting/default_projector_projector_message_ids
+    to: meeting/default_projector_message_ids
     restriction_mode: A
-  used_as_default_projector_for_projector_countdowns_in_meeting_id:
+  used_as_default_projector_for_countdown_in_meeting_id:
     type: relation
-    to: meeting/default_projector_projector_countdowns_ids
+    to: meeting/default_projector_countdown_ids
     restriction_mode: A
   used_as_default_projector_for_assignment_poll_in_meeting_id:
     type: relation

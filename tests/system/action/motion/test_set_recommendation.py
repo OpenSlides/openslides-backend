@@ -189,5 +189,5 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
             self.permission_test_models,
             "motion.set_recommendation",
             {"id": 22, "recommendation_id": 77},
-            Permissions.Motion.CAN_MANAGE,
+            Permissions.Motion.CAN_MANAGE_METADATA,
         )

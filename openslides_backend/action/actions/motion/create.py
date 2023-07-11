@@ -39,13 +39,13 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
             "lead_motion_id",
             "statute_paragraph_id",
             "reason",
-            "amendment_paragraph",
+            "amendment_paragraphs",
         ],
         required_properties=["meeting_id", "title"],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
             "submitter_ids": id_list_schema,
-            "amendment_paragraph": number_string_json_schema,
+            "amendment_paragraphs": number_string_json_schema,
             **agenda_creation_properties,
         },
     )
@@ -90,27 +90,27 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
                 raise ActionException(
                     "You can't give both of lead_motion_id and statute_paragraph_id."
                 )
-            if not instance.get("text") and not instance.get("amendment_paragraph"):
+            if not instance.get("text") and not instance.get("amendment_paragraphs"):
                 raise ActionException(
-                    "Text or amendment_paragraph is required in this context."
+                    "Text or amendment_paragraphs is required in this context."
                 )
-            if instance.get("text") and instance.get("amendment_paragraph"):
+            if instance.get("text") and instance.get("amendment_paragraphs"):
                 raise ActionException(
-                    "You can't give both of text and amendment_paragraph"
+                    "You can't give both of text and amendment_paragraphs"
                 )
-            if instance.get("text") and "amendment_paragraph" in instance:
-                del instance["amendment_paragraph"]
-            if instance.get("amendment_paragraph") and "text" in instance:
+            if instance.get("text") and "amendment_paragraphs" in instance:
+                del instance["amendment_paragraphs"]
+            if instance.get("amendment_paragraphs") and "text" in instance:
                 del instance["text"]
         else:
             if not instance.get("text"):
                 raise ActionException("Text is required")
-            if instance.get("amendment_paragraph"):
+            if instance.get("amendment_paragraphs"):
                 raise ActionException(
-                    "You can't give amendment_paragraph in this context"
+                    "You can't give amendment_paragraphs in this context"
                 )
-        if instance.get("amendment_paragraph"):
-            self.validate_amendment_paragraph(instance)
+        if instance.get("amendment_paragraphs"):
+            self.validate_amendment_paragraphs(instance)
         # if lead_motion and not has perm motion.can_manage
         # use category_id and block_id from the lead_motion
         if instance.get("lead_motion_id") and not has_perm(
@@ -176,7 +176,7 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
                 "text",
                 "reason",
                 "lead_motion_id",
-                "amendment_paragraph",
+                "amendment_paragraphs",
                 "category_id",
                 "statute_paragraph_id",
                 "workflow_id",

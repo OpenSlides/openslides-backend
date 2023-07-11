@@ -32,7 +32,7 @@ class MotionStateUpdateAction(UpdateAction):
             "show_recommendation_extension_field",
             "next_state_ids",
             "previous_state_ids",
-            "set_created_timestamp",
+            "set_workflow_timestamp",
             "allow_motion_forwarding",
             "submitter_withdraw_state_id",
         ]

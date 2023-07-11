@@ -5,10 +5,10 @@ import fastjsonschema
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...mixins.import_mixins import ImportState, JsonUploadMixin
+from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import UserCreate
-from .password_mixin import PasswordCreateMixin
 from .user_mixin import DuplicateCheckMixin, UsernameMixin
 
 
@@ -164,7 +164,7 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                 value = entry["default_password"]
                 info = ImportState.DONE
             else:
-                value = PasswordCreateMixin.generate_password()
+                value = get_random_password()
                 info = ImportState.GENERATED
             entry["default_password"] = {"value": value, "info": info}
         elif state in (ImportState.DONE, ImportState.ERROR):
