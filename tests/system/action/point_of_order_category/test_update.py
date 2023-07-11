@@ -49,5 +49,5 @@ class PointOfOrderCategoryUpdate(BaseActionTestCase):
             self.permission_test_models,
             "point_of_order_category.update",
             {"id": 37, "text": "foo", "rank": 12},
-            Permissions.ListOfSpeakers.CAN_MANAGE,
+            Permissions.Meeting.CAN_MANAGE_SETTINGS,
         )

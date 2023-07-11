@@ -35,5 +35,5 @@ class PointOfOrderCategoryCreate(BaseActionTestCase):
             {},
             "point_of_order_category.create",
             {"text": "blablabla", "rank": 11, "meeting_id": 1},
-            Permissions.ListOfSpeakers.CAN_MANAGE,
+            Permissions.Meeting.CAN_MANAGE_SETTINGS,
         )
