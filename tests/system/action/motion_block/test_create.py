@@ -28,7 +28,7 @@ class MotionBlockActionTest(BaseActionTestCase):
                 "is_internal": False,
                 "level": 0,
                 "type": AgendaItem.AGENDA_ITEM,
-                "weight": 10000,
+                "weight": 1,
                 "meeting_id": 42,
                 "content_object_id": "motion_block/1",
                 "meta_deleted": False,

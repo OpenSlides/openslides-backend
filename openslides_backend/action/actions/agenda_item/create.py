@@ -56,13 +56,14 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
             "type"
         ) == AgendaItem.INTERNAL_ITEM or parent.get("is_internal", False)
 
-        max_weight = self.datastore.max(
-            self.model.collection,
-            And(
-                FilterOperator("parent_id", "=", instance.get("parent_id")),
-                FilterOperator("meeting_id", "=", instance["meeting_id"]),
-            ),
-            "weight",
-        )
-        instance["weight"] = (max_weight or 0) + 1
+        if "weight" not in instance:
+            max_weight = self.datastore.max(
+                self.model.collection,
+                And(
+                    FilterOperator("parent_id", "=", instance.get("parent_id")),
+                    FilterOperator("meeting_id", "=", instance["meeting_id"]),
+                ),
+                "weight",
+            )
+            instance["weight"] = (max_weight or 0) + 1
         return instance

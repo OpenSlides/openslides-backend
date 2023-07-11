@@ -35,7 +35,7 @@ agenda_creation_properties = {
         "minimum": 0,
     },
     f"{AGENDA_PREFIX}weight": {
-        "description": "The weight of the agenda item. Submitting null defaults to 0.",
+        "description": "The weight of the agenda item.",
         "type": "integer",
     },
 }
