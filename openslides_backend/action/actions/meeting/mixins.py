@@ -5,18 +5,31 @@ from ....permissions.permission_helper import has_committee_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
+from ...mixins.check_unique_name_mixin import CheckUniqueInContextMixin
 
 
-class MeetingPermissionMixin(Action):
+class MeetingPermissionMixin(CheckUniqueInContextMixin):
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if instance.get("external_id"):
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                "The external_id of the meeting is not unique in the committee scope.",
+                None,
+                "committee_id",
+                self.get_committee_id(instance),
+            )
+
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        is_manager = has_committee_management_level(
+        committee_id = self.get_committee_id(instance)
+        if not has_committee_management_level(
             self.datastore,
             self.user_id,
             CommitteeManagementLevel.CAN_MANAGE,
-            self.get_committee_id(instance),
-        )
-        if not is_manager:
-            raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)
+            committee_id,
+        ):
+            raise MissingPermission({CommitteeManagementLevel.CAN_MANAGE: committee_id})
 
     def get_committee_id(self, instance: Dict[str, Any]) -> int:
         return instance["committee_id"]
