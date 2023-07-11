@@ -35,6 +35,7 @@ updatable_fields = [
     "location",
     "organization_tag_ids",
     "name",
+    "external_id",
 ]
 
 

@@ -294,6 +294,7 @@ class MeetingClone(BaseActionTestCase):
                 "location": "Testraum",
                 "organization_tag_ids": [1],
                 "name": "name_ORnVFSQJ",
+                "external_id": "external_id",
             },
         )
         self.assert_status_code(response, 200)
@@ -308,6 +309,7 @@ class MeetingClone(BaseActionTestCase):
                 "start_time": 1641370959,
                 "end_time": 1641370959,
                 "name": "name_ORnVFSQJ",
+                "external_id": "external_id",
                 "template_for_organization_id": None,
             },
         )
