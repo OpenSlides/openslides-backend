@@ -18,6 +18,7 @@ class TestGetUSerScope(BasePresenterTestCase):
                 "meeting/2": {
                     "committee_id": 2,
                     "is_active_in_organization_id": None,
+                    "is_archived_in_organization_id": 1,
                 },
                 "committee/1": {},
                 "committee/2": {"meeting_ids": [1, 2]},

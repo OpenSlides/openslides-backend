@@ -10,7 +10,6 @@ from ..models.models import Committee
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PresenterException
 from ..shared.filters import And, FilterOperator, Or
-from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -40,31 +39,41 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
 
     def get_result(self) -> Any:
         result: Dict[int, Any] = {}
-        for user_id in self.data["user_ids"]:
-            result[user_id] = {}
-            self.check_permissions_for_scope(user_id)
-            committees_data = self.get_committees_data(user_id)
-            meetings_data = self.get_meetings_data(user_id)
-            if committees_data:
-                result[user_id]["committees"] = committees_data
-            if meetings_data:
-                result[user_id]["meetings"] = meetings_data
-        return result
-
-    def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
-        committees_data = []
         cml_fields = [
             f"committee_${cml_field}_management_level"
             for cml_field in cast(
                 List[str], Committee.user__management_level.replacement_enum
             )
         ]
-        user = self.datastore.get(
-            fqid_from_collection_and_id("user", user_id),
-            ["committee_ids", "committee_$_management_level", *cml_fields],
+        gmr = GetManyRequest(
+            "user",
+            self.data["user_ids"],
+            [
+                "id",
+                "organization_management_level",
+                "meeting_ids",
+                "committee_ids",
+                "committee_$_management_level",
+                *cml_fields,
+            ],
         )
+        users = self.datastore.get_many([gmr]).get("user", {})
+        for user_id, user in users.items():
+            result[user_id] = {}
+            self.check_permissions_for_scope(user_id)
+            if oml := user.get("organization_management_level"):
+                result[user_id]["organization_management_level"] = oml
+            if committees_data := self.get_committees_data(user):
+                result[user_id]["committees"] = committees_data
+            if meetings_data := self.get_meetings_data(user):
+                result[user_id]["meetings"] = meetings_data
+        return result
+
+    def get_committees_data(self, user: Dict[str, Any]) -> List[Dict[str, Any]]:
         if not user.get("committee_ids"):
             return []
+
+        committees_data = []
         gmr = GetManyRequest("committee", user["committee_ids"], ["id", "name"])
         committees = {
             committee["id"]: {"name": committee.get("name", ""), "cml": []}
@@ -90,10 +99,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             )
         return committees_data
 
-    def get_meetings_data(self, user_id: int) -> List[Dict[str, Any]]:
-        user = self.datastore.get(
-            fqid_from_collection_and_id("user", user_id), ["meeting_ids"]
-        )
+    def get_meetings_data(self, user: Dict[str, Any]) -> List[Dict[str, Any]]:
         if not user.get("meeting_ids"):
             return []
 
@@ -109,7 +115,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
                 FilterOperator("meeting_id", "=", meeting_id)
                 for meeting_id in user["meeting_ids"]
             ),
-            FilterOperator("user_id", "=", user_id),
+            FilterOperator("user_id", "=", user["id"]),
         )
         models_by_meeting: Dict[int, Dict[str, List[int]]] = defaultdict(
             lambda: defaultdict(list)
