@@ -101,16 +101,13 @@ services:
             - "9013:9013"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
-            - VOTE_HOST=vote
-            - DATASTORE_READER_HOST=datastore-reader
             - MESSAGING=redis
-            - MESSAGE_BUS_HOST=redis
-            - VOTE_REDIS_HOST=redis
-            - VOTE_DATABASE_HOST=postgres
-            - VOTE_DATABASE_USER=openslides
-            - VOTE_DATABASE_NAME=openslides
-            - DATABASE_HOST=postgres
+            - DATASTORE_READER_HOST=datastore-reader
             - AUTH_HOST=auth
+            - DATABASE_HOST=postgres
+            - VOTE_DATABASE_HOST=postgres
+            - MESSAGE_BUS_HOST=redis
+            - CACHE_HOST=redis
         depends_on:
             - datastore-reader
             - redis
