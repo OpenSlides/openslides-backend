@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "361ec1c214a68044cb0f51e6ea71311b"
+MODELS_YML_CHECKSUM = "28066ef6e917ed37337a4da3d2e4c136"
 
 
 class Organization(Model):
@@ -990,7 +990,7 @@ class AgendaItem(Model):
     level = fields.IntegerField(
         read_only=True, constraints={"description": "Calculated by the server"}
     )
-    weight = fields.IntegerField(default=10000)
+    weight = fields.IntegerField()
     content_object_id = fields.GenericRelationField(
         to={
             "motion": "agenda_item_id",

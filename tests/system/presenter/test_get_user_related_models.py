@@ -8,7 +8,11 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_user_related_models_simple(self) -> None:
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 200)
-        assert data == {"1": {}}
+        assert data == {
+            "1": {
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
+            }
+        }
 
     def test_get_user_related_models_committee(self) -> None:
         self.set_models(
@@ -23,7 +27,10 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 200)
         assert data == {
-            "1": {"committees": [{"id": 1, "cml": "can_manage", "name": "test"}]}
+            "1": {
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
+                "committees": [{"id": 1, "cml": "can_manage", "name": "test"}],
+            }
         }
 
     def test_get_user_related_models_committee_more_user(self) -> None:
@@ -48,7 +55,10 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         assert data == {
-            "1": {"committees": [{"id": 1, "name": "test", "cml": "can_manage"}]},
+            "1": {
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
+                "committees": [{"id": 1, "name": "test", "cml": "can_manage"}],
+            },
             "2": {"committees": [{"id": 1, "name": "test", "cml": "can_manage"}]},
             "3": {"committees": [{"id": 1, "name": "test", "cml": ""}]},
         }
@@ -69,11 +79,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         assert data == {
             "1": {
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                 "committees": [
                     {"id": 1, "cml": "can_manage", "name": "test"},
                     {"id": 2, "cml": "can_manage", "name": "test2"},
                     {"id": 3, "cml": "", "name": "test3"},
-                ]
+                ],
             }
         }
 
@@ -81,10 +92,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
+                "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1],
+                    "committee_id": 1,
                 },
                 "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
                 "assignment_candidate/3": {"meeting_user_id": 1, "meeting_id": 1},
@@ -102,16 +115,17 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         assert data == {
             "1": {
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                 "meetings": [
                     {
                         "id": 1,
                         "name": "test",
                         "is_active_in_organization_id": 1,
-                        "submitter_ids": [2],
-                        "candidate_ids": [3],
+                        "motion_submitter_ids": [2],
+                        "assignment_candidate_ids": [3],
                         "speaker_ids": [4],
                     }
-                ]
+                ],
             }
         }
 
@@ -120,7 +134,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
             {
                 "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
                 "user/2": {"meeting_ids": [1], "meeting_user_ids": [2]},
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
                 "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
                 "motion_submitter/3": {"meeting_user_id": 2, "meeting_id": 1},
                 "assignment_candidate/3": {"meeting_user_id": 1, "meeting_id": 1},
@@ -149,16 +168,17 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         assert data == {
             "1": {
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                 "meetings": [
                     {
                         "id": 1,
                         "name": "test",
                         "is_active_in_organization_id": 1,
-                        "submitter_ids": [2],
-                        "candidate_ids": [3],
+                        "motion_submitter_ids": [2],
+                        "assignment_candidate_ids": [3],
                         "speaker_ids": [4],
                     }
-                ]
+                ],
             },
             "2": {
                 "meetings": [
@@ -166,8 +186,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                         "id": 1,
                         "name": "test",
                         "is_active_in_organization_id": 1,
-                        "submitter_ids": [3],
-                        "candidate_ids": [4],
+                        "motion_submitter_ids": [3],
+                        "assignment_candidate_ids": [4],
                         "speaker_ids": [5],
                     }
                 ]
@@ -183,7 +203,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         self.set_models(
             {
                 "user/1": {"organization_management_level": None, "meeting_ids": [1]},
-                "meeting/1": {"name": "test"},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                },
                 "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
                 "meeting_user/1": {
                     "meeting_id": 1,
@@ -195,17 +220,71 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         status_code, _ = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 403)
 
-    def test_get_user_related_models_permission_because_no_meeting_included(
+    def test_get_user_related_models_empty_meeting(
         self,
     ) -> None:
         self.set_models(
             {
-                "user/2": {"organization_management_level": None, "meeting_ids": [1]},
-                "meeting/1": {"name": "test"},
+                "user/2": {"meeting_user_ids": [1]},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                },
             }
         )
-        status_code, _ = self.request("get_user_related_models", {"user_ids": [2]})
+        status_code, data = self.request("get_user_related_models", {"user_ids": [2]})
         self.assertEqual(status_code, 200)
+        assert data == {
+            "2": {
+                "meetings": [
+                    {
+                        "id": 1,
+                        "name": "test",
+                        "is_active_in_organization_id": 1,
+                    }
+                ]
+            },
+        }
+
+    def test_get_user_related_models_archived_meeting(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "user/2": {"meeting_user_ids": [1]},
+                "committee/1": {"meeting_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "is_archived_in_organization_id": 1,
+                    "committee_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                },
+            }
+        )
+        status_code, data = self.request("get_user_related_models", {"user_ids": [2]})
+        self.assertEqual(status_code, 200)
+        assert data == {
+            "2": {
+                "meetings": [
+                    {
+                        "id": 1,
+                        "name": "test",
+                        "is_active_in_organization_id": None,
+                    }
+                ]
+            },
+        }
 
     def test_get_user_related_models_permissions_user_can_manage(self) -> None:
         self.set_models(
@@ -246,8 +325,16 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 }
             }
         )
-        status_code, _ = self.request("get_user_related_models", {"user_ids": [1]})
+        status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 200)
+        self.assertEqual(
+            data,
+            {
+                "1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                }
+            },
+        )
 
     def test_get_user_related_models_no_committee_permissions(self) -> None:
         self.set_models(
