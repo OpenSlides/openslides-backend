@@ -7,11 +7,11 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..meeting_user.helper import MeetingUserHelper
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 
 
 @register_action("motion.set_support_self")
-class MotionSetSupportSelfAction(MeetingUserHelper, UpdateAction):
+class MotionSetSupportSelfAction(MeetingUserHelperMixin, UpdateAction):
     """
     Action to add the user to the support of a motion.
     """

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -191,11 +191,11 @@ class StopControl(CountdownControl, Action):
                 {
                     "user_id": mu["user_id"],
                     "voted": mu["user_id"] in all_voted_users,
-                    "vote_delegated_to_user_id": cast(
-                        Dict[int, Dict[str, int]], mu_to_user_id
-                    )[vote_mu_id]["user_id"]
-                    if (vote_mu_id := mu.get("vote_delegated_to_id"))
-                    else None,
+                    "vote_delegated_to_user_id": (
+                        mu_to_user_id[vote_mu_id]["user_id"]
+                        if (vote_mu_id := mu.get("vote_delegated_to_id"))
+                        else None
+                    ),
                 }
             )
 

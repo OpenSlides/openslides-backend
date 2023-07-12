@@ -1,8 +1,9 @@
 from typing import List, Set, Union
 
+from openslides_backend.action.mixins.meeting_user_helper import get_meeting_user
+
 from ...services.datastore.interface import DatastoreService
 from ...shared.exceptions import ActionException
-from ...shared.filters import And, FilterOperator
 from ...shared.patterns import (
     KEYSEPARATOR,
     FullQualifiedId,
@@ -34,12 +35,10 @@ def assert_belongs_to_meeting(
             if meeting_id in instance.get("meeting_ids", []):
                 continue
             # try on datastore whether minimum 1 group-relation exist in meeting_user
-            filter_ = And(
-                FilterOperator("meeting_id", "=", meeting_id),
-                FilterOperator("user_id", "=", id_from_fqid(fqid)),
+            meeting_user = get_meeting_user(
+                datastore, meeting_id, id_from_fqid(fqid), ["group_ids"]
             )
-            result = datastore.filter("meeting_user", filter_, ["group_ids"])
-            if len(result) == 1 and list(result.values())[0].get("group_ids"):
+            if meeting_user and meeting_user.get("group_ids"):
                 continue
             errors.add(str(fqid))
         elif collection_from_fqid(fqid) == "mediafile":

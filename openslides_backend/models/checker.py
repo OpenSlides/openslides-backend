@@ -38,19 +38,20 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.schema import (
     models_map_object,
     number_string_json_schema,
+    schema_version,
 )
 from openslides_backend.shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
 
 SCHEMA = fastjsonschema.compile(
     {
-        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$schema": schema_version,
         "title": "Schema for initial and example data.",
         **models_map_object,
     }
 )
 NUMBER_STRING_JSON_SCHEMA = fastjsonschema.compile(
     {
-        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$schema": schema_version,
         "title": "Schema for amendment paragraph",
         **number_string_json_schema,
     }

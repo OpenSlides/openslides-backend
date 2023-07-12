@@ -1,9 +1,12 @@
 from typing import List
 
+from openslides_backend.action.mixins.meeting_user_helper import (
+    get_groups_from_meeting_user,
+)
+
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PermissionDenied
-from ..shared.filters import And, FilterOperator
 from ..shared.patterns import fqid_from_collection_and_id
 from .management_levels import CommitteeManagementLevel, OrganizationManagementLevel
 from .permissions import Permission, permission_parents
@@ -28,20 +31,8 @@ def has_perm(
         ):
             return True
 
-        filter_result = datastore.filter(
-            "meeting_user",
-            And(
-                FilterOperator("meeting_id", "=", meeting_id),
-                FilterOperator("user_id", "=", user_id),
-            ),
-            ["group_ids"],
-            lock_result=False,
-        )
-        if len(filter_result) == 1:
-            meeting_user = list(filter_result.values())[0]
-            if not (group_ids := meeting_user.get("group_ids")):
-                return False
-        else:
+        group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
+        if not group_ids:
             return False
     elif user_id == 0:
         # anonymous users are in the default group
@@ -155,18 +146,5 @@ def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool
         fqid_from_collection_and_id("meeting", meeting_id),
         ["admin_group_id"],
     )
-    filter_result = datastore.filter(
-        "meeting_user",
-        And(
-            FilterOperator("meeting_id", "=", meeting_id),
-            FilterOperator("user_id", "=", user_id),
-        ),
-        ["group_ids"],
-    )
-    if len(filter_result) == 1:
-        meeting_user = list(filter_result.values())[0]
-    else:
-        meeting_user = {}
-    if meeting.get("admin_group_id") in meeting_user.get("group_ids", []):
-        return True
-    return False
+    group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
+    return meeting["admin_group_id"] in group_ids

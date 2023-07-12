@@ -1208,7 +1208,7 @@ class MeetingImport(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_logo_dollar_id(self) -> None:
+    def test_logo_id(self) -> None:
         # Template Relation Field
         request_data = self.create_request_data(
             {
@@ -1250,7 +1250,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists("mediafile/1")
         self.assert_model_exists("meeting/2", {"font_italic_id": 1})
 
-    def test_logo_dollar_id_wrong_replacement(self) -> None:
+    def test_logo_id_wrong_place(self) -> None:
         # Template Relation Field
         request_data = self.create_request_data(
             {

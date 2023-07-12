@@ -219,7 +219,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_default_projector_to_not_existing_replacement_error(self) -> None:
+    def test_update_default_projector_to_not_existing_option_error(self) -> None:
         _, response = self.basic_test(
             {"default_projector_non_existing_ids": [1]}, check_200=False
         )
