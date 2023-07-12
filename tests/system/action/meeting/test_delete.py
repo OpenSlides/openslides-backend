@@ -41,7 +41,8 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 403)
         assert (
-            "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
+            "Missing permission: CommitteeManagementLevel can_manage in committee 1"
+            in response.json["message"]
         )
 
     def test_delete_permissions_can_manage_organization(self) -> None:

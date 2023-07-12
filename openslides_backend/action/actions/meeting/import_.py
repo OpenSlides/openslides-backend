@@ -3,6 +3,7 @@ import time
 from collections import OrderedDict, defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
+from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.migrations.migration_wrapper import MigrationWrapperMemory
 from openslides_backend.models.base import model_registry
@@ -21,10 +22,6 @@ from openslides_backend.models.fields import (
     TemplateRelationField,
 )
 from openslides_backend.models.models import Meeting, User
-from openslides_backend.permissions.management_levels import CommitteeManagementLevel
-from openslides_backend.permissions.permission_helper import (
-    has_committee_management_level,
-)
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, MissingPermission
 from openslides_backend.shared.filters import FilterOperator, Or
@@ -51,7 +48,9 @@ from ..user.user_mixin import LimitOfUserMixin, UsernameMixin
 
 
 @register_action("meeting.import")
-class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
+class MeetingImport(
+    SingularActionMixin, LimitOfUserMixin, UsernameMixin, MeetingPermissionMixin
+):
     """
     Action to import a meeting.
     """
@@ -696,15 +695,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             result["number_of_imported_users"] = self.number_of_imported_users
             result["number_of_merged_users"] = self.number_of_merged_users
         return result
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if not has_committee_management_level(
-            self.datastore,
-            self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
-            instance["committee_id"],
-        ):
-            raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)
 
     def migrate_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
