@@ -57,8 +57,9 @@ search_users_schema = fastjsonschema.compile(
 @register_presenter("search_users")
 class SearchUsers(BasePresenter):
     """
-    Matches users to the search criteria either by username or by exact match of first name, last
-    name AND email. Returns a list of users for each search criteria in payload order.
+    Matches users to the search criteria either by username or saml id or
+    by exact match of first name, last name AND email.
+    Returns a list of users for each search criteria in payload order.
     """
 
     schema = search_users_schema
