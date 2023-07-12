@@ -1009,7 +1009,8 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 403)
         assert (
-            "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
+            "Missing permission: CommitteeManagementLevel can_manage in committee 1"
+            in response.json["message"]
         )
 
     def test_use_blobs(self) -> None:

@@ -7,12 +7,8 @@ from openslides_backend.models.checker import (
     external_motion_fields,
 )
 from openslides_backend.models.models import Meeting
-from openslides_backend.permissions.management_levels import CommitteeManagementLevel
-from openslides_backend.permissions.permission_helper import (
-    has_committee_management_level,
-)
 from openslides_backend.services.datastore.interface import GetManyRequest
-from openslides_backend.shared.exceptions import ActionException, PermissionDenied
+from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
@@ -32,6 +28,7 @@ updatable_fields = [
     "location",
     "organization_tag_ids",
     "name",
+    "external_id",
 ]
 
 
@@ -233,9 +230,9 @@ class MeetingClone(MeetingImport):
                     ),
                 )
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def get_committee_id(self, instance: Dict[str, Any]) -> int:
         if instance.get("committee_id"):
-            committee_id = instance["committee_id"]
+            return instance["committee_id"]
         else:
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
@@ -243,13 +240,4 @@ class MeetingClone(MeetingImport):
                 lock_result=False,
                 use_changed_models=False,
             )
-            committee_id = meeting["committee_id"]
-        if not has_committee_management_level(
-            self.datastore,
-            self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
-            committee_id,
-        ):
-            raise PermissionDenied(
-                f"Missing {CommitteeManagementLevel.CAN_MANAGE.get_verbose_type()}: {CommitteeManagementLevel.CAN_MANAGE} for committee {committee_id}"
-            )
+            return meeting["committee_id"]
