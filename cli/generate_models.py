@@ -255,8 +255,6 @@ class Model(Node):
 
 class Attribute(Node):
     type: str
-    replacement_collection: Optional[Collection] = None
-    replacement_enum: Optional[List[str]] = None
     to: Optional["To"] = None
     fields: Optional["Attribute"] = None
     required: bool = False

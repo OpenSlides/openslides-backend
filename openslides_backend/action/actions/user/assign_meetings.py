@@ -8,15 +8,14 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
-from ...util.group_mixins import GroupHelper
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
-from ..meeting_user.helper import MeetingUserHelper
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..meeting_user.update import MeetingUserUpdate
 
 
 @register_action("user.assign_meetings")
-class UserAssignMeetings(GroupHelper, MeetingUserHelper, UpdateAction):
+class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
     """
     Action to assign a user to multiple groups and meetings.
     """
@@ -50,7 +49,9 @@ class UserAssignMeetings(GroupHelper, MeetingUserHelper, UpdateAction):
         )
         user_meeting_ids = set(user.get("meeting_ids", []))
         for meeting_id in meeting_ids:
-            meeting_user = self.get_meeting_user(meeting_id, user_id)
+            meeting_user = (
+                self.get_meeting_user(meeting_id, user_id, ["id", "group_ids"]) or {}
+            )
             meeting_to_meeting_user[meeting_id] = meeting_user
             filter_ = And(
                 FilterOperator("name", "=", group_name),

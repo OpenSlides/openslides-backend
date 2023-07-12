@@ -16,11 +16,11 @@ from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
 from ...util.default_schema import DefaultSchema
-from ...util.group_mixins import GroupHelper
 from ...util.register import register_action_set
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 
 
-class MotionCommentMixin(GroupHelper, Action):
+class MotionCommentMixin(MeetingUserHelperMixin, Action):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         super().check_permissions(instance)
 

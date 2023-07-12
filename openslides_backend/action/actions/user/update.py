@@ -1,9 +1,9 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
-from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
@@ -98,18 +98,3 @@ class UserUpdate(
 
         check_gender_helper(self.datastore, instance)
         return instance
-
-    def apply_instance(
-        self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None
-    ) -> None:
-        if not fqid:
-            fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
-        if (
-            fqid in self.datastore.changed_models
-            and (cm_user := self.datastore.changed_models[fqid]).get("meta_new")
-            and "group_$_ids" in instance
-        ):
-            instance["group_$_ids"].update(
-                {k: cm_user.get(f"group_${k}_ids", []) for k in cm_user["group_$_ids"]}
-            )
-        self.datastore.apply_changed_model(fqid, instance)

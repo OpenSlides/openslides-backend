@@ -22,15 +22,11 @@ class ModelMetaClass(type):
             metaclass, class_name, class_parents, class_attributes
         )
         if class_name != "Model":
-            new_class.field_prefix_map = {}
             for attr_name in class_attributes:
                 attr = getattr(new_class, attr_name)
                 if isinstance(attr, fields.Field):
                     attr.own_collection = new_class.collection
                     attr.own_field_name = attr_name
-
-                    # Save field name.
-                    new_class.field_prefix_map[attr_name] = attr
             model_registry[new_class.collection] = new_class
         return new_class
 
@@ -42,9 +38,6 @@ class Model(metaclass=ModelMetaClass):
 
     collection: Collection
     verbose_name: str
-
-    # Saves all fields with their respective unique prefix for easier access.
-    field_prefix_map: Dict[str, fields.BaseRelationField]
 
     def __str__(self) -> str:
         return self.verbose_name
@@ -66,17 +59,12 @@ class Model(metaclass=ModelMetaClass):
 
     def try_get_field(self, field_name: str) -> Optional[fields.Field]:
         """
-        Returns the field for the given field name. You may give the
-        pythonic field name.
-
-        Returns None if field is not found.
+        Returns the field for the given field name or None if field is not found.
         """
-        prefix = field_name.split("$")[0]
-        if prefix not in self.field_prefix_map:
-            return None
-
-        field = self.field_prefix_map[prefix]
-        return field
+        field = getattr(self, field_name, None)
+        if isinstance(field, fields.Field):
+            return field
+        return None
 
     def get_fields(self) -> Iterable[fields.Field]:
         """
@@ -95,9 +83,7 @@ class Model(metaclass=ModelMetaClass):
             if isinstance(model_field, fields.BaseRelationField):
                 yield model_field
 
-    def get_property(
-        self, field_name: str, replacement_pattern: Optional[str] = None
-    ) -> fields.Schema:
+    def get_property(self, field_name: str) -> fields.Schema:
         """
         Returns JSON schema for the given field. Throws an error if it's read_only.
         """
@@ -106,7 +92,7 @@ class Model(metaclass=ModelMetaClass):
             raise ActionException(
                 f"The field {field_name} is read_only and cannot be used in a payload schema."
             )
-        return {field_name: field.get_payload_schema(replacement_pattern)}
+        return {field_name: field.get_schema()}
 
     def get_properties(self, *fields: str) -> Dict[str, fields.Schema]:
         """
