@@ -1944,7 +1944,6 @@ agenda_item:
     restriction_mode: A
   weight:
     type: number
-    default: 10000
     restriction_mode: A
 
   content_object_id:
