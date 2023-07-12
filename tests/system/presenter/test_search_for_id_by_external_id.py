@@ -10,45 +10,59 @@ class TestSearchForIdByExternalId(BasePresenterTestCase):
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                 },
-                "user/7": {"saml_id": "123saml", "username": "test"},
-                "meeting/2": {"name": "test meeting", "external_id": "234ex"},
-                "group/8": {"name": "test group", "external_id": "345ex"},
-                "committee/11": {"name": "test committee", "external_id": "234ex"},
+                "meeting/2": {
+                    "name": "test meeting",
+                    "external_id": "234ex",
+                    "committee_id": 11,
+                },
+                "group/8": {
+                    "name": "test group",
+                    "external_id": "345ex",
+                    "meeting_id": 2,
+                },
+                "committee/11": {
+                    "name": "test committee",
+                    "external_id": "234ex",
+                    "organization_id": 1,
+                },
             }
         )
-        status_code, data = self.request(
-            "search_for_id_by_external_id",
-            {"collection": "user", "external_id": "123saml"},
-        )
-        self.assertEqual(status_code, 200)
-        self.assertEqual(data, {"id": 7})
 
         status_code, data = self.request(
             "search_for_id_by_external_id",
-            {"collection": "meeting", "external_id": "234ex"},
+            {"collection": "meeting", "external_id": "234ex", "context_id": 11},
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"id": 2})
 
         status_code, data = self.request(
             "search_for_id_by_external_id",
-            {"collection": "group", "external_id": "345ex"},
+            {"collection": "group", "external_id": "345ex", "context_id": 2},
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"id": 8})
 
         status_code, data = self.request(
             "search_for_id_by_external_id",
-            {"collection": "committee", "external_id": "234ex"},
+            {"collection": "committee", "external_id": "234ex", "context_id": 1},
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"id": 11})
 
     def test_none_found(self) -> None:
-        self.set_models({"group/8": {"name": "test group", "external_id": "1ex"}})
+        self.set_models(
+            {
+                "group/8": {
+                    "name": "test group",
+                    "external_id": "1ex",
+                    "meeting_id": 1,
+                },
+                "meeting/1": {"name": "test", "group_ids": [8]},
+            }
+        )
         status_code, data = self.request(
             "search_for_id_by_external_id",
-            {"collection": "group", "external_id": "2other"},
+            {"collection": "group", "external_id": "2other", "context_id": 1},
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(
@@ -58,13 +72,22 @@ class TestSearchForIdByExternalId(BasePresenterTestCase):
     def test_many_found(self) -> None:
         self.set_models(
             {
-                "group/8": {"name": "test group", "external_id": "1ex"},
-                "group/9": {"name": "test group 2", "external_id": "1ex"},
+                "group/8": {
+                    "name": "test group",
+                    "external_id": "1ex",
+                    "meeting_id": 1,
+                },
+                "group/9": {
+                    "name": "test group 2",
+                    "external_id": "1ex",
+                    "meeting_id": 1,
+                },
+                "meeting/1": {"name": "test meeting 1", "group_ids": [8, 9]},
             }
         )
         status_code, data = self.request(
             "search_for_id_by_external_id",
-            {"collection": "group", "external_id": "1ex"},
+            {"collection": "group", "external_id": "1ex", "context_id": 1},
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(
@@ -74,12 +97,22 @@ class TestSearchForIdByExternalId(BasePresenterTestCase):
     def test_wrong_collection(self) -> None:
         status_code, data = self.request(
             "search_for_id_by_external_id",
-            {"collection": "motion", "external_id": "1ex"},
+            {"collection": "motion", "external_id": "1ex", "context_id": 1},
         )
         self.assertEqual(status_code, 400)
         self.assertEqual(
             data["message"],
-            "data.collection must be one of ['user', 'committee', 'meeting', 'group']",
+            "data.collection must be one of ['committee', 'meeting', 'group']",
+        )
+
+        status_code, data = self.request(
+            "search_for_id_by_external_id",
+            {"collection": "user", "external_id": "123saml", "context_id": 1},
+        )
+        self.assertEqual(status_code, 400)
+        self.assertEqual(
+            data["message"],
+            "data.collection must be one of ['committee', 'meeting', 'group']",
         )
 
     def test_no_permission(self) -> None:
@@ -92,7 +125,7 @@ class TestSearchForIdByExternalId(BasePresenterTestCase):
         )
         status_code, data = self.request(
             "search_for_id_by_external_id",
-            {"collection": "group", "external_id": "1ex"},
+            {"collection": "group", "external_id": "1ex", "context_id": 1},
         )
         self.assertEqual(status_code, 403)
         self.assertEqual(
