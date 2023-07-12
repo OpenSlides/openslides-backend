@@ -112,17 +112,22 @@ class TestSearchUsers(BasePresenterTestCase):
                         "first_name": "first4",
                         "last_name": "last4",
                     },
+                    {
+                        "username": "userX",
+                        "saml_id": "saml5",
+                    },
                 ],
             },
         )
         self.assertEqual(status_code, 200)
-        self.assertEqual(len(data), 6)
+        self.assertEqual(len(data), 7)
         self.assertEqual(data[0], [self.user2])
         self.assertEqual(data[1], [])
         self.assertEqual(data[2], [self.user2])
         self.assertEqual(data[3], [self.user4])
         self.assertEqual(data[4], [self.user2])
         self.assertEqual(data[5], [self.user5])
+        self.assertEqual(data[6], [])
 
     def test_search_ignore_case_strip(self) -> None:
         status_code, data = self.request(

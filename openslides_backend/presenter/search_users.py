@@ -97,13 +97,12 @@ class SearchUsers(BasePresenter):
             current_result = []
             for instance in instances.values():
                 for search_def in search_fields:
-                    if all(
-                        (instance.get(field) or "").lower() == search[field]
-                        for field in search_def
-                    ) and any(search[field] for field in search_def):
-                        current_result.append(instance)
-                        break
-                    elif any(search[field] for field in search_def):
+                    if any(search[field] for field in search_def):
+                        if all(
+                            (instance.get(field) or "").lower() == search[field]
+                            for field in search_def
+                        ):
+                            current_result.append(instance)
                         break
             result.append(current_result)
         return result
