@@ -51,6 +51,7 @@ class UserUpdate(
             "organization_management_level",
             "committee_management_ids",
             "is_demo_user",
+            "saml_id",
         ],
         additional_optional_fields={
             "meeting_id": optional_id_schema,

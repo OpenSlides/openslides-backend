@@ -1300,6 +1300,43 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_perm_group_E_saml_id_high_enough(self) -> None:
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "saml_id": "test saml id",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "saml_id": "test saml id",
+            },
+        )
+
+    def test_no_perm_group_E_saml_id(self) -> None:
+        self.permission_setup()
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "saml_id": "test saml id",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Your organization management level is not high enough to set a Level of OrganizationManagementLevel or the saml_id!",
+            response.json["message"],
+        )
+
     def test_perm_group_F_demo_user_no_permission(self) -> None:
         """demo_user only editable by Superadmin"""
         self.permission_setup()

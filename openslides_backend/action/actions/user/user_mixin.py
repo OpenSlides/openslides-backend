@@ -200,6 +200,7 @@ class DuplicateCheckMixin(Action):
             },
         )
         self.used_usernames: List[str] = []
+        self.used_saml_ids: List[str] = []
         self.used_names_and_email: List[Any] = []
 
     def check_username_for_duplicate(self, username: str, payload_index: int) -> bool:
@@ -209,6 +210,15 @@ class DuplicateCheckMixin(Action):
         )
         if username not in self.used_usernames:
             self.used_usernames.append(username)
+        return result
+
+    def check_saml_id_for_duplicate(self, saml_id: str, payload_index: int) -> bool:
+        result = (
+            bool(self.users_in_double_lists[payload_index])
+            or saml_id in self.used_saml_ids
+        )
+        if saml_id not in self.used_saml_ids:
+            self.used_saml_ids.append(saml_id)
         return result
 
     def check_name_and_email_for_duplicate(

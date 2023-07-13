@@ -37,6 +37,7 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                             "username",
                             "gender",
                             "pronoun",
+                            "saml_id",
                         ),
                     },
                     "required": [],
@@ -58,6 +59,7 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
         {"property": "username", "type": "string"},
         {"property": "gender", "type": "string"},
         {"property": "pronoun", "type": "string"},
+        {"property": "saml_id", "type": "string"},
     ]
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     skip_archived_meeting_check = True
@@ -70,7 +72,13 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
             [
                 {
                     field: entry.get(field, "")
-                    for field in ("username", "first_name", "last_name", "email")
+                    for field in (
+                        "username",
+                        "saml_id",
+                        "first_name",
+                        "last_name",
+                        "email",
+                    )
                 }
                 for entry in data
             ]
@@ -122,6 +130,22 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                 else:
                     state = ImportState.NEW
                     entry["username"] = {"value": entry["username"], "info": "done"}
+            elif entry.get("saml_id"):
+                if self.check_saml_id_for_duplicate(entry["saml_id"], payload_index):
+                    state = ImportState.DONE
+                    if searchdata := self.get_search_data(payload_index):
+                        entry["saml_id"] = {
+                            "value": entry["saml_id"],
+                            "info": "done",
+                            "id": searchdata["id"],
+                        }
+                    else:
+                        entry["saml_id"] = {"value": entry["saml_id"], "info": "done"}
+                        state = ImportState.ERROR
+                        messages.append(f"Duplicate in csv list index: {payload_index}")
+                else:
+                    state = ImportState.NEW
+                    entry["saml_id"] = {"value": entry["saml_id"], "info": "done"}
             else:
                 if not (entry.get("first_name") or entry.get("last_name")):
                     state = ImportState.ERROR
