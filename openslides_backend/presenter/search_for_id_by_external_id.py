@@ -5,7 +5,7 @@ import fastjsonschema
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..shared.exceptions import MissingPermission
-from ..shared.filters import FilterOperator
+from ..shared.filters import And, FilterOperator
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -19,11 +19,12 @@ search_for_id_by_external_id_schema = fastjsonschema.compile(
         "properties": {
             "collection": {
                 "type": "string",
-                "enum": ["user", "committee", "meeting", "group"],
+                "enum": ["committee", "meeting", "group"],
             },
             "external_id": {"type": "string"},
+            "context_id": {"type": "integer"},
         },
-        "required": ["collection", "external_id"],
+        "required": ["collection", "external_id", "context_id"],
         "additionalProperties": False,
     }
 )
@@ -40,10 +41,17 @@ class SearchForIdByExternalId(BasePresenter):
 
     def get_result(self) -> Any:
         self.check_permissions()
-        field_name = "external_id"
-        if self.data["collection"] == "user":
-            field_name = "saml_id"
-        filter_ = FilterOperator(field_name, "=", self.data["external_id"])
+        context_field_map = {
+            "group": "meeting_id",
+            "meeting": "committee_id",
+            "committee": "organization_id",
+        }
+        filter_ = And(
+            FilterOperator("external_id", "=", self.data["external_id"]),
+            FilterOperator(
+                context_field_map[self.data["collection"]], "=", self.data["context_id"]
+            ),
+        )
         filtered = self.datastore.filter(
             self.data["collection"], filter_, ["id"]
         ).values()
