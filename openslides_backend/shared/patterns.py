@@ -117,6 +117,10 @@ def id_from_fqfield(fqfield: FullQualifiedField) -> int:
     return int(str(fqfield).split(KEYSEPARATOR)[1])
 
 
+def fqid_and_field_from_fqfield(fqfield: str) -> Tuple[str, str]:
+    return cast(Tuple[str, str], fqfield.rsplit(KEYSEPARATOR, 1))
+
+
 def collectionfield_and_fqid_from_fqfield(fqfield: str) -> Tuple[str, str]:
     parts = fqfield.split(KEYSEPARATOR)
     return f"{parts[0]}{KEYSEPARATOR}{parts[2]}", f"{parts[0]}{KEYSEPARATOR}{parts[1]}"

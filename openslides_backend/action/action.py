@@ -48,9 +48,8 @@ from ..shared.otel import make_span
 from ..shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
-    field_from_fqfield,
+    fqid_and_field_from_fqfield,
     fqid_from_collection_and_id,
-    fqid_from_fqfield,
     transform_to_fqids,
 )
 from ..shared.typing import DeletedModel, HistoryInformation
@@ -341,33 +340,28 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         relation_updates = self.relation_manager.get_relation_updates(
             self.model, instance, self.name
         )
-
         return self.handle_relation_updates_helper(relation_updates)
 
     def handle_relation_updates_helper(
         self,
         relation_updates: RelationUpdates,
     ) -> Iterable[Event]:
-        fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
-            list_fields: Optional[ListFields] = None
+            fields: Dict[str, Any] = {}
+            list_fields: ListFields = {}
+            fqid, field = fqid_and_field_from_fqfield(fqfield)
             if data["type"] in ("add", "remove"):
                 data = cast(FieldUpdateElement, data)
-                fields = {field_from_fqfield(fqfield): data["value"]}
+                fields[field] = data["value"]
             elif data["type"] == "list_update":
                 data = cast(ListUpdateElement, data)
-                fields = None
-                list_fields_tmp = {}
                 if data["add"]:
-                    list_fields_tmp["add"] = {field_from_fqfield(fqfield): data["add"]}
+                    list_fields["add"] = {field: data["add"]}
                 if data["remove"]:
-                    list_fields_tmp["remove"] = {
-                        field_from_fqfield(fqfield): data["remove"]
-                    }
-                list_fields = cast(ListFields, list_fields_tmp)
+                    list_fields["remove"] = {field: data["remove"]}
             yield self.build_event(
                 EventType.Update,
-                fqid_from_fqfield(fqfield),
+                fqid,
                 fields,
                 list_fields,
             )

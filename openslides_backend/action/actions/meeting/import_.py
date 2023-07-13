@@ -1,7 +1,7 @@
 import re
 import time
 from collections import OrderedDict, defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
 
 from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.migrations import get_backend_migration_index
@@ -35,7 +35,7 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.schema import models_map_object
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....shared.interfaces.event import Event, ListFields
+from ....shared.interfaces.event import Event, ListFields, ListFieldsValue
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -582,7 +582,7 @@ class MeetingImport(
         )
 
         # add meetings to organization if set in meeting
-        adder: Dict[str, List[Union[int, str]]] = {}
+        adder: ListFieldsValue = {}
         if meeting.get("is_active_in_organization_id"):
             adder["active_meeting_ids"] = [meeting_id]
         if meeting.get("template_for_organization_id"):
