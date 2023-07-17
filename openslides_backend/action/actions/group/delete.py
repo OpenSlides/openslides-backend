@@ -41,9 +41,7 @@ class GroupDeleteAction(DeleteAction):
                 "meeting_id",
             ],
         )
-        if len(group.get("user_ids", [])) and not self.is_meeting_deleted(
-            group["meeting_id"]
-        ):
+        if group.get("user_ids") and not self.is_meeting_deleted(group["meeting_id"]):
             raise ActionException("You cannot delete a group with users.")
         self.mediafile_ids: List[int] = list(
             set(group.get("mediafile_access_group_ids", []))

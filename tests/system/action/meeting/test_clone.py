@@ -294,6 +294,7 @@ class MeetingClone(BaseActionTestCase):
                 "location": "Testraum",
                 "organization_tag_ids": [1],
                 "name": "name_ORnVFSQJ",
+                "external_id": "external_id",
             },
         )
         self.assert_status_code(response, 200)
@@ -308,10 +309,30 @@ class MeetingClone(BaseActionTestCase):
                 "start_time": 1641370959,
                 "end_time": 1641370959,
                 "name": "name_ORnVFSQJ",
+                "external_id": "external_id",
                 "template_for_organization_id": None,
             },
         )
         self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/2"]})
+
+    def test_clone_with_duplicate_external_id(self) -> None:
+        self.test_models["meeting/1"][
+            "template_for_organization_id"
+        ] = ONE_ORGANIZATION_ID
+        self.test_models["meeting/1"]["external_id"] = "external_id"
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "external_id": "external_id",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the meeting is not unique in the committee scope.",
+            response.json["message"],
+        )
 
     def test_clone_with_recommendation_extension(self) -> None:
         self.set_models(self.test_models)
@@ -985,7 +1006,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Missing CommitteeManagementLevel: can_manage for committee 2",
+            "Missing permission: CommitteeManagementLevel can_manage in committee 2",
             response.json["message"],
         )
 
@@ -1007,7 +1028,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Missing CommitteeManagementLevel: can_manage for committee 1",
+            "Missing permission: CommitteeManagementLevel can_manage in committee 1",
             response.json["message"],
         )
 
@@ -1088,10 +1109,13 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(
             {
                 "committee/1": {"organization_id": 1, "meeting_ids": [1, 2]},
-                "meeting/1": {"motion_ids": [1], "list_of_speakers_ids": [1]},
+                "meeting/1": {
+                    "motion_ids": [1, 4],
+                    "motion_state_ids": [1],
+                    "list_of_speakers_ids": [1, 4],
+                },
                 "meeting/2": {
-                    "name": "forward target",
-                    "motion_ids": [2],
+                    "motion_ids": [2, 3],
                     "is_active_in_organization_id": 1,
                 },
                 "motion/1": {
@@ -1106,28 +1130,69 @@ class MeetingClone(BaseActionTestCase):
                 "motion/2": {
                     "meeting_id": 2,
                     "origin_id": 1,
+                    "origin_meeting_id": 1,
                     "all_origin_ids": [1],
                     "sequential_number": 1,
                     "list_of_speakers_id": 2,
                     "title": "motion1 forwarded",
                     "state_id": 2,
                 },
+                "motion/3": {
+                    "meeting_id": 2,
+                    "derived_motion_ids": [4],
+                    "all_derived_motion_ids": [4],
+                    "sequential_number": 2,
+                    "list_of_speakers_id": 3,
+                    "title": "motion3",
+                    "state_id": 2,
+                },
+                "motion/4": {
+                    "meeting_id": 1,
+                    "origin_id": 3,
+                    "origin_meeting_id": 2,
+                    "all_origin_ids": [3],
+                    "sequential_number": 1,
+                    "list_of_speakers_id": 4,
+                    "title": "motion3 forwarded",
+                    "state_id": 1,
+                },
                 "list_of_speakers/1": {
                     "sequential_number": 1,
                     "content_object_id": "motion/1",
-                    "closed": False,
                     "meeting_id": 1,
                 },
-                "motion_state/1": {"motion_ids": [1]},
+                "list_of_speakers/2": {
+                    "sequential_number": 1,
+                    "content_object_id": "motion/2",
+                    "meeting_id": 2,
+                },
+                "list_of_speakers/3": {
+                    "sequential_number": 2,
+                    "content_object_id": "motion/3",
+                    "meeting_id": 2,
+                },
+                "list_of_speakers/4": {
+                    "sequential_number": 2,
+                    "content_object_id": "motion/4",
+                    "meeting_id": 1,
+                },
+                "motion_state/1": {"motion_ids": [1, 4], "meeting_id": 1},
+                "motion_state/2": {"motion_ids": [2, 3], "meeting_id": 2},
             }
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "meeting/3", {"motion_ids": [3], "name": "Test - Copy"}
+            "meeting/3", {"motion_ids": [5, 6], "name": "Test - Copy"}
         )
         self.assert_model_exists(
-            "motion/3", {"meeting_id": 3, "origin_id": None, "derived_motion_ids": None}
+            "motion/5",
+            {
+                "meeting_id": 3,
+                "origin_id": None,
+                "origin_meeting_id": None,
+                "derived_motion_ids": None,
+            },
         )
 
     def test_clone_with_underscore_attributes(self) -> None:

@@ -1,14 +1,14 @@
 import time
 from typing import Any, Dict, List
 
-from openslides_backend.models.checker import Checker, CheckException
-from openslides_backend.models.models import Meeting
-from openslides_backend.permissions.management_levels import CommitteeManagementLevel
-from openslides_backend.permissions.permission_helper import (
-    has_committee_management_level,
+from openslides_backend.models.checker import (
+    Checker,
+    CheckException,
+    external_motion_fields,
 )
+from openslides_backend.models.models import Meeting
 from openslides_backend.services.datastore.interface import GetManyRequest
-from openslides_backend.shared.exceptions import ActionException, PermissionDenied
+from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
@@ -31,6 +31,7 @@ updatable_fields = [
     "location",
     "organization_tag_ids",
     "name",
+    "external_id",
 ]
 
 
@@ -72,11 +73,7 @@ class MeetingClone(MeetingImport):
         )
 
     def preprocess_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Temporarely, because meeting.clone has _model and _collection attributes
-        """
-        underscore_keys = tuple(key for key in instance.keys() if key[0] == "_")
-        [instance.pop(key) for key in underscore_keys]
+        # overwrite method from meeting.import
         return instance
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -97,9 +94,7 @@ class MeetingClone(MeetingImport):
         self.check_one_meeting(instance)
         meeting = self.get_meeting_from_json(meeting_json)
 
-        if (committee_id := instance.get("committee_id")) and committee_id != meeting[
-            "committee_id"
-        ]:
+        if committee_id := instance.get("committee_id"):
             meeting["committee_id"] = committee_id
 
         # pre update the meeting
@@ -118,26 +113,13 @@ class MeetingClone(MeetingImport):
             if field in instance:
                 meeting[field] = instance.pop(field)
 
-        # reset mediafile/attachment_ids to [] if None.
-        for mediafile_id in instance["meeting"].get("mediafile", []):
-            if (
-                instance["meeting"]["mediafile"][mediafile_id].get("attachment_ids")
-                is None
-            ):
-                instance["meeting"]["mediafile"][mediafile_id]["attachment_ids"] = []
-
         # check datavalidation
         checker = Checker(
             data=meeting_json,
             mode="internal",
             repair=True,
             fields_to_remove={
-                "motion": [
-                    "origin_id",
-                    "derived_motion_ids",
-                    "all_origin_id",
-                    "all_derived_motion_ids",
-                ]
+                "motion": external_motion_fields,
             },
         )
         try:
@@ -259,9 +241,9 @@ class MeetingClone(MeetingImport):
             },
         )
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def get_committee_id(self, instance: Dict[str, Any]) -> int:
         if instance.get("committee_id"):
-            committee_id = instance["committee_id"]
+            return instance["committee_id"]
         else:
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
@@ -269,13 +251,4 @@ class MeetingClone(MeetingImport):
                 lock_result=False,
                 use_changed_models=False,
             )
-            committee_id = meeting["committee_id"]
-        if not has_committee_management_level(
-            self.datastore,
-            self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
-            committee_id,
-        ):
-            raise PermissionDenied(
-                f"Missing {CommitteeManagementLevel.CAN_MANAGE.get_verbose_type()}: {CommitteeManagementLevel.CAN_MANAGE} for committee {committee_id}"
-            )
+            return meeting["committee_id"]
