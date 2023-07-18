@@ -181,6 +181,25 @@ class TopicCreateSystemTest(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_create_with_tag_ids(self) -> None:
+        """Tag 1 is from meeting 1 and a topic for meeting 1 should be created."""
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1, "tag_ids": [1]},
+                "tag/1": {"name": "test tag", "meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "topic.create", {"meeting_id": 1, "title": "A", "tag_ids": [1]}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "topic/1", {"meeting_id": 1, "title": "A", "tag_ids": [1]}
+        )
+        self.assert_model_exists(
+            "tag/1", {"meeting_id": 1, "name": "test tag", "tagged_ids": ["topic/1"]}
+        )
+
     def test_create_no_permission(self) -> None:
         self.base_permission_test(
             {}, "topic.create", {"meeting_id": 1, "title": "test"}
