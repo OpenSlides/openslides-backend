@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 from openslides_backend.action.action_worker import gunicorn_post_request
 from openslides_backend.action.relations.relation_manager import RelationManager
+from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import ActionResults, Payload
@@ -23,6 +24,7 @@ from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import FullQualifiedId
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+from tests.system.action.util import get_internal_auth_header
 from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_action_test_application, get_route_path
 from tests.util import Response
@@ -31,6 +33,7 @@ from .mock_gunicorn_gthread_worker import MockGunicornThreadWorker
 
 DEFAULT_PASSWORD = "password"
 ACTION_URL = get_route_path(ActionView.action_route)
+ACTION_URL_INTERNAL = get_route_path(ActionView.internal_action_route)
 ACTION_URL_SEPARATELY = get_route_path(ActionView.action_route, "handle_separately")
 
 
@@ -44,12 +47,14 @@ class BaseActionTestCase(BaseSystemTestCase):
         data: Dict[str, Any],
         anonymous: bool = False,
         lang: Optional[str] = None,
+        internal: Optional[bool] = None,
     ) -> Response:
         return self.request_multi(
             action,
             [data],
             anonymous=anonymous,
             lang=lang,
+            internal=internal,
         )
 
     def request_multi(
@@ -58,7 +63,13 @@ class BaseActionTestCase(BaseSystemTestCase):
         data: List[Dict[str, Any]],
         anonymous: bool = False,
         lang: Optional[str] = None,
+        internal: Optional[bool] = None,
     ) -> Response:
+        ActionClass = actions_map.get(action)
+        if internal is None:
+            internal = bool(
+                ActionClass and ActionClass.action_type != ActionType.PUBLIC
+            )
         response = self.request_json(
             [
                 {
@@ -68,6 +79,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             ],
             anonymous=anonymous,
             lang=lang,
+            internal=internal,
         )
         if response.status_code == 200:
             results = response.json.get("results", [])
@@ -80,17 +92,23 @@ class BaseActionTestCase(BaseSystemTestCase):
         payload: Payload,
         anonymous: bool = False,
         lang: Optional[str] = None,
+        internal: bool = False,
     ) -> Response:
         client = self.client if not anonymous else self.anon_client
         headers = {}
         if lang:
             headers["Accept-Language"] = lang
-        response = client.post(ACTION_URL, json=payload, headers=headers)
+        if internal:
+            url = ACTION_URL_INTERNAL
+            headers.update(get_internal_auth_header())
+        else:
+            url = ACTION_URL
+        response = client.post(url, json=payload, headers=headers)
         if response.status_code == 202:
             gunicorn_post_request(
                 MockGunicornThreadWorker(),
-                None,  # type:ignore
-                None,  # type:ignore
+                None,  # type: ignore
+                None,  # type: ignore
                 response,
             )
         return response

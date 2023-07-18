@@ -17,6 +17,7 @@ class BaseVoteTestCase(BaseActionTestCase):
         data: Dict[str, Any],
         anonymous: bool = False,
         lang: Optional[str] = None,
+        internal: Optional[bool] = None,
         start_poll_before_vote: bool = True,
         stop_poll_after_vote: bool = True,
     ) -> Response:
@@ -29,7 +30,7 @@ class BaseVoteTestCase(BaseActionTestCase):
                 self.execute_action_internally("poll.stop", {"id": data["id"]})
             return response
         else:
-            return super().request(action, data, anonymous, lang)
+            return super().request(action, data, anonymous, lang, internal)
 
     def anonymous_vote(self, payload: Dict[str, Any], id: int = 1) -> Response:
         # make request manually to prevent sending of cookie & header
