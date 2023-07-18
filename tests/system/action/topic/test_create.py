@@ -159,6 +159,28 @@ class TopicCreateSystemTest(BaseActionTestCase):
         topic = self.get_model("topic/3")
         self.assertEqual(topic.get("sequential_number"), 44)
 
+    def test_create_meeting_id_tag_ids_mismatch(self) -> None:
+        """Tag 8 is from meeting 8 and a topic for meeting 1 should be created.
+        This should lead to an error."""
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/8": {
+                    "is_active_in_organization_id": 1,
+                    "tag_ids": [8],
+                },
+                "tag/8": {"name": "tag8", "meeting_id": 8},
+            }
+        )
+        response = self.request(
+            "topic.create", {"meeting_id": 1, "title": "A", "tag_ids": [8]}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "The following models do not belong to meeting 1: ['tag/8']"
+            in response.json["message"]
+        )
+
     def test_create_no_permission(self) -> None:
         self.base_permission_test(
             {}, "topic.create", {"meeting_id": 1, "title": "test"}
