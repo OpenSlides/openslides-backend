@@ -5,7 +5,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from tests.system.action.base import BaseActionTestCase
 
 
-class TopicJsonUpload(BaseActionTestCase):
+class TestAccountJsonUpload(BaseActionTestCase):
     def test_json_upload(self) -> None:
         start_time = int(time())
         response = self.request(
@@ -13,10 +13,19 @@ class TopicJsonUpload(BaseActionTestCase):
             {
                 "data": [
                     {
-                        "username": "test",
-                        "default_password": "secret",
+                        "title": "title",
+                        "first_name": "first name",
+                        "last_name": "last name",
                         "is_active": "1",
                         "is_physical_person": "F",
+                        "default_password": "secret",
+                        "email": "email",
+                        "username": "test",
+                        "gender": "gender",
+                        "pronoun": "pronoun",
+                        "default_structure_level": "structure level",
+                        "default_number": "number",
+                        "default_vote_weight": "2.000000",
                         "wrong": 15,
                     }
                 ],
@@ -28,10 +37,19 @@ class TopicJsonUpload(BaseActionTestCase):
             "state": ImportState.NEW,
             "messages": [],
             "data": {
-                "username": {"value": "test", "info": ImportState.DONE},
-                "default_password": {"value": "secret", "info": ImportState.DONE},
+                "title": "title",
+                "first_name": "first name",
+                "last_name": "last name",
                 "is_active": True,
                 "is_physical_person": False,
+                "default_password": {"value": "secret", "info": ImportState.DONE},
+                "email": "email",
+                "username": {"value": "test", "info": ImportState.DONE},
+                "gender": "gender",
+                "pronoun": "pronoun",
+                "default_structure_level": "structure level",
+                "default_number": "number",
+                "default_vote_weight": "2.000000",
             },
         }
         worker = self.assert_model_exists("action_worker/1")

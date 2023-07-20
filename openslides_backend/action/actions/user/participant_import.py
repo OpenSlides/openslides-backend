@@ -3,7 +3,7 @@ from ...util.register import register_action
 from .base_import import BaseUserImport
 
 
-@register_action("account.import")
-class AccountImport(BaseUserImport):
+@register_action("participant.import")
+class ParticipantImport(BaseUserImport):
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
-    import_name = "account"
+    import_name = "participant"

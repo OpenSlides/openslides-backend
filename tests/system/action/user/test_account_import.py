@@ -5,7 +5,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from tests.system.action.base import BaseActionTestCase
 
 
-class UserJsonImport(BaseActionTestCase):
+class TestAccountImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.set_models(
