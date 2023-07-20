@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import fastjsonschema
 
@@ -116,36 +116,20 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
             UserCreate.schema_validator(entry)
             if entry.get("username"):
                 if self.check_username_for_duplicate(entry["username"], payload_index):
-                    state = ImportState.DONE
-                    if searchdata := self.get_search_data(payload_index):
-                        entry["username"] = {
-                            "value": entry["username"],
-                            "info": "done",
-                            "id": searchdata["id"],
-                        }
-                    else:
-                        entry["username"] = {"value": entry["username"], "info": "done"}
-                        state = ImportState.ERROR
-                        messages.append(f"Duplicate in csv list index: {payload_index}")
+                    state, msg = self.handle_done_entry(
+                        "username", entry, payload_index
+                    )
+                    if msg:
+                        messages.append(msg)
                 else:
-                    state = ImportState.NEW
-                    entry["username"] = {"value": entry["username"], "info": "done"}
+                    state = self.handle_new_entry("username", entry)
             elif entry.get("saml_id"):
                 if self.check_saml_id_for_duplicate(entry["saml_id"], payload_index):
-                    state = ImportState.DONE
-                    if searchdata := self.get_search_data(payload_index):
-                        entry["saml_id"] = {
-                            "value": entry["saml_id"],
-                            "info": "done",
-                            "id": searchdata["id"],
-                        }
-                    else:
-                        entry["saml_id"] = {"value": entry["saml_id"], "info": "done"}
-                        state = ImportState.ERROR
-                        messages.append(f"Duplicate in csv list index: {payload_index}")
+                    state, msg = self.handle_done_entry("saml_id", entry, payload_index)
+                    if msg:
+                        messages.append(msg)
                 else:
-                    state = ImportState.NEW
-                    entry["saml_id"] = {"value": entry["saml_id"], "info": "done"}
+                    state = self.handle_new_entry("saml_id", entry)
             else:
                 if not (entry.get("first_name") or entry.get("last_name")):
                     state = ImportState.ERROR
@@ -178,6 +162,8 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                     }
             self.handle_default_password(entry, state)
             if entry.get("saml_id", {}).get("value"):
+                if entry.get("password") or entry.get("default_password"):
+                    messages.append("Remove password or default_password from entry.")
                 entry.pop("password", None)
                 entry.pop("default_password", None)
                 entry["can_change_own_password"] = False
@@ -209,3 +195,25 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
             entry.get("last_name", ""),
             entry.get("email", ""),
         )
+
+    def handle_done_entry(
+        self, fieldname: str, entry: Dict[str, Any], payload_index: int
+    ) -> Tuple[ImportState, Optional[str]]:
+        state = ImportState.DONE
+        message = None
+        if searchdata := self.get_search_data(payload_index):
+            entry[fieldname] = {
+                "value": entry[fieldname],
+                "info": "done",
+                "id": searchdata["id"],
+            }
+        else:
+            entry[fieldname] = {"value": entry[fieldname], "info": "done"}
+            state = ImportState.ERROR
+            message = f"Duplicate in csv list index: {payload_index}"
+        return state, message
+
+    def handle_new_entry(self, fieldname: str, entry: Dict[str, Any]) -> ImportState:
+        state = ImportState.NEW
+        entry[fieldname] = {"value": entry[fieldname], "info": "done"}
+        return state

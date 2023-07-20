@@ -363,6 +363,9 @@ class TopicJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         worker = self.assert_model_exists("action_worker/1")
         assert worker["result"]["import"] == "account"
+        assert worker["result"]["rows"][0]["messages"] == [
+            "Remove password or default_password from entry."
+        ]
         data = worker["result"]["rows"][0]["data"]
         assert data.get("saml_id") == {
             "value": "test",
