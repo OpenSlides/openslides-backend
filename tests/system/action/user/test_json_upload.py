@@ -354,6 +354,8 @@ class TopicJsonUpload(BaseActionTestCase):
                 "data": [
                     {
                         "saml_id": "test",
+                        "password": "test2",
+                        "default_password": "test3",
                     }
                 ],
             },
@@ -361,10 +363,14 @@ class TopicJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         worker = self.assert_model_exists("action_worker/1")
         assert worker["result"]["import"] == "account"
-        assert worker["result"]["rows"][0]["data"].get("saml_id") == {
+        data = worker["result"]["rows"][0]["data"]
+        assert data.get("saml_id") == {
             "value": "test",
             "info": "done",
         }
+        assert "password" not in data
+        assert "default_password" not in data
+        assert data.get("can_change_own_password") is False
 
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(

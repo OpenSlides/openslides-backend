@@ -177,6 +177,10 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                         "info": ImportState.GENERATED,
                     }
             self.handle_default_password(entry, state)
+            if entry.get("saml_id", {}).get("value"):
+                entry.pop("password", None)
+                entry.pop("default_password", None)
+                entry["can_change_own_password"] = False
         except fastjsonschema.JsonSchemaException as exception:
             state = ImportState.ERROR
             messages.append(exception.message)
