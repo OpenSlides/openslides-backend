@@ -6,9 +6,3 @@ CREATE TABLE IF NOT EXISTS media.mediafile_data (
     data bytea,
     mimetype varchar(255)
 );
-
-CREATE TABLE IF NOT EXISTS media.resource_data (
-    id int PRIMARY KEY,
-    data bytea,
-    mimetype varchar(255)
-);

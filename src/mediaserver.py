@@ -30,25 +30,14 @@ def handle_view_error(error):
     return response
 
 
-@app.route("/system/media/get/<int:mediafile_id>")
-def serve(mediafile_id):
-    return serve_files(mediafile_id, "mediafile")
-
-
-@app.route("/system/media/get_resource/<int:resource_id>")
-def serve_resource(resource_id):
-    return serve_files(resource_id, "resource")
-
-
-def serve_files(file_id, file_type):
+@app.route("/system/media/get/<int:file_id>")
+def serve(file_id):
     # get file id
     presenter_headers = dict(request.headers)
     del_keys = [key for key in presenter_headers if "content" in key]
     for key in del_keys:
         del presenter_headers[key]
-    ok, filename, auth_header = check_file_id(
-        file_id, file_type, app, presenter_headers
-    )
+    ok, filename, auth_header = check_file_id(file_id, app, presenter_headers)
     if not ok:
         raise NotFoundError()
 
@@ -56,7 +45,7 @@ def serve_files(file_id, file_type):
 
     # Query file from db
     global database
-    data, mimetype = database.get_file(file_id, file_type)
+    data, mimetype = database.get_file(file_id)
 
     # Send data (chunked)
     def chunked(size, source):
@@ -80,15 +69,6 @@ def serve_files(file_id, file_type):
 
 @app.route("/internal/media/upload_mediafile/", methods=["POST"])
 def media_post():
-    return file_post("mediafile")
-
-
-@app.route("/internal/media/upload_resource/", methods=["POST"])
-def resource_post():
-    return file_post("resource")
-
-
-def file_post(file_type):
     dejson = get_json_from_request()
     try:
         file_data = base64.b64decode(dejson["file"].encode())
@@ -101,9 +81,9 @@ def file_post(file_type):
         raise BadRequestError(
             f"The post request.data is not in right format: {request.data}"
         )
-    app.logger.debug(f"to database {file_type} {file_id} {mimetype}")
+    app.logger.debug(f"to database {file_id} {mimetype}")
     global database
-    database.set_mediafile(file_id, file_type, file_data, mimetype)
+    database.set_mediafile(file_id, file_data, mimetype)
     return "", 200
 
 
@@ -113,9 +93,9 @@ def duplicate_mediafile():
     app.logger.debug(f"source_id {source_id} and target_id {target_id}")
     global database
     # Query file source_id from db
-    data, mimetype = database.get_file(source_id, "mediafile")
+    data, mimetype = database.get_file(source_id)
     # Insert mediafile in target_id into db
-    database.set_mediafile(target_id, "mediafile", data, mimetype)
+    database.set_mediafile(target_id, data, mimetype)
     return "", 200
 
 

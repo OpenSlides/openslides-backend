@@ -8,7 +8,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+
     - name: Run tests
       run: make run-tests
+    
+    - name: Run black
+      run: make check-black
+    
+    - name: Run isort
+      run: make check-isort
+    
+    - name: Run flake8
+      run: make flake8
+
     - name: Stop containers
       run: make stop-tests

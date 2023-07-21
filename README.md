@@ -1,8 +1,7 @@
 # openslides-media-service
 Media service for OpenSlides 4
 
-Delivers media files and resources for OpenSlides. It stores the data in the
-database.
+Delivers media files for OpenSlides. It stores the data in the database.
 
 ## Configuration
 - `MEDIA_DATABASE_HOST`: Host of the database (default: `postgres`)

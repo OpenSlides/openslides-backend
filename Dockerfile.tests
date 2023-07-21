@@ -6,9 +6,10 @@ RUN apt-get -y update && apt-get -y upgrade && \
 
 WORKDIR /app
 
-COPY requirements_tests.txt .
+COPY requirements*.txt ./
 RUN pip install -r requirements_tests.txt
 
+COPY setup.cfg .
 COPY src/* src/
 COPY scripts/entrypoint.sh .
 COPY scripts/service_env.sh scripts/

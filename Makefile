@@ -13,10 +13,18 @@ start-test-setup: | build-dev build-tests build-dummy-presenter
 
 run-tests: | start-test-setup
 	docker-compose -f docker-compose.test.yml exec -T tests pytest
-	docker-compose -f docker-compose.test.yml down
 
 run-tests-interactive: | start-test-setup
 	docker-compose -f docker-compose.test.yml exec tests bash
+
+check-black:
+	docker-compose -f docker-compose.test.yml exec -T tests black --check --diff src/ tests/
+
+check-isort:
+	docker-compose -f docker-compose.test.yml exec -T tests isort --check-only --diff src/ tests/
+
+flake8:
+	docker-compose -f docker-compose.test.yml exec -T tests flake8 src/ tests/
 
 stop-tests:
 	docker-compose -f docker-compose.test.yml down
