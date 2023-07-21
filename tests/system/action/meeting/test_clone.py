@@ -294,6 +294,7 @@ class MeetingClone(BaseActionTestCase):
                 "location": "Testraum",
                 "organization_tag_ids": [1],
                 "name": "name_ORnVFSQJ",
+                "external_id": "external_id",
             },
         )
         self.assert_status_code(response, 200)
@@ -308,10 +309,30 @@ class MeetingClone(BaseActionTestCase):
                 "start_time": 1641370959,
                 "end_time": 1641370959,
                 "name": "name_ORnVFSQJ",
+                "external_id": "external_id",
                 "template_for_organization_id": None,
             },
         )
         self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/2"]})
+
+    def test_clone_with_duplicate_external_id(self) -> None:
+        self.test_models["meeting/1"][
+            "template_for_organization_id"
+        ] = ONE_ORGANIZATION_ID
+        self.test_models["meeting/1"]["external_id"] = "external_id"
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "external_id": "external_id",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the meeting is not unique in the committee scope.",
+            response.json["message"],
+        )
 
     def test_clone_with_recommendation_extension(self) -> None:
         self.set_models(self.test_models)
@@ -985,7 +1006,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Missing CommitteeManagementLevel: can_manage for committee 2",
+            "Missing permission: CommitteeManagementLevel can_manage in committee 2",
             response.json["message"],
         )
 
@@ -1007,7 +1028,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Missing CommitteeManagementLevel: can_manage for committee 1",
+            "Missing permission: CommitteeManagementLevel can_manage in committee 1",
             response.json["message"],
         )
 

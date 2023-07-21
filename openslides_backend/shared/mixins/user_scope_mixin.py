@@ -34,8 +34,9 @@ class UserScopeMixin(BaseServiceProvider):
         self, id_or_instance: int | Dict[str, Any]
     ) -> Tuple[UserScope, int, str]:
         """
-        Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
-        and the oml-level of the user as string (Empty string, if no)
+        Returns the scope of the given user id together with the relevant scope id (either meeting,
+        committee or organization) and the OML level of the user as string (empty string if the user
+        has none).
         """
         meetings: Set[int] = set()
         committees_manager: Set[int] = set()
@@ -70,21 +71,17 @@ class UserScopeMixin(BaseServiceProvider):
                 )
             ]
         ).get("meeting", {})
-        committees_of_meetings = set(
-            meeting_data.get("committee_id")
-            for _, meeting_data in result.items()
-            if meeting_data.get("is_active_in_organization_id")
-        )
-        committees = list(committees_manager | committees_of_meetings)
-        meetings_committee = {
-            meeting_id: meeting_data.get("committee_id")  # type: ignore
+
+        meetings_committee: Dict[int, int] = {
+            meeting_id: meeting_data["committee_id"]
             for meeting_id, meeting_data in result.items()
             if meeting_data.get("is_active_in_organization_id")
         }
+        committees = committees_manager | set(meetings_committee.values())
         if len(meetings_committee) == 1 and len(committees) == 1:
             return UserScope.Meeting, next(iter(meetings_committee)), oml_right
         elif len(committees) == 1:
-            return UserScope.Committee, cast(int, committees[0]), oml_right
+            return UserScope.Committee, next(iter(committees)), oml_right
         return UserScope.Organization, 1, oml_right
 
     def check_permissions_for_scope(

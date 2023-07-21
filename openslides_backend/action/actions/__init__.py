@@ -30,6 +30,7 @@ def prepare_actions_map() -> None:
         organization,
         organization_tag,
         personal_note,
+        point_of_order_category,
         poll,
         poll_candidate,
         poll_candidate_list,
