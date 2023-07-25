@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "8c8b134007bfc8c540f6074b00def99a"
+MODELS_YML_CHECKSUM = "3aadf13ed4f7f2c59817c42a3cc2f194"
 
 
 class Organization(Model):
@@ -456,6 +456,9 @@ class Meeting(Model):
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
     list_of_speakers_enable_point_of_order_categories = fields.BooleanField(
         default=False
+    )
+    list_of_speakers_restrict_point_of_order_submissions_to_open_lists = (
+        fields.BooleanField(default=False)
     )
     list_of_speakers_enable_pro_contra_speech = fields.BooleanField(default=False)
     list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)

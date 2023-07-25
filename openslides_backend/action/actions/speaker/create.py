@@ -215,6 +215,7 @@ class SpeakerCreateAction(
                 "list_of_speakers_enable_point_of_order_speakers",
                 "list_of_speakers_enable_point_of_order_categories",
                 "list_of_speakers_present_users_only",
+                "list_of_speakers_restrict_point_of_order_submissions_to_open_lists",
             ],
         )
         if instance.get("point_of_order") and not meeting.get(
@@ -239,7 +240,12 @@ class SpeakerCreateAction(
             )
 
         if (
-            not instance.get("point_of_order")
+            (
+                not instance.get("point_of_order")
+                or meeting.get(
+                    "list_of_speakers_restrict_point_of_order_submissions_to_open_lists"
+                )
+            )
             and los.get("closed")
             and instance.get("user_id") == self.user_id
             and not has_perm(

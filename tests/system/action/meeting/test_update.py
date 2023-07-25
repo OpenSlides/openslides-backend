@@ -547,6 +547,19 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting/1", {"list_of_speakers_enable_point_of_order_speakers": True}
         )
 
+    def test_update_list_of_speakers_restrict_point_of_order_submissions_to_open_lists(
+        self,
+    ) -> None:
+        self.basic_test(
+            {"list_of_speakers_restrict_point_of_order_submissions_to_open_lists": True}
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "list_of_speakers_restrict_point_of_order_submissions_to_open_lists": True
+            },
+        )
+
     def test_update_with_user(self) -> None:
         self.set_models(
             {
