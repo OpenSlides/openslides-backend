@@ -63,6 +63,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "list_of_speakers_show_first_contribution": True,
             "list_of_speakers_enable_point_of_order_speakers": True,
             "list_of_speakers_enable_point_of_order_categories": False,
+            "list_of_speakers_point_of_order_closable": False,
             "list_of_speakers_enable_pro_contra_speech": False,
             "list_of_speakers_can_set_contribution_self": False,
             "list_of_speakers_speaker_note_for_everyone": True,

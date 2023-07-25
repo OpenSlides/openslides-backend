@@ -138,9 +138,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.test_models["meeting/1"][
             "list_of_speakers_enable_point_of_order_speakers"
         ] = True
-        self.test_models["meeting/1"][
-            "list_of_speakers_restrict_point_of_order_submissions_to_open_lists"
-        ] = True
+        self.test_models["meeting/1"]["list_of_speakers_point_of_order_closable"] = True
         self.test_models["meeting/1"]["group_ids"] = [3]
         self.test_models["group/3"] = {"name": "permission group", "meeting_id": 1}
         self.test_models["point_of_order_category/1"] = {"rank": 1, "meeting_id": 1}

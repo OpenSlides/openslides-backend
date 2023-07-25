@@ -1051,7 +1051,7 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
-  list_of_speakers_restrict_point_of_order_submissions_to_open_lists:
+  list_of_speakers_point_of_order_closable:
     type: boolean
     default: False
     restriction_mode: B
