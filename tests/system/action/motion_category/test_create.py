@@ -104,6 +104,35 @@ class MotionCategorySystemTest(BaseActionTestCase):
         assert model.get("name") == "test_Xcdfgee"
         assert "prefix" not in model
 
+    def test_create_not_unique_prefix(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                    "motion_category_ids": [1],
+                },
+                "motion_category/1": {"meeting_id": 222, "prefix": "test"},
+            }
+        )
+        response = self.request(
+            "motion_category.create",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "prefix": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion_category/2",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "prefix": "test",
+            },
+        )
+
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
             {},
