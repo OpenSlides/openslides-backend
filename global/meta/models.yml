@@ -1051,6 +1051,10 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
+  list_of_speakers_closing_disables_point_of_order:
+    type: boolean
+    default: False
+    restriction_mode: B
   list_of_speakers_enable_pro_contra_speech:
     type: boolean
     default: False

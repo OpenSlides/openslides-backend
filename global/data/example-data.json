@@ -411,6 +411,7 @@
             "list_of_speakers_show_first_contribution": false,
             "list_of_speakers_enable_point_of_order_speakers": true,
             "list_of_speakers_enable_point_of_order_categories": false,
+            "list_of_speakers_closing_disables_point_of_order": false,
             "list_of_speakers_enable_pro_contra_speech": false,
             "list_of_speakers_can_set_contribution_self": false,
             "list_of_speakers_speaker_note_for_everyone": true,
