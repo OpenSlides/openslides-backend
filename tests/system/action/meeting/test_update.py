@@ -547,6 +547,15 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting/1", {"list_of_speakers_enable_point_of_order_speakers": True}
         )
 
+    def test_update_list_of_speakers_closing_disables_point_of_order(
+        self,
+    ) -> None:
+        self.basic_test({"list_of_speakers_closing_disables_point_of_order": True})
+        self.assert_model_exists(
+            "meeting/1",
+            {"list_of_speakers_closing_disables_point_of_order": True},
+        )
+
     def test_update_with_user(self) -> None:
         self.set_models(
             {
