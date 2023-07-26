@@ -39,7 +39,13 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "name": "test_Xcdfgee",
                 "meeting_id": 42,
                 "first_state_name": "begin",
-                "states": [self.get_state("begin", [], [])],
+                "states": [
+                    {
+                        **self.get_state("begin", [], []),
+                        "set_workflow_timestamp": True,
+                        "allow_motion_forwarding": True,
+                    }
+                ],
             },
         )
         self.assert_status_code(response, 200)
@@ -58,6 +64,8 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "name": "begin",
                 "first_state_of_workflow_id": 1,
                 "weight": 1,
+                "set_workflow_timestamp": True,
+                "allow_motion_forwarding": True,
             },
         )
 
