@@ -1,15 +1,8 @@
-import pytest
 import requests
 
-from tests.base import reset_db
+from tests.base import get_mediafile, reset_db  # noqa
 
 DUPLICATE_URL = "http://media:9006/internal/media/duplicate_mediafile/"
-GET_URL = "http://media:9006/system/media/get/"
-
-
-@pytest.fixture(autouse=True)
-def reset_db_in_duplicate_mediafile():
-    reset_db()
 
 
 def check_response(response, status_code):
@@ -17,8 +10,8 @@ def check_response(response, status_code):
     assert "message" in response.json()
 
 
-def check_saved_content(id_, content, mimetype):
-    get_response = requests.get(GET_URL + str(id_))
+def check_saved_content(id, content, mimetype):
+    get_response = get_mediafile(id)
     assert get_response.status_code == 200
     assert get_response.content == content
     assert mimetype in get_response.headers.get("Content-Type")

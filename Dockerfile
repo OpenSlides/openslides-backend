@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN apt-get -y update && apt-get -y upgrade && \
   apt-get install --no-install-recommends -y \
-    postgresql-client libpq-dev python3-dev gcc
+    postgresql-client libpq-dev python3-dev gcc git
 
 COPY requirements_production.txt requirements_production.txt
 RUN pip install -r requirements_production.txt
@@ -20,4 +20,4 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-
 
 EXPOSE 9006
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "-b", "0.0.0.0:9006", "src.mediaserver:app"]
+CMD exec gunicorn -b 0.0.0.0:9006 src.mediaserver:app

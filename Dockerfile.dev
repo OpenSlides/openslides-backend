@@ -1,7 +1,7 @@
 FROM python:3.10.3-slim-buster
 
 RUN apt-get -y update && apt-get install --no-install-recommends -y \
-    postgresql-client libpq-dev gcc libc-dev
+    postgresql-client libpq-dev gcc libc-dev git
 
 WORKDIR /app
 
@@ -14,10 +14,9 @@ COPY scripts/execute-cleanup.sh .
 COPY setup.cfg .
 COPY scripts/service_env.sh scripts/
 
+RUN chmod 777 -R .
+
 EXPOSE 9006
 
-ENV FLASK_APP ./src/mediaserver.py
-ENV FLASK_ENV development
-
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["flask", "run", "--host", "0.0.0.0", "--port", "9006"]
+CMD exec flask --app src/mediaserver run --host 0.0.0.0 --port 9006 --debug

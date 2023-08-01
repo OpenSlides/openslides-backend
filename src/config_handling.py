@@ -1,6 +1,8 @@
 import os
 import sys
 
+from flask import current_app as app
+
 DEV_MODE_ENVIRONMENT_VAR = "OPENSLIDES_DEVELOPMENT"
 DEV_SECRET = "openslides"
 
@@ -21,7 +23,7 @@ def get_type_for(config_value):
     return type(CONFIG_DEFAULTS[config_value])
 
 
-def init_config(app):
+def init_config():
     for config, default in CONFIG_DEFAULTS.items():
         if config.endswith("_FILE"):
             value = get_config_from(config)

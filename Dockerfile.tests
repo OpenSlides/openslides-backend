@@ -2,7 +2,7 @@ FROM python:3.10.3-slim-buster
 
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y wait-for-it \
-    postgresql-client libpq-dev gcc libc-dev
+    postgresql-client libpq-dev gcc libc-dev git
 
 WORKDIR /app
 
@@ -14,5 +14,8 @@ COPY src/* src/
 COPY scripts/entrypoint.sh .
 COPY scripts/service_env.sh scripts/
 
+RUN chmod 777 -R .
+
+STOPSIGNAL SIGKILL
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["bash", "-c", "sleep infinity"]
+CMD ["sleep", "inf"]

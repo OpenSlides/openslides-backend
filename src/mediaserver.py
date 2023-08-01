@@ -1,21 +1,25 @@
 import atexit
 import base64
 import json
+import sys
+from functools import partial
+from signal import SIGINT, SIGTERM, signal
 
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify, redirect, request
 
-from .auth import AUTH_HEADER, check_file_id
+from .auth import AUTHENTICATION_HEADER, check_file_id, check_login
 from .config_handling import init_config, is_dev_mode
 from .database import Database
 from .exceptions import BadRequestError, HttpError, NotFoundError
 from .logging import init_logging
 
 app = Flask(__name__)
-init_logging(app)
-init_config(app)
-database = Database(app)
+with app.app_context():
+    init_logging()
+    init_config()
+    database = Database()
 
-app.logger.info("Started Media-Server")
+app.logger.info("Started media server")
 
 
 @app.errorhandler(HttpError)
@@ -32,12 +36,15 @@ def handle_view_error(error):
 
 @app.route("/system/media/get/<int:file_id>")
 def serve(file_id):
+    if not check_login():
+        return redirect("/")
+
     # get file id
     presenter_headers = dict(request.headers)
     del_keys = [key for key in presenter_headers if "content" in key]
     for key in del_keys:
         del presenter_headers[key]
-    ok, filename, auth_header = check_file_id(file_id, app, presenter_headers)
+    ok, filename, auth_header = check_file_id(file_id, presenter_headers)
     if not ok:
         raise NotFoundError()
 
@@ -58,12 +65,12 @@ def serve(file_id):
     filename_latin1 = filename.encode("latin1", errors="replace").decode("latin1")
     response.headers["Content-Disposition"] = f'inline; filename="{filename_latin1}"'
 
-    client_cache_duration = int(app.config["MEDIA_CLIENT_CACHE_DURATION"])
+    client_cache_duration = int(app.config["MEDIA_CLIENT_CACHE_DURATION"] or 0)
     if client_cache_duration > 0 and not is_dev_mode():
         response.headers["Cache-Control"] = f"private, max-age={client_cache_duration}"
 
     if auth_header:
-        response.headers[AUTH_HEADER] = auth_header
+        response.headers[AUTHENTICATION_HEADER] = auth_header
     return response
 
 
@@ -126,3 +133,6 @@ def shutdown(database):
 
 
 atexit.register(shutdown, database)
+
+for sig in (SIGTERM, SIGINT):
+    signal(sig, partial(sys.exit, 0))

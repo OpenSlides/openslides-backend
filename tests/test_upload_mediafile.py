@@ -1,18 +1,10 @@
-# Tests for the openslides media service
 import base64
 
-import pytest
 import requests
 
-from tests.base import reset_db
+from tests.base import get_mediafile, reset_db  # noqa
 
 UPLOAD_URL = "http://media:9006/internal/media/upload_mediafile/"
-GET_URL = "http://media:9006/system/media/get/"
-
-
-@pytest.fixture(autouse=True)
-def reset_db_in_upload_mediafile():
-    reset_db()
 
 
 def test_good():
@@ -25,7 +17,7 @@ def test_good():
     assert resp.status_code == 200
     assert resp.text == ""
 
-    get_response = requests.get(GET_URL + "4")
+    get_response = get_mediafile(4)
     assert get_response.status_code == 200
     assert get_response.content == b"testtesttest"
     assert "text/plain" in get_response.headers.get("Content-Type")

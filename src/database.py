@@ -1,11 +1,12 @@
 import psycopg2
+from flask import current_app as app
 
 from .cache import LRUCache
 from .exceptions import NotFoundError, ServerError
 
 
 class Database:
-    def __init__(self, app):
+    def __init__(self):
         self.config = app.config
         self.logger = app.logger
         self.connection = None
