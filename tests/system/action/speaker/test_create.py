@@ -648,3 +648,59 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("speaker/3", {"weight": 4})
         self.assert_model_exists("speaker/4", {"weight": 5})
+
+    def test_create_category_key_error_problem(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_asdewqasd",
+                    "is_active_in_organization_id": 1,
+                    "list_of_speakers_enable_point_of_order_categories": True,
+                    "list_of_speakers_enable_point_of_order_speakers": True,
+                    "point_of_order_category_ids": [2, 3, 5],
+                },
+                "user/1": {
+                    "meeting_ids": [1],
+                },
+                "point_of_order_category/2": {
+                    "rank": 2,
+                    "meeting_id": 1,
+                },
+                "point_of_order_category/3": {
+                    "rank": 3,
+                    "meeting_id": 1,
+                },
+                "point_of_order_category/5": {
+                    "rank": 5,
+                    "meeting_id": 1,
+                },
+                "speaker/1": {
+                    "weight": 1,
+                    "point_of_order": True,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/23": {"speaker_ids": [1], "meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "speaker.create",
+            {
+                "user_id": 1,
+                "list_of_speakers_id": 23,
+                "point_of_order": True,
+                "point_of_order_category_id": 3,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/2",
+            {
+                "user_id": 1,
+                "list_of_speakers_id": 23,
+                "point_of_order": True,
+                "point_of_order_category_id": 3,
+                "weight": 1,
+            },
+        )
+        self.assert_model_exists("speaker/1", {"weight": 2})

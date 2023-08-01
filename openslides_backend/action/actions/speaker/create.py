@@ -94,6 +94,7 @@ class SpeakerCreateAction(
                 speaker = los[index]
                 if (
                     speaker.get("point_of_order")
+                    and speaker.get("point_of_order_category_id")
                     and categories[speaker["point_of_order_category_id"]]["rank"]
                     <= new_speaker_rank
                 ):
