@@ -32,7 +32,7 @@ class TopicCreate(
     model = Topic()
     schema = DefaultSchema(Topic()).get_create_schema(
         required_properties=["meeting_id", "title"],
-        optional_properties=["text", "attachment_ids", "tag_ids"],
+        optional_properties=["text", "attachment_ids"],
         additional_optional_fields=agenda_creation_properties,
     )
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]

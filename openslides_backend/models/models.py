@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "8c8b134007bfc8c540f6074b00def99a"
+MODELS_YML_CHECKSUM = "4ee1bccdf2ec2a8d19562e1e4d4b18b2"
 
 
 class Organization(Model):
@@ -457,6 +457,9 @@ class Meeting(Model):
     list_of_speakers_enable_point_of_order_categories = fields.BooleanField(
         default=False
     )
+    list_of_speakers_closing_disables_point_of_order = fields.BooleanField(
+        default=False
+    )
     list_of_speakers_enable_pro_contra_speech = fields.BooleanField(default=False)
     list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)
     list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
@@ -902,12 +905,7 @@ class Tag(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     tagged_ids = fields.GenericRelationListField(
-        to={
-            "agenda_item": "tag_ids",
-            "assignment": "tag_ids",
-            "motion": "tag_ids",
-            "topic": "tag_ids",
-        },
+        to={"agenda_item": "tag_ids", "assignment": "tag_ids", "motion": "tag_ids"},
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(to={"meeting": "tag_ids"}, required=True)
@@ -1075,9 +1073,6 @@ class Topic(Model):
         on_delete=fields.OnDelete.CASCADE,
         required=True,
         equal_fields="meeting_id",
-    )
-    tag_ids = fields.RelationListField(
-        to={"tag": "tagged_ids"}, equal_fields="meeting_id"
     )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},
