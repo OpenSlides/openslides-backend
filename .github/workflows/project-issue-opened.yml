@@ -1,4 +1,4 @@
-name: Project automation
+name: Project automation issue opened
 on:
   issues:
     types:

@@ -1,0 +1,20 @@
+name: Delegated project automation for reviews
+
+on:
+  workflow_run:
+    workflows: [Project automation issue opened]
+    types:
+      - requested
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ github.event.workflow_run.event }}"
+      - run: echo "${{ github.event.workflow_run.event.issue }}"
+      - run: echo "${{ github.event.workflow_run.event.issue.node_id }}"
+      - run: echo "${{ github.event.workflow_run.pull_requests }}"
+      - run: echo "${{ github.event.workflow_run.pull_requests[0] }}"
+      - run: echo "${{ github.event.workflow_run.pull_requests[0].id }}"
+      - run: echo "${{ github.event.workflow_run.pull_requests[0].node_id }}"
+      - run: echo "${{ github.event.workflow_run.pull_requests[0].number }}"

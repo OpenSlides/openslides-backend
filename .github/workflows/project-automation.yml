@@ -21,6 +21,7 @@ jobs:
     name: Set status
     runs-on: ubuntu-latest
     steps:
+      - run: echo "${{ inputs.status_value }}"
       - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
         with:
           gh_app_ID: ${{ secrets.AUTOMATION_APP_ID }}
