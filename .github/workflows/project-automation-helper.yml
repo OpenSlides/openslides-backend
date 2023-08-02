@@ -12,7 +12,6 @@ on:
 jobs:
   workflow_call:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_call'
     steps:
       - uses: leonsteinhaeuser/project-beta-automations@v2.1.0
         with:
