@@ -8,6 +8,13 @@ on:
       status_value:
         required: true
         type: string
+    secrets:
+      AUTOMATION_APP_ID:
+        required: true
+      AUTOMATION_APP_INSTALLATION_ID:
+        required: true
+      AUTOMATION_APP_PRIVATE_KEY:
+        required: true
 
 jobs:
   workflow_call:

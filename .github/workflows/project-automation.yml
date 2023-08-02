@@ -19,36 +19,42 @@ jobs:
   issue_opened:
     if: github.event_name == 'issues' && (github.event.action == 'opened' || github.event.action == 'reopened')
     uses: ./.github/workflows/project-automation-helper.yml
+    secrets: inherit
     with:
       resource_node_id: ${{ github.event.issue.node_id }}
       status_value: "Planning"
   pull_request_opened:
     if: github.event_name == 'pull_request_target' && (github.event.action == 'opened' || github.event.action == 'reopened')
     uses: ./.github/workflows/project-automation-helper.yml
+    secrets: inherit
     with:
       resource_node_id: ${{ github.event.pull_request.node_id }}
       status_value: "Work in progress"
   pull_request_review_requested:
     if: github.event_name == 'pull_request_target' && github.event.action == 'review_requested'
     uses: ./.github/workflows/project-automation-helper.yml
+    secrets: inherit
     with:
       resource_node_id: ${{ github.event.pull_request.node_id }}
       status_value: "Review in progress"
   pull_request_changes_requested:
     if: github.event_name == 'pull_request_review' && github.event.review.state == 'changes_requested'
     uses: ./.github/workflows/project-automation-helper.yml
+    secrets: inherit
     with:
       resource_node_id: ${{ github.event.pull_request.node_id }}
       status_value: "Work in progress"
   pull_request_approved:
     if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
     uses: ./.github/workflows/project-automation-helper.yml
+    secrets: inherit
     with:
       resource_node_id: ${{ github.event.pull_request.node_id }}
       status_value: "Reviewer approved"
   pull_request_or_issue_closed:
     if: github.event.action == 'closed'
     uses: ./.github/workflows/project-automation-helper.yml
+    secrets: inherit
     with:
       resource_node_id: ${{ github.event.pull_request.node_id }}
       status_value: "Done"
