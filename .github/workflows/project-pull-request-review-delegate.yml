@@ -1,0 +1,25 @@
+name: Delegated project automation for reviews
+
+on:
+  workflow_run:
+    workflows: [Project automation for reviews]
+    types:
+      - requested
+
+jobs:
+  pull_request_approved:
+    name: Pull request approved
+    if: github.event.workflow_run.event.review.state == 'approved'
+    uses: ./.github/workflows/project-automation.yml
+    secrets: inherit
+    with:
+      resource_node_id: ${{ github.event.workflow_run.event.pull_request.node_id }}
+      status_value: "Reviewer approved"
+  pull_request_changes_requested:
+    name: Pull request changes requested
+    if: github.event.workflow_run.event.review.state == 'changes_requested'
+    uses: ./.github/workflows/project-automation.yml
+    secrets: inherit
+    with:
+      resource_node_id: ${{ github.event.workflow_run.event.pull_request.node_id }}
+      status_value: "Work in progress"
