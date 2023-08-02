@@ -12,4 +12,4 @@ jobs:
     secrets: inherit
     with:
       resource_node_id: ${{ github.event.issue.node_id }}
-      status_value: "Planning"
+      status_value: "Backlog"
