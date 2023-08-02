@@ -1,4 +1,4 @@
-name: Project automation pull request opened
+name: Project automation
 on:
   pull_request_target:
     types:
