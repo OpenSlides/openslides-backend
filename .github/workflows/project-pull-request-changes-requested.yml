@@ -1,0 +1,15 @@
+name: Project automation
+on:
+  pull_request_review:
+    types:
+      - submitted
+
+jobs:
+  pull_request_changes_requested:
+    name: Pull request changes requested
+    if: github.event.review.state == 'changes_requested'
+    uses: ./.github/workflows/project-automation.yml
+    secrets: inherit
+    with:
+      resource_node_id: ${{ github.event.pull_request.node_id }}
+      status_value: "Work in progress"
