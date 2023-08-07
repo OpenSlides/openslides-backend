@@ -29,7 +29,7 @@ test-unit-integration:
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
 validate-models-yml:
-	python cli/modelsvalidator/validate.py
+	python cli/validate.py
 
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
@@ -55,7 +55,7 @@ run-debug:
 	OPENSLIDES_DEVELOPMENT=1 python -m openslides_backend
 
 pip-check:
-	pip-check
+	pip-check -H
 
 coverage:
 	pytest --cov --cov-report html
