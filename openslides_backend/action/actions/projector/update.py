@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from ....models.models import Projector
+from ....models.models import Meeting, Projector
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
@@ -34,20 +34,7 @@ class ProjectorUpdate(UpdateAction):
             "show_title",
             "show_logo",
             "show_clock",
-            "used_as_default_projector_for_agenda_item_list_in_meeting_id",
-            "used_as_default_projector_for_topic_in_meeting_id",
-            "used_as_default_projector_for_list_of_speakers_in_meeting_id",
-            "used_as_default_projector_for_current_list_of_speakers_in_meeting_id",
-            "used_as_default_projector_for_motion_in_meeting_id",
-            "used_as_default_projector_for_amendment_in_meeting_id",
-            "used_as_default_projector_for_motion_block_in_meeting_id",
-            "used_as_default_projector_for_assignment_in_meeting_id",
-            "used_as_default_projector_for_mediafile_in_meeting_id",
-            "used_as_default_projector_for_message_in_meeting_id",
-            "used_as_default_projector_for_countdown_in_meeting_id",
-            "used_as_default_projector_for_assignment_poll_in_meeting_id",
-            "used_as_default_projector_for_motion_poll_in_meeting_id",
-            "used_as_default_projector_for_poll_in_meeting_id",
+            *Meeting.reverse_default_projectors(),
         ],
     )
     permission = Permissions.Projector.CAN_MANAGE

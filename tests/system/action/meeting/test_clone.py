@@ -38,10 +38,7 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [1, 2],
                 "motion_state_ids": [1],
                 "motion_workflow_ids": [1],
-                **{
-                    f"default_projector_{name}_ids": [1]
-                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                },
+                **{field: [1] for field in Meeting.all_default_projectors()},
                 "is_active_in_organization_id": 1,
             },
             "group/1": {
@@ -80,10 +77,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
                 "name": "Default projector",
-                **{
-                    f"used_as_default_projector_for_{name}_in_meeting_id": 1
-                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                },
+                **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
         }
 
@@ -111,10 +105,7 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [3, 4],
                 "motion_state_ids": [2],
                 "motion_workflow_ids": [2],
-                **{
-                    f"default_projector_{name}_ids": [2]
-                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                },
+                **{field: [2] for field in Meeting.all_default_projectors()},
                 "template_for_organization_id": ONE_ORGANIZATION_ID,
             },
         )

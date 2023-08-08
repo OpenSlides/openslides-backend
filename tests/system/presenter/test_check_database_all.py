@@ -186,10 +186,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "motion_state_ids": [1],
                     "motion_workflow_ids": [1],
                     "is_active_in_organization_id": 1,
-                    **{
-                        f"default_projector_{part}_ids": [1]
-                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: [1] for field in Meeting.all_default_projectors()},
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -253,10 +250,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
-                    **{
-                        f"used_as_default_projector_for_{part}_in_meeting_id": 1
-                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
                 "action_worker/1": {
                     "name": "testcase",
@@ -358,10 +352,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "logo_web_header_id": 1,
                     "font_bold_id": 2,
                     "meeting_user_ids": [11, 12, 13, 14, 15, 16],
-                    **{
-                        f"default_projector_{part}_ids": [1]
-                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: [1] for field in Meeting.all_default_projectors()},
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -499,10 +490,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
-                    **{
-                        f"used_as_default_projector_for_{part}_in_meeting_id": 1
-                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
                 "mediafile/1": {
                     "is_public": True,
@@ -642,10 +630,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "is_active_in_organization_id": 1,
                     "motion_ids": [1],
                     "list_of_speakers_ids": [3],
-                    **{
-                        f"default_projector_{part}_ids": [1]
-                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: [1] for field in Meeting.all_default_projectors()},
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -710,10 +695,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
-                    **{
-                        f"used_as_default_projector_for_{part}_in_meeting_id": 1
-                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
                 "meeting/2": {
                     "committee_id": 1,
@@ -734,10 +716,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "is_active_in_organization_id": 1,
                     "list_of_speakers_ids": [4],
                     "motion_ids": [2],
-                    **{
-                        f"default_projector_{part}_ids": [2]
-                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: [2] for field in Meeting.all_default_projectors()},
                     **self.get_meeting_defaults(),
                 },
                 "group/3": {
@@ -801,10 +780,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
-                    **{
-                        f"used_as_default_projector_for_{part}_in_meeting_id": 2
-                        for part in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: 2 for field in Meeting.reverse_default_projectors()},
                 },
                 "motion/1": {
                     "meeting_id": 1,

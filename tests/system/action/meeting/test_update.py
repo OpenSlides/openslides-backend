@@ -21,19 +21,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "admin_group_id": 1,
                 "projector_ids": [1],
                 "reference_projector_id": 1,
-                **{
-                    f"default_projector_{name}_ids": [1]
-                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                },
+                **{field: [1] for field in Meeting.all_default_projectors()},
             },
             "projector/1": {
                 "name": "Projector 1",
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
-                **{
-                    f"used_as_default_projector_for_{name}_in_meeting_id": 1
-                    for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                },
+                **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
         }
 
@@ -51,19 +45,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "default_group_id": 1,
                     "projector_ids": [1],
                     "reference_projector_id": 1,
-                    **{
-                        f"default_projector_{name}_ids": [1]
-                        for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: [1] for field in Meeting.all_default_projectors()},
                 },
                 "projector/1": {
                     "name": "Projector 1",
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
-                    **{
-                        f"used_as_default_projector_for_{name}_in_meeting_id": 1
-                        for name in Meeting.DEFAULT_PROJECTOR_ENUM
-                    },
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
             }
         )

@@ -1,7 +1,8 @@
 # Code generated. DO NOT EDIT.
 
-from openslides_backend.models import fields
-from openslides_backend.models.base import Model
+from . import fields
+from .base import Model
+from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
 MODELS_YML_CHECKSUM = "b45c748d2dbe49a5154ddc03a1e858cd"
 
@@ -288,7 +289,7 @@ class Committee(Model):
     )
 
 
-class Meeting(Model):
+class Meeting(Model, MeetingModelMixin):
     collection = "meeting"
     verbose_name = "meeting"
 
@@ -800,43 +801,6 @@ class Meeting(Model):
     )
     admin_group_id = fields.RelationField(to={"group": "admin_group_for_meeting_id"})
 
-    LOGO_ENUM = (
-        "projector_main",
-        "projector_header",
-        "web_header",
-        "pdf_header_l",
-        "pdf_header_r",
-        "pdf_footer_l",
-        "pdf_footer_r",
-        "pdf_ballot_paper",
-    )
-    FONT_ENUM = (
-        "regular",
-        "italic",
-        "bold",
-        "bold_italic",
-        "monospace",
-        "chyron_speaker_name",
-        "projector_h1",
-        "projector_h2",
-    )
-    DEFAULT_PROJECTOR_ENUM = (
-        "agenda_item_list",
-        "topic",
-        "list_of_speakers",
-        "current_list_of_speakers",
-        "motion",
-        "amendment",
-        "motion_block",
-        "assignment",
-        "mediafile",
-        "message",
-        "countdown",
-        "assignment_poll",
-        "motion_poll",
-        "poll",
-    )
-
 
 class Group(Model):
     collection = "group"
@@ -965,7 +929,7 @@ class Tag(Model):
     meeting_id = fields.RelationField(to={"meeting": "tag_ids"}, required=True)
 
 
-class AgendaItem(Model):
+class AgendaItem(Model, AgendaItemModelMixin):
     collection = "agenda_item"
     verbose_name = "agenda item"
 
@@ -1014,10 +978,6 @@ class AgendaItem(Model):
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(to={"meeting": "agenda_item_ids"}, required=True)
-
-    AGENDA_ITEM = "common"
-    INTERNAL_ITEM = "internal"
-    HIDDEN_ITEM = "hidden"
 
 
 class ListOfSpeakers(Model):
@@ -1571,7 +1531,7 @@ class MotionStatuteParagraph(Model):
     )
 
 
-class Poll(Model):
+class Poll(Model, PollModelMixin):
     collection = "poll"
     verbose_name = "poll"
 
@@ -1657,15 +1617,6 @@ class Poll(Model):
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(to={"meeting": "poll_ids"}, required=True)
-
-    STATE_CREATED = "created"
-    STATE_STARTED = "started"
-    STATE_FINISHED = "finished"
-    STATE_PUBLISHED = "published"
-
-    TYPE_ANALOG = "analog"
-    TYPE_NAMED = "named"
-    TYPE_PSEUDOANONYMOUS = "pseudoanonymous"
 
 
 class Option(Model):

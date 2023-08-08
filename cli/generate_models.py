@@ -3,13 +3,19 @@ import os
 import string
 import sys
 from collections import ChainMap
-from textwrap import dedent, indent
-from typing import Any, Dict, List, Optional, Union
+from textwrap import dedent
+from typing import Any, Dict, List, Optional, Type, Union
 
 import requests
 import yaml
 
+from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
+from openslides_backend.models.mixins import (
+    AgendaItemModelMixin,
+    MeetingModelMixin,
+    PollModelMixin,
+)
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SOURCE = "./global/meta/models.yml"
@@ -47,12 +53,18 @@ RELATION_FIELD_CLASSES = {
     "generic-relation-list": "GenericRelationListField",
 }
 
+MODEL_MIXINS: Dict[str, Type] = {
+    "agenda_item": AgendaItemModelMixin,
+    "meeting": MeetingModelMixin,
+    "poll": PollModelMixin,
+}
+
 FILE_TEMPLATE = dedent(
     """\
     # Code generated. DO NOT EDIT.
 
-    from openslides_backend.models import fields
-    from openslides_backend.models.base import Model
+    from . import fields
+    from .base import Model
     """
 )
 
@@ -113,6 +125,11 @@ def main() -> None:
     MODELS = yaml.safe_load(models_yml)
     with open(DESTINATION, "w") as dest:
         dest.write(FILE_TEMPLATE)
+        dest.write(
+            "from .mixins import "
+            + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
+            + "\n"
+        )
         dest.write("\nMODELS_YML_CHECKSUM = " + repr(checksum) + "\n")
         for collection, fields in MODELS.items():
             if collection == "_migration_index":
@@ -154,77 +171,12 @@ class Model(Node):
     MODEL_TEMPLATE = string.Template(
         dedent(
             """
-
-            class ${class_name}(Model):
+            class ${class_name}(${base_classes}):
                 collection = "${collection}"
                 verbose_name = "${verbose_name}"
-
             """
         )
     )
-
-    ADDITIONAL_MODEL_CODE = {
-        "agenda_item": dedent(
-            """
-            AGENDA_ITEM = "common"
-            INTERNAL_ITEM = "internal"
-            HIDDEN_ITEM = "hidden"
-            """
-        ),
-        "poll": dedent(
-            """
-            STATE_CREATED = "created"
-            STATE_STARTED = "started"
-            STATE_FINISHED = "finished"
-            STATE_PUBLISHED = "published"
-
-            TYPE_ANALOG = "analog"
-            TYPE_NAMED = "named"
-            TYPE_PSEUDOANONYMOUS = "pseudoanonymous"
-            """
-        ),
-        "meeting": dedent(
-            """
-            LOGO_ENUM = (
-                "projector_main",
-                "projector_header",
-                "web_header",
-                "pdf_header_l",
-                "pdf_header_r",
-                "pdf_footer_l",
-                "pdf_footer_r",
-                "pdf_ballot_paper",
-            )
-            FONT_ENUM = (
-                "regular",
-                "italic",
-                "bold",
-                "bold_italic",
-                "monospace",
-                "chyron_speaker_name",
-                "projector_h1",
-                "projector_h2",
-            )
-            DEFAULT_PROJECTOR_ENUM = (
-                "agenda_item_list",
-                "topic",
-                "list_of_speakers",
-                "current_list_of_speakers",
-                "motion",
-                "amendment",
-                "motion_block",
-                "assignment",
-                "mediafile",
-                "message",
-                "countdown",
-                "assignment_poll",
-                "motion_poll",
-                "poll",
-            )
-
-            """
-        ),
-    }
 
     def __init__(self, collection: str, fields: Dict[str, Dict[str, Any]]) -> None:
         self.collection = collection
@@ -237,16 +189,22 @@ class Model(Node):
 
     def get_code(self) -> str:
         verbose_name = " ".join(self.collection.split("_"))
-        code = self.MODEL_TEMPLATE.substitute(
-            dict(
-                class_name=self.get_class_name(),
-                collection=self.collection,
-                verbose_name=verbose_name,
+        base_classes: List[Type] = [BaseModel]
+        if self.collection in MODEL_MIXINS:
+            base_classes.append(MODEL_MIXINS[self.collection])
+        code = (
+            self.MODEL_TEMPLATE.substitute(
+                {
+                    "class_name": self.get_class_name(),
+                    "base_classes": ", ".join(cls.__name__ for cls in base_classes),
+                    "collection": self.collection,
+                    "verbose_name": verbose_name,
+                }
             )
+            + "\n"
         )
         for field_name, attribute in self.attributes.items():
             code += attribute.get_code(field_name)
-        code += indent(self.ADDITIONAL_MODEL_CODE.get(self.collection, ""), " " * 4)
         return code
 
     def get_class_name(self) -> str:
