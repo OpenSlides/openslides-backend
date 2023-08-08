@@ -45,7 +45,7 @@ class CommitteeJsonUploadCommittee(BackendImportBaseTest):
         assert response.json["results"][0][0]["state"] == ImportState.DONE
         assert response.json["results"][0][0]["id"] == 1
         assert response.json["results"][0][0]["headers"] == [
-            {"property": "name", "type": "string"},
+            {"property": "name", "type": "string", "is_object": True},
             {"property": "description", "type": "string"},
             {
                 "property": "forward_to_committees",

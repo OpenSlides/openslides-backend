@@ -53,7 +53,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
     )
 
     headers = [
-        {"property": "name", "type": "string"},
+        {"property": "name", "type": "string", "is_object": True},
         {"property": "description", "type": "string"},
         {
             "property": "forward_to_committees",
