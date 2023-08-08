@@ -165,7 +165,7 @@ class RelationManager:
         a = b = ListUpdateElement
             The two ListUpdateElements can just be combined into one.
         a = ListUpdateElement, b = FieldUpdateElement
-            Not possible and currently not needed.
+            The FieldUpdate is more specific and therefore overrides the ListUpdate.
         """
         # list field is updated, merge updates
         if a["type"] in ("add", "remove"):
@@ -195,5 +195,5 @@ class RelationManager:
             a["add"] = new_add
             a["remove"] = new_remove
         else:
-            raise NotImplementedError()
+            return b
         return a
