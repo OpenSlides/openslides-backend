@@ -383,6 +383,44 @@ class CommitteeImport(BaseActionTestCase):
             "organization_tag/38", {"name": "new", "tagged_ids": ["committee/1"]}
         )
 
+    def test_import_managers(self) -> None:
+        self.set_models(
+            {
+                "user/5": {"username": "test"},
+                "action_worker/1": {
+                    "result": {
+                        "import": "committee",
+                        "rows": [
+                            {
+                                "state": ImportState.NEW,
+                                "messages": [],
+                                "data": {
+                                    "name": {"value": "test1", "info": ImportState.NEW},
+                                    "committee_managers": [
+                                        {
+                                            "value": "test",
+                                            "info": ImportState.NEW,
+                                            "id": 5,
+                                        },
+                                        {
+                                            "value": "unknown",
+                                            "info": ImportState.WARNING,
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            }
+        )
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("committee/1", {"name": "test1", "manager_ids": [5]})
+        self.assert_model_exists(
+            "user/5", {"username": "test", "committee_management_ids": [1]}
+        )
+
     def test_import_no_permission(self) -> None:
         self.base_permission_test(
             {

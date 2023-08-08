@@ -54,6 +54,7 @@ class CommitteeImport(ImportMixin):
         if any(entry["data"].get("organization_tags") for entry in data):
             self.handle_organization_tags(data)
         for entry in data:
+            self.handle_committee_managers(entry)
             if entry["state"] == ImportState.NEW:
                 new_committee = self.get_committee_data_from_entry(entry)
                 new_committee["organization_id"] = ONE_ORGANIZATION_ID
@@ -150,7 +151,7 @@ class CommitteeImport(ImportMixin):
     def get_committee_data_from_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         result = {
             field: entry["data"][field]
-            for field in ("description", "organization_tag_ids")
+            for field in ("description", "organization_tag_ids", "manager_ids")
             if field in entry["data"]
         }
         result["name"] = entry["data"]["name"]["value"]
@@ -192,3 +193,11 @@ class CommitteeImport(ImportMixin):
                     if id_ not in collect_ot_ids:
                         collect_ot_ids.append(id_)
                 entry["data"]["organization_tag_ids"] = collect_ot_ids
+
+    def handle_committee_managers(self, entry: Dict[str, Any]) -> None:
+        if "committee_managers" in entry["data"]:
+            entry["data"]["manager_ids"] = [
+                inner["id"]
+                for inner in entry["data"].get("committee_managers", [])
+                if inner.get("id")
+            ]
