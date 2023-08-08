@@ -421,6 +421,43 @@ class CommitteeImport(BaseActionTestCase):
             "user/5", {"username": "test", "committee_management_ids": [1]}
         )
 
+    def test_import_forward_to_committees(self) -> None:
+        self.set_models(
+            {
+                "committee/5": {"name": "test"},
+                "action_worker/1": {
+                    "result": {
+                        "import": "committee",
+                        "rows": [
+                            {
+                                "state": ImportState.NEW,
+                                "messages": [],
+                                "data": {
+                                    "name": {"value": "test1", "info": ImportState.NEW},
+                                    "forward_to_committees": [
+                                        {
+                                            "value": "test",
+                                            "info": ImportState.NEW,
+                                            "id": 5,
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            }
+        )
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/6", {"name": "test1", "forward_to_committee_ids": [5]}
+        )
+        self.assert_model_exists(
+            "committee/5",
+            {"name": "test", "receive_forwardings_from_committee_ids": [6]},
+        )
+
     def test_import_no_permission(self) -> None:
         self.base_permission_test(
             {

@@ -1,9 +1,10 @@
-from typing import Any, Dict, List, Set, cast
+from typing import Any, Callable, Dict, List, Set, Type, cast
 
 from ....models.models import ActionWorker
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.schema import required_id_schema
 from ....shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from ...action import Action
 from ...mixins.import_mixins import ImportMixin, ImportState, Lookup, ResultType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -52,7 +53,36 @@ class CommitteeImport(ImportMixin):
         update_committee_payload: List[Dict[str, Any]] = []
         self.error = False
         if any(entry["data"].get("organization_tags") for entry in data):
-            self.handle_organization_tags(data)
+
+            def get_ot_create_payload(name: str) -> Dict[str, Any]:
+                return {
+                    "name": name,
+                    "organization_id": ONE_ORGANIZATION_ID,
+                    "color": "#ffffff",
+                }
+
+            self.handle_list_field(
+                "organization_tags",
+                "organization_tag_ids",
+                data,
+                OrganizationTagCreate,
+                get_ot_create_payload,
+            )
+        if any(entry["data"].get("forward_to_committees") for entry in data):
+
+            def get_fc_create_payload(name: str) -> Dict[str, Any]:
+                return {
+                    "name": name,
+                }
+
+            self.handle_list_field(
+                "forward_to_committees",
+                "forward_to_committee_ids",
+                data,
+                CommitteeCreate,
+                get_fc_create_payload,
+            )
+
         for entry in data:
             self.handle_committee_managers(entry)
             if entry["state"] == ImportState.NEW:
@@ -151,7 +181,12 @@ class CommitteeImport(ImportMixin):
     def get_committee_data_from_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         result = {
             field: entry["data"][field]
-            for field in ("description", "organization_tag_ids", "manager_ids")
+            for field in (
+                "description",
+                "organization_tag_ids",
+                "manager_ids",
+                "forward_to_committee_ids",
+            )
             if field in entry["data"]
         }
         result["name"] = entry["data"]["name"]["value"]
@@ -159,40 +194,42 @@ class CommitteeImport(ImportMixin):
             result["id"] = entry["data"]["name"]["id"]
         return result
 
-    def handle_organization_tags(self, data: List[Dict[str, Any]]) -> None:
-        create_otnames: Set[str] = set()
-        otname_to_id: Dict[str, int] = {}
+    def handle_list_field(
+        self,
+        data_name: str,
+        payload_name: str,
+        data: List[Dict[str, Any]],
+        create_action: Type[Action],
+        get_create_payload: Callable[[str], Dict[str, Any]],
+    ) -> None:
+        create_names: Set[str] = set()
+        name_to_id: Dict[str, int] = {}
         for entry in data:
-            for otentry in entry["data"].get("organization_tags", []):
-                if otentry["info"] == ImportState.WARNING:
+            for innerentry in entry["data"].get(data_name, []):
+                if innerentry["info"] == ImportState.WARNING:
                     pass
-                elif not otentry.get("id"):
-                    create_otnames.add(cast(str, otentry["value"]))
+                elif not innerentry.get("id"):
+                    create_names.add(cast(str, innerentry["value"]))
                 else:
-                    otname_to_id[otentry["value"]] = otentry["id"]
+                    name_to_id[innerentry["value"]] = innerentry["id"]
         # create payload and execute create action
-        created_names: List[str] = list(create_otnames)
-        create_ots_payload = [
-            {"name": otname, "organization_id": ONE_ORGANIZATION_ID, "color": "#ffffff"}
-            for otname in created_names
-        ]
-        ot_create_results = self.execute_other_action(
-            OrganizationTagCreate, create_ots_payload
-        )
-        created_ids = [(r or {})["id"] for r in (ot_create_results or [])]
+        created_names: List[str] = list(create_names)
+        create_payload = [get_create_payload(name) for name in created_names]
+        create_results = self.execute_other_action(create_action, create_payload)
+        created_ids = [(r or {})["id"] for r in (create_results or [])]
         for name, id_ in zip(created_names, created_ids):
-            otname_to_id[name] = id_
-        # set the organization_tag_ids
+            name_to_id[name] = id_
+        # set the payload name
         for entry in data:
-            if entry["data"].get("organization_tags"):
-                collect_ot_ids: List[int] = []
-                for otentry in entry["data"]["organization_tags"]:
-                    if otentry["info"] == ImportState.WARNING:
+            if entry["data"].get(data_name):
+                collect_ids: List[int] = []
+                for innerentry in entry["data"][data_name]:
+                    if innerentry["info"] == ImportState.WARNING:
                         continue
-                    id_ = otname_to_id[otentry["value"]]
-                    if id_ not in collect_ot_ids:
-                        collect_ot_ids.append(id_)
-                entry["data"]["organization_tag_ids"] = collect_ot_ids
+                    id_ = name_to_id[innerentry["value"]]
+                    if id_ not in collect_ids:
+                        collect_ids.append(id_)
+                entry["data"][payload_name] = collect_ids
 
     def handle_committee_managers(self, entry: Dict[str, Any]) -> None:
         if "committee_managers" in entry["data"]:
