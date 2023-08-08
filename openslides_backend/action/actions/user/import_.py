@@ -39,7 +39,7 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
         data = self.result.get("rows", [])
         for entry in data:
             # Revert username-info and default-password-info
-            for field in ("username", "default_password"):
+            for field in ("username", "default_password", "saml_id"):
                 if field in entry["data"]:
                     if field == "username" and "id" in entry["data"][field]:
                         entry["data"]["id"] = entry["data"][field]["id"]
@@ -48,7 +48,7 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
         search_data_list = [
             {
                 field: entry["data"].get(field, "")
-                for field in ("username", "first_name", "last_name", "email")
+                for field in ("username", "first_name", "last_name", "email", "saml_id")
             }
             for entry in data
         ]
@@ -60,13 +60,17 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
         self.error = False
         for payload_index, entry in enumerate(data):
             if entry["state"] == ImportState.NEW:
-                if not entry["data"].get("username"):
+                if not entry["data"].get("username") and not entry["data"].get(
+                    "saml_id"
+                ):
                     self.error = True
                     entry["state"] = ImportState.ERROR
                     entry["messages"].append(
                         "Error: Want to create user, but missing username in import data."
                     )
-                elif self.check_username_for_duplicate(
+                elif entry["data"].get(
+                    "username"
+                ) and self.check_username_for_duplicate(
                     entry["data"]["username"], payload_index
                 ):
                     self.error = True
@@ -74,18 +78,40 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
                     entry["messages"].append(
                         "Error: want to create a new user, but username already exists."
                     )
+                elif entry["data"].get("saml_id") and self.check_saml_id_for_duplicate(
+                    entry["data"]["saml_id"], payload_index
+                ):
+                    self.error = True
+                    entry["state"] = ImportState.ERROR
+                    entry["messages"].append(
+                        "Error: want to create a new user, but saml_id already exists."
+                    )
                 else:
                     create_action_payload.append(entry["data"])
             elif entry["state"] == ImportState.DONE:
                 search_data = self.get_search_data(payload_index)
-                if not entry["data"].get("username"):
+                if not entry["data"].get("username") and not entry["data"].get(
+                    "saml_id"
+                ):
                     self.error = True
                     entry["state"] = ImportState.ERROR
                     entry["messages"].append(
                         "Error: Want to update user, but missing username in import data."
                     )
-                elif not self.check_username_for_duplicate(
+                elif entry["data"].get(
+                    "username"
+                ) and not self.check_username_for_duplicate(
                     entry["data"]["username"], payload_index
+                ):
+                    self.error = True
+                    entry["state"] = ImportState.ERROR
+                    entry["messages"].append(
+                        "Error: want to update, but missing user in db."
+                    )
+                elif entry["data"].get(
+                    "saml_id"
+                ) and not self.check_saml_id_for_duplicate(
+                    entry["data"]["saml_id"], payload_index
                 ):
                     self.error = True
                     entry["state"] = ImportState.ERROR
@@ -105,7 +131,10 @@ class UserImport(DuplicateCheckMixin, ImportMixin):
                         "Error: want to update, but found search data doesn't match."
                     )
                 else:
-                    del entry["data"]["username"]
+                    for field in ("username", "saml_id"):
+                        if field in entry["data"]:
+                            del entry["data"][field]
+
                     update_action_payload.append(entry["data"])
             else:
                 self.error = True

@@ -107,6 +107,7 @@ class TopicJsonUpload(BaseActionTestCase):
                 {"property": "username", "type": "string"},
                 {"property": "gender", "type": "string"},
                 {"property": "pronoun", "type": "string"},
+                {"property": "saml_id", "type": "string"},
             ],
             "rows": [
                 {
@@ -345,6 +346,34 @@ class TopicJsonUpload(BaseActionTestCase):
             worker["result"]["rows"][0]["data"]["default_password"]["info"]
             == ImportState.GENERATED
         )
+
+    def test_json_upload_saml_id(self) -> None:
+        response = self.request(
+            "user.json_upload",
+            {
+                "data": [
+                    {
+                        "saml_id": "test",
+                        "password": "test2",
+                        "default_password": "test3",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        worker = self.assert_model_exists("action_worker/1")
+        assert worker["result"]["import"] == "account"
+        assert worker["result"]["rows"][0]["messages"] == [
+            "Remove password or default_password from entry."
+        ]
+        data = worker["result"]["rows"][0]["data"]
+        assert data.get("saml_id") == {
+            "value": "test",
+            "info": "done",
+        }
+        assert "password" not in data
+        assert "default_password" not in data
+        assert data.get("can_change_own_password") is False
 
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
