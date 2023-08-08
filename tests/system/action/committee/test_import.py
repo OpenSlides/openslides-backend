@@ -17,15 +17,20 @@ class CommitteeImport(BaseActionTestCase):
                             {
                                 "state": ImportState.NEW,
                                 "messages": [],
-                                "data": {"name": "test1"},
+                                "data": {
+                                    "name": {"value": "test1", "info": ImportState.NEW}
+                                },
                             },
                             {
                                 "state": ImportState.DONE,
                                 "messages": [],
                                 "data": {
-                                    "name": "test2",
+                                    "name": {
+                                        "value": "test2",
+                                        "info": ImportState.DONE,
+                                        "id": 12,
+                                    },
                                     "description": "blablabla",
-                                    "id": 12,
                                 },
                             },
                         ],
@@ -53,7 +58,9 @@ class CommitteeImport(BaseActionTestCase):
                             {
                                 "state": ImportState.NEW,
                                 "messages": [],
-                                "data": {"name": "test1"},
+                                "data": {
+                                    "name": {"value": "test1", "info": ImportState.NEW}
+                                },
                             },
                         ],
                     },
@@ -77,7 +84,13 @@ class CommitteeImport(BaseActionTestCase):
                             {
                                 "state": ImportState.DONE,
                                 "messages": [],
-                                "data": {"name": "test1", "id": 12},
+                                "data": {
+                                    "name": {
+                                        "value": "test1",
+                                        "info": ImportState.DONE,
+                                        "id": 12,
+                                    }
+                                },
                             },
                         ],
                     },
@@ -101,7 +114,13 @@ class CommitteeImport(BaseActionTestCase):
                             {
                                 "state": ImportState.DONE,
                                 "messages": [],
-                                "data": {"name": "test1", "id": 12},
+                                "data": {
+                                    "name": {
+                                        "value": "test1",
+                                        "info": ImportState.DONE,
+                                        "id": 12,
+                                    }
+                                },
                             },
                         ],
                     },
@@ -130,7 +149,10 @@ class CommitteeImport(BaseActionTestCase):
                                 "state": ImportState.NEW,
                                 "messages": [],
                                 "data": {
-                                    "name": "new committee",
+                                    "name": {
+                                        "value": "new committee",
+                                        "info": ImportState.NEW,
+                                    },
                                     "forward_to_committees": [
                                         {
                                             "value": "test1",
@@ -204,7 +226,10 @@ class CommitteeImport(BaseActionTestCase):
                                 "state": ImportState.NEW,
                                 "messages": [],
                                 "data": {
-                                    "name": "new committee",
+                                    "name": {
+                                        "value": "new committee",
+                                        "info": ImportState.NEW,
+                                    },
                                     "forward_to_committees": [
                                         {"value": "test1", "info": ImportState.NEW}
                                     ],
@@ -217,7 +242,10 @@ class CommitteeImport(BaseActionTestCase):
                                 "state": ImportState.NEW,
                                 "messages": [],
                                 "data": {
-                                    "name": "new committee 2",
+                                    "name": {
+                                        "value": "new committee 2",
+                                        "info": ImportState.NEW,
+                                    },
                                     "forward_to_committees": [
                                         {"value": "test1", "info": ImportState.DONE}
                                     ],
@@ -276,7 +304,7 @@ class CommitteeImport(BaseActionTestCase):
                                 "state": ImportState.NEW,
                                 "messages": [],
                                 "data": {
-                                    "name": "test1",
+                                    "name": {"value": "test1", "info": ImportState.NEW},
                                     "meeting_name": "meeting 1",
                                     "start_time": 1684844525,
                                     "end_time": 1684844546,
@@ -321,7 +349,9 @@ class CommitteeImport(BaseActionTestCase):
                             {
                                 "state": ImportState.NEW,
                                 "messages": [],
-                                "data": {"name": "test1"},
+                                "data": {
+                                    "name": {"value": "test1", "info": ImportState.NEW}
+                                },
                             },
                         ],
                     }
@@ -341,7 +371,9 @@ class CommitteeImport(BaseActionTestCase):
                             {
                                 "state": ImportState.NEW,
                                 "messages": [],
-                                "data": {"name": "test1"},
+                                "data": {
+                                    "name": {"value": "test1", "info": ImportState.NEW}
+                                },
                             },
                         ],
                     }

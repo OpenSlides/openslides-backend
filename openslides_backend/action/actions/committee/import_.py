@@ -42,7 +42,9 @@ class CommitteeImport(ImportMixin):
 
         # initialize the lookups
         committee_lookup = Lookup(
-            self.datastore, "committee", [entry["data"]["name"] for entry in data]
+            self.datastore,
+            "committee",
+            [entry["data"]["name"]["value"] for entry in data],
         )
 
         # collect the payloads
@@ -110,7 +112,7 @@ class CommitteeImport(ImportMixin):
                 )
                 change_committees.update(
                     {
-                        e["data"]["name"]: e["data"]["id"]
+                        e["data"]["name"]["value"]: e["data"]["name"]["id"]
                         for e in data
                         if e["state"] == ImportState.DONE
                     }
@@ -131,12 +133,14 @@ class CommitteeImport(ImportMixin):
                         if entry["data"].get(field):
                             pl[field] = entry["data"][field]
                     pl["language"] = organization.get("default_language", "en")
-                    pl["committee_id"] = change_committees[entry["data"]["name"]]
+                    pl["committee_id"] = change_committees[
+                        entry["data"]["name"]["value"]
+                    ]
                     if entry["data"].get("meeting_admins"):
                         pl["admin_ids"] = [
                             inner["id"]
                             for inner in entry["data"]["meeting_admins"]
-                            if inner["info"] == ImportState.DONE
+                            if inner.get("id")
                         ]
 
                     meeting_payload.append(pl)
@@ -144,11 +148,15 @@ class CommitteeImport(ImportMixin):
         return {}
 
     def get_committee_data_from_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        return {
+        result = {
             field: entry["data"][field]
-            for field in ("name", "description", "id", "organization_tag_ids")
+            for field in ("description", "organization_tag_ids")
             if field in entry["data"]
         }
+        result["name"] = entry["data"]["name"]["value"]
+        if entry["data"]["name"].get("id"):
+            result["id"] = entry["data"]["name"]["id"]
+        return result
 
     def handle_organization_tags(self, data: List[Dict[str, Any]]) -> None:
         create_otnames: Set[str] = set()
