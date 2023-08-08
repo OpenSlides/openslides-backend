@@ -162,15 +162,17 @@ class CommitteeImport(ImportMixin):
         create_otnames: Set[str] = set()
         otname_to_id: Dict[str, int] = {}
         for entry in data:
-            for otentry in entry["data"].get("organization_tag_ids", []):
-                if otentry["info"] == ImportState.NEW:
+            for otentry in entry["data"].get("organization_tags", []):
+                if otentry["info"] == ImportState.WARNING:
+                    pass
+                elif not otentry.get("id"):
                     create_otnames.add(cast(str, otentry["value"]))
-                elif entry["info"] == ImportState.DONE:
+                else:
                     otname_to_id[otentry["value"]] = otentry["id"]
         # create payload and execute create action
         created_names: List[str] = list(create_otnames)
         create_ots_payload = [
-            {"name": otname, "organization_id": ONE_ORGANIZATION_ID}
+            {"name": otname, "organization_id": ONE_ORGANIZATION_ID, "color": "#ffffff"}
             for otname in created_names
         ]
         ot_create_results = self.execute_other_action(
@@ -181,9 +183,11 @@ class CommitteeImport(ImportMixin):
             otname_to_id[name] = id_
         # set the organization_tag_ids
         for entry in data:
-            if entry["data"].get("organization_tag_ids"):
+            if entry["data"].get("organization_tags"):
                 collect_ot_ids: List[int] = []
                 for otentry in entry["data"]["organization_tags"]:
+                    if otentry["info"] == ImportState.WARNING:
+                        continue
                     id_ = otname_to_id[otentry["value"]]
                     if id_ not in collect_ot_ids:
                         collect_ot_ids.append(id_)

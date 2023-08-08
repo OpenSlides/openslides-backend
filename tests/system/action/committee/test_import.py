@@ -337,7 +337,51 @@ class CommitteeImport(BaseActionTestCase):
             },
         )
         self.assert_model_exists("user/5", {"username": "u1", "meeting_ids": [1]})
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 5, "meeting_id": 1, "group_ids": [2]}
+        )
         self.assert_model_exists("committee/1", {"name": "test1", "meeting_ids": [1]})
+
+    def test_import_organization_tags(self) -> None:
+        self.set_models(
+            {
+                "organization_tag/37": {"name": "test"},
+                "action_worker/1": {
+                    "result": {
+                        "import": "committee",
+                        "rows": [
+                            {
+                                "state": ImportState.NEW,
+                                "messages": [],
+                                "data": {
+                                    "name": {"value": "test1", "info": ImportState.NEW},
+                                    "organization_tags": [
+                                        {
+                                            "value": "test",
+                                            "info": ImportState.NEW,
+                                            "id": 37,
+                                        },
+                                        {"value": "new", "info": ImportState.NEW},
+                                        {"value": "test", "info": ImportState.WARNING},
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            }
+        )
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/1", {"name": "test1", "organization_tag_ids": [37, 38]}
+        )
+        self.assert_model_exists(
+            "organization_tag/37", {"name": "test", "tagged_ids": ["committee/1"]}
+        )
+        self.assert_model_exists(
+            "organization_tag/38", {"name": "new", "tagged_ids": ["committee/1"]}
+        )
 
     def test_import_no_permission(self) -> None:
         self.base_permission_test(
