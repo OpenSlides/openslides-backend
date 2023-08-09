@@ -440,6 +440,7 @@ class CommitteeImport(BaseActionTestCase):
                                             "info": ImportState.NEW,
                                             "id": 5,
                                         },
+                                        {"value": "new", "info": ImportState.NEW},
                                     ],
                                 },
                             },
@@ -451,11 +452,68 @@ class CommitteeImport(BaseActionTestCase):
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "committee/6", {"name": "test1", "forward_to_committee_ids": [5]}
+            "committee/7", {"name": "test1", "forward_to_committee_ids": [5, 6]}
+        )
+        self.assert_model_exists(
+            "committee/6",
+            {"name": "new", "receive_forwardings_from_committee_ids": [7]},
         )
         self.assert_model_exists(
             "committee/5",
-            {"name": "test", "receive_forwardings_from_committee_ids": [6]},
+            {"name": "test", "receive_forwardings_from_committee_ids": [7]},
+        )
+
+    def test_import_forward_to_committees_done_case(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"name": "test1", "forward_to_committee_ids": [2, 3]},
+                "committee/2": {
+                    "name": "done",
+                    "receive_forwardings_from_committee_ids": [1],
+                },
+                "committee/3": {
+                    "name": "remove",
+                    "receive_forwardings_from_committee_ids": [1],
+                },
+                "action_worker/1": {
+                    "result": {
+                        "import": "committee",
+                        "rows": [
+                            {
+                                "state": ImportState.DONE,
+                                "messages": [],
+                                "data": {
+                                    "name": {
+                                        "value": "test1",
+                                        "info": ImportState.DONE,
+                                        "id": 1,
+                                    },
+                                    "forward_to_committees": [
+                                        {
+                                            "value": "done",
+                                            "info": ImportState.DONE,
+                                            "id": 2,
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            }
+        )
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/1", {"name": "test1", "forward_to_committee_ids": [2]}
+        )
+        self.assert_model_exists(
+            "committee/2",
+            {"name": "done", "receive_forwardings_from_committee_ids": [1]},
+        )
+        self.assert_model_exists(
+            "committee/3",
+            {"name": "remove", "receive_forwardings_from_committee_ids": []},
         )
 
     def test_import_no_permission(self) -> None:

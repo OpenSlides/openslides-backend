@@ -73,6 +73,7 @@ class CommitteeImport(ImportMixin):
             def get_fc_create_payload(name: str) -> Dict[str, Any]:
                 return {
                     "name": name,
+                    "organization_id": ONE_ORGANIZATION_ID,
                 }
 
             self.handle_list_field(
