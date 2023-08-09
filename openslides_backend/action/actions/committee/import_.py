@@ -8,6 +8,7 @@ from ...action import Action
 from ...mixins.import_mixins import ImportMixin, ImportState, Lookup, ResultType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..meeting.clone import MeetingClone
 from ..meeting.create import MeetingCreate
 from ..organization_tag.create import OrganizationTagCreate
 from .create import CommitteeCreate
@@ -154,7 +155,8 @@ class CommitteeImport(ImportMixin):
 
         # create meetings
         if any(entry["data"].get("meeting_name") for entry in data):
-            meeting_payload: List[Dict[str, Any]] = []
+            create_meeting_payload: List[Dict[str, Any]] = []
+            clone_meeting_payload: List[Dict[str, Any]] = []
             organization = self.datastore.get(
                 ONE_ORGANIZATION_FQID, ["default_language"]
             )
@@ -174,9 +176,20 @@ class CommitteeImport(ImportMixin):
                             for inner in entry["data"]["meeting_admins"]
                             if inner.get("id")
                         ]
-
-                    meeting_payload.append(pl)
-            self.execute_other_action(MeetingCreate, meeting_payload)
+                    if (
+                        meeting_id := entry["data"]
+                        .get("meeting_template", {})
+                        .get("id")
+                    ):
+                        pl["meeting_id"] = meeting_id
+                        del pl["language"]
+                        clone_meeting_payload.append(pl)
+                    else:
+                        create_meeting_payload.append(pl)
+            if clone_meeting_payload:
+                self.execute_other_action(MeetingClone, clone_meeting_payload)
+            if create_meeting_payload:
+                self.execute_other_action(MeetingCreate, create_meeting_payload)
         return {}
 
     def get_committee_data_from_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:

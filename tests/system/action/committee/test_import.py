@@ -1,6 +1,7 @@
 import pytest
 
 from openslides_backend.action.mixins.import_mixins import ImportState
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -341,6 +342,128 @@ class CommitteeImport(BaseActionTestCase):
             "meeting_user/1", {"user_id": 5, "meeting_id": 1, "group_ids": [2]}
         )
         self.assert_model_exists("committee/1", {"name": "test1", "meeting_ids": [1]})
+
+    def test_import_clone_meeting(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "default_language": "de",
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                },
+                "committee/1": {"organization_id": 1},
+                "meeting/1": {
+                    "committee_id": 1,
+                    "name": "Test",
+                    "default_group_id": 1,
+                    "admin_group_id": 2,
+                    "motions_default_amendment_workflow_id": 1,
+                    "motions_default_statute_amendment_workflow_id": 1,
+                    "motions_default_workflow_id": 1,
+                    "reference_projector_id": 1,
+                    "projector_countdown_default_time": 60,
+                    "projector_countdown_warning_time": 5,
+                    "projector_ids": [1],
+                    "group_ids": [1, 2],
+                    "motion_state_ids": [1],
+                    "motion_workflow_ids": [1],
+                    **{
+                        f"default_projector_{name}_ids": [1]
+                        for name in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
+                    "is_active_in_organization_id": 1,
+                },
+                "group/1": {
+                    "meeting_id": 1,
+                    "name": "default group",
+                    "weight": 1,
+                    "default_group_for_meeting_id": 1,
+                },
+                "group/2": {
+                    "meeting_id": 1,
+                    "name": "admin group",
+                    "weight": 1,
+                    "admin_group_for_meeting_id": 1,
+                },
+                "motion_workflow/1": {
+                    "meeting_id": 1,
+                    "name": "blup",
+                    "first_state_id": 1,
+                    "default_amendment_workflow_meeting_id": 1,
+                    "default_statute_amendment_workflow_meeting_id": 1,
+                    "default_workflow_meeting_id": 1,
+                    "state_ids": [1],
+                    "sequential_number": 1,
+                },
+                "motion_state/1": {
+                    "css_class": "lightblue",
+                    "meeting_id": 1,
+                    "workflow_id": 1,
+                    "name": "test",
+                    "weight": 1,
+                    "workflow_id": 1,
+                    "first_state_of_workflow_id": 1,
+                },
+                "projector/1": {
+                    "sequential_number": 1,
+                    "meeting_id": 1,
+                    "used_as_reference_projector_meeting_id": 1,
+                    "name": "Default projector",
+                    **{
+                        f"used_as_default_projector_for_{name}_in_meeting_id": 1
+                        for name in Meeting.DEFAULT_PROJECTOR_ENUM
+                    },
+                },
+                "user/5": {"username": "u1"},
+                "action_worker/1": {
+                    "result": {
+                        "import": "committee",
+                        "rows": [
+                            {
+                                "state": ImportState.NEW,
+                                "messages": [],
+                                "data": {
+                                    "name": {"value": "test1", "info": ImportState.NEW},
+                                    "meeting_name": "meeting 1",
+                                    "start_time": 1684844525,
+                                    "end_time": 1684844546,
+                                    "meeting_admins": [
+                                        {
+                                            "value": "u1",
+                                            "info": ImportState.DONE,
+                                            "id": 5,
+                                        },
+                                        {"value": "u2", "info": ImportState.WARNING},
+                                    ],
+                                    "meeting_template": {
+                                        "value": "Test",
+                                        "info": ImportState.DONE,
+                                        "id": 1,
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            }
+        )
+
+        response = self.request("committee.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "name": "meeting 1",
+                "start_time": 1684844525,
+                "end_time": 1684844546,
+                "committee_id": 2,
+            },
+        )
+        self.assert_model_exists("user/5", {"username": "u1", "meeting_ids": [2]})
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 5, "meeting_id": 2, "group_ids": [4]}
+        )
+        self.assert_model_exists("committee/2", {"name": "test1", "meeting_ids": [2]})
 
     def test_import_organization_tags(self) -> None:
         self.set_models(
