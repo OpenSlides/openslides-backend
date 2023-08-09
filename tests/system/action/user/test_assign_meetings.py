@@ -107,6 +107,44 @@ class UserAssignMeetings(BaseActionTestCase):
             "meeting_user/7", {"meeting_id": 4, "user_id": 1, "group_ids": [43]}
         )
 
+    def test_assign_meetings_multiple_committees(self) -> None:
+        self.set_models(
+            {
+                "group/11": {
+                    "name": "to_find",
+                    "meeting_id": 1,
+                },
+                "group/22": {
+                    "name": "to_find",
+                    "meeting_id": 2,
+                },
+                "meeting/1": {
+                    "name": "m1",
+                    "group_ids": [11],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                },
+                "meeting/2": {
+                    "name": "m2",
+                    "group_ids": [22],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 3,
+                },
+                "committee/2": {"meeting_ids": [1]},
+                "committee/3": {"meeting_ids": [2]},
+            }
+        )
+        response = self.request(
+            "user.assign_meetings",
+            {
+                "id": 1,
+                "meeting_ids": [1, 2],
+                "group_name": "to_find",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/1", {"committee_ids": [2, 3]})
+
     def test_assign_meetings_with_existing_user_in_group(self) -> None:
         self.set_models(
             {

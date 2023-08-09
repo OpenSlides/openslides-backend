@@ -68,22 +68,19 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
                 Dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
             ).get("user_id")
             meeting_users = self.get_meeting_users_from_changed_models(user_id)
-            min_meeting_user_id = min(meeting_users.keys())
-            if min_meeting_user_id == instance["id"]:
-                fqid_user = fqid_from_collection_and_id("user", user_id)
-                db_user = self.datastore.get(
-                    fqid_user,
-                    [
-                        "id",
-                        "committee_ids",
-                        "committee_management_ids",
-                        "meeting_user_ids",
-                    ],
-                    use_changed_models=False,
-                    raise_exception=False,
-                )
-                return self.do_changes(fqid_user, db_user, meeting_users, action)
-        return {}
+            fqid_user = fqid_from_collection_and_id("user", user_id)
+            db_user = self.datastore.get(
+                fqid_user,
+                [
+                    "id",
+                    "committee_ids",
+                    "committee_management_ids",
+                    "meeting_user_ids",
+                ],
+                use_changed_models=False,
+                raise_exception=False,
+            )
+            return self.do_changes(fqid_user, db_user, meeting_users, action)
 
     def do_changes(
         self,
