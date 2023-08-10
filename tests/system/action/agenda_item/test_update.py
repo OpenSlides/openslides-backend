@@ -128,6 +128,40 @@ class AgendaItemActionTest(BaseActionTestCase):
         tag = self.get_model("tag/1")
         self.assertEqual(tag.get("tagged_ids"), [])
 
+    def test_update_multiple_with_type(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "agenda_item/1": {
+                    "comment": "test1",
+                    "meeting_id": 1,
+                    "type": "internal",
+                    "child_ids": [2],
+                    "is_internal": True,
+                },
+                "agenda_item/2": {
+                    "comment": "test2",
+                    "meeting_id": 1,
+                    "type": "internal",
+                    "parent_id": 1,
+                    "is_internal": True,
+                },
+            }
+        )
+        response = self.request_multi(
+            "agenda_item.update",
+            [{"id": 1, "type": "common"}, {"id": 2, "type": "common"}],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "agenda_item/1",
+            {"comment": "test1", "type": "common", "is_internal": False},
+        )
+        self.assert_model_exists(
+            "agenda_item/2",
+            {"comment": "test2", "type": "common", "is_internal": False},
+        )
+
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             {

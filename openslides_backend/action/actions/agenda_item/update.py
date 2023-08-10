@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
@@ -48,6 +48,10 @@ class AgendaItemUpdate(UpdateAction):
             fqid_from_collection_and_id(self.model.collection, id_), ["child_ids"]
         )
         if agenda_item.get("child_ids"):
+            self.changed_parents[id_] = {
+                "is_hidden": parent_is_hidden,
+                "is_internal": parent_is_internal,
+            }
             get_many_request = GetManyRequest(
                 self.model.collection,
                 agenda_item["child_ids"],
@@ -88,18 +92,23 @@ class AgendaItemUpdate(UpdateAction):
         )
         gm_result = self.datastore.get_many([get_many_request])
         agenda_items = gm_result.get(self.model.collection, {})
+        self.changed_parents: Dict[int, Any] = {}
         for instance in action_data:
             if instance.get("type") is None:
                 new_instances.append(instance)
                 continue
             agenda_item = agenda_items[instance["id"]]
             if agenda_item.get("parent_id"):
-                parent_ai = self.datastore.get(
-                    fqid_from_collection_and_id(
-                        self.model.collection, agenda_item["parent_id"]
-                    ),
-                    ["is_hidden", "is_internal"],
-                )
+                if agenda_item["parent_id"] in self.changed_parents:
+                    parent_ai = self.changed_parents[agenda_item["parent_id"]]
+                else:
+                    parent_ai = self.datastore.get(
+                        fqid_from_collection_and_id(
+                            self.model.collection, agenda_item["parent_id"]
+                        ),
+                        ["is_hidden", "is_internal"],
+                    )
+                print("XXX2", agenda_item, parent_ai)
             else:
                 parent_ai = {"is_hidden": False, "is_internal": False}
             instance["is_hidden"] = self.calc_is_hidden(
@@ -114,4 +123,5 @@ class AgendaItemUpdate(UpdateAction):
                     instance["id"], instance["is_hidden"], instance["is_internal"]
                 )
             )
+        print("XXX1", new_instances)
         return new_instances
