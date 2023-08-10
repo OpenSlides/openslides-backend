@@ -104,6 +104,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "users_allow_self_set_present": True,
             "users_pdf_welcometitle": "Welcome to OpenSlides",
             "users_pdf_welcometext": "blablabla",
+            "users_pdf_wlan_encryption": "WPA",
             "users_email_sender": "OpenSlides",
             "users_email_subject": "OpenSlides access data",
             "users_email_body": "blablabla",

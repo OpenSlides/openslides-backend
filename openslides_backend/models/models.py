@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "5c16613cd811dc14025edcaeb4e8b2e2"
+MODELS_YML_CHECKSUM = "6faa8e76b0382398e24bb2d4b7fdd0ae"
 
 
 class Organization(Model):
@@ -551,7 +551,7 @@ class Meeting(Model):
     users_pdf_wlan_ssid = fields.CharField()
     users_pdf_wlan_password = fields.CharField()
     users_pdf_wlan_encryption = fields.CharField(
-        constraints={"enum": ["", "WEP", "WPA", "nopass"]}
+        default="WPA", constraints={"enum": ["", "WEP", "WPA", "nopass"]}
     )
     users_email_sender = fields.CharField(default="OpenSlides")
     users_email_replyto = fields.CharField()
