@@ -1,14 +1,16 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.schema import optional_id_schema
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
+from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionResultElement
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixin import PasswordMixin
 from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
@@ -62,6 +64,7 @@ class UserCreate(
     own_history_information_first = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        self.meeting_id: Optional[int] = instance.get("meeting_id")
         instance = super().update_instance(instance)
         if instance.get("is_active"):
             self.check_limit_of_user(1)
@@ -92,3 +95,15 @@ class UserCreate(
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_helper(self.datastore, instance)
         return instance
+
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        meeting_user_id: Optional[int] = None
+        if self.meeting_id:
+            meeting_user = get_meeting_user(
+                self.datastore, self.meeting_id, instance["id"], ["id"]
+            )
+            if meeting_user:
+                meeting_user_id = meeting_user.get("id")
+        return {"id": instance["id"], "meeting_user_id": meeting_user_id}
