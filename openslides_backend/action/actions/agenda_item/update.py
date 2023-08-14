@@ -108,7 +108,6 @@ class AgendaItemUpdate(UpdateAction):
                         ),
                         ["is_hidden", "is_internal"],
                     )
-                print("XXX2", agenda_item, parent_ai)
             else:
                 parent_ai = {"is_hidden": False, "is_internal": False}
             instance["is_hidden"] = self.calc_is_hidden(
@@ -123,5 +122,4 @@ class AgendaItemUpdate(UpdateAction):
                     instance["id"], instance["is_hidden"], instance["is_internal"]
                 )
             )
-        print("XXX1", new_instances)
         return new_instances
