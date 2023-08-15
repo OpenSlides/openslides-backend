@@ -149,7 +149,7 @@ organization:
     type: text
     restriction_mode: A
   saml_private_key:
-    type: string
+    type: text
     restriction_mode: A
 
   vote_decrypt_public_main_key:
