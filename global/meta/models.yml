@@ -1300,6 +1300,7 @@ meeting:
     restriction_mode: B
   users_pdf_wlan_encryption:
     type: string
+    default: WPA
     enum:
       - ""
       - WEP

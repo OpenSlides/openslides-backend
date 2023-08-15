@@ -464,6 +464,7 @@
             "users_allow_self_set_present": true,
             "users_pdf_welcometitle": "Welcome to OpenSlides",
             "users_pdf_welcometext": "[Place for your welcome and help text.]",
+            "users_pdf_wlan_encryption": "",
             "users_email_sender": "Openslides",
             "users_email_subject": "OpenSlides access data",
             "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
