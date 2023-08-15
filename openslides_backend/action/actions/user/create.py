@@ -99,11 +99,11 @@ class UserCreate(
     def create_action_result_element(
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
-        meeting_user_id: Optional[int] = None
+        result = {"id": instance["id"]}
         if self.meeting_id:
             meeting_user = get_meeting_user(
                 self.datastore, self.meeting_id, instance["id"], ["id"]
             )
-            if meeting_user:
-                meeting_user_id = meeting_user.get("id")
-        return {"id": instance["id"], "meeting_user_id": meeting_user_id}
+            if meeting_user and meeting_user.get("id"):
+                result["meeting_user_id"] = meeting_user["id"]
+        return result

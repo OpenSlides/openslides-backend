@@ -27,6 +27,7 @@ class UserCreateActionTest(BaseActionTestCase):
         assert (password := model.get("default_password")) is not None
         assert all(char in PASSWORD_CHARS for char in password)
         assert self.auth.is_equals(password, model.get("password", ""))
+        assert response.json["results"][0][0] == {"id": 2}
         self.assert_history_information("user/2", ["Account created"])
 
     def test_create_first_and_last_name(self) -> None:
