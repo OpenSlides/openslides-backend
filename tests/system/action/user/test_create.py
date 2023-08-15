@@ -27,6 +27,7 @@ class UserCreateActionTest(BaseActionTestCase):
         assert (password := model.get("default_password")) is not None
         assert all(char in PASSWORD_CHARS for char in password)
         assert self.auth.is_equals(password, model.get("password", ""))
+        assert response.json["results"][0][0] == {"id": 2}
         self.assert_history_information("user/2", ["Account created"])
 
     def test_create_first_and_last_name(self) -> None:
@@ -107,6 +108,8 @@ class UserCreateActionTest(BaseActionTestCase):
         assert self.auth.is_equals(
             user2.get("default_password", ""), user2.get("password", "")
         )
+        result = response.json["results"][0][0]
+        assert result == {"id": 2, "meeting_user_id": 1}
         self.assert_model_exists(
             "meeting_user/1", {"meeting_id": 111, "user_id": 2, "group_ids": [111]}
         )
@@ -137,6 +140,8 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/2", {"username": "test Xcdfgee", "meeting_user_ids": [1]}
         )
+        result = response.json["results"][0][0]
+        assert result == {"id": 2, "meeting_user_id": 1}
         self.assert_model_exists(
             "meeting_user/1", {"meeting_id": 1, "user_id": 2, "comment": "blablabla"}
         )
@@ -188,6 +193,8 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting_ids": [1],
             },
         )
+        result = response.json["results"][0][0]
+        assert result == {"id": 223, "meeting_user_id": 2}
         self.assert_model_exists(
             "meeting_user/2",
             {
