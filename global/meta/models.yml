@@ -3286,7 +3286,6 @@ poll_candidate:
   user_id:
     type: relation
     to: user/poll_candidate_ids
-    required: true
     restriction_mode: A
   weight:
     type: number

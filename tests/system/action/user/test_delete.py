@@ -143,6 +143,26 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_model_exists("motion/50", {"submitter_ids": []})
 
+    def test_delete_with_poll_candidate(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "username_srtgb123",
+                    "poll_candidate_ids": [34],
+                },
+                "meeting/1": {},
+                "poll_candidate/34": {"user_id": 111},
+            }
+        )
+        response = self.request("user.delete", {"id": 111})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted(
+            "user/111",
+            {"poll_candidate_ids": [34]},
+        )
+        self.assert_model_exists("poll_candidate/34", {"user_id": None})
+
     def test_delete_with_template_field_set_null(self) -> None:
         self.set_models(
             {
