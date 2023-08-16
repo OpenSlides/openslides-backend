@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "b45c748d2dbe49a5154ddc03a1e858cd"
+MODELS_YML_CHECKSUM = "295720b86599b69e9340af0427f4f2bc"
 
 
 class Organization(Model):
@@ -43,7 +43,7 @@ class Organization(Model):
     saml_attr_mapping = fields.JSONField()
     saml_metadata_idp = fields.TextField()
     saml_metadata_sp = fields.TextField()
-    saml_private_key = fields.CharField()
+    saml_private_key = fields.TextField()
     committee_ids = fields.RelationListField(to={"committee": "organization_id"})
     active_meeting_ids = fields.RelationListField(
         to={"meeting": "is_active_in_organization_id"}
@@ -504,7 +504,7 @@ class Meeting(Model, MeetingModelMixin):
     users_pdf_wlan_ssid = fields.CharField()
     users_pdf_wlan_password = fields.CharField()
     users_pdf_wlan_encryption = fields.CharField(
-        constraints={"enum": ["", "WEP", "WPA", "nopass"]}
+        default="WPA", constraints={"enum": ["", "WEP", "WPA", "nopass"]}
     )
     users_email_sender = fields.CharField(default="OpenSlides")
     users_email_replyto = fields.CharField()
@@ -1765,7 +1765,7 @@ class PollCandidate(Model):
         required=True,
         equal_fields="meeting_id",
     )
-    user_id = fields.RelationField(to={"user": "poll_candidate_ids"}, required=True)
+    user_id = fields.RelationField(to={"user": "poll_candidate_ids"})
     weight = fields.IntegerField(required=True)
     meeting_id = fields.RelationField(
         to={"meeting": "poll_candidate_ids"}, required=True

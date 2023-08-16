@@ -139,7 +139,7 @@ organization:
     type: text
     restriction_mode: A
   saml_private_key:
-    type: string
+    type: text
     restriction_mode: A
 
   vote_decrypt_public_main_key:
@@ -1251,6 +1251,7 @@ meeting:
     restriction_mode: B
   users_pdf_wlan_encryption:
     type: string
+    default: WPA
     enum:
       - ""
       - WEP
@@ -3282,7 +3283,6 @@ poll_candidate:
   user_id:
     type: relation
     to: user/poll_candidate_ids
-    required: true
     restriction_mode: A
   weight:
     type: number
