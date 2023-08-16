@@ -1,5 +1,5 @@
 from operator import itemgetter
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
