@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -128,7 +130,9 @@ class AgendaItemActionTest(BaseActionTestCase):
         tag = self.get_model("tag/1")
         self.assertEqual(tag.get("tagged_ids"), [])
 
-    def test_update_multiple_with_type(self) -> None:
+    def update_multiple_with_type_variations(
+        self, variations: List[Dict[str, int | str]]
+    ) -> None:
         self.set_models(
             {
                 "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
@@ -144,22 +148,76 @@ class AgendaItemActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "type": "internal",
                     "parent_id": 1,
+                    "child_ids": [3],
+                    "is_internal": True,
+                },
+                "agenda_item/3": {
+                    "comment": "test3",
+                    "meeting_id": 1,
+                    "type": "internal",
+                    "parent_id": 2,
                     "is_internal": True,
                 },
             }
         )
-        response = self.request_multi(
-            "agenda_item.update",
-            [{"id": 1, "type": "common"}, {"id": 2, "type": "common"}],
-        )
+        response = self.request_multi("agenda_item.update", variations)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "agenda_item/1",
-            {"comment": "test1", "type": "common", "is_internal": False},
+            {
+                "comment": "test1",
+                "type": "common",
+                "is_internal": False,
+                "is_hidden": False,
+            },
         )
         self.assert_model_exists(
             "agenda_item/2",
-            {"comment": "test2", "type": "common", "is_internal": False},
+            {
+                "comment": "test2",
+                "type": "internal",
+                "is_internal": True,
+                "is_hidden": False,
+            },
+        )
+        self.assert_model_exists(
+            "agenda_item/3",
+            {
+                "comment": "test3",
+                "type": "hidden",
+                "is_internal": True,
+                "is_hidden": True,
+            },
+        )
+
+    def test_variations_123(self) -> None:
+        self.update_multiple_with_type_variations(
+            [{"id": 1, "type": "common"}, {"id": 2}, {"id": 3, "type": "hidden"}]
+        )
+
+    def test_variations_132(self) -> None:
+        self.update_multiple_with_type_variations(
+            [{"id": 1, "type": "common"}, {"id": 3, "type": "hidden"}, {"id": 2}]
+        )
+
+    def test_variations_213(self) -> None:
+        self.update_multiple_with_type_variations(
+            [{"id": 2}, {"id": 1, "type": "common"}, {"id": 3, "type": "hidden"}]
+        )
+
+    def test_variations_231(self) -> None:
+        self.update_multiple_with_type_variations(
+            [{"id": 2}, {"id": 3, "type": "hidden"}, {"id": 1, "type": "common"}]
+        )
+
+    def test_variations_312(self) -> None:
+        self.update_multiple_with_type_variations(
+            [{"id": 3, "type": "hidden"}, {"id": 1, "type": "common"}, {"id": 2}]
+        )
+
+    def test_variations_321(self) -> None:
+        self.update_multiple_with_type_variations(
+            [{"id": 3, "type": "hidden"}, {"id": 2}, {"id": 1, "type": "common"}]
         )
 
     def test_update_no_permissions(self) -> None:

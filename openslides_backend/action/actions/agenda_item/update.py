@@ -1,4 +1,3 @@
-from operator import itemgetter
 from typing import Optional
 
 from ....models.models import AgendaItem
@@ -86,25 +85,13 @@ class AgendaItemUpdate(UpdateAction):
         new_instances = []
         agenda_item_ids = [instance["id"] for instance in action_data]
         get_many_request = GetManyRequest(
-            self.model.collection, agenda_item_ids, ["parent_id"]
+            self.model.collection, agenda_item_ids, ["parent_id", "child_ids"]
         )
 
         gm_result = self.datastore.get_many([get_many_request])
         agenda_items = gm_result.get(self.model.collection, {})
 
-        level_instances = []
         for instance in action_data:
-            level = 0
-            pivot = instance
-            while pivot.get("parent_id"):
-                if pivot["parent_id"] in agenda_item_ids:
-                    level += 1
-                pivot = agenda_items.get(pivot["parent_id"], {})
-            level_instances.append((level, instance))
-        for instance in [
-            level_instance[1]
-            for level_instance in sorted(level_instances, key=itemgetter(0))
-        ]:
             if instance.get("type") is None:
                 new_instances.append(instance)
                 continue
