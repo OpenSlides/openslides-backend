@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "6faa8e76b0382398e24bb2d4b7fdd0ae"
+MODELS_YML_CHECKSUM = "9ace09287ef7c4a9856f8d2583f21d60"
 
 
 class Organization(Model):
@@ -1756,7 +1756,7 @@ class PollCandidate(Model):
         required=True,
         equal_fields="meeting_id",
     )
-    user_id = fields.RelationField(to={"user": "poll_candidate_ids"}, required=True)
+    user_id = fields.RelationField(to={"user": "poll_candidate_ids"})
     weight = fields.IntegerField(required=True)
     meeting_id = fields.RelationField(
         to={"meeting": "poll_candidate_ids"}, required=True
