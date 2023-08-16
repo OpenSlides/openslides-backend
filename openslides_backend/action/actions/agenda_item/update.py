@@ -1,3 +1,4 @@
+from operator import itemgetter
 from typing import Any, Dict, Optional
 
 from ....models.models import AgendaItem
@@ -48,10 +49,6 @@ class AgendaItemUpdate(UpdateAction):
             fqid_from_collection_and_id(self.model.collection, id_), ["child_ids"]
         )
         if agenda_item.get("child_ids"):
-            self.changed_parents[id_] = {
-                "is_hidden": parent_is_hidden,
-                "is_internal": parent_is_internal,
-            }
             get_many_request = GetManyRequest(
                 self.model.collection,
                 agenda_item["child_ids"],
@@ -75,6 +72,7 @@ class AgendaItemUpdate(UpdateAction):
                 ):
                     continue
                 instances.append(instance)
+                self.apply_instance(instance)
                 instances.extend(
                     self.handle_children(
                         child_id,
@@ -90,24 +88,34 @@ class AgendaItemUpdate(UpdateAction):
         get_many_request = GetManyRequest(
             self.model.collection, agenda_item_ids, ["parent_id"]
         )
+
         gm_result = self.datastore.get_many([get_many_request])
         agenda_items = gm_result.get(self.model.collection, {})
-        self.changed_parents: Dict[int, Any] = {}
+
+        level_instances = []
         for instance in action_data:
+            level = 0
+            pivot = instance
+            while pivot.get("parent_id"):
+                if pivot["parent_id"] in agenda_item_ids:
+                    level += 1
+                pivot = agenda_items.get(pivot["parent_id"], {})
+            level_instances.append((level, instance))
+        for instance in [
+            level_instance[1]
+            for level_instance in sorted(level_instances, key=itemgetter(0))
+        ]:
             if instance.get("type") is None:
                 new_instances.append(instance)
                 continue
             agenda_item = agenda_items[instance["id"]]
             if agenda_item.get("parent_id"):
-                if agenda_item["parent_id"] in self.changed_parents:
-                    parent_ai = self.changed_parents[agenda_item["parent_id"]]
-                else:
-                    parent_ai = self.datastore.get(
-                        fqid_from_collection_and_id(
-                            self.model.collection, agenda_item["parent_id"]
-                        ),
-                        ["is_hidden", "is_internal"],
-                    )
+                parent_ai = self.datastore.get(
+                    fqid_from_collection_and_id(
+                        self.model.collection, agenda_item["parent_id"]
+                    ),
+                    ["is_hidden", "is_internal"],
+                )
             else:
                 parent_ai = {"is_hidden": False, "is_internal": False}
             instance["is_hidden"] = self.calc_is_hidden(
@@ -117,6 +125,7 @@ class AgendaItemUpdate(UpdateAction):
                 instance["type"], parent_ai.get("is_internal")
             )
             new_instances.append(instance)
+            self.apply_instance(instance)
             new_instances.extend(
                 self.handle_children(
                     instance["id"], instance["is_hidden"], instance["is_internal"]
