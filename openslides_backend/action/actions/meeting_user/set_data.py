@@ -56,6 +56,14 @@ class MeetingUserSetData(
                 ), "Not permitted to change user_id."
         elif meeting_id and user_id:
             instance["id"] = self.create_or_get_meeting_user(meeting_id, user_id)
+        if (
+            instance.get("vote_delegated_to_id")
+            and instance["vote_delegated_to_id"] == instance["id"]
+            or instance.get("vote_delegations_from_ids")
+            and instance["id"] in instance["vote_delegations_from_ids"]
+        ):
+            raise ActionException("Self vote delegation is not allowed.")
+
         return instance
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
