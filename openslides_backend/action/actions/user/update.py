@@ -1,9 +1,10 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
-from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
+from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
@@ -48,17 +49,14 @@ class UserUpdate(
             "default_structure_level",
             "default_vote_weight",
             "organization_management_level",
-            "committee_$_management_level",
-            "number_$",
-            "structure_level_$",
-            "vote_weight_$",
-            "about_me_$",
-            "comment_$",
-            "vote_delegated_$_to_id",
-            "vote_delegations_$_from_ids",
-            "group_$_ids",
+            "committee_management_ids",
             "is_demo_user",
+            "saml_id",
         ],
+        additional_optional_fields={
+            "meeting_id": optional_id_schema,
+            **UserMixin.transfer_field_list,
+        },
     )
     check_email_field = "email"
 
@@ -101,18 +99,3 @@ class UserUpdate(
 
         check_gender_helper(self.datastore, instance)
         return instance
-
-    def apply_instance(
-        self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None
-    ) -> None:
-        if not fqid:
-            fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
-        if (
-            fqid in self.datastore.changed_models
-            and (cm_user := self.datastore.changed_models[fqid]).get("meta_new")
-            and "group_$_ids" in instance
-        ):
-            instance["group_$_ids"].update(
-                {k: cm_user.get(f"group_${k}_ids", []) for k in cm_user["group_$_ids"]}
-            )
-        self.datastore.apply_changed_model(fqid, instance)

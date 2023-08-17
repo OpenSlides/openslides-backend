@@ -1,15 +1,12 @@
-from collections import defaultdict
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List
 
 import fastjsonschema
 
 from openslides_backend.shared.mixins.user_scope_mixin import UserScopeMixin
 from openslides_backend.shared.schema import id_list_schema
 
-from ..models.models import Committee
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PresenterException
-from ..shared.filters import And, FilterOperator, Or
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -39,22 +36,15 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
 
     def get_result(self) -> Any:
         result: Dict[int, Any] = {}
-        cml_fields = [
-            f"committee_${cml_field}_management_level"
-            for cml_field in cast(
-                List[str], Committee.user__management_level.replacement_enum
-            )
-        ]
         gmr = GetManyRequest(
             "user",
             self.data["user_ids"],
             [
                 "id",
                 "organization_management_level",
-                "meeting_ids",
+                "meeting_user_ids",
                 "committee_ids",
-                "committee_$_management_level",
-                *cml_fields,
+                "committee_management_ids",
             ],
         )
         users = self.datastore.get_many([gmr]).get("user", {})
@@ -81,14 +71,13 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             .get("committee", {})
             .values()
         }
-        for level in user.get("committee_$_management_level", []):
-            for committee_nr in user.get(f"committee_${level}_management_level", []):
-                if committee_nr in committees:
-                    committees[committee_nr]["cml"].append(level)
-                else:
-                    raise PresenterException(
-                        f"Data error: user has rights for committee {committee_nr}, but faultily is no member of committee."
-                    )
+        for committee_nr in user.get("committee_management_ids", []):
+            if committee_nr in committees:
+                committees[committee_nr]["cml"].append("can_manage")
+            else:
+                raise PresenterException(
+                    f"Data error: user has rights for committee {committee_nr}, but faultily is no member of committee."
+                )
         for committee_id, committee in committees.items():
             committees_data.append(
                 {
@@ -100,31 +89,27 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
         return committees_data
 
     def get_meetings_data(self, user: Dict[str, Any]) -> List[Dict[str, Any]]:
-        if not user.get("meeting_ids"):
+        if not user.get("meeting_user_ids"):
             return []
+
+        result_fields = (
+            "speaker_ids",
+            "motion_submitter_ids",
+            "assignment_candidate_ids",
+        )
+        gmr = GetManyRequest(
+            "meeting_user",
+            user["meeting_user_ids"],
+            ["meeting_id", *result_fields],
+        )
+        meeting_users = self.datastore.get_many([gmr]).get("meeting_user", {}).values()
 
         gmr = GetManyRequest(
             "meeting",
-            user["meeting_ids"],
+            [meeting_user["meeting_id"] for meeting_user in meeting_users],
             ["id", "name", "is_active_in_organization_id"],
         )
-        meetings = self.datastore.get_many([gmr]).get("meeting", {}).values()
-
-        filter = And(
-            Or(
-                FilterOperator("meeting_id", "=", meeting_id)
-                for meeting_id in user["meeting_ids"]
-            ),
-            FilterOperator("user_id", "=", user["id"]),
-        )
-        models_by_meeting: Dict[int, Dict[str, List[int]]] = defaultdict(
-            lambda: defaultdict(list)
-        )
-        for collection in ("motion_submitter", "assignment_candidate", "speaker"):
-            models = self.datastore.filter(collection, filter, ["id", "meeting_id"])
-            for id, model in models.items():
-                models_by_meeting[model["meeting_id"]][f"{collection}_ids"].append(id)
-
+        meetings = self.datastore.get_many([gmr]).get("meeting", {})
         return [
             {
                 "id": meeting["id"],
@@ -132,7 +117,12 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
                 "is_active_in_organization_id": meeting.get(
                     "is_active_in_organization_id"
                 ),
-                **models_by_meeting[meeting["id"]],
+                **{
+                    field: value
+                    for field in result_fields
+                    if (value := meeting_user.get(field))
+                },
             }
-            for meeting in meetings
+            for meeting_user in meeting_users
+            if (meeting := meetings.get(meeting_user["meeting_id"]))
         ]

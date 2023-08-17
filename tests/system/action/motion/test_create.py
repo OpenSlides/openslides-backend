@@ -56,9 +56,13 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert model.get("submitter_ids") == [1]
         assert "agenda_create" not in model
         submitter = self.get_model("motion_submitter/1")
-        assert submitter.get("user_id") == 1
+        assert submitter.get("meeting_user_id") == 1
         assert submitter.get("meeting_id") == 222
         assert submitter.get("motion_id") == 1
+        self.assert_model_exists(
+            "meeting_user/1",
+            {"meeting_id": 222, "user_id": 1, "motion_submitter_ids": [1]},
+        )
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 222)
         self.assertEqual(agenda_item.get("content_object_id"), "motion/1")
@@ -85,6 +89,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "tag/56": {"name": "name_56", "meeting_id": 1},
                 "mediafile/8": {"owner_id": "meeting/1"},
                 "meeting/1": {"mediafile_ids": [8]},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
 
@@ -98,7 +103,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "sort_parent_id": 1,
                 "category_id": 124,
                 "block_id": 78,
-                "supporter_ids": [1],
+                "supporter_meeting_user_ids": [1],
                 "tag_ids": [56],
                 "attachment_ids": [8],
                 "text": "test",
@@ -113,7 +118,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert model.get("sort_parent_id") == 1
         assert model.get("category_id") == 124
         assert model.get("block_id") == 78
-        assert model.get("supporter_ids") == [1]
+        assert model.get("supporter_meeting_user_ids") == [1]
         assert model.get("tag_ids") == [56]
         assert model.get("attachment_ids") == [8]
 
@@ -230,11 +235,11 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "text": "text",
-                "amendment_paragraph_$": {4: "text"},
+                "amendment_paragraphs": {4: "text"},
             },
         )
         self.assert_status_code(response, 400)
-        assert "give amendment_paragraph_$ in this context" in response.json["message"]
+        assert "give amendment_paragraphs in this context" in response.json["message"]
 
     def test_create_reason_missing(self) -> None:
         self.create_model(
@@ -283,7 +288,12 @@ class MotionCreateActionTest(BaseActionTestCase):
             }
         )
         self.set_models(
-            {"user/56": {"meeting_ids": [222]}, "user/57": {"meeting_ids": [222]}}
+            {
+                "user/56": {"meeting_ids": [222]},
+                "user/57": {"meeting_ids": [222]},
+                "meeting_user/56": {"meeting_id": 222, "user_id": 56},
+                "meeting_user/57": {"meeting_id": 222, "user_id": 57},
+            }
         )
         response = self.request(
             "motion.create",
@@ -300,12 +310,12 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert motion.get("submitter_ids") == [1, 2]
         submitter_1 = self.get_model("motion_submitter/1")
         assert submitter_1.get("meeting_id") == 222
-        assert submitter_1.get("user_id") == 56
+        assert submitter_1.get("meeting_user_id") == 56
         assert submitter_1.get("motion_id") == 1
         assert submitter_1.get("weight") == 1
         submitter_2 = self.get_model("motion_submitter/2")
         assert submitter_2.get("meeting_id") == 222
-        assert submitter_2.get("user_id") == 57
+        assert submitter_2.get("meeting_user_id") == 57
         assert submitter_2.get("motion_id") == 1
         assert submitter_2.get("weight") == 2
 
@@ -528,6 +538,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_category/56": {"meeting_id": 1},
                 "motion_block/13": {"meeting_id": 1},
                 "motion_block/57": {"meeting_id": 1},
+                "meeting/1": {"user_ids": [2]},
             }
         )
         response = self.request(

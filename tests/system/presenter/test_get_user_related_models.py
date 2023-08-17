@@ -1,7 +1,4 @@
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 
 from .base import BasePresenterTestCase
@@ -23,10 +20,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "committee/1": {"name": "test"},
                 "user/1": {
                     "committee_ids": [1],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 },
             }
         )
@@ -45,17 +39,11 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "committee/1": {"name": "test", "user_ids": [1, 2, 3]},
                 "user/1": {
                     "committee_ids": [1],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 },
                 "user/2": {
                     "committee_ids": [1],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 },
                 "user/3": {
                     "committee_ids": [1],
@@ -83,10 +71,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "committee/3": {"name": "test3", "user_ids": [1]},
                 "user/1": {
                     "committee_ids": [1, 2, 3],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1, 2],
+                    "committee_management_ids": [1, 2],
                 },
             }
         )
@@ -106,16 +91,24 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_user_related_models_meeting(self) -> None:
         self.set_models(
             {
-                "user/1": {"meeting_ids": [1]},
+                "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
                 "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [1],
                     "committee_id": 1,
                 },
-                "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
-                "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
-                "speaker/4": {"user_id": 1, "meeting_id": 1},
+                "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
+                "assignment_candidate/3": {"meeting_user_id": 1, "meeting_id": 1},
+                "speaker/4": {"meeting_user_id": 1, "meeting_id": 1},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "speaker_ids": [4],
+                    "motion_submitter_ids": [2],
+                    "assignment_candidate_ids": [3],
+                },
             }
         )
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
@@ -139,20 +132,34 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     def test_get_user_related_models_meetings_more_user(self) -> None:
         self.set_models(
             {
-                "user/1": {"meeting_ids": [1]},
-                "user/2": {"meeting_ids": [1]},
+                "user/1": {"meeting_ids": [1], "meeting_user_ids": [1]},
+                "user/2": {"meeting_ids": [1], "meeting_user_ids": [2]},
                 "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
                 },
-                "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
-                "motion_submitter/3": {"user_id": 2, "meeting_id": 1},
-                "assignment_candidate/3": {"user_id": 1, "meeting_id": 1},
-                "assignment_candidate/4": {"user_id": 2, "meeting_id": 1},
-                "speaker/4": {"user_id": 1, "meeting_id": 1},
-                "speaker/5": {"user_id": 2, "meeting_id": 1},
+                "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
+                "motion_submitter/3": {"meeting_user_id": 2, "meeting_id": 1},
+                "assignment_candidate/3": {"meeting_user_id": 1, "meeting_id": 1},
+                "assignment_candidate/4": {"meeting_user_id": 2, "meeting_id": 1},
+                "speaker/4": {"meeting_user_id": 1, "meeting_id": 1},
+                "speaker/5": {"meeting_user_id": 2, "meeting_id": 1},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "speaker_ids": [4],
+                    "motion_submitter_ids": [2],
+                    "assignment_candidate_ids": [3],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "speaker_ids": [5],
+                    "motion_submitter_ids": [3],
+                    "assignment_candidate_ids": [4],
+                },
             }
         )
         status_code, data = self.request(
@@ -202,7 +209,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
                 },
-                "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
+                "motion_submitter/2": {"meeting_user_id": 1, "meeting_id": 1},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "motion_submitter_ids": [2],
+                },
             }
         )
         status_code, _ = self.request("get_user_related_models", {"user_ids": [1]})
@@ -213,12 +225,17 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     ) -> None:
         self.set_models(
             {
-                "user/2": {"organization_management_level": None, "meeting_ids": [1]},
+                "user/2": {"meeting_user_ids": [1]},
                 "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 2,
                 },
             }
         )
@@ -241,11 +258,17 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
     ) -> None:
         self.set_models(
             {
-                "user/2": {"organization_management_level": None, "meeting_ids": [1]},
+                "user/2": {"meeting_user_ids": [1]},
                 "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
                     "name": "test",
+                    "is_archived_in_organization_id": 1,
                     "committee_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 2,
                 },
             }
         )
@@ -269,7 +292,12 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "user/1": {
                     "organization_management_level": None,
                     "meeting_ids": [1],
-                    "group_$1_ids": [3],
+                    "meeting_user_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [3],
                 },
                 "committee/1": {"meeting_ids": [1]},
                 "meeting/1": {
@@ -315,8 +343,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "user/1": {
                     "organization_management_level": None,
                     "committee_ids": [1],
-                    "committee_$_management_level": ["1"],
-                    "committee_$1_management_level": None,
+                    "committee_management_ids": [],
                 },
             }
         )
@@ -331,10 +358,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "committee/3": {"name": "test3", "user_ids": [1]},
                 "user/1": {
                     "committee_ids": [1],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1, 2],
+                    "committee_management_ids": [1, 2],
                 },
             }
         )

@@ -1,6 +1,8 @@
-from typing import List, cast
+from typing import List
 
-from openslides_backend.models.models import User
+from openslides_backend.action.mixins.meeting_user_helper import (
+    get_groups_from_meeting_user,
+)
 
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
@@ -18,46 +20,39 @@ def has_perm(
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
             [
-                f"group_${meeting_id}_ids",
                 "organization_management_level",
             ],
             lock_result=False,
         )
-    else:
-        user = {}
+        # superadmins have all permissions
+        if (
+            user.get("organization_management_level")
+            == OrganizationManagementLevel.SUPERADMIN
+        ):
+            return True
 
-    # superadmins have all permissions
-    if (
-        user.get("organization_management_level")
-        == OrganizationManagementLevel.SUPERADMIN
-    ):
-        return True
-
-    # get correct group ids for this user
-    if user.get(f"group_${meeting_id}_ids"):
-        group_ids = user[f"group_${meeting_id}_ids"]
-    else:
-        # anonymous users are in the default group
-        if user_id == 0:
-            meeting = datastore.get(
-                fqid_from_collection_and_id("meeting", meeting_id),
-                ["default_group_id", "enable_anonymous"],
-            )
-            # check if anonymous is allowed
-            if not meeting.get("enable_anonymous"):
-                raise PermissionDenied(
-                    f"Anonymous is not enabled for meeting {meeting_id}"
-                )
-            group_ids = [meeting["default_group_id"]]
-        else:
+        group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
+        if not group_ids:
             return False
+    elif user_id == 0:
+        # anonymous users are in the default group
+        meeting = datastore.get(
+            fqid_from_collection_and_id("meeting", meeting_id),
+            ["default_group_id", "enable_anonymous"],
+        )
+        # check if anonymous is allowed
+        if not meeting.get("enable_anonymous"):
+            raise PermissionDenied(f"Anonymous is not enabled for meeting {meeting_id}")
+        group_ids = [meeting["default_group_id"]]
+    else:
+        return False
 
     gmr = GetManyRequest(
         "group",
         group_ids,
         ["permissions", "admin_group_for_meeting_id"],
     )
-    result = datastore.get_many([gmr])
+    result = datastore.get_many([gmr], lock_result=False)
     for group in result["group"].values():
         # admins implicitly have all permissions
         if group.get("admin_group_for_meeting_id") == meeting_id:
@@ -109,12 +104,7 @@ def has_committee_management_level(
 ) -> bool:
     """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
     if user_id > 0:
-        cml_fields = [
-            f"committee_${management_level}_management_level"
-            for management_level in cast(
-                List[str], User.committee__management_level.replacement_enum
-            )
-        ]
+        cml_fields = ["committee_management_ids"]
         user = datastore.get(
             fqid_from_collection_and_id("user", user_id),
             ["organization_management_level", *cml_fields],
@@ -126,16 +116,8 @@ def has_committee_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         ):
             return True
-        return any(
-            [
-                CommitteeManagementLevel(management_level) >= expected_level
-                for management_level in cast(
-                    List[str], User.committee__management_level.replacement_enum
-                )
-                if committee_id
-                in user.get(f"committee_${management_level}_management_level", [])
-            ]
-        )
+        if committee_id in user.get("committee_management_ids", []):
+            return True
     return False
 
 
@@ -164,8 +146,5 @@ def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool
         fqid_from_collection_and_id("meeting", meeting_id),
         ["admin_group_id"],
     )
-    groups_field = f"group_${meeting_id}_ids"
-    user = datastore.get(fqid_from_collection_and_id("user", user_id), [groups_field])
-    if meeting.get("admin_group_id") in user.get(groups_field, []):
-        return True
-    return False
+    group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
+    return meeting["admin_group_id"] in group_ids

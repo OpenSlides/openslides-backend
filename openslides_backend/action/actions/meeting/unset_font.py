@@ -24,5 +24,5 @@ class MeetingUnsetFontAction(UpdateAction, GetMeetingIdFromIdMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         place = instance.pop("place")
-        instance["font_$_id"] = {place: None}
+        instance[f"font_{place}_id"] = None
         return instance
