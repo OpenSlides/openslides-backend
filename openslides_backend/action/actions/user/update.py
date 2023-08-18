@@ -1,14 +1,17 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
+from ....shared.functions.count_users_for_limit import get_user_counting_to_add_function
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
+from ...action import original_instances
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixin import (
     LimitOfUserMixin,
@@ -60,6 +63,20 @@ class UserUpdate(
     )
     check_email_field = "email"
 
+    @original_instances
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        """
+        The check for limit of users has to be implemented here for all changed users
+        """
+        old: List[int] = []
+        new: List[tuple[bool, List[int]]] = []
+        for instance in action_data:
+            old.append(instance.get("id"))
+            new.append((instance.get("is_active"), instance.get("group_ids")))
+        user_counting_to_add_function = get_user_counting_to_add_function(old, new)
+        self.check_limit_of_user(user_counting_to_add_function)
+        return action_data
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         user = self.datastore.get(
@@ -94,8 +111,6 @@ class UserUpdate(
                 raise PermissionException(
                     "A superadmin is not allowed to set himself inactive."
                 )
-        if instance.get("is_active") and not user.get("is_active"):
-            self.check_limit_of_user(1)
 
         check_gender_helper(self.datastore, instance)
         return instance

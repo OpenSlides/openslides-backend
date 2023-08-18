@@ -1,10 +1,128 @@
+from os import environ
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.functions.count_users_for_limit import (
+    count_users_for_limit,
+)
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
 class UserUpdateActionTest(BaseActionTestCase):
+    limit_models = {
+        ONE_ORGANIZATION_FQID: {
+            "limit_of_users": 7,
+            "active_meeting_ids": [1, 2],
+            "archived_meeting_ids": [3],
+        },
+        "committee/1": {"meeting_ids": [1, 2, 3], "user_ids": [2, 4, 5, 6, 7, 8, 9]},
+        "meeting/1": {
+            "is_active_in_organization_id": 1,
+            "user_ids": [2, 4, 5, 6, 7, 8],
+            "group_ids": [11],
+            "committee_id": 1,
+        },
+        "meeting/2": {
+            "is_active_in_organization_id": 1,
+            "user_ids": [8],
+            "group_ids": [22],
+            "committee_id": 1,
+        },
+        "meeting/3": {
+            "is_archived_in_organization_id": 1,
+            "user_ids": [9],
+            "group_ids": [33],
+            "committee_id": 1,
+        },
+        "group/11": {"meeting_id": 1, "meeting_user_ids": [12, 14, 15, 17, 18]},
+        "group/22": {"meeting_id": 2, "meeting_user_ids": [28]},
+        "group/33": {"meeting_id": 3, "meeting_user_ids": [36, 39]},
+        "user/2": {
+            "username": "u2, active, m1",
+            "is_active": True,
+            "meeting_user_ids": [12],
+            "meeting_ids": [1],
+        },
+        "user/3": {
+            "username": "u3, active, m1",
+            "is_active": True,
+            "meeting_user_ids": [13],
+            "meeting_ids": [1],
+        },
+        "user/4": {
+            "username": "u4, active, m1m2",
+            "is_active": True,
+            "meeting_user_ids": [14, 24],
+            "meeting_ids": [1, 2],
+        },
+        "user/5": {"username": "u5, active", "is_active": True},
+        "user/6": {
+            "username": "u6, inactive, ma3",
+            "is_active": False,
+            "meeting_user_ids": [36],
+            "meeting_ids": [3],
+        },
+        "user/7": {
+            "username": "u7, inactive, m1",
+            "is_active": False,
+            "meeting_user_ids": [17],
+            "meeting_ids": [1],
+        },
+        "user/8": {
+            "username": "u8, active, m1",
+            "is_active": True,
+            "meeting_user_ids": [18],
+            "meeting_ids": [1],
+        },
+        "user/9": {
+            "username": "u9, active, ma3",
+            "is_active": True,
+            "meeting_user_ids": [39],
+            "meeting_ids": [3],
+        },
+        "meeting_user/12": {
+            "user_id": 2,
+            "meeting_id": 1,
+            "group_ids": [11],
+        },
+        "meeting_user/13": {
+            "user_id": 3,
+            "meeting_id": 1,
+            "group_ids": [11],
+        },
+        "meeting_user/14": {
+            "user_id": 4,
+            "meeting_id": 1,
+            "group_ids": [11],
+        },
+        "meeting_user/24": {
+            "user_id": 4,
+            "meeting_id": 2,
+            "group_ids": [22],
+        },
+        "meeting_user/36": {
+            "user_id": 6,
+            "meeting_id": 3,
+            "group_ids": [33],
+        },
+        "meeting_user/17": {
+            "user_id": 7,
+            "meeting_id": 1,
+            "group_ids": [11],
+        },
+        "meeting_user/18": {
+            "user_id": 8,
+            "meeting_id": 1,
+            "group_ids": [11],
+        },
+        "meeting_user/39": {
+            "user_id": 9,
+            "meeting_id": 3,
+            "group_ids": [33],
+        },
+    }
+
     def permission_setup(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
@@ -1532,47 +1650,108 @@ class UserUpdateActionTest(BaseActionTestCase):
             "meeting_user/2", {"comment": "test", "group_ids": [1]}
         )
 
-    def test_update_hit_user_limit(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
-                "user/2": {"is_active": True},
-                "user/3": {"is_active": True},
-                "user/4": {"is_active": False},
-            }
-        )
-        response = self.request(
+    def test_update_user_limit_standard(self) -> None:
+        """count mode standard: all users with is_active = True are counted"""
+        environ["USER_COUNT_MODE"] = "standard"
+
+        self.set_models(self.limit_models)
+        with self.datastore.get_database_context():
+            assert count_users_for_limit(self.datastore) == 7
+
+        response = self.request_multi(
             "user.update",
-            {
-                "id": 4,
-                "is_active": True,
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "The number of active users cannot exceed the limit of users."
-            == response.json["message"]
+            [
+                {"id": 2, "last_name": "Bernard"},  # T -> T
+                {"id": 3, "meeting_id": 2, "group_ids": [22]},  # T -> T
+                {
+                    "id": 4,
+                    "is_active": True,
+                    "meeting_id": 2,
+                    "group_ids": [],
+                },  # T -> T
+                {
+                    "id": 5,
+                    "is_active": True,
+                    "meeting_id": 1,
+                    "group_ids": [11],
+                },  # T -> T
+                {
+                    "id": 6,
+                    "is_active": True,
+                    "meeting_id": 1,
+                    "group_ids": [11],
+                },  # F -> T
+                {"id": 7, "is_active": True},  # F -> T
+                {
+                    "id": 8,
+                    "is_active": True,
+                    "meeting_id": 1,
+                    "group_ids": [],
+                },  # T -> T
+                {
+                    "id": 9,
+                    "is_active": False,
+                    "meeting_id": 1,
+                    "group_ids": [11],
+                },  # T -> F
+            ],
         )
 
-    def test_update_user_limit_okay(self) -> None:
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {"limit_of_users": 4},
-                "user/2": {"is_active": True},
-                "user/3": {"is_active": True},
-                "user/4": {"is_active": False},
-            }
-        )
-        response = self.request(
+        self.assert_status_code(response, 200)
+        with self.datastore.get_database_context():
+            assert count_users_for_limit(self.datastore) == 8
+
+    def test_update_user_limit_no_archived_meetings(self) -> None:
+        """count mode no_archived_meetings: users with is_active = True and member of an active meeting are counted"""
+        environ["USER_COUNT_MODE"] = "no_archived_meetings"
+
+        self.limit_models[ONE_ORGANIZATION_FQID]["limit_of_users"] = 10
+        self.set_models(self.limit_models)
+
+        with self.datastore.get_database_context():
+            assert count_users_for_limit(self.datastore) == 4
+
+        response = self.request_multi(
             "user.update",
-            {
-                "id": 4,
-                "is_active": True,
-            },
+            [
+                {"id": 2, "last_name": "Bernard"},  # T -> T
+                {"id": 3, "meeting_id": 2, "group_ids": [22]},  # T -> T
+                {
+                    "id": 4,
+                    "is_active": True,
+                    "meeting_id": 2,
+                    "group_ids": [],
+                },  # T -> T
+                {
+                    "id": 5,
+                    "is_active": True,
+                    "meeting_id": 1,
+                    "group_ids": [11],
+                },  # F -> T
+                {
+                    "id": 6,
+                    "is_active": True,
+                    "meeting_id": 1,
+                    "group_ids": [11],
+                },  # F -> T
+                {"id": 7, "is_active": True},  # F -> T
+                {
+                    "id": 8,
+                    "is_active": True,
+                    "meeting_id": 1,
+                    "group_ids": [],
+                },  # T -> F
+                {
+                    "id": 9,
+                    "is_active": False,
+                    "meeting_id": 1,
+                    "group_ids": [11],
+                },  # T -> F
+            ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/4", {"is_active": True})
-        self.assert_history_information("user/4", ["Set active"])
+        with self.datastore.get_database_context():
+            assert count_users_for_limit(self.datastore) == 6
 
     def test_update_negative_default_vote_weight(self) -> None:
         self.create_model("user/111", {"username": "user111"})

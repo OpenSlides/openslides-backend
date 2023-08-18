@@ -59,8 +59,7 @@ class MeetingArchiveTest(BaseActionTestCase):
                     "meeting_ids": [1, 2],
                     "default_meeting_id": 1,
                     "user_ids": [1, 2, 3, 4, 5],
-                    "user_$_management_level": ["can_manage"],
-                    "user_$can_manage_management_level": [3, 5],
+                    "manager_ids": [3, 5],
                 },
                 "meeting/1": {
                     "name": "to archive",
@@ -69,6 +68,7 @@ class MeetingArchiveTest(BaseActionTestCase):
                     "committee_id": 1,
                     "is_active_in_organization_id": 1,
                     "default_meeting_for_committee_id": 1,
+                    "meeting_user_ids": [12, 14, 15],
                 },
                 "meeting/2": {
                     "name": "m1",
@@ -76,14 +76,18 @@ class MeetingArchiveTest(BaseActionTestCase):
                     "group_ids": [2],
                     "committee_id": 1,
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [24],
                 },
-                "group/1": {"user_ids": [2, 4, 5], "meeting_id": 1, "name": "g1"},
-                "group/2": {"user_ids": [4], "meeting_id": 2, "name": "g2"},
+                "group/1": {
+                    "meeting_user_ids": [12, 14, 15],
+                    "meeting_id": 1,
+                    "name": "g1",
+                },
+                "group/2": {"meeting_user_ids": [24], "meeting_id": 2, "name": "g2"},
                 "user/2": {
                     "username": "only in meeting to archive",
                     "meeting_ids": [1],
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [12],
                     "committee_ids": [1],
                     "organization_id": 1,
                     "is_active": True,
@@ -91,8 +95,8 @@ class MeetingArchiveTest(BaseActionTestCase):
                 "user/3": {
                     "username": "only committee manager",
                     "meeting_ids": [],
-                    "committee_$_management_level": ["can_manage"],
-                    "committee_$can_manage_management_level": [1],
+                    "meeting_user_ids": [],
+                    "committee_management_ids": [1],
                     "committee_ids": [1],
                     "organization_id": 1,
                     "is_active": True,
@@ -100,9 +104,7 @@ class MeetingArchiveTest(BaseActionTestCase):
                 "user/4": {
                     "username": "both meetings",
                     "meeting_ids": [1, 2],
-                    "group_$_ids": ["1, 2"],
-                    "group_$1_ids": [1],
-                    "group_$2_ids": [2],
+                    "meeting_user_ids": [14, 24],
                     "committee_ids": [1],
                     "organization_id": 1,
                     "is_active": True,
@@ -110,13 +112,31 @@ class MeetingArchiveTest(BaseActionTestCase):
                 "user/5": {
                     "username": "meeting to archive and committee",
                     "meeting_ids": [1],
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
-                    "committee_$_management_level": ["can_manage"],
-                    "committee_$can_manage_management_level": [1],
+                    "meeting_user_ids": [15],
+                    "committee_management_ids": [1],
                     "committee_ids": [1],
                     "organization_id": 1,
                     "is_active": True,
+                },
+                "meeting_user/12": {
+                    "user_id": 2,
+                    "meeting_id": 1,
+                    "group_ids": [1],
+                },
+                "meeting_user/14": {
+                    "user_id": 4,
+                    "meeting_id": 1,
+                    "group_ids": [1],
+                },
+                "meeting_user/24": {
+                    "user_id": 4,
+                    "meeting_id": 2,
+                    "group_ids": [2],
+                },
+                "meeting_user/15": {
+                    "user_id": 5,
+                    "meeting_id": 1,
+                    "group_ids": [1],
                 },
             }
         )
@@ -136,8 +156,7 @@ class MeetingArchiveTest(BaseActionTestCase):
             {
                 "user_ids": [1, 2, 3, 4, 5],
                 "meeting_ids": [1, 2],
-                "user_$_management_level": ["can_manage"],
-                "user_$can_manage_management_level": [3, 5],
+                "manager_ids": [3, 5],
             },
         )
         self.assert_model_exists(
@@ -149,15 +168,17 @@ class MeetingArchiveTest(BaseActionTestCase):
                 "is_archived_in_organization_id": 1,
             },
         )
-        self.assert_model_exists("group/1", {"user_ids": [2, 4, 5], "meeting_id": 1})
+        self.assert_model_exists(
+            "group/1", {"meeting_user_ids": [12, 14, 15], "meeting_id": 1}
+        )
+        self.assert_model_exists("group/2", {"meeting_user_ids": [24], "meeting_id": 2})
         self.assert_model_exists(
             "user/2",
             {
                 "username": "only in meeting to archive",
                 "is_active": True,
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
                 "meeting_ids": [1],
+                "meeting_user_ids": [12],
                 "committee_ids": [1],
                 "organization_id": 1,
             },
@@ -167,8 +188,7 @@ class MeetingArchiveTest(BaseActionTestCase):
             {
                 "username": "only committee manager",
                 "meeting_ids": [],
-                "committee_$_management_level": ["can_manage"],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
                 "committee_ids": [1],
                 "organization_id": 1,
                 "is_active": True,
@@ -179,9 +199,7 @@ class MeetingArchiveTest(BaseActionTestCase):
             {
                 "username": "both meetings",
                 "meeting_ids": [1, 2],
-                "group_$_ids": ["1, 2"],
-                "group_$1_ids": [1],
-                "group_$2_ids": [2],
+                "meeting_user_ids": [14, 24],
                 "committee_ids": [1],
                 "organization_id": 1,
                 "is_active": True,
@@ -192,14 +210,24 @@ class MeetingArchiveTest(BaseActionTestCase):
             {
                 "username": "meeting to archive and committee",
                 "meeting_ids": [1],
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
-                "committee_$_management_level": ["can_manage"],
-                "committee_$can_manage_management_level": [1],
+                "meeting_user_ids": [15],
+                "committee_management_ids": [1],
                 "committee_ids": [1],
                 "organization_id": 1,
                 "is_active": True,
             },
+        )
+        self.assert_model_exists(
+            "meeting_user/12", {"user_id": 2, "meeting_id": 1, "group_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/14", {"user_id": 4, "meeting_id": 1, "group_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/24", {"user_id": 4, "meeting_id": 2, "group_ids": [2]}
+        )
+        self.assert_model_exists(
+            "meeting_user/15", {"user_id": 5, "meeting_id": 1, "group_ids": [1]}
         )
 
     def test_archive_no_permissions(self) -> None:
