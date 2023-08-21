@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 from typing_extensions import NotRequired, TypedDict
 
+from ...services.datastore.commands import GetManyRequest
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
