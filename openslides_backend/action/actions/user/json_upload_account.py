@@ -12,8 +12,8 @@ from .create import UserCreate
 from .user_mixin import DuplicateCheckMixin, UsernameMixin
 
 
-@register_action("user.json_upload")
-class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
+@register_action("account.json_upload")
+class AccountJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -54,12 +54,12 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
         {"property": "last_name", "type": "string"},
         {"property": "is_active", "type": "boolean"},
         {"property": "is_physical_person", "type": "boolean"},
-        {"property": "default_password", "type": "string"},
+        {"property": "default_password", "type": "string","is_object": True},
         {"property": "email", "type": "string"},
-        {"property": "username", "type": "string"},
+        {"property": "username", "type": "string", "is_object": True},
         {"property": "gender", "type": "string"},
         {"property": "pronoun", "type": "string"},
-        {"property": "saml_id", "type": "string"},
+        {"property": "saml_id", "type": "string", "is_object": True},
     ]
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     skip_archived_meeting_check = True
@@ -135,7 +135,7 @@ class UserJsonUpload(DuplicateCheckMixin, UsernameMixin, JsonUploadMixin):
                     state = ImportState.ERROR
                     messages.append("Cannot generate username.")
                 elif self.check_name_and_email_for_duplicate(
-                    *UserJsonUpload._names_and_email(entry), payload_index
+                    *AccountJsonUpload._names_and_email(entry), payload_index
                 ):
                     state = ImportState.DONE
                     if searchdata := self.get_search_data(payload_index):

@@ -1,27 +1,100 @@
 from enum import Enum
-from time import time
+from time import mktime, strptime, time
 from typing import Any, Callable, Dict, List, Optional, TypedDict
 
+from ...services.datastore.commands import GetManyRequest
 from ...shared.exceptions import ActionException
+from ...shared.filters import FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
+from ...shared.interfaces.services import DatastoreService
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
 from ..action import Action
 from ..util.typing import ActionData, ActionResultElement
+from .singular_action_mixin import SingularActionMixin
 
-TRUE_VALUES = ("1", "true", "yes", "t")
-FALSE_VALUES = ("0", "false", "no", "f")
-
+TRUE_VALUES = ("1", "true", "yes", "y", "t")
+FALSE_VALUES = ("0", "false", "no", "n", "f")
 
 class ImportState(str, Enum):
-    ERROR = "error"
-    NEW = "new"
+    NONE = "none"
     WARNING = "warning"
+    NEW = "new"
     DONE = "done"
     GENERATED = "generated"
+    REMOVE = "remove"
+    ERROR = "error"
 
 
-class ImportMixin(Action):
+class ResultType(Enum):
+    """Used by Lookup to differ the possible results in check_duplicate."""
+    FOUND_ID = 1
+    FOUND_MORE_IDS = 2
+    NOT_FOUND = 3
+
+
+class Lookup:
+    def __init__(
+        self,
+        datastore: DatastoreService,
+        collection: str,
+        names: List[str],
+        field: str = "name",
+        mapped_fields: List[str] = [],
+    ) -> None:
+        self.datastore = datastore
+        self.collection = collection
+        self.field = field
+        self.name_to_ids: Dict[str, List[Dict[str, Any]]] = {name: [] for name in names}
+        self.id_to_name: Dict[int, str] = {}
+        if "id" not in mapped_fields:
+            mapped_fields.append("id")
+        if field not in mapped_fields:
+            mapped_fields.append(field)
+        if names:
+            for entry in datastore.filter(
+                collection,
+                Or(*[FilterOperator(field, "=", name) for name in names]),
+                mapped_fields,
+                lock_result=False,
+            ).values():
+                self.name_to_ids[entry[field]].append(entry)
+                self.id_to_name[entry["id"]] = entry[field]
+
+    def check_duplicate(self, name: str) -> ResultType:
+        if not self.name_to_ids.get(name):
+            return ResultType.NOT_FOUND
+        elif len(self.name_to_ids[name]) > 1:
+            return ResultType.FOUND_MORE_IDS
+        else:
+            return ResultType.FOUND_ID
+
+
+    def get_id_by_name(self, name: str) -> Optional[int]:
+        if len(self.name_to_ids[name]) == 1:
+            return self.name_to_ids[name][0]["id"]
+        return None
+
+    def get_name_by_id(self, id_: int) -> Optional[str]:
+        if name := self.id_to_name.get(id_):
+            return name
+        return None
+
+    def read_missing_ids(self, ids: List[int]) -> None:
+        result = self.datastore.get_many(
+            [GetManyRequest(self.collection, ids, [self.field])],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        self.id_to_name.update(
+            {
+                key: value.get(self.field, "")
+                for key, value in result[self.collection].items()
+            }
+        )
+
+
+class ImportMixin(SingularActionMixin):
     """
     Mixin for import actions. It works together with the json_upload.
     """
@@ -85,29 +158,27 @@ class ImportMixin(Action):
         return on_success
 
 
-class HeaderEntry(TypedDict):
-    property: str
-    type: str
-
-
 class StatisticEntry(TypedDict):
     name: str
     value: int
 
 
-class JsonUploadMixin(Action):
-    headers: List[HeaderEntry]
+class JsonUploadMixin(SingularActionMixin):
+    headers: List[Dict[str, Any]]
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
-    state: ImportState
+    import_state: ImportState
 
     def set_state(self, number_errors: int, number_warnings: int) -> None:
+        """
+        To remove, but is used in some backend imports
+        """
         if number_errors > 0:
-            self.state = ImportState.ERROR
+            self.import_state = ImportState.ERROR
         elif number_warnings > 0:
-            self.state = ImportState.WARNING
+            self.import_state = ImportState.WARNING
         else:
-            self.state = ImportState.DONE
+            self.import_state = ImportState.DONE
 
     def store_rows_in_the_action_worker(self, import_name: str) -> None:
         self.new_store_id = self.datastore.reserve_id(collection="action_worker")
@@ -124,7 +195,7 @@ class JsonUploadMixin(Action):
                             "result": {"import": import_name, "rows": self.rows},
                             "created": time_created,
                             "timestamp": time_created,
-                            "state": self.state,
+                            "state": self.import_state,
                         },
                     )
                 ],
@@ -147,21 +218,36 @@ class JsonUploadMixin(Action):
             "headers": self.headers,
             "rows": self.rows,
             "statistics": self.statistics,
-            "state": self.state,
+            "state": self.import_state,
         }
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields
         property_to_type = {
-            header["property"]: header["type"] for header in self.headers
+            header["property"]: (
+                header["type"],
+                header.get("is_object"),
+                header.get("is_list", False),
+            )
+            for header in self.headers
         }
         for entry in list(instance.get("data", [])):
             for field in dict(entry):
                 if field not in property_to_type:
                     del entry[field]
                 else:
-                    type_ = property_to_type[field]
-                    if type_ == "integer":
+                    type_, is_object, is_list = property_to_type[field]
+                    if type_ == "string" and is_list:
+                        try:
+                            entry[field] = [
+                                item.strip()
+                                for item in list(csv.reader([entry[field]]))[0]
+                            ]
+                        except Exception:
+                            pass
+                    elif type_ == "string":
+                        continue
+                    elif type_ == "integer":
                         try:
                             entry[field] = int(entry[field])
                         except ValueError:
@@ -177,5 +263,15 @@ class JsonUploadMixin(Action):
                             raise ActionException(
                                 f"Could not parse {entry[field]} expect boolean"
                             )
-
+                    elif type_ == "date":
+                        try:
+                            entry[field] = int(
+                                mktime(strptime(entry[field], "%Y-%m-%d"))
+                            )
+                        except Exception:
+                            pass
+                    else:
+                        raise ActionException(
+                            f"Unknown type in conversion: type:{type_} is_object:{str(is_object)} is_list:{str(is_list)}"
+                        )
         super().validate_instance(instance)
