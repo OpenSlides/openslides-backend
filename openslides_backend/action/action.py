@@ -19,17 +19,14 @@ import fastjsonschema
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
 from ..models.base import Model, model_registry
-from ..models.fields import (
-    BaseRelationField,
-    BaseTemplateField,
-    BaseTemplateRelationField,
-)
+from ..models.fields import BaseRelationField
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
+from ..presenter.base import BasePresenter
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import (
@@ -108,6 +105,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     history_information: Optional[str] = None
     history_relation_field: Optional[str] = None
     add_self_history_information: bool = False
+    own_history_information_first: bool = False
 
     relation_manager: RelationManager
 
@@ -444,9 +442,14 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         information = self.get_history_information()
         if self.cascaded_actions_history or information:
-            return merge_history_informations(
-                self.cascaded_actions_history, information or {}
-            )
+            if self.own_history_information_first:
+                return merge_history_informations(
+                    information, self.cascaded_actions_history
+                )
+            else:
+                return merge_history_informations(
+                    self.cascaded_actions_history, information
+                )
         else:
             return None
 
@@ -556,8 +559,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         Validate required fields with the events of one WriteRequest.
         Precondition: Events are sorted create/update/delete-events
         Not implemented: required RelationListFields of all types raise a NotImplementedError, if there exist
-        one, during getting required_fields from model, except TemplateRelationField and
-        TemplateRelationListField with replacement_enum-attribute.
+        one, during getting required_fields from model.
         Also check for fields in the write request, which are not model fields.
         """
         fdict: Dict[FullQualifiedId, Dict[str, Any]] = {}
@@ -621,23 +623,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         Validates all relation fields according to the model definition.
         """
         for field in self.model.get_relation_fields():
-            if not field.equal_fields:
+            if not field.equal_fields or field.own_field_name not in instance:
                 continue
 
-            if field.own_field_name in instance:
-                fields = [field.own_field_name]
-            elif isinstance(field, BaseTemplateRelationField):
-                fields = [
-                    instance_field
-                    for instance_field, replacement in self.get_structured_fields_in_instance(
-                        field, instance
-                    )
-                ]
-                if not fields:
-                    continue
-            else:
-                continue
-
+            fields = [field.own_field_name]
             for equal_field in field.equal_fields:
                 if not (own_equal_field_value := instance.get(equal_field)):
                     fqid = fqid_from_collection_and_id(
@@ -676,20 +665,6 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                                     f"{fqid}/{equal_field}: "
                                     f"{related_instance.get(equal_field)}"
                                 )
-
-    def get_structured_fields_in_instance(
-        self, field: BaseTemplateField, instance: Dict[str, Any]
-    ) -> List[Tuple[str, str]]:
-        """
-        Finds the given field in the given instance and returns the names as well as
-        the used replacements of it.
-        """
-        structured_fields: List[Tuple[str, str]] = []
-        for instance_field in instance:
-            replacement = field.try_get_replacement(instance_field)
-            if replacement:
-                structured_fields.append((instance_field, replacement))
-        return structured_fields
 
     def apply_instance(
         self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None
@@ -752,14 +727,31 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         return None
 
+    def execute_presenter(
+        self, PresenterClass: Type[BasePresenter], payload: Any
+    ) -> Any:
+        presenter_instance = PresenterClass(
+            payload,
+            self.services,
+            self.datastore,
+            self.logging,
+            self.user_id,
+        )
+        presenter_instance.validate()
+        return presenter_instance.get_result()
+
 
 def merge_history_informations(
-    a: HistoryInformation, *other: HistoryInformation
+    a: Optional[HistoryInformation], *other: Optional[HistoryInformation]
 ) -> HistoryInformation:
     """
     Merges multiple history informations. All latter ones are merged into the first one.
     """
+    if a is None:
+        a = {}
     for b in other:
+        if b is None:
+            b = {}
         for fqid, information in b.items():
             if fqid in a:
                 a[fqid].extend(information)

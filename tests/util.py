@@ -75,7 +75,7 @@ class Client(WerkzeugClient):
         """
         self.auth_data.update(auth_data)
         if "refresh_id" in self.auth_data:
-            self.set_cookie("localhost", COOKIE_NAME, self.auth_data["refresh_id"])
+            self.set_cookie(COOKIE_NAME, self.auth_data["refresh_id"])
         if self.on_auth_data_changed:
             self.on_auth_data_changed(self.auth_data)
 

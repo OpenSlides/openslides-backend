@@ -3,13 +3,19 @@ import os
 import string
 import sys
 from collections import ChainMap
-from textwrap import dedent, indent
-from typing import Any, Dict, List, Optional, Union
+from textwrap import dedent
+from typing import Any, Dict, List, Optional, Type, Union
 
 import requests
 import yaml
 
+from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
+from openslides_backend.models.mixins import (
+    AgendaItemModelMixin,
+    MeetingModelMixin,
+    PollModelMixin,
+)
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SOURCE = "./global/meta/models.yml"
@@ -47,12 +53,18 @@ RELATION_FIELD_CLASSES = {
     "generic-relation-list": "GenericRelationListField",
 }
 
+MODEL_MIXINS: Dict[str, Type] = {
+    "agenda_item": AgendaItemModelMixin,
+    "meeting": MeetingModelMixin,
+    "poll": PollModelMixin,
+}
+
 FILE_TEMPLATE = dedent(
     """\
     # Code generated. DO NOT EDIT.
 
-    from openslides_backend.models import fields
-    from openslides_backend.models.base import Model
+    from . import fields
+    from .base import Model
     """
 )
 
@@ -72,22 +84,13 @@ def main() -> None:
             to:
               collection: another_model
               field:
-                type: structured-relation
-                name: another_$_attribute
-                replacement_collection: ...
-                through:
-                - ...
-                - ...
+                type: relation
+                name: another_attribute
 
         another_model:
-          another_$_attribute:
-            type: template
-            replacement_collection: ...
-            fields:
-              type: relation-list
-              to:
-                collection: some_model
-                field: some_attribute
+          another_attribute:
+            type: relation_list
+            to: some_model/some_attribute_id
     """
 
     global MODELS
@@ -122,6 +125,11 @@ def main() -> None:
     MODELS = yaml.safe_load(models_yml)
     with open(DESTINATION, "w") as dest:
         dest.write(FILE_TEMPLATE)
+        dest.write(
+            "from .mixins import "
+            + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
+            + "\n"
+        )
         dest.write("\nMODELS_YML_CHECKSUM = " + repr(checksum) + "\n")
         for collection, fields in MODELS.items():
             if collection == "_migration_index":
@@ -163,36 +171,12 @@ class Model(Node):
     MODEL_TEMPLATE = string.Template(
         dedent(
             """
-
-            class ${class_name}(Model):
+            class ${class_name}(${base_classes}):
                 collection = "${collection}"
                 verbose_name = "${verbose_name}"
-
             """
         )
     )
-
-    ADDITIONAL_MODEL_CODE = {
-        "agenda_item": dedent(
-            """
-            AGENDA_ITEM = "common"
-            INTERNAL_ITEM = "internal"
-            HIDDEN_ITEM = "hidden"
-            """
-        ),
-        "poll": dedent(
-            """
-            STATE_CREATED = "created"
-            STATE_STARTED = "started"
-            STATE_FINISHED = "finished"
-            STATE_PUBLISHED = "published"
-
-            TYPE_ANALOG = "analog"
-            TYPE_NAMED = "named"
-            TYPE_PSEUDOANONYMOUS = "pseudoanonymous"
-            """
-        ),
-    }
 
     def __init__(self, collection: str, fields: Dict[str, Dict[str, Any]]) -> None:
         self.collection = collection
@@ -205,16 +189,22 @@ class Model(Node):
 
     def get_code(self) -> str:
         verbose_name = " ".join(self.collection.split("_"))
-        code = self.MODEL_TEMPLATE.substitute(
-            dict(
-                class_name=self.get_class_name(),
-                collection=self.collection,
-                verbose_name=verbose_name,
+        base_classes: List[Type] = [BaseModel]
+        if self.collection in MODEL_MIXINS:
+            base_classes.append(MODEL_MIXINS[self.collection])
+        code = (
+            self.MODEL_TEMPLATE.substitute(
+                {
+                    "class_name": self.get_class_name(),
+                    "base_classes": ", ".join(cls.__name__ for cls in base_classes),
+                    "collection": self.collection,
+                    "verbose_name": verbose_name,
+                }
             )
+            + "\n"
         )
         for field_name, attribute in self.attributes.items():
             code += attribute.get_code(field_name)
-        code += indent(self.ADDITIONAL_MODEL_CODE.get(self.collection, ""), " " * 4)
         return code
 
     def get_class_name(self) -> str:
@@ -223,8 +213,6 @@ class Model(Node):
 
 class Attribute(Node):
     type: str
-    replacement_collection: Optional[Collection] = None
-    replacement_enum: Optional[List[str]] = None
     to: Optional["To"] = None
     fields: Optional["Attribute"] = None
     required: bool = False
@@ -234,15 +222,11 @@ class Attribute(Node):
     equal_fields: Optional[Union[str, List[str]]] = None
     contraints: Dict[str, Any]
 
-    is_template: bool = False
-
     FIELD_TEMPLATE = string.Template(
         "    ${field_name} = fields.${field_class}(${properties})\n"
     )
 
-    def __init__(
-        self, value: Union[str, Dict], is_inner_attribute: bool = False
-    ) -> None:
+    def __init__(self, value: Union[str, Dict]) -> None:
         self.FIELD_CLASSES = {
             **COMMON_FIELD_CLASSES,
             **RELATION_FIELD_CLASSES,
@@ -253,59 +237,34 @@ class Attribute(Node):
             self.type = value
         else:
             self.type = value.get("type", "")
-            if self.type == "template":
-                self.is_template = True
-                replacement_str = value.get("replacement_collection")
-                self.replacement_collection = (
-                    replacement_str if replacement_str else None
-                )
-                inner_value = value.get("fields")
-                assert not is_inner_attribute and inner_value
-                self.fields = type(self)(inner_value, is_inner_attribute=True)
-                if self.fields.type in ("relation", "relation-list"):
-                    self.replacement_enum = value.get("replacement_enum")
-                    assert not self.replacement_collection or not self.replacement_enum
-                    if self.replacement_enum:
-                        self.required = self.fields.required
+            if self.type in RELATION_FIELD_CLASSES.keys():
+                self.to = To(value.get("to", {}))
+                self.on_delete = value.get("on_delete")
             else:
-                if self.type in RELATION_FIELD_CLASSES.keys():
-                    self.to = To(value.get("to", {}))
-                    self.on_delete = value.get("on_delete")
-                else:
-                    assert self.type in COMMON_FIELD_CLASSES.keys(), (
-                        "Invalid type: " + self.type
-                    )
-                self.required = value.get("required", False)
-                self.read_only = value.get("read_only", False)
-                self.default = value.get("default")
-                self.equal_fields = value.get("equal_fields")
-                for k, v in value.items():
-                    if k not in (
-                        "type",
-                        "to",
-                        "required",
-                        "read_only",
-                        "default",
-                        "on_delete",
-                        "equal_fields",
-                        "items",
-                        "restriction_mode",
-                    ):
-                        self.contraints[k] = v
-                    elif self.type in ("string[]", "number[]") and k == "items":
-                        self.in_array_constraints.update(v)
+                assert self.type in COMMON_FIELD_CLASSES.keys(), (
+                    "Invalid type: " + self.type
+                )
+            self.required = value.get("required", False)
+            self.read_only = value.get("read_only", False)
+            self.default = value.get("default")
+            self.equal_fields = value.get("equal_fields")
+            for k, v in value.items():
+                if k not in (
+                    "type",
+                    "to",
+                    "required",
+                    "read_only",
+                    "default",
+                    "on_delete",
+                    "equal_fields",
+                    "items",
+                    "restriction_mode",
+                ):
+                    self.contraints[k] = v
+                elif self.type in ("string[]", "number[]") and k == "items":
+                    self.in_array_constraints.update(v)
 
     def get_code(self, field_name: str) -> str:
-        structured_field_sign = field_name.find("$")
-        if structured_field_sign == -1:
-            assert not self.is_template
-            return self.get_code_for_normal(field_name)
-        assert self.is_template
-        field_name = field_name.replace("$", "", 1)
-        assert field_name.find("$") == -1
-        return self.get_code_for_template(field_name, structured_field_sign)
-
-    def get_code_for_normal(self, field_name: str) -> str:
         if field_name == "organization_id":
             field_class = "OrganizationField"
         else:
@@ -334,29 +293,6 @@ class Attribute(Node):
                 field_class=field_class,
                 properties=properties.rstrip(", "),
             )
-        )
-
-    def get_code_for_template(self, field_name: str, index: int) -> str:
-        assert self.fields is not None
-        field_class = f"Template{self.FIELD_CLASSES[self.fields.type]}"
-        properties = f"index={index}, "
-        if self.replacement_collection:
-            properties += f"replacement_collection={repr(self.replacement_collection)},"
-        if self.fields.to:
-            properties += self.fields.to.get_properties()
-        if self.fields.required:
-            properties += "required=True,"
-        if self.fields.on_delete:
-            assert self.fields.on_delete in [mode.value for mode in OnDelete]
-            properties += f"on_delete=fields.OnDelete.{self.fields.on_delete},"
-        if self.contraints:
-            properties += f"constraints={repr(self.contraints)},"
-        if self.fields.contraints:
-            properties += f"constraints={repr(self.fields.contraints)},"
-        if self.replacement_enum:
-            properties += f"replacement_enum={repr(self.replacement_enum)},"
-        return self.FIELD_TEMPLATE.substitute(
-            dict(field_name=field_name, field_class=field_class, properties=properties)
         )
 
 

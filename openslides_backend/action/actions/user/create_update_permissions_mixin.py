@@ -2,7 +2,6 @@ from collections import defaultdict
 from functools import reduce
 from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
-from ....models.models import User
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -13,7 +12,6 @@ from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, PermissionDenied
 from ....shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.util_dict_sets import get_set_from_dict_by_fieldlist
 from ...action import Action
 
 
@@ -21,21 +19,13 @@ class PermissionVarStore:
     def __init__(self, datastore: DatastoreService, user_id: int) -> None:
         self.datastore = datastore
         self.user_id = user_id
-        self._cml_replacement_min_can_manage = [
-            f"committee_${replacement}_management_level"
-            for replacement in cast(
-                List[str], User.committee__management_level.replacement_enum
-            )
-            if CommitteeManagementLevel(replacement)
-            >= CommitteeManagementLevel.CAN_MANAGE
-        ]
         self.user = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id),
             [
                 "organization_management_level",
-                "group_$_ids",
                 "committee_ids",
-                *self._cml_replacement_min_can_manage,
+                "committee_management_ids",
+                "meeting_user_ids",
             ],
             lock_result=False,
         )
@@ -70,7 +60,7 @@ class PermissionVarStore:
         """Set of meetings where the request user has user.can_manage permissions"""
         if self._user_meetings is None:
             self._user_meetings = self._get_user_meetings_with_user_can_manage(
-                self.user.get("group_$_ids", [])
+                self.user.get("meeting_user_ids", [])
             )
         return self._user_meetings
 
@@ -80,9 +70,7 @@ class PermissionVarStore:
         belonging to those committees, where the request user has minimum
         CommitteeManagementLevel.CAN_MANAGE and is member of committee_id,
         """
-        user_committees = get_set_from_dict_by_fieldlist(
-            self.user, self._cml_replacement_min_can_manage
-        )
+        user_committees = set(self.user.get("committee_management_ids") or [])
         if user_committees:
             committees_d = (
                 self.datastore.get_many(
@@ -109,21 +97,27 @@ class PermissionVarStore:
         return user_committees, user_meetings
 
     def _get_user_meetings_with_user_can_manage(
-        self, meeting_ids: List[str] = []
+        self, meeting_user_ids: List[str] = []
     ) -> Set[int]:
         """
         Returns a set of meetings, where the request user has user.can_manage permissions
         """
         user_meetings = set()
-        if meeting_ids:
-            user = self.datastore.get(
-                fqid_from_collection_and_id("user", self.user_id),
-                [f"group_${meeting_id}_ids" for meeting_id in meeting_ids],
-            )
+        if meeting_user_ids:
+            # fetch all group_ids
             all_groups: List[int] = []
-            for groups in user.values():
-                if type(groups) == list:
-                    all_groups.extend(groups)
+            for meeting_user_id in meeting_user_ids:
+                meeting_user = self.datastore.get(
+                    fqid_from_collection_and_id("meeting_user", meeting_user_id),
+                    ["group_ids"],
+                )
+                group_ids = meeting_user.get("group_ids")
+                if group_ids:
+                    for group_id in group_ids:
+                        if group_id not in all_groups:
+                            all_groups.append(group_id)
+
+            # fetch the groups for permissions
             groups = (
                 self.datastore.get_many(
                     [
@@ -138,11 +132,13 @@ class PermissionVarStore:
                 .values()
             )
 
+            # use permissions to add the meetings to user_meeting
             for group in groups:
                 if Permissions.User.CAN_MANAGE in group.get(
                     "permissions", []
                 ) or group.get("admin_group_for_meeting_id"):
-                    user_meetings.add(group.get("meeting_id"))
+                    if group.get("meeting_id"):
+                        user_meetings.add(group["meeting_id"])
 
         return user_meetings
 
@@ -166,17 +162,17 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
             "presence",
         ],
         "B": [
-            "number_$",
-            "structure_level_$",
-            "vote_weight_$",
-            "about_me_$",
-            "comment_$",
-            "vote_delegated_$_to_id",
-            "vote_delegations_$_from_ids",
+            "number",
+            "structure_level",
+            "vote_weight",
+            "about_me",
+            "comment",
+            "vote_delegated_to_id",
+            "vote_delegations_from_ids",
             "is_present_in_meeting_ids",
         ],
-        "C": ["group_$_ids"],
-        "D": ["committee_ids", "committee_$_management_level"],
+        "C": ["meeting_id", "group_ids"],
+        "D": ["committee_ids", "committee_management_ids"],
         "E": ["organization_management_level", "saml_id"],
         "F": ["default_password"],
         "G": ["is_demo_user"],
@@ -258,11 +254,9 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
     def check_group_B(
         self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
     ) -> None:
-        """Check Group B meeting template fields: Only meeting.permissions for each meeting"""
+        """Check Group B meeting fields: Only meeting.permissions for each meeting"""
         if fields:
-            meeting_ids = self._meetings_from_group_B_fields_from_instance(
-                fields, instance
-            )
+            meeting_ids = self._meetings_from_group_B_fields_from_instance(instance)
             if diff := meeting_ids - permstore.user_meetings:
                 raise MissingPermission(
                     {Permissions.User.CAN_MANAGE: meeting_id for meeting_id in diff}
@@ -271,17 +265,16 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
     def check_group_C(
         self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
     ) -> None:
-        """Check Group C group_$_ids: OML, CML or meeting.permissions for each meeting"""
+        """Check Group C group_ids: OML, CML or meeting.permissions for each meeting"""
         if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
-            touch_meeting_ids: Set[int] = set(
-                map(int, instance.get("group_$_ids", dict()).keys())
-            )
-            # Check permission for each change operation/meeting
-            if diff := touch_meeting_ids - permstore.user_committees_meetings:
-                if diff := diff - permstore.user_meetings:
-                    raise PermissionDenied(
-                        f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {diff}"
-                    )
+            touch_meeting_id = instance.get("meeting_id")
+            if (
+                touch_meeting_id not in permstore.user_committees_meetings
+                and touch_meeting_id not in permstore.user_meetings
+            ):
+                raise PermissionDenied(
+                    f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting {touch_meeting_id}"
+                )
 
     def check_group_D(
         self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
@@ -415,40 +408,28 @@ class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
         Gets a Set of all committees from the instance regarding committees from group D.
         To get committees, that should be removed from cml, the user must be read.
         """
-        right_list = instance.get("committee_$_management_level", {}).keys()
-        committees = set(
-            [
-                committee_id
-                for committees in instance.get(
-                    "committee_$_management_level", {}
-                ).values()
-                for committee_id in committees
-            ]
-        )
-        # In case of create there is no id, in case of update the user can remove committees only with the committee right
+        committees = set(instance.get("committee_management_ids") or [])
         if instance_user_id := instance.get("id"):
-            cml_fields = [
-                f"committee_${replacement}_management_level"
-                for replacement in right_list
-            ]
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", instance_user_id),
-                [*cml_fields],
+                ["committee_management_ids"],
                 lock_result=False,
+                use_changed_models=False,
             )
-            committees_existing = get_set_from_dict_by_fieldlist(user, cml_fields)
+            committees_existing = set(user.get("committee_management_ids") or [])
             # Just changes with ^ symmetric_difference operat
             committees = committees ^ committees_existing
+
         return committees
 
     def _meetings_from_group_B_fields_from_instance(
-        self, fields_to_search_for: List[str], instance: Dict[str, Any]
+        self, instance: Dict[str, Any]
     ) -> Set[int]:
         """
-        Gets a set of all meetings from the fields of group B in instance
+        Gets a set of all meetings from the curious field is_present_in_meeting_ids.
+        The meeting_id don't belong explicitly to group B and is only added, if there is
+        any other group B field.
         """
-        meetings: Set[int] = set()
-        for field in fields_to_search_for:
-            if "_$" in field:
-                meetings.update(map(int, instance.get(field, dict()).keys()))
+        meetings: Set[int] = set(instance.get("is_present_in_meeting_ids", []))
+        meetings.add(cast(int, instance.get("meeting_id")))
         return meetings

@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from openslides_backend.models.checker import (
     Checker,
@@ -10,16 +10,13 @@ from openslides_backend.models.models import Meeting
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.interfaces.event import Event, EventType
-from openslides_backend.shared.patterns import (
-    FullQualifiedId,
-    fqid_from_collection_and_id,
-)
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
 
+from ....shared.export_helper import export_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .export_helper import export_meeting
 from .import_ import ONE_ORGANIZATION_ID, MeetingImport
 
 updatable_fields = [
@@ -79,8 +76,8 @@ class MeetingClone(MeetingImport):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json
-        self.additional_user_ids = instance.pop("user_ids", None) or []
-        self.additional_admin_ids = instance.pop("admin_ids", None) or []
+        additional_user_ids = instance.pop("user_ids", None) or []
+        additional_admin_ids = instance.pop("admin_ids", None) or []
         set_as_template = instance.pop("set_as_template", False)
 
         # needs an empty map for superclass code
@@ -147,32 +144,59 @@ class MeetingClone(MeetingImport):
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
 
-        if self.additional_user_ids:
-            default_group_id = self.get_meeting_from_json(instance["meeting"]).get(
-                "default_group_id"
-            )
+        meeting = self.get_meeting_from_json(meeting_json)
+        meeting_id = meeting["id"]
+        meeting_users_in_instance = instance["meeting"]["meeting_user"]
+        if additional_user_ids:
+            default_group_id = meeting.get("default_group_id")
+            group_in_instance = instance["meeting"]["group"][str(default_group_id)]
             self._update_default_and_admin_group(
-                default_group_id, instance, self.additional_user_ids
+                group_in_instance,
+                meeting_users_in_instance,
+                additional_user_ids,
+                meeting_id,
             )
 
-        if self.additional_admin_ids:
-            admin_group_id = self.get_meeting_from_json(instance["meeting"]).get(
-                "admin_group_id"
-            )
+        if additional_admin_ids:
+            admin_group_id = meeting.get("admin_group_id")
+            group_in_instance = instance["meeting"]["group"][str(admin_group_id)]
             self._update_default_and_admin_group(
-                admin_group_id, instance, self.additional_admin_ids
+                group_in_instance,
+                meeting_users_in_instance,
+                additional_admin_ids,
+                meeting_id,
             )
         return instance
 
-    @staticmethod
     def _update_default_and_admin_group(
-        group_id: int, instance: Dict[str, Any], additional_user_ids: List[int]
+        self,
+        group_in_instance: Dict[str, Any],
+        meeting_users_in_instance: Dict[str, Any],
+        additional_user_ids: List[int],
+        meeting_id: int,
     ) -> None:
-        for entry in instance["meeting"].get("group", {}).values():
-            if entry["id"] == group_id:
-                user_ids = set(entry.get("user_ids", set()) or set())
-                user_ids.update(additional_user_ids)
-                entry["user_ids"] = list(user_ids)
+        additional_meeting_user_ids = [
+            self.create_or_get_meeting_user(meeting_id, user_id)
+            for user_id in additional_user_ids
+        ]
+        meeting_user_ids = set(
+            group_in_instance.get("meeting_user_ids", set()) or set()
+        )
+        meeting_user_ids.update(additional_meeting_user_ids)
+        group_id = group_in_instance["id"]
+        for meeting_user_id in additional_meeting_user_ids:
+            fqid_meeting_user = fqid_from_collection_and_id(
+                "meeting_user", meeting_user_id
+            )
+            meeting_user = cast(
+                Dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
+            )
+            group_ids = meeting_user.get("group_ids", [])
+            if group_id not in group_ids:
+                group_ids.append(group_id)
+                meeting_user["group_ids"] = group_ids
+            meeting_users_in_instance[str(meeting_user_id)] = meeting_user
+        group_in_instance["meeting_user_ids"] = list(meeting_user_ids)
 
     def duplicate_mediafiles(self, json_data: Dict[str, Any]) -> None:
         for mediafile_id in json_data["mediafile"]:
@@ -186,18 +210,6 @@ class MeetingClone(MeetingImport):
         self, events: List[Event], json_data: Dict[str, Any]
     ) -> None:
         meeting_id = self.get_meeting_from_json(json_data)["id"]
-        for model in json_data["group"].values():
-            if model.get("user_ids"):
-                for user_id in model.get("user_ids"):
-                    if user_id in self.additional_user_ids or self.additional_admin_ids:
-                        events.append(
-                            self.build_event_helper(
-                                fqid_from_collection_and_id("user", user_id),
-                                meeting_id,
-                                "group_$_ids",
-                                model["id"],
-                            )
-                        )
         if organization_tag_ids := self.get_meeting_from_json(json_data).get(
             "organization_tag_ids"
         ):
@@ -217,29 +229,6 @@ class MeetingClone(MeetingImport):
                         },
                     ),
                 )
-
-    def field_with_meeting(self, field: str, meeting_id: int) -> str:
-        front, back = field.split("$")
-        return f"{front}${meeting_id}{back}"
-
-    def build_event_helper(
-        self,
-        fqid: FullQualifiedId,
-        meeting_id: int,
-        field_template: str,
-        model_id: int,
-    ) -> Event:
-        return self.build_event(
-            EventType.Update,
-            fqid,
-            list_fields={
-                "add": {
-                    field_template: [str(meeting_id)],
-                    self.field_with_meeting(field_template, meeting_id): [model_id],
-                },
-                "remove": {},
-            },
-        )
 
     def get_committee_id(self, instance: Dict[str, Any]) -> int:
         if instance.get("committee_id"):

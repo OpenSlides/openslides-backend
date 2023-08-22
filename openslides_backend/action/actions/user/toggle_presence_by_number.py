@@ -60,22 +60,33 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         return instance
 
     def find_user_to_number(self, meeting_id: int, number: str) -> int:
-        filter_: Filter = FilterOperator(f"number_${meeting_id}", "=", number)
-        result = self.datastore.filter("user", filter_, ["id"])
+        filter_: Filter = And(
+            FilterOperator("number", "=", number),
+            FilterOperator("meeting_id", "=", meeting_id),
+        )
+        result = self.datastore.filter("meeting_user", filter_, ["user_id"])
         if len(result.keys()) == 1:
-            return list(result.keys())[0]
+            return list(result.values())[0]["user_id"]
         elif len(result.keys()) > 1:
             raise ActionException("Found more than one user with the number.")
 
-        filter_ = And(
-            FilterOperator(f"number_${meeting_id}", "=", ""),
-            FilterOperator("default_number", "=", number),
-        )
+        filter_ = FilterOperator("default_number", "=", number)
         result = self.datastore.filter("user", filter_, ["id"])
-        if len(result.keys()) == 1:
-            return list(result.keys())[0]
-        elif len(result.keys()) > 1:
-            raise ActionException("Found more than one user with the default number.")
+        ids = {user["id"] for user in result.values()}
+        if len(ids) >= 1:
+            filter_ = And(
+                FilterOperator("number", "=", ""),
+                FilterOperator("meeting_id", "=", meeting_id),
+            )
+            result = self.datastore.filter("meeting_user", filter_, ["user_id"])
+            user_ids = {meeting_user["user_id"] for meeting_user in result.values()}
+            found_user_ids = user_ids & ids
+            if len(found_user_ids) == 1:
+                return list(found_user_ids)[0]
+            elif len(found_user_ids) > 1:
+                raise ActionException(
+                    "Found more than one user with the default number."
+                )
         raise ActionException("No user with this number found.")
 
     def create_action_result_element(

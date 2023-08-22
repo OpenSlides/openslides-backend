@@ -1,17 +1,16 @@
-import re
 from typing import Any, Dict, Optional
-
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
-from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
+from ....shared.schema import optional_id_schema
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
+from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionResultElement
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixin import PasswordMixin
 from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
@@ -50,23 +49,22 @@ class UserCreate(
             "default_vote_weight",
             "organization_management_level",
             "is_present_in_meeting_ids",
-            "committee_$_management_level",
-            "group_$_ids",
-            "vote_delegations_$_from_ids",
-            "vote_delegated_$_to_id",
-            "comment_$",
-            "number_$",
-            "structure_level_$",
-            "about_me_$",
-            "vote_weight_$",
+            "committee_management_ids",
             "is_demo_user",
             "forwarding_committee_ids",
             "saml_id",
         ],
+        additional_optional_fields={
+            "meeting_id": optional_id_schema,
+            **UserMixin.transfer_field_list,
+        },
     )
     check_email_field = "email"
+    history_information = "Account created"
+    own_history_information_first = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        self.meeting_id: Optional[int] = instance.get("meeting_id")
         instance = super().update_instance(instance)
         if instance.get("is_active"):
             self.check_limit_of_user(1)
@@ -98,28 +96,14 @@ class UserCreate(
         check_gender_helper(self.datastore, instance)
         return instance
 
-    def generate_username(self, instance: Dict[str, Any]) -> str:
-        return self.generate_usernames(
-            [
-                re.sub(
-                    r"\W",
-                    "",
-                    instance.get("first_name", "") + instance.get("last_name", ""),
-                )
-            ]
-        )[0]
-
-    def get_history_information(self) -> Optional[HistoryInformation]:
-        information = {}
-        for instance in self.instances:
-            meeting_ids = list(instance.get("group_$_ids", []))
-            instance_information = ["Participant created"]
-            if len(meeting_ids) == 1:
-                instance_information[0] += " in meeting {}"
-                instance_information.append(
-                    fqid_from_collection_and_id("meeting", meeting_ids.pop())
-                )
-            information[
-                fqid_from_collection_and_id(self.model.collection, instance["id"])
-            ] = instance_information
-        return information
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        result = {"id": instance["id"]}
+        if self.meeting_id:
+            meeting_user = get_meeting_user(
+                self.datastore, self.meeting_id, instance["id"], ["id"]
+            )
+            if meeting_user and meeting_user.get("id"):
+                result["meeting_user_id"] = meeting_user["id"]
+        return result

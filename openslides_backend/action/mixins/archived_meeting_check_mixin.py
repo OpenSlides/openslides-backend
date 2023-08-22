@@ -26,11 +26,6 @@ class CheckForArchivedMeetingMixin(Action):
             if isinstance(model_field, fields.BaseGenericRelationField):
                 raise NotImplementedError()
             if (
-                isinstance(model_field, fields.BaseTemplateField)
-                and model_field.replacement_collection == "meeting"
-            ):
-                meeting_ids.update(map(int, instance[fname].keys()))
-            elif (
                 type(model_field) == fields.RelationField
                 and tuple(model_field.to.keys())[0] == "meeting"  # type: ignore
             ):

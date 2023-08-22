@@ -1,6 +1,6 @@
 from typing import Any, Dict, Iterable, List, Tuple, Type
 
-from ...models.fields import BaseTemplateRelationField, OnDelete
+from ...models.fields import OnDelete
 from ...shared.exceptions import ActionException, ProtectedModelsException
 from ...shared.interfaces.event import Event, EventType
 from ...shared.patterns import (
@@ -37,15 +37,6 @@ class DeleteAction(Action):
             fqid=this_fqid,
             mapped_fields=relevant_fields,
         )
-        # Fetch structured fields in second step
-        structured_fields: List[str] = []
-        for field in self.model.get_relation_fields():
-            if isinstance(field, BaseTemplateRelationField):
-                structured_fields += list(
-                    self.get_all_structured_fields(field, db_instance)
-                )
-        if structured_fields:
-            db_instance.update(self.datastore.get(this_fqid, structured_fields))
 
         # Update instance and set relation fields to None.
         # Gather all delete actions with action data and also all models to be deleted
@@ -56,19 +47,8 @@ class DeleteAction(Action):
             if field.on_delete != OnDelete.SET_NULL:
                 # Extract all foreign keys as fqids from the model
                 foreign_fqids: List[FullQualifiedId] = []
-                if isinstance(field, BaseTemplateRelationField):
-                    for structured_field_name in self.get_all_structured_fields(
-                        field, db_instance
-                    ):
-                        foreign_fqids += transform_to_fqids(
-                            db_instance[structured_field_name],
-                            field.get_target_collection(),
-                        )
-                else:
-                    value = db_instance.get(field.get_own_field_name(), [])
-                    foreign_fqids = transform_to_fqids(
-                        value, field.get_target_collection()
-                    )
+                value = db_instance.get(field.get_own_field_name(), [])
+                foreign_fqids = transform_to_fqids(value, field.get_target_collection())
 
                 if field.on_delete == OnDelete.PROTECT:
                     protected_fqids = [
@@ -97,13 +77,7 @@ class DeleteAction(Action):
                         self.datastore.apply_changed_model(fqid, DeletedModel())
             else:
                 # field.on_delete == OnDelete.SET_NULL
-                if isinstance(field, BaseTemplateRelationField):
-                    fields = self.get_all_structured_fields(field, db_instance)
-                else:
-                    fields = [field.get_own_field_name()]
-
-                for field_name in fields:
-                    instance[field_name] = None
+                instance[field.get_own_field_name()] = None
 
         # Add additional relation models and execute all previously gathered delete actions
         # catch all protected models exception to gather all protected fqids
@@ -118,12 +92,6 @@ class DeleteAction(Action):
             raise ProtectedModelsException(this_fqid, all_protected_fqids)
 
         return instance
-
-    def get_all_structured_fields(
-        self, field: BaseTemplateRelationField, instance: Dict[str, Any]
-    ) -> Iterable[str]:
-        for replacement in instance.get(field.get_template_field_name(), []):
-            yield field.get_structured_field_name(replacement)
 
     def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])

@@ -67,8 +67,11 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assert_model_not_exists("topic/4")
 
     def test_create_more_fields(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "test", "is_active_in_organization_id": 1}
+        self.set_models(
+            {
+                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "tag/37": {"meeting_id": 1},
+            }
         )
         response = self.request(
             "topic.create",
@@ -77,6 +80,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
                 "title": "test",
                 "agenda_type": AgendaItem.INTERNAL_ITEM,
                 "agenda_duration": 60,
+                "agenda_tag_ids": [37],
             },
         )
         self.assert_status_code(response, 200)
@@ -91,6 +95,10 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["type"], AgendaItem.INTERNAL_ITEM)
         self.assertEqual(agenda_item["duration"], 60)
         self.assertEqual(agenda_item["weight"], 1)
+        self.assertEqual(agenda_item["tag_ids"], [37])
+        self.assert_model_exists(
+            "tag/37", {"meeting_id": 1, "tagged_ids": ["agenda_item/1"]}
+        )
 
     def test_create_multiple_in_one_request(self) -> None:
         self.create_model("meeting/1", {"is_active_in_organization_id": 1})
@@ -159,7 +167,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
         topic = self.get_model("topic/3")
         self.assertEqual(topic.get("sequential_number"), 44)
 
-    def test_create_meeting_id_tag_ids_mismatch(self) -> None:
+    def test_create_meeting_id_agenda_tag_ids_mismatch(self) -> None:
         """Tag 8 is from meeting 8 and a topic for meeting 1 should be created.
         This should lead to an error."""
         self.set_models(
@@ -173,7 +181,14 @@ class TopicCreateSystemTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "topic.create", {"meeting_id": 1, "title": "A", "tag_ids": [8]}
+            "topic.create",
+            {
+                "meeting_id": 1,
+                "title": "A",
+                "agenda_type": AgendaItem.INTERNAL_ITEM,
+                "agenda_duration": 60,
+                "agenda_tag_ids": [8],
+            },
         )
         self.assert_status_code(response, 400)
         assert (
@@ -181,7 +196,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_create_with_tag_ids(self) -> None:
+    def test_create_with_agenda_tag_ids(self) -> None:
         """Tag 1 is from meeting 1 and a topic for meeting 1 should be created."""
         self.set_models(
             {
@@ -190,14 +205,31 @@ class TopicCreateSystemTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "topic.create", {"meeting_id": 1, "title": "A", "tag_ids": [1]}
+            "topic.create",
+            {
+                "meeting_id": 1,
+                "title": "A",
+                "agenda_type": AgendaItem.INTERNAL_ITEM,
+                "agenda_duration": 60,
+                "agenda_tag_ids": [1],
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "topic/1", {"meeting_id": 1, "title": "A", "tag_ids": [1]}
+            "topic/1", {"meeting_id": 1, "title": "A", "agenda_item_id": 1}
         )
         self.assert_model_exists(
-            "tag/1", {"meeting_id": 1, "name": "test tag", "tagged_ids": ["topic/1"]}
+            "agenda_item/1",
+            {
+                "meeting_id": 1,
+                "type": AgendaItem.INTERNAL_ITEM,
+                "duration": 60,
+                "tag_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "tag/1",
+            {"meeting_id": 1, "name": "test tag", "tagged_ids": ["agenda_item/1"]},
         )
 
     def test_create_no_permission(self) -> None:

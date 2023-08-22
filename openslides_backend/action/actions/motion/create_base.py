@@ -12,12 +12,14 @@ from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from .mixins import set_workflow_timestamp_helper
 from .set_number_mixin import SetNumberMixin
 
 
 class MotionCreateBase(
+    MeetingUserHelperMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     SequentialNumbersMixin,
@@ -58,7 +60,14 @@ class MotionCreateBase(
         self.apply_instance(instance)
         weight = 1
         for user_id in submitter_ids:
-            data = {"motion_id": instance["id"], "user_id": user_id, "weight": weight}
+            meeting_user_id = self.create_or_get_meeting_user(
+                instance["meeting_id"], user_id
+            )
+            data = {
+                "motion_id": instance["id"],
+                "meeting_user_id": meeting_user_id,
+                "weight": weight,
+            }
             weight += 1
             self.execute_other_action(
                 MotionSubmitterCreateAction, [data], skip_history=True

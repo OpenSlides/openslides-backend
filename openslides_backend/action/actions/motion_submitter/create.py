@@ -27,7 +27,7 @@ class MotionSubmitterCreateAction(
 
     model = MotionSubmitter()
     schema = DefaultSchema(MotionSubmitter()).get_create_schema(
-        required_properties=["motion_id", "user_id"],
+        required_properties=["motion_id", "meeting_user_id"],
         optional_properties=["weight"],
     )
     history_information = "Submitters changed"
@@ -42,24 +42,30 @@ class MotionSubmitterCreateAction(
         """
         instance = self.update_instance_with_meeting_id(instance)
         meeting_id = instance["meeting_id"]  # meeting_id is set from motion
+
+        meeting_user = self.datastore.get(
+            fqid_from_collection_and_id("meeting_user", instance["meeting_user_id"]),
+            ["user_id"],
+        )
         if not has_organization_management_level(
-            self.datastore, instance["user_id"], OrganizationManagementLevel.SUPERADMIN
+            self.datastore,
+            meeting_user["user_id"],
+            OrganizationManagementLevel.SUPERADMIN,
         ):
             assert_belongs_to_meeting(
                 self.datastore,
-                [fqid_from_collection_and_id("user", instance["user_id"])],
+                [fqid_from_collection_and_id("user", meeting_user["user_id"])],
                 meeting_id,
             )
 
-        # check, if (user_id, motion_id) already in the datastore.
         filter = And(
-            FilterOperator("user_id", "=", instance["user_id"]),
+            FilterOperator("meeting_user_id", "=", instance["meeting_user_id"]),
             FilterOperator("motion_id", "=", instance["motion_id"]),
             FilterOperator("meeting_id", "=", meeting_id),
         )
         exists = self.datastore.exists(collection=self.model.collection, filter=filter)
         if exists:
-            raise ActionException("(user_id, motion_id) must be unique.")
+            raise ActionException("(meeting_user_id, motion_id) must be unique.")
         if instance.get("weight") is None:
             filter = And(
                 FilterOperator("meeting_id", "=", instance["meeting_id"]),

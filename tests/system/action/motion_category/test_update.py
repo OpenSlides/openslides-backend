@@ -114,8 +114,15 @@ class MotionCategorySystemTest(BaseActionTestCase):
                 "prefix": "test",
             },
         )
-        self.assert_status_code(response, 400)
-        assert "Prefix 'test' is not unique in the meeting." in response.json["message"]
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion_category/111",
+            {
+                "name": "name_srtgb123",
+                "prefix": "test",
+                "meeting_id": 222,
+            },
+        )
 
     def test_update_no_permission(self) -> None:
         self.base_permission_test(

@@ -21,7 +21,7 @@ class AssignmentCandidateCreate(PermissionMixin, CreateActionWithInferredMeeting
 
     model = AssignmentCandidate()
     schema = DefaultSchema(AssignmentCandidate()).get_create_schema(
-        required_properties=["assignment_id", "user_id"],
+        required_properties=["assignment_id", "meeting_user_id"],
         optional_properties=[],
     )
     history_information = "Candidate added"

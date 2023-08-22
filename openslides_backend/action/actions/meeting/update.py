@@ -76,6 +76,7 @@ meeting_settings_keys = [
     "list_of_speakers_show_first_contribution",
     "list_of_speakers_enable_point_of_order_speakers",
     "list_of_speakers_enable_point_of_order_categories",
+    "list_of_speakers_closing_disables_point_of_order",
     "list_of_speakers_enable_pro_contra_speech",
     "list_of_speakers_can_set_contribution_self",
     "list_of_speakers_speaker_note_for_everyone",
@@ -171,7 +172,7 @@ class MeetingUpdate(
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
-            "default_projector_$_ids",
+            *Meeting.all_default_projectors(),
         ],
         additional_optional_fields={
             "set_as_template": {"type": "boolean"},
@@ -226,15 +227,14 @@ class MeetingUpdate(
                         "An internal projector cannot be set as reference projector."
                     )
                 meeting_check.append(reference_projector_fqid)
-        if "default_projector_$_ids" in instance:
-            meeting_check.extend(
-                [
-                    fqid_from_collection_and_id("projector", projector_id)
-                    for projectors in instance["default_projector_$_ids"].values()
-                    for projector_id in projectors
-                    if projector_id
-                ]
-            )
+
+        meeting_check.extend(
+            [
+                fqid_from_collection_and_id("projector", projector_id)
+                for field in Meeting.all_default_projectors()
+                for projector_id in instance.get(field, [])
+            ]
+        )
 
         if meeting_check:
             assert_belongs_to_meeting(self.datastore, meeting_check, instance["id"])
@@ -269,7 +269,7 @@ class MeetingUpdate(
         # group C check
         if (
             "reference_projector_id" in instance
-            or "default_projector_$_ids" in instance
+            or any(field in instance for field in Meeting.all_default_projectors())
         ) and not has_perm(
             self.datastore,
             self.user_id,

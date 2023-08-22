@@ -10,6 +10,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
+            "meeting/1": {"meeting_user_ids": [1]},
             "motion/111": {
                 "meeting_id": 1,
                 "title": "title_srtgb123",
@@ -17,12 +18,21 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "text": "<i>test</i>",
                 "reason": "<b>test2</b>",
                 "modified_final_version": "blablabla",
-                "amendment_paragraph_$": ["3"],
-                "amendment_paragraph_$3": "testtesttest",
+                "amendment_paragraphs": {"3": "testtesttest"},
                 "submitter_ids": [1],
                 "state_id": 1,
             },
-            "motion_submitter/1": {"meeting_id": 1, "motion_id": 111, "user_id": 1},
+            "motion_submitter/1": {
+                "meeting_id": 1,
+                "motion_id": 111,
+                "meeting_user_id": 1,
+            },
+            "meeting_user/1": {
+                "meeting_id": 1,
+                "user_id": 1,
+                "motion_submitter_ids": [1],
+            },
+            "user/1": {"meeting_user_ids": [1]},
             "motion_state/1": {
                 "meeting_id": 1,
                 "motion_ids": [111],
@@ -41,8 +51,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "text": "<i>test</i>",
                     "reason": "<b>test2</b>",
                     "modified_final_version": "blablabla",
-                    "amendment_paragraph_$": ["3"],
-                    "amendment_paragraph_$3": "testtesttest",
+                    "amendment_paragraphs": {"3": "testtesttest"},
                     "created": 1687339000,
                 },
             }
@@ -57,7 +66,10 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "text": "text_eNPkDVuq",
                     "reason": "reason_ukWqADfE",
                     "modified_final_version": "mfv_ilVvBsUi",
-                    "amendment_paragraph_$": {3: "<html>test</html>"},
+                    "amendment_paragraphs": {
+                        3: "<html>test</html>",
+                        4: "</><</>broken>",
+                    },
                     "start_line_number": 13,
                 },
             )
@@ -68,8 +80,10 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("text") == "text_eNPkDVuq"
         assert model.get("reason") == "reason_ukWqADfE"
         assert model.get("modified_final_version") == "mfv_ilVvBsUi"
-        assert model.get("amendment_paragraph_$3") == "&lt;html&gt;test&lt;/html&gt;"
-        assert model.get("amendment_paragraph_$") == ["3"]
+        assert model.get("amendment_paragraphs") == {
+            "3": "&lt;html&gt;test&lt;/html&gt;",
+            "4": "&lt;broken&gt;",
+        }
         assert model.get("start_line_number") == 13
         assert model.get("created") == 1687339000
         self.assert_history_information("motion/111", ["Motion updated"])
@@ -140,12 +154,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "title": "title_bDFsWtKL",
                 "number": "124",
-                "amendment_paragraph_$": {3: "<html>test</html>"},
+                "amendment_paragraphs": {3: "<html>test</html>"},
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot update amendment_paragraph_$, because it was not set in the old values.",
+            "Cannot update amendment_paragraphs, because it was not set in the old values.",
             response.json["message"],
         )
 
@@ -213,7 +227,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "recommendation_extension": "ext [motion/112] [motion/113]",
                     "category_id": 4,
                     "block_id": 51,
-                    "supporter_ids": [],
+                    "supporter_meeting_user_ids": [],
                     "tag_ids": [],
                     "attachment_ids": [],
                 },
@@ -224,7 +238,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("recommendation_extension") == "ext [motion/112] [motion/113]"
         assert model.get("category_id") == 4
         assert model.get("block_id") == 51
-        assert model.get("supporter_ids") == []
+        assert model.get("supporter_meeting_user_ids") == []
         assert model.get("tag_ids") == []
         assert model.get("attachment_ids") == []
         # motion/113 does not exist and should therefore not be present in the relations
@@ -344,7 +358,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "recommendation_extension": "ext_sldennt [motion/112]",
                 "category_id": 4,
                 "block_id": 51,
-                "supporter_ids": [],
+                "supporter_meeting_user_ids": [],
                 "tag_ids": [],
                 "attachment_ids": [],
             },
@@ -445,6 +459,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
+        self.permission_test_models["motion_state/1"]["allow_submitter_edit"] = False
         self.set_models(self.permission_test_models)
         response = self.request(
             "motion.update",
@@ -476,9 +491,9 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
+        self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
-        self.set_models(self.permission_test_models)
         response = self.request(
             "motion.update",
             {
@@ -493,9 +508,9 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
+        self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
-        self.set_models(self.permission_test_models)
         response = self.request(
             "motion.update",
             {
@@ -507,14 +522,17 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert "Forbidden fields:" in response.json["message"]
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 1, "user_id": 2, "group_ids": [3]}
+        )
 
     def test_update_permission_metadata_and_wl(self) -> None:
         self.create_meeting()
+        self.set_models(self.permission_test_models)
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
-        self.set_models(self.permission_test_models)
         self.set_models(
             {
                 "motion_category/2": {"meeting_id": 1, "name": "test"},
@@ -539,7 +557,13 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
-        self.permission_test_models["motion_submitter/1"]["user_id"] = self.user_id
+        self.permission_test_models["motion_submitter/1"]["meeting_user_id"] = 2
+        self.permission_test_models["meeting_user/2"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "motion_submitter_ids": [1],
+        }
+        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [2]}
         self.set_models(self.permission_test_models)
         response = self.request(
             "motion.update",
@@ -558,7 +582,13 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
-        self.permission_test_models["motion_submitter/1"]["user_id"] = self.user_id
+        self.permission_test_models["motion_submitter/1"]["meeting_user_id"] = 1
+        self.permission_test_models["meeting_user/1"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "motion_submitter_ids": [1],
+        }
+        self.permission_test_models[f"user/{self.user_id}"] = {"meeting_user_ids": [1]}
         self.set_models(self.permission_test_models)
         self.set_models({"motion_category/2": {"meeting_id": 1, "name": "test"}})
         response = self.request(
