@@ -90,7 +90,7 @@ class StopControl(CountdownControl, Action):
             user_token = get_user_token()
             vote_weight = Decimal(ballot["weight"])
             votesvalid += vote_weight
-            vote_template = {"user_token": user_token}
+            vote_template: Dict[str, str | int] = {"user_token": user_token}
             if "vote_user_id" in ballot:
                 vote_template["user_id"] = ballot["vote_user_id"]
             if "request_user_id" in ballot:
@@ -161,38 +161,40 @@ class StopControl(CountdownControl, Action):
 
     def get_entitled_users(self, poll: Dict[str, Any]) -> List[Dict[str, Any]]:
         entitled_users = []
-        entitled_users_ids = set()
         all_voted_users = set(poll.get("voted_ids", []))
-        meeting_id = poll["meeting_id"]
 
         # get all users from the groups.
-        gmr = GetManyRequest("group", poll.get("entitled_group_ids", []), ["user_ids"])
+        gmr = GetManyRequest(
+            "group", poll.get("entitled_group_ids", []), ["meeting_user_ids"]
+        )
         gm_result = self.datastore.get_many([gmr])
         groups = gm_result.get("group", {}).values()
 
+        meeting_user_ids = set()
         for group in groups:
-            user_ids = group.get("user_ids", [])
-            entitled_users_ids.update(user_ids)
-
+            meeting_user_ids.update(group.get("meeting_user_ids", []))
         gmr = GetManyRequest(
-            "user",
-            list(entitled_users_ids),
-            [
-                "id",
-                "is_present_in_meeting_ids",
-                f"vote_delegated_${meeting_id}_to_id",
-            ],
+            "meeting_user", list(meeting_user_ids), ["user_id", "vote_delegated_to_id"]
         )
-        gm_result = self.datastore.get_many([gmr], lock_result=False)
-        users = gm_result.get("user", {}).values()
+        gm_result = self.datastore.get_many([gmr])
+        meeting_users = gm_result.get("meeting_user", {}).values()
+        delegated_to_mu_ids = list(
+            set(id_ for mu in meeting_users if (id_ := mu.get("vote_delegated_to_id")))
+        )
+        mu_to_user_id = {}
+        if delegated_to_mu_ids:
+            gmr = GetManyRequest("meeting_user", delegated_to_mu_ids, ["user_id"])
+            mu_to_user_id = self.datastore.get_many([gmr]).get("meeting_user", {})
 
-        for user in users:
+        for mu in meeting_users:
             entitled_users.append(
                 {
-                    "user_id": user["id"],
-                    "voted": user["id"] in all_voted_users,
-                    "vote_delegated_to_id": user.get(
-                        f"vote_delegated_${meeting_id}_to_id"
+                    "user_id": mu["user_id"],
+                    "voted": mu["user_id"] in all_voted_users,
+                    "vote_delegated_to_user_id": (
+                        mu_to_user_id[vote_mu_id]["user_id"]
+                        if (vote_mu_id := mu.get("vote_delegated_to_id"))
+                        else None
                     ),
                 }
             )

@@ -2,7 +2,9 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - 'feature/**'
 
 env:
   PYTHON_VERSION: 3.10.x
@@ -16,7 +18,7 @@ jobs:
         working-directory: .github/docker-compose
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Create secrets for datastore
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
@@ -44,7 +46,7 @@ jobs:
     name: Build and test development docker image with Docker Compose
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Run tests
       run: dev/run-tests.sh
@@ -53,10 +55,10 @@ jobs:
     name: Check coding style
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
@@ -86,10 +88,10 @@ jobs:
       PYTHONPATH: .
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 

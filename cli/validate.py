@@ -43,7 +43,7 @@ DATA_TYPES = (
 )
 
 
-VALID_TYPES = DATA_TYPES + RELATION_TYPES + ("template",)
+VALID_TYPES = DATA_TYPES + RELATION_TYPES
 
 OPTIONAL_ATTRIBUTES = (
     "description",
@@ -100,12 +100,7 @@ class Checker:
         for collection, fields in self.models.items():
             for field_name, field in fields.items():
                 is_relation_field = field["type"] in RELATION_TYPES
-                is_template_relation_field = (
-                    field["type"] == "template"
-                    and isinstance(field["fields"], dict)
-                    and field["fields"]["type"] in RELATION_TYPES
-                )
-                if not is_relation_field and not is_template_relation_field:
+                if not is_relation_field:
                     continue
                 error = self.check_relation(collection, field_name, field)
                 if error:
@@ -127,9 +122,6 @@ class Checker:
             field[
                 "restriction_mode"
             ] = "A"  # add restriction_mode to satisfy the checker below.
-            if field["type"] == "template":  # no nested templates
-                self.errors.append(f"Nested template field in {collectionfield}")
-                return
 
         type = field.get("type")
         if type not in VALID_TYPES:
@@ -144,8 +136,6 @@ class Checker:
         ]
         if type in RELATION_TYPES:
             required_attributes.append("to")
-        if type == "template":
-            required_attributes.append("fields")
         for attr in required_attributes:
             if attr not in field:
                 self.errors.append(
@@ -218,35 +208,6 @@ class Checker:
             if nested and type in ("relation", "relation-list"):
                 valid_attributes.append("enum")
 
-        if type == "template":
-            if "$" not in field_name:
-                self.errors.append(
-                    f"The template field {collectionfield} is missing a $"
-                )
-            valid_attributes.append("replacement_collection")
-            fields = field.get("fields")
-            if (
-                isinstance(fields, dict)
-                and fields.get("type") in ("relation", "relation-list")
-                and "replacement_enum" in field
-            ):
-                if "replacement_collection" in field:
-                    self.errors.append(
-                        f"Field {collectionfield}' may contain either 'replacement_collection' or 'replacement_enum'."
-                    )
-                if not isinstance(field["replacement_enum"], list):
-                    self.errors.append(
-                        f"'replacement_enum' for {collectionfield} is not a list."
-                    )
-                valid_attributes.append("replacement_enum")
-                for value in field["replacement_enum"]:
-                    self.validate_value_for_type("string", value, collectionfield)
-            if isinstance(fields, dict) and fields.get("type") == "decimal(6)":
-                valid_attributes.append("minimum")
-        elif "$" in field_name and not nested:
-            print(field_name, field)
-            self.errors.append(f"The non-template field {collectionfield} contains a $")
-
         for attr in field.keys():
             if attr not in valid_attributes:
                 self.errors.append(
@@ -255,9 +216,6 @@ class Checker:
 
         if not isinstance(field.get("description", ""), str):
             self.errors.append(f"Description of {collectionfield} must be a string.")
-
-        if type == "template":
-            self.check_field(collection, field_name, field["fields"], nested=True)
 
     def validate_value_for_type(
         self, type_str: str, value: Any, collectionfield: str
@@ -310,8 +268,6 @@ class Checker:
         self, collection: str, field_name: str, field: Dict[str, Any]
     ) -> Optional[str]:
         collectionfield = f"{collection}{KEYSEPARATOR}{field_name}"
-        if field["type"] == "template":
-            field = field["fields"]
         to = field["to"]
 
         if isinstance(to, str):
@@ -358,10 +314,6 @@ class Checker:
             return f"The collectionfield '{to_collectionfield}' in 'to' of {from_collectionfield} does not exist."
 
         to_field = self.models[to_collection][to_field_name]
-        if to_field["type"] == "template":
-            to_field = to_field["fields"]
-            if not isinstance(to_field, dict):
-                return f"The 'fields' of the template field '{to_collectionfield}' must be a dict to hold a relation."
         if to_field["type"] not in RELATION_TYPES:
             return f"{from_collectionfield} points to {to_collectionfield}, but {to_collectionfield} to is not a relation."
 

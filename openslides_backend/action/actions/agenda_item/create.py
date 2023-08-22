@@ -27,6 +27,7 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
             "parent_id",
             "duration",
             "weight",
+            "tag_ids",
         ],
     )
     permission = Permissions.AgendaItem.CAN_MANAGE

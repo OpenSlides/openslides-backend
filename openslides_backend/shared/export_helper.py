@@ -4,27 +4,18 @@ from datastore.shared.util import is_reserved_field
 
 from openslides_backend.migrations import get_backend_migration_index
 
-from ....models.base import model_registry
-from ....models.fields import (
+from ..models.base import model_registry
+from ..models.fields import (
     BaseRelationField,
     GenericRelationField,
     OnDelete,
     RelationField,
     RelationListField,
-    TemplateCharField,
-    TemplateDecimalField,
-    TemplateHTMLStrictField,
-    TemplateRelationField,
-    TemplateRelationListField,
 )
-from ....models.models import Meeting, User
-from ....services.datastore.commands import GetManyRequest
-from ....services.datastore.interface import DatastoreService
-from ....shared.patterns import (
-    collection_from_fqid,
-    fqid_from_collection_and_id,
-    id_from_fqid,
-)
+from ..models.models import Meeting, User
+from ..services.datastore.commands import GetManyRequest
+from ..services.datastore.interface import DatastoreService
+from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from_fqid
 
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
@@ -102,14 +93,41 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
                                 or []
                             )
                         )
+            if (
+                isinstance(user_field, RelationField)
+                and user_field.get_target_collection() == "meeting_user"
+            ):
+                id_ = entry.get(user_field.get_own_field_name())
+                if id_:
+                    user_ids.add(results["meeting_user"][id_]["user_id"])
+
+            if (
+                isinstance(user_field, RelationListField)
+                and user_field.get_target_collection() == "meeting_user"
+            ):
+                for entry in export[collection].values():
+                    if entry.get(user_field.get_own_field_name()):
+                        user_ids.update(
+                            set(
+                                user_id
+                                for id_ in entry.get(user_field.get_own_field_name())
+                                if (
+                                    user_id := results["meeting_user"][id_].get(
+                                        "user_id"
+                                    )
+                                )
+                            )
+                        )
             if isinstance(user_field, GenericRelationField):
                 for entry in export[collection].values():
                     field_name = user_field.get_own_field_name()
-                    if (
-                        entry.get(field_name)
-                        and collection_from_fqid(entry[field_name]) == "user"
-                    ):
+                    if not entry.get(field_name):
+                        continue
+                    if collection_from_fqid(entry[field_name]) == "user":
                         user_ids.add(id_from_fqid(entry[field_name]))
+                    elif collection_from_fqid(entry[field_name]) == "meeting_user":
+                        id_ = id_from_fqid(entry[field_name])
+                        user_ids.add(results["meeting_user"][id_]["user_id"])
     add_users(list(user_ids), export, meeting_id, datastore)
     return export
 
@@ -122,28 +140,7 @@ def add_users(
 ) -> None:
     if not user_ids:
         return
-    fields = []
-    template_fields = []
-    for field in User().get_fields():
-        if isinstance(
-            field,
-            (
-                TemplateCharField,
-                TemplateHTMLStrictField,
-                TemplateDecimalField,
-                TemplateRelationField,
-                TemplateRelationListField,
-            ),
-        ):
-            template_fields.append(
-                (
-                    struct_field := field.get_structured_field_name(meeting_id),
-                    field.get_template_field_name(),
-                )
-            )
-            fields.append(struct_field)
-        else:
-            fields.append(field.own_field_name)
+    fields = [field.own_field_name for field in User().get_fields()]
 
     gmr = GetManyRequest(
         "user",
@@ -159,14 +156,26 @@ def add_users(
     )
 
     for user in users.values():
-        for field_name, field_template_name in template_fields:
-            if user.get(field_name):
-                user[field_template_name] = [str(meeting_id)]
         user["meeting_ids"] = [meeting_id]
         if meeting_id in (user.get("is_present_in_meeting_ids") or []):
             user["is_present_in_meeting_ids"] = [meeting_id]
         else:
             user["is_present_in_meeting_ids"] = None
+        # limit user fields to exported objects
+        collection_field_tupels = [
+            ("meeting_user", "meeting_user_ids"),
+            ("poll", "poll_voted_ids"),
+            ("option", "option_ids"),
+            ("vote", "vote_ids"),
+            ("poll_candidate", "poll_candidate_ids"),
+            ("vote", "delegated_vote_ids"),
+        ]
+        for collection, fname in collection_field_tupels:
+            user[fname] = [
+                id_
+                for id_ in user.get(fname, [])
+                if export_data.get(collection, {}).get(str(id_))
+            ]
 
     export_data["user"] = users
 

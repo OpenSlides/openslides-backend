@@ -71,11 +71,7 @@ class UserSaveSamlAccount(
             "properties": {
                 payload_field: {
                     "oneOf": [
-                        (
-                            type_def := self.model.get_field(
-                                model_field
-                            ).get_payload_schema()
-                        ),
+                        (type_def := self.model.get_field(model_field).get_schema()),
                         {
                             "type": "array",
                             "items": type_def,

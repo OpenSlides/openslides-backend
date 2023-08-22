@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple, cast
+from typing import Any, Dict, Tuple
 
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -21,25 +21,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "admin_group_id": 1,
                 "projector_ids": [1],
                 "reference_projector_id": 1,
-                "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
-                **{
-                    f"default_projector_${name}_ids": [1]
-                    for name in cast(
-                        List[str], Meeting.default_projector__ids.replacement_enum
-                    )
-                },
+                **{field: [1] for field in Meeting.all_default_projectors()},
             },
             "projector/1": {
                 "name": "Projector 1",
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
-                "used_as_default_$_in_meeting_id": Meeting.default_projector__ids.replacement_enum,
-                **{
-                    f"used_as_default_${name}_in_meeting_id": 1
-                    for name in cast(
-                        List[str], Meeting.default_projector__ids.replacement_enum
-                    )
-                },
+                **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
         }
 
@@ -57,25 +45,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "default_group_id": 1,
                     "projector_ids": [1],
                     "reference_projector_id": 1,
-                    "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
-                    **{
-                        f"default_projector_${name}_ids": [1]
-                        for name in cast(
-                            List[str], Meeting.default_projector__ids.replacement_enum
-                        )
-                    },
+                    **{field: [1] for field in Meeting.all_default_projectors()},
                 },
                 "projector/1": {
                     "name": "Projector 1",
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
-                    "used_as_default_$_in_meeting_id": Meeting.default_projector__ids.replacement_enum,
-                    **{
-                        f"used_as_default_${name}_in_meeting_id": 1
-                        for name in cast(
-                            List[str], Meeting.default_projector__ids.replacement_enum
-                        )
-                    },
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
             }
         )
@@ -151,30 +127,30 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             }
         )
         self.basic_test(
-            {"reference_projector_id": 2, "default_projector_$_ids": {"topics": [2]}}
+            {"reference_projector_id": 2, "default_projector_topic_ids": [2]}
         )
         self.assert_model_exists(
             "meeting/1",
             {
                 "reference_projector_id": 2,
-                "default_projector_$topics_ids": [2],
-                "default_projector_$motion_ids": [1],
+                "default_projector_topic_ids": [2],
+                "default_projector_motion_ids": [1],
             },
         )
         self.assert_model_exists(
             "projector/1",
             {
                 "used_as_reference_projector_meeting_id": None,
-                "used_as_default_$topics_in_meeting_id": None,
-                "used_as_default_$motion_in_meeting_id": 1,
+                "used_as_default_projector_for_topic_in_meeting_id": None,
+                "used_as_default_projector_for_motion_in_meeting_id": 1,
             },
         )
         self.assert_model_exists(
             "projector/2",
             {
                 "used_as_reference_projector_meeting_id": 1,
-                "used_as_default_$topics_in_meeting_id": 1,
-                "used_as_default_$motion_in_meeting_id": None,
+                "used_as_default_projector_for_topic_in_meeting_id": 1,
+                "used_as_default_projector_for_motion_in_meeting_id": None,
             },
         )
 
@@ -231,29 +207,29 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_default_projector_to_not_existing_replacement_error(self) -> None:
+    def test_update_default_projector_to_not_existing_option_error(self) -> None:
         _, response = self.basic_test(
-            {"default_projector_$_ids": {"not_existing": 1}}, check_200=False
+            {"default_projector_non_existing_ids": [1]}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.default_projector_$_ids must not contain {'not_existing'} properties",
+            "data must not contain {'default_projector_non_existing_ids'} properties",
             response.json["message"],
         )
 
     def test_update_default_projector_to_null_error(self) -> None:
         _, response = self.basic_test(
-            {"default_projector_$_ids": {"topics": None}}, check_200=False
+            {"default_projector_topic_ids": None}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.default_projector_$_ids.topics must be array",
+            "data.default_projector_topic_ids must be array",
             response.json["message"],
         )
 
     def test_update_default_projector_to_not_existing_projector_error(self) -> None:
         _, response = self.basic_test(
-            {"default_projector_$_ids": {"topics": [2]}}, check_200=False
+            {"default_projector_topic_ids": [2]}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -273,7 +249,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             }
         )
         _, response = self.basic_test(
-            {"default_projector_$_ids": {"topics": [2]}}, check_200=False
+            {"default_projector_topic_ids": [2]}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -547,6 +523,15 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting/1", {"list_of_speakers_enable_point_of_order_speakers": True}
         )
 
+    def test_update_list_of_speakers_closing_disables_point_of_order(
+        self,
+    ) -> None:
+        self.basic_test({"list_of_speakers_closing_disables_point_of_order": True})
+        self.assert_model_exists(
+            "meeting/1",
+            {"list_of_speakers_closing_disables_point_of_order": True},
+        )
+
     def test_update_with_user(self) -> None:
         self.set_models(
             {
@@ -586,7 +571,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 },
                 {
                     "action": "user.update",
-                    "data": [{"id": 4, "group_$_ids": {"3": [11]}}],
+                    "data": [{"id": 4, "meeting_id": 3, "group_ids": [11]}],
                 },
             ]
         )

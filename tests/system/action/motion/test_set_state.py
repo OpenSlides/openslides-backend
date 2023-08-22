@@ -10,24 +10,26 @@ class MotionSetStateActionTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {
-                    "is_active_in_organization_id": 1,
-                    "motion_submitter_ids": [12],
-                },
                 "motion_state/76": {
                     "meeting_id": 1,
+                    "name": "test0",
+                    "motion_ids": [],
                     "next_state_ids": [77],
+                    "previous_state_ids": [],
                     "allow_submitter_edit": True,
                 },
                 "motion_state/77": {
                     "meeting_id": 1,
+                    "name": "test1",
                     "motion_ids": [22],
                     "first_state_of_workflow_id": 76,
+                    "next_state_ids": [],
                     "previous_state_ids": [76],
                     "allow_submitter_edit": True,
                 },
                 "motion/22": {
                     "meeting_id": 1,
+                    "title": "test1",
                     "state_id": 77,
                     "number_value": 23,
                     "submitter_ids": [12],
@@ -36,12 +38,19 @@ class MotionSetStateActionTest(BaseActionTestCase):
                 "motion_submitter/12": {
                     "meeting_id": 1,
                     "motion_id": 22,
+                    "meeting_user_id": 5,
+                },
+                "meeting_user/5": {
+                    "meeting_id": 1,
                     "user_id": 1,
+                    "motion_submitter_ids": [12],
                 },
-                "user/1": {
-                    "submitted_motion_$_ids": ["1"],
-                    "submitted_motion_$1_ids": [12],
+                "meeting/1": {
+                    "id": 1,
+                    "meeting_user_ids": [5],
+                    "is_active_in_organization_id": 1,
                 },
+                "user/1": {"id": 1, "meeting_user_ids": [5]},
             }
         )
 
@@ -113,16 +122,14 @@ class MotionSetStateActionTest(BaseActionTestCase):
                 },
                 "user/1": {
                     "organization_management_level": None,
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
                 },
                 "group/1": {
                     "meeting_id": 1,
-                    "user_ids": [1],
                     "permissions": [Permissions.Motion.CAN_MANAGE_METADATA],
                 },
             }
         )
+        self.set_user_groups(1, [1])
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/22", {"state_id": 76})
@@ -247,13 +254,16 @@ class MotionSetStateActionTest(BaseActionTestCase):
                 },
                 "user/1": {
                     "organization_management_level": None,
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
+                },
+                "meeting_user/5": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "group_ids": [1],
                 },
                 "group/1": {
                     "meeting_id": 1,
-                    "user_ids": [1],
-                    "permissions": [Permissions.Motion.CAN_SEE],
+                    "meeting_user_ids": [5],
+                    "permissions": [Permissions.Motion.CAN_MANAGE_METADATA],
                 },
             }
         )

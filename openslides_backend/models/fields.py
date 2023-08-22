@@ -1,4 +1,3 @@
-import re
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Union, cast
@@ -7,15 +6,13 @@ import fastjsonschema
 
 from openslides_backend.shared.exceptions import ActionException
 
-from ..shared.patterns import COLOR_REGEX, ID_REGEX, Collection, FullQualifiedId
+from ..shared.patterns import COLOR_REGEX, Collection, FullQualifiedId
 from ..shared.schema import (
     decimal_schema,
     fqid_list_schema,
     id_list_schema,
     optional_fqid_schema,
     optional_id_schema,
-    optional_str_list_schema,
-    optional_str_schema,
     required_fqid_schema,
     required_id_schema,
 )
@@ -24,13 +21,6 @@ from ..shared.util import (
     ALLOWED_HTML_TAGS_PERMISSIVE,
     ALLOWED_HTML_TAGS_STRICT,
     validate_html,
-)
-
-TEMPLATE_FIELD_SCHEMA = fastjsonschema.compile(
-    {
-        "type": ["array", "null"],
-        "items": {"type": "string"},
-    }
 )
 
 
@@ -69,10 +59,6 @@ class Field:
         Returns a JSON schema for this field.
         """
         return dict(**self.constraints)
-
-    def get_payload_schema(self, *args: Any, **kwargs: Any) -> Schema:
-        """Calls get_schema by default."""
-        return self.get_schema()
 
     def extend_schema(self, schema: Schema, **kwargs: Any) -> Schema:
         """
@@ -384,206 +370,3 @@ class OrganizationField(RelationField):
 
     def get_schema(self) -> Schema:
         return self.extend_schema(super().get_schema(), enum=[1])
-
-
-class BaseTemplateField(Field):
-    replacement_collection: Optional[Collection]
-    replacement_enum: Optional[List[str]]
-    index: int
-
-    def __init__(self, **kwargs: Any) -> None:
-        self.replacement_collection = kwargs.pop("replacement_collection", None)
-        self.replacement_enum = kwargs.pop("replacement_enum", None)
-        self.index = kwargs.pop("index")
-        super().__init__(**kwargs)
-
-    def get_own_field_name(self) -> str:
-        return self.get_template_field_name()
-
-    def get_payload_schema(
-        self, replacement_pattern: Optional[str] = None, *args: Any, **kwargs: Any
-    ) -> Schema:
-        schema = {
-            "type": "object",
-            "additionalProperties": False,
-        }
-
-        if self.replacement_enum:
-            subschema: Schema = self.get_schema()
-            schema.update(
-                {"properties": {name: subschema for name in self.replacement_enum}}
-            )
-        else:
-            if not replacement_pattern:
-                if self.replacement_collection:
-                    replacement_pattern = ID_REGEX
-                else:
-                    replacement_pattern = ".*"
-            schema.update(
-                {"patternProperties": {replacement_pattern: self.get_schema()}}
-            )
-        return schema
-
-    def get_regex(self) -> str:
-        """
-        For internal usage. To find the replacement, please use [try_]get_replacement.
-        """
-        return (
-            r"^"
-            + self.own_field_name[: self.index]
-            + r"\$"
-            + r"([a-zA-Z0-9_\-]*)"
-            + self.own_field_name[self.index :]
-            + r"$"
-        )
-
-    def get_replacement(self, field_name: str) -> str:
-        replacement = self.try_get_replacement(field_name)
-        if not replacement:
-            raise ValueError(
-                f"{field_name} does not contain a valid replacement for a structured field."
-            )
-        return replacement
-
-    def get_template_field_name(self) -> str:
-        return self.get_structured_field_name("")
-
-    def get_structured_field_name(self, replacement: Any) -> str:
-        return (
-            self.own_field_name[: self.index]
-            + "$"
-            + str(replacement)
-            + self.own_field_name[self.index :]
-        )
-
-    def is_template_field(self, field_name: str) -> bool:
-        return field_name == self.get_template_field_name()
-
-    def try_get_replacement(self, field_name: str) -> Optional[str]:
-        match = re.match(self.get_regex(), field_name)
-        if not match:
-            return None
-        replacement = match.group(1)
-        if not replacement:
-            raise ValueError(
-                "You try to get the replacement of a template field: " + field_name
-            )
-        if self.replacement_collection and not replacement.isnumeric():
-            raise ValueError(
-                f"Replacements for Structured Relation Fields must be ids. Invalid replacement: {replacement}"
-            )
-        if replacement.startswith("_"):
-            raise ValueError(f"Replacements must not start with '_': {field_name}")
-        return replacement
-
-    def validate_with_schema(
-        self, fqid: FullQualifiedId, field_name: str, value: Any
-    ) -> None:
-        if self.is_template_field(field_name):
-            try:
-                TEMPLATE_FIELD_SCHEMA(value)
-            except fastjsonschema.JsonSchemaException as e:
-                raise ActionException(
-                    f"Invalid data for {fqid}/{field_name}: " + e.message
-                )
-        else:
-            super().validate_with_schema(fqid, field_name, value)
-
-
-class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
-    def check_required_not_fulfilled(
-        self, instance: Dict[str, Any], is_create: bool
-    ) -> bool:
-        own_field_name = self.get_own_field_name()
-        assert hasattr(
-            self, "replacement_enum"
-        ), f"field {own_field_name} required is only implemented with replacement_enum"
-        if own_field_name not in instance:
-            return is_create
-        if is_create and set(instance.get(own_field_name, ())) != set(
-            cast(List[str], self.replacement_enum)
-        ):
-            return True
-        parts = own_field_name.split("$")
-        template = parts[0] + "$%s" + parts[1]
-        return any(
-            # Check every structure field and return True (=Error) if any structure field is empty.
-            # If structure-field doesn't exist, it will not try to set anything empty and return True.
-            not instance.get(template % replace_text, True)
-            for replace_text in instance[own_field_name]
-        )
-
-
-class TemplateRelationField(BaseTemplateRelationField, RelationField):
-    def get_schema(self) -> Schema:
-        if self.constraints and self.constraints.get("enum"):
-            return self.extend_schema(super().get_schema(), **optional_str_schema)
-        else:
-            id_schema = required_id_schema if self.required else optional_id_schema
-            return self.extend_schema(super().get_schema(), **id_schema)
-
-
-class TemplateRelationListField(BaseTemplateRelationField, RelationListField):
-    def get_schema(self) -> Schema:
-        schema = super().get_schema()
-        if self.constraints:
-            for key in self.constraints.keys():
-                del schema[key]
-        if self.constraints and self.constraints.get("enum"):
-            schema = self.extend_schema(schema, **optional_str_list_schema)
-        else:
-            schema = self.extend_schema(schema, **id_list_schema)
-        if self.constraints:
-            schema["items"].update(self.constraints)
-        if not hasattr(self, "required") or not self.required:
-            schema["type"] = ["array", "null"]
-        return schema
-
-
-class TemplateCharField(BaseTemplateField, CharField):
-    pass
-
-
-class TemplateDecimalField(BaseTemplateField, DecimalField):
-    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
-        if (min := self.constraints.get("minimum")) is not None:
-            if type(value) == dict:
-                assert all(
-                    (Decimal(v) >= Decimal(min))
-                    for v in value.values()
-                    if v is not None
-                ), f"{self.get_own_field_name()} must be bigger than or equal to {min}."
-            elif type(value) == list:
-                assert all(
-                    (
-                        Decimal(
-                            cast(
-                                Union[Decimal, float, str],
-                                payload.get(
-                                    self.get_structured_field_name(replacement)
-                                ),
-                            )
-                        )
-                        >= Decimal(min)
-                    )
-                    for replacement in value
-                ), f"{self.get_own_field_name()} must be bigger than or equal to {min}."
-            else:
-                raise NotImplementedError(
-                    f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"
-                )
-        return value
-
-
-class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
-    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
-        if type(value) == dict:
-            sup: Any = super()
-            return {key: sup.validate(struc) for key, struc in value.items()}
-        elif type(value) == list:
-            return value
-        elif value is None:
-            return None
-        raise NotImplementedError(
-            f"Unexpected type: {type(value)} (value: {value}) for field {self.get_own_field_name()}"
-        )

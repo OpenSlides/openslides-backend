@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from ....models.models import Projector
+from ....models.models import Meeting, Projector
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
@@ -34,7 +34,7 @@ class ProjectorUpdate(UpdateAction):
             "show_title",
             "show_logo",
             "show_clock",
-            "used_as_default_$_in_meeting_id",
+            *Meeting.reverse_default_projectors(),
         ],
     )
     permission = Permissions.Projector.CAN_MANAGE

@@ -51,18 +51,38 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/42": {
-                    "group_$22_ids": [111],
-                    "group_$_ids": ["22"],
+                    "meeting_user_ids": [142],
                     "meeting_ids": [22],
                     "committee_ids": [3],
                 },
-                "committee/3": {"meeting_ids": [22], "user_ids": [42]},
+                "user/43": {
+                    "meeting_user_ids": [143],
+                    "meeting_ids": [22],
+                    "committee_ids": [3],
+                },
+                "committee/3": {"meeting_ids": [22], "user_ids": [42, 43]},
                 "meeting/22": {
                     "committee_id": 3,
-                    "user_ids": [42],
+                    "name": "name_meeting_22",
+                    "group_ids": [111],
+                    "user_ids": [42, 43],
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [142, 143],
                 },
                 "group/111": {
-                    "user_ids": [42],
+                    "name": "name_srtgb123",
+                    "meeting_id": 22,
+                    "meeting_user_ids": [142, 143],
+                },
+                "meeting_user/142": {
+                    "meeting_id": 22,
+                    "user_id": 42,
+                    "group_ids": [111],
+                },
+                "meeting_user/143": {
+                    "meeting_id": 22,
+                    "user_id": 43,
+                    "group_ids": [111],
                 },
             }
         )

@@ -9,16 +9,26 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-            "user/233": {"username": "username_233"},
-            "user/234": {"username": "username_234"},
+            "user/233": {"username": "username_233", "meeting_user_ids": [233]},
+            "user/234": {"username": "username_234", "meeting_user_ids": [234]},
+            "meeting_user/233": {
+                "meeting_id": 1,
+                "user_id": 233,
+                "assignment_candidate_ids": [31],
+            },
+            "meeting_user/234": {
+                "meeting_id": 1,
+                "user_id": 234,
+                "assignment_candidate_ids": [32],
+            },
             "assignment_candidate/31": {
                 "assignment_id": 222,
-                "user_id": 233,
+                "meeting_user_id": 233,
                 "meeting_id": 1,
             },
             "assignment_candidate/32": {
                 "assignment_id": 222,
-                "user_id": 234,
+                "meeting_user_id": 234,
                 "meeting_id": 1,
             },
         }
@@ -28,16 +38,26 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-                "user/233": {"username": "username_233"},
-                "user/234": {"username": "username_234"},
+                "user/233": {"username": "username_233", "meeting_user_ids": [233]},
+                "user/234": {"username": "username_234", "meeting_user_ids": [234]},
+                "meeting_user/233": {
+                    "meeting_id": 1,
+                    "user_id": 233,
+                    "assignment_candidate_ids": [31],
+                },
+                "meeting_user/234": {
+                    "meeting_id": 1,
+                    "user_id": 234,
+                    "assignment_candidate_ids": [32],
+                },
                 "assignment_candidate/31": {
                     "assignment_id": 222,
-                    "user_id": 233,
+                    "meeting_user_id": 233,
                     "meeting_id": 1,
                 },
                 "assignment_candidate/32": {
                     "assignment_id": 222,
-                    "user_id": 234,
+                    "meeting_user_id": 234,
                     "meeting_id": 1,
                 },
             }
@@ -57,11 +77,21 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-                "user/233": {"username": "username_233"},
-                "user/234": {"username": "username_234"},
+                "user/233": {"username": "username_233", "meeting_user_ids": [233]},
+                "user/234": {"username": "username_234", "meeting_user_ids": [234]},
+                "meeting_user/233": {
+                    "meeting_id": 1,
+                    "user_id": 233,
+                    "assignment_candidate_ids": [31],
+                },
+                "meeting_user/234": {
+                    "meeting_id": 1,
+                    "user_id": 234,
+                    "assignment_candidate_ids": [32],
+                },
                 "assignment_candidate/31": {
                     "assignment_id": 222,
-                    "user_id": 233,
+                    "meeting_user_id": 233,
                     "meeting_id": 1,
                 },
             }
@@ -81,19 +111,34 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
                 "user/233": {"username": "username_233"},
                 "user/234": {"username": "username_234"},
                 "user/236": {"username": "username_236"},
+                "meeting_user/233": {
+                    "meeting_id": 1,
+                    "user_id": 233,
+                    "assignment_candidate_ids": [31],
+                },
+                "meeting_user/234": {
+                    "meeting_id": 1,
+                    "user_id": 234,
+                    "assignment_candidate_ids": [32],
+                },
+                "meeting_user/236": {
+                    "meeting_id": 1,
+                    "user_id": 236,
+                    "assignment_candidate_ids": [33],
+                },
                 "assignment_candidate/31": {
                     "assignment_id": 222,
-                    "user_id": 233,
+                    "meeting_user_id": 233,
                     "meeting_id": 1,
                 },
                 "assignment_candidate/32": {
                     "assignment_id": 222,
-                    "user_id": 234,
+                    "meeting_user_id": 234,
                     "meeting_id": 1,
                 },
                 "assignment_candidate/33": {
                     "assignment_id": 222,
-                    "user_id": 236,
+                    "meeting_user_id": 236,
                     "meeting_id": 1,
                 },
             }

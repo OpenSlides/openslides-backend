@@ -1,4 +1,4 @@
-from ....models.models import Projector
+from ....models.models import Meeting, Projector
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
@@ -32,7 +32,7 @@ class ProjectorCreateAction(SequentialNumbersMixin, CreateAction):
             "show_logo",
             "show_clock",
             "used_as_reference_projector_meeting_id",
-            "used_as_default_$_in_meeting_id",
+            *Meeting.reverse_default_projectors(),
         ],
     )
     permission = Permissions.Projector.CAN_MANAGE

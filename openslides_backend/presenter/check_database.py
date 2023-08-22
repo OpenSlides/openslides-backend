@@ -3,12 +3,12 @@ from typing import Any, Dict, Optional
 import fastjsonschema
 from datastore.shared.util import DeletedModelsBehaviour
 
-from ..action.actions.meeting.export_helper import export_meeting
 from ..models.checker import Checker, CheckException, external_motion_fields
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PermissionDenied
+from ..shared.export_helper import export_meeting
 from ..shared.schema import optional_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
