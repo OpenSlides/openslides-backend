@@ -2019,7 +2019,7 @@ list_of_speakers:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2145,7 +2145,7 @@ topic:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2201,7 +2201,7 @@ motion:
     restriction_mode: D
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: C
@@ -2487,7 +2487,7 @@ motion_comment_section:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2539,7 +2539,7 @@ motion_category:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2578,7 +2578,7 @@ motion_block:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2807,7 +2807,7 @@ motion_workflow:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2859,7 +2859,7 @@ motion_statute_paragraph:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2984,7 +2984,7 @@ poll:
     restriction_mode: C
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -3170,7 +3170,7 @@ assignment:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -3528,7 +3528,7 @@ projector:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
