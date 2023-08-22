@@ -20,7 +20,7 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
             "organization_tag_ids",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
-            "user_$_management_level",
+            "manager_ids",
             "external_id",
         ],
     )

@@ -1,7 +1,4 @@
-from typing import Any, Dict, Optional
-
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
-from openslides_backend.shared.typing import HistoryInformation
+from typing import Any, Dict
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -20,6 +17,7 @@ class UserDelete(UserScopeMixin, DeleteAction):
     model = User()
     schema = DefaultSchema(User()).get_delete_schema()
     skip_archived_meeting_check = True
+    history_information = "Account deleted"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance["id"] == self.user_id:
@@ -28,19 +26,3 @@ class UserDelete(UserScopeMixin, DeleteAction):
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance["id"])
-
-    def get_history_information(self) -> Optional[HistoryInformation]:
-        users = self.get_instances_with_fields(["id", "group_$_ids"])
-        information = {}
-        for user in users:
-            meeting_ids = user.get("group_$_ids", [])
-            instance_information = ["Participant deleted"]
-            if len(meeting_ids) == 1:
-                instance_information[0] += " in meeting {}"
-                instance_information.append(
-                    fqid_from_collection_and_id("meeting", meeting_ids.pop())
-                )
-            information[
-                fqid_from_collection_and_id(self.model.collection, user["id"])
-            ] = instance_information
-        return information

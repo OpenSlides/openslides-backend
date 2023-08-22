@@ -131,33 +131,6 @@ class OrganizationInitialImport(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_initial_import_negative_vote_weight(self) -> None:
-        self.datastore.truncate_db()
-        request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
-        request_data["data"]["user"]["1"]["vote_weight_$"] = ["1"]
-        request_data["data"]["user"]["1"]["vote_weight_$1"] = "-2.000000"
-        response = self.request("organization.initial_import", request_data)
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "vote_weight_$ must be bigger than or equal to 0.", response.json["message"]
-        )
-
-    def test_initial_import_negative_vote_weight_fields(self) -> None:
-        self.datastore.truncate_db()
-        request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
-        request_data["data"]["user"]["1"]["default_vote_weight"] = "-2.000000"
-        request_data["data"]["user"]["1"]["vote_weight_$"] = ["1"]
-        request_data["data"]["user"]["1"]["vote_weight_$1"] = "-2.000000"
-        response = self.request("organization.initial_import", request_data)
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "default_vote_weight must be bigger than or equal to 0.",
-            response.json["message"],
-        )
-        self.assertIn(
-            "vote_weight_$ must be bigger than or equal to 0.", response.json["message"]
-        )
-
     def test_initial_import_empty_data(self) -> None:
         """when there is no data given, use initial_data.json for initial import"""
         self.datastore.truncate_db()

@@ -25,7 +25,7 @@ class SpeakerCreateAction(
     model = Speaker()
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
-        required_properties=["list_of_speakers_id", "user_id"],
+        required_properties=["list_of_speakers_id", "meeting_user_id"],
         optional_properties=[
             "point_of_order",
             "note",
@@ -94,6 +94,7 @@ class SpeakerCreateAction(
                 speaker = los[index]
                 if (
                     speaker.get("point_of_order")
+                    and speaker.get("point_of_order_category_id")
                     and categories[speaker["point_of_order_category_id"]]["rank"]
                     <= new_speaker_rank
                 ):
@@ -191,9 +192,16 @@ class SpeakerCreateAction(
         - that user has to be present to be added to the list of speakers
         - that request-user cannot create a speaker without being point_of_order, a not closed los is closed and no list_of_speakers.can_manage permission
         """
-        if instance.get("point_of_order") and instance.get("user_id") != self.user_id:
+        meeting_user = self.datastore.get(
+            fqid_from_collection_and_id("meeting_user", instance["meeting_user_id"]),
+            ["user_id"],
+        )
+        if (
+            instance.get("point_of_order")
+            and meeting_user.get("user_id") != self.user_id
+        ):
             raise ActionException(
-                f"The requesting user {self.user_id} is not the user {instance.get('user_id')} the point-of-order is filed for."
+                f"The requesting user {self.user_id} is not the user {meeting_user['user_id']} the point-of-order is filed for."
             )
 
         if (
@@ -215,6 +223,7 @@ class SpeakerCreateAction(
                 "list_of_speakers_enable_point_of_order_speakers",
                 "list_of_speakers_enable_point_of_order_categories",
                 "list_of_speakers_present_users_only",
+                "list_of_speakers_closing_disables_point_of_order",
             ],
         )
         if instance.get("point_of_order") and not meeting.get(
@@ -239,9 +248,12 @@ class SpeakerCreateAction(
             )
 
         if (
-            not instance.get("point_of_order")
+            (
+                not instance.get("point_of_order")
+                or meeting.get("list_of_speakers_closing_disables_point_of_order")
+            )
             and los.get("closed")
-            and instance.get("user_id") == self.user_id
+            and meeting_user["user_id"] == self.user_id
             and not has_perm(
                 self.datastore,
                 self.user_id,
@@ -251,7 +263,7 @@ class SpeakerCreateAction(
         ):
             raise ActionException("The list of speakers is closed.")
         if meeting.get("list_of_speakers_present_users_only"):
-            user_fqid = fqid_from_collection_and_id("user", instance["user_id"])
+            user_fqid = fqid_from_collection_and_id("user", meeting_user["user_id"])
             user = self.datastore.get(user_fqid, ["is_present_in_meeting_ids"])
             if meeting_id not in user.get("is_present_in_meeting_ids", ()):
                 raise ActionException(
@@ -267,19 +279,23 @@ class SpeakerCreateAction(
         speakers = self.datastore.filter(
             collection="speaker",
             filter=filter_obj,
-            mapped_fields=["user_id", "point_of_order"],
+            mapped_fields=["meeting_user_id", "point_of_order"],
         )
         for speaker in speakers.values():
-            if speaker["user_id"] == instance["user_id"] and bool(
+            if speaker["meeting_user_id"] == instance["meeting_user_id"] and bool(
                 speaker.get("point_of_order")
             ) == bool(instance.get("point_of_order")):
                 raise ActionException(
-                    f"User {instance['user_id']} is already on the list of speakers."
+                    f"User {meeting_user['user_id']} is already on the list of speakers."
                 )
         return super().validate_fields(instance)
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if instance.get("user_id") == self.user_id:
+        meeting_user = self.datastore.get(
+            fqid_from_collection_and_id("meeting_user", instance["meeting_user_id"]),
+            ["user_id"],
+        )
+        if meeting_user.get("user_id") == self.user_id:
             permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER
         else:
             permission = Permissions.ListOfSpeakers.CAN_MANAGE

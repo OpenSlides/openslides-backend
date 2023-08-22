@@ -44,47 +44,6 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_self_about_me(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("test", group_ids=[1])
-        self.login(self.user_id)
-        self.update_model("user/2", {"meeting_ids": [1]})
-        response = self.request(
-            "user.update_self",
-            {
-                "about_me_$": {
-                    "1": "This is for meeting/1",
-                }
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"about_me_$1": "This is for meeting/1"})
-
-    def test_update_self_about_me_wrong_meeting(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("test", group_ids=[1])
-        self.login(self.user_id)
-        self.set_models(
-            {
-                "user/2": {"meeting_ids": [1]},
-                "meeting/2": {"is_active_in_organization_id": 1},
-            }
-        )
-        response = self.request(
-            "user.update_self",
-            {
-                "about_me_$": {
-                    "1": "This is for meeting/1",
-                    "2": "This is for meeting/2",
-                }
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "User may update about_me_$ only in his meetings, but tries in [2]",
-            response.json["message"],
-        )
-
     def test_update_self_forbidden_username(self) -> None:
         self.update_model(
             "user/1",

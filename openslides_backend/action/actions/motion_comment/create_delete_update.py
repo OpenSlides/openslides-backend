@@ -17,9 +17,10 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 
 
-class MotionCommentMixin(Action):
+class MotionCommentMixin(MeetingUserHelperMixin, Action):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         super().check_permissions(instance)
 
@@ -27,11 +28,6 @@ class MotionCommentMixin(Action):
             instance, ["write_group_ids", "meeting_id", "submitter_can_write"]
         )
         meeting_id = section["meeting_id"]
-        user = self.datastore.get(
-            fqid_from_collection_and_id("user", self.user_id),
-            [f"group_${meeting_id}_ids"],
-            lock_result=False,
-        )
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),
             ["admin_group_id"],
@@ -40,17 +36,28 @@ class MotionCommentMixin(Action):
 
         allowed_groups = set(section.get("write_group_ids", []))
         allowed_groups.add(meeting["admin_group_id"])
-        user_groups = set(user.get(f"group_${meeting_id}_ids", []))
+        user_groups = self.get_groups_from_meeting_user(meeting_id, self.user_id)
         if allowed_groups.intersection(user_groups):
             return
 
         if section.get("submitter_can_write"):
             motion_id = self.get_field_from_instance("motion_id", instance)
 
+            meeting_user = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("user_id", "=", self.user_id),
+                    FilterOperator("meeting_id", "=", meeting_id),
+                ),
+                ["id"],
+            )
+            meeting_user_id = None
+            if meeting_user:
+                meeting_user_id = int(list(meeting_user)[0])
             if motion_id and self.datastore.exists(
                 "motion_submitter",
                 And(
-                    FilterOperator("user_id", "=", self.user_id),
+                    FilterOperator("meeting_user_id", "=", meeting_user_id),
                     FilterOperator("motion_id", "=", motion_id),
                 ),
             ):

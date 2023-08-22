@@ -71,6 +71,7 @@ class AgendaItemUpdate(UpdateAction):
                 ):
                     continue
                 instances.append(instance)
+                self.apply_instance(instance)
                 instances.extend(
                     self.handle_children(
                         child_id,
@@ -84,10 +85,12 @@ class AgendaItemUpdate(UpdateAction):
         new_instances = []
         agenda_item_ids = [instance["id"] for instance in action_data]
         get_many_request = GetManyRequest(
-            self.model.collection, agenda_item_ids, ["parent_id"]
+            self.model.collection, agenda_item_ids, ["parent_id", "child_ids"]
         )
+
         gm_result = self.datastore.get_many([get_many_request])
         agenda_items = gm_result.get(self.model.collection, {})
+
         for instance in action_data:
             if instance.get("type") is None:
                 new_instances.append(instance)
@@ -109,6 +112,7 @@ class AgendaItemUpdate(UpdateAction):
                 instance["type"], parent_ai.get("is_internal")
             )
             new_instances.append(instance)
+            self.apply_instance(instance)
             new_instances.extend(
                 self.handle_children(
                     instance["id"], instance["is_hidden"], instance["is_internal"]

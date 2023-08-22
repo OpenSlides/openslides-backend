@@ -13,10 +13,10 @@ from .mixins import GetMeetingIdFromIdMixin
 class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
     """
     Base action to set a speacial mediafile in a meeting.
-    Subclass has to set `field` and `allowed_mimetypes`
+    Subclass has to set `file_type` and `allowed_mimetypes`
     """
 
-    field: str
+    file_type: str
     allowed_mimetypes: List[str]
 
     model = Meeting()
@@ -29,8 +29,10 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
     permission = Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        if not self.field or not self.allowed_mimetypes:
-            raise NotImplementedError("Subclass has to set field and allowed_mimetypes")
+        if not self.file_type or not self.allowed_mimetypes:
+            raise NotImplementedError(
+                "Subclass has to set file_type and allowed_mimetypes"
+            )
         super().__init__(*args, **kwargs)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -48,7 +50,8 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
             raise ActionException(
                 f"Invalid mimetype: {mediafile.get('mimetype')}, allowed are {self.allowed_mimetypes}"
             )
-        instance[self.field] = {instance.pop("place"): instance.pop("mediafile_id")}
+        place = instance.pop("place")
+        instance[f"{self.file_type}_{place}_id"] = instance.pop("mediafile_id")
         return instance
 
     def check_owner(self, mediafile: Dict[str, Any], instance: Dict[str, Any]) -> None:

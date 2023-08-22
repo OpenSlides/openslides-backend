@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Type
 
 from ....models.models import AgendaItem
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.schema import optional_id_schema
+from ....shared.schema import id_list_schema, optional_id_schema
 from ...action import Action
 
 AGENDA_PREFIX = "agenda_"
@@ -37,6 +37,10 @@ agenda_creation_properties = {
     f"{AGENDA_PREFIX}weight": {
         "description": "The weight of the agenda item.",
         "type": "integer",
+    },
+    f"{AGENDA_PREFIX}tag_ids": {
+        "description": "The ids of tags to be set.",
+        **id_list_schema,
     },
 }
 

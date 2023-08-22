@@ -36,11 +36,6 @@ class MigrationChecker(Checker):
     def check_normal_fields(self, model: Dict[str, Any], collection: str) -> bool:
         return False
 
-    def check_template_fields(self, model: Dict[str, Any], collection: str) -> bool:
-        if collection not in model_registry:
-            return False
-        return super().check_template_fields(model, collection)
-
     def check_types(self, *args, **kwargs) -> None:
         pass
 
@@ -161,6 +156,10 @@ def assert_model(read_model):
         if "meta_deleted" not in expected:
             expected["meta_deleted"] = False
 
+        # don't compare meta_position if it's not requested
+        if "meta_position" not in expected:
+            expected["meta_position"] = model["meta_position"]
+
         if position is None:
             # assert that current model is equal to expected
             assert model == expected
@@ -171,9 +170,6 @@ def assert_model(read_model):
 
             # additionally assert that the model at the max position is equal to expected
             model = read_model(fqid, position=position)
-
-        if "meta_position" not in expected:
-            expected["meta_position"] = position
 
         assert model == expected
 

@@ -189,7 +189,9 @@ class GroupCreateActionTest(BaseActionTestCase):
                 "meeting/22": {
                     "name": "name_vJxebUwo",
                     "is_active_in_organization_id": 1,
+                    "admin_group_id": 2,
                 },
+                "group/2": {"meeting_id": 22, "admin_group_for_meeting_id": 22},
                 "group/3": {"name": "test", "meeting_id": 22},
             }
         )

@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
 from ...action import Action
 
 
@@ -20,12 +21,26 @@ class PermissionHelperMixin(Action):
         return self.is_submitter(submitter_ids)
 
     def is_submitter(self, submitter_ids: List[int]) -> bool:
+        user = self.datastore.get(
+            fqid_from_collection_and_id("user", self.user_id), ["meeting_user_ids"]
+        )
         get_many_request = GetManyRequest(
-            "motion_submitter", submitter_ids, ["user_id"]
+            "motion_submitter", submitter_ids, ["meeting_user_id"]
         )
         result = self.datastore.get_many([get_many_request])
         submitters = result.get("motion_submitter", {}).values()
-        return any(self.user_id == s.get("user_id") for s in submitters)
+        return any(
+            s.get("meeting_user_id") in (user.get("meeting_user_ids") or [])
+            for s in submitters
+        )
+
+
+class AmendmentParagraphHelper:
+    def validate_amendment_paragraphs(self, instance: Dict[str, Any]) -> None:
+        for key, html in instance["amendment_paragraphs"].items():
+            instance["amendment_paragraphs"][key] = validate_html(
+                html, ALLOWED_HTML_TAGS_STRICT
+            )
 
 
 def set_workflow_timestamp_helper(

@@ -22,10 +22,17 @@ class ChatMessageDelete(DeleteAction):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         chat_message = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["user_id", "meeting_id"],
+            ["meeting_user_id", "meeting_id"],
             lock_result=False,
         )
-        if chat_message.get("user_id") != self.user_id and not has_perm(
+        meeting_user = self.datastore.get(
+            fqid_from_collection_and_id(
+                "meeting_user", chat_message["meeting_user_id"]
+            ),
+            ["user_id"],
+            lock_result=False,
+        )
+        if meeting_user.get("user_id") != self.user_id and not has_perm(
             self.datastore,
             self.user_id,
             Permissions.Chat.CAN_MANAGE,

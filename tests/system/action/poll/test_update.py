@@ -13,9 +13,13 @@ class UpdatePollTestCase(BaseActionTestCase):
                     "title": "test_assignment_ohneivoh9caiB8Yiungo",
                     "open_posts": 1,
                 },
-                "meeting/1": {"name": "my meeting", "is_active_in_organization_id": 1},
+                "meeting/1": {
+                    "name": "my meeting",
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [11],
+                },
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                "group/1": {"user_ids": [1], "poll_ids": [1]},
+                "group/1": {"meeting_user_ids": [11], "poll_ids": [1]},
                 "poll/1": {
                     "content_object_id": "assignment/1",
                     "title": "test_title_beeFaihuNae1vej2ai8m",
@@ -34,8 +38,12 @@ class UpdatePollTestCase(BaseActionTestCase):
                 "option/2": {"meeting_id": 1, "poll_id": 1},
                 "user/1": {
                     "is_present_in_meeting_ids": [1],
-                    "group_$1_ids": [1],
-                    "group_$_ids": ["1"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "group_ids": [1],
                 },
             }
         )
