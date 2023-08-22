@@ -134,6 +134,18 @@ class TestInternalActionsDev(BaseInternalActionTest):
         self.assert_status_code(response, 401)
         self.assert_model_not_exists("user/2")
 
+    def test_internal_execute_stack_internal_via_public_route(self) -> None:
+        self.datastore.truncate_db()
+        response = self.request(
+            "organization.initial_import", {"data": {}}, internal=False
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json.get("message"),
+            "Action organization.initial_import does not exist.",
+        )
+        self.assert_model_not_exists("organization/1")
+
     def test_internal_wrongly_encoded_password(self) -> None:
         response = self.anon_client.post(
             get_route_path(self.route),
@@ -197,13 +209,3 @@ class TestInternalActionsProdWithPasswordFile(
             response.json.get("message"), "Action option.create does not exist."
         )
         self.assert_model_not_exists("option/1")
-
-    def test_internal_execute_stack_internal_via_public_route(self) -> None:
-        self.datastore.truncate_db()
-        response = self.request("organization.initial_import", {"data": {}})
-        self.assert_status_code(response, 400)
-        self.assertEqual(
-            response.json.get("message"),
-            "Action organization.initial_import does not exist.",
-        )
-        self.assert_model_not_exists("organization/1")
