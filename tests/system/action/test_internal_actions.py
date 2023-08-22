@@ -1,7 +1,10 @@
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
 
-from openslides_backend.http.views.action_view import ActionView
+from openslides_backend.http.views.action_view import (
+    INTERNAL_AUTHORIZATION_HEADER,
+    ActionView,
+)
 from openslides_backend.http.views.base_view import RouteFunction
 from openslides_backend.shared.env import DEV_PASSWORD
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -60,7 +63,7 @@ class BaseInternalActionTest(BaseInternalRequestTest):
     Sets up a server-side password for internal requests.
     """
 
-    route = ActionView.internal_action_route
+    route: RouteFunction = ActionView.internal_action_route
 
     def internal_request(
         self,
@@ -129,6 +132,15 @@ class TestInternalActionsDev(BaseInternalActionTest):
     def test_internal_wrong_password_in_request(self) -> None:
         response = self.internal_request("user.create", {"username": "test"}, "wrong")
         self.assert_status_code(response, 401)
+        self.assert_model_not_exists("user/2")
+
+    def test_internal_wrongly_encoded_password(self) -> None:
+        response = self.anon_client.post(
+            get_route_path(self.route),
+            json=[{"action": "user.create", "data": [{"username": "test"}]}],
+            headers={INTERNAL_AUTHORIZATION_HEADER: "openslides"},
+        )
+        self.assert_status_code(response, 400)
         self.assert_model_not_exists("user/2")
 
 
