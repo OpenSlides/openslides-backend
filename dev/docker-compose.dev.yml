@@ -95,7 +95,7 @@ services:
             - redis
     vote:
         build:
-            context: "https://github.com/OpenSlides/openslides-vote-service.git#feature/remove-template-fields"
+            context: "https://github.com/OpenSlides/openslides-vote-service.git#main"
         image: openslides-vote-dev
         ports:
             - "9013:9013"
