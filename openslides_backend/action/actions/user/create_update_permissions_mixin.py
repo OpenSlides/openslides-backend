@@ -13,6 +13,7 @@ from ....shared.exceptions import MissingPermission, PermissionDenied
 from ....shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
+from .user_mixin import UserMixin
 
 
 class PermissionVarStore:
@@ -143,7 +144,7 @@ class PermissionVarStore:
         return user_meetings
 
 
-class CreateUpdatePermissionsMixin(UserScopeMixin, Action):
+class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
     field_rights: Dict[str, list] = {
         "A": [
             "title",

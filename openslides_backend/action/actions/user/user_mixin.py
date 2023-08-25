@@ -83,6 +83,15 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "group_ids": id_list_schema,
     }
 
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if "meeting_id" not in instance and any(
+            key in self.transfer_field_list for key in instance.keys()
+        ):
+            raise ActionException(
+                "Missing meeting_id in instance, because meeting related fields used"
+            )
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         for field in ("username", "first_name", "last_name", "email"):
@@ -125,8 +134,6 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 meeting_user_data[field] = instance.pop(field)
         if meeting_user_data:
             self.apply_instance(instance)
-            if not meeting_id:
-                raise ActionException("Transfer data needs meeting_id.")
             meeting_user_data["meeting_id"] = meeting_id
             meeting_user_data["user_id"] = instance["id"]
             self.execute_other_action(MeetingUserSetData, [meeting_user_data])

@@ -155,7 +155,10 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Transfer data needs meeting_id." in response.json["message"]
+        assert (
+            "Missing meeting_id in instance, because meeting related fields used"
+            in response.json["message"]
+        )
 
     def test_create_with_meeting_user_fields(self) -> None:
         self.set_models(
