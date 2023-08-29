@@ -5,8 +5,8 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from tests.system.action.base import BaseActionTestCase
 
 
-class TopicJsonUpload(BaseActionTestCase):
-    def test_json_upload(self) -> None:
+class AccountJsonUpload(BaseActionTestCase):
+    def test_json_upload_simple(self) -> None:
         start_time = int(time())
         response = self.request(
             "account.json_upload",
@@ -135,23 +135,66 @@ class TopicJsonUpload(BaseActionTestCase):
     def test_json_upload_duplicate_in_db(self) -> None:
         self.set_models(
             {
-                "user/3": {"username": "test"},
-            }
+                "user/3": {
+                    "username": "test",
+                    "saml_id": "12345",
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "max@mustermann.org",
+                },
+            },
         )
         response = self.request(
             "account.json_upload",
-            {"data": [{"username": "test"}]},
+            {
+                "data": [
+                    {"username": "test"},
+                    {"saml_id": "12345"},
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "max@mustermann.org",
+                    },
+                ]
+            },
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
         assert result["rows"] == [
             {
-                "state": ImportState.DONE,
-                "messages": [],
+                "state": ImportState.ERROR,
+                "messages": [
+                    "The account with id 3 was found multiple times by different search criteria."
+                ],
                 "data": {
-                    "username": {"value": "test", "info": ImportState.DONE, "id": 3},
+                    "username": {"value": "test", "info": "done", "id": 3},
+                    "id": 3,
                 },
-            }
+            },
+            {
+                "state": ImportState.ERROR,
+                "messages": [
+                    "The account with id 3 was found multiple times by different search criteria."
+                ],
+                "data": {
+                    "saml_id": {"value": "12345", "info": "done"},
+                    "id": 3,
+                    "username": {"value": "test", "info": "done", "id": 3},
+                },
+            },
+            {
+                "state": ImportState.ERROR,
+                "messages": [
+                    "The account with id 3 was found multiple times by different search criteria."
+                ],
+                "data": {
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "max@mustermann.org",
+                    "id": 3,
+                    "username": {"value": "test", "info": "done", "id": 3},
+                },
+            },
         ]
 
     def test_json_upload_multiple_duplicates(self) -> None:
@@ -188,7 +231,7 @@ class TopicJsonUpload(BaseActionTestCase):
         assert result["rows"] == [
             {
                 "state": ImportState.ERROR,
-                "messages": ["Found more than one user: test, test2"],
+                "messages": ["Found more users with name and email"],
                 "data": {
                     "first_name": "Max",
                     "last_name": "Mustermann",
@@ -197,7 +240,7 @@ class TopicJsonUpload(BaseActionTestCase):
             }
         ]
 
-    def test_json_upload_duplicate_in_data(self) -> None:
+    def test_json_upload_username_duplicate_in_data(self) -> None:
         self.maxDiff = None
         response = self.request(
             "account.json_upload",
@@ -211,21 +254,29 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["rows"][2]["messages"] == ["Duplicate in csv list index: 2"]
+        assert result["rows"][0]["messages"] == [
+            "Found more users with the same username"
+        ]
+        assert result["rows"][0]["state"] == ImportState.ERROR
+        assert result["rows"][2]["messages"] == [
+            "Found more users with the same username"
+        ]
         assert result["rows"][2]["state"] == ImportState.ERROR
         self.assert_model_exists(
             "action_worker/1",
             {
+                "id": 1,
+                "state": ImportState.ERROR,
                 "result": {
                     "import": "account",
                     "rows": [
                         {
-                            "state": ImportState.NEW,
-                            "messages": [],
+                            "state": ImportState.ERROR,
+                            "messages": ["Found more users with the same username"],
                             "data": {
                                 "username": {
                                     "value": "test",
-                                    "info": ImportState.DONE,
+                                    "info": ImportState.ERROR,
                                 },
                                 "default_password": {
                                     "value": "secret",
@@ -246,11 +297,11 @@ class TopicJsonUpload(BaseActionTestCase):
                         },
                         {
                             "state": ImportState.ERROR,
-                            "messages": ["Duplicate in csv list index: 2"],
+                            "messages": ["Found more users with the same username"],
                             "data": {
                                 "username": {
                                     "value": "test",
-                                    "info": ImportState.DONE,
+                                    "info": ImportState.ERROR,
                                 },
                                 "default_password": {
                                     "value": "secret",
@@ -259,7 +310,7 @@ class TopicJsonUpload(BaseActionTestCase):
                             },
                         },
                     ],
-                }
+                },
             },
         )
 
@@ -287,12 +338,14 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.NEW
         assert entry["data"]["first_name"] == "Max"
         assert entry["data"]["last_name"] == "Mustermann"
         assert entry["data"]["username"] == {
             "value": "MaxMustermann1",
             "info": ImportState.GENERATED,
         }
+        assert entry["data"]["default_password"]["info"] == ImportState.GENERATED
 
     def test_json_upload_names_and_email_set_username(self) -> None:
         self.set_models(
@@ -321,11 +374,8 @@ class TopicJsonUpload(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["data"]["first_name"] == "Max"
         assert entry["data"]["last_name"] == "Mustermann"
-        assert entry["data"]["username"] == {
-            "value": "test",
-            "info": ImportState.DONE,
-            "id": 34,
-        }
+        assert entry["data"]["id"] == 34
+        assert entry["data"]["username"]["value"] == "test"
 
     def test_json_upload_generate_default_password(self) -> None:
         response = self.request(
@@ -364,16 +414,179 @@ class TopicJsonUpload(BaseActionTestCase):
         worker = self.assert_model_exists("action_worker/1")
         assert worker["result"]["import"] == "account"
         assert worker["result"]["rows"][0]["messages"] == [
-            "Remove password or default_password from entry."
+            "Removed password or default_password from entry."
         ]
         data = worker["result"]["rows"][0]["data"]
-        assert data.get("saml_id") == {
-            "value": "test",
-            "info": "done",
+        assert data == {
+            "saml_id": {"info": "new", "value": "test"},
+            "username": {"info": "generated", "value": ""},
+            "can_change_own_password": False,
         }
-        assert "password" not in data
-        assert "default_password" not in data
-        assert data.get("can_change_own_password") is False
+
+    def test_json_upload_duplicated_one_saml_id(self) -> None:
+        self.set_models(
+            {
+                "user/3": {
+                    "username": "test",
+                    "saml_id": "12345",
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "max@mustermann.org",
+                },
+            },
+        )
+
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test2",
+                        "saml_id": "12345",
+                        "first_name": "John",
+                        "default_password": "test3",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"] == [
+            {
+                "state": ImportState.ERROR,
+                "messages": [
+                    "saml_id 12345 must be unique.",
+                    "Removed password or default_password from entry.",
+                ],
+                "data": {
+                    "username": {"value": "test2", "info": ImportState.DONE},
+                    "saml_id": {"value": "12345", "info": "error"},
+                    "first_name": "John",
+                    "can_change_own_password": False,
+                },
+            }
+        ]
+        assert result["statistics"] == [
+            {"name": "total", "value": 1},
+            {"name": "created", "value": 0},
+            {"name": "updated", "value": 0},
+            {"name": "error", "value": 1},
+            {"name": "warning", "value": 0},
+        ]
+        assert result["state"] == ImportState.ERROR
+
+    def test_json_upload_duplicated_two_new_saml_ids(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test1",
+                        "saml_id": "12345",
+                    },
+                    {
+                        "username": "test2",
+                        "saml_id": "12345",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"] == [
+            {
+                "state": ImportState.ERROR,
+                "messages": [
+                    "saml_id 12345 must be unique.",
+                    "Removed password or default_password from entry.",
+                ],
+                "data": {
+                    "username": {"value": "test1", "info": ImportState.DONE},
+                    "saml_id": {"value": "12345", "info": ImportState.ERROR},
+                    "can_change_own_password": False,
+                },
+            },
+            {
+                "state": ImportState.ERROR,
+                "messages": [
+                    "saml_id 12345 must be unique.",
+                    "Removed password or default_password from entry.",
+                ],
+                "data": {
+                    "username": {"value": "test2", "info": ImportState.DONE},
+                    "saml_id": {"value": "12345", "info": ImportState.ERROR},
+                    "can_change_own_password": False,
+                },
+            },
+        ]
+        assert result["statistics"] == [
+            {"name": "total", "value": 2},
+            {"name": "created", "value": 0},
+            {"name": "updated", "value": 0},
+            {"name": "error", "value": 2},
+            {"name": "warning", "value": 0},
+        ]
+        assert result["state"] == ImportState.ERROR
+
+    def test_json_upload_duplicated_two_found_saml_ids(self) -> None:
+        self.set_models(
+            {
+                "user/3": {
+                    "username": "test1",
+                    "saml_id": "1",
+                },
+                "user/4": {
+                    "username": "test2",
+                    "saml_id": "2",
+                },
+            },
+        )
+
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test1",
+                        "saml_id": "12345",
+                    },
+                    {
+                        "username": "test2",
+                        "saml_id": "12345",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"] == [
+            {
+                "state": ImportState.ERROR,
+                "messages": ["saml_id 12345 must be unique."],
+                "data": {
+                    "username": {"value": "test1", "info": "done", "id": 3},
+                    "saml_id": {"value": "12345", "info": "error"},
+                    "id": 3,
+                },
+            },
+            {
+                "state": ImportState.ERROR,
+                "messages": ["saml_id 12345 must be unique."],
+                "data": {
+                    "username": {"value": "test2", "info": "done", "id": 4},
+                    "saml_id": {"value": "12345", "info": "error"},
+                    "id": 4,
+                },
+            },
+        ]
+        assert result["statistics"] == [
+            {"name": "total", "value": 2},
+            {"name": "created", "value": 0},
+            {"name": "updated", "value": 0},
+            {"name": "error", "value": 2},
+            {"name": "warning", "value": 0},
+        ]
+        assert result["state"] == ImportState.ERROR
 
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(

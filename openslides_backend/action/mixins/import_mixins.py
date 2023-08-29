@@ -1,20 +1,21 @@
+import csv
+from collections import defaultdict
 from enum import Enum
 from time import mktime, strptime, time
-from typing import Any, Callable, Dict, List, Optional, TypedDict
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
 
-from ...services.datastore.commands import GetManyRequest
 from ...shared.exceptions import ActionException
-from ...shared.filters import FilterOperator, Or
+from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
 from ...shared.interfaces.services import DatastoreService
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
-from ..action import Action
 from ..util.typing import ActionData, ActionResultElement
 from .singular_action_mixin import SingularActionMixin
 
 TRUE_VALUES = ("1", "true", "yes", "y", "t")
 FALSE_VALUES = ("0", "false", "no", "n", "f")
+
 
 class ImportState(str, Enum):
     NONE = "none"
@@ -38,60 +39,81 @@ class Lookup:
         self,
         datastore: DatastoreService,
         collection: str,
-        names: List[str],
-        field: str = "name",
-        mapped_fields: List[str] = [],
+        name_entries: List[Tuple[Union[str, Tuple[str, ...]], Dict[str, Any]]],
+        field: Union[str, Tuple[str, ...]] = "name",
+        mapped_fields: Optional[List[str]] = None,
     ) -> None:
+        if mapped_fields is None:
+            mapped_fields = []
         self.datastore = datastore
         self.collection = collection
         self.field = field
-        self.name_to_ids: Dict[str, List[Dict[str, Any]]] = {name: [] for name in names}
-        self.id_to_name: Dict[int, str] = {}
+        self.name_to_ids: Dict[Union[str, Tuple[str, ...]], List[Dict[str, Any]]] = {
+            name: [] for name, _ in name_entries
+        }
+        self.id_to_name: Dict[int, List[Union[str, Tuple[str, ...]]]] = defaultdict(
+            list
+        )
+        or_filters: List[Filter] = []
         if "id" not in mapped_fields:
             mapped_fields.append("id")
-        if field not in mapped_fields:
-            mapped_fields.append(field)
-        if names:
+        if type(field) == str:
+            if field not in mapped_fields:
+                mapped_fields.append(field)
+            if name_entries:
+                or_filters = [
+                    FilterOperator(field, "=", name) for name, _ in name_entries
+                ]
+        else:
+            mapped_fields.extend((f for f in field if f not in mapped_fields))
+            if name_entries:
+                or_filters = [
+                    And(*[FilterOperator(field[i], "=", name_tpl[i]) for i in range(3)])
+                    for name_tpl, _ in name_entries
+                ]
+        if or_filters:
             for entry in datastore.filter(
                 collection,
-                Or(*[FilterOperator(field, "=", name) for name in names]),
+                Or(*or_filters),
                 mapped_fields,
                 lock_result=False,
             ).values():
-                self.name_to_ids[entry[field]].append(entry)
-                self.id_to_name[entry["id"]] = entry[field]
+                if type(field) == str:
+                    self.name_to_ids[entry[field]].append(entry)
+                    self.id_to_name[entry["id"]].append(entry[field])
+                else:
+                    key: Tuple[Any, ...] = tuple(entry.get(f, "") for f in field)
+                    self.name_to_ids[key].append(entry)
+                    self.id_to_name[entry["id"]].append(key)
 
-    def check_duplicate(self, name: str) -> ResultType:
-        if not self.name_to_ids.get(name):
-            return ResultType.NOT_FOUND
-        elif len(self.name_to_ids[name]) > 1:
+        # Add action data items not found in database to lookup dict
+        for name, entry in name_entries:
+            if not (values := self.name_to_ids.get(name, [])):
+                values.append(entry)
+            else:
+                if not values[0].get("id"):
+                    values.append(entry)
+
+    def check_duplicate(self, name: Union[str, Tuple[str, ...]]) -> ResultType:
+        if len(values := self.name_to_ids.get(name, [])) == 1:
+            if values[0].get("id"):
+                return ResultType.FOUND_ID
+            else:
+                return ResultType.NOT_FOUND
+        elif len(values) > 1:
             return ResultType.FOUND_MORE_IDS
-        else:
-            return ResultType.FOUND_ID
+        raise ActionException("Logical Error in Lookup Class")
 
-
-    def get_id_by_name(self, name: str) -> Optional[int]:
-        if len(self.name_to_ids[name]) == 1:
-            return self.name_to_ids[name][0]["id"]
+    def get_x_by_name(self, name: Union[str, Tuple[str, ...]], x: str) -> Optional[int]:
+        """Gets fieldname 'x' from value of name_to_ids-dict"""
+        if len(self.name_to_ids.get(name, [])) == 1:
+            return self.name_to_ids[name][0].get(x)
         return None
 
-    def get_name_by_id(self, id_: int) -> Optional[str]:
+    def get_name_by_id(self, id_: int) -> Optional[List[Union[str, Tuple[str, ...]]]]:
         if name := self.id_to_name.get(id_):
             return name
         return None
-
-    def read_missing_ids(self, ids: List[int]) -> None:
-        result = self.datastore.get_many(
-            [GetManyRequest(self.collection, ids, [self.field])],
-            lock_result=False,
-            use_changed_models=False,
-        )
-        self.id_to_name.update(
-            {
-                key: value.get(self.field, "")
-                for key, value in result[self.collection].items()
-            }
-        )
 
 
 class ImportMixin(SingularActionMixin):
@@ -220,6 +242,11 @@ class JsonUploadMixin(SingularActionMixin):
             "statistics": self.statistics,
             "state": self.import_state,
         }
+
+    def add_payload_index_to_action_data(self, action_data: ActionData) -> ActionData:
+        for payload_index, entry in enumerate(action_data):
+            entry["payload_index"] = payload_index
+        return action_data
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields
