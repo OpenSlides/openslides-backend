@@ -156,14 +156,12 @@ class UserCreateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                 },
                 "group/111": {"meeting_id": 11},
-            })
+            }
+        )
 
         response = self.request(
             "user.create",
-            {
-                "username": "test Xcdfgee",
-                "group_ids": [111]
-            },
+            {"username": "test Xcdfgee", "group_ids": [111]},
         )
         self.assert_status_code(response, 400)
         assert (
