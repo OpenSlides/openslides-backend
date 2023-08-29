@@ -29,6 +29,7 @@ class ImportState(str, Enum):
 
 class ResultType(Enum):
     """Used by Lookup to differ the possible results in check_duplicate."""
+
     FOUND_ID = 1
     FOUND_MORE_IDS = 2
     NOT_FOUND = 3
