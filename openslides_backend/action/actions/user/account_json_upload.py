@@ -177,7 +177,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
 
         if not entry.get("username") and self.row_state == ImportState.NEW:
             entry["username"] = {
-                "value": self.generate_username(entry),
+                "value": self.generate_username(entry) or entry.get("saml_id"),
                 "info": ImportState.GENERATED,
             }
 

@@ -403,7 +403,7 @@ class AccountJsonUpload(BaseActionTestCase):
             {
                 "data": [
                     {
-                        "saml_id": "test",
+                        "saml_id": "test_saml_id",
                         "password": "test2",
                         "default_password": "test3",
                     }
@@ -418,8 +418,8 @@ class AccountJsonUpload(BaseActionTestCase):
         ]
         data = worker["result"]["rows"][0]["data"]
         assert data == {
-            "saml_id": {"info": "new", "value": "test"},
-            "username": {"info": "generated", "value": ""},
+            "saml_id": {"info": "new", "value": "test_saml_id"},
+            "username": {"info": "generated", "value": "test_saml_id"},
             "can_change_own_password": False,
         }
 
