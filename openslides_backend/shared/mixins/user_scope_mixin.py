@@ -42,14 +42,6 @@ class UserScopeMixin(BaseServiceProvider):
             if "group_ids" in id_or_instance:
                 if "meeting_id" in id_or_instance:
                     meetings.add(id_or_instance["meeting_id"])
-                else:
-                    meeting_user = self.datastore.get(
-                        fqid_from_collection_and_id(
-                            "meeting_user", id_or_instance["id"]
-                        ),
-                        ["meeting_id"],
-                    )
-                    meetings.add(meeting_user["meeting_id"])
             committees_manager.update(
                 set(id_or_instance.get("committee_management_ids", []))
             )

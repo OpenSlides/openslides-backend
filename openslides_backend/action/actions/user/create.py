@@ -20,7 +20,6 @@ from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender
 class UserCreate(
     EmailCheckMixin,
     CreateAction,
-    UserMixin,
     CreateUpdatePermissionsMixin,
     PasswordMixin,
     LimitOfUserMixin,
