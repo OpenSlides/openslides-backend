@@ -66,7 +66,7 @@ class UserJsonImport(BaseActionTestCase):
         )
 
     def test_import_username_and_create(self) -> None:
-        response = self.request("user.import", {"id": 2, "import": True})
+        response = self.request("account.import", {"id": 2, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
@@ -75,13 +75,13 @@ class UserJsonImport(BaseActionTestCase):
         self.assert_model_not_exists("action_worker/2")
 
     def test_import_abort(self) -> None:
-        response = self.request("user.import", {"id": 2, "import": False})
+        response = self.request("account.import", {"id": 2, "import": False})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("action_worker/2")
         self.assert_model_not_exists("user/2")
 
     def test_import_wrong_action_worker(self) -> None:
-        response = self.request("user.import", {"id": 5, "import": True})
+        response = self.request("account.import", {"id": 5, "import": True})
         self.assert_status_code(response, 400)
         assert (
             "Wrong id doesn't point on account import data." in response.json["message"]
@@ -114,13 +114,13 @@ class UserJsonImport(BaseActionTestCase):
                 },
             }
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("user/2")
         self.assert_model_exists("user/1", {"first_name": "Testy"})
 
     def test_import_names_and_email_and_create(self) -> None:
-        response = self.request("user.import", {"id": 3, "import": True})
+        response = self.request("account.import", {"id": 3, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
@@ -159,7 +159,7 @@ class UserJsonImport(BaseActionTestCase):
                 {"saml_id": {"value": "testsaml", "info": ImportState.NEW}},
             )
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
@@ -182,7 +182,7 @@ class UserJsonImport(BaseActionTestCase):
                 ),
             }
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
@@ -205,7 +205,7 @@ class UserJsonImport(BaseActionTestCase):
                 ),
             }
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
@@ -230,7 +230,7 @@ class UserJsonImport(BaseActionTestCase):
                 ),
             }
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
@@ -262,7 +262,7 @@ class UserJsonImport(BaseActionTestCase):
                 ),
             }
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
@@ -270,7 +270,7 @@ class UserJsonImport(BaseActionTestCase):
             "Error: Want to create user, but missing username in import data."
         ]
 
-        response = self.request("user.import", {"id": 7, "import": True})
+        response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
@@ -288,7 +288,7 @@ class UserJsonImport(BaseActionTestCase):
                 },
             )
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
@@ -307,7 +307,7 @@ class UserJsonImport(BaseActionTestCase):
                 },
             )
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
@@ -345,7 +345,7 @@ class UserJsonImport(BaseActionTestCase):
                 }
             }
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][1]
         assert entry["state"] == ImportState.ERROR
@@ -371,7 +371,7 @@ class UserJsonImport(BaseActionTestCase):
                 ),
             }
         )
-        response = self.request("user.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
@@ -380,7 +380,7 @@ class UserJsonImport(BaseActionTestCase):
         ]
 
     def test_import_error_state(self) -> None:
-        response = self.request("user.import", {"id": 4, "import": True})
+        response = self.request("account.import", {"id": 4, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
@@ -388,12 +388,12 @@ class UserJsonImport(BaseActionTestCase):
         self.assert_model_exists("action_worker/4")
 
     def test_import_no_permission(self) -> None:
-        self.base_permission_test({}, "user.import", {"id": 2, "import": True})
+        self.base_permission_test({}, "account.import", {"id": 2, "import": True})
 
     def test_import_permission(self) -> None:
         self.base_permission_test(
             {},
-            "user.import",
+            "account.import",
             {"id": 2, "import": True},
             OrganizationManagementLevel.CAN_MANAGE_USERS,
         )

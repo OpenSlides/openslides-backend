@@ -11,8 +11,8 @@ from .update import UserUpdate
 from .user_mixin import DuplicateCheckMixin
 
 
-@register_action("user.import")
-class UserImport(DuplicateCheckMixin, ImportMixin):
+@register_action("account.import")
+class AccountImport(DuplicateCheckMixin, ImportMixin):
     """
     Action to import a result from the action_worker.
     """
