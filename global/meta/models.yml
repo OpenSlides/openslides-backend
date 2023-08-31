@@ -3825,6 +3825,9 @@ action_worker:
       - running
       - end
       - aborted
+      - warning
+      - error
+      - done
     restriction_mode: A
   created:
     type: timestamp

@@ -319,6 +319,17 @@ class JsonUploadMixin(BaseImportJsonUpload):
             entry["payload_index"] = payload_index
         return action_data
 
+    @staticmethod
+    def count_warnings_in_payload(data: Union[str, List[Dict[str, Any]]]) -> int:
+        count = 0
+        for col in data:
+            if type(col) == dict:
+                if col.get("info") == ImportState.WARNING:
+                    count += 1
+            elif type(col) == list:
+                count += JsonUploadMixin.count_warnings_in_payload(col)
+        return count
+
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields
         property_to_type = {

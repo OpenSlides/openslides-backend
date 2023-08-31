@@ -218,6 +218,7 @@ class AccountJsonUpload(BaseActionTestCase):
                     "saml_id": {"value": "12345", "info": ImportState.DONE},
                     "id": 3,
                     "username": {"value": "test", "info": "done", "id": 3},
+                    "default_password": {"info": "warning", "value": ""},
                 },
             },
             {

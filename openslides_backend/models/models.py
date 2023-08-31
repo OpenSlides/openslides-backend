@@ -2104,7 +2104,8 @@ class ActionWorker(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     state = fields.CharField(
-        required=True, constraints={"enum": ["running", "end", "aborted"]}
+        required=True,
+        constraints={"enum": ["running", "end", "aborted", "warning", "error", "done"]},
     )
     created = fields.TimestampField(required=True)
     timestamp = fields.TimestampField(required=True)

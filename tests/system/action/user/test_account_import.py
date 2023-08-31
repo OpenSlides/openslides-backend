@@ -6,7 +6,6 @@ from tests.system.action.base import BaseActionTestCase
 
 from .test_account_json_upload import AccountJsonUploadForUseInImport
 
-
 class AccountJsonImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
