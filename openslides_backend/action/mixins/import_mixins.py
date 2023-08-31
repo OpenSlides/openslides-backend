@@ -139,8 +139,10 @@ class ImportMixin(SingularActionMixin):
             raise ActionException(
                 f"Wrong id doesn't point on {self.import_name} import data."
             )
+        if worker.get("state") not in ImportState.__members__.values():
+            raise ActionException("Error in import: Missing valid state in stored worker.")
         if worker.get("state") == ImportState.ERROR:
-            raise ActionException("Error in import.")
+            raise ActionException("Error in import. Data will not be imported.")
         self.result = worker["result"]
         return instance
 
@@ -248,6 +250,17 @@ class JsonUploadMixin(SingularActionMixin):
         for payload_index, entry in enumerate(action_data):
             entry["payload_index"] = payload_index
         return action_data
+
+    @staticmethod
+    def count_warnings_in_payload(data: Union[str, List[Dict[str, Any]]]) -> int:
+        count = 0
+        for col in data:
+            if type(col) == dict:
+                if col.get("info") == ImportState.WARNING:
+                    count += 1
+            elif type(col) == list:
+                count += JsonUploadMixin.count_warnings_in_payload(col)
+        return count
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields

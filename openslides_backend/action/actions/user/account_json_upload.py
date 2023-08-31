@@ -80,9 +80,10 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         # generate statistics
         itemCount = len(self.rows)
         state_to_count = {state: 0 for state in ImportState}
-        for entry in self.rows:
-            state_to_count[entry["state"]] += 1
-            entry["data"].pop("payload_index", None)
+        for row in self.rows:
+            state_to_count[row["state"]] += 1
+            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(row.get("data", {}).values())
+            row["data"].pop("payload_index", None)
 
         self.statistics = [
             {"name": "total", "value": itemCount},
@@ -181,7 +182,6 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 "info": ImportState.GENERATED,
             }
 
-        self.handle_default_password(entry)
         if saml_id := entry.get("saml_id"):
             check_result = self.all_saml_id_lookup.check_duplicate(saml_id)
             if id_ := entry.get("id"):
@@ -214,12 +214,11 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                         "value": saml_id,
                         "info": ImportState.NEW,
                     }
-
-            if entry.get("password") or entry.get("default_password"):
-                messages.append("Removed password or default_password from entry.")
-                entry.pop("password", None)
-                entry.pop("default_password", None)
-                entry["can_change_own_password"] = False
+            if entry["saml_id"]["info"] == ImportState.DONE or entry.get("default_password"):
+                entry["default_password"] = {"value": "", "info": ImportState.WARNING}
+                messages.append("Will remove password and default_password and forbid changing your OpenSlides password.")
+        else:
+            self.handle_default_password(entry)
         return {"state": self.row_state, "messages": messages, "data": entry}
 
     def handle_default_password(self, entry: Dict[str, Any]) -> None:
