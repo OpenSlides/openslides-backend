@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "295720b86599b69e9340af0427f4f2bc"
+MODELS_YML_CHECKSUM = "583c60c2e2ead61990169ab080bc9173"
 
 
 class Organization(Model):
@@ -2104,7 +2104,8 @@ class ActionWorker(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     state = fields.CharField(
-        required=True, constraints={"enum": ["running", "end", "aborted"]}
+        required=True,
+        constraints={"enum": ["running", "end", "aborted", "warning", "error", "done"]},
     )
     created = fields.TimestampField(required=True)
     timestamp = fields.TimestampField(required=True)

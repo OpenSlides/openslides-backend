@@ -5,12 +5,13 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from tests.system.action.base import BaseActionTestCase
 
 
-class UserJsonImport(BaseActionTestCase):
+class AccountJsonImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.set_models(
             {
                 "action_worker/2": {
+                    "state": ImportState.DONE,
                     "result": {
                         "import": "account",
                         "rows": [
@@ -29,6 +30,7 @@ class UserJsonImport(BaseActionTestCase):
                     },
                 },
                 "action_worker/3": {
+                    "state": ImportState.DONE,
                     "result": {
                         "import": "account",
                         "rows": [
@@ -50,6 +52,7 @@ class UserJsonImport(BaseActionTestCase):
                     },
                 },
                 "action_worker/4": {
+                    "state": ImportState.ERROR,
                     "result": {
                         "import": "account",
                         "rows": [
@@ -68,10 +71,12 @@ class UserJsonImport(BaseActionTestCase):
     def test_import_username_and_create(self) -> None:
         response = self.request("account.import", {"id": 2, "import": True})
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
+        user2 = self.assert_model_exists(
             "user/2",
             {"username": "test", "first_name": "Testy"},
         )
+        assert user2.get("default_password")
+        assert user2.get("password")
         self.assert_model_not_exists("action_worker/2")
 
     def test_import_abort(self) -> None:
@@ -94,6 +99,7 @@ class UserJsonImport(BaseActionTestCase):
                     "username": "test",
                 },
                 "action_worker/6": {
+                    "state": ImportState.DONE,
                     "result": {
                         "import": "account",
                         "rows": [
