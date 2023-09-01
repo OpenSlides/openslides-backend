@@ -18,16 +18,20 @@ from ..meeting_user.set_data import MeetingUserSetData
 
 
 class UsernameMixin(Action):
-    def generate_usernames(self, usernames: List[str]) -> List[str]:
+    def generate_usernames(
+        self, usernames: List[str], fix_usernames: Optional[List[str]] = None
+    ) -> List[str]:
         """
         Generate unique usernames in parallel to a given list of usernames
         """
+        if fix_usernames is None:
+            fix_usernames = []
         used_usernames: List[str] = []
         for username in usernames:
             template_username = username
             count = 0
             while True:
-                if username in used_usernames:
+                if username in used_usernames or username in fix_usernames:
                     count += 1
                     username = template_username + str(count)
                     continue
@@ -94,7 +98,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
 
-        def check_existence(what:str) -> None:
+        def check_existence(what: str) -> None:
             if what in instance:
                 if not instance[what]:
                     raise ActionException(f"This {what} is forbidden.")

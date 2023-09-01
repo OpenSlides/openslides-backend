@@ -2,11 +2,12 @@ from time import time
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from tests.system.action.base import BaseActionTestCase
 
 
 class AccountJsonUpload(BaseActionTestCase):
-    def test_json_upload_simple(self) -> None:
+    def test_json_upload_simple(self) -> int:
         start_time = int(time())
         response = self.request(
             "account.json_upload",
@@ -34,10 +35,16 @@ class AccountJsonUpload(BaseActionTestCase):
                 "is_physical_person": False,
             },
         }
-        worker = self.assert_model_exists("action_worker/1")
+        action_worker_id = response.json["results"][0][0].get("id")
+        action_worker_fqid = fqid_from_collection_and_id(
+            "action_worker", action_worker_id
+        )
+        worker = self.assert_model_exists(action_worker_fqid)
         assert worker["result"]["import"] == "account"
         assert start_time <= worker["created"] <= end_time
         assert start_time <= worker["timestamp"] <= end_time
+
+        return action_worker_id
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
@@ -174,10 +181,11 @@ class AccountJsonUpload(BaseActionTestCase):
             {
                 "state": ImportState.ERROR,
                 "messages": [
-                    "The account with id 3 was found multiple times by different search criteria.", "Will remove password and default_password and forbid changing your OpenSlides password."
+                    "The account with id 3 was found multiple times by different search criteria.",
+                    "Will remove password and default_password and forbid changing your OpenSlides password.",
                 ],
                 "data": {
-                    "saml_id": {"value": "12345", "info": "done"},
+                    "saml_id": {"value": "12345", "info": "new"},
                     "id": 3,
                     "username": {"value": "test", "info": "done", "id": 3},
                     "default_password": {"info": "warning", "value": ""},
@@ -237,6 +245,7 @@ class AccountJsonUpload(BaseActionTestCase):
                     "first_name": "Max",
                     "last_name": "Mustermann",
                     "email": "max@mustermann.org",
+                    "username": {"value": "MaxMustermann", "info": "generated"},
                 },
             }
         ]
@@ -398,16 +407,33 @@ class AccountJsonUpload(BaseActionTestCase):
             == ImportState.GENERATED
         )
 
-    def test_json_upload_saml_id(self) -> None:
+    def test_json_upload_saml_id_new(self) -> None:
+        self.set_models(
+            {
+                "user/34": {
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "test@ntvtn.de",
+                    "username": "test_saml_id",
+                }
+            }
+        )
+
         response = self.request(
             "account.json_upload",
             {
                 "data": [
                     {
                         "saml_id": "test_saml_id",
-                        "password": "test2",
-                        "default_password": "test3",
-                    }
+                        "default_password": "test2",
+                    },
+                    {
+                        "username": "test_saml_id1",
+                    },
+                    {
+                        "first_name": "test_sa",
+                        "last_name": "ml_id2",
+                    },
                 ],
             },
         )
@@ -417,10 +443,60 @@ class AccountJsonUpload(BaseActionTestCase):
         assert worker["result"]["rows"][0]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
+        assert worker["result"]["rows"][0]["state"] == ImportState.NEW
+        data0 = worker["result"]["rows"][0]["data"]
+        assert data0 == {
+            "saml_id": {"info": "new", "value": "test_saml_id"},
+            "username": {"info": "generated", "value": "test_saml_id2"},
+            "default_password": {"info": "warning", "value": ""},
+        }
+        assert worker["result"]["rows"][1]["data"]["username"] == {
+            "info": "done",
+            "value": "test_saml_id1",
+        }
+        assert worker["result"]["rows"][2]["data"]["username"] == {
+            "info": "generated",
+            "value": "test_saml_id21",
+        }
+        assert worker["result"]["rows"][2]["data"]["last_name"] == "ml_id2"
+        assert worker["result"]["rows"][2]["data"]["first_name"] == "test_sa"
+
+    def test_json_upload_saml_id_done(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "test",
+                    "password": "secret",
+                    "default_password": "secret",
+                    "can_change_own_password": True,
+                }
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test",
+                        "saml_id": "test_saml_id",
+                        "default_password": "secret2",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        worker = self.assert_model_exists("action_worker/1")
+        assert worker["state"] == ImportState.WARNING
+        assert worker["result"]["import"] == "account"
+        assert worker["result"]["rows"][0]["state"] == ImportState.DONE
+        assert worker["result"]["rows"][0]["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password."
+        ]
         data = worker["result"]["rows"][0]["data"]
         assert data == {
+            "id": 2,
             "saml_id": {"info": "new", "value": "test_saml_id"},
-            "username": {"info": "generated", "value": "test_saml_id"},
+            "username": {"info": "done", "value": "test", "id": 2},
             "default_password": {"info": "warning", "value": ""},
         }
 
