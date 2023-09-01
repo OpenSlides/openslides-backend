@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....action.action import Action
+from ....action.action import Action, original_instances
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....presenter.search_users import SearchUsers
 from ....services.datastore.interface import DatastoreService
@@ -13,6 +13,7 @@ from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, optional_id_schema
+from ...util.typing import ActionData
 from ..meeting_user.set_data import MeetingUserSetData
 
 
@@ -83,31 +84,33 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "group_ids": id_list_schema,
     }
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
-        super().validate_instance(instance)
-        if "meeting_id" not in instance and any(
-            key in self.transfer_field_list for key in instance.keys()
-        ):
-            raise ActionException(
-                "Missing meeting_id in instance, because meeting related fields used"
-            )
+    @original_instances
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
+            for field in ("username", "first_name", "last_name", "email", "saml_id"):
+                self.strip_field(field, instance)
+        return super().get_updated_instances(action_data)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        for field in ("username", "first_name", "last_name", "email"):
-            self.strip_field(field, instance)
-        if "username" in instance:
-            if not instance["username"]:
-                raise ActionException("This username is forbidden.")
-            result = self.datastore.filter(
-                "user",
-                FilterOperator("username", "=", instance["username"]),
-                ["id"],
-            )
-            if result and instance["id"] not in result.keys():
-                raise ActionException(
-                    f"A user with the username {instance['username']} already exists."
+
+        def check_existence(what:str) -> None:
+            if what in instance:
+                if not instance[what]:
+                    raise ActionException(f"This {what} is forbidden.")
+                result = self.datastore.filter(
+                    "user",
+                    FilterOperator(what, "=", instance[what]),
+                    ["id"],
                 )
+                if result and instance["id"] not in result.keys():
+                    raise ActionException(
+                        f"A user with the {what} {instance[what]} already exists."
+                    )
+
+        check_existence("username")
+        check_existence("saml_id")
+
         self.check_meeting_and_users(
             instance, fqid_from_collection_and_id("user", instance["id"])
         )
