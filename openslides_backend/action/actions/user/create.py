@@ -64,7 +64,7 @@ class UserCreate(
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         self.meeting_id: Optional[int] = instance.get("meeting_id")
-        instance = super().update_instance(instance)
+
         if instance.get("is_active"):
             self.check_limit_of_user(1)
         saml_id = instance.get("saml_id")
@@ -72,7 +72,10 @@ class UserCreate(
             if saml_id:
                 instance["username"] = saml_id
             else:
+                if not (instance.get("first_name") or instance.get("last_name")):
+                    raise ActionException("Need username or first_name or last_name")
                 instance["username"] = self.generate_username(instance)
+        instance = super().update_instance(instance)
         if saml_id:
             instance["can_change_own_password"] = False
             if instance.get("can_change_own_password") or instance.get(
@@ -85,12 +88,6 @@ class UserCreate(
             if not instance.get("default_password"):
                 instance["default_password"] = get_random_password()
             instance = self.set_password(instance)
-        if not (
-            instance.get("username")
-            or instance.get("first_name")
-            or instance.get("last_name")
-        ):
-            raise ActionException("Need username or first_name or last_name")
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_helper(self.datastore, instance)
         return instance
