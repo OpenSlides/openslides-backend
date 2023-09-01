@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -71,6 +71,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         data = instance.pop("data")
         data = self.add_payload_index_to_action_data(data)
         self.setup_lookups(data)
+        self.create_usernames(data)
 
         self.rows = [
             self.validate_entry(entry, payload_index)
@@ -82,7 +83,9 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         state_to_count = {state: 0 for state in ImportState}
         for row in self.rows:
             state_to_count[row["state"]] += 1
-            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(row.get("data", {}).values())
+            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
+                row.get("data", {}).values()
+            )
             row["data"].pop("payload_index", None)
 
         self.statistics = [
@@ -104,9 +107,13 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
     ) -> Dict[str, Any]:
         messages: List[str] = []
         id_: Optional[int] = None
-        if username := entry.get("username"):
+        old_saml_id: Optional[str] = None
+        if (username := entry.get("username")) and type(username) == str:
             check_result = self.username_lookup.check_duplicate(username)
-            id_ = self.username_lookup.get_x_by_name(username, "id")
+            id_ = cast(int, self.username_lookup.get_x_by_name(username, "id"))
+            old_saml_id = cast(
+                str, self.all_saml_id_lookup.get_x_by_name(username, "saml_id")
+            )
             if check_result == ResultType.FOUND_ID and id_ != 0:
                 self.row_state = ImportState.DONE
                 entry["id"] = id_
@@ -130,9 +137,9 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 messages.append("Found more users with the same username")
         elif saml_id := entry.get("saml_id"):
             check_result = self.saml_id_lookup.check_duplicate(saml_id)
-            id_ = self.saml_id_lookup.get_x_by_name(saml_id, "id")
-            username = self.saml_id_lookup.get_x_by_name(saml_id, "username")
+            id_ = cast(int, self.saml_id_lookup.get_x_by_name(saml_id, "id"))
             if check_result == ResultType.FOUND_ID and id_ != 0:
+                username = self.saml_id_lookup.get_x_by_name(saml_id, "username")
                 self.row_state = ImportState.DONE
                 entry["id"] = id_
                 entry["username"] = {
@@ -152,11 +159,13 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
             else:
                 names_and_email = self._names_and_email(entry)
                 check_result = self.names_email_lookup.check_duplicate(names_and_email)
-                id_ = self.names_email_lookup.get_x_by_name(names_and_email, "id")
-                username = self.names_email_lookup.get_x_by_name(
-                    names_and_email, "username"
+                id_ = cast(
+                    int, self.names_email_lookup.get_x_by_name(names_and_email, "id")
                 )
                 if check_result == ResultType.FOUND_ID and id_ != 0:
+                    username = self.names_email_lookup.get_x_by_name(
+                        names_and_email, "username"
+                    )
                     self.row_state = ImportState.DONE
                     entry["id"] = id_
                     entry["username"] = {
@@ -176,12 +185,6 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 f"The account with id {id_} was found multiple times by different search criteria."
             )
 
-        if not entry.get("username") and self.row_state == ImportState.NEW:
-            entry["username"] = {
-                "value": self.generate_username(entry) or entry.get("saml_id"),
-                "info": ImportState.GENERATED,
-            }
-
         if saml_id := entry.get("saml_id"):
             check_result = self.all_saml_id_lookup.check_duplicate(saml_id)
             if id_ := entry.get("id"):
@@ -192,7 +195,9 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 ):
                     entry["saml_id"] = {
                         "value": saml_id,
-                        "info": ImportState.DONE,
+                        "info": ImportState.DONE
+                        if saml_id == old_saml_id
+                        else ImportState.NEW,
                     }
                 else:
                     self.row_state = ImportState.ERROR
@@ -214,9 +219,13 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                         "value": saml_id,
                         "info": ImportState.NEW,
                     }
-            if entry["saml_id"]["info"] == ImportState.DONE or entry.get("default_password"):
+            if entry["saml_id"]["info"] == ImportState.NEW or entry.get(
+                "default_password"
+            ):
                 entry["default_password"] = {"value": "", "info": ImportState.WARNING}
-                messages.append("Will remove password and default_password and forbid changing your OpenSlides password.")
+                messages.append(
+                    "Will remove password and default_password and forbid changing your OpenSlides password."
+                )
         else:
             self.handle_default_password(entry)
         return {"state": self.row_state, "messages": messages, "data": entry}
@@ -245,6 +254,32 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
             entry.get("email", ""),
         )
 
+    def create_usernames(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        usernames: List[str] = []
+        fix_usernames: List[str] = []
+        payload_indices: List[int] = []
+
+        for entry in data:
+            if "username" not in entry.keys():
+                if saml_id := entry.get("saml_id"):
+                    username = saml_id
+                else:
+                    username = entry.get("first_name", "") + entry.get("last_name", "")
+                usernames.append(username)
+                payload_indices.append(entry["payload_index"])
+            else:
+                fix_usernames.append(entry["username"])
+
+        usernames = self.generate_usernames(usernames, fix_usernames)
+
+        for index, username in zip(payload_indices, usernames):
+            data[index]["username"] = {
+                "value": username,
+                "info": ImportState.GENERATED,
+            }
+            self.username_lookup.add_item(data[index])
+        return data
+
     def setup_lookups(self, data: List[Dict[str, Any]]) -> None:
         self.username_lookup = Lookup(
             self.datastore,
@@ -255,6 +290,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 if (username := entry.get("username"))
             ],
             field="username",
+            mapped_fields=["saml_id"],
         )
         self.saml_id_lookup = Lookup(
             self.datastore,
@@ -291,7 +327,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
             "user",
             [(saml_id, entry) for entry in data if (saml_id := entry.get("saml_id"))],
             field="saml_id",
-            mapped_fields=["username"],
+            mapped_fields=["username", "saml_id"],
         )
 
         self.all_id_mapping: Dict[int, List[Union[str, Tuple[str, ...]]]] = defaultdict(

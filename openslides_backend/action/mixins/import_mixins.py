@@ -2,7 +2,7 @@ import csv
 from collections import defaultdict
 from enum import Enum
 from time import mktime, strptime, time
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
@@ -49,9 +49,11 @@ class Lookup:
         self.datastore = datastore
         self.collection = collection
         self.field = field
-        self.name_to_ids: Dict[Union[str, Tuple[str, ...]], List[Dict[str, Any]]] = {
-            name: [] for name, _ in name_entries
-        }
+        self.name_to_ids: Dict[
+            Union[str, Tuple[str, ...]], List[Dict[str, Any]]
+        ] = defaultdict(list)
+        for name, _ in name_entries:
+            self.name_to_ids[name] = []
         self.id_to_name: Dict[int, List[Union[str, Tuple[str, ...]]]] = defaultdict(
             list
         )
@@ -79,17 +81,11 @@ class Lookup:
                 mapped_fields,
                 lock_result=False,
             ).values():
-                if type(field) == str:
-                    self.name_to_ids[entry[field]].append(entry)
-                    self.id_to_name[entry["id"]].append(entry[field])
-                else:
-                    key: Tuple[Any, ...] = tuple(entry.get(f, "") for f in field)
-                    self.name_to_ids[key].append(entry)
-                    self.id_to_name[entry["id"]].append(key)
+                self.add_item(entry)
 
         # Add action data items not found in database to lookup dict
         for name, entry in name_entries:
-            if not (values := self.name_to_ids.get(name, [])):
+            if not (values := cast(list, self.name_to_ids[name])):
                 values.append(entry)
             else:
                 if not values[0].get("id"):
@@ -105,7 +101,9 @@ class Lookup:
             return ResultType.FOUND_MORE_IDS
         raise ActionException("Logical Error in Lookup Class")
 
-    def get_x_by_name(self, name: Union[str, Tuple[str, ...]], x: str) -> Optional[int]:
+    def get_x_by_name(
+        self, name: Union[str, Tuple[str, ...]], x: str
+    ) -> Optional[Union[int, str]]:
         """Gets fieldname 'x' from value of name_to_ids-dict"""
         if len(self.name_to_ids.get(name, [])) == 1:
             return self.name_to_ids[name][0].get(x)
@@ -116,8 +114,34 @@ class Lookup:
             return name
         return None
 
+    def add_item(self, entry: Dict[str, Any]) -> None:
+        if type(self.field) == str:
+            if type(key := entry[self.field]) == dict:
+                key = key["value"]
+            self.name_to_ids[key].append(entry)
+            if entry.get("id"):
+                self.id_to_name[entry["id"]].append(entry[self.field])
+        else:
+            key = tuple(entry.get(f, "") for f in self.field)
+            self.name_to_ids[key].append(entry)
+            if entry.get("id"):
+                self.id_to_name[entry["id"]].append(key)
 
-class ImportMixin(SingularActionMixin):
+
+class BaseImportJsonUpload(SingularActionMixin):
+    @staticmethod
+    def count_warnings_in_payload(data: Union[List[Union[Dict[str, str], List[Any]]], Dict[str, Any]]) -> int:
+        count = 0
+        for col in data:
+            if type(col) == dict:
+                if col.get("info") == ImportState.WARNING:
+                    count += 1
+            elif type(col) == list:
+                count += BaseImportJsonUpload.count_warnings_in_payload(col)
+        return count
+
+
+class ImportMixin(BaseImportJsonUpload):
     """
     Mixin for import actions. It works together with the json_upload.
     """
@@ -140,7 +164,9 @@ class ImportMixin(SingularActionMixin):
                 f"Wrong id doesn't point on {self.import_name} import data."
             )
         if worker.get("state") not in ImportState.__members__.values():
-            raise ActionException("Error in import: Missing valid state in stored worker.")
+            raise ActionException(
+                "Error in import: Missing valid state in stored worker."
+            )
         if worker.get("state") == ImportState.ERROR:
             raise ActionException("Error in import. Data will not be imported.")
         self.result = worker["result"]
@@ -188,7 +214,7 @@ class StatisticEntry(TypedDict):
     value: int
 
 
-class JsonUploadMixin(SingularActionMixin):
+class JsonUploadMixin(BaseImportJsonUpload):
     headers: List[Dict[str, Any]]
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
@@ -250,17 +276,6 @@ class JsonUploadMixin(SingularActionMixin):
         for payload_index, entry in enumerate(action_data):
             entry["payload_index"] = payload_index
         return action_data
-
-    @staticmethod
-    def count_warnings_in_payload(data: Union[str, List[Dict[str, Any]]]) -> int:
-        count = 0
-        for col in data:
-            if type(col) == dict:
-                if col.get("info") == ImportState.WARNING:
-                    count += 1
-            elif type(col) == list:
-                count += JsonUploadMixin.count_warnings_in_payload(col)
-        return count
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields

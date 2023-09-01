@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from openslides_backend.action.mixins.import_mixins import ImportState
+from openslides_backend.action.mixins.import_mixins import ImportMixin, ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -65,6 +65,32 @@ class AccountJsonImport(BaseActionTestCase):
                     },
                 },
                 "action_worker/5": {"result": None},
+                "user/2": {
+                    "username": "test",
+                    "default_password": "secret",
+                    "password": "secret",
+                },
+                "action_worker/6": {
+                    "state": ImportState.WARNING,
+                    "result": {
+                        "import": "account",
+                        "rows": [
+                            {
+                                "state": ImportState.DONE,
+                                "messages": ["test"],
+                                "data": {
+                                    "username": {
+                                        "value": "test",
+                                        "info": ImportState.DONE,
+                                        "id": 2,
+                                    },
+                                    "saml_id": "12345",
+                                    "default_password": "test2",
+                                },
+                            },
+                        ],
+                    },
+                },
             }
         )
 
@@ -140,15 +166,25 @@ class AccountJsonImport(BaseActionTestCase):
         )
 
     def get_action_worker_data(
-        self, number: int, state: ImportState, data: Dict[str, Any]
+        self, number: int, row_state: ImportState, data: Dict[str, Any]
     ) -> Dict[str, Any]:
+        def get_import_state() -> ImportState:
+            """Precondition: There is only 1 row(_state)"""
+            if row_state == ImportState.ERROR:
+                return row_state
+            if ImportMixin.count_warnings_in_payload(data):
+                return ImportState.WARNING
+            else:
+                return ImportState.DONE
+
         return {
             f"action_worker/{number}": {
+                "state": get_import_state(),
                 "result": {
                     "import": "account",
                     "rows": [
                         {
-                            "state": state,
+                            "state": row_state,
                             "messages": [],
                             "data": data,
                         },
@@ -385,13 +421,19 @@ class AccountJsonImport(BaseActionTestCase):
             "Error: want to update, but found search data doesn't match."
         ]
 
-    def test_import_error_state(self) -> None:
+    def test_import_error_state_action_worker4(self) -> None:
         response = self.request("account.import", {"id": 4, "import": True})
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Error in import. Data will not be imported."
+        self.assert_model_exists("action_worker/4")
+
+    def test_import_warning_state_action_worker6(self) -> None:
+        response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
-        assert entry["state"] == ImportState.ERROR
-        assert entry["messages"] == ["test", "Error in import."]
-        self.assert_model_exists("action_worker/4")
+        assert entry["state"] == ImportState.WARNING
+        assert entry["messages"] == ["test"]
+        self.assert_model_exists("action_worker/6")
 
     def test_import_no_permission(self) -> None:
         self.base_permission_test({}, "account.import", {"id": 2, "import": True})
