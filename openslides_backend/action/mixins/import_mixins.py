@@ -143,6 +143,18 @@ class Lookup:
             if entry.get("id"):
                 self.id_to_name[entry["id"]].append(key)
 
+    def add_item(self, entry: Dict[str, Any]) -> None:
+        if type(self.field) == str:
+            if type(key := entry[self.field]) == dict:
+                key = key["value"]
+            self.name_to_ids[key].append(entry)
+            if entry.get("id"):
+                self.id_to_name[entry["id"]].append(entry[self.field])
+        else:
+            key = tuple(entry.get(f, "") for f in self.field)
+            self.name_to_ids[key].append(entry)
+            if entry.get("id"):
+                self.id_to_name[entry["id"]].append(key)
 
 class BaseImportJsonUpload(SingularActionMixin):
     @staticmethod
@@ -318,17 +330,6 @@ class JsonUploadMixin(BaseImportJsonUpload):
         for payload_index, entry in enumerate(action_data):
             entry["payload_index"] = payload_index
         return action_data
-
-    @staticmethod
-    def count_warnings_in_payload(data: Union[str, List[Dict[str, Any]]]) -> int:
-        count = 0
-        for col in data:
-            if type(col) == dict:
-                if col.get("info") == ImportState.WARNING:
-                    count += 1
-            elif type(col) == list:
-                count += JsonUploadMixin.count_warnings_in_payload(col)
-        return count
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields
