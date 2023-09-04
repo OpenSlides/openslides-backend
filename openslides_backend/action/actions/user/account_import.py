@@ -43,7 +43,8 @@ class AccountImport(DuplicateCheckMixin, ImportMixin):
                 if field in entry["data"]:
                     if field == "username" and "id" in entry["data"][field]:
                         entry["data"]["id"] = entry["data"][field]["id"]
-                    entry["data"][field] = entry["data"][field]["value"]
+                    if type(dvalue := entry["data"][field]) == dict:
+                        entry["data"][field] = dvalue["value"]
 
         search_data_list = [
             {

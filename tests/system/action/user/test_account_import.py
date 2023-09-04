@@ -196,15 +196,15 @@ class AccountJsonImport(BaseActionTestCase):
     def test_import_with_saml_id(self) -> None:
         self.set_models(
             self.get_action_worker_data(
-                6,
+                7,
                 ImportState.NEW,
                 {"saml_id": {"value": "testsaml", "info": ImportState.NEW}},
             )
         )
-        response = self.request("account.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2",
+            "user/3",
             {
                 "username": "testsaml",
                 "saml_id": "testsaml",
