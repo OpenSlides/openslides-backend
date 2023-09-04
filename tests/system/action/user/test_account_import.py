@@ -84,8 +84,15 @@ class AccountJsonImport(BaseActionTestCase):
                                         "info": ImportState.DONE,
                                         "id": 2,
                                     },
-                                    "saml_id": "12345",
-                                    "default_password": "test2",
+                                    "saml_id": {
+                                        "value": "12345",
+                                        "info": ImportState.DONE,
+                                        "id": 2,
+                                    },
+                                    "default_password": {
+                                        "value": "test2",
+                                        "info": ImportState.WARNING,
+                                    },
                                 },
                             },
                         ],
@@ -431,9 +438,9 @@ class AccountJsonImport(BaseActionTestCase):
         response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
-        assert entry["state"] == ImportState.WARNING
+        assert entry["state"] == ImportState.DONE
         assert entry["messages"] == ["test"]
-        self.assert_model_exists("action_worker/6")
+        self.assert_model_not_exists("action_worker/6")
 
     def test_import_no_permission(self) -> None:
         self.base_permission_test({}, "account.import", {"id": 2, "import": True})
