@@ -89,7 +89,10 @@ class ChatGroupSortActionTest(BaseActionTestCase):
             {"meeting_id": 222, "chat_group_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Id 32 not in db_instances." in response.json["message"]
+        assert (
+            "chat_group sorting failed, because element chat_group/32 doesn't exist."
+            in response.json["message"]
+        )
 
     def test_sort_additional_chat_groups_in_meeting(self) -> None:
         self.set_models(
@@ -118,7 +121,10 @@ class ChatGroupSortActionTest(BaseActionTestCase):
             {"meeting_id": 222, "chat_group_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Additional db_instances found." in response.json["message"]
+        assert (
+            "chat_group sorting failed, because some elements were not included in the call."
+            in response.json["message"]
+        )
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
