@@ -75,6 +75,10 @@ class UserUpdate(
             raise ActionException(
                 f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
             )
+        if instance.get("saml_id") and not user.get("saml_id"):
+            instance["can_change_own_password"] = False
+            instance["default_password"] = ""
+            instance["password"] = ""
 
         if (
             instance["id"] == self.user_id
