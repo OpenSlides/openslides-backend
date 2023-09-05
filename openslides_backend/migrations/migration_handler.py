@@ -34,7 +34,7 @@ class MigrationHandler(BaseHandler):
     migration_running = False
     migrate_thread_stream: Optional[StringIO] = None
     migrate_thread_stream_can_be_closed: bool = False
-    migrate_thread_exception: Optional[MigrationException] = None
+    migrate_thread_exception: Optional[Exception] = None
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
@@ -92,7 +92,7 @@ class MigrationHandler(BaseHandler):
         handler = MigrationWrapper(verbose, self.write_line)
         try:
             return handler.execute_command(command)
-        except MigrationException as e:
+        except Exception as e:
             MigrationHandler.migrate_thread_exception = e
             self.logger.exception(e)
         finally:
