@@ -112,7 +112,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
             check_result = self.username_lookup.check_duplicate(username)
             id_ = cast(int, self.username_lookup.get_x_by_name(username, "id"))
             old_saml_id = cast(
-                str, self.all_saml_id_lookup.get_x_by_name(username, "saml_id")
+                str, self.username_lookup.get_x_by_name(username, "saml_id")
             )
             if check_result == ResultType.FOUND_ID and id_ != 0:
                 self.row_state = ImportState.DONE
@@ -196,8 +196,8 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                     entry["saml_id"] = {
                         "value": saml_id,
                         "info": ImportState.DONE
-                        if saml_id == old_saml_id
-                        else ImportState.NEW,
+                        if old_saml_id
+                        else ImportState.NEW,  # only if newly set
                     }
                 else:
                     self.row_state = ImportState.ERROR

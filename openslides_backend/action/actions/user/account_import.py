@@ -132,10 +132,8 @@ class AccountImport(DuplicateCheckMixin, ImportMixin):
                         "Error: want to update, but found search data doesn't match."
                     )
                 else:
-                    for field in ("username", "saml_id"):
-                        if field in entry["data"]:
-                            del entry["data"][field]
-
+                    if "username" in entry["data"]:
+                        del entry["data"]["username"]
                     update_action_payload.append(entry["data"])
             else:
                 self.error = True

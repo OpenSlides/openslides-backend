@@ -407,99 +407,6 @@ class AccountJsonUpload(BaseActionTestCase):
             == ImportState.GENERATED
         )
 
-    def test_json_upload_saml_id_new(self) -> None:
-        self.set_models(
-            {
-                "user/34": {
-                    "first_name": "Max",
-                    "last_name": "Mustermann",
-                    "email": "test@ntvtn.de",
-                    "username": "test_saml_id",
-                }
-            }
-        )
-
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [
-                    {
-                        "saml_id": "test_saml_id",
-                        "default_password": "test2",
-                    },
-                    {
-                        "username": "test_saml_id1",
-                    },
-                    {
-                        "first_name": "test_sa",
-                        "last_name": "ml_id2",
-                    },
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        worker = self.assert_model_exists("action_worker/1")
-        assert worker["result"]["import"] == "account"
-        assert worker["result"]["rows"][0]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
-        ]
-        assert worker["result"]["rows"][0]["state"] == ImportState.NEW
-        data0 = worker["result"]["rows"][0]["data"]
-        assert data0 == {
-            "saml_id": {"info": "new", "value": "test_saml_id"},
-            "username": {"info": "generated", "value": "test_saml_id2"},
-            "default_password": {"info": "warning", "value": ""},
-        }
-        assert worker["result"]["rows"][1]["data"]["username"] == {
-            "info": "done",
-            "value": "test_saml_id1",
-        }
-        assert worker["result"]["rows"][2]["data"]["username"] == {
-            "info": "generated",
-            "value": "test_saml_id21",
-        }
-        assert worker["result"]["rows"][2]["data"]["last_name"] == "ml_id2"
-        assert worker["result"]["rows"][2]["data"]["first_name"] == "test_sa"
-
-    def test_json_upload_saml_id_done(self) -> None:
-        self.set_models(
-            {
-                "user/2": {
-                    "username": "test",
-                    "password": "secret",
-                    "default_password": "secret",
-                    "can_change_own_password": True,
-                }
-            }
-        )
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [
-                    {
-                        "username": "test",
-                        "saml_id": "test_saml_id",
-                        "default_password": "secret2",
-                    }
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        worker = self.assert_model_exists("action_worker/1")
-        assert worker["state"] == ImportState.WARNING
-        assert worker["result"]["import"] == "account"
-        assert worker["result"]["rows"][0]["state"] == ImportState.DONE
-        assert worker["result"]["rows"][0]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
-        ]
-        data = worker["result"]["rows"][0]["data"]
-        assert data == {
-            "id": 2,
-            "saml_id": {"info": "new", "value": "test_saml_id"},
-            "username": {"info": "done", "value": "test", "id": 2},
-            "default_password": {"info": "warning", "value": ""},
-        }
-
     def test_json_upload_duplicated_one_saml_id(self) -> None:
         self.set_models(
             {
@@ -677,3 +584,133 @@ class AccountJsonUpload(BaseActionTestCase):
             {"data": [{"username": "test"}]},
             OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
+
+
+class AccountJsonUploadForUseInImport(BaseActionTestCase):
+    def json_upload_saml_id_new(self) -> None:
+        self.set_models(
+            {
+                "user/34": {
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "test@ntvtn.de",
+                    "username": "test_saml_id",
+                }
+            }
+        )
+
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "saml_id": "test_saml_id",
+                        "default_password": "test2",
+                    },
+                    {
+                        "username": "test_saml_id1",
+                    },
+                    {
+                        "first_name": "test_sa",
+                        "last_name": "ml_id2",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        worker = self.assert_model_exists("action_worker/1")
+        assert worker["result"]["import"] == "account"
+        assert worker["result"]["rows"][0]["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password."
+        ]
+        assert worker["result"]["rows"][0]["state"] == ImportState.NEW
+        data0 = worker["result"]["rows"][0]["data"]
+        assert data0 == {
+            "saml_id": {"info": "new", "value": "test_saml_id"},
+            "username": {"info": "generated", "value": "test_saml_id2"},
+            "default_password": {"info": "warning", "value": ""},
+        }
+        assert worker["result"]["rows"][1]["data"]["username"] == {
+            "info": "done",
+            "value": "test_saml_id1",
+        }
+        assert worker["result"]["rows"][2]["data"]["username"] == {
+            "info": "generated",
+            "value": "test_saml_id21",
+        }
+        assert worker["result"]["rows"][2]["data"]["last_name"] == "ml_id2"
+        assert worker["result"]["rows"][2]["data"]["first_name"] == "test_sa"
+
+    def json_upload_set_saml_id_in_existing_account(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "test",
+                    "password": "secret",
+                    "default_password": "secret",
+                    "can_change_own_password": True,
+                    "default_vote_weight": "2.300000",
+                }
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test",
+                        "saml_id": "test_saml_id",
+                        "default_password": "secret2",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        worker = self.assert_model_exists("action_worker/1")
+        assert worker["state"] == ImportState.WARNING
+        assert worker["result"]["import"] == "account"
+        assert worker["result"]["rows"][0]["state"] == ImportState.DONE
+        assert worker["result"]["rows"][0]["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password."
+        ]
+        data = worker["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "saml_id": {"info": "new", "value": "test_saml_id"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "default_password": {"info": "warning", "value": ""},
+        }
+
+    def json_upload_update_saml_id_in_existing_account(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "test",
+                    "default_vote_weight": "2.300000",
+                    "saml_id": "old_one",
+                }
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test",
+                        "saml_id": "new_one",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        worker = self.assert_model_exists("action_worker/1")
+        assert worker["state"] == ImportState.DONE
+        assert worker["result"]["import"] == "account"
+        assert worker["result"]["rows"][0]["state"] == ImportState.DONE
+        assert worker["result"]["rows"][0]["messages"] == []
+        data = worker["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "saml_id": {"info": "done", "value": "new_one"},
+            "username": {"info": "done", "value": "test", "id": 2},
+        }
