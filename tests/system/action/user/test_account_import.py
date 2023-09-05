@@ -21,7 +21,7 @@ class AccountJsonImport(BaseActionTestCase):
                                 "messages": [],
                                 "data": {
                                     "username": {
-                                        "value": "test",
+                                        "value": "jonny",
                                         "info": ImportState.DONE,
                                     },
                                     "first_name": "Testy",
@@ -105,19 +105,19 @@ class AccountJsonImport(BaseActionTestCase):
     def test_import_username_and_create(self) -> None:
         response = self.request("account.import", {"id": 2, "import": True})
         self.assert_status_code(response, 200)
-        user2 = self.assert_model_exists(
-            "user/2",
-            {"username": "test", "first_name": "Testy"},
+        user = self.assert_model_exists(
+            "user/3",
+            {"username": "jonny", "first_name": "Testy"},
         )
-        assert user2.get("default_password")
-        assert user2.get("password")
+        assert user.get("default_password")
+        assert user.get("password")
         self.assert_model_not_exists("action_worker/2")
 
     def test_import_abort(self) -> None:
         response = self.request("account.import", {"id": 2, "import": False})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("action_worker/2")
-        self.assert_model_not_exists("user/2")
+        self.assert_model_not_exists("user/3")
 
     def test_import_wrong_action_worker(self) -> None:
         response = self.request("account.import", {"id": 5, "import": True})
@@ -130,9 +130,9 @@ class AccountJsonImport(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "username": "test",
+                    "username": "user1",
                 },
-                "action_worker/6": {
+                "action_worker/7": {
                     "state": ImportState.DONE,
                     "result": {
                         "import": "account",
@@ -142,7 +142,7 @@ class AccountJsonImport(BaseActionTestCase):
                                 "messages": [],
                                 "data": {
                                     "username": {
-                                        "value": "test",
+                                        "value": "user1",
                                         "info": ImportState.DONE,
                                         "id": 1,
                                     },
@@ -154,16 +154,15 @@ class AccountJsonImport(BaseActionTestCase):
                 },
             }
         )
-        response = self.request("account.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
-        self.assert_model_not_exists("user/2")
         self.assert_model_exists("user/1", {"first_name": "Testy"})
 
     def test_import_names_and_email_and_create(self) -> None:
         response = self.request("account.import", {"id": 3, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2",
+            "user/3",
             {
                 "username": "TestyTester",
                 "first_name": "Testy",
@@ -353,7 +352,7 @@ class AccountJsonImport(BaseActionTestCase):
                 ImportState.DONE,
                 {
                     "first_name": "Testy",
-                    "username": {"value": "test", "info": ImportState.DONE},
+                    "username": {"value": "fred", "info": ImportState.DONE},
                 },
             )
         )
@@ -366,7 +365,8 @@ class AccountJsonImport(BaseActionTestCase):
     def test_import_error_state_done_search_data_error(self) -> None:
         self.set_models(
             {
-                "action_worker/6": {
+                "action_worker/7": {
+                    "state": ImportState.DONE,
                     "result": {
                         "import": "account",
                         "rows": [
@@ -375,7 +375,7 @@ class AccountJsonImport(BaseActionTestCase):
                                 "messages": [],
                                 "data": {
                                     "username": {
-                                        "value": "test",
+                                        "value": "durban",
                                         "info": ImportState.DONE,
                                     }
                                 },
@@ -385,7 +385,7 @@ class AccountJsonImport(BaseActionTestCase):
                                 "messages": [],
                                 "data": {
                                     "username": {
-                                        "value": "test",
+                                        "value": "durban",
                                         "info": ImportState.DONE,
                                     }
                                 },
@@ -395,7 +395,7 @@ class AccountJsonImport(BaseActionTestCase):
                 }
             }
         )
-        response = self.request("account.import", {"id": 6, "import": True})
+        response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][1]
         assert entry["state"] == ImportState.ERROR
@@ -406,14 +406,14 @@ class AccountJsonImport(BaseActionTestCase):
     def test_import_error_state_done_not_matching_ids(self) -> None:
         self.set_models(
             {
-                "user/8": {"username": "test"},
+                "user/8": {"username": "user8"},
                 **self.get_action_worker_data(
                     6,
                     ImportState.DONE,
                     {
                         "first_name": "Testy",
                         "username": {
-                            "value": "test",
+                            "value": "user8",
                             "info": ImportState.DONE,
                             "id": 5,
                         },
