@@ -147,15 +147,27 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_comment_without_meeting_id(self) -> None:
+        self.set_models(
+            {
+                "meeting/11": {
+                    "name": "meeting11",
+                    "committee_id": 79,
+                    "group_ids": [111],
+                    "is_active_in_organization_id": 1,
+                },
+                "group/111": {"meeting_id": 11},
+            }
+        )
+
         response = self.request(
             "user.create",
-            {
-                "username": "test Xcdfgee",
-                "comment": "blablabla",
-            },
+            {"username": "test Xcdfgee", "group_ids": [111]},
         )
         self.assert_status_code(response, 400)
-        assert "Transfer data needs meeting_id." in response.json["message"]
+        assert (
+            "Missing meeting_id in instance, because meeting related fields used"
+            in response.json["message"]
+        )
 
     def test_create_with_meeting_user_fields(self) -> None:
         self.set_models(

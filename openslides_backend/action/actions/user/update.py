@@ -21,7 +21,6 @@ from .user_mixin import (
 @register_action("user.update")
 class UserUpdate(
     EmailCheckMixin,
-    UserMixin,
     CreateUpdatePermissionsMixin,
     UpdateAction,
     LimitOfUserMixin,
