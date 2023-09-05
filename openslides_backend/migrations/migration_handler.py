@@ -3,7 +3,6 @@ from io import StringIO
 from threading import Lock, Thread
 from typing import Any, Dict, Optional
 
-from datastore.migrations import MigrationException
 from datastore.migrations import MigrationState as DatastoreMigrationState
 
 from ..shared.exceptions import View400Exception
