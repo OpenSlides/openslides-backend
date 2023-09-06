@@ -9,6 +9,7 @@ class TopicJsonImport(BaseActionTestCase):
             {
                 "meeting/22": {"name": "test", "is_active_in_organization_id": 1},
                 "action_worker/2": {
+                    "state": ImportState.DONE,
                     "result": {
                         "import": "topic",
                         "rows": [
@@ -17,13 +18,14 @@ class TopicJsonImport(BaseActionTestCase):
                                 "messages": [],
                                 "data": {"title": "test", "meeting_id": 22},
                             },
-                            {
-                                "state": ImportState.ERROR,
-                                "messages": ["test"],
-                                "data": {"title": "broken", "meeting_id": 22},
-                            },
+                            # This one leads to an import state ImportState.ERROR
+                            # {
+                            #     "state": ImportState.ERROR,
+                            #     "messages": ["test"],
+                            #     "data": {"title": "broken", "meeting_id": 22},
+                            # },
                         ],
-                    }
+                    },
                 },
             }
         )

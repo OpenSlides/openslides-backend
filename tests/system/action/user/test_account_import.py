@@ -3,7 +3,8 @@ from typing import Any, Dict
 from openslides_backend.action.mixins.import_mixins import ImportMixin, ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
-from .test_account_json_upload import  AccountJsonUploadForUseInImport
+
+from .test_account_json_upload import AccountJsonUploadForUseInImport
 
 
 class AccountJsonImport(BaseActionTestCase):
@@ -460,21 +461,49 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.json_upload_saml_id_new()
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
-        self.assert_model_exists("user/35", {"username": "test_saml_id2", "saml_id": "test_saml_id", "default_password": "", "can_change_own_password": False, "default_vote_weight": "1.000000"})
-        self.assert_model_exists("user/36", {"username": "test_saml_id1", "saml_id": None, "can_change_own_password": True, "default_vote_weight": "1.000000"})
-        self.assert_model_exists("user/37", {"username": "test_saml_id21", "saml_id": None, "can_change_own_password": True, "default_vote_weight": "1.000000"})
+        self.assert_model_exists(
+            "user/35",
+            {
+                "username": "test_saml_id2",
+                "saml_id": "test_saml_id",
+                "default_password": "",
+                "can_change_own_password": False,
+                "default_vote_weight": "1.000000",
+            },
+        )
+        self.assert_model_exists(
+            "user/36",
+            {
+                "username": "test_saml_id1",
+                "saml_id": None,
+                "can_change_own_password": True,
+                "default_vote_weight": "1.000000",
+            },
+        )
+        self.assert_model_exists(
+            "user/37",
+            {
+                "username": "test_saml_id21",
+                "saml_id": None,
+                "can_change_own_password": True,
+                "default_vote_weight": "1.000000",
+            },
+        )
         self.assert_model_not_exists("action_worker/1")
 
     def test_upload_import_with_generated_usernames_error_username(self) -> None:
         self.json_upload_saml_id_new()
-        self.set_models({
-            "user/33": {"username": "test_saml_id21"}
-        })
+        self.set_models({"user/33": {"username": "test_saml_id21"}})
         response = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][2]["state"] == ImportState.ERROR
-        assert response.json["results"][0][0]["rows"][2]["messages"] == ["Error: want to create a new user, but username already exists."]
-        assert response.json["results"][0][0]["rows"][2]["data"]["username"] == 'test_saml_id21'
+        assert response.json["results"][0][0]["rows"][2]["messages"] == [
+            "Error: want to create a new user, but username already exists."
+        ]
+        assert (
+            response.json["results"][0][0]["rows"][2]["data"]["username"]
+            == "test_saml_id21"
+        )
         self.assert_model_not_exists("user/35")
         self.assert_model_not_exists("user/36")
         self.assert_model_not_exists("user/37")
@@ -484,12 +513,29 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.json_upload_set_saml_id_in_existing_account()
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
-        self.assert_model_exists("user/2", {"username": "test", "saml_id": "test_saml_id", "default_password": "", "can_change_own_password": False, "password": "", "default_vote_weight": "2.300000"})
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "test",
+                "saml_id": "test_saml_id",
+                "default_password": "",
+                "can_change_own_password": False,
+                "password": "",
+                "default_vote_weight": "2.300000",
+            },
+        )
         self.assert_model_not_exists("action_worker/1")
 
     def test_json_upload_update_saml_id_in_existing_account(self) -> None:
         self.json_upload_update_saml_id_in_existing_account()
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
-        self.assert_model_exists("user/2", {"username": "test", "saml_id": "new_one", "default_vote_weight": "2.300000"})
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "test",
+                "saml_id": "new_one",
+                "default_vote_weight": "2.300000",
+            },
+        )
         self.assert_model_not_exists("action_worker/1")
