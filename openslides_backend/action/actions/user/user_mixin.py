@@ -88,6 +88,15 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "group_ids": id_list_schema,
     }
 
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if "meeting_id" not in instance and any(
+            key in self.transfer_field_list for key in instance.keys()
+        ):
+            raise ActionException(
+                "Missing meeting_id in instance, because meeting related fields used"
+            )
+
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
