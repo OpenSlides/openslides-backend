@@ -5,7 +5,6 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MeetingUser
-from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...util.action_type import ActionType
