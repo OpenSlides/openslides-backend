@@ -1,9 +1,15 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
-from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, ResultType
+from ...mixins.import_mixins import (
+    ImportState,
+    JsonUploadMixin,
+    Lookup,
+    ResultType,
+    SearchFieldType,
+)
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -110,9 +116,9 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         old_saml_id: Optional[str] = None
         if (username := entry.get("username")) and type(username) == str:
             check_result = self.username_lookup.check_duplicate(username)
-            id_ = cast(int, self.username_lookup.get_x_by_name(username, "id"))
+            id_ = cast(int, self.username_lookup.get_field_by_name(username, "id"))
             old_saml_id = cast(
-                str, self.username_lookup.get_x_by_name(username, "saml_id")
+                str, self.username_lookup.get_field_by_name(username, "saml_id")
             )
             if check_result == ResultType.FOUND_ID and id_ != 0:
                 self.row_state = ImportState.DONE
@@ -137,9 +143,9 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 messages.append("Found more users with the same username")
         elif saml_id := entry.get("saml_id"):
             check_result = self.saml_id_lookup.check_duplicate(saml_id)
-            id_ = cast(int, self.saml_id_lookup.get_x_by_name(saml_id, "id"))
+            id_ = cast(int, self.saml_id_lookup.get_field_by_name(saml_id, "id"))
             if check_result == ResultType.FOUND_ID and id_ != 0:
-                username = self.saml_id_lookup.get_x_by_name(saml_id, "username")
+                username = self.saml_id_lookup.get_field_by_name(saml_id, "username")
                 self.row_state = ImportState.DONE
                 entry["id"] = id_
                 entry["username"] = {
@@ -160,10 +166,11 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 names_and_email = self._names_and_email(entry)
                 check_result = self.names_email_lookup.check_duplicate(names_and_email)
                 id_ = cast(
-                    int, self.names_email_lookup.get_x_by_name(names_and_email, "id")
+                    int,
+                    self.names_email_lookup.get_field_by_name(names_and_email, "id"),
                 )
                 if check_result == ResultType.FOUND_ID and id_ != 0:
-                    username = self.names_email_lookup.get_x_by_name(
+                    username = self.names_email_lookup.get_field_by_name(
                         names_and_email, "username"
                     )
                     self.row_state = ImportState.DONE
@@ -189,7 +196,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
             check_result = self.all_saml_id_lookup.check_duplicate(saml_id)
             if id_ := entry.get("id"):
                 if check_result == ResultType.FOUND_ID:
-                    idFound = self.all_saml_id_lookup.get_x_by_name(saml_id, "id")
+                    idFound = self.all_saml_id_lookup.get_field_by_name(saml_id, "id")
                 if check_result == ResultType.NOT_FOUND or (
                     check_result == ResultType.FOUND_ID and id_ == idFound
                 ):
@@ -330,9 +337,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
             mapped_fields=["username", "saml_id"],
         )
 
-        self.all_id_mapping: Dict[int, List[Union[str, Tuple[str, ...]]]] = defaultdict(
-            list
-        )
+        self.all_id_mapping: Dict[int, List[SearchFieldType]] = defaultdict(list)
         for id, values in self.username_lookup.id_to_name.items():
             self.all_id_mapping[id].extend(values)
         for id, values in self.saml_id_lookup.id_to_name.items():

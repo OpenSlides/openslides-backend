@@ -16,6 +16,9 @@ from .singular_action_mixin import SingularActionMixin
 TRUE_VALUES = ("1", "true", "yes", "y", "t")
 FALSE_VALUES = ("0", "false", "no", "n", "f")
 
+# A searchfield can be a string or a tuple of strings
+SearchFieldType = Union[str, Tuple[str, ...]]
+
 
 class ImportState(str, Enum):
     NONE = "none"
@@ -40,8 +43,8 @@ class Lookup:
         self,
         datastore: DatastoreService,
         collection: str,
-        name_entries: List[Tuple[Union[str, Tuple[str, ...]], Dict[str, Any]]],
-        field: Union[str, Tuple[str, ...]] = "name",
+        name_entries: List[Tuple[SearchFieldType, Dict[str, Any]]],
+        field: SearchFieldType = "name",
         mapped_fields: Optional[List[str]] = None,
     ) -> None:
         if mapped_fields is None:
@@ -49,14 +52,12 @@ class Lookup:
         self.datastore = datastore
         self.collection = collection
         self.field = field
-        self.name_to_ids: Dict[
-            Union[str, Tuple[str, ...]], List[Dict[str, Any]]
-        ] = defaultdict(list)
-        for name, _ in name_entries:
-            self.name_to_ids[name] = []
-        self.id_to_name: Dict[int, List[Union[str, Tuple[str, ...]]]] = defaultdict(
+        self.name_to_ids: Dict[SearchFieldType, List[Dict[str, Any]]] = defaultdict(
             list
         )
+        for name, _ in name_entries:
+            self.name_to_ids[name] = []
+        self.id_to_name: Dict[int, List[SearchFieldType]] = defaultdict(list)
         or_filters: List[Filter] = []
         if "id" not in mapped_fields:
             mapped_fields.append("id")
@@ -91,7 +92,7 @@ class Lookup:
                 if not values[0].get("id"):
                     values.append(entry)
 
-    def check_duplicate(self, name: Union[str, Tuple[str, ...]]) -> ResultType:
+    def check_duplicate(self, name: SearchFieldType) -> ResultType:
         if len(values := self.name_to_ids.get(name, [])) == 1:
             if values[0].get("id"):
                 return ResultType.FOUND_ID
@@ -101,15 +102,15 @@ class Lookup:
             return ResultType.FOUND_MORE_IDS
         raise ActionException("Logical Error in Lookup Class")
 
-    def get_x_by_name(
-        self, name: Union[str, Tuple[str, ...]], x: str
+    def get_field_by_name(
+        self, name: SearchFieldType, fieldname: str
     ) -> Optional[Union[int, str]]:
-        """Gets fieldname 'x' from value of name_to_ids-dict"""
+        """Gets 'fieldname' from value of name_to_ids-dict"""
         if len(self.name_to_ids.get(name, [])) == 1:
-            return self.name_to_ids[name][0].get(x)
+            return self.name_to_ids[name][0].get(fieldname)
         return None
 
-    def get_name_by_id(self, id_: int) -> Optional[List[Union[str, Tuple[str, ...]]]]:
+    def get_name_by_id(self, id_: int) -> Optional[List[SearchFieldType]]:
         if name := self.id_to_name.get(id_):
             return name
         return None
