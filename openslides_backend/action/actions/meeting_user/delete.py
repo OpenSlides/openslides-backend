@@ -4,13 +4,13 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MeetingUser
-from ....permissions.permissions import Permissions
 from ...generics.delete import DeleteAction
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("meeting_user.delete")
+@register_action("meeting_user.delete", action_type=ActionType.BACKEND_INTERNAL)
 class MeetingUserDelete(DeleteAction):
     """
     Action to delete a meeting user.
@@ -18,7 +18,6 @@ class MeetingUserDelete(DeleteAction):
 
     model = MeetingUser()
     schema = DefaultSchema(MeetingUser()).get_delete_schema()
-    permission = Permissions.User.CAN_MANAGE
 
     def get_history_information(self) -> Optional[HistoryInformation]:
         users = self.get_instances_with_fields(["user_id", "meeting_id"])

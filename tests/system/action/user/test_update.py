@@ -446,10 +446,11 @@ class UserUpdateActionTest(BaseActionTestCase):
                     ],
                 },
                 {
-                    "action": "meeting_user.update",
+                    "action": "user.update",
                     "data": [
                         {
-                            "id": 111,
+                            "id": 123,
+                            "meeting_id": 11,
                             "group_ids": [],
                         }
                     ],

@@ -8,12 +8,13 @@ from ....models.models import MeetingUser
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...mixins.meeting_user_helper import get_meeting_user_filter
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .mixin import MeetingUserMixin
 
 
-@register_action("meeting_user.create")
+@register_action("meeting_user.create", action_type=ActionType.BACKEND_INTERNAL)
 class MeetingUserCreate(MeetingUserMixin, CreateAction):
     """
     Action to create a meeting user.
@@ -28,7 +29,6 @@ class MeetingUserCreate(MeetingUserMixin, CreateAction):
             *MeetingUserMixin.standard_fields,
         ],
     )
-    permission = Permissions.User.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if self.datastore.exists(
