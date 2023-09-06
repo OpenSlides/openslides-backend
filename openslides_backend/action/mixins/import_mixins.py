@@ -130,7 +130,9 @@ class Lookup:
 
 class BaseImportJsonUpload(SingularActionMixin):
     @staticmethod
-    def count_warnings_in_payload(data: Union[List[Union[Dict[str, str], List[Any]]], Dict[str, Any]]) -> int:
+    def count_warnings_in_payload(
+        data: Union[List[Union[Dict[str, str], List[Any]]], Dict[str, Any]]
+    ) -> int:
         count = 0
         for col in data:
             if type(col) == dict:
