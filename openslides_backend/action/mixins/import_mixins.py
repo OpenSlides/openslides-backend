@@ -355,7 +355,7 @@ class JsonUploadMixin(BaseImportJsonUpload):
                             ]
                         except Exception:
                             pass
-                    elif type_ == "string":
+                    elif type_ in ("string", "decimal"):
                         continue
                     elif type_ == "decimal":
                         entry[field] = str(Decimal("0.000000") + Decimal(entry[field]))
