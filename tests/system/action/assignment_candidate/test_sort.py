@@ -101,7 +101,10 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             {"assignment_id": 222, "candidate_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Id 32 not in db_instances." in response.json["message"]
+        assert (
+            "assignment_candidate sorting failed, because element assignment_candidate/32 doesn't exist."
+            in response.json["message"]
+        )
 
     def test_sort_another_section_db(self) -> None:
         self.set_models(
@@ -148,7 +151,10 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             {"assignment_id": 222, "candidate_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Additional db_instances found." in response.json["message"]
+        assert (
+            "assignment_candidate sorting failed, because some elements were not included in the call."
+            in response.json["message"]
+        )
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(

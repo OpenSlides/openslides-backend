@@ -43,7 +43,10 @@ class SpeakerSortActionTest(BaseActionTestCase):
             "speaker.sort", {"list_of_speakers_id": 222, "speaker_ids": [32, 31]}
         )
         self.assert_status_code(response, 400)
-        assert "Id 32 not in db_instances." in response.json["message"]
+        assert (
+            "speaker sorting failed, because element speaker/32 doesn't exist."
+            in response.json["message"]
+        )
 
     def test_sort_another_section_db(self) -> None:
         self.set_models(
@@ -59,7 +62,10 @@ class SpeakerSortActionTest(BaseActionTestCase):
             "speaker.sort", {"list_of_speakers_id": 222, "speaker_ids": [32, 31]}
         )
         self.assert_status_code(response, 400)
-        assert "Additional db_instances found." in response.json["message"]
+        assert (
+            "speaker sorting failed, because some elements were not included in the call."
+            in response.json["message"]
+        )
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
