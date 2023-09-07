@@ -41,6 +41,9 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                             "username",
                             "gender",
                             "pronoun",
+                            "default_number",
+                            "default_structure_level",
+                            "default_vote_weight",
                             "saml_id",
                         ),
                     },
@@ -63,6 +66,9 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         {"property": "username", "type": "string", "is_object": True},
         {"property": "gender", "type": "string"},
         {"property": "pronoun", "type": "string"},
+        {"property": "default_number", "type": "string"},
+        {"property": "default_structure_level", "type": "string"},
+        {"property": "default_vote_weight", "type": "decimal"},
         {"property": "saml_id", "type": "string", "is_object": True},
     ]
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS

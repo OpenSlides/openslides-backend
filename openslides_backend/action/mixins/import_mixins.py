@@ -304,7 +304,7 @@ class JsonUploadMixin(BaseImportJsonUpload):
                             ]
                         except Exception:
                             pass
-                    elif type_ == "string":
+                    elif type_ in ("string", "decimal"):
                         continue
                     elif type_ == "integer":
                         try:
