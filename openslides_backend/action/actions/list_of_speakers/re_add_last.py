@@ -60,10 +60,6 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
                         last_speaker_id, last_speaker = speaker_id, speaker
         if last_speaker is None:
             raise ActionException("There is no last speaker that can be re-added.")
-        elif last_speaker.get("point_of_order"):
-            raise ActionException(
-                "The last speaker is a point of order speaker and cannot be re-added."
-            )
         assert isinstance(lowest_weight, int)
 
         for speaker in speakers.values():
@@ -87,5 +83,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             "id": last_speaker_id,
             "begin_time": None,
             "end_time": None,
+            "point_of_order": None,
+            "point_of_order_category_id": None,
             "weight": lowest_weight - 1,
         }
