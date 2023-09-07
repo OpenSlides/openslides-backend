@@ -1,6 +1,7 @@
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
@@ -63,6 +64,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "list_of_speakers_show_first_contribution": True,
             "list_of_speakers_enable_point_of_order_speakers": True,
             "list_of_speakers_enable_point_of_order_categories": False,
+            "list_of_speakers_closing_disables_point_of_order": False,
             "list_of_speakers_enable_pro_contra_speech": False,
             "list_of_speakers_can_set_contribution_self": False,
             "list_of_speakers_speaker_note_for_everyone": True,
@@ -103,6 +105,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "users_allow_self_set_present": True,
             "users_pdf_welcometitle": "Welcome to OpenSlides",
             "users_pdf_welcometext": "blablabla",
+            "users_pdf_wlan_encryption": "WPA",
             "users_email_sender": "OpenSlides",
             "users_email_subject": "OpenSlides access data",
             "users_email_body": "blablabla",
@@ -183,10 +186,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "group_ids": [1, 2],
                     "motion_state_ids": [1],
                     "motion_workflow_ids": [1],
-                    "logo_$_id": None,
-                    "font_$_id": [],
-                    "default_projector_$_ids": [],
                     "is_active_in_organization_id": 1,
+                    **{field: [1] for field in Meeting.all_default_projectors()},
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -234,7 +235,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
-                    "used_as_default_$_in_meeting_id": [],
                     "scale": 0,
                     "scroll": 0,
                     "width": 1200,
@@ -251,6 +251,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
                 "action_worker/1": {
                     "name": "testcase",
@@ -268,8 +269,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
     def get_new_user(self, username: str, datapart: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "username": username,
-            "group_$_ids": ["1"],
-            "group_$1_ids": [1],
             "can_change_own_password": False,
             "is_physical_person": True,
             "default_vote_weight": "1.000000",
@@ -336,7 +335,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "group_ids": [1, 2],
                     "motion_state_ids": [1],
                     "motion_workflow_ids": [1],
-                    "default_projector_$_ids": [],
                     "motion_ids": [1],
                     "motion_submitter_ids": [5],
                     "list_of_speakers_ids": [6, 11],
@@ -352,10 +350,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "user_ids": [1, 2, 3, 4, 5, 6],
                     "present_user_ids": [2],
                     "mediafile_ids": [1, 2],
-                    "logo_$_id": ["web_header"],
-                    "logo_$web_header_id": 1,
-                    "font_$_id": ["bold"],
-                    "font_$bold_id": 2,
+                    "logo_web_header_id": 1,
+                    "font_bold_id": 2,
+                    "meeting_user_ids": [11, 12, 13, 14, 15, 16],
+                    **{field: [1] for field in Meeting.all_default_projectors()},
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -363,7 +361,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "name": "default group",
                     "weight": 1,
                     "default_group_for_meeting_id": 1,
-                    "user_ids": [1, 2, 3, 4, 5, 6],
+                    "meeting_user_ids": [11, 12, 13, 14, 15, 16],
                 },
                 "group/2": {
                     "meeting_id": 1,
@@ -372,8 +370,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "admin_group_for_meeting_id": 1,
                 },
                 "user/1": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [11],
                     "can_change_own_password": False,
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
@@ -383,36 +380,67 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "present_user",
                     {
                         "is_present_in_meeting_ids": [1],
+                        "meeting_user_ids": [12],
                     },
                 ),
                 "user/3": self.get_new_user(
                     "submitter_user",
                     {
-                        "submitted_motion_$_ids": ["1"],
-                        "submitted_motion_$1_ids": [5],
+                        "meeting_user_ids": [13],
                     },
                 ),
                 "user/4": self.get_new_user(
                     "vote_user",
                     {
-                        "vote_$_ids": ["1"],
-                        "vote_$1_ids": [7],
+                        "meeting_user_ids": [14],
+                        "vote_ids": [7],
                     },
                 ),
                 "user/5": self.get_new_user(
                     "delegated_user",
                     {
-                        "vote_delegated_vote_$_ids": ["1"],
-                        "vote_delegated_vote_$1_ids": [7],
+                        "meeting_user_ids": [15],
+                        "delegated_vote_ids": [7],
                     },
                 ),
                 "user/6": self.get_new_user(
                     "candidate_user",
                     {
-                        "assignment_candidate_$_ids": ["1"],
-                        "assignment_candidate_$1_ids": [9],
+                        "meeting_user_ids": [16],
                     },
                 ),
+                "meeting_user/11": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
+                },
+                "meeting_user/12": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [1],
+                },
+                "meeting_user/13": {
+                    "meeting_id": 1,
+                    "user_id": 3,
+                    "motion_submitter_ids": [5],
+                    "group_ids": [1],
+                },
+                "meeting_user/14": {
+                    "meeting_id": 1,
+                    "user_id": 4,
+                    "group_ids": [1],
+                },
+                "meeting_user/15": {
+                    "meeting_id": 1,
+                    "user_id": 5,
+                    "group_ids": [1],
+                },
+                "meeting_user/16": {
+                    "meeting_id": 1,
+                    "user_id": 6,
+                    "assignment_candidate_ids": [9],
+                    "group_ids": [1],
+                },
                 "motion_workflow/1": {
                     "meeting_id": 1,
                     "name": "blup",
@@ -447,7 +475,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
-                    "used_as_default_$_in_meeting_id": [],
                     "scale": 0,
                     "scroll": 0,
                     "width": 1200,
@@ -464,18 +491,17 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
                 "mediafile/1": {
                     "is_public": True,
                     "owner_id": "meeting/1",
-                    "used_as_logo_$_in_meeting_id": ["web_header"],
-                    "used_as_logo_$web_header_in_meeting_id": 1,
+                    "used_as_logo_web_header_in_meeting_id": 1,
                 },
                 "mediafile/2": {
                     "is_public": True,
                     "owner_id": "meeting/1",
-                    "used_as_font_$_in_meeting_id": ["bold"],
-                    "used_as_font_$bold_in_meeting_id": 1,
+                    "used_as_font_bold_in_meeting_id": 1,
                 },
                 "motion/1": {
                     "submitter_ids": [5],
@@ -489,7 +515,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "list_of_speakers_id": 6,
                 },
                 "motion_submitter/5": {
-                    "user_id": 3,
+                    "meeting_user_id": 13,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
@@ -514,7 +540,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 "assignment_candidate/9": {
                     "weight": 10000,
                     "assignment_id": 10,
-                    "user_id": 6,
+                    "meeting_user_id": 16,
                     "meeting_id": 1,
                 },
                 "assignment/10": {
@@ -602,12 +628,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "group_ids": [1, 2],
                     "motion_state_ids": [1],
                     "motion_workflow_ids": [1],
-                    "logo_$_id": None,
-                    "font_$_id": [],
-                    "default_projector_$_ids": [],
                     "is_active_in_organization_id": 1,
                     "motion_ids": [1],
                     "list_of_speakers_ids": [3],
+                    **{field: [1] for field in Meeting.all_default_projectors()},
                     **self.get_meeting_defaults(),
                 },
                 "group/1": {
@@ -656,7 +680,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
-                    "used_as_default_$_in_meeting_id": [],
                     "scale": 0,
                     "scroll": 0,
                     "width": 1200,
@@ -673,6 +696,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
                 "meeting/2": {
                     "committee_id": 1,
@@ -690,12 +714,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "group_ids": [3, 4],
                     "motion_state_ids": [2],
                     "motion_workflow_ids": [2],
-                    "logo_$_id": None,
-                    "font_$_id": [],
-                    "default_projector_$_ids": [],
                     "is_active_in_organization_id": 1,
                     "list_of_speakers_ids": [4],
                     "motion_ids": [2],
+                    **{field: [2] for field in Meeting.all_default_projectors()},
                     **self.get_meeting_defaults(),
                 },
                 "group/3": {
@@ -743,7 +765,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "meeting_id": 2,
                     "used_as_reference_projector_meeting_id": 2,
                     "name": "Default projector",
-                    "used_as_default_$_in_meeting_id": [],
                     "scale": 0,
                     "scroll": 0,
                     "width": 1200,
@@ -760,6 +781,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "show_title": True,
                     "show_logo": True,
                     "show_clock": True,
+                    **{field: 2 for field in Meeting.reverse_default_projectors()},
                 },
                 "motion/1": {
                     "meeting_id": 1,

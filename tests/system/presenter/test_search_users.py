@@ -1,7 +1,4 @@
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.filters import And, FilterOperator, Or
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope
@@ -406,8 +403,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "user/1",
             {
                 "organization_management_level": None,
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
         status_code, _ = self.request(
@@ -445,17 +441,20 @@ class TestSearchUsers(BasePresenterTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "group/1": {
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                     "meeting_id": 1,
                     "permissions": [Permissions.User.CAN_MANAGE],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
                 },
             }
         )
         self.update_model(
             "user/1",
             {
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
                 "organization_management_level": None,
             },
         )
@@ -504,8 +503,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "user/1",
             {
                 "organization_management_level": None,
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
         status_code, data = self.request(
@@ -530,8 +528,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "user/1",
             {
                 "organization_management_level": None,
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
         status_code, data = self.request(

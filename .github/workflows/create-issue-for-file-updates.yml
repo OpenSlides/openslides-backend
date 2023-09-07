@@ -15,7 +15,7 @@ jobs:
     if: github.repository_owner == 'OpenSlides'
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -42,7 +42,14 @@ jobs:
           OS_FILE_NAME: permission.yml
         with:
           filename: .github/workflows/announce-file-changes-template.md
-      
+
+    steps:
+      - name: Generate access token
+        uses: tibdex/github-app-token@v1
+        id: generate-token
+        with:
+          app_id: ${{ secrets.AUTOMATION_APP_ID }}
+          private_key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
       - name: Send dispatch if models.yml or permission.yml was changed
         if: |
           contains(steps.changed-files.outputs.modified_files, 'global/meta/models.yml') ||
@@ -50,6 +57,6 @@ jobs:
         uses: peter-evans/repository-dispatch@v2
         with:
           event-type: models-update
-          repository: OpenSlides/openslides-autoupdate-service
-          token: ${{ secrets.AUTOUPDATE_ACCESS_TOKEN }}
+          repository: ${{ github.repository_owner }}/openslides-autoupdate-service
+          token: ${{ steps.generate-token.outputs.token }}
           client-payload: '{"body": "Triggered by commit [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})"}'

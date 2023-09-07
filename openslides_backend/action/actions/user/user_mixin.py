@@ -1,23 +1,19 @@
-from collections import defaultdict
+import re
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
-from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
-from ....services.datastore.commands import GetManyRequest
+from ....presenter.search_users import SearchUsers
 from ....services.datastore.interface import DatastoreService
-from ....shared.exceptions import ActionException, DatastoreException
+from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.patterns import (
-    FullQualifiedId,
-    fqid_from_collection_and_id,
-    id_from_fqid,
-)
-from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
+from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
+from ....shared.schema import decimal_schema, id_list_schema, optional_id_schema
+from ..meeting_user.set_data import MeetingUserSetData
 
 
 class UsernameMixin(Action):
@@ -47,6 +43,17 @@ class UsernameMixin(Action):
             used_usernames.append(username)
         return used_usernames
 
+    def generate_username(self, entry: Dict[str, Any]) -> str:
+        return self.generate_usernames(
+            [
+                re.sub(
+                    r"\W",
+                    "",
+                    entry.get("first_name", "") + entry.get("last_name", ""),
+                )
+            ]
+        )[0]
+
 
 class LimitOfUserMixin(Action):
     def check_limit_of_user(self, number: int) -> None:
@@ -65,11 +72,30 @@ class LimitOfUserMixin(Action):
 
 
 class UserMixin(CheckForArchivedMeetingMixin):
+    transfer_field_list = {
+        "comment": {"type": "string"},
+        "number": {"type": "string"},
+        "structure_level": {"type": "string"},
+        "about_me": {"type": "string"},
+        "vote_weight": decimal_schema,
+        "vote_delegated_to_id": optional_id_schema,
+        "vote_delegations_from_ids": id_list_schema,
+        "group_ids": id_list_schema,
+    }
+
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if "meeting_id" not in instance and any(
+            key in self.transfer_field_list for key in instance.keys()
+        ):
+            raise ActionException(
+                "Missing meeting_id in instance, because meeting related fields used"
+            )
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         for field in ("username", "first_name", "last_name", "email"):
             self.strip_field(field, instance)
-        user_fqid = fqid_from_collection_and_id("user", instance["id"])
         if "username" in instance:
             if not instance["username"]:
                 raise ActionException("This username is forbidden.")
@@ -82,166 +108,35 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 raise ActionException(
                     f"A user with the username {instance['username']} already exists."
                 )
-        self.check_existence_of_to_and_from_users(instance)
-        self.check_meeting_and_users(instance, user_fqid)
-        if "vote_delegated_$_to_id" in instance:
-            self.check_vote_delegated__to_id(instance, user_fqid)
-        if "vote_delegations_$_from_ids" in instance:
-            self.check_vote_delegations__from_ids(instance, user_fqid)
+        self.check_meeting_and_users(
+            instance, fqid_from_collection_and_id("user", instance["id"])
+        )
+        self.meeting_user_set_data(instance)
         return instance
 
     def strip_field(self, field: str, instance: Dict[str, Any]) -> None:
         if instance.get(field):
             instance[field] = instance[field].strip()
 
-    def check_vote_delegated__to_id(
-        self, instance: Dict[str, Any], user_fqid: FullQualifiedId
-    ) -> None:
-        mapped_fields = [
-            f"vote_delegations_${meeting_id}_from_ids"
-            for meeting_id, delegated_to in instance["vote_delegated_$_to_id"].items()
-            if delegated_to
-        ]
-        if not mapped_fields:
-            return
-        user_self = self.datastore.get(user_fqid, mapped_fields, raise_exception=False)
-        if "vote_delegations_$_from_ids" in instance:
-            update_dict = {
-                f"vote_delegations_${meeting_id}_from_ids": delegated_from
-                for meeting_id, delegated_from in instance[
-                    "vote_delegations_$_from_ids"
-                ].items()
-            }
-            user_self.update(update_dict)
-        for meeting_id, delegated_to_id in instance["vote_delegated_$_to_id"].items():
-            if id_from_fqid(user_fqid) == delegated_to_id:
-                raise ActionException(
-                    f"User {delegated_to_id} can't delegate the vote to himself."
-                )
-            if user_self.get(f"vote_delegations_${meeting_id}_from_ids"):
-                raise ActionException(
-                    f"User {id_from_fqid(user_fqid)} cannot delegate his vote, because there are votes delegated to him."
-                )
-            mapped_field = f"vote_delegated_${meeting_id}_to_id"
-            user_delegated_to = self.datastore.get(
-                fqid_from_collection_and_id("user", delegated_to_id),
-                [mapped_field],
-            )
-            if user_delegated_to.get(mapped_field):
-                raise ActionException(
-                    f"User {id_from_fqid(user_fqid)} cannot delegate his vote to user {delegated_to_id}, because that user has delegated his vote himself."
-                )
-
-    def check_vote_delegations__from_ids(
-        self, instance: Dict[str, Any], user_fqid: FullQualifiedId
-    ) -> None:
-        mapped_fields = [
-            f"vote_delegated_${meeting_id}_to_id"
-            for meeting_id, delegated_from in instance[
-                "vote_delegations_$_from_ids"
-            ].items()
-            if delegated_from
-        ]
-        if not mapped_fields:
-            return
-        user_self = self.datastore.get(user_fqid, mapped_fields, raise_exception=False)
-        if "vote_delegated_$_to_id" in instance:
-            update_dict = {
-                f"vote_delegated_${meeting_id}_to_id": delegated_to
-                for meeting_id, delegated_to in instance[
-                    "vote_delegated_$_to_id"
-                ].items()
-            }
-            user_self.update(update_dict)
-        for meeting_id, delegated_from_ids in instance[
-            "vote_delegations_$_from_ids"
-        ].items():
-            if id_from_fqid(user_fqid) in delegated_from_ids:
-                raise ActionException(
-                    f"User {id_from_fqid(user_fqid)} can't delegate the vote to himself."
-                )
-            if user_self.get(f"vote_delegated_${meeting_id}_to_id"):
-                raise ActionException(
-                    f"User {id_from_fqid(user_fqid)} cannot receive vote delegations, because he delegated his own vote."
-                )
-            mapped_field = f"vote_delegations_${meeting_id}_from_ids"
-            error_user_ids: List[int] = []
-            for user_id in delegated_from_ids:
-                user = self.datastore.get(
-                    fqid_from_collection_and_id("user", user_id),
-                    [mapped_field],
-                )
-                if user.get(mapped_field):
-                    error_user_ids.append(user_id)
-            if error_user_ids:
-                raise ActionException(
-                    f"User(s) {error_user_ids} can't delegate their votes because they receive vote delegations."
-                )
-
-    def check_existence_of_to_and_from_users(self, instance: Dict[str, Any]) -> None:
-        user_ids = set(
-            filter(bool, instance.get("vote_delegated_$_to_id", dict()).values())
-        )
-        if "vote_delegations_$_from_ids" in instance:
-            for ids in instance["vote_delegations_$_from_ids"].values():
-                if isinstance(ids, list):
-                    user_ids.update(ids)
-                else:
-                    raise ActionException(
-                        f"value of vote_delegations_$_from_ids must be a list, but it is type '{type(ids)}'"
-                    )
-
-        if user_ids:
-            get_many_request = GetManyRequest(
-                self.model.collection, list(user_ids), ["id"]
-            )
-            gm_result = self.datastore.get_many([get_many_request], lock_result=False)
-            users = gm_result.get(self.model.collection, {})
-
-            set_action_data = user_ids
-            diff = set_action_data.difference(users.keys())
-            if len(diff):
-                raise ActionException(f"The following users were not found: {diff}")
-
     def check_meeting_and_users(
         self, instance: Dict[str, Any], user_fqid: FullQualifiedId
     ) -> None:
-        meeting_users = defaultdict(list)
-        if instance.get("group_$_ids") is not None:
-            self.datastore.apply_changed_model(
-                user_fqid,
-                {
-                    **{
-                        f"group_${meeting_id}_ids": ids
-                        for meeting_id, ids in instance.get("group_$_ids", {}).items()
-                    },
-                    "meeting_ids": [
-                        int(id) for id in instance.get("group_$_ids", {}).keys()
-                    ],
-                },
-            )
         if instance.get("meeting_id") is not None:
             self.datastore.apply_changed_model(
                 user_fqid, {"meeting_id": instance.get("meeting_id")}
             )
-        for meeting_id, user_id in instance.get("vote_delegated_$_to_id", {}).items():
-            if user_id:
-                meeting_users[meeting_id].append(
-                    fqid_from_collection_and_id("user", user_id)
-                )
-        for meeting_id, user_ids in instance.get(
-            "vote_delegations_$_from_ids", {}
-        ).items():
-            if user_ids:
-                meeting_users[meeting_id].extend(
-                    [
-                        fqid_from_collection_and_id("user", user_id)
-                        for user_id in user_ids
-                    ]
-                )
-        for meeting_id, users in meeting_users.items():
-            users.append(user_fqid)
-            assert_belongs_to_meeting(self.datastore, users, int(meeting_id))
+
+    def meeting_user_set_data(self, instance: Dict[str, Any]) -> None:
+        meeting_user_data = {}
+        meeting_id = instance.pop("meeting_id", None)
+        for field in self.transfer_field_list:
+            if field in instance:
+                meeting_user_data[field] = instance.pop(field)
+        if meeting_user_data:
+            self.apply_instance(instance)
+            meeting_user_data["meeting_id"] = meeting_id
+            meeting_user_data["user_id"] = instance["id"]
+            self.execute_other_action(MeetingUserSetData, [meeting_user_data])
 
 
 class UpdateHistoryMixin(Action):
@@ -251,64 +146,23 @@ class UpdateHistoryMixin(Action):
         # Scan the instances and collect the info for the history information
         # Copy instances first since they are modified
         for instance in deepcopy(self.instances):
-            instance_fields = set(instance.keys()) - {"id"}
             instance_information = []
 
             # Fetch the current instance from the db to diff with the given instance
-            resolved_instance_fields = []
-            for field in instance_fields:
-                model_field = self.model.try_get_field(field)
-                if model_field:
-                    resolved_instance_fields.append(field)
-                    if (
-                        isinstance(model_field, BaseTemplateField)
-                        and model_field.is_template_field(field)
-                        and isinstance(instance[field], dict)
-                    ):
-                        for replacement in instance[field].keys():
-                            resolved_instance_fields.append(
-                                model_field.get_structured_field_name(replacement)
-                            )
-            try:
-                db_instance = self.datastore.get(
-                    fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                    resolved_instance_fields,
-                    use_changed_models=False,
-                )
-            except DatastoreException:
+            db_instance = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                list(instance.keys()),
+                use_changed_models=False,
+                raise_exception=False,
+            )
+            if not db_instance:
                 continue
 
             # Compare db version with payload
-            for field in instance_fields:
-                model_field = self.model.try_get_field(field)
-                if model_field:
-                    # Remove fields if equal
-                    if not isinstance(
-                        model_field, BaseTemplateField
-                    ) or not model_field.is_template_field(field):
-                        if instance[field] == db_instance.get(field):
-                            del instance[field]
-                            # Also remove from template field, if necessary
-                            if isinstance(model_field, BaseTemplateField):
-                                template_field_name = (
-                                    model_field.get_template_field_name()
-                                )
-                                replacement = model_field.get_replacement(field)
-                                if template_field_name in instance:
-                                    if replacement in instance[template_field_name]:
-                                        instance[template_field_name].remove(
-                                            replacement
-                                        )
-                                    if not instance[template_field_name]:
-                                        del instance[template_field_name]
-                    else:
-                        # clean up template fields
-                        for replacement in list(instance.get(field, [])):
-                            if (
-                                model_field.get_structured_field_name(replacement)
-                                not in instance
-                            ):
-                                instance[field].remove(replacement)
+            for field in list(instance.keys()):
+                # Remove fields if equal
+                if field != "id" and instance[field] == db_instance.get(field):
+                    del instance[field]
 
             # personal data
             update_fields = [
@@ -324,85 +178,11 @@ class UpdateHistoryMixin(Action):
             if any(field in instance for field in update_fields):
                 instance_information.append("Personal data changed")
 
-            # meeting specific data
-            meeting_ids: Set[str] = set()
-            for field in ("structure_level_$", "number_$", "vote_weight_$"):
-                if field in instance:
-                    meeting_ids.update(instance[field] or set())
-            if len(meeting_ids) == 1:
-                meeting_id = meeting_ids.pop()
-                instance_information.extend(
-                    [
-                        "Participant data updated in meeting {}",
-                        fqid_from_collection_and_id("meeting", meeting_id),
-                    ]
-                )
-            elif len(meeting_ids) > 1:
-                instance_information.append(
-                    "Participant data updated in multiple meetings"
-                )
-
-            # groups
-            if "group_$_ids" in instance:
-                group_ids_from_instance = self.get_group_ids_from_instance(instance)
-                group_ids_from_db = self.get_group_ids_from_db(instance)
-                added = group_ids_from_instance - group_ids_from_db
-                removed = group_ids_from_db - group_ids_from_instance
-
-                group_information: List[str] = []
-                changed = added | removed
-                result = self.datastore.get_many(
-                    [
-                        GetManyRequest(
-                            "group",
-                            list(changed),
-                            ["meeting_id", "default_group_for_meeting_id"],
-                        )
-                    ]
-                )
-                # remove default groups
-                groups = result.get("group", {})
-                default_groups = {
-                    id
-                    for id, group in groups.items()
-                    if group.get("default_group_for_meeting_id")
-                }
-                if len(changed) > 1:
-                    added -= default_groups
-                    removed -= default_groups
-                    changed = added | removed
-                if added and removed:
-                    group_information.append("Groups changed")
-                else:
-                    if added:
-                        group_information.append("Participant added to")
-                    else:
-                        group_information.append("Participant removed from")
-                    if len(changed) == 1:
-                        group_information[0] += " group {}"
-                        changed_group = changed.pop()
-                        group_information.append(
-                            fqid_from_collection_and_id("group", changed_group)
-                        )
-                    else:
-                        group_information[0] += " multiple groups"
-
-                meeting_ids = {group["meeting_id"] for group in groups.values()}
-                if len(meeting_ids) == 1:
-                    group_information[0] += " in meeting {}"
-                    meeting_id = meeting_ids.pop()
-                    group_information.append(
-                        fqid_from_collection_and_id("meeting", meeting_id)
-                    )
-                else:
-                    group_information[0] += " in multiple meetings"
-                instance_information.extend(group_information)
-
             # other fields
             if "organization_management_level" in instance:
                 instance_information.append("Organization Management Level changed")
-            if "committee_$_management_level" in instance:
-                instance_information.append("Committee Management Level changed")
+            if "committee_management_ids" in instance:
+                instance_information.append("Committee management changed")
             if "is_active" in instance:
                 if instance["is_active"]:
                     instance_information.append("Set active")
@@ -415,35 +195,62 @@ class UpdateHistoryMixin(Action):
                 ] = instance_information
         return information
 
-    def get_group_ids_from_db(self, instance: Dict[str, Any]) -> Set[int]:
-        user_fqid = fqid_from_collection_and_id("user", instance["id"])
-        user_prepare_fetch = self.datastore.get(
-            user_fqid, ["group_$_ids"], use_changed_models=False
-        )
-        if not user_prepare_fetch.get("group_$_ids"):
-            return set()
-        # You can give partial group_$_ids in the instance.
-        # so groups of meetings, which meeting is not in instance,
-        # doesn't count.
-        fields = [
-            f"group_${meeting_id}_ids"
-            for meeting_id in user_prepare_fetch["group_$_ids"]
-            if f"group_${meeting_id}_ids" in instance
-        ]
-        group_ids: Set[int] = set()
-        user = self.datastore.get(user_fqid, fields, use_changed_models=False)
-        for field in fields:
-            group_ids.update(user.get(field) or [])
-        return group_ids
 
-    def get_group_ids_from_instance(self, instance: Dict[str, Any]) -> Set[int]:
-        fields = [
-            f"group_${meeting_id}_ids" for meeting_id in (instance["group_$_ids"] or [])
-        ]
-        group_ids: Set[int] = set()
-        for field in fields:
-            group_ids.update(instance.get(field) or [])
-        return group_ids
+class DuplicateCheckMixin(Action):
+    def init_duplicate_set(self, data: List[Any]) -> None:
+        self.users_in_double_lists = self.execute_presenter(
+            SearchUsers,
+            {
+                "permission_type": "organization",
+                "permission_id": 1,
+                "search": data,
+            },
+        )
+        self.used_usernames: List[str] = []
+        self.used_saml_ids: List[str] = []
+        self.used_names_and_email: List[Any] = []
+
+    def check_username_for_duplicate(self, username: str, payload_index: int) -> bool:
+        result = (
+            bool(self.users_in_double_lists[payload_index])
+            or username in self.used_usernames
+        )
+        if username not in self.used_usernames:
+            self.used_usernames.append(username)
+        return result
+
+    def check_saml_id_for_duplicate(self, saml_id: str, payload_index: int) -> bool:
+        result = (
+            bool(self.users_in_double_lists[payload_index])
+            or saml_id in self.used_saml_ids
+        )
+        if saml_id not in self.used_saml_ids:
+            self.used_saml_ids.append(saml_id)
+        return result
+
+    def check_name_and_email_for_duplicate(
+        self, first_name: str, last_name: str, email: str, payload_index: int
+    ) -> bool:
+        entry = (first_name, last_name, email)
+        result = (
+            self.users_in_double_lists[payload_index]
+            or entry in self.used_names_and_email
+        )
+        if entry not in self.used_names_and_email:
+            self.used_names_and_email.append(entry)
+        return result
+
+    def get_search_data(self, payload_index: int) -> Optional[Dict[str, Any]]:
+        if len(self.users_in_double_lists[payload_index]) == 1:
+            return self.users_in_double_lists[payload_index][0]
+        return None
+
+    def has_multiple_search_data(self, payload_index: int) -> List[str]:
+        if len(self.users_in_double_lists[payload_index]) >= 2:
+            return [
+                entry["username"] for entry in self.users_in_double_lists[payload_index]
+            ]
+        return []
 
 
 def check_gender_helper(datastore: DatastoreService, instance: Dict[str, Any]) -> None:

@@ -11,13 +11,11 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {
-                "logo_$place_id": 222,
-                "logo_$_id": ["place"],
+                "logo_web_header_id": 222,
                 "is_active_in_organization_id": 1,
             },
             "mediafile/222": {
-                "used_as_logo_$place_in_meeting_id": 111,
-                "used_as_logo_$_in_meeting_id": ["place"],
+                "used_as_logo_web_header_in_meeting_id": 111,
                 "owner_id": "meeting/1",
             },
         }
@@ -138,14 +136,12 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/111": {
-                    "logo_$place_id": 222,
-                    "logo_$_id": ["place"],
+                    "logo_web_header_id": 222,
                     "all_projection_ids": [1],
                     "is_active_in_organization_id": 1,
                 },
                 "mediafile/222": {
-                    "used_as_logo_$place_in_meeting_id": 111,
-                    "used_as_logo_$_in_meeting_id": ["place"],
+                    "used_as_logo_web_header_in_meeting_id": 111,
                     "projection_ids": [1],
                     "owner_id": "meeting/111",
                 },
@@ -166,8 +162,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("mediafile/222")
         self.assert_model_deleted("projection/1")
         meeting = self.get_model("meeting/111")
-        assert meeting.get("logo_$place_id") is None
-        assert meeting.get("logo_$_id") == []
+        assert meeting.get("logo_web_header_id") is None
 
     def test_delete_directory_two_children_orga_owner(self) -> None:
         self.set_models(

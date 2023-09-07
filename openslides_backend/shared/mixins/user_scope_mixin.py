@@ -1,9 +1,8 @@
 from enum import Enum
-from typing import Any, Dict, List, Set, Tuple, cast
+from typing import Any, Dict, Set, Tuple
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
-from ...models.models import Committee
 from ...permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -17,7 +16,6 @@ from ...permissions.permissions import Permissions
 from ...services.datastore.interface import GetManyRequest
 from ..exceptions import MissingPermission
 from ..patterns import fqid_from_collection_and_id
-from ..util_dict_sets import get_set_from_dict_by_fieldlist, get_set_from_dict_from_dict
 
 
 class UserScope(str, Enum):
@@ -40,27 +38,25 @@ class UserScopeMixin(BaseServiceProvider):
         """
         meetings: Set[int] = set()
         committees_manager: Set[int] = set()
-        cml_fields = [
-            f"committee_${cml_field}_management_level"
-            for cml_field in cast(
-                List[str], Committee.user__management_level.replacement_enum
-            )
-        ]
         if isinstance(id_or_instance, dict):
-            meetings.update(map(int, id_or_instance.get("group_$_ids", {}).keys()))
+            if "group_ids" in id_or_instance:
+                if "meeting_id" in id_or_instance:
+                    meetings.add(id_or_instance["meeting_id"])
             committees_manager.update(
-                get_set_from_dict_from_dict(
-                    id_or_instance, "committee_$_management_level"
-                )
+                set(id_or_instance.get("committee_management_ids", []))
             )
             oml_right = id_or_instance.get("organization_management_level", "")
         else:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_or_instance),
-                ["meeting_ids", "organization_management_level", *cml_fields],
+                [
+                    "meeting_ids",
+                    "organization_management_level",
+                    "committee_management_ids",
+                ],
             )
             meetings.update(user.get("meeting_ids", []))
-            committees_manager.update(get_set_from_dict_by_fieldlist(user, cml_fields))
+            committees_manager.update(set(user.get("committee_management_ids") or []))
             oml_right = user.get("organization_management_level", "")
         result = self.datastore.get_many(
             [

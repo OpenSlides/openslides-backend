@@ -1,7 +1,10 @@
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
 
-from openslides_backend.http.views.action_view import ActionView
+from openslides_backend.http.views.action_view import (
+    INTERNAL_AUTHORIZATION_HEADER,
+    ActionView,
+)
 from openslides_backend.http.views.base_view import RouteFunction
 from openslides_backend.shared.env import DEV_PASSWORD
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -60,7 +63,7 @@ class BaseInternalActionTest(BaseInternalRequestTest):
     Sets up a server-side password for internal requests.
     """
 
-    route = ActionView.internal_action_route
+    route: RouteFunction = ActionView.internal_action_route
 
     def internal_request(
         self,
@@ -131,6 +134,27 @@ class TestInternalActionsDev(BaseInternalActionTest):
         self.assert_status_code(response, 401)
         self.assert_model_not_exists("user/2")
 
+    def test_internal_execute_stack_internal_via_public_route(self) -> None:
+        self.datastore.truncate_db()
+        response = self.request(
+            "organization.initial_import", {"data": {}}, internal=False
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json.get("message"),
+            "Action organization.initial_import does not exist.",
+        )
+        self.assert_model_not_exists("organization/1")
+
+    def test_internal_wrongly_encoded_password(self) -> None:
+        response = self.anon_client.post(
+            get_route_path(self.route),
+            json=[{"action": "user.create", "data": [{"username": "test"}]}],
+            headers={INTERNAL_AUTHORIZATION_HEADER: "openslides"},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("user/2")
+
 
 @disable_dev_mode
 class TestInternalActionsProd(BaseInternalActionTest):
@@ -185,13 +209,3 @@ class TestInternalActionsProdWithPasswordFile(
             response.json.get("message"), "Action option.create does not exist."
         )
         self.assert_model_not_exists("option/1")
-
-    def test_internal_execute_stack_internal_via_public_route(self) -> None:
-        self.datastore.truncate_db()
-        response = self.request("organization.initial_import", {"data": {}})
-        self.assert_status_code(response, 400)
-        self.assertEqual(
-            response.json.get("message"),
-            "Action organization.initial_import does not exist.",
-        )
-        self.assert_model_not_exists("organization/1")

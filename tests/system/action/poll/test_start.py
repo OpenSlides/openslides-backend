@@ -17,6 +17,8 @@ class VotePollBaseTestClass(BaseActionTestCase):
                     "poll_countdown_id": 11,
                     "is_active_in_organization_id": 1,
                     "group_ids": [1],
+                    "meeting_user_ids": [11],
+                    "present_user_ids": [1],
                 },
                 "projector_countdown/11": {
                     "default_time": 60,
@@ -24,13 +26,17 @@ class VotePollBaseTestClass(BaseActionTestCase):
                     "countdown_time": 60,
                     "meeting_id": 1,
                 },
-                "group/1": {"user_ids": [1]},
+                "group/1": {"meeting_user_ids": [11]},
                 "option/1": {"meeting_id": 1, "poll_id": 1},
                 "option/2": {"meeting_id": 1, "poll_id": 1},
                 "user/1": {
                     "is_present_in_meeting_ids": [1],
-                    "group_$1_ids": [1],
-                    "group_$_ids": ["1"],
+                    "meeting_user_ids": [11],
+                },
+                "meeting_user/11": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
                 },
                 "assignment/1": {
                     "title": "test_assignment_tcLT59bmXrXif424Qw7K",

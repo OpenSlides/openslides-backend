@@ -1,4 +1,4 @@
-from typing import Set
+from typing import cast
 
 from openslides_backend.action.util.typing import ActionData
 from openslides_backend.services.datastore.commands import GetManyRequest
@@ -32,7 +32,7 @@ class VoteCreate(CreateActionWithInferredMeeting):
     relation_field_for_meeting = "option_id"
 
     def prefetch(self, action_data: ActionData) -> None:
-        result = self.datastore.get_many(
+        self.datastore.get_many(
             [
                 GetManyRequest(
                     "option",
@@ -42,37 +42,33 @@ class VoteCreate(CreateActionWithInferredMeeting):
             ],
             use_changed_models=False,
         )
-        fields = [
-            "vote_$_ids",
-            "poll_voted_$_ids",
-            "vote_delegated_vote_$_ids",
-        ]
-        fields_set: Set[str] = set()
-        for option in result["option"].values():
-            fields_set.update(
-                (
-                    f"vote_${option['meeting_id']}_ids",
-                    f"poll_voted_${option['meeting_id']}_ids",
-                    f"vote_delegated_vote_${option['meeting_id']}_ids",
-                )
-            )
-        fields.extend(fields_set)
+        meeting_users = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user",
+                    list(
+                        {
+                            cast(int, instance.get(fname))
+                            for instance in action_data
+                            for fname in (
+                                "meeting_user_id",
+                                "delegated_meeting_user_id",
+                            )
+                            if instance.get(fname)
+                        }
+                    ),
+                    ["id", "user_id", "vote_ids", "delegated_vote_ids"],
+                ),
+            ],
+            use_changed_models=False,
+        )["meeting_user"]
+
         self.datastore.get_many(
             [
                 GetManyRequest(
                     "user",
-                    list(
-                        {
-                            user_id
-                            for instance in action_data
-                            for user_id in (
-                                instance.get("user_id"),
-                                instance.get("delegated_user_id"),
-                            )
-                            if user_id is not None
-                        }
-                    ),
-                    fields,
+                    list({mu["user_id"] for mu in meeting_users.values()}),
+                    ["id", "poll_voted_ids"],
                 ),
             ],
             use_changed_models=False,
