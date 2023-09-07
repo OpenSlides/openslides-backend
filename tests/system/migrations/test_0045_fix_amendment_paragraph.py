@@ -1,4 +1,3 @@
-from tests.system.migrations.conftest import DoesNotExist
 
 
 def test_migration(write, finalize, assert_model, read_model):
@@ -41,6 +40,30 @@ def test_migration(write, finalize, assert_model, read_model):
                 "amendment_paragraph_$42": "change",
             },
         },
+        {
+            "type": "create",
+            "fqid": "motion/23880",
+            "fields": {
+                "id": 23880,
+                "title": "Änderungsantrag zu 01",
+                "reason": "",
+                "created": 1678286817,
+                "state_id": 3564,
+                "meeting_id": 177,
+                "sort_weight": 10000,
+                "last_modified": 1678286817,
+                "meta_position": 13607,
+                "submitter_ids": [25353],
+                "lead_motion_id": 23879,
+                "category_weight": 10000,
+                "sequential_number": 2,
+                "start_line_number": 1,
+                "workflow_timestamp": 1678286817,
+                "list_of_speakers_id": 25721,
+                "amendment_paragraph_$": ["0"],
+                "amendment_paragraph_$0": "<p>Dieser Test Antrag soll weitergeleitet werden. Und dann dazu ein &Auml;nderungsantrag gestellt werden.</p>",
+            },
+        },
     )
     finalize("0045_fix_amendment_paragraph")
 
@@ -54,5 +77,27 @@ def test_migration(write, finalize, assert_model, read_model):
                 "2": "change",
                 "42": "change",
             },
+        },
+    )
+    assert_model(
+        "motion/23880",
+        {
+            "id": 23880,
+            "title": "Änderungsantrag zu 01",
+            "reason": "",
+            "created": 1678286817,
+            "state_id": 3564,
+            "meeting_id": 177,
+            "sort_weight": 10000,
+            "last_modified": 1678286817,
+            "meta_position": 13607,
+            "submitter_ids": [25353],
+            "lead_motion_id": 23879,
+            "category_weight": 10000,
+            "sequential_number": 2,
+            "start_line_number": 1,
+            "workflow_timestamp": 1678286817,
+            "list_of_speakers_id": 25721,
+            "amendment_paragraphs": "<p>Dieser Test Antrag soll weitergeleitet werden. Und dann dazu ein &Auml;nderungsantrag gestellt werden.</p>",
         },
     )
