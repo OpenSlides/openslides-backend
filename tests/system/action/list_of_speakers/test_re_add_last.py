@@ -241,17 +241,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
             }
         )
         response = self.request("list_of_speakers.re_add_last", {"id": 111})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "speaker/223",
-            {
-                "list_of_speakers_id": 111,
-                "meeting_user_id": 42,
-                "begin_time": None,
-                "end_time": None,
-                "point_of_order": None,
-                "meeting_id": 222,
-            },
+        self.assert_status_code(response, 400)
+        assert (
+            "The last speaker is a point of order speaker and cannot be re-added."
+            in response.json["message"]
         )
 
     def test_last_speaker_also_in_waiting_list(self) -> None:
