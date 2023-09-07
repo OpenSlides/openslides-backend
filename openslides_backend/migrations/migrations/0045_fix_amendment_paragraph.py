@@ -65,107 +65,11 @@ class ParametrizedFieldStrategy(TypedDict):
 TEMPLATE_FIELDS: Dict[
     Collection, Dict[str, FieldStrategy | ParametrizedFieldStrategy]
 ] = {
-    "user": {
-        "committee_$_management_level": {
-            "strategy": FieldStrategy.Rename,
-            "name": "committee_management_ids",
-        },
-        "poll_voted_$_ids": FieldStrategy.Merge,
-        "option_$_ids": FieldStrategy.Merge,
-        "vote_$_ids": FieldStrategy.Merge,
-        "vote_delegated_vote_$_ids": {
-            "strategy": FieldStrategy.Merge,
-            "name": "delegated_vote_ids",
-        },
-        "comment_$": FieldStrategy.MoveToMeetingUser,
-        "number_$": FieldStrategy.MoveToMeetingUser,
-        "structure_level_$": FieldStrategy.MoveToMeetingUser,
-        "about_me_$": FieldStrategy.MoveToMeetingUser,
-        "vote_weight_$": FieldStrategy.MoveToMeetingUser,
-        "group_$_ids": FieldStrategy.MoveToMeetingUser,
-        "speaker_$_ids": FieldStrategy.MoveToMeetingUser,
-        "personal_note_$_ids": FieldStrategy.MoveToMeetingUser,
-        "supported_motion_$_ids": FieldStrategy.MoveToMeetingUser,
-        "submitted_motion_$_ids": {
-            "strategy": FieldStrategy.MoveToMeetingUser,
-            "name": "motion_submitter_ids",
-        },
-        "assignment_candidate_$_ids": FieldStrategy.MoveToMeetingUser,
-        "vote_delegated_$_to_id": FieldStrategy.MoveToMeetingUserAndReplace,
-        "vote_delegations_$_from_ids": FieldStrategy.MoveToMeetingUserAndReplace,
-        "chat_message_$_ids": FieldStrategy.MoveToMeetingUser,
-    },
-    "committee": {
-        "user_$_management_level": {
-            "strategy": FieldStrategy.Rename,
-            "name": "manager_ids",
-        },
-    },
-    "meeting": {
-        "logo_$_id": FieldStrategy.Rename,
-        "font_$_id": FieldStrategy.Rename,
-        "default_projector_$_ids": {
-            "strategy": FieldStrategy.Rename,
-            "name": {
-                "default_projector_$agenda_all_items_ids": "default_projector_agenda_item_list_ids",
-                "default_projector_$topics_ids": "default_projector_topic_ids",
-                "default_projector_$projector_countdowns_ids": "default_projector_countdown_ids",
-                "default_projector_$projector_message_ids": "default_projector_message_ids",
-            },
-        },
-    },
-    "group": {
-        "user_ids": FieldStrategy.ReplaceWithMeetingUsers,
-    },
     "motion": {
         "amendment_paragraph_$": {
             "strategy": FieldStrategy.MergeToJSON,
             "name": "amendment_paragraphs",
         },
-        "supporter_ids": {
-            "strategy": FieldStrategy.ReplaceWithMeetingUsers,
-            "name": "supporter_meeting_user_ids",
-        },
-    },
-    "mediafile": {
-        "used_as_logo_$_in_meeting_id": FieldStrategy.Rename,
-        "used_as_font_$_in_meeting_id": FieldStrategy.Rename,
-    },
-    "projector": {
-        "used_as_default_$_in_meeting_id": {
-            "strategy": FieldStrategy.Rename,
-            "name": {
-                "used_as_default_$agenda_all_items_in_meeting_id": "used_as_default_projector_for_agenda_item_list_in_meeting_id",
-                "used_as_default_$topics_in_meeting_id": "used_as_default_projector_for_topic_in_meeting_id",
-                "used_as_default_$list_of_speakers_in_meeting_id": "used_as_default_projector_for_list_of_speakers_in_meeting_id",
-                "used_as_default_$current_list_of_speakers_in_meeting_id": "used_as_default_projector_for_current_list_of_speakers_in_meeting_id",
-                "used_as_default_$motion_in_meeting_id": "used_as_default_projector_for_motion_in_meeting_id",
-                "used_as_default_$amendment_in_meeting_id": "used_as_default_projector_for_amendment_in_meeting_id",
-                "used_as_default_$motion_block_in_meeting_id": "used_as_default_projector_for_motion_block_in_meeting_id",
-                "used_as_default_$assignment_in_meeting_id": "used_as_default_projector_for_assignment_in_meeting_id",
-                "used_as_default_$mediafile_in_meeting_id": "used_as_default_projector_for_mediafile_in_meeting_id",
-                "used_as_default_$projector_message_in_meeting_id": "used_as_default_projector_for_message_in_meeting_id",
-                "used_as_default_$projector_countdowns_in_meeting_id": "used_as_default_projector_for_countdown_in_meeting_id",
-                "used_as_default_$assignment_poll_in_meeting_id": "used_as_default_projector_for_assignment_poll_in_meeting_id",
-                "used_as_default_$motion_poll_in_meeting_id": "used_as_default_projector_for_motion_poll_in_meeting_id",
-                "used_as_default_$poll_in_meeting_id": "used_as_default_projector_for_poll_in_meeting_id",
-            },
-        }
-    },
-    "personal_note": {
-        "user_id": FieldStrategy.ReplaceWithMeetingUsers,
-    },
-    "speaker": {
-        "user_id": FieldStrategy.ReplaceWithMeetingUsers,
-    },
-    "motion_submitter": {
-        "user_id": FieldStrategy.ReplaceWithMeetingUsers,
-    },
-    "assignment_candidate": {
-        "user_id": FieldStrategy.ReplaceWithMeetingUsers,
-    },
-    "chat_message": {
-        "user_id": FieldStrategy.ReplaceWithMeetingUsers,
     },
 }
 
