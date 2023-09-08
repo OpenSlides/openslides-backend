@@ -233,6 +233,18 @@ class ImportMixin(BaseImportJsonUpload):
                     if type(dvalue := entry[field]) == dict:
                         entry[field] = dvalue["value"]
 
+    def flatten_object_fields(self, fields: Optional[List[str]]) -> None:
+        """ replace objects from self.rows["data"] with their values. Uses the fields, if given, otherwise all"""
+        for row in self.rows:
+            entry = row["data"]
+            used_list= fields if fields else entry.keys()
+            for field in used_list:
+                if field in entry["data"]:
+                    if field == "username" and "id" in entry["data"][field]:
+                        entry["data"]["id"] = entry["data"][field]["id"]
+                    if type(dvalue := entry["data"][field]) == dict:
+                        entry["data"][field] = dvalue["value"]
+
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:
             for instance in action_data:
