@@ -266,7 +266,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update", {"id": 111, "vote_delegated_to_id": 11, "meeting_id": 1}
         )
         self.assert_status_code(response, 400)
-        assert "Self vote delegation is not allowed." in response.json["message"]
+        assert (
+            "User 111 can't delegate the vote to himself." in response.json["message"]
+        )
 
     def test_update_self_vote_delegation_2(self) -> None:
         self.set_models(
@@ -284,7 +286,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"id": 111, "vote_delegations_from_ids": [11], "meeting_id": 1},
         )
         self.assert_status_code(response, 400)
-        assert "Self vote delegation is not allowed." in response.json["message"]
+        assert (
+            "User 111 can't delegate the vote to himself." in response.json["message"]
+        )
 
     def test_committee_manager_without_committee_ids(self) -> None:
         """Giving committee management level requires committee_ids"""
@@ -901,7 +905,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "vote_weight": "12.002345",
                 "about_me": "about me 1",
                 "comment": "comment for meeting/1",
-                "vote_delegated_to_id": 1,  # meeting_user/1 => user/2 in meeting/1
                 "vote_delegations_from_ids": [3, 5],  # from user/5 and 6 in meeting/1
             },
         )
@@ -918,7 +921,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user_id": 111,
                 "meeting_id": 1,
-                "vote_delegated_to_id": 1,
                 "vote_delegations_from_ids": [3, 5],
                 "number": "number1",
                 "structure_level": "structure_level 1",
@@ -930,10 +932,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_user/8",
             {"user_id": 111, "meeting_id": 4, "number": "number1 in 4"},
-        )
-        self.assert_model_exists(
-            "meeting_user/1",
-            {"user_id": 2, "meeting_id": 1, "vote_delegations_from_ids": [7]},
         )
         self.assert_model_exists(
             "meeting_user/3", {"user_id": 5, "meeting_id": 1, "vote_delegated_to_id": 7}

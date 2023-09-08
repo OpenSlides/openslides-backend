@@ -77,7 +77,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             "id": 14,
         }
         request_data.update(meeting_user4_update)
-        return self.request("meeting_user.update", request_data)
+        return self.request("meeting_user.set_data", request_data)
 
     def test_delegated_to_standard_user(self) -> None:
         response = self.request_executor({"vote_delegated_to_id": 13})

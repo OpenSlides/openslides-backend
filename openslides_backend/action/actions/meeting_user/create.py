@@ -10,11 +10,12 @@ from ...mixins.meeting_user_helper import get_meeting_user_filter
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixin import MeetingUserMixin
+from .history_mixin import MeetingUserHistoryMixin
+from .mixin import meeting_user_standard_fields
 
 
 @register_action("meeting_user.create", action_type=ActionType.BACKEND_INTERNAL)
-class MeetingUserCreate(MeetingUserMixin, CreateAction):
+class MeetingUserCreate(MeetingUserHistoryMixin, CreateAction):
     """
     Action to create a meeting user.
     """
@@ -25,7 +26,7 @@ class MeetingUserCreate(MeetingUserMixin, CreateAction):
         optional_properties=[
             "about_me",
             "group_ids",
-            *MeetingUserMixin.standard_fields,
+            *meeting_user_standard_fields,
         ],
     )
 
