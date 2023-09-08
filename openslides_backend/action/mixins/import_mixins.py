@@ -30,6 +30,12 @@ class ImportState(str, Enum):
     ERROR = "error"
 
 
+class ImportRow(TypedDict):
+    state: ImportState
+    data: Dict[str, Any]
+    messages: List[str]
+
+
 class ResultType(Enum):
     """Used by Lookup to differ the possible results in check_duplicate."""
 
@@ -104,7 +110,7 @@ class Lookup:
 
     def get_field_by_name(
         self, name: SearchFieldType, fieldname: str
-    ) -> Optional[Union[int, str]]:
+    ) -> Optional[Union[int, str, bool]]:
         """Gets 'fieldname' from value of name_to_ids-dict"""
         if len(self.name_to_ids.get(name, [])) == 1:
             return self.name_to_ids[name][0].get(fieldname)
@@ -143,6 +149,15 @@ class BaseImportJsonUpload(SingularActionMixin):
                 count += BaseImportJsonUpload.count_warnings_in_payload(col)
         return count
 
+    @staticmethod
+    def get_value_from_union_str_object(field: Optional[Union[str, Dict[str, Any]]]) -> Optional[str]:
+        if type(field) == dict:
+            return field.get("value", "")
+        elif type(field) == str:
+            return field
+        else:
+            return None
+
 
 class ImportMixin(BaseImportJsonUpload):
     """
@@ -150,6 +165,7 @@ class ImportMixin(BaseImportJsonUpload):
     """
 
     import_name: str
+    rows: List[ImportRow] = []
 
     def prepare_action_data(self, action_data: ActionData) -> ActionData:
         self.error_store_ids: List[int] = []
@@ -187,6 +203,18 @@ class ImportMixin(BaseImportJsonUpload):
         return {
             "rows": self.result.get("rows", []),
         }
+
+    def flatten_object_fields(self, fields: Optional[List[str]]) -> None:
+        """ replace objects from self.rows["data"] with their values. Uses the fields, if given, otherwise all"""
+        for row in self.rows:
+            entry = row["data"]
+            used_list= fields if fields else entry.keys()
+            for field in used_list:
+                if field in entry["data"]:
+                    if field == "username" and "id" in entry["data"][field]:
+                        entry["data"]["id"] = entry["data"][field]["id"]
+                    if type(dvalue := entry["data"][field]) == dict:
+                        entry["data"][field] = dvalue["value"]
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:

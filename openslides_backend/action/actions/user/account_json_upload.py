@@ -85,10 +85,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         self.setup_lookups(data)
         self.create_usernames(data)
 
-        self.rows = [
-            self.validate_entry(entry, payload_index)
-            for payload_index, entry in enumerate(data)
-        ]
+        self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
         itemCount = len(self.rows)
@@ -115,8 +112,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         return {}
 
     def validate_entry(
-        self, entry: Dict[str, Any], payload_index: int
-    ) -> Dict[str, Any]:
+        self, entry: Dict[str, Any]) -> Dict[str, Any]:
         messages: List[str] = []
         id_: Optional[int] = None
         old_saml_id: Optional[str] = None

@@ -539,3 +539,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             },
         )
         self.assert_model_not_exists("action_worker/1")
+
+    def test_json_upload_update_multiple_users_okay(self) -> None:
+        self.json_upload_multiple_users()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)

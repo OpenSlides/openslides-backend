@@ -723,3 +723,109 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "saml_id": {"info": "done", "value": "new_one"},
             "username": {"info": "done", "value": "test", "id": 2},
         }
+
+    def json_upload_multiple_users(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "user2",
+                    "password": "secret",
+                    "default_password": "secret",
+                    "can_change_own_password": True,
+                    "default_vote_weight": "2.300000",
+                },
+                "user/3": {
+                    "username": "user3",
+                    "saml_id": "saml3",
+                    "password": "secret",
+                    "default_password": "secret",
+                    "can_change_own_password": True,
+                    "default_vote_weight": "3.300000",
+                },
+                "user/4": {
+                    "username": "user4",
+                    "first_name": "Martin",
+                    "last_name": "Luther King",
+                    "email": "mlk@america.com",
+                    "password": "secret",
+                    "default_password": "secret",
+                    "can_change_own_password": True,
+                    "default_vote_weight": "4.300000",
+                },
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "user2",
+                        "saml_id": "test_saml_id2",
+                        "default_vote_weight": "2.345678"
+                    },
+                    {
+                        "saml_id": "saml3",
+                        "default_vote_weight": "3.345678"
+                    },
+                    {
+                        "first_name": "Martin",
+                        "last_name": "Luther King",
+                        "email": "mlk@america.com",
+                        "default_vote_weight": "4.345678",
+                    },
+                    {
+                        "username": "new_user5",
+                        "default_vote_weight": "5.345678",
+                        "saml_id": "saml5",
+                    },
+                    {
+                        "saml_id": "new_saml6",
+                        "default_vote_weight": "6.345678",
+                    },
+                    {
+                        "first_name": "Joan",
+                        "last_name": "Baez7",
+                        "default_vote_weight": "7.345678",
+                    },
+
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        worker = self.assert_model_exists("action_worker/1")
+        assert worker["state"] == ImportState.WARNING
+        assert worker["result"]["import"] == "account"
+        assert worker["result"]["rows"][0]["state"] == ImportState.DONE
+        assert worker["result"]["rows"][0]["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password."
+        ]
+        assert worker["result"]["rows"][0]["data"] == {'id': 2, 'saml_id': {'info': 'new', 'value': 'test_saml_id2'}, 'username': {'id': 2, 'info': 'done', 'value': 'user2'}, 'default_password': {'info': 'warning', 'value': ''}, 'default_vote_weight': '2.345678'}
+
+        assert worker["result"]["rows"][1]["state"] == ImportState.DONE
+        assert worker["result"]["rows"][1]["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password."
+        ]
+        assert worker["result"]["rows"][1]["data"] == {'id': 3, 'saml_id': {'info': 'new', 'value': 'saml3'}, 'username': {'id': 3, 'info': 'done', 'value': 'user3'}, 'default_password': {'info': 'warning', 'value': ''}, 'default_vote_weight': '3.345678'}
+
+        assert worker["result"]["rows"][2]["state"] == ImportState.DONE
+        assert worker["result"]["rows"][2]["messages"] == []
+        assert worker["result"]["rows"][2]["data"] == {'id': 4, 'email': 'mlk@america.com', 'username': {'id': 4, 'info': 'done', 'value': 'user4'}, 'last_name': 'Luther King', 'first_name': 'Martin', 'default_vote_weight': '4.345678'}
+
+        assert worker["result"]["rows"][3]["state"] == ImportState.NEW
+        assert worker["result"]["rows"][3]["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password."
+        ]
+        assert worker["result"]["rows"][3]["data"] == {'saml_id': {'info': 'new', 'value': 'saml5'}, 'username': {'info': 'done', 'value': 'new_user5'}, 'default_password': {'info': 'warning', 'value': ''}, 'default_vote_weight': '5.345678'}
+
+        assert worker["result"]["rows"][4]["state"] == ImportState.NEW
+        assert worker["result"]["rows"][4]["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password."
+        ]
+        assert worker["result"]["rows"][4]["data"] == {'saml_id': {'info': 'new', 'value': 'new_saml6'}, 'username': {'info': 'generated', 'value': 'new_saml6'}, 'default_password': {'info': 'warning', 'value': ''}, 'default_vote_weight': '6.345678'}
+
+        assert worker["result"]["rows"][5]["state"] == ImportState.NEW
+        assert worker["result"]["rows"][5]["messages"] == []
+        default_password = worker["result"]["rows"][5]["data"].pop("default_password")
+        assert default_password["info"] == ImportState.GENERATED
+        assert default_password["value"]
+        assert worker["result"]["rows"][5]["data"] == {'username': {'info': 'generated', 'value': 'JoanBaez7'}, 'last_name': 'Baez7', 'first_name': 'Joan', 'default_vote_weight': '7.345678'}
