@@ -1,20 +1,20 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import fastjsonschema
 
 from ....models.models import Topic
 from ....permissions.permissions import Permissions
+from ....shared.filters import FilterOperator
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportState, JsonUploadMixin
+from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, ResultType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create import TopicCreate
-from .mixins import DuplicateCheckMixin
 
 
 @register_action("topic.json_upload")
-class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
+class TopicJsonUpload(JsonUploadMixin):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -63,7 +63,7 @@ class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
             entry["meeting_id"] = instance["meeting_id"]
 
         # validate and check for duplicates
-        self.init_duplicate_set(instance["meeting_id"])
+        self.setup_lookups(data, instance["meeting_id"])
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
@@ -90,12 +90,28 @@ class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
         state, messages = None, []
         try:
             TopicCreate.schema_validator(entry)
-            if self.check_for_duplicate(entry["title"]):
+            check_result = self.topic_lookup.check_duplicate(entry["title"])
+            id_ = self.topic_lookup.get_field_by_name(entry["title"], "id")
+            if check_result == ResultType.FOUND_ID and id_ != 0:
                 state = ImportState.WARNING
                 messages.append("Duplicate")
-            else:
+            elif check_result == ResultType.FOUND_ID and id_ == 0:
+                state = ImportState.WARNING
+                messages.append("Duplicate")
+            elif check_result == ResultType.NOT_FOUND or id_ == 0:
                 state = ImportState.NEW
+            elif check_result == ResultType.FOUND_MORE_IDS:
+                state = ImportState.ERROR
         except fastjsonschema.JsonSchemaException as exception:
             state = ImportState.ERROR
             messages.append(exception.message)
         return {"state": state, "messages": messages, "data": entry}
+
+    def setup_lookups(self, data: List[Dict[str, Any]], meeting_id: int) -> None:
+        self.topic_lookup = Lookup(
+            self.datastore,
+            "topic",
+            [(title, entry) for entry in data if (title := entry.get("title"))],
+            field="title",
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+        )

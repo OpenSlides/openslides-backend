@@ -56,6 +56,7 @@ class Lookup:
         name_entries: List[Tuple[SearchFieldType, Dict[str, Any]]],
         field: SearchFieldType = "name",
         mapped_fields: Optional[List[str]] = None,
+        global_and_filter: Optional[Filter] = None,
     ) -> None:
         if mapped_fields is None:
             mapped_fields = []
@@ -86,9 +87,14 @@ class Lookup:
                     for name_tpl, _ in name_entries
                 ]
         if or_filters:
+            if global_and_filter:
+                filter_: Filter = And(global_and_filter, Or(*or_filters))
+            else:
+                filter_ = Or(*or_filters)
+
             for entry in datastore.filter(
                 collection,
-                Or(*or_filters),
+                filter_,
                 mapped_fields,
                 lock_result=False,
             ).values():
