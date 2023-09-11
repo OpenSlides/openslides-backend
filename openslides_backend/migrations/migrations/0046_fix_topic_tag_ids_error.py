@@ -22,8 +22,6 @@ class Migration(BaseModelMigration):
             if self.field in model:
                 update: Dict[str, Any] = {self.field: None}
                 events.append(
-                    RequestUpdateEvent(
-                        fqid_from_collection_and_id("topic", id), update
-                    )
+                    RequestUpdateEvent(fqid_from_collection_and_id("topic", id), update)
                 )
         return events
