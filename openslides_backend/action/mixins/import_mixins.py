@@ -166,7 +166,7 @@ class ImportMixin(BaseImportJsonUpload):
             raise ActionException(
                 f"Wrong id doesn't point on {self.import_name} import data."
             )
-        if worker.get("state") not in ImportState.__members__.values():
+        if worker.get("state") not in list(ImportState):
             raise ActionException(
                 "Error in import: Missing valid state in stored worker."
             )
