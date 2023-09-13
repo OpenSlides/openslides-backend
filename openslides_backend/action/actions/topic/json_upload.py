@@ -1,7 +1,5 @@
 from typing import Any, Dict, List
 
-import fastjsonschema
-
 from ....models.models import Topic
 from ....permissions.permissions import Permissions
 from ....shared.filters import FilterOperator
@@ -10,7 +8,6 @@ from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, Result
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..agenda_item.agenda_creation import agenda_creation_properties
-from .create import TopicCreate
 
 
 @register_action("topic.json_upload")
@@ -62,7 +59,7 @@ class TopicJsonUpload(JsonUploadMixin):
         for entry in data:
             entry["meeting_id"] = instance["meeting_id"]
 
-        # validate and check for duplicates
+        # setup and validate entries
         self.setup_lookups(data, instance["meeting_id"])
         self.rows = [self.validate_entry(entry) for entry in data]
 
@@ -88,23 +85,19 @@ class TopicJsonUpload(JsonUploadMixin):
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         state, messages = None, []
-        try:
-            TopicCreate.schema_validator(entry)
-            check_result = self.topic_lookup.check_duplicate(entry["title"])
-            id_ = self.topic_lookup.get_field_by_name(entry["title"], "id")
-            if check_result == ResultType.FOUND_ID and id_ != 0:
-                state = ImportState.WARNING
-                messages.append("Duplicate")
-            elif check_result == ResultType.FOUND_ID and id_ == 0:
-                state = ImportState.WARNING
-                messages.append("Duplicate")
-            elif check_result == ResultType.NOT_FOUND or id_ == 0:
-                state = ImportState.NEW
-            elif check_result == ResultType.FOUND_MORE_IDS:
-                state = ImportState.ERROR
-        except fastjsonschema.JsonSchemaException as exception:
-            state = ImportState.ERROR
-            messages.append(exception.message)
+        check_result = self.topic_lookup.check_duplicate(entry["title"])
+        id_ = self.topic_lookup.get_field_by_name(entry["title"], "id")
+        if check_result == ResultType.FOUND_ID and id_ != 0:
+            state = ImportState.WARNING
+            messages.append("Duplicate")
+        elif check_result == ResultType.FOUND_ID and id_ == 0:
+            state = ImportState.WARNING
+            messages.append("Duplicate")
+        elif check_result == ResultType.NOT_FOUND or id_ == 0:
+            state = ImportState.NEW
+        elif check_result == ResultType.FOUND_MORE_IDS:
+            state = ImportState.WARNING
+            messages.append("Duplicate")
         return {"state": state, "messages": messages, "data": entry}
 
     def setup_lookups(self, data: List[Dict[str, Any]], meeting_id: int) -> None:

@@ -155,8 +155,8 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["rows"][2]["messages"] == []
-        assert result["rows"][2]["state"] == ImportState.ERROR
+        assert result["rows"][2]["messages"] == ["Duplicate"]
+        assert result["rows"][2]["state"] == ImportState.WARNING
         self.assert_model_exists(
             "import_preview/1",
             {
@@ -164,8 +164,8 @@ class TopicJsonUpload(BaseActionTestCase):
                 "result": {
                     "rows": [
                         {
-                            "state": ImportState.ERROR,
-                            "messages": [],
+                            "state": ImportState.WARNING,
+                            "messages": ["Duplicate"],
                             "data": {"title": "test", "meeting_id": 22},
                         },
                         {
@@ -174,8 +174,8 @@ class TopicJsonUpload(BaseActionTestCase):
                             "data": {"title": "bla", "meeting_id": 22},
                         },
                         {
-                            "state": ImportState.ERROR,
-                            "messages": [],
+                            "state": ImportState.WARNING,
+                            "messages": ["Duplicate"],
                             "data": {"title": "test", "meeting_id": 22},
                         },
                     ],
