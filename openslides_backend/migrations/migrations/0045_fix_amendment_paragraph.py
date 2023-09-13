@@ -25,8 +25,7 @@ class Migration(BaseModelMigration):
                 for replacement in model.get(self.old_field, []):
                     structured_field = self.old_field.replace("$", f"${replacement}")
                     update[structured_field] = None
-                    if structured_value := model.get(structured_field):
-                        update[self.new_field][replacement] = structured_value
+                    update[self.new_field][replacement] = model.get(structured_field)
                 events.append(
                     RequestUpdateEvent(
                         fqid_from_collection_and_id("motion", id), update
