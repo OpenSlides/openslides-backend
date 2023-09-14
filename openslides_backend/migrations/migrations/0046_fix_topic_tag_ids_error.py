@@ -5,6 +5,8 @@ from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
 
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
+from ...shared.filters import FilterOperator
+
 
 class Migration(BaseModelMigration):
     """
@@ -17,11 +19,12 @@ class Migration(BaseModelMigration):
 
     def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
         events: List[BaseRequestEvent] = []
-        db_models = self.reader.get_all("topic")
-        for id, model in db_models.items():
-            if self.field in model:
-                update: Dict[str, Any] = {self.field: None}
-                events.append(
-                    RequestUpdateEvent(fqid_from_collection_and_id("topic", id), update)
-                )
+        db_models = self.reader.filter(
+            collection="topic", filter=FilterOperator(self.field, "!=", None)
+        )
+        for id_ in db_models:
+            update: Dict[str, Any] = {self.field: None}
+            events.append(
+                RequestUpdateEvent(fqid_from_collection_and_id("topic", id_), update)
+            )
         return events
