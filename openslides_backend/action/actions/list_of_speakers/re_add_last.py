@@ -83,7 +83,5 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             "id": last_speaker_id,
             "begin_time": None,
             "end_time": None,
-            "point_of_order": None,
-            "point_of_order_category_id": None,
             "weight": lowest_weight - 1,
         }

@@ -249,7 +249,6 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                 "meeting_user_id": 42,
                 "begin_time": None,
                 "end_time": None,
-                "point_of_order": None,
                 "meeting_id": 222,
             },
         )
