@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from datastore.migrations import BaseModelMigration
 from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
-
+from ...shared.filters import FilterOperator
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 
@@ -18,17 +18,20 @@ class Migration(BaseModelMigration):
 
     def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
         events: List[BaseRequestEvent] = []
-        db_models = self.reader.get_all("motion")
+        db_models = self.reader.filter(
+            collection="motion",
+            filter= FilterOperator(self.old_field,  "!=",  None),
+        )
+
         for id, model in db_models.items():
-            if self.old_field in model:
-                update: Dict[str, Any] = {self.old_field: None, self.new_field: {}}
-                for replacement in model.get(self.old_field, []):
-                    structured_field = self.old_field.replace("$", f"${replacement}")
-                    update[structured_field] = None
-                    update[self.new_field][replacement] = model.get(structured_field)
-                events.append(
-                    RequestUpdateEvent(
-                        fqid_from_collection_and_id("motion", id), update
-                    )
+            update: Dict[str, Any] = {self.old_field: None, self.new_field: {}}
+            for replacement in model.get(self.old_field, []):
+                structured_field = self.old_field.replace("$", f"${replacement}")
+                update[structured_field] = None
+                update[self.new_field][replacement] = model.get(structured_field)
+            events.append(
+                RequestUpdateEvent(
+                    fqid_from_collection_and_id("motion", id), update
                 )
+            )
         return events
