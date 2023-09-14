@@ -77,6 +77,7 @@ class TopicJsonUpload(JsonUploadMixin):
             {"name": "warning", "value": state_to_count[ImportState.WARNING]},
         ]
 
+        # finalize
         self.set_state(
             state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )
@@ -86,14 +87,10 @@ class TopicJsonUpload(JsonUploadMixin):
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         state, messages = None, []
         check_result = self.topic_lookup.check_duplicate(entry["title"])
-        id_ = self.topic_lookup.get_field_by_name(entry["title"], "id")
-        if check_result == ResultType.FOUND_ID and id_ != 0:
+        if check_result == ResultType.FOUND_ID:
             state = ImportState.WARNING
             messages.append("Duplicate")
-        elif check_result == ResultType.FOUND_ID and id_ == 0:
-            state = ImportState.WARNING
-            messages.append("Duplicate")
-        elif check_result == ResultType.NOT_FOUND or id_ == 0:
+        elif check_result == ResultType.NOT_FOUND:
             state = ImportState.NEW
         elif check_result == ResultType.FOUND_MORE_IDS:
             state = ImportState.WARNING
