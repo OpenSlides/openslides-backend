@@ -1,4 +1,4 @@
-def test_migration(write, finalize, assert_model):
+def test_migration(write, finalize, assert_model, read_model):
     write(
         {
             "type": "create",
@@ -20,7 +20,27 @@ def test_migration(write, finalize, assert_model):
                 "title": "test",
             },
         },
+        {
+            "type": "create",
+            "fqid": "motion/63",
+            "fields": {
+                "id": 63,
+                "title": "test",
+                "amendment_paragraph_$": ["0", "1", "2", "42"],
+                "amendment_paragraph_$0": "change",
+                "amendment_paragraph_$1": "",
+                "amendment_paragraph_$2": "",
+                "amendment_paragraph_$42": "change",
+            },
+        }
     )
+    write(
+        {
+            "type": "delete",
+            "fqid": "motion/63",
+        }
+    )
+
     finalize("0045_fix_amendment_paragraph")
 
     assert_model(
@@ -42,3 +62,7 @@ def test_migration(write, finalize, assert_model):
             "title": "test",
         },
     )
+
+    motion63 = read_model("motion/63")
+    assert motion63["meta_deleted"] == True
+    assert motion63["amendment_paragraph_$"] == ["0", "1", "2", "42"]
