@@ -24,8 +24,8 @@ class Migration(BaseModelMigration):
             collection="motion",
             filter=And(
                 FilterOperator(self.old_field, "!=", None),
-                FilterOperator("meta_deleted", "!=", True)
-            )
+                FilterOperator("meta_deleted", "!=", True),
+            ),
         )
 
         for id, model in db_models.items():

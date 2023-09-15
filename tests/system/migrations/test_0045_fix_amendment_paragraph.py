@@ -32,7 +32,7 @@ def test_migration(write, finalize, assert_model, read_model):
                 "amendment_paragraph_$2": "",
                 "amendment_paragraph_$42": "change",
             },
-        }
+        },
     )
     write(
         {
@@ -64,5 +64,5 @@ def test_migration(write, finalize, assert_model, read_model):
     )
 
     motion63 = read_model("motion/63")
-    assert motion63["meta_deleted"] == True
+    assert motion63["meta_deleted"] is True
     assert motion63["amendment_paragraph_$"] == ["0", "1", "2", "42"]
