@@ -5,7 +5,7 @@ from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
 
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
-from ...shared.filters import FilterOperator
+from ...shared.filters import And, FilterOperator
 
 
 class Migration(BaseModelMigration):
@@ -22,7 +22,10 @@ class Migration(BaseModelMigration):
         events: List[BaseRequestEvent] = []
         db_models = self.reader.filter(
             collection="motion",
-            filter=FilterOperator(self.old_field, "!=", None),
+            filter=And(
+                FilterOperator(self.old_field, "!=", None),
+                FilterOperator("meta_deleted", "!=", True),
+            ),
         )
 
         for id, model in db_models.items():
