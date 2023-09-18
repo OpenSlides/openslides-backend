@@ -111,8 +111,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         self.store_rows_in_the_action_worker("account")
         return {}
 
-    def validate_entry(
-        self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         messages: List[str] = []
         id_: Optional[int] = None
         old_saml_id: Optional[str] = None

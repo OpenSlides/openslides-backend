@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AccountJsonUpload(BaseActionTestCase):
-    def test_json_upload_simple(self) -> int:
+    def test_json_upload_simple(self) -> None:
         start_time = int(time())
         response = self.request(
             "account.json_upload",
@@ -49,8 +49,6 @@ class AccountJsonUpload(BaseActionTestCase):
         assert worker["result"]["import"] == "account"
         assert start_time <= worker["created"] <= end_time
         assert start_time <= worker["timestamp"] <= end_time
-
-        return action_worker_id
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
@@ -333,89 +331,6 @@ class AccountJsonUpload(BaseActionTestCase):
             },
         )
 
-    def test_json_upload_names_and_email_generate_username(self) -> None:
-        self.set_models(
-            {
-                "user/34": {
-                    "username": "MaxMustermann",
-                    "first_name": "Testy",
-                    "last_name": "Tester",
-                }
-            }
-        )
-
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [
-                    {
-                        "first_name": "Max",
-                        "last_name": "Mustermann",
-                    }
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        entry = response.json["results"][0][0]["rows"][0]
-        assert entry["state"] == ImportState.NEW
-        assert entry["data"]["first_name"] == "Max"
-        assert entry["data"]["last_name"] == "Mustermann"
-        assert entry["data"]["username"] == {
-            "value": "MaxMustermann1",
-            "info": ImportState.GENERATED,
-        }
-        assert entry["data"]["default_password"]["info"] == ImportState.GENERATED
-
-    def test_json_upload_names_and_email_set_username(self) -> None:
-        self.set_models(
-            {
-                "user/34": {
-                    "first_name": "Max",
-                    "last_name": "Mustermann",
-                    "email": "test@ntvtn.de",
-                    "username": "test",
-                }
-            }
-        )
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [
-                    {
-                        "first_name": "Max",
-                        "last_name": "Mustermann",
-                        "email": "test@ntvtn.de",
-                    }
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        entry = response.json["results"][0][0]["rows"][0]
-        assert entry["data"]["first_name"] == "Max"
-        assert entry["data"]["last_name"] == "Mustermann"
-        assert entry["data"]["id"] == 34
-        assert entry["data"]["username"]["value"] == "test"
-
-    def test_json_upload_generate_default_password(self) -> None:
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [
-                    {
-                        "username": "test",
-                    }
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        worker = self.assert_model_exists("action_worker/1")
-        assert worker["result"]["import"] == "account"
-        assert worker["result"]["rows"][0]["data"].get("default_password")
-        assert (
-            worker["result"]["rows"][0]["data"]["default_password"]["info"]
-            == ImportState.GENERATED
-        )
-
     def test_json_upload_duplicated_one_saml_id(self) -> None:
         self.set_models(
             {
@@ -456,7 +371,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 ],
                 "data": {
                     "username": {"value": "test2", "info": ImportState.DONE},
-                    "saml_id": {"value": "12345", "info": "error"},
+                    "saml_id": {"value": "12345", "info": ImportState.ERROR},
                     "first_name": "John",
                     "default_password": {"value": "", "info": ImportState.WARNING},
                 },
@@ -557,8 +472,8 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": ["saml_id 12345 must be unique."],
                 "data": {
-                    "username": {"value": "test1", "info": "done", "id": 3},
-                    "saml_id": {"value": "12345", "info": "error"},
+                    "username": {"value": "test1", "info": ImportState.DONE, "id": 3},
+                    "saml_id": {"value": "12345", "info": ImportState.ERROR},
                     "id": 3,
                 },
             },
@@ -566,8 +481,8 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": ["saml_id 12345 must be unique."],
                 "data": {
-                    "username": {"value": "test2", "info": "done", "id": 4},
-                    "saml_id": {"value": "12345", "info": "error"},
+                    "username": {"value": "test2", "info": ImportState.DONE, "id": 4},
+                    "saml_id": {"value": "12345", "info": ImportState.ERROR},
                     "id": 4,
                 },
             },
@@ -724,6 +639,159 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "username": {"info": "done", "value": "test", "id": 2},
         }
 
+    def json_upload_names_and_email_find_username(self) -> None:
+        self.set_models(
+            {
+                "user/34": {
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "test@ntvtn.de",
+                    "username": "test",
+                }
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "test@ntvtn.de",
+                        "default_password": "new default password",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["data"] == {
+            "id": 34,
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "email": "test@ntvtn.de",
+            "default_password": {"value": "new default password", "info": "done"},
+            "username": {"value": "test", "info": "done", "id": 34},
+        }
+
+    def json_upload_names_and_email_generate_username(self) -> None:
+        self.set_models(
+            {
+                "user/34": {
+                    "username": "MaxMustermann",
+                    "first_name": "Testy",
+                    "last_name": "Tester",
+                }
+            }
+        )
+
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.NEW
+        assert entry["data"]["first_name"] == "Max"
+        assert entry["data"]["last_name"] == "Mustermann"
+        assert entry["data"]["username"] == {
+            "value": "MaxMustermann1",
+            "info": ImportState.GENERATED,
+        }
+        assert entry["data"]["default_password"]["info"] == ImportState.GENERATED
+
+    def json_upload_generate_default_password(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        worker = self.assert_model_exists("action_worker/1")
+        assert worker["result"]["import"] == "account"
+        assert worker["result"]["rows"][0]["data"].get("default_password")
+        assert (
+            worker["result"]["rows"][0]["data"]["default_password"]["info"]
+            == ImportState.GENERATED
+        )
+
+    def json_upload_username_10_saml_id_11(self) -> None:
+        self.set_models(
+            {
+                "user/10": {
+                    "username": "user10",
+                },
+                "user/11": {
+                    "username": "user11",
+                    "saml_id": "saml_id11",
+                }
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "user10",
+                        "saml_id": "saml_id10",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["data"] == {
+            "id": 10,
+            "username": {"value": "user10", "info": "done", "id": 10},
+            "saml_id": {"value": "saml_id10", "info": "new"},
+            "default_password": {"value": "", "info": "warning"},
+        }
+
+    def json_upload_username_username_and_saml_id_found(self) -> None:
+        self.set_models(
+            {
+                "user/11": {
+                    "username": "user11",
+                    "saml_id": "saml_id11",
+                }
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "user11",
+                        "saml_id": "saml_id11",
+                        "default_vote_weight": "11.000000",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["data"] == {
+            "id": 11,
+            "username": {"value": "user11", "info": ImportState.DONE, "id": 11},
+            "saml_id": {"value": "saml_id11", "info": ImportState.DONE},
+            "default_vote_weight": "11.000000",
+        }
+
     def json_upload_multiple_users(self) -> None:
         self.set_models(
             {
@@ -761,12 +829,9 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
                     {
                         "username": "user2",
                         "saml_id": "test_saml_id2",
-                        "default_vote_weight": "2.345678"
+                        "default_vote_weight": "2.345678",
                     },
-                    {
-                        "saml_id": "saml3",
-                        "default_vote_weight": "3.345678"
-                    },
+                    {"saml_id": "saml3", "default_vote_weight": "3.345678"},
                     {
                         "first_name": "Martin",
                         "last_name": "Luther King",
@@ -787,7 +852,6 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
                         "last_name": "Baez7",
                         "default_vote_weight": "7.345678",
                     },
-
                 ],
             },
         )
@@ -799,33 +863,67 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert worker["result"]["rows"][0]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        assert worker["result"]["rows"][0]["data"] == {'id': 2, 'saml_id': {'info': 'new', 'value': 'test_saml_id2'}, 'username': {'id': 2, 'info': 'done', 'value': 'user2'}, 'default_password': {'info': 'warning', 'value': ''}, 'default_vote_weight': '2.345678'}
+        assert worker["result"]["rows"][0]["data"] == {
+            "id": 2,
+            "saml_id": {"info": "new", "value": "test_saml_id2"},
+            "username": {"id": 2, "info": "done", "value": "user2"},
+            "default_password": {"info": "warning", "value": ""},
+            "default_vote_weight": "2.345678",
+        }
 
         assert worker["result"]["rows"][1]["state"] == ImportState.DONE
         assert worker["result"]["rows"][1]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        assert worker["result"]["rows"][1]["data"] == {'id': 3, 'saml_id': {'info': 'new', 'value': 'saml3'}, 'username': {'id': 3, 'info': 'done', 'value': 'user3'}, 'default_password': {'info': 'warning', 'value': ''}, 'default_vote_weight': '3.345678'}
+        assert worker["result"]["rows"][1]["data"] == {
+            "id": 3,
+            "saml_id": {"info": "new", "value": "saml3"},
+            "username": {"id": 3, "info": "done", "value": "user3"},
+            "default_password": {"info": "warning", "value": ""},
+            "default_vote_weight": "3.345678",
+        }
 
         assert worker["result"]["rows"][2]["state"] == ImportState.DONE
         assert worker["result"]["rows"][2]["messages"] == []
-        assert worker["result"]["rows"][2]["data"] == {'id': 4, 'email': 'mlk@america.com', 'username': {'id': 4, 'info': 'done', 'value': 'user4'}, 'last_name': 'Luther King', 'first_name': 'Martin', 'default_vote_weight': '4.345678'}
+        assert worker["result"]["rows"][2]["data"] == {
+            "id": 4,
+            "email": "mlk@america.com",
+            "username": {"id": 4, "info": "done", "value": "user4"},
+            "last_name": "Luther King",
+            "first_name": "Martin",
+            "default_vote_weight": "4.345678",
+        }
 
         assert worker["result"]["rows"][3]["state"] == ImportState.NEW
         assert worker["result"]["rows"][3]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        assert worker["result"]["rows"][3]["data"] == {'saml_id': {'info': 'new', 'value': 'saml5'}, 'username': {'info': 'done', 'value': 'new_user5'}, 'default_password': {'info': 'warning', 'value': ''}, 'default_vote_weight': '5.345678'}
+        assert worker["result"]["rows"][3]["data"] == {
+            "saml_id": {"info": "new", "value": "saml5"},
+            "username": {"info": "done", "value": "new_user5"},
+            "default_password": {"info": "warning", "value": ""},
+            "default_vote_weight": "5.345678",
+        }
 
         assert worker["result"]["rows"][4]["state"] == ImportState.NEW
         assert worker["result"]["rows"][4]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        assert worker["result"]["rows"][4]["data"] == {'saml_id': {'info': 'new', 'value': 'new_saml6'}, 'username': {'info': 'generated', 'value': 'new_saml6'}, 'default_password': {'info': 'warning', 'value': ''}, 'default_vote_weight': '6.345678'}
+        assert worker["result"]["rows"][4]["data"] == {
+            "saml_id": {"info": "new", "value": "new_saml6"},
+            "username": {"info": "generated", "value": "new_saml6"},
+            "default_password": {"info": "warning", "value": ""},
+            "default_vote_weight": "6.345678",
+        }
 
         assert worker["result"]["rows"][5]["state"] == ImportState.NEW
         assert worker["result"]["rows"][5]["messages"] == []
         default_password = worker["result"]["rows"][5]["data"].pop("default_password")
         assert default_password["info"] == ImportState.GENERATED
         assert default_password["value"]
-        assert worker["result"]["rows"][5]["data"] == {'username': {'info': 'generated', 'value': 'JoanBaez7'}, 'last_name': 'Baez7', 'first_name': 'Joan', 'default_vote_weight': '7.345678'}
+        assert worker["result"]["rows"][5]["data"] == {
+            "username": {"info": "generated", "value": "JoanBaez7"},
+            "last_name": "Baez7",
+            "first_name": "Joan",
+            "default_vote_weight": "7.345678",
+        }

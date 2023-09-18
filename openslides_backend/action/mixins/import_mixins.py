@@ -42,6 +42,7 @@ class ResultType(Enum):
     FOUND_ID = 1
     FOUND_MORE_IDS = 2
     NOT_FOUND = 3
+    NOT_FOUND_ANYMORE = 4
 
 
 class Lookup:
@@ -92,15 +93,25 @@ class Lookup:
 
         # Add action data items not found in database to lookup dict
         for name, entry in name_entries:
-            if not (values := cast(list, self.name_to_ids[name])):
-                values.append(entry)
-            else:
+            if values := cast(list, self.name_to_ids[name]):
                 if not values[0].get("id"):
                     values.append(entry)
+            else:
+                if type(self.field) == str:
+                    obj = entry[self.field]
+                    if type(obj) == dict and obj.get("id"):
+                        obj["info"] = ImportState.ERROR
+                values.append(entry)
 
     def check_duplicate(self, name: SearchFieldType) -> ResultType:
         if len(values := self.name_to_ids.get(name, [])) == 1:
-            if values[0].get("id"):
+            if (entry := values[0]).get("id"):
+                if (
+                    type(self.field) == str
+                    and type(obj := entry[self.field]) == dict
+                    and obj["info"] == ImportState.ERROR
+                ):
+                    return ResultType.NOT_FOUND_ANYMORE
                 return ResultType.FOUND_ID
             else:
                 return ResultType.NOT_FOUND
@@ -114,11 +125,6 @@ class Lookup:
         """Gets 'fieldname' from value of name_to_ids-dict"""
         if len(self.name_to_ids.get(name, [])) == 1:
             return self.name_to_ids[name][0].get(fieldname)
-        return None
-
-    def get_name_by_id(self, id_: int) -> Optional[List[SearchFieldType]]:
-        if name := self.id_to_name.get(id_):
-            return name
         return None
 
     def add_item(self, entry: Dict[str, Any]) -> None:
@@ -150,7 +156,9 @@ class BaseImportJsonUpload(SingularActionMixin):
         return count
 
     @staticmethod
-    def get_value_from_union_str_object(field: Optional[Union[str, Dict[str, Any]]]) -> Optional[str]:
+    def get_value_from_union_str_object(
+        field: Optional[Union[str, Dict[str, Any]]]
+    ) -> Optional[str]:
         if type(field) == dict:
             return field.get("value", "")
         elif type(field) == str:
@@ -166,6 +174,7 @@ class ImportMixin(BaseImportJsonUpload):
 
     import_name: str
     rows: List[ImportRow] = []
+    result: Dict[str, List] = {}
 
     def prepare_action_data(self, action_data: ActionData) -> ActionData:
         self.error_store_ids: List[int] = []
@@ -204,17 +213,15 @@ class ImportMixin(BaseImportJsonUpload):
             "rows": self.result.get("rows", []),
         }
 
-    def flatten_object_fields(self, fields: Optional[List[str]]) -> None:
-        """ replace objects from self.rows["data"] with their values. Uses the fields, if given, otherwise all"""
+    def flatten_object_fields(self, fields: Optional[List[str]] = None) -> None:
+        """replace objects from self.rows["data"] with their values. Uses the fields, if given, otherwise all"""
         for row in self.rows:
             entry = row["data"]
-            used_list= fields if fields else entry.keys()
+            used_list = fields if fields else entry.keys()
             for field in used_list:
-                if field in entry["data"]:
-                    if field == "username" and "id" in entry["data"][field]:
-                        entry["data"]["id"] = entry["data"][field]["id"]
-                    if type(dvalue := entry["data"][field]) == dict:
-                        entry["data"][field] = dvalue["value"]
+                if field in entry:
+                    if type(dvalue := entry[field]) == dict:
+                        entry[field] = dvalue["value"]
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:
