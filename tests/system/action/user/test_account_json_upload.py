@@ -74,6 +74,27 @@ class AccountJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Could not parse X50 expect boolean" in response.json["message"]
 
+    def test_json_upload_without_names_error(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "default_number": "strange number",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.ERROR,
+            "messages": ["Cannot generate username. Missing one of first_name, last_name."],
+            "data": {
+                "username": {"value": "", "info": ImportState.GENERATED},
+                "default_number": "strange number",
+            },
+        }
+
     def test_json_upload_results(self) -> None:
         response = self.request(
             "account.json_upload",
@@ -189,13 +210,11 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": [
                     "The account with id 3 was found multiple times by different search criteria.",
-                    "Will remove password and default_password and forbid changing your OpenSlides password.",
                 ],
                 "data": {
-                    "saml_id": {"value": "12345", "info": "new"},
+                    "saml_id": {"value": "12345", "info": ImportState.DONE},
                     "id": 3,
                     "username": {"value": "test", "info": "done", "id": 3},
-                    "default_password": {"info": "warning", "value": ""},
                 },
             },
             {
@@ -386,7 +405,7 @@ class AccountJsonUpload(BaseActionTestCase):
         ]
         assert result["state"] == ImportState.ERROR
 
-    def test_json_upload_duplicated_two_new_saml_ids(self) -> None:
+    def test_json_upload_duplicated_two_new_saml_ids1(self) -> None:
         response = self.request(
             "account.json_upload",
             {
@@ -422,6 +441,54 @@ class AccountJsonUpload(BaseActionTestCase):
                 ],
                 "data": {
                     "username": {"value": "test2", "info": ImportState.DONE},
+                    "saml_id": {"value": "12345", "info": ImportState.ERROR},
+                    "default_password": {"info": ImportState.WARNING, "value": ""},
+                },
+            },
+        ]
+        assert result["statistics"] == [
+            {"name": "total", "value": 2},
+            {"name": "created", "value": 0},
+            {"name": "updated", "value": 0},
+            {"name": "error", "value": 2},
+            {"name": "warning", "value": 1},
+        ]
+        assert result["state"] == ImportState.ERROR
+
+    def test_json_upload_duplicated_two_new_saml_ids2(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "saml_id": "12345",
+                    },
+                    {
+                        "saml_id": "12345",
+                        "default_password": "def_password",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"] == [
+            {
+                "state": ImportState.ERROR,
+                "messages": ["saml_id 12345 must be unique."],
+                "data": {
+                    "username": {"value": "12345", "info": ImportState.GENERATED},
+                    "saml_id": {"value": "12345", "info": ImportState.ERROR},
+                },
+            },
+            {
+                "state": ImportState.ERROR,
+                "messages": [
+                    "saml_id 12345 must be unique.",
+                    "Will remove password and default_password and forbid changing your OpenSlides password.",
+                ],
+                "data": {
+                    "username": {"value": "123451", "info": ImportState.GENERATED},
                     "saml_id": {"value": "12345", "info": ImportState.ERROR},
                     "default_password": {"info": ImportState.WARNING, "value": ""},
                 },
@@ -872,14 +939,12 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         }
 
         assert worker["result"]["rows"][1]["state"] == ImportState.DONE
-        assert worker["result"]["rows"][1]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
-        ]
+        assert worker["result"]["rows"][1]["messages"] == ["Will remove password and default_password and forbid changing your OpenSlides password."]
         assert worker["result"]["rows"][1]["data"] == {
             "id": 3,
-            "saml_id": {"info": "new", "value": "saml3"},
-            "username": {"id": 3, "info": "done", "value": "user3"},
-            "default_password": {"info": "warning", "value": ""},
+            "saml_id": {"info": ImportState.DONE, "value": "saml3"},
+            "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
+            "default_password": {"info": ImportState.WARNING, "value": ""},
             "default_vote_weight": "3.345678",
         }
 

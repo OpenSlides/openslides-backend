@@ -115,13 +115,17 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         messages: List[str] = []
         id_: Optional[int] = None
         old_saml_id: Optional[str] = None
+        old_default_password: Optional[str] = None
         if (username := entry.get("username")) and type(username) == str:
             check_result = self.username_lookup.check_duplicate(username)
             id_ = cast(int, self.username_lookup.get_field_by_name(username, "id"))
-            old_saml_id = cast(
-                str, self.username_lookup.get_field_by_name(username, "saml_id")
-            )
             if check_result == ResultType.FOUND_ID and id_ != 0:
+                old_saml_id = cast(
+                    str, self.username_lookup.get_field_by_name(username, "saml_id")
+                )
+                old_default_password = cast(
+                    str, self.username_lookup.get_field_by_name(username, "default_password")
+                )
                 self.row_state = ImportState.DONE
                 entry["id"] = id_
                 entry["username"] = {
@@ -147,6 +151,13 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
             id_ = cast(int, self.saml_id_lookup.get_field_by_name(saml_id, "id"))
             if check_result == ResultType.FOUND_ID and id_ != 0:
                 username = self.saml_id_lookup.get_field_by_name(saml_id, "username")
+                old_saml_id = cast(
+                    str, self.saml_id_lookup.get_field_by_name(saml_id, "saml_id")
+                )
+                old_default_password = cast(
+                    str, self.saml_id_lookup.get_field_by_name(saml_id, "default_password")
+                )
+
                 self.row_state = ImportState.DONE
                 entry["id"] = id_
                 entry["username"] = {
@@ -156,13 +167,10 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 }
             elif check_result == ResultType.NOT_FOUND or id_ == 0:
                 self.row_state = ImportState.NEW
-            elif check_result == ResultType.FOUND_MORE_IDS:
-                self.row_state = ImportState.ERROR
-                messages.append("Found more users with the same saml_id")
         else:
             if not (entry.get("first_name") or entry.get("last_name")):
                 self.row_state = ImportState.ERROR
-                messages.append("Cannot generate username.")
+                messages.append("Cannot generate username. Missing one of first_name, last_name.")
             else:
                 names_and_email = self._names_and_email(entry)
                 check_result = self.names_email_lookup.check_duplicate(names_and_email)
@@ -173,6 +181,12 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 if check_result == ResultType.FOUND_ID and id_ != 0:
                     username = self.names_email_lookup.get_field_by_name(
                         names_and_email, "username"
+                    )
+                    old_saml_id = cast(
+                        str, self.names_email_lookup.get_field_by_name(names_and_email, "saml_id")
+                    )
+                    old_default_password = cast(
+                        str, self.names_email_lookup.get_field_by_name(names_and_email, "default_password")
                     )
                     self.row_state = ImportState.DONE
                     entry["id"] = id_
@@ -228,8 +242,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                         "info": ImportState.NEW,
                     }
             if entry["saml_id"]["info"] == ImportState.NEW or entry.get(
-                "default_password"
-            ):
+                "default_password") or old_default_password:
                 entry["default_password"] = {"value": "", "info": ImportState.WARNING}
                 messages.append(
                     "Will remove password and default_password and forbid changing your OpenSlides password."
@@ -298,7 +311,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 if (username := entry.get("username"))
             ],
             field="username",
-            mapped_fields=["saml_id"],
+            mapped_fields=["username", "saml_id", "default_password"],
         )
         self.saml_id_lookup = Lookup(
             self.datastore,
@@ -309,7 +322,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 if not entry.get("username") and (saml_id := entry.get("saml_id"))
             ],
             field="saml_id",
-            mapped_fields=["username"],
+            mapped_fields=["saml_id", "username", "default_password"],
         )
         self.names_email_lookup = Lookup(
             self.datastore,
@@ -328,7 +341,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                 )
             ],
             field=tuple(("first_name", "last_name", "email")),
-            mapped_fields=["username"],
+            mapped_fields=["username", "saml_id", "default_password"],
         )
         self.all_saml_id_lookup = Lookup(
             self.datastore,
