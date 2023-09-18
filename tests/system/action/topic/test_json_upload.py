@@ -196,7 +196,7 @@ class TopicJsonUpload(BaseActionTestCase):
         )
 
 
-class TopicJsonUploadHelper(BaseActionTestCase):
+class TopicJsonUploadForUseInImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.set_models(

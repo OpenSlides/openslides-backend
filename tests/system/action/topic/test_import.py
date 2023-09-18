@@ -1,5 +1,6 @@
 from openslides_backend.action.mixins.import_mixins import ImportState
 from tests.system.action.base import BaseActionTestCase
+from tests.system.action.topic.test_json_upload import TopicJsonUploadForUseInImport
 
 
 class TopicJsonImport(BaseActionTestCase):
