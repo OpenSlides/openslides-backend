@@ -678,14 +678,24 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = response_import.json["results"][0][0]["rows"][2]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == ["Error: user 4 not found anymore for updating user 'user4'."]
-        assert["data"] == {
+        assert row["data"] == {
             "id": 4, "email": "mlk@america.com", "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"}, "last_name": "Luther King", "first_name": "Martin", "default_vote_weight": "4.345678"}
-Ab hier weitermachen
+
         row = response_import.json["results"][0][0]["rows"][3]
         assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Will remove password and default_password and forbid changing your OpenSlides password.", "Error: saml_id 'saml5' found in different id (11 instead of None)"]
+        assert row["data"] == {
+            "username": {"info": ImportState.DONE, "value": "new_user5"}, "saml_id": {"info": ImportState.ERROR, "value": "saml5"}, "default_password": {"info": ImportState.WARNING, "value": ""}, "default_vote_weight": "5.345678"}
 
         row = response_import.json["results"][0][0]["rows"][4]
         assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Will remove password and default_password and forbid changing your OpenSlides password.", "Error: saml_id 'new_saml6' found in different id (12 instead of None)"]
+        assert row["data"] == {
+            "username": {"info": ImportState.GENERATED, "value": "new_saml6"}, "saml_id": {"info": ImportState.ERROR, "value": "new_saml6"}, "default_password": {"info": ImportState.WARNING, "value": ""}, "default_vote_weight": "6.345678"}
 
         row = response_import.json["results"][0][0]["rows"][5]
         assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: row state expected to be 'done', but it is 'new'."]
+        assert row["data"]["username"] == {"info": ImportState.ERROR, "value": "JoanBaez7"}
+        assert row["data"]["default_password"]["info"] == ImportState.GENERATED
+        assert row["data"]["default_password"]["value"]
