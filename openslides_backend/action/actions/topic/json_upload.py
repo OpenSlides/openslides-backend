@@ -93,8 +93,7 @@ class TopicJsonUpload(JsonUploadMixin):
         elif check_result == ResultType.NOT_FOUND:
             state = ImportState.NEW
         elif check_result == ResultType.FOUND_MORE_IDS:
-            state = ImportState.WARNING
-            messages.append("Duplicate")
+            state = ImportState.ERROR
         return {"state": state, "messages": messages, "data": entry}
 
     def setup_lookups(self, data: List[Dict[str, Any]], meeting_id: int) -> None:

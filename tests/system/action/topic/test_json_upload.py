@@ -155,8 +155,7 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
-        assert result["rows"][2]["messages"] == ["Duplicate"]
-        assert result["rows"][2]["state"] == ImportState.WARNING
+        assert result["rows"][2]["state"] == ImportState.ERROR
         self.assert_model_exists(
             "import_preview/1",
             {
@@ -164,8 +163,8 @@ class TopicJsonUpload(BaseActionTestCase):
                 "result": {
                     "rows": [
                         {
-                            "state": ImportState.WARNING,
-                            "messages": ["Duplicate"],
+                            "state": ImportState.ERROR,
+                            "messages": [],
                             "data": {"title": "test", "meeting_id": 22},
                         },
                         {
@@ -174,8 +173,8 @@ class TopicJsonUpload(BaseActionTestCase):
                             "data": {"title": "bla", "meeting_id": 22},
                         },
                         {
-                            "state": ImportState.WARNING,
-                            "messages": ["Duplicate"],
+                            "state": ImportState.ERROR,
+                            "messages": [],
                             "data": {"title": "test", "meeting_id": 22},
                         },
                     ],
@@ -194,4 +193,108 @@ class TopicJsonUpload(BaseActionTestCase):
             "topic.json_upload",
             {"data": [{"title": "test"}], "meeting_id": 1},
             Permissions.AgendaItem.CAN_MANAGE,
+        )
+
+
+class TopicJsonUploadHelper(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.set_models(
+            {
+                "meeting/22": {"name": "test", "is_active_in_organization_id": 1},
+            }
+        )
+
+    def json_upload_agenda_data(self) -> None:
+        start_time = int(time())
+        response = self.request(
+            "topic.json_upload",
+            {
+                "meeting_id": 22,
+                "data": [
+                    {
+                        "title": "test",
+                        "agenda_comment": "testtesttest",
+                        "agenda_type": "hidden",
+                        "agenda_duration": "50",
+                        "wrong": 15,
+                    }
+                ],
+            },
+        )
+        end_time = int(time())
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "title": "test",
+                "meeting_id": 22,
+                "agenda_comment": "testtesttest",
+                "agenda_type": "hidden",
+                "agenda_duration": 50,
+            },
+        }
+        worker = self.assert_model_exists(
+            "action_worker/1", {"state": ImportState.DONE}
+        )
+        assert start_time <= worker.get("created", -1) <= end_time
+        assert start_time <= worker.get("timestamp", -1) <= end_time
+
+    def json_upload_duplicate_in_db(self) -> None:
+        self.set_models(
+            {
+                "topic/3": {"title": "test", "meeting_id": 22},
+                "meeting/22": {"topic_ids": [3]},
+            }
+        )
+        response = self.request(
+            "topic.json_upload",
+            {"meeting_id": 22, "data": [{"title": "test"}]},
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"] == [
+            {
+                "state": ImportState.WARNING,
+                "messages": ["Duplicate"],
+                "data": {"title": "test", "meeting_id": 22},
+            }
+        ]
+
+    def json_upload_duplicate_in_data(self) -> None:
+        response = self.request(
+            "topic.json_upload",
+            {
+                "meeting_id": 22,
+                "data": [{"title": "test"}, {"title": "bla"}, {"title": "test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"][2]["state"] == ImportState.ERROR
+        self.assert_model_exists(
+            "action_worker/1",
+            {
+                "result": {
+                    "import": "topic",
+                    "rows": [
+                        {
+                            "state": ImportState.ERROR,
+                            "messages": [],
+                            "data": {"title": "test", "meeting_id": 22},
+                        },
+                        {
+                            "state": ImportState.NEW,
+                            "messages": [],
+                            "data": {"title": "bla", "meeting_id": 22},
+                        },
+                        {
+                            "state": ImportState.ERROR,
+                            "messages": [],
+                            "data": {"title": "test", "meeting_id": 22},
+                        },
+                    ],
+                }
+            },
         )
