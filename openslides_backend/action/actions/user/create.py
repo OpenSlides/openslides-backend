@@ -79,9 +79,7 @@ class UserCreate(
         if saml_id:
             instance["can_change_own_password"] = False
             instance["password"] = None
-            if instance.get(
-                "default_password"
-            ):
+            if instance.get("default_password"):
                 raise ActionException(
                     f"user {instance['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
                 )

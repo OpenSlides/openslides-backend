@@ -280,7 +280,10 @@ class AccountJsonImport(BaseActionTestCase):
         )
         response = self.request("account.import", {"id": 6, "import": True})
         self.assert_status_code(response, 400)
-        self.assertIn("Invalid JsonUpload data: The data from json upload must contain a valid username object", response.json["message"])
+        self.assertIn(
+            "Invalid JsonUpload data: The data from json upload must contain a valid username object",
+            response.json["message"],
+        )
 
     def test_import_error_state_done_missing_user_in_db(self) -> None:
         self.set_models(
@@ -487,14 +490,14 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
 
     def test_json_upload_names_and_email_find_username_error(self) -> None:
         self.json_upload_names_and_email_find_username()
-        self.set_models({
-            "user/34": {"username": "test34"}
-        })
+        self.set_models({"user/34": {"username": "test34"}})
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
-        assert row["messages"] == ["Error: user 34 not found anymore for updating user 'test'."]
+        assert row["messages"] == [
+            "Error: user 34 not found anymore for updating user 'test'."
+        ]
         assert row["data"] == {
             "id": 34,
             "email": "test@ntvtn.de",
@@ -511,7 +514,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.NEW
         assert row["messages"] == []
-        self.assert_model_exists("user/35",
+        self.assert_model_exists(
+            "user/35",
             {
                 "id": 35,
                 "username": "MaxMustermann1",
@@ -520,8 +524,9 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "organization_id": 1,
                 "is_physical_person": True,
                 "default_vote_weight": "1.000000",
-                "can_change_own_password": True
-            })
+                "can_change_own_password": True,
+            },
+        )
 
     def test_json_upload_generate_default_password(self) -> None:
         self.json_upload_generate_default_password()
@@ -530,28 +535,31 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.NEW
         assert row["messages"] == []
-        user2 = self.assert_model_exists("user/2",
+        user2 = self.assert_model_exists(
+            "user/2",
             {
                 "id": 2,
                 "username": "test",
                 "organization_id": 1,
                 "is_physical_person": True,
                 "default_vote_weight": "1.000000",
-                "can_change_own_password": True
-            })
+                "can_change_own_password": True,
+            },
+        )
         assert user2["default_password"]
         assert user2["password"]
 
     def test_json_upload_username_10_saml_id_11_error(self) -> None:
         self.json_upload_username_10_saml_id_11()
-        self.set_models({
-            "user/11": {"saml_id": "saml_id10"}
-        })
+        self.set_models({"user/11": {"saml_id": "saml_id10"}})
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
-        assert row["messages"] == ["Will remove password and default_password and forbid changing your OpenSlides password.", "Error: saml_id 'saml_id10' found in different id (11 instead of 10)"]
+        assert row["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Error: saml_id 'saml_id10' found in different id (11 instead of 10)",
+        ]
         assert row["data"] == {
             "id": 10,
             "saml_id": {"info": "error", "value": "saml_id10"},
@@ -559,7 +567,9 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_password": {"info": "warning", "value": ""},
         }
 
-    def test_json_upload_username_username_and_saml_id_found_and_deleted_error(self) -> None:
+    def test_json_upload_username_username_and_saml_id_found_and_deleted_error(
+        self,
+    ) -> None:
         self.json_upload_username_username_and_saml_id_found()
         self.request("user.delete", {"id": 11})
         assert self.assert_model_deleted("user/11")
@@ -567,7 +577,9 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.assert_status_code(response_import, 200)
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
-        assert row["messages"] == ["Error: user 11 not found anymore for updating user 'user11'."]
+        assert row["messages"] == [
+            "Error: user 11 not found anymore for updating user 'user11'."
+        ]
         assert row["data"] == {
             "id": 11,
             "saml_id": {"info": "done", "value": "saml_id11"},
@@ -579,7 +591,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.json_upload_multiple_users()
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
-        self.assert_model_exists("user/2",
+        self.assert_model_exists(
+            "user/2",
             {
                 "id": 2,
                 "saml_id": "test_saml_id2",
@@ -588,9 +601,10 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_vote_weight": "2.345678",
                 "password": "",
                 "can_change_own_password": False,
-            }
+            },
         )
-        self.assert_model_exists("user/3",
+        self.assert_model_exists(
+            "user/3",
             {
                 "id": 3,
                 "saml_id": "saml3",
@@ -598,9 +612,10 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_password": "",
                 "default_vote_weight": "3.345678",
                 "can_change_own_password": False,
-            }
+            },
         )
-        self.assert_model_exists("user/4",
+        self.assert_model_exists(
+            "user/4",
             {
                 "id": 4,
                 "username": "user4",
@@ -610,9 +625,10 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_password": "secret",
                 "default_vote_weight": "4.345678",
                 "can_change_own_password": True,
-            }
+            },
         )
-        self.assert_model_exists("user/5",
+        self.assert_model_exists(
+            "user/5",
             {
                 "id": 5,
                 "saml_id": "saml5",
@@ -620,9 +636,10 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_password": "",
                 "default_vote_weight": "5.345678",
                 "can_change_own_password": False,
-            }
+            },
         )
-        self.assert_model_exists("user/6",
+        self.assert_model_exists(
+            "user/6",
             {
                 "id": 6,
                 "saml_id": "new_saml6",
@@ -630,9 +647,10 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_password": "",
                 "default_vote_weight": "6.345678",
                 "can_change_own_password": False,
-            }
+            },
         )
-        self.assert_model_exists("user/7",
+        self.assert_model_exists(
+            "user/7",
             {
                 "id": 7,
                 "username": "JoanBaez7",
@@ -640,7 +658,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "last_name": "Baez7",
                 "default_vote_weight": "7.345678",
                 "can_change_own_password": True,
-            }
+            },
         )
 
     def test_json_upload_update_multiple_users_all_error(self) -> None:
@@ -652,50 +670,88 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "user/4": {"username": "user4_married"},
                 "user/11": {"username": "new_user_5", "saml_id": "saml5"},
                 "user/12": {"username": "doubler6", "saml_id": "new_saml6"},
-                "user/13": {"username": "doubler7", "username": "JoanBaez7"},
+                "user/13": {"username": "JoanBaez7"},
             },
-
         )
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
-        assert row["messages"] == ["Will remove password and default_password and forbid changing your OpenSlides password.", "Error: user 2 not found anymore for updating user 'user2'."]
+        assert row["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Error: user 2 not found anymore for updating user 'user2'.",
+        ]
         assert row["data"] == {
             "id": 2,
             "saml_id": {"info": ImportState.NEW, "value": "test_saml_id2"},
-            "username": {"id": 2, "info": ImportState.ERROR, 'value': "user2"},
+            "username": {"id": 2, "info": ImportState.ERROR, "value": "user2"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
             "default_vote_weight": "2.345678",
         }
 
         row = response_import.json["results"][0][0]["rows"][1]
         assert row["state"] == ImportState.ERROR
-        assert row["messages"] == ["Will remove password and default_password and forbid changing your OpenSlides password.", "Error: saml_id 'saml3' is duplicated in import."]
+        assert row["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Error: saml_id 'saml3' is duplicated in import.",
+        ]
         assert row["data"] == {
-            "id": 3, "saml_id": {"info": ImportState.ERROR, "value": "saml3"}, "username": {"id": 3, "info": ImportState.DONE, "value": "user3"}, "default_password": {"info": ImportState.WARNING, "value": ""}, "default_vote_weight": "3.345678", "can_change_own_password": False}
+            "id": 3,
+            "saml_id": {"info": ImportState.ERROR, "value": "saml3"},
+            "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
+            "default_password": {"info": ImportState.WARNING, "value": ""},
+            "default_vote_weight": "3.345678",
+            "can_change_own_password": False,
+        }
 
         row = response_import.json["results"][0][0]["rows"][2]
         assert row["state"] == ImportState.ERROR
-        assert row["messages"] == ["Error: user 4 not found anymore for updating user 'user4'."]
+        assert row["messages"] == [
+            "Error: user 4 not found anymore for updating user 'user4'."
+        ]
         assert row["data"] == {
-            "id": 4, "email": "mlk@america.com", "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"}, "last_name": "Luther King", "first_name": "Martin", "default_vote_weight": "4.345678"}
+            "id": 4,
+            "email": "mlk@america.com",
+            "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"},
+            "last_name": "Luther King",
+            "first_name": "Martin",
+            "default_vote_weight": "4.345678",
+        }
 
         row = response_import.json["results"][0][0]["rows"][3]
         assert row["state"] == ImportState.ERROR
-        assert row["messages"] == ["Will remove password and default_password and forbid changing your OpenSlides password.", "Error: saml_id 'saml5' found in different id (11 instead of None)"]
+        assert row["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Error: saml_id 'saml5' found in different id (11 instead of None)",
+        ]
         assert row["data"] == {
-            "username": {"info": ImportState.DONE, "value": "new_user5"}, "saml_id": {"info": ImportState.ERROR, "value": "saml5"}, "default_password": {"info": ImportState.WARNING, "value": ""}, "default_vote_weight": "5.345678"}
+            "username": {"info": ImportState.DONE, "value": "new_user5"},
+            "saml_id": {"info": ImportState.ERROR, "value": "saml5"},
+            "default_password": {"info": ImportState.WARNING, "value": ""},
+            "default_vote_weight": "5.345678",
+        }
 
         row = response_import.json["results"][0][0]["rows"][4]
         assert row["state"] == ImportState.ERROR
-        assert row["messages"] == ["Will remove password and default_password and forbid changing your OpenSlides password.", "Error: saml_id 'new_saml6' found in different id (12 instead of None)"]
+        assert row["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Error: saml_id 'new_saml6' found in different id (12 instead of None)",
+        ]
         assert row["data"] == {
-            "username": {"info": ImportState.GENERATED, "value": "new_saml6"}, "saml_id": {"info": ImportState.ERROR, "value": "new_saml6"}, "default_password": {"info": ImportState.WARNING, "value": ""}, "default_vote_weight": "6.345678"}
+            "username": {"info": ImportState.GENERATED, "value": "new_saml6"},
+            "saml_id": {"info": ImportState.ERROR, "value": "new_saml6"},
+            "default_password": {"info": ImportState.WARNING, "value": ""},
+            "default_vote_weight": "6.345678",
+        }
 
         row = response_import.json["results"][0][0]["rows"][5]
         assert row["state"] == ImportState.ERROR
-        assert row["messages"] == ["Error: row state expected to be 'done', but it is 'new'."]
-        assert row["data"]["username"] == {"info": ImportState.ERROR, "value": "JoanBaez7"}
+        assert row["messages"] == [
+            "Error: row state expected to be 'done', but it is 'new'."
+        ]
+        assert row["data"]["username"] == {
+            "info": ImportState.ERROR,
+            "value": "JoanBaez7",
+        }
         assert row["data"]["default_password"]["info"] == ImportState.GENERATED
         assert row["data"]["default_password"]["value"]

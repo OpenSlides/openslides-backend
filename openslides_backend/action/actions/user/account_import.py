@@ -63,7 +63,7 @@ class AccountImport(DuplicateCheckMixin, ImportMixin):
 
         return {}
 
-    def validate_entry(self, row: Dict[str, Dict[str, Any]]) -> ImportRow:
+    def validate_entry(self, row: ImportRow) -> ImportRow:
         entry = row["data"]
         username = self.get_value_from_union_str_object(entry.get("username"))
         if not username:
@@ -124,11 +124,11 @@ class AccountImport(DuplicateCheckMixin, ImportMixin):
                     f"Error: saml_id '{saml_id}' is duplicated in import."
                 )
             elif check_result == ResultType.NOT_FOUND_ANYMORE:
-                    row["state"] = ImportState.ERROR
-                    entry["saml_id"]["info"] = ImportState.ERROR
-                    row["messages"].append(
-                        f"Error: saml_id '{saml_id}' not found anymore in user with id '{id_from_saml_id}'"
-                    )
+                row["state"] = ImportState.ERROR
+                entry["saml_id"]["info"] = ImportState.ERROR
+                row["messages"].append(
+                    f"Error: saml_id '{saml_id}' not found anymore in user with id '{id_from_saml_id}'"
+                )
             elif check_result == ResultType.NOT_FOUND:
                 pass
 

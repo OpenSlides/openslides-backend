@@ -124,7 +124,10 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                     str, self.username_lookup.get_field_by_name(username, "saml_id")
                 )
                 old_default_password = cast(
-                    str, self.username_lookup.get_field_by_name(username, "default_password")
+                    str,
+                    self.username_lookup.get_field_by_name(
+                        username, "default_password"
+                    ),
                 )
                 self.row_state = ImportState.DONE
                 entry["id"] = id_
@@ -155,7 +158,8 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                     str, self.saml_id_lookup.get_field_by_name(saml_id, "saml_id")
                 )
                 old_default_password = cast(
-                    str, self.saml_id_lookup.get_field_by_name(saml_id, "default_password")
+                    str,
+                    self.saml_id_lookup.get_field_by_name(saml_id, "default_password"),
                 )
 
                 self.row_state = ImportState.DONE
@@ -170,7 +174,9 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         else:
             if not (entry.get("first_name") or entry.get("last_name")):
                 self.row_state = ImportState.ERROR
-                messages.append("Cannot generate username. Missing one of first_name, last_name.")
+                messages.append(
+                    "Cannot generate username. Missing one of first_name, last_name."
+                )
             else:
                 names_and_email = self._names_and_email(entry)
                 check_result = self.names_email_lookup.check_duplicate(names_and_email)
@@ -183,10 +189,16 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                         names_and_email, "username"
                     )
                     old_saml_id = cast(
-                        str, self.names_email_lookup.get_field_by_name(names_and_email, "saml_id")
+                        str,
+                        self.names_email_lookup.get_field_by_name(
+                            names_and_email, "saml_id"
+                        ),
                     )
                     old_default_password = cast(
-                        str, self.names_email_lookup.get_field_by_name(names_and_email, "default_password")
+                        str,
+                        self.names_email_lookup.get_field_by_name(
+                            names_and_email, "default_password"
+                        ),
                     )
                     self.row_state = ImportState.DONE
                     entry["id"] = id_
@@ -241,8 +253,11 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                         "value": saml_id,
                         "info": ImportState.NEW,
                     }
-            if entry["saml_id"]["info"] == ImportState.NEW or entry.get(
-                "default_password") or old_default_password:
+            if (
+                entry["saml_id"]["info"] == ImportState.NEW
+                or entry.get("default_password")
+                or old_default_password
+            ):
                 entry["default_password"] = {"value": "", "info": ImportState.WARNING}
                 messages.append(
                     "Will remove password and default_password and forbid changing your OpenSlides password."

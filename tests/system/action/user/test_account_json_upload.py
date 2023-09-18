@@ -88,7 +88,9 @@ class AccountJsonUpload(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.ERROR,
-            "messages": ["Cannot generate username. Missing one of first_name, last_name."],
+            "messages": [
+                "Cannot generate username. Missing one of first_name, last_name."
+            ],
             "data": {
                 "username": {"value": "", "info": ImportState.GENERATED},
                 "default_number": "strange number",
@@ -804,7 +806,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
                 "user/11": {
                     "username": "user11",
                     "saml_id": "saml_id11",
-                }
+                },
             }
         )
         response = self.request(
@@ -939,7 +941,9 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         }
 
         assert worker["result"]["rows"][1]["state"] == ImportState.DONE
-        assert worker["result"]["rows"][1]["messages"] == ["Will remove password and default_password and forbid changing your OpenSlides password."]
+        assert worker["result"]["rows"][1]["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password."
+        ]
         assert worker["result"]["rows"][1]["data"] == {
             "id": 3,
             "saml_id": {"info": ImportState.DONE, "value": "saml3"},
