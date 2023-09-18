@@ -78,7 +78,8 @@ class UserCreate(
         instance = super().update_instance(instance)
         if saml_id:
             instance["can_change_own_password"] = False
-            if instance.get("can_change_own_password") or instance.get(
+            instance["password"] = None
+            if instance.get(
                 "default_password"
             ):
                 raise ActionException(
