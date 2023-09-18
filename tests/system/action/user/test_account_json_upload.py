@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class AccountJsonUpload(BaseActionTestCase):
-    def test_json_upload_simple(self) -> int:
+    def test_json_upload_simple(self) -> None:
         start_time = int(time())
         response = self.request(
             "account.json_upload",
@@ -49,8 +49,6 @@ class AccountJsonUpload(BaseActionTestCase):
             import_preview_fqid, {"name": "account"}
         )
         assert start_time <= import_preview["created"] <= end_time
-
-        return action_worker_id
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
