@@ -45,7 +45,7 @@ class TopicJsonUpload(JsonUploadMixin):
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
     headers = [
-        {"property": "title", "type": "string"},
+        {"property": "title", "type": "string", "is_object": True},
         {"property": "text", "type": "string"},
         {"property": "agenda_comment", "type": "string"},
         {"property": "agenda_type", "type": "string"},
@@ -90,10 +90,17 @@ class TopicJsonUpload(JsonUploadMixin):
         if check_result == ResultType.FOUND_ID:
             state = ImportState.WARNING
             messages.append("Duplicate")
+            entry["title"] = {
+                "value": entry["title"],
+                "info": ImportState.DONE,
+                "id": self.topic_lookup.get_field_by_name(entry["title"], "id"),
+            }
         elif check_result == ResultType.NOT_FOUND:
             state = ImportState.NEW
+            entry["title"] = {"value": entry["title"], "info": ImportState.NEW}
         elif check_result == ResultType.FOUND_MORE_IDS:
             state = ImportState.ERROR
+            entry["title"] = {"value": entry["title"], "info": ImportState.ERROR}
         return {"state": state, "messages": messages, "data": entry}
 
     def setup_lookups(self, data: List[Dict[str, Any]], meeting_id: int) -> None:

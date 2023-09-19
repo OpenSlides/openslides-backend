@@ -1,19 +1,19 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ....models.models import ImportPreview
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
+from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportMixin, ImportState
+from ...mixins.import_mixins import ImportMixin, ImportState, Lookup, ResultType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import TopicCreate
-from .mixins import DuplicateCheckMixin
 
 
 @register_action("topic.import")
-class TopicImport(DuplicateCheckMixin, ImportMixin):
+class TopicImport(ImportMixin):
     """
     Action to import a result from the import_preview.
     """
@@ -36,13 +36,16 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
             return {}
 
         meeting_id = self.get_meeting_id(instance)
-        self.init_duplicate_set(meeting_id)
+        self.setup_lookups(self.result.get("rows", []), meeting_id)
         action_payload = [
             entry["data"]
             for entry in self.result.get("rows", [])
             if (entry["state"] in (ImportState.NEW, ImportState.WARNING))
-            and not self.check_for_duplicate(entry["data"]["title"])
+            and self.topic_lookup.check_duplicate(entry["data"]["title"]["value"])
+            == ResultType.NOT_FOUND
         ]
+        for entry in action_payload:
+            entry["title"] = entry["title"]["value"]
         self.execute_other_action(TopicCreate, action_payload)
         self.error = False
         return instance
@@ -57,3 +60,16 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
         if worker.get("name") == TopicImport.import_name:
             return next(iter(worker.get("result", {})["rows"]))["data"]["meeting_id"]
         raise ActionException("Import data cannot be found.")
+
+    def setup_lookups(self, data: List[Dict[str, Any]], meeting_id: int) -> None:
+        self.topic_lookup = Lookup(
+            self.datastore,
+            "topic",
+            [
+                (title, entry["data"])
+                for entry in data
+                if (title := entry["data"].get("title", {}).get("value"))
+            ],
+            field="title",
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+        )

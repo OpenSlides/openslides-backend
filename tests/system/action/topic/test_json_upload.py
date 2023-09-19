@@ -37,7 +37,7 @@ class TopicJsonUpload(BaseActionTestCase):
             "state": ImportState.NEW,
             "messages": [],
             "data": {
-                "title": "test",
+                "title": {"value": "test", "info": ImportState.NEW},
                 "meeting_id": 22,
                 "agenda_comment": "testtesttest",
                 "agenda_type": "hidden",
@@ -91,7 +91,10 @@ class TopicJsonUpload(BaseActionTestCase):
                         {
                             "state": ImportState.NEW,
                             "messages": [],
-                            "data": {"title": "test", "meeting_id": 22},
+                            "data": {
+                                "title": {"value": "test", "info": ImportState.NEW},
+                                "meeting_id": 22,
+                            },
                         }
                     ],
                 },
@@ -101,7 +104,7 @@ class TopicJsonUpload(BaseActionTestCase):
         assert result == {
             "id": 1,
             "headers": [
-                {"property": "title", "type": "string"},
+                {"property": "title", "type": "string", "is_object": True},
                 {"property": "text", "type": "string"},
                 {"property": "agenda_comment", "type": "string"},
                 {"property": "agenda_type", "type": "string"},
@@ -111,7 +114,10 @@ class TopicJsonUpload(BaseActionTestCase):
                 {
                     "state": ImportState.NEW,
                     "messages": [],
-                    "data": {"title": "test", "meeting_id": 22},
+                    "data": {
+                        "title": {"value": "test", "info": ImportState.NEW},
+                        "meeting_id": 22,
+                    },
                 }
             ],
             "statistics": [
@@ -141,7 +147,10 @@ class TopicJsonUpload(BaseActionTestCase):
             {
                 "state": ImportState.WARNING,
                 "messages": ["Duplicate"],
-                "data": {"title": "test", "meeting_id": 22},
+                "data": {
+                    "title": {"value": "test", "info": ImportState.DONE, "id": 3},
+                    "meeting_id": 22,
+                },
             }
         ]
 
@@ -165,17 +174,26 @@ class TopicJsonUpload(BaseActionTestCase):
                         {
                             "state": ImportState.ERROR,
                             "messages": [],
-                            "data": {"title": "test", "meeting_id": 22},
+                            "data": {
+                                "title": {"value": "test", "info": ImportState.ERROR},
+                                "meeting_id": 22,
+                            },
                         },
                         {
                             "state": ImportState.NEW,
                             "messages": [],
-                            "data": {"title": "bla", "meeting_id": 22},
+                            "data": {
+                                "title": {"value": "bla", "info": ImportState.NEW},
+                                "meeting_id": 22,
+                            },
                         },
                         {
                             "state": ImportState.ERROR,
                             "messages": [],
-                            "data": {"title": "test", "meeting_id": 22},
+                            "data": {
+                                "title": {"value": "test", "info": ImportState.ERROR},
+                                "meeting_id": 22,
+                            },
                         },
                     ],
                 },
@@ -228,7 +246,7 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
             "state": ImportState.NEW,
             "messages": [],
             "data": {
-                "title": "test",
+                "title": {"value": "test", "info": ImportState.NEW},
                 "meeting_id": 22,
                 "agenda_comment": "testtesttest",
                 "agenda_type": "hidden",
@@ -258,7 +276,10 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
             {
                 "state": ImportState.WARNING,
                 "messages": ["Duplicate"],
-                "data": {"title": "test", "meeting_id": 22},
+                "data": {
+                    "title": {"value": "test", "info": ImportState.DONE, "id": 3},
+                    "meeting_id": 22,
+                },
             }
         ]
 
@@ -282,17 +303,26 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
                         {
                             "state": ImportState.ERROR,
                             "messages": [],
-                            "data": {"title": "test", "meeting_id": 22},
+                            "data": {
+                                "title": {"value": "test", "info": ImportState.ERROR},
+                                "meeting_id": 22,
+                            },
                         },
                         {
                             "state": ImportState.NEW,
                             "messages": [],
-                            "data": {"title": "bla", "meeting_id": 22},
+                            "data": {
+                                "title": {"value": "bla", "info": ImportState.NEW},
+                                "meeting_id": 22,
+                            },
                         },
                         {
                             "state": ImportState.ERROR,
                             "messages": [],
-                            "data": {"title": "test", "meeting_id": 22},
+                            "data": {
+                                "title": {"value": "test", "info": ImportState.ERROR},
+                                "meeting_id": 22,
+                            },
                         },
                     ],
                 }

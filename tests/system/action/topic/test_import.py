@@ -17,7 +17,10 @@ class TopicJsonImport(BaseActionTestCase):
                             {
                                 "state": ImportState.NEW,
                                 "messages": [],
-                                "data": {"title": "test", "meeting_id": 22},
+                                "data": {
+                                    "title": {"value": "test", "info": ImportState.NEW},
+                                    "meeting_id": 22,
+                                },
                             },
                         ],
                     },
@@ -43,6 +46,26 @@ class TopicJsonImport(BaseActionTestCase):
             {
                 "topic/1": {"title": "test", "meeting_id": 22},
                 "meeting/22": {"topic_ids": [1]},
+                "action_worker/2": {
+                    "state": ImportState.DONE,
+                    "result": {
+                        "import": "topic",
+                        "rows": [
+                            {
+                                "state": ImportState.WARNING,
+                                "messages": ["Duplicate"],
+                                "data": {
+                                    "title": {
+                                        "value": "test",
+                                        "info": ImportState.DONE,
+                                        "id": 1,
+                                    },
+                                    "meeting_id": 22,
+                                },
+                            },
+                        ],
+                    },
+                },
             }
         )
         response = self.request("topic.import", {"id": 2, "import": True})
