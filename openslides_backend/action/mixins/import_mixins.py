@@ -1,5 +1,6 @@
 import csv
 from collections import defaultdict
+from decimal import Decimal
 from enum import Enum
 from time import mktime, strptime, time
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union, cast
@@ -339,8 +340,10 @@ class JsonUploadMixin(BaseImportJsonUpload):
                             ]
                         except Exception:
                             pass
-                    elif type_ in ("string", "decimal"):
+                    elif type_ == "string":
                         continue
+                    elif type_ == "decimal":
+                        entry[field] = str(Decimal("0.000000") + Decimal(entry[field]))
                     elif type_ == "integer":
                         try:
                             entry[field] = int(entry[field])

@@ -20,7 +20,7 @@ class AccountJsonUpload(BaseActionTestCase):
                         "is_physical_person": "F",
                         "default_number": "strange number",
                         "default_structure_level": "CEO",
-                        "default_vote_weight": "1.000000",
+                        "default_vote_weight": "1.12",
                         "wrong": 15,
                     }
                 ],
@@ -38,7 +38,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "is_physical_person": False,
                 "default_number": "strange number",
                 "default_structure_level": "CEO",
-                "default_vote_weight": "1.000000",
+                "default_vote_weight": "1.120000",
             },
         }
         action_worker_id = response.json["results"][0][0].get("id")
