@@ -15,11 +15,10 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create import UserCreate
 from .update import UserUpdate
-from .user_mixin import DuplicateCheckMixin
 
 
 @register_action("account.import")
-class AccountImport(DuplicateCheckMixin, ImportMixin):
+class AccountImport(ImportMixin):
     """
     Action to import a result from the action_worker.
     """
