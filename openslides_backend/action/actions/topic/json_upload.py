@@ -89,7 +89,9 @@ class TopicJsonUpload(JsonUploadMixin):
         check_result = self.topic_lookup.check_duplicate(entry["title"])
         if check_result == ResultType.FOUND_ID:
             state = ImportState.WARNING
-            messages.append("Duplicate")
+            messages.append(
+                "Duplicate, import will update text and ignore agenda fields"
+            )
             entry["title"] = {
                 "value": entry["title"],
                 "info": ImportState.DONE,
