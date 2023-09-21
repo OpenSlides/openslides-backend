@@ -146,9 +146,7 @@ class TopicJsonUpload(BaseActionTestCase):
         assert result["rows"] == [
             {
                 "state": ImportState.WARNING,
-                "messages": [
-                    "Duplicate, import will update text and ignore agenda fields"
-                ],
+                "messages": ["Duplicate, import will update this topic."],
                 "data": {
                     "title": {"value": "test", "info": ImportState.DONE, "id": 3},
                     "meeting_id": 22,
@@ -277,9 +275,7 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
         assert result["rows"] == [
             {
                 "state": ImportState.WARNING,
-                "messages": [
-                    "Duplicate, import will update text and ignore agenda fields"
-                ],
+                "messages": ["Duplicate, import will update this topic."],
                 "data": {
                     "title": {"value": "test", "info": ImportState.DONE, "id": 3},
                     "meeting_id": 22,

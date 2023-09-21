@@ -9,7 +9,9 @@ from ....shared.schema import required_id_schema
 from ...mixins.import_mixins import ImportMixin, ImportState, Lookup, ResultType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..agenda_item.update import AgendaItemUpdate
 from .create import TopicCreate
+from .update import TopicUpdate
 
 
 @register_action("topic.import")
@@ -37,16 +39,53 @@ class TopicImport(ImportMixin):
 
         meeting_id = self.get_meeting_id(instance)
         self.setup_lookups(self.result.get("rows", []), meeting_id)
-        action_payload = [
+        create_payloads = [
             entry["data"]
             for entry in self.result.get("rows", [])
-            if (entry["state"] in (ImportState.NEW, ImportState.WARNING))
+            if entry["state"] == ImportState.NEW
             and self.topic_lookup.check_duplicate(entry["data"]["title"]["value"])
             == ResultType.NOT_FOUND
         ]
-        for entry in action_payload:
+        pre_update_payloads = [
+            entry["data"]
+            for entry in self.result.get("rows", [])
+            if entry["state"] == ImportState.WARNING
+            and self.topic_lookup.check_duplicate(entry["data"]["title"]["value"])
+            == ResultType.FOUND_ID
+            and entry["data"]["title"].get("id")
+            == self.topic_lookup.get_field_by_name(
+                entry["data"]["title"]["value"], "id"
+            )
+        ]
+        update_payloads: List[Dict[str, Any]] = []
+        agenda_item_updates: List[Dict[str, Any]] = []
+        for entry in create_payloads:
             entry["title"] = entry["title"]["value"]
-        self.execute_other_action(TopicCreate, action_payload)
+        for entry in pre_update_payloads:
+            if entry.get("text"):
+                update_payloads.append(
+                    {"id": entry["title"]["id"], "text": entry["text"]}
+                )
+            agenda_item: Dict[str, Any] = {}
+            for field in (
+                "agenda_comment",
+                "agenda_type",
+                "agenda_duration",
+            ):
+                if entry.get(field):
+                    agenda_item[field[7:]] = entry[field]
+            if agenda_item:
+                agenda_item["id"] = self.topic_lookup.get_field_by_name(
+                    entry["title"]["value"], "agenda_item_id"
+                )
+                agenda_item_updates.append(agenda_item)
+
+        if create_payloads:
+            self.execute_other_action(TopicCreate, create_payloads)
+        if update_payloads:
+            self.execute_other_action(TopicUpdate, update_payloads)
+        if agenda_item_updates:
+            self.execute_other_action(AgendaItemUpdate, agenda_item_updates)
         self.error = False
         return instance
 
@@ -71,5 +110,6 @@ class TopicImport(ImportMixin):
                 if (title := entry["data"].get("title", {}).get("value"))
             ],
             field="title",
+            mapped_fields=["agenda_item_id"],
             global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )

@@ -41,7 +41,7 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_model_not_exists("topic/1")
         self.assert_model_not_exists("import_preview/2")
 
-    def test_import_duplicate_in_db(self) -> None:
+    def test_import_found_id_and_text_field(self) -> None:
         self.set_models(
             {
                 "topic/1": {"title": "test", "meeting_id": 22},
@@ -53,7 +53,9 @@ class TopicJsonImport(BaseActionTestCase):
                         "rows": [
                             {
                                 "state": ImportState.WARNING,
-                                "messages": ["Duplicate"],
+                                "messages": [
+                                    "Duplicate, import will update this topic."
+                                ],
                                 "data": {
                                     "title": {
                                         "value": "test",
@@ -61,6 +63,7 @@ class TopicJsonImport(BaseActionTestCase):
                                         "id": 1,
                                     },
                                     "meeting_id": 22,
+                                    "text": "this should be updated",
                                 },
                             },
                         ],
@@ -70,9 +73,61 @@ class TopicJsonImport(BaseActionTestCase):
         )
         response = self.request("topic.import", {"id": 2, "import": True})
         self.assert_status_code(response, 200)
-        self.assert_model_not_exists("topic/2")
+        self.assert_model_exists(
+            "topic/1",
+            {"title": "test", "meeting_id": 22, "text": "this should be updated"},
+        )
 
-    def test_import_duplicate_and_topic_deleted_so_imported(self) -> None:
+    def test_import_found_id_and_agenda_fields(self) -> None:
+        self.set_models(
+            {
+                "topic/1": {"title": "test", "meeting_id": 22, "agenda_item_id": 7},
+                "agenda_item/7": {"content_object_id": "topic/1", "meeting_id": 22},
+                "meeting/22": {"topic_ids": [1]},
+                "action_worker/2": {
+                    "state": ImportState.DONE,
+                    "result": {
+                        "import": "topic",
+                        "rows": [
+                            {
+                                "state": ImportState.WARNING,
+                                "messages": [
+                                    "Duplicate, import will update this topic."
+                                ],
+                                "data": {
+                                    "title": {
+                                        "value": "test",
+                                        "info": ImportState.DONE,
+                                        "id": 1,
+                                    },
+                                    "meeting_id": 22,
+                                    "agenda_comment": "test",
+                                    "agenda_type": "hidden",
+                                    "agenda_duration": 40,
+                                },
+                            },
+                        ],
+                    },
+                },
+            }
+        )
+        response = self.request("topic.import", {"id": 2, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "topic/1",
+            {"title": "test", "meeting_id": 22, "agenda_item_id": 7},
+        )
+        self.assert_model_exists(
+            "agenda_item/7",
+            {
+                "content_object_id": "topic/1",
+                "comment": "test",
+                "type": "hidden",
+                "duration": 40,
+            },
+        )
+
+    def test_import_duplicate_and_topic_deleted(self) -> None:
         self.set_models(
             {
                 "topic/1": {"title": "test", "meeting_id": 22},
@@ -99,48 +154,27 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("topic/2", {"title": "test"})
 
-    def test_import_duplicate_so_not_imported(self) -> None:
-        self.set_models(
-            {
-                "topic/1": {"title": "test", "meeting_id": 22},
-                "meeting/22": {"topic_ids": [1]},
-            }
-        )
-        response = self.request(
-            "topic.json_upload",
-            {
-                "meeting_id": 22,
-                "data": [
-                    {
-                        "title": "test",
-                    }
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("import_preview/3")
-        response = self.request("topic.import", {"id": 3, "import": True})
-        self.assert_status_code(response, 200)
-        self.assert_model_not_exists("topic/2")
 
-    def test_import_with_upload(self) -> None:
-        response = self.request(
-            "topic.json_upload",
-            {
-                "meeting_id": 22,
-                "data": [
-                    {
-                        "title": "another title",
-                    }
-                ],
-            },
-        )
+class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
+    def test_import_agenda_data(self) -> None:
+        self.json_upload_agenda_data()
+        response = self.request("topic.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("import_preview/3")
-        response = self.request("topic.import", {"id": 3, "import": True})
-        self.assert_status_code(response, 200)
+        self.assert_model_exists("topic/1", {"title": "test"})
         self.assert_model_exists(
-            "topic/1", {"title": "another title", "meeting_id": 22}
+            "agenda_item/1",
+            {"comment": "testtesttest", "type": "hidden", "duration": 50},
         )
-        self.assert_model_exists("meeting/22", {"topic_ids": [1]})
-        self.assert_model_not_exists("import_preview/3")
+
+    def test_import_duplicate_in_db(self) -> None:
+        self.json_upload_duplicate_in_db()
+        response = self.request("topic.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("topic/3", {"title": "test", "meeting_id": 22})
+        self.assert_model_not_exists("topic/4")
+
+    def test_import_duplicate_in_data(self) -> None:
+        self.json_upload_duplicate_in_data()
+        response = self.request("topic.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 400)
+        assert "Error in import. Data will not be imported." in response.json["message"]
