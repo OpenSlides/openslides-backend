@@ -8,10 +8,10 @@ class TopicJsonImport(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/22": {"name": "test", "is_active_in_organization_id": 1},
-                "action_worker/2": {
+                "import_preview/2": {
                     "state": ImportState.DONE,
+                    "name": "topic",
                     "result": {
-                        "import": "topic",
                         "rows": [
                             {
                                 "state": ImportState.NEW,
@@ -35,13 +35,13 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("topic/1", {"title": "test", "meeting_id": 22})
         self.assert_model_exists("meeting/22", {"topic_ids": [1]})
-        self.assert_model_not_exists("action_worker/2")
+        self.assert_model_deleted("import_preview/2")
 
     def test_import_abort(self) -> None:
         response = self.request("topic.import", {"id": 2, "import": False})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("topic/1")
-        self.assert_model_not_exists("action_worker/2")
+        self.assert_model_deleted("import_preview/2")
 
     def test_import_duplicate_in_db(self) -> None:
         self.set_models(
@@ -73,7 +73,7 @@ class TopicJsonImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("action_worker/3")
+        self.assert_model_exists("import_preview/3")
         response = self.request("topic.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("topic/1")
@@ -100,7 +100,7 @@ class TopicJsonImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("action_worker/3")
+        self.assert_model_exists("import_preview/3")
         response = self.request("topic.import", {"id": 3, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("topic/2")
@@ -118,11 +118,11 @@ class TopicJsonImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("action_worker/3")
+        self.assert_model_exists("import_preview/3")
         response = self.request("topic.import", {"id": 3, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "topic/1", {"title": "another title", "meeting_id": 22}
         )
         self.assert_model_exists("meeting/22", {"topic_ids": [1]})
-        self.assert_model_not_exists("action_worker/3")
+        self.assert_model_deleted("import_preview/3")

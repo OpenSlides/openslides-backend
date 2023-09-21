@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, cast
 
-from ....models.models import ActionWorker
+from ....models.models import ImportPreview
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException
 from ....shared.schema import required_id_schema
@@ -20,11 +20,11 @@ from .update import UserUpdate
 @register_action("account.import")
 class AccountImport(ImportMixin):
     """
-    Action to import a result from the action_worker.
+    Action to import a result from the import_preview.
     """
 
-    model = ActionWorker()
-    schema = DefaultSchema(ActionWorker()).get_default_schema(
+    model = ImportPreview()
+    schema = DefaultSchema(ImportPreview()).get_default_schema(
         additional_required_fields={
             "id": required_id_schema,
             "import": {"type": "boolean"},

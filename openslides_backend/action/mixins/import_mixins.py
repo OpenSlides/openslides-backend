@@ -4,6 +4,7 @@ from decimal import Decimal
 from enum import Enum
 from time import mktime, strptime, time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+
 from typing_extensions import NotRequired, TypedDict
 
 from ...shared.exceptions import ActionException
@@ -184,22 +185,22 @@ class ImportMixin(BaseImportJsonUpload):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         store_id = instance["id"]
-        worker = self.datastore.get(
-            fqid_from_collection_and_id("action_worker", store_id),
-            ["result", "state"],
+        import_preview = self.datastore.get(
+            fqid_from_collection_and_id("import_preview", store_id),
+            ["result", "state", "name"],
             lock_result=False,
         )
-        if (worker.get("result") or {}).get("import") != self.import_name:
+        if import_preview.get("name") != self.import_name:
             raise ActionException(
                 f"Wrong id doesn't point on {self.import_name} import data."
             )
-        if worker.get("state") not in list(ImportState):
+        if import_preview.get("state") not in list(ImportState):
             raise ActionException(
                 "Error in import: Missing valid state in stored worker."
             )
-        if worker.get("state") == ImportState.ERROR:
+        if import_preview.get("state") == ImportState.ERROR:
             raise ActionException("Error in import. Data will not be imported.")
-        self.result = worker["result"]
+        self.result = import_preview.get("result", {})
         return instance
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
@@ -231,13 +232,13 @@ class ImportMixin(BaseImportJsonUpload):
                 store_id = instance["id"]
                 if store_id in self.error_store_ids:
                     continue
-                self.datastore.write_action_worker(
+                self.datastore.write(
                     WriteRequest(
                         events=[
                             Event(
                                 type=EventType.Delete,
                                 fqid=fqid_from_collection_and_id(
-                                    "action_worker", store_id
+                                    "import_preview", store_id
                                 ),
                             )
                         ],
@@ -277,11 +278,11 @@ class JsonUploadMixin(BaseImportJsonUpload):
         else:
             self.import_state = ImportState.DONE
 
-    def store_rows_in_the_action_worker(self, import_name: str) -> None:
-        self.new_store_id = self.datastore.reserve_id(collection="action_worker")
-        fqid = fqid_from_collection_and_id("action_worker", self.new_store_id)
+    def store_rows_in_the_import_preview(self, import_name: str) -> None:
+        self.new_store_id = self.datastore.reserve_id(collection="import_preview")
+        fqid = fqid_from_collection_and_id("import_preview", self.new_store_id)
         time_created = int(time())
-        self.datastore.write_action_worker(
+        self.datastore.write(
             WriteRequest(
                 events=[
                     Event(
@@ -289,9 +290,9 @@ class JsonUploadMixin(BaseImportJsonUpload):
                         fqid=fqid,
                         fields={
                             "id": self.new_store_id,
-                            "result": {"import": import_name, "rows": self.rows},
+                            "name": import_name,
+                            "result": {"rows": self.rows},
                             "created": time_created,
-                            "timestamp": time_created,
                             "state": self.import_state,
                         },
                     )

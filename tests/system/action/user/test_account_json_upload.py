@@ -41,14 +41,14 @@ class AccountJsonUpload(BaseActionTestCase):
                 "default_vote_weight": "1.120000",
             },
         }
-        action_worker_id = response.json["results"][0][0].get("id")
-        action_worker_fqid = fqid_from_collection_and_id(
-            "action_worker", action_worker_id
+        import_preview_id = response.json["results"][0][0].get("id")
+        import_preview_fqid = fqid_from_collection_and_id(
+            "import_preview", import_preview_id
         )
-        worker = self.assert_model_exists(action_worker_fqid)
-        assert worker["result"]["import"] == "account"
-        assert start_time <= worker["created"] <= end_time
-        assert start_time <= worker["timestamp"] <= end_time
+        import_preview = self.assert_model_exists(
+            import_preview_fqid, {"name": "account"}
+        )
+        assert start_time <= import_preview["created"] <= end_time
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
@@ -104,10 +104,11 @@ class AccountJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "action_worker/1",
+            "import_preview/1",
             {
+                "name": "account",
+                "state": ImportState.DONE,
                 "result": {
-                    "import": "account",
                     "rows": [
                         {
                             "state": ImportState.NEW,
@@ -124,7 +125,7 @@ class AccountJsonUpload(BaseActionTestCase):
                             },
                         }
                     ],
-                }
+                },
             },
         )
         result = response.json["results"][0][0]
@@ -301,12 +302,12 @@ class AccountJsonUpload(BaseActionTestCase):
         ]
         assert result["rows"][2]["state"] == ImportState.ERROR
         self.assert_model_exists(
-            "action_worker/1",
+            "import_preview/1",
             {
                 "id": 1,
+                "name": "account",
                 "state": ImportState.ERROR,
                 "result": {
-                    "import": "account",
                     "rows": [
                         {
                             "state": ImportState.ERROR,
@@ -611,28 +612,28 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        worker = self.assert_model_exists("action_worker/1")
-        assert worker["result"]["import"] == "account"
-        assert worker["result"]["rows"][0]["messages"] == [
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        assert worker["result"]["rows"][0]["state"] == ImportState.NEW
-        data0 = worker["result"]["rows"][0]["data"]
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
+        data0 = import_preview["result"]["rows"][0]["data"]
         assert data0 == {
             "saml_id": {"info": "new", "value": "test_saml_id"},
             "username": {"info": "generated", "value": "test_saml_id2"},
             "default_password": {"info": "warning", "value": ""},
         }
-        assert worker["result"]["rows"][1]["data"]["username"] == {
+        assert import_preview["result"]["rows"][1]["data"]["username"] == {
             "info": "done",
             "value": "test_saml_id1",
         }
-        assert worker["result"]["rows"][2]["data"]["username"] == {
+        assert import_preview["result"]["rows"][2]["data"]["username"] == {
             "info": "generated",
             "value": "test_saml_id21",
         }
-        assert worker["result"]["rows"][2]["data"]["last_name"] == "ml_id2"
-        assert worker["result"]["rows"][2]["data"]["first_name"] == "test_sa"
+        assert import_preview["result"]["rows"][2]["data"]["last_name"] == "ml_id2"
+        assert import_preview["result"]["rows"][2]["data"]["first_name"] == "test_sa"
 
     def json_upload_set_saml_id_in_existing_account(self) -> None:
         self.set_models(
@@ -659,14 +660,14 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        worker = self.assert_model_exists("action_worker/1")
-        assert worker["state"] == ImportState.WARNING
-        assert worker["result"]["import"] == "account"
-        assert worker["result"]["rows"][0]["state"] == ImportState.DONE
-        assert worker["result"]["rows"][0]["messages"] == [
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.WARNING
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        data = worker["result"]["rows"][0]["data"]
+        data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
             "saml_id": {"info": "new", "value": "test_saml_id"},
@@ -696,12 +697,12 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        worker = self.assert_model_exists("action_worker/1")
-        assert worker["state"] == ImportState.DONE
-        assert worker["result"]["import"] == "account"
-        assert worker["result"]["rows"][0]["state"] == ImportState.DONE
-        assert worker["result"]["rows"][0]["messages"] == []
-        data = worker["result"]["rows"][0]["data"]
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
             "saml_id": {"info": "done", "value": "new_one"},
@@ -789,11 +790,11 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        worker = self.assert_model_exists("action_worker/1")
-        assert worker["result"]["import"] == "account"
-        assert worker["result"]["rows"][0]["data"].get("default_password")
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["data"].get("default_password")
         assert (
-            worker["result"]["rows"][0]["data"]["default_password"]["info"]
+            import_preview["result"]["rows"][0]["data"]["default_password"]["info"]
             == ImportState.GENERATED
         )
 
@@ -925,14 +926,14 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        worker = self.assert_model_exists("action_worker/1")
-        assert worker["state"] == ImportState.WARNING
-        assert worker["result"]["import"] == "account"
-        assert worker["result"]["rows"][0]["state"] == ImportState.DONE
-        assert worker["result"]["rows"][0]["messages"] == [
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.WARNING
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        assert worker["result"]["rows"][0]["data"] == {
+        assert import_preview["result"]["rows"][0]["data"] == {
             "id": 2,
             "saml_id": {"info": "new", "value": "test_saml_id2"},
             "username": {"id": 2, "info": "done", "value": "user2"},
@@ -940,11 +941,11 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "default_vote_weight": "2.345678",
         }
 
-        assert worker["result"]["rows"][1]["state"] == ImportState.DONE
-        assert worker["result"]["rows"][1]["messages"] == [
+        assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][1]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        assert worker["result"]["rows"][1]["data"] == {
+        assert import_preview["result"]["rows"][1]["data"] == {
             "id": 3,
             "saml_id": {"info": ImportState.DONE, "value": "saml3"},
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
@@ -952,9 +953,9 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "default_vote_weight": "3.345678",
         }
 
-        assert worker["result"]["rows"][2]["state"] == ImportState.DONE
-        assert worker["result"]["rows"][2]["messages"] == []
-        assert worker["result"]["rows"][2]["data"] == {
+        assert import_preview["result"]["rows"][2]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][2]["messages"] == []
+        assert import_preview["result"]["rows"][2]["data"] == {
             "id": 4,
             "email": "mlk@america.com",
             "username": {"id": 4, "info": "done", "value": "user4"},
@@ -963,34 +964,36 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "default_vote_weight": "4.345678",
         }
 
-        assert worker["result"]["rows"][3]["state"] == ImportState.NEW
-        assert worker["result"]["rows"][3]["messages"] == [
+        assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
+        assert import_preview["result"]["rows"][3]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        assert worker["result"]["rows"][3]["data"] == {
+        assert import_preview["result"]["rows"][3]["data"] == {
             "saml_id": {"info": "new", "value": "saml5"},
             "username": {"info": "done", "value": "new_user5"},
             "default_password": {"info": "warning", "value": ""},
             "default_vote_weight": "5.345678",
         }
 
-        assert worker["result"]["rows"][4]["state"] == ImportState.NEW
-        assert worker["result"]["rows"][4]["messages"] == [
+        assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW
+        assert import_preview["result"]["rows"][4]["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password."
         ]
-        assert worker["result"]["rows"][4]["data"] == {
+        assert import_preview["result"]["rows"][4]["data"] == {
             "saml_id": {"info": "new", "value": "new_saml6"},
             "username": {"info": "generated", "value": "new_saml6"},
             "default_password": {"info": "warning", "value": ""},
             "default_vote_weight": "6.345678",
         }
 
-        assert worker["result"]["rows"][5]["state"] == ImportState.NEW
-        assert worker["result"]["rows"][5]["messages"] == []
-        default_password = worker["result"]["rows"][5]["data"].pop("default_password")
+        assert import_preview["result"]["rows"][5]["state"] == ImportState.NEW
+        assert import_preview["result"]["rows"][5]["messages"] == []
+        default_password = import_preview["result"]["rows"][5]["data"].pop(
+            "default_password"
+        )
         assert default_password["info"] == ImportState.GENERATED
         assert default_password["value"]
-        assert worker["result"]["rows"][5]["data"] == {
+        assert import_preview["result"]["rows"][5]["data"] == {
             "username": {"info": "generated", "value": "JoanBaez7"},
             "last_name": "Baez7",
             "first_name": "Joan",

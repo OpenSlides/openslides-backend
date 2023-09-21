@@ -3825,15 +3825,36 @@ action_worker:
       - running
       - end
       - aborted
-      - warning
-      - error
-      - done
     restriction_mode: A
   created:
     type: timestamp
     required: true
     restriction_mode: A
   timestamp:
+    type: timestamp
+    required: true
+    restriction_mode: A
+  result:
+    type: JSON
+    restriction_mode: A
+
+import_preview:
+  id:
+    type: number
+    restriction_mode: A
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  state:
+    type: string
+    required: true
+    enum:
+      - warning
+      - error
+      - done
+    restriction_mode: A
+  created:
     type: timestamp
     required: true
     restriction_mode: A

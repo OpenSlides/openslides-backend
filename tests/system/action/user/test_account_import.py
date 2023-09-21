@@ -12,10 +12,10 @@ class AccountJsonImport(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "action_worker/2": {
+                "import_preview/2": {
                     "state": ImportState.DONE,
+                    "name": "account",
                     "result": {
-                        "import": "account",
                         "rows": [
                             {
                                 "state": ImportState.NEW,
@@ -31,10 +31,10 @@ class AccountJsonImport(BaseActionTestCase):
                         ],
                     },
                 },
-                "action_worker/3": {
+                "import_preview/3": {
                     "state": ImportState.DONE,
+                    "name": "account",
                     "result": {
-                        "import": "account",
                         "rows": [
                             {
                                 "state": ImportState.NEW,
@@ -53,10 +53,10 @@ class AccountJsonImport(BaseActionTestCase):
                         ],
                     },
                 },
-                "action_worker/4": {
+                "import_preview/4": {
                     "state": ImportState.ERROR,
+                    "name": "account",
                     "result": {
-                        "import": "account",
                         "rows": [
                             {
                                 "state": ImportState.ERROR,
@@ -66,16 +66,16 @@ class AccountJsonImport(BaseActionTestCase):
                         ],
                     },
                 },
-                "action_worker/5": {"result": None},
+                "import_preview/5": {"result": None},
                 "user/2": {
                     "username": "test",
                     "default_password": "secret",
                     "password": "secret",
                 },
-                "action_worker/6": {
+                "import_preview/6": {
                     "state": ImportState.WARNING,
+                    "name": "account",
                     "result": {
-                        "import": "account",
                         "rows": [
                             {
                                 "state": ImportState.DONE,
@@ -112,12 +112,12 @@ class AccountJsonImport(BaseActionTestCase):
         )
         assert user.get("default_password")
         assert user.get("password")
-        self.assert_model_not_exists("action_worker/2")
+        self.assert_model_deleted("import_preview/2")
 
     def test_import_abort(self) -> None:
         response = self.request("account.import", {"id": 2, "import": False})
         self.assert_status_code(response, 200)
-        self.assert_model_not_exists("action_worker/2")
+        self.assert_model_deleted("import_preview/2")
         self.assert_model_not_exists("user/3")
 
     def test_import_wrong_action_worker(self) -> None:
@@ -133,10 +133,10 @@ class AccountJsonImport(BaseActionTestCase):
                 "user/1": {
                     "username": "user1",
                 },
-                "action_worker/7": {
+                "import_preview/7": {
                     "state": ImportState.DONE,
+                    "name": "account",
                     "result": {
-                        "import": "account",
                         "rows": [
                             {
                                 "state": ImportState.DONE,
@@ -187,10 +187,10 @@ class AccountJsonImport(BaseActionTestCase):
                 return ImportState.DONE
 
         return {
-            f"action_worker/{number}": {
+            f"import_preview/{number}": {
                 "state": get_import_state(),
+                "name": "account",
                 "result": {
-                    "import": "account",
                     "rows": [
                         {
                             "state": row_state,
@@ -312,10 +312,10 @@ class AccountJsonImport(BaseActionTestCase):
     def test_import_error_state_done_search_data_error(self) -> None:
         self.set_models(
             {
-                "action_worker/7": {
+                "import_preview/7": {
                     "state": ImportState.DONE,
+                    "name": "account",
                     "result": {
-                        "import": "account",
                         "rows": [
                             {
                                 "state": ImportState.NEW,
@@ -382,7 +382,7 @@ class AccountJsonImport(BaseActionTestCase):
         response = self.request("account.import", {"id": 4, "import": True})
         self.assert_status_code(response, 400)
         assert response.json["message"] == "Error in import. Data will not be imported."
-        self.assert_model_exists("action_worker/4")
+        self.assert_model_exists("import_preview/4")
 
     def test_import_no_permission(self) -> None:
         self.base_permission_test({}, "account.import", {"id": 2, "import": True})
@@ -437,7 +437,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         assert user37["default_password"]
         assert user37["password"]
 
-        self.assert_model_not_exists("action_worker/1")
+        self.assert_model_deleted("import_preview/1")
 
     def test_upload_import_with_generated_usernames_error_username(self) -> None:
         self.json_upload_saml_id_new()
@@ -455,7 +455,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.assert_model_not_exists("user/35")
         self.assert_model_not_exists("user/36")
         self.assert_model_not_exists("user/37")
-        self.assert_model_exists("action_worker/1")
+        self.assert_model_exists("import_preview/1")
 
     def test_json_upload_set_saml_id_in_existing_account(self) -> None:
         self.json_upload_set_saml_id_in_existing_account()
@@ -472,7 +472,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_vote_weight": "2.300000",
             },
         )
-        self.assert_model_not_exists("action_worker/1")
+        self.assert_model_deleted("import_preview/1")
 
     def test_json_upload_update_saml_id_in_existing_account(self) -> None:
         self.json_upload_update_saml_id_in_existing_account()
@@ -486,7 +486,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_vote_weight": "2.300000",
             },
         )
-        self.assert_model_not_exists("action_worker/1")
+        self.assert_model_deleted("import_preview/1")
 
     def test_json_upload_names_and_email_find_username_error(self) -> None:
         self.json_upload_names_and_email_find_username()

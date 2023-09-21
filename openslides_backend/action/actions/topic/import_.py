@@ -15,7 +15,7 @@ from .mixins import DuplicateCheckMixin
 @register_action("topic.import")
 class TopicImport(DuplicateCheckMixin, ImportMixin):
     """
-    Action to import a result from the action_worker.
+    Action to import a result from the import_preview.
     """
 
     model = ActionWorker()
@@ -50,10 +50,10 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         store_id = instance["id"]
         worker = self.datastore.get(
-            fqid_from_collection_and_id("action_worker", store_id),
-            ["result"],
+            fqid_from_collection_and_id("import_preview", store_id),
+            ["name", "result"],
             lock_result=False,
         )
-        if worker.get("result", {}).get("import") == TopicImport.import_name:
-            return next(iter(worker["result"]["rows"]))["data"]["meeting_id"]
+        if worker.get("name") == TopicImport.import_name:
+            return next(iter(worker.get("result", {})["rows"]))["data"]["meeting_id"]
         raise ActionException("Import data cannot be found.")

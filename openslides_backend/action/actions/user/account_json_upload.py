@@ -108,7 +108,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         self.set_state(
             state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )
-        self.store_rows_in_the_action_worker("account")
+        self.store_rows_in_the_import_preview("account")
         return {}
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
