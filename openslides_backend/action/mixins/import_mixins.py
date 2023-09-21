@@ -3,7 +3,8 @@ from collections import defaultdict
 from decimal import Decimal
 from enum import Enum
 from time import mktime, strptime, time
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing_extensions import NotRequired, TypedDict
 
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
@@ -248,13 +249,19 @@ class ImportMixin(BaseImportJsonUpload):
         return on_success
 
 
+class HeaderEntry(TypedDict):
+    property: str
+    type: str
+    is_object: NotRequired[bool]
+
+
 class StatisticEntry(TypedDict):
     name: str
     value: int
 
 
 class JsonUploadMixin(BaseImportJsonUpload):
-    headers: List[Dict[str, Any]]
+    headers: List[HeaderEntry]
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
     import_state: ImportState
