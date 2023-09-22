@@ -112,12 +112,12 @@ class AccountJsonImport(BaseActionTestCase):
         )
         assert user.get("default_password")
         assert user.get("password")
-        self.assert_model_deleted("import_preview/2")
+        self.assert_model_not_exists("import_preview/2")
 
     def test_import_abort(self) -> None:
         response = self.request("account.import", {"id": 2, "import": False})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("import_preview/2")
+        self.assert_model_not_exists("import_preview/2")
         self.assert_model_not_exists("user/3")
 
     def test_import_wrong_action_worker(self) -> None:
@@ -437,7 +437,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         assert user37["default_password"]
         assert user37["password"]
 
-        self.assert_model_deleted("import_preview/1")
+        self.assert_model_not_exists("import_preview/1")
 
     def test_upload_import_with_generated_usernames_error_username(self) -> None:
         self.json_upload_saml_id_new()
@@ -472,7 +472,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_vote_weight": "2.300000",
             },
         )
-        self.assert_model_deleted("import_preview/1")
+        self.assert_model_not_exists("import_preview/1")
 
     def test_json_upload_update_saml_id_in_existing_account(self) -> None:
         self.json_upload_update_saml_id_in_existing_account()
@@ -486,7 +486,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "default_vote_weight": "2.300000",
             },
         )
-        self.assert_model_deleted("import_preview/1")
+        self.assert_model_not_exists("import_preview/1")
 
     def test_json_upload_names_and_email_find_username_error(self) -> None:
         self.json_upload_names_and_email_find_username()
