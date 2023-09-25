@@ -344,8 +344,10 @@ class AccountJsonImport(BaseActionTestCase):
         )
         response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
         for i in range(2):
-            entry = response.json["results"][0][0]["rows"][i]
+            entry = result["rows"][i]
             assert entry["state"] == ImportState.ERROR
             assert entry["messages"] == [
                 "Error: username 'durban' is duplicated in import."
@@ -675,7 +677,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         )
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
-        row = response_import.json["results"][0][0]["rows"][0]
+        assert (result := response_import.json["results"][0][0])["state"] == ImportState.ERROR
+        row = result["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password.",
@@ -689,7 +692,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_vote_weight": "2.345678",
         }
 
-        row = response_import.json["results"][0][0]["rows"][1]
+        row = row = result["rows"][1]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password.",
@@ -704,7 +707,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "can_change_own_password": False,
         }
 
-        row = response_import.json["results"][0][0]["rows"][2]
+        row = row = result["rows"][2]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Error: user 4 not found anymore for updating user 'user4'."
@@ -718,7 +721,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_vote_weight": "4.345678",
         }
 
-        row = response_import.json["results"][0][0]["rows"][3]
+        row = row = result["rows"][3]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password.",
@@ -731,7 +734,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_vote_weight": "5.345678",
         }
 
-        row = response_import.json["results"][0][0]["rows"][4]
+        row = row = result["rows"][4]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password.",
@@ -744,7 +747,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_vote_weight": "6.345678",
         }
 
-        row = response_import.json["results"][0][0]["rows"][5]
+        row = row = result["rows"][5]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Error: row state expected to be 'done', but it is 'new'."

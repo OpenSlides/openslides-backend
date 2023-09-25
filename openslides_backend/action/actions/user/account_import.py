@@ -39,14 +39,11 @@ class AccountImport(ImportMixin):
             return {}
 
         instance = super().update_instance(instance)
-        self.error = False
         self.setup_lookups()
 
         self.rows = [self.validate_entry(row) for row in self.result["rows"]]
 
-        if self.error:
-            self.error_store_ids.append(instance["id"])
-        else:
+        if self.import_state != ImportState.ERROR:
             create_action_payload: List[Dict[str, Any]] = []
             update_action_payload: List[Dict[str, Any]] = []
             self.flatten_object_fields(["username", "saml_id", "default_password"])
@@ -139,8 +136,8 @@ class AccountImport(ImportMixin):
                 field = "can_change_own_password"
                 if self.username_lookup.get_field_by_name(username, field):
                     entry[field] = False
-        if not self.error and row["state"] == ImportState.ERROR:
-            self.error = True
+        if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
+            self.import_state = ImportState.ERROR
         return {
             "state": row["state"],
             "data": row["data"],

@@ -178,10 +178,7 @@ class ImportMixin(BaseImportJsonUpload):
     import_name: str
     rows: List[ImportRow] = []
     result: Dict[str, List] = {}
-
-    def prepare_action_data(self, action_data: ActionData) -> ActionData:
-        self.error_store_ids: List[int] = []
-        return action_data
+    import_state = ImportState.DONE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         store_id = instance["id"]
@@ -196,7 +193,7 @@ class ImportMixin(BaseImportJsonUpload):
             )
         if import_preview.get("state") not in list(ImportState):
             raise ActionException(
-                "Error in import: Missing valid state in stored worker."
+                "Error in import: Missing valid state in stored import_preview."
             )
         if import_preview.get("state") == ImportState.ERROR:
             raise ActionException("Error in import. Data will not be imported.")
@@ -214,6 +211,7 @@ class ImportMixin(BaseImportJsonUpload):
     ) -> Optional[ActionResultElement]:
         return {
             "rows": self.result.get("rows", []),
+            "state": self.import_state
         }
 
     def flatten_object_fields(self, fields: Optional[List[str]] = None) -> None:
@@ -230,7 +228,7 @@ class ImportMixin(BaseImportJsonUpload):
         def on_success() -> None:
             for instance in action_data:
                 store_id = instance["id"]
-                if store_id in self.error_store_ids:
+                if self.import_state == ImportState.ERROR:
                     continue
                 self.datastore.write_action_worker(
                     WriteRequest(
