@@ -31,14 +31,15 @@ class TopicImport(ImportMixin):
     import_name = "topic"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance = super().update_instance(instance)
-
-        # handle abort in on_success
         if not instance["import"]:
             return {}
 
+        instance = super().update_instance(instance)
+
+        self.error = False
         meeting_id = self.get_meeting_id(instance)
         self.setup_lookups(self.result.get("rows", []), meeting_id)
+
         create_payloads = [
             entry["data"]
             for entry in self.result.get("rows", [])

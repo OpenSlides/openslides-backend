@@ -43,7 +43,6 @@ class TopicJsonUpload(JsonUploadMixin):
             "meeting_id": required_id_schema,
         }
     )
-    permission = Permissions.AgendaItem.CAN_MANAGE
     headers = [
         {"property": "title", "type": "string", "is_object": True},
         {"property": "text", "type": "string"},
@@ -51,6 +50,9 @@ class TopicJsonUpload(JsonUploadMixin):
         {"property": "agenda_type", "type": "string"},
         {"property": "agenda_duration", "type": "integer"},
     ]
+    permission = Permissions.AgendaItem.CAN_MANAGE
+    row_state: ImportState
+    topic_lookup: Lookup
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
@@ -66,8 +68,11 @@ class TopicJsonUpload(JsonUploadMixin):
         # generate statistics
         itemCount = len(self.rows)
         state_to_count = {state: 0 for state in ImportState}
-        for entry in self.rows:
-            state_to_count[entry["state"]] += 1
+        for row in self.rows:
+            state_to_count[row["state"]] += 1
+            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
+                row.get("data", {}).values()
+            )
 
         self.statistics = [
             {"name": "total", "value": itemCount},
@@ -88,11 +93,11 @@ class TopicJsonUpload(JsonUploadMixin):
         state, messages = None, []
         check_result = self.topic_lookup.check_duplicate(entry["title"])
         if check_result == ResultType.FOUND_ID:
-            state = ImportState.WARNING
-            messages.append("Duplicate, import will update this topic.")
+            state = ImportState.DONE
+            messages.append("Existing topic will be updated.")
             entry["title"] = {
                 "value": entry["title"],
-                "info": ImportState.DONE,
+                "info": ImportState.WARNING,
                 "id": self.topic_lookup.get_field_by_name(entry["title"], "id"),
             }
         elif check_result == ResultType.NOT_FOUND:
@@ -100,6 +105,7 @@ class TopicJsonUpload(JsonUploadMixin):
             entry["title"] = {"value": entry["title"], "info": ImportState.NEW}
         elif check_result == ResultType.FOUND_MORE_IDS:
             state = ImportState.ERROR
+            messages.append(f"Duplicated topic name '{entry['title']}'.")
             entry["title"] = {"value": entry["title"], "info": ImportState.ERROR}
         return {"state": state, "messages": messages, "data": entry}
 
