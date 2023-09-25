@@ -91,22 +91,24 @@ class TopicJsonUpload(JsonUploadMixin):
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         state, messages = None, []
-        check_result = self.topic_lookup.check_duplicate(entry["title"])
+        check_result = self.topic_lookup.check_duplicate(title := entry["title"])
+        id_ = self.topic_lookup.get_field_by_name(title, "id")
         if check_result == ResultType.FOUND_ID:
             state = ImportState.DONE
             messages.append("Existing topic will be updated.")
+            entry["id"] = id_
             entry["title"] = {
-                "value": entry["title"],
+                "value": title,
                 "info": ImportState.WARNING,
-                "id": self.topic_lookup.get_field_by_name(entry["title"], "id"),
+                "id": id_,
             }
         elif check_result == ResultType.NOT_FOUND:
             state = ImportState.NEW
-            entry["title"] = {"value": entry["title"], "info": ImportState.NEW}
+            entry["title"] = {"value": title, "info": ImportState.NEW}
         elif check_result == ResultType.FOUND_MORE_IDS:
             state = ImportState.ERROR
-            messages.append(f"Duplicated topic name '{entry['title']}'.")
-            entry["title"] = {"value": entry["title"], "info": ImportState.ERROR}
+            messages.append(f"Duplicated topic name '{title}'.")
+            entry["title"] = {"value": title, "info": ImportState.ERROR}
         return {"state": state, "messages": messages, "data": entry}
 
     def setup_lookups(self, data: List[Dict[str, Any]], meeting_id: int) -> None:

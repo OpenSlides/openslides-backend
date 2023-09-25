@@ -51,6 +51,7 @@ class TopicJsonUpload(BaseActionTestCase):
             "import_preview/1",
             {
                 "name": "topic",
+                "state": ImportState.DONE,
                 "result": {
                     "rows": [
                         {
@@ -105,6 +106,7 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
         assert result["rows"][0]["state"] == ImportState.ERROR
         assert result["rows"][1]["state"] == ImportState.NEW
         assert result["rows"][2]["state"] == ImportState.ERROR
@@ -207,7 +209,7 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
     def json_upload_duplicate_in_db(self) -> None:
         self.set_models(
             {
-                "topic/3": {"title": "test", "text" : "old one", "meeting_id": 22},
+                "topic/3": {"title": "test", "text": "old one", "meeting_id": 22},
                 "meeting/22": {"topic_ids": [3]},
             }
         )
@@ -223,6 +225,7 @@ class TopicJsonUploadForUseInImport(BaseActionTestCase):
                 "state": ImportState.DONE,
                 "messages": ["Existing topic will be updated."],
                 "data": {
+                    "id": 3,
                     "title": {"value": "test", "info": ImportState.WARNING, "id": 3},
                     "text": "new one",
                     "meeting_id": 22,

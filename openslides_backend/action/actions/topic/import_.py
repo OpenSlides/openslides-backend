@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from ....models.models import ImportPreview
 from ....permissions.permissions import Permissions
@@ -6,7 +6,13 @@ from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportMixin, ImportState, Lookup, ResultType
+from ...mixins.import_mixins import (
+    ImportMixin,
+    ImportRow,
+    ImportState,
+    Lookup,
+    ResultType,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..agenda_item.update import AgendaItemUpdate
@@ -29,6 +35,7 @@ class TopicImport(ImportMixin):
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
     import_name = "topic"
+    agenda_item_fields = ["agenda_comment", "agenda_duration", "agenda_type"]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if not instance["import"]:
@@ -36,59 +43,84 @@ class TopicImport(ImportMixin):
 
         instance = super().update_instance(instance)
 
-        self.error = False
         meeting_id = self.get_meeting_id(instance)
         self.setup_lookups(self.result.get("rows", []), meeting_id)
 
-        create_payloads = [
-            entry["data"]
-            for entry in self.result.get("rows", [])
-            if entry["state"] == ImportState.NEW
-            and self.topic_lookup.check_duplicate(entry["data"]["title"]["value"])
-            == ResultType.NOT_FOUND
-        ]
-        pre_update_payloads = [
-            entry["data"]
-            for entry in self.result.get("rows", [])
-            if entry["state"] == ImportState.WARNING
-            and self.topic_lookup.check_duplicate(entry["data"]["title"]["value"])
-            == ResultType.FOUND_ID
-            and entry["data"]["title"].get("id")
-            == self.topic_lookup.get_field_by_name(
-                entry["data"]["title"]["value"], "id"
-            )
-        ]
-        update_payloads: List[Dict[str, Any]] = []
-        agenda_item_updates: List[Dict[str, Any]] = []
-        for entry in create_payloads:
-            entry["title"] = entry["title"]["value"]
-        for entry in pre_update_payloads:
-            if entry.get("text"):
-                update_payloads.append(
-                    {"id": entry["title"]["id"], "text": entry["text"]}
-                )
-            agenda_item: Dict[str, Any] = {}
-            for field in (
-                "agenda_comment",
-                "agenda_type",
-                "agenda_duration",
-            ):
-                if entry.get(field):
-                    agenda_item[field[7:]] = entry[field]
-            if agenda_item:
-                agenda_item["id"] = self.topic_lookup.get_field_by_name(
-                    entry["title"]["value"], "agenda_item_id"
-                )
-                agenda_item_updates.append(agenda_item)
+        self.rows = [self.validate_entry(row) for row in self.result["rows"]]
 
-        if create_payloads:
-            self.execute_other_action(TopicCreate, create_payloads)
-        if update_payloads:
-            self.execute_other_action(TopicUpdate, update_payloads)
-        if agenda_item_updates:
-            self.execute_other_action(AgendaItemUpdate, agenda_item_updates)
-        self.error = False
-        return instance
+        if self.import_state != ImportState.ERROR:
+            create_action_payload: List[Dict[str, Any]] = []
+            update_action_payload: List[Dict[str, Any]] = []
+            update_agenda_item_payload: List[Dict[str, Any]] = []
+            self.flatten_object_fields(["title"])
+            for row in self.rows:
+                entry = row["data"]
+                if row["state"] == ImportState.NEW:
+                    create_action_payload.append(entry)
+                else:
+                    agenda_item = {
+                        field[7:]: value
+                        for field in self.agenda_item_fields
+                        if (value := entry.pop(field, None)) is not None
+                    }
+                    if agenda_item:
+                        agenda_item["id"] = self.topic_lookup.get_field_by_name(
+                            entry["title"], "agenda_item_id"
+                        )
+                        update_agenda_item_payload.append(agenda_item)
+                    entry.pop("meeting_id", None)
+                    update_action_payload.append(entry)
+            if create_action_payload:
+                self.execute_other_action(TopicCreate, create_action_payload)
+            if update_action_payload:
+                self.execute_other_action(TopicUpdate, update_action_payload)
+            if update_agenda_item_payload:
+                self.execute_other_action(AgendaItemUpdate, update_agenda_item_payload)
+
+        return {}
+
+    def validate_entry(self, row: ImportRow) -> ImportRow:
+        entry = row["data"]
+        title = cast(str, self.get_value_from_union_str_object(entry.get("title")))
+        check_result = self.topic_lookup.check_duplicate(title)
+        id_ = cast(int, self.topic_lookup.get_field_by_name(title, "id"))
+
+        if check_result == ResultType.FOUND_ID and id_ != 0:
+            if row["state"] != ImportState.DONE:
+                row["messages"].append(
+                    f"Error: row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
+                )
+                row["state"] = ImportState.ERROR
+                entry["title"]["info"] = ImportState.ERROR
+            elif "id" not in entry:
+                raise ActionException(
+                    f"Invalid JsonUpload data: A data row with state '{ImportState.DONE}' must have an 'id'"
+                )
+            elif entry["id"] != id_:
+                row["state"] = ImportState.ERROR
+                entry["title"]["info"] = ImportState.ERROR
+                row["messages"].append(
+                    f"Error: topic '{title}' found in different id ({id_} instead of {entry['id']})"
+                )
+        elif check_result == ResultType.FOUND_MORE_IDS:
+            row["state"] = ImportState.ERROR
+            entry["title"]["info"] = ImportState.ERROR
+            row["messages"].append(f"Error: topic '{title}' is duplicated in import.")
+        elif check_result == ResultType.NOT_FOUND_ANYMORE:
+            row["messages"].append(
+                f"Error: topic {entry['title']['id']} not found anymore for updating topic '{title}'."
+            )
+            row["state"] = ImportState.ERROR
+        elif check_result == ResultType.NOT_FOUND:
+            pass  # cannot create an error !
+
+        if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
+            self.import_state = ImportState.ERROR
+        return {
+            "state": row["state"],
+            "data": row["data"],
+            "messages": row.get("messages", []),
+        }
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         store_id = instance["id"]
