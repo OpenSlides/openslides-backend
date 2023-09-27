@@ -86,13 +86,7 @@ class TopicImport(ImportMixin):
         id_ = cast(int, self.topic_lookup.get_field_by_name(title, "id"))
 
         if check_result == ResultType.FOUND_ID and id_ != 0:
-            if row["state"] != ImportState.DONE:
-                row["messages"].append(
-                    f"Error: row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
-                )
-                row["state"] = ImportState.ERROR
-                entry["title"]["info"] = ImportState.ERROR
-            elif "id" not in entry:
+            if "id" not in entry:
                 raise ActionException(
                     f"Invalid JsonUpload data: A data row with state '{ImportState.DONE}' must have an 'id'"
                 )

@@ -207,3 +207,42 @@ class TopicImportWithIncludedJsonUpload(TopicJsonUploadForUseInImport):
             "topic/3", {"title": "test", "text": "new one", "meeting_id": 22}
         )
         self.assert_model_not_exists("topic/4")
+
+    def test_import_done_switched_to_new(self) -> None:
+        self.json_upload_duplicate_in_db()
+        self.request("topic.delete", {"id": 3})
+        self.assert_model_deleted("topic/3")
+        response = self.request("topic.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
+        assert result["rows"][0]["messages"] == [
+            "Existing topic will be updated.",
+            "Error: topic 3 not found anymore for updating topic 'test'.",
+        ]
+
+    def test_import_topic_switched_id(self) -> None:
+        self.json_upload_duplicate_in_db()
+        self.request("topic.delete", {"id": 3})
+        self.assert_model_deleted("topic/3", {"title": "test", "meeting_id": 22})
+        self.create_model("topic/4", {"title": "test", "meeting_id": 22})
+        response = self.request("topic.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
+        assert result["rows"][0]["messages"] == [
+            "Existing topic will be updated.",
+            "Error: topic 'test' found in different id (4 instead of 3)",
+        ]
+
+    def test_import_topic_duplicate_id(self) -> None:
+        self.json_upload_duplicate_in_db()
+        self.create_model("topic/4", {"title": "test", "meeting_id": 22})
+        response = self.request("topic.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
+        assert result["rows"][0]["messages"] == [
+            "Existing topic will be updated.",
+            "Error: topic 'test' is duplicated in import.",
+        ]
