@@ -5,16 +5,17 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import MeetingUser
-from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...mixins.meeting_user_helper import get_meeting_user_filter
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixin import MeetingUserMixin
+from .history_mixin import MeetingUserHistoryMixin
+from .mixin import meeting_user_standard_fields
 
 
-@register_action("meeting_user.create")
-class MeetingUserCreate(MeetingUserMixin, CreateAction):
+@register_action("meeting_user.create", action_type=ActionType.BACKEND_INTERNAL)
+class MeetingUserCreate(MeetingUserHistoryMixin, CreateAction):
     """
     Action to create a meeting user.
     """
@@ -25,10 +26,9 @@ class MeetingUserCreate(MeetingUserMixin, CreateAction):
         optional_properties=[
             "about_me",
             "group_ids",
-            *MeetingUserMixin.standard_fields,
+            *meeting_user_standard_fields,
         ],
     )
-    permission = Permissions.User.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if self.datastore.exists(

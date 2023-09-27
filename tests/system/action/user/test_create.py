@@ -568,10 +568,10 @@ class UserCreateActionTest(BaseActionTestCase):
                     ],
                 },
                 {
-                    "action": "meeting_user.create",
+                    "action": "user.update",
                     "data": [
                         {
-                            "user_id": 3,
+                            "id": 3,
                             "meeting_id": 4,
                             "group_ids": [4],
                         }
@@ -633,10 +633,10 @@ class UserCreateActionTest(BaseActionTestCase):
                     ],
                 },
                 {
-                    "action": "meeting_user.create",
+                    "action": "user.update",
                     "data": [
                         {
-                            "user_id": 3,
+                            "id": 3,
                             "meeting_id": 4,
                             "group_ids": [4],
                         }
