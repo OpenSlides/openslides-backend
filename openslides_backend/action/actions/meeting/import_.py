@@ -153,6 +153,7 @@ class MeetingImport(
             user.pop("committee_management_ids", None)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
         json_data.pop("action_worker", None)
+        json_data.pop("import_preview", None)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = instance["meeting"]

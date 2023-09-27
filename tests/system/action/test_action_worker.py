@@ -227,7 +227,7 @@ class ActionWorkerTest(BaseActionTestCase):
             start2 = datetime.now()
             self.new_id = self.datastore.reserve_id("action_worker")
             self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
-            self.datastore.write_action_worker(
+            self.datastore.write_without_events(
                 WriteRequest(
                     events=[
                         Event(
@@ -257,7 +257,7 @@ class ActionWorkerTest(BaseActionTestCase):
         self.user_id = 1
         new_ids = self.datastore.reserve_ids("action_worker", amount=3)
         for new_id in new_ids:
-            self.datastore.write_action_worker(
+            self.datastore.write_without_events(
                 WriteRequest(
                     events=[
                         Event(
@@ -278,7 +278,7 @@ class ActionWorkerTest(BaseActionTestCase):
                 f"action_worker/{new_id}", {"name": "test", "state": "running"}
             )
 
-        self.datastore.write_action_worker(
+        self.datastore.write_without_events(
             WriteRequest(
                 events=[
                     Event(type=EventType.Delete, fqid=f"action_worker/{new_id}")

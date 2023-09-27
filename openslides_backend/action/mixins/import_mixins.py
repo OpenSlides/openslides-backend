@@ -230,7 +230,7 @@ class ImportMixin(BaseImportJsonUpload):
                 store_id = instance["id"]
                 if self.import_state == ImportState.ERROR:
                     continue
-                self.datastore.write_action_worker(
+                self.datastore.write_without_events(
                     WriteRequest(
                         events=[
                             Event(
@@ -280,7 +280,7 @@ class JsonUploadMixin(BaseImportJsonUpload):
         self.new_store_id = self.datastore.reserve_id(collection="import_preview")
         fqid = fqid_from_collection_and_id("import_preview", self.new_store_id)
         time_created = int(time())
-        self.datastore.write_action_worker(
+        self.datastore.write_without_events(
             WriteRequest(
                 events=[
                     Event(

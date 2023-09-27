@@ -259,6 +259,12 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "created": round(time() - 3),
                     "timestamp": round(time()),
                 },
+                "import_preview/1": {
+                    "name": "testcase",
+                    "state": "done",
+                    "created": round(time() - 3),
+                },
+
             }
         )
         status_code, data = self.request("check_database_all", {})

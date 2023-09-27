@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from ....models.models import ActionWorker
+from ....models.models import ImportPreview
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
@@ -18,8 +18,8 @@ class TopicImport(DuplicateCheckMixin, ImportMixin):
     Action to import a result from the import_preview.
     """
 
-    model = ActionWorker()
-    schema = DefaultSchema(ActionWorker()).get_default_schema(
+    model = ImportPreview()
+    schema = DefaultSchema(ImportPreview()).get_default_schema(
         additional_required_fields={
             "id": required_id_schema,
             "import": {"type": "boolean"},

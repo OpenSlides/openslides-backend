@@ -120,7 +120,7 @@ class AccountJsonImport(BaseActionTestCase):
         self.assert_model_not_exists("import_preview/2")
         self.assert_model_not_exists("user/3")
 
-    def test_import_wrong_action_worker(self) -> None:
+    def test_import_wrong_import_preview(self) -> None:
         response = self.request("account.import", {"id": 5, "import": True})
         self.assert_status_code(response, 400)
         assert (
@@ -174,7 +174,7 @@ class AccountJsonImport(BaseActionTestCase):
             },
         )
 
-    def get_action_worker_data(
+    def get_import_preview_data(
         self, number: int, row_state: ImportState, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         def get_import_state() -> ImportState:
@@ -204,7 +204,7 @@ class AccountJsonImport(BaseActionTestCase):
 
     def test_import_with_saml_id(self) -> None:
         self.set_models(
-            self.get_action_worker_data(
+            self.get_import_preview_data(
                 7,
                 ImportState.NEW,
                 {"saml_id": {"value": "testsaml", "info": ImportState.NEW}},
@@ -223,7 +223,7 @@ class AccountJsonImport(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"saml_id": "testsaml"},
-                **self.get_action_worker_data(
+                **self.get_import_preview_data(
                     6,
                     ImportState.NEW,
                     {
@@ -244,7 +244,7 @@ class AccountJsonImport(BaseActionTestCase):
     def test_import_done_error_missing_user(self) -> None:
         self.set_models(
             {
-                **self.get_action_worker_data(
+                **self.get_import_preview_data(
                     6,
                     ImportState.DONE,
                     {
@@ -270,7 +270,7 @@ class AccountJsonImport(BaseActionTestCase):
 
     def test_import_error_state_done_missing_username(self) -> None:
         self.set_models(
-            self.get_action_worker_data(
+            self.get_import_preview_data(
                 6,
                 ImportState.DONE,
                 {
@@ -287,7 +287,7 @@ class AccountJsonImport(BaseActionTestCase):
 
     def test_import_error_state_done_missing_user_in_db(self) -> None:
         self.set_models(
-            self.get_action_worker_data(
+            self.get_import_preview_data(
                 6,
                 ImportState.DONE,
                 {
@@ -357,7 +357,7 @@ class AccountJsonImport(BaseActionTestCase):
         self.set_models(
             {
                 "user/8": {"username": "user8"},
-                **self.get_action_worker_data(
+                **self.get_import_preview_data(
                     6,
                     ImportState.DONE,
                     {
@@ -380,7 +380,7 @@ class AccountJsonImport(BaseActionTestCase):
             "Error: username 'user8' found in different id (8 instead of 5)"
         ]
 
-    def test_import_error_state_action_worker4(self) -> None:
+    def test_import_error_state_import_preview4(self) -> None:
         response = self.request("account.import", {"id": 4, "import": True})
         self.assert_status_code(response, 400)
         assert response.json["message"] == "Error in import. Data will not be imported."

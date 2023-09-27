@@ -37,7 +37,7 @@ def check_everything(datastore: DatastoreService) -> None:
             for id, model in models.items()
         }
         for collection, models in result.items()
-        if collection != "action_worker"
+        if collection not in ["action_worker", "import_preview"]
     }
     data["_migration_index"] = get_backend_migration_index()
     Checker(

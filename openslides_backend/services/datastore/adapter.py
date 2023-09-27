@@ -445,10 +445,10 @@ class DatastoreAdapter(BaseDatastoreService):
         )
         self.retrieve(command)
 
-    def write_action_worker(self, write_request: WriteRequest) -> None:
-        command = commands.WriteActionWorker(write_requests=[write_request])
+    def write_without_events(self, write_request: WriteRequest) -> None:
+        command = commands.WriteWithoutEvents(write_requests=[write_request])
         self.logger.debug(
-            f"Start WRITE_ACTION_WORKER request to datastore with the following data: "
+            f"Start WRITE_WITHOUT_EVENTS request to datastore with the following data: "
             f"Write request: {write_request}"
         )
         self.retrieve(command)
