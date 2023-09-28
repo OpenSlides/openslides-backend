@@ -15,6 +15,7 @@ from ...mixins.import_mixins import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..agenda_item.agenda_creation import CreateActionWithAgendaItemMixin
 from ..agenda_item.update import AgendaItemUpdate
 from .create import TopicCreate
 from .update import TopicUpdate
@@ -58,11 +59,9 @@ class TopicImport(ImportMixin):
                 if row["state"] == ImportState.NEW:
                     create_action_payload.append(entry)
                 else:
-                    agenda_item = {
-                        field[7:]: value
-                        for field in self.agenda_item_fields
-                        if (value := entry.pop(field, None)) is not None
-                    }
+                    agenda_item = CreateActionWithAgendaItemMixin.remove_agenda_prefix_from_fieldnames(
+                        entry
+                    )
                     if agenda_item:
                         agenda_item["id"] = self.topic_lookup.get_field_by_name(
                             entry["title"], "agenda_item_id"
