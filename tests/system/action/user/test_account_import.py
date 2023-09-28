@@ -677,7 +677,9 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         )
         response_import = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response_import, 200)
-        assert (result := response_import.json["results"][0][0])["state"] == ImportState.ERROR
+        assert (result := response_import.json["results"][0][0])[
+            "state"
+        ] == ImportState.ERROR
         row = result["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [

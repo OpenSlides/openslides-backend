@@ -209,10 +209,7 @@ class ImportMixin(BaseImportJsonUpload):
     def create_action_result_element(
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
-        return {
-            "rows": self.result.get("rows", []),
-            "state": self.import_state
-        }
+        return {"rows": self.result.get("rows", []), "state": self.import_state}
 
     def flatten_object_fields(self, fields: Optional[List[str]] = None) -> None:
         """replace objects from self.rows["data"] with their values. Uses the fields, if given, otherwise all"""

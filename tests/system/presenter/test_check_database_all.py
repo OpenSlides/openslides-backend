@@ -264,7 +264,6 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "state": "done",
                     "created": round(time() - 3),
                 },
-
             }
         )
         status_code, data = self.request("check_database_all", {})

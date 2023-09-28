@@ -355,7 +355,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
                     )
                 )
             ],
-            field=tuple(("first_name", "last_name", "email")),
+            field=("first_name", "last_name", "email"),
             mapped_fields=["username", "saml_id", "default_password"],
         )
         self.all_saml_id_lookup = Lookup(
@@ -367,9 +367,10 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         )
 
         self.all_id_mapping: Dict[int, List[SearchFieldType]] = defaultdict(list)
-        for id, values in self.username_lookup.id_to_name.items():
-            self.all_id_mapping[id].extend(values)
-        for id, values in self.saml_id_lookup.id_to_name.items():
-            self.all_id_mapping[id].extend(values)
-        for id, values in self.names_email_lookup.id_to_name.items():
-            self.all_id_mapping[id].extend(values)
+        for lookup in (
+            self.username_lookup,
+            self.saml_id_lookup,
+            self.names_email_lookup,
+        ):
+            for id, values in lookup.id_to_name.items():
+                self.all_id_mapping[id].extend(values)

@@ -18,12 +18,6 @@ class TopicJsonImport(BaseActionTestCase):
                                 "messages": [],
                                 "data": {"title": "test", "meeting_id": 22},
                             },
-                            # This one leads to an import state ImportState.ERROR
-                            # {
-                            #     "state": ImportState.ERROR,
-                            #     "messages": ["test"],
-                            #     "data": {"title": "broken", "meeting_id": 22},
-                            # },
                         ],
                     },
                 },
