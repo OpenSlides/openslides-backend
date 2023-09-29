@@ -448,6 +448,44 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_create_saml_id_but_duplicate_error1(self) -> None:
+        self.set_models({"user/2": {"username": "x", "saml_id": "123saml"}})
+        response = self.request(
+            "user.create",
+            {
+                "saml_id": "123saml",
+                "default_password": "",
+                "can_change_own_password": False,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A user with the saml_id 123saml already exists.", response.json["message"]
+        )
+
+    def test_create_saml_id_but_duplicate_error2(self) -> None:
+        self.set_models({"user/2": {"username": "123saml"}})
+        response = self.request(
+            "user.create",
+            {
+                "saml_id": "123saml",
+                "default_password": "",
+                "can_change_own_password": False,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A user with the username 123saml already exists.", response.json["message"]
+        )
+
+    def test_create_empty_saml_id_and_empty_values(self) -> None:
+        response = self.request(
+            "user.create",
+            {"saml_id": "  ", "username": "x"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("This saml_id is forbidden.", response.json["message"])
+
     def test_create_permission_nothing(self) -> None:
         self.permission_setup()
         response = self.request(
@@ -1150,7 +1188,7 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "This username is forbidden." in response.json["message"]
+        assert "Need username or first_name or last_name" in response.json["message"]
 
     def test_create_gender(self) -> None:
         self.set_models({"organization/1": {"genders": ["male", "female"]}})

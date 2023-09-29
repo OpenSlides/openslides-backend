@@ -83,7 +83,7 @@ class TopicJsonUpload(DuplicateCheckMixin, JsonUploadMixin):
         self.set_state(
             state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )
-        self.store_rows_in_the_action_worker("topic")
+        self.store_rows_in_the_import_preview("topic")
         return {}
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
