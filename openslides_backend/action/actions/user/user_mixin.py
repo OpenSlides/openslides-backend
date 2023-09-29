@@ -104,13 +104,6 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 self.strip_field(field, instance)
         return super().get_updated_instances(action_data)
 
-    @original_instances
-    def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        for instance in action_data:
-            for field in ("username", "first_name", "last_name", "email", "saml_id"):
-                self.strip_field(field, instance)
-        return super().get_updated_instances(action_data)
-
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
 

@@ -149,18 +149,6 @@ class Lookup:
             if entry.get("id"):
                 self.id_to_name[entry["id"]].append(key)
 
-    def add_item(self, entry: Dict[str, Any]) -> None:
-        if type(self.field) == str:
-            if type(key := entry[self.field]) == dict:
-                key = key["value"]
-            self.name_to_ids[key].append(entry)
-            if entry.get("id"):
-                self.id_to_name[entry["id"]].append(entry[self.field])
-        else:
-            key = tuple(entry.get(f, "") for f in self.field)
-            self.name_to_ids[key].append(entry)
-            if entry.get("id"):
-                self.id_to_name[entry["id"]].append(key)
 
 class BaseImportJsonUpload(SingularActionMixin):
     @staticmethod
@@ -228,16 +216,6 @@ class ImportMixin(BaseImportJsonUpload):
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
         return {"rows": self.result.get("rows", []), "state": self.import_state}
-
-    def flatten_object_fields(self, fields: Optional[List[str]] = None) -> None:
-        """replace objects from self.rows["data"] with their values. Uses the fields, if given, otherwise all"""
-        for row in self.rows:
-            entry = row["data"]
-            used_list = fields if fields else entry.keys()
-            for field in used_list:
-                if field in entry:
-                    if type(dvalue := entry[field]) == dict:
-                        entry[field] = dvalue["value"]
 
     def flatten_object_fields(self, fields: Optional[List[str]] = None) -> None:
         """replace objects from self.rows["data"] with their values. Uses the fields, if given, otherwise all"""
