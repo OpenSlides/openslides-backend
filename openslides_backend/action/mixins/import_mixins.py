@@ -7,7 +7,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 from typing_extensions import NotRequired, TypedDict
 
-from ...services.datastore.commands import GetManyRequest
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
@@ -256,6 +255,7 @@ class HeaderEntry(TypedDict):
     property: str
     type: str
     is_object: NotRequired[bool]
+    is_list: NotRequired[bool]
 
 
 class StatisticEntry(TypedDict):
@@ -269,18 +269,7 @@ class JsonUploadMixin(BaseImportJsonUpload):
     statistics: List[StatisticEntry]
     import_state: ImportState
 
-    """
-    # next fields have to be set in subclass, see committee/json_upload.py.
-    # Implements helpful handling for list fields like admins, organization_tags
-    """
-    import_object_lookup: Lookup  # to be defined and initiated in subclass
-    import_object_name: str  # to be set in subclass for each entry
-    payload_db_field: Dict[str, str]  # mapping payload fieldname to db-id-field
-
     def set_state(self, number_errors: int, number_warnings: int) -> None:
-        """
-        To remove, but is used in some backend imports
-        """
         if number_errors > 0:
             self.import_state = ImportState.ERROR
         elif number_warnings > 0:
@@ -391,6 +380,8 @@ class JsonUploadMixin(BaseImportJsonUpload):
                         )
         super().validate_instance(instance)
 
+
+    # The part below comes from old committee-json_upload. Look if it makes sense
     def check_list_field(
         self,
         field: str,

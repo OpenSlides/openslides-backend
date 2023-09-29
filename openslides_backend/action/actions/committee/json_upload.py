@@ -144,7 +144,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
             },
         ]
 
-        self.store_rows_in_the_action_worker("committee")
+        self.store_rows_in_the_import_preview("committee")
         return {}  # do not create any write_requests, this is just for preview
 
     def validate_entry(
@@ -158,7 +158,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
         check_result = self.import_object_lookup.check_duplicate(
             self.import_object_name
         )
-        id_ = self.import_object_lookup.get_id_by_name(self.import_object_name)
+        id_ = self.import_object_lookup.get_field_by_name(self.import_object_name, "id")
         if check_result == ResultType.FOUND_ID and id_ != 0:
             self.row_state = ImportState.DONE
             entry["name"] = {
@@ -254,7 +254,7 @@ class CommitteeJsonUpload(JsonUploadMixin):
                 entry["meeting_template"] = {
                     "value": meeting_template,
                     "info": ImportState.DONE,
-                    "id": self.meeting_lookup.get_id_by_name(meeting_template),
+                    "id": self.meeting_lookup.get_field_by_name(meeting_template, "id"),
                 }
             else:
                 entry["meeting_template"] = {

@@ -75,8 +75,8 @@ class CommitteeImport(ImportMixin):
                         "Want to update committee, but could not find it."
                     )
                     self.error = True
-                elif edit_committee["id"] != committee_lookup.get_id_by_name(
-                    edit_committee["name"]
+                elif edit_committee["id"] != committee_lookup.get_field_by_name(
+                    edit_committee["name"], "id"
                 ):
                     entry["state"] = ImportState.ERROR
                     entry["messages"].append(
