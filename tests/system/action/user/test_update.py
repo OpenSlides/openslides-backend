@@ -2068,3 +2068,38 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user 111 is a Single Sign On user and may not set the local default_passwort or the right to change it locally.",
             response.json["message"],
         )
+
+
+
+    def test_group_removal_with_speaker(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "username_abcdefgh123",
+                    "meeting_user_ids": [1111],
+                },
+                "meeting_user/1111": {
+                    "meeting_id": 1,
+                    "user_id": 111,
+                    "speaker_ids": [15],
+                    "group_ids": [11]
+                },
+                "meeting/1": {},
+                "speaker/15": {"meeting_user_id": 1111, "meeting_id": 1},
+                "group/11": {"meeting_id": 1, "meeting_user_ids": [223]},
+            }
+        )
+        response = self.request("user.update", {"id": 111, "group_ids": []})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "username_abcdefgh123",
+                "meeting_user_ids": [1111],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1111", {"group_ids": [], "meta_deleted": False}
+        )
+        self.assert_model_exists("speaker/15", { "meeting_user_id": None, "meeting_id": 1 })
