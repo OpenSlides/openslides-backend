@@ -694,7 +694,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_vote_weight": "2.345678",
         }
 
-        row = row = result["rows"][1]
+        row = result["rows"][1]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password.",
@@ -709,7 +709,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "can_change_own_password": False,
         }
 
-        row = row = result["rows"][2]
+        row = result["rows"][2]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Error: user 4 not found anymore for updating user 'user4'."
@@ -723,7 +723,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_vote_weight": "4.345678",
         }
 
-        row = row = result["rows"][3]
+        row = result["rows"][3]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password.",
@@ -736,7 +736,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_vote_weight": "5.345678",
         }
 
-        row = row = result["rows"][4]
+        row = result["rows"][4]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Will remove password and default_password and forbid changing your OpenSlides password.",
@@ -749,7 +749,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_vote_weight": "6.345678",
         }
 
-        row = row = result["rows"][5]
+        row = result["rows"][5]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Error: row state expected to be 'done', but it is 'new'."
