@@ -27,7 +27,7 @@ class HTTPEngine:
         "write",
         "truncate_db",
         "delete_history_information",
-        "write_action_worker",
+        "write_without_events",
     ]
 
     def __init__(

@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "295720b86599b69e9340af0427f4f2bc"
+MODELS_YML_CHECKSUM = "566944b1e2fa1b4b216537f3acbb3e5f"
 
 
 class Organization(Model):
@@ -2108,4 +2108,17 @@ class ActionWorker(Model):
     )
     created = fields.TimestampField(required=True)
     timestamp = fields.TimestampField(required=True)
+    result = fields.JSONField()
+
+
+class ImportPreview(Model):
+    collection = "import_preview"
+    verbose_name = "import preview"
+
+    id = fields.IntegerField()
+    name = fields.CharField(required=True)
+    state = fields.CharField(
+        required=True, constraints={"enum": ["warning", "error", "done"]}
+    )
+    created = fields.TimestampField(required=True)
     result = fields.JSONField()

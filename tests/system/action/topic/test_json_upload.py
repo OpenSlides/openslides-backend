@@ -45,10 +45,9 @@ class TopicJsonUpload(BaseActionTestCase):
             },
         }
         worker = self.assert_model_exists(
-            "action_worker/1", {"state": ImportState.DONE}
+            "import_preview/1", {"state": ImportState.DONE}
         )
         assert start_time <= worker.get("created", -1) <= end_time
-        assert start_time <= worker.get("timestamp", -1) <= end_time
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
@@ -84,10 +83,10 @@ class TopicJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "action_worker/1",
+            "import_preview/1",
             {
+                "name": "topic",
                 "result": {
-                    "import": "topic",
                     "rows": [
                         {
                             "state": ImportState.NEW,
@@ -95,7 +94,7 @@ class TopicJsonUpload(BaseActionTestCase):
                             "data": {"title": "test", "meeting_id": 22},
                         }
                     ],
-                }
+                },
             },
         )
         result = response.json["results"][0][0]
@@ -159,10 +158,10 @@ class TopicJsonUpload(BaseActionTestCase):
         assert result["rows"][2]["messages"] == ["Duplicate"]
         assert result["rows"][2]["state"] == ImportState.WARNING
         self.assert_model_exists(
-            "action_worker/1",
+            "import_preview/1",
             {
+                "name": "topic",
                 "result": {
-                    "import": "topic",
                     "rows": [
                         {
                             "state": ImportState.NEW,
@@ -180,7 +179,7 @@ class TopicJsonUpload(BaseActionTestCase):
                             "data": {"title": "test", "meeting_id": 22},
                         },
                     ],
-                }
+                },
             },
         )
 
