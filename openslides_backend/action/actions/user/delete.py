@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -7,6 +7,7 @@ from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
+
 
 @register_action("user.delete")
 class UserDelete(UserScopeMixin, ConditionalSpeakerCascadeMixin, DeleteAction):
@@ -22,7 +23,10 @@ class UserDelete(UserScopeMixin, ConditionalSpeakerCascadeMixin, DeleteAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance["id"] == self.user_id:
             raise ActionException("You cannot delete yourself.")
-        return instance
+        return super().update_instance(instance)
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance["id"])
+
+    def get_meetings_removed(self, action_date: Dict[str, Any]) -> List[int]:
+        return [0]

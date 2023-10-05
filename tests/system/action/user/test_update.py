@@ -2069,8 +2069,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-
-
     def test_group_removal_with_speaker(self) -> None:
         self.set_models(
             {
@@ -2082,7 +2080,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "user_id": 111,
                     "speaker_ids": [15],
-                    "group_ids": [11]
+                    "group_ids": [11],
                 },
                 "meeting/1": {},
                 "speaker/15": {"meeting_user_id": 1111, "meeting_id": 1},
@@ -2102,4 +2100,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting_user/1111", {"group_ids": [], "meta_deleted": False}
         )
-        self.assert_model_exists("speaker/15", { "meeting_user_id": None, "meeting_id": 1 })
+        self.assert_model_exists(
+            "speaker/15", {"meeting_user_id": None, "meeting_id": 1}
+        )
