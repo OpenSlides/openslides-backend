@@ -407,7 +407,6 @@ meeting_user:
   speaker_ids:
     type: relation-list
     to: speaker/meeting_user_id
-    on_delete: SET_NULL
     restriction_mode: A
   supported_motion_ids:
     type: relation-list

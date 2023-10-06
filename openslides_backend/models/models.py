@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "ff4983f49a6d7c14cb14ebfb57bccf25"
+MODELS_YML_CHECKSUM = "34d6dfe51212a0566f81e5c2f67675d6"
 
 
 class Organization(Model):
@@ -157,9 +157,7 @@ class MeetingUser(Model):
     personal_note_ids = fields.RelationListField(
         to={"personal_note": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    speaker_ids = fields.RelationListField(
-        to={"speaker": "meeting_user_id"}, on_delete=fields.OnDelete.SET_NULL
-    )
+    speaker_ids = fields.RelationListField(to={"speaker": "meeting_user_id"})
     supported_motion_ids = fields.RelationListField(
         to={"motion": "supporter_meeting_user_ids"}
     )
