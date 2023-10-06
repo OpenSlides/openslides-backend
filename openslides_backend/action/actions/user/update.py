@@ -9,6 +9,7 @@ from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixin import (
     LimitOfUserMixin,
@@ -25,6 +26,7 @@ class UserUpdate(
     UpdateAction,
     LimitOfUserMixin,
     UpdateHistoryMixin,
+    ConditionalSpeakerCascadeMixin,
 ):
     """
     Action to update a user.
@@ -103,3 +105,8 @@ class UserUpdate(
 
         check_gender_helper(self.datastore, instance)
         return instance
+
+    def get_removed_meeting_id(self, action_date: Dict[str, Any]) -> int | None:
+        if action_date.get("group_ids") == []:
+            return action_date.get("meeting_id")
+        return None

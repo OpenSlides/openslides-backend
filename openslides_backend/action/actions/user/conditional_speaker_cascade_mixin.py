@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
@@ -12,9 +12,9 @@ class ConditionalSpeakerCascadeMixin(Action):
     """
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        removed_meeting_ids = self.get_meetings_removed(instance)
-        if len(removed_meeting_ids) != 0:
-            delete_all = 0 in removed_meeting_ids
+        removed_meeting_id = self.get_removed_meeting_id(instance)
+        if removed_meeting_id is not None:
+            delete_all = removed_meeting_id == 0
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", instance["id"]),
                 [
@@ -37,7 +37,7 @@ class ConditionalSpeakerCascadeMixin(Action):
             filtered_meeting_users = [
                 meeting_user
                 for meeting_user in meeting_users.get("meeting_user", {}).values()
-                if delete_all or meeting_user["meeting_id"] in removed_meeting_ids
+                if delete_all or meeting_user["meeting_id"] == removed_meeting_id
             ]
             speakers = self.datastore.get_many(
                 [
@@ -69,8 +69,10 @@ class ConditionalSpeakerCascadeMixin(Action):
 
         return super().update_instance(instance)
 
-    def get_meetings_removed(self, action_date: Dict[str, Any]) -> List[int]:
+    def get_removed_meeting_id(self, action_date: Dict[str, Any]) -> int | None:
         """
-        Get the ids of all meetings from which the user is removed. If the user is removed from all meetings, the return value will be [0]
+        Get the id of the meetings from which the user is removed.
+        If the user is removed from all meetings, the return value will be 0.
+        If the user is removed from no meetings, it will be None.
         """
         raise NotImplementedError()
