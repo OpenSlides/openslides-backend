@@ -73,7 +73,7 @@ class TestExportMeeting(BasePresenterTestCase):
         assert "organization_tag" not in data
         assert data["meeting"]["1"].get("organization_tag_ids") is None
 
-    def test_action_worker_exclusion(self) -> None:
+    def test_action_worker_import_preview_exclusion(self) -> None:
         self.set_models(
             {
                 "meeting/1": {"name": "name_foo"},
@@ -84,11 +84,18 @@ class TestExportMeeting(BasePresenterTestCase):
                     "created": round(time() - 3),
                     "timestamp": round(time()),
                 },
+                "import_preview/1": {
+                    "id": 1,
+                    "name": "testcase",
+                    "state": "done",
+                    "created": round(time()),
+                },
             }
         )
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 200
         assert "action_worker" not in data
+        assert "import_preview" not in data
 
     def test_add_users(self) -> None:
         self.set_models(

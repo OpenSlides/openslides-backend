@@ -82,18 +82,21 @@ class CreateActionWithAgendaItemMixin(Action):
     def get_dependent_action_data_agenda_item(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> List[Dict[str, Any]]:
-        agenda_item_action_data = {
-            "content_object_id": fqid_from_collection_and_id(
-                self.model.collection, instance["id"]
-            ),
-        }
-        for extra_field in agenda_creation_properties.keys():
-            if extra_field == f"{AGENDA_PREFIX}create":
-                # This field should not be provided to the AgendaItemCreate action.
-                continue
-            prefix_len = len(AGENDA_PREFIX)
-            extra_field_without_prefix = extra_field[prefix_len:]
-            value = instance.pop(extra_field, None)
-            if value is not None:
-                agenda_item_action_data[extra_field_without_prefix] = value
+        agenda_item_action_data = self.remove_agenda_prefix_from_fieldnames(instance)
+        agenda_item_action_data["content_object_id"] = fqid_from_collection_and_id(
+            self.model.collection, instance["id"]
+        )
         return [agenda_item_action_data]
+
+    @staticmethod
+    def remove_agenda_prefix_from_fieldnames(
+        instance: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        prefix_len = len(AGENDA_PREFIX)
+        extra_field = f"{AGENDA_PREFIX}create"  # This field should not be provided to the AgendaItemCreate action.
+        agenda_item = {
+            field[prefix_len:]: value
+            for field in agenda_creation_properties.keys()
+            if field != extra_field and (value := instance.pop(field, None)) is not None
+        }
+        return agenda_item

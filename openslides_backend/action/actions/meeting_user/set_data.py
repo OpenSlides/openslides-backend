@@ -9,12 +9,15 @@ from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .helper_mixin import MeetingUserHelperMixin
-from .mixin import MeetingUserHistoryMixin
+from .mixin import MeetingUserMixin
 
 
 @register_action("meeting_user.set_data", action_type=ActionType.BACKEND_INTERNAL)
 class MeetingUserSetData(
-    MeetingUserHistoryMixin, ExtendHistoryMixin, MeetingUserHelperMixin, UpdateAction
+    MeetingUserMixin,
+    ExtendHistoryMixin,
+    MeetingUserHelperMixin,
+    UpdateAction,
 ):
     """
     Action to create, update or delete a meeting_user.
@@ -39,7 +42,7 @@ class MeetingUserSetData(
     extend_history_to = "user_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        meeting_id = instance.pop("meeting_id", None)
+        meeting_id = instance.get("meeting_id")
         user_id = instance.pop("user_id", None)
         if instance.get("id"):
             fqid = fqid_from_collection_and_id("meeting_user", instance["id"])
@@ -56,14 +59,9 @@ class MeetingUserSetData(
                 ), "Not permitted to change user_id."
         elif meeting_id and user_id:
             instance["id"] = self.create_or_get_meeting_user(meeting_id, user_id)
-        if (
-            instance.get("vote_delegated_to_id")
-            and instance["vote_delegated_to_id"] == instance["id"]
-            or instance.get("vote_delegations_from_ids")
-            and instance["id"] in instance["vote_delegations_from_ids"]
-        ):
-            raise ActionException("Self vote delegation is not allowed.")
-
+        # MeetingUserMixin needs the meeting_id in "create" case
+        instance = super().update_instance(instance)
+        instance.pop("meeting_id", None)
         return instance
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:

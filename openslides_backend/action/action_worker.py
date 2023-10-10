@@ -106,7 +106,7 @@ class ActionWorkerWriting(object):
                 self.new_id = self.datastore.reserve_id(collection="action_worker")
                 self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
             try:
-                self.datastore.write_action_worker(
+                self.datastore.write_without_events(
                     WriteRequest(
                         events=[
                             Event(
@@ -138,7 +138,7 @@ class ActionWorkerWriting(object):
     def continue_action_worker_write(self) -> None:
         current_time = round(time())
         with self.datastore.get_database_context():
-            self.datastore.write_action_worker(
+            self.datastore.write_without_events(
                 WriteRequest(
                     events=[
                         Event(
@@ -190,7 +190,7 @@ class ActionWorkerWriting(object):
                     f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {message}"
                 )
 
-            self.datastore.write_action_worker(
+            self.datastore.write_without_events(
                 WriteRequest(
                     events=[
                         Event(

@@ -145,7 +145,7 @@ class BaseDatastoreService(Protocol):
         ...
 
     @abstractmethod
-    def write_action_worker(self, write_request: WriteRequest) -> None:
+    def write_without_events(self, write_request: WriteRequest) -> None:
         ...
 
     @abstractmethod
