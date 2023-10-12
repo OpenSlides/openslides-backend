@@ -2,6 +2,9 @@ import time
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
+from openslides_backend.action.actions.motion.check_create_update_payload_mixin import (
+    MotionCheckCreateUpdatePayloadMixin,
+)
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
@@ -30,7 +33,11 @@ from .set_number_mixin import SetNumberMixin
 
 @register_action("motion.update")
 class MotionUpdate(
-    UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin, SetNumberMixin
+    UpdateAction,
+    AmendmentParagraphHelper,
+    MotionCheckCreateUpdatePayloadMixin,
+    PermissionHelperMixin,
+    SetNumberMixin,
 ):
     """
     Action to update motions.
@@ -95,34 +102,13 @@ class MotionUpdate(
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
-        if (
-            instance.get("text")
-            or instance.get("amendment_paragraphs")
-            or instance.get("reason") == ""
-        ):
-            motion = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["text", "amendment_paragraphs", "meeting_id"],
-            )
-
-        if instance.get("text"):
-            if not motion.get("text"):
-                raise ActionException(
-                    "Cannot update text, because it was not set in the old values."
-                )
+        error_message = self.get_payload_integrity_error_message(
+            instance, is_update=True
+        )
+        if error_message:
+            raise ActionException(error_message)
         if instance.get("amendment_paragraphs"):
-            if not motion.get("amendment_paragraphs"):
-                raise ActionException(
-                    "Cannot update amendment_paragraphs, because it was not set in the old values."
-                )
             self.validate_amendment_paragraphs(instance)
-        if instance.get("reason") == "":
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", motion["meeting_id"]),
-                ["motions_reason_required"],
-            )
-            if meeting.get("motions_reason_required"):
-                raise ActionException("Reason is required to update.")
 
         if instance.get("workflow_id"):
             workflow_id = instance.pop("workflow_id")
@@ -146,13 +132,6 @@ class MotionUpdate(
         for prefix in ("recommendation", "state"):
             if f"{prefix}_extension" in instance:
                 self.set_extension_reference_ids(prefix, instance)
-
-        if instance.get("number"):
-            meeting_id = self.get_meeting_id(instance)
-            if not self._check_if_unique(
-                instance["number"], meeting_id, instance["id"]
-            ):
-                raise ActionException("Number is not unique.")
 
         return instance
 

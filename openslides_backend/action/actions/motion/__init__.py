@@ -3,6 +3,7 @@ from . import (  # noqa
     create_forwarded,
     delete,
     follow_recommendation,
+    json_upload,
     reset_recommendation,
     reset_state,
     set_recommendation,
