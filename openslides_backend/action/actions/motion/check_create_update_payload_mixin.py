@@ -1,6 +1,10 @@
 from typing import Any, Dict
 
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from openslides_backend.shared.patterns import (
+    EXTENSION_REFERENCE_IDS_PATTERN,
+    collection_and_id_from_fqid,
+    fqid_from_collection_and_id,
+)
 
 from .set_number_mixin import SetNumberMixin
 
@@ -66,4 +70,13 @@ class MotionCheckCreateUpdatePayloadMixin(SetNumberMixin):
                 instance["number"], meeting_id, instance["id"]
             ):
                 return "Number is not unique."
+        for prefix in ("recommendation", "state"):
+            if f"{prefix}_extension" in instance:
+                possible_rerids = EXTENSION_REFERENCE_IDS_PATTERN.findall(
+                    instance[f"{prefix}_extension"]
+                )
+                for fqid in possible_rerids:
+                    collection, id_ = collection_and_id_from_fqid(fqid)
+                    if collection != "motion":
+                        return f"Found {fqid} but only motion is allowed."
         return None

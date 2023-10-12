@@ -145,8 +145,6 @@ class MotionUpdate(
         motion_ids = []
         for fqid in possible_rerids:
             collection, id_ = collection_and_id_from_fqid(fqid)
-            if collection != "motion":
-                raise ActionException(f"Found {fqid} but only motion is allowed.")
             motion_ids.append(int(id_))
         if motion_ids:
             gm_request = GetManyRequest("motion", motion_ids, ["id"])
