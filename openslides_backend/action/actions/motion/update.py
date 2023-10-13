@@ -2,9 +2,6 @@ import time
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
-from openslides_backend.action.actions.motion.payload_validation_mixin import (
-    MotionUpdatePayloadValidationMixin,
-)
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
@@ -28,6 +25,7 @@ from .mixins import (
     PermissionHelperMixin,
     set_workflow_timestamp_helper,
 )
+from .payload_validation_mixin import MotionUpdatePayloadValidationMixin
 from .set_number_mixin import SetNumberMixin
 
 
@@ -110,7 +108,7 @@ class MotionUpdate(
             instance, motion["meeting_id"]
         )
         if len(error_messages):
-            raise ActionException(error_messages[0])
+            raise ActionException(error_messages[0]["message"])
         if instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
 

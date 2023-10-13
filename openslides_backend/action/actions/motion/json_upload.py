@@ -1,13 +1,23 @@
+from typing import Any, Dict
+
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
 from ....shared.schema import required_id_schema
 from ...mixins.import_mixins import ImportState, JsonUploadMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .payload_validation_mixin import (
+    MotionCreatePayloadValidationMixin,
+    MotionUpdatePayloadValidationMixin,
+)
 
 
 @register_action("motion.json_upload")
-class MotionJsonUpload(JsonUploadMixin):
+class MotionJsonUpload(
+    JsonUploadMixin,
+    MotionCreatePayloadValidationMixin,
+    MotionUpdatePayloadValidationMixin,
+):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -63,3 +73,11 @@ class MotionJsonUpload(JsonUploadMixin):
     ]
     permission = Permissions.Motion.CAN_MANAGE
     row_state: ImportState
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        # transform instance into a correct create/update payload
+        # try to find a pre-existing motion with the same number
+        # if there is one, validate for a motion.create, otherwise for a motion.update
+        # using get_create_payload_integrity_error_message and get_update_payload_integrity_error_message
+
+        return instance

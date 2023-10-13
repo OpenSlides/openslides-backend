@@ -1,9 +1,5 @@
 from typing import Any, Dict
 
-from openslides_backend.action.actions.motion.payload_validation_mixin import (
-    MotionCreatePayloadValidationMixin,
-)
-
 from ....models.models import Motion
 from ....permissions.base_classes import Permission
 from ....permissions.permission_helper import has_perm
@@ -22,6 +18,7 @@ from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create_base import MotionCreateBase
 from .mixins import AmendmentParagraphHelper
+from .payload_validation_mixin import MotionCreatePayloadValidationMixin
 
 
 @register_action("motion.create")
@@ -95,7 +92,7 @@ class MotionCreate(
             instance, instance["meeting_id"]
         )
         if len(error_messages):
-            raise ActionException(error_messages[0])
+            raise ActionException(error_messages[0]["message"])
         if instance.get("lead_motion_id"):
             if instance.get("text") and "amendment_paragraphs" in instance:
                 del instance["amendment_paragraphs"]

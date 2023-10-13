@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TypedDict
 
 from openslides_backend.shared.patterns import (
     EXTENSION_REFERENCE_IDS_PATTERN,
@@ -8,6 +8,14 @@ from openslides_backend.shared.patterns import (
 
 from .set_number_mixin import SetNumberMixin
 
+MotionActionErrorData = TypedDict(
+    "MotionActionErrorData",
+    {
+        "origin": str,
+        "message": str,
+    },
+)
+
 
 class MotionBasePayloadValidationMixin(SetNumberMixin):
     """
@@ -16,13 +24,13 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
 
     def conduct_common_checks(
         self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[str]:
-        errors = []
+    ) -> List[MotionActionErrorData]:
+        errors: List[MotionActionErrorData] = []
         if instance.get("number"):
             if not self._check_if_unique(
                 instance["number"], meeting_id, instance["id"]
             ):
-                errors.append("Number is not unique.")
+                errors.append({"origin": "number", "message": "Number is not unique."})
         recommendation_check = self._check_recommendation_and_state(instance)
         if recommendation_check:
             errors += recommendation_check
@@ -35,8 +43,10 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
         )
         return meeting.get("motions_reason_required", False)
 
-    def _check_recommendation_and_state(self, instance: Dict[str, Any]) -> List[str]:
-        errors = []
+    def _check_recommendation_and_state(
+        self, instance: Dict[str, Any]
+    ) -> List[MotionActionErrorData]:
+        errors: List[MotionActionErrorData] = []
         for prefix in ("recommendation", "state"):
             if f"{prefix}_extension" in instance:
                 possible_rerids = EXTENSION_REFERENCE_IDS_PATTERN.findall(
@@ -45,7 +55,12 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
                 for fqid in possible_rerids:
                     collection, id_ = collection_and_id_from_fqid(fqid)
                     if collection != "motion":
-                        errors.append(f"Found {fqid} but only motion is allowed.")
+                        errors.append(
+                            {
+                                "origin": f"{prefix}_extension",
+                                "message": f"Found {fqid} but only motion is allowed.",
+                            }
+                        )
         return errors
 
 
@@ -57,40 +72,56 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
 
     def get_create_payload_integrity_error_message(
         self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[str]:
+    ) -> List[MotionActionErrorData]:
         return (
             self._create_conduct_before_checks(instance, meeting_id)
             + self.conduct_common_checks(instance, meeting_id)
-            + self._create_conduct_after_checks(instance, meeting_id)
+            + self._create_conduct_after_checks(instance)
         )
 
     def _create_conduct_before_checks(
         self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[str]:
-        errors = []
+    ) -> List[MotionActionErrorData]:
+        errors: List[MotionActionErrorData] = []
         if instance.get("lead_motion_id"):
             if instance.get("statute_paragraph_id"):
                 errors.append(
-                    "You can't give both of lead_motion_id and statute_paragraph_id."
+                    {
+                        "origin": "statute_paragraph_id",
+                        "message": "You can't give both of lead_motion_id and statute_paragraph_id.",
+                    }
                 )
             elif not instance.get("text") and not instance.get("amendment_paragraphs"):
                 errors.append(
-                    "Text or amendment_paragraphs is required in this context."
+                    {
+                        "origin": "text",
+                        "message": "Text or amendment_paragraphs is required in this context.",
+                    }
                 )
             elif instance.get("text") and instance.get("amendment_paragraphs"):
-                errors.append("You can't give both of text and amendment_paragraphs")
+                errors.append(
+                    {
+                        "origin": "amendmend_paragraphs",
+                        "message": "You can't give both of text and amendment_paragraphs",
+                    }
+                )
         else:
             if not instance.get("text"):
-                errors.append("Text is required")
+                errors.append({"origin": "text", "message": "Text is required"})
             if instance.get("amendment_paragraphs"):
-                errors.append("You can't give amendment_paragraphs in this context")
+                errors.append(
+                    {
+                        "origin": "amendment_paragraphs",
+                        "message": "You can't give amendment_paragraphs in this context",
+                    }
+                )
         if (not instance.get("reason")) and self.check_reason_required(meeting_id):
-            errors.append("Reason is required")
+            errors.append({"origin": "reason", "message": "Reason is required"})
         return errors
 
     def _create_conduct_after_checks(
-        self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[str]:
+        self, instance: Dict[str, Any]
+    ) -> List[MotionActionErrorData]:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             [
@@ -110,7 +141,12 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
             else:
                 workflow_id = meeting.get("motions_default_workflow_id")
         if not workflow_id:
-            return ["No matching default workflow defined on this meeting"]
+            return [
+                {
+                    "origin": "workflow_id",
+                    "message": "No matching default workflow defined on this meeting",
+                }
+            ]
         return []
 
 
@@ -122,20 +158,16 @@ class MotionUpdatePayloadValidationMixin(MotionBasePayloadValidationMixin):
 
     def get_update_payload_integrity_error_message(
         self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[str]:
+    ) -> List[MotionActionErrorData]:
         return self._update_conduct_before_checks(
             instance, meeting_id
         ) + self.conduct_common_checks(instance, meeting_id)
 
     def _update_conduct_before_checks(
         self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[str]:
-        errors = []
-        if (
-            instance.get("text")
-            or instance.get("amendment_paragraphs")
-            or instance.get("reason") == ""
-        ):
+    ) -> List[MotionActionErrorData]:
+        errors: List[MotionActionErrorData] = []
+        if instance.get("text") or instance.get("amendment_paragraphs"):
             motion = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["text", "amendment_paragraphs"],
@@ -143,13 +175,21 @@ class MotionUpdatePayloadValidationMixin(MotionBasePayloadValidationMixin):
         if instance.get("text"):
             if not motion.get("text"):
                 errors.append(
-                    "Cannot update text, because it was not set in the old values."
+                    {
+                        "origin": "text",
+                        "message": "Cannot update text, because it was not set in the old values.",
+                    }
                 )
         if instance.get("amendment_paragraphs"):
             if not motion.get("amendment_paragraphs"):
                 errors.append(
-                    "Cannot update amendment_paragraphs, because it was not set in the old values."
+                    {
+                        "origin": "amendment_paragraphs",
+                        "message": "Cannot update amendment_paragraphs, because it was not set in the old values.",
+                    }
                 )
         if instance.get("reason") == "" and self.check_reason_required(meeting_id):
-            errors.append("Reason is required to update.")
+            errors.append(
+                {"origin": "reason", "message": "Reason is required to update."}
+            )
         return errors
