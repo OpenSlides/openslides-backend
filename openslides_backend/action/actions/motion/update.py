@@ -2,8 +2,8 @@ import time
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
-from openslides_backend.action.actions.motion.check_create_update_payload_mixin import (
-    MotionCheckCreateUpdatePayloadMixin,
+from openslides_backend.action.actions.motion.payload_validation_mixin import (
+    MotionUpdatePayloadValidationMixin,
 )
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -35,7 +35,7 @@ from .set_number_mixin import SetNumberMixin
 class MotionUpdate(
     UpdateAction,
     AmendmentParagraphHelper,
-    MotionCheckCreateUpdatePayloadMixin,
+    MotionUpdatePayloadValidationMixin,
     PermissionHelperMixin,
     SetNumberMixin,
 ):
@@ -102,11 +102,15 @@ class MotionUpdate(
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
-        error_message = self.get_payload_integrity_error_message(
-            instance, is_update=True
+        motion = self.datastore.get(
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            ["meeting_id"],
         )
-        if error_message:
-            raise ActionException(error_message)
+        error_messages = self.get_update_payload_integrity_error_message(
+            instance, motion["meeting_id"]
+        )
+        if len(error_messages):
+            raise ActionException(error_messages[0])
         if instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
 

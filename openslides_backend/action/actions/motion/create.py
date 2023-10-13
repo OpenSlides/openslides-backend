@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
-from openslides_backend.action.actions.motion.check_create_update_payload_mixin import (
-    MotionCheckCreateUpdatePayloadMixin,
+from openslides_backend.action.actions.motion.payload_validation_mixin import (
+    MotionCreatePayloadValidationMixin,
 )
 
 from ....models.models import Motion
@@ -26,7 +26,7 @@ from .mixins import AmendmentParagraphHelper
 
 @register_action("motion.create")
 class MotionCreate(
-    AmendmentParagraphHelper, MotionCheckCreateUpdatePayloadMixin, MotionCreateBase
+    AmendmentParagraphHelper, MotionCreatePayloadValidationMixin, MotionCreateBase
 ):
     """
     Create Action for motions.
@@ -91,9 +91,11 @@ class MotionCreate(
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # special check logic
-        error_message = self.get_payload_integrity_error_message(instance)
-        if error_message:
-            raise ActionException(error_message)
+        error_messages = self.get_create_payload_integrity_error_message(
+            instance, instance["meeting_id"]
+        )
+        if len(error_messages):
+            raise ActionException(error_messages[0])
         if instance.get("lead_motion_id"):
             if instance.get("text") and "amendment_paragraphs" in instance:
                 del instance["amendment_paragraphs"]
