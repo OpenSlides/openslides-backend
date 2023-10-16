@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Dict, List, TypedDict
 
 from openslides_backend.shared.patterns import (
@@ -8,10 +9,22 @@ from openslides_backend.shared.patterns import (
 
 from .set_number_mixin import SetNumberMixin
 
+
+class MotionErrorType(str, Enum):
+    UNIQUE_NUMBER = "number_unique"
+    RECO_EXTENSION = "recommendation_extension"
+    STATE_EXTENSION = "state_extension"
+    MOTION_TYPE = "motion_type"
+    TEXT = "text"
+    AMENDMENT_PARAGRAPHS = "amendment_paragraphs"
+    REASON = "reason"
+    WORKFLOW = "workflow"
+
+
 MotionActionErrorData = TypedDict(
     "MotionActionErrorData",
     {
-        "origin": str,
+        "type": MotionErrorType,
         "message": str,
     },
 )
@@ -30,7 +43,12 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
             if not self._check_if_unique(
                 instance["number"], meeting_id, instance["id"]
             ):
-                errors.append({"origin": "number", "message": "Number is not unique."})
+                errors.append(
+                    {
+                        "type": MotionErrorType.UNIQUE_NUMBER,
+                        "message": "Number is not unique.",
+                    }
+                )
         recommendation_check = self._check_recommendation_and_state(instance)
         if recommendation_check:
             errors += recommendation_check
@@ -57,7 +75,9 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
                     if collection != "motion":
                         errors.append(
                             {
-                                "origin": f"{prefix}_extension",
+                                "type": MotionErrorType.STATE_EXTENSION
+                                if prefix == "state"
+                                else MotionErrorType.RECO_EXTENSION,
                                 "message": f"Found {fqid} but only motion is allowed.",
                             }
                         )
@@ -87,36 +107,40 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
             if instance.get("statute_paragraph_id"):
                 errors.append(
                     {
-                        "origin": "statute_paragraph_id",
+                        "type": MotionErrorType.MOTION_TYPE,
                         "message": "You can't give both of lead_motion_id and statute_paragraph_id.",
                     }
                 )
             elif not instance.get("text") and not instance.get("amendment_paragraphs"):
                 errors.append(
                     {
-                        "origin": "text",
+                        "type": MotionErrorType.TEXT,
                         "message": "Text or amendment_paragraphs is required in this context.",
                     }
                 )
             elif instance.get("text") and instance.get("amendment_paragraphs"):
                 errors.append(
                     {
-                        "origin": "amendmend_paragraphs",
+                        "type": MotionErrorType.MOTION_TYPE,
                         "message": "You can't give both of text and amendment_paragraphs",
                     }
                 )
         else:
             if not instance.get("text"):
-                errors.append({"origin": "text", "message": "Text is required"})
+                errors.append(
+                    {"type": MotionErrorType.TEXT, "message": "Text is required"}
+                )
             if instance.get("amendment_paragraphs"):
                 errors.append(
                     {
-                        "origin": "amendment_paragraphs",
+                        "type": MotionErrorType.AMENDMENT_PARAGRAPHS,
                         "message": "You can't give amendment_paragraphs in this context",
                     }
                 )
         if (not instance.get("reason")) and self.check_reason_required(meeting_id):
-            errors.append({"origin": "reason", "message": "Reason is required"})
+            errors.append(
+                {"type": MotionErrorType.REASON, "message": "Reason is required"}
+            )
         return errors
 
     def _create_conduct_after_checks(
@@ -143,7 +167,7 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
         if not workflow_id:
             return [
                 {
-                    "origin": "workflow_id",
+                    "type": MotionErrorType.WORKFLOW,
                     "message": "No matching default workflow defined on this meeting",
                 }
             ]
@@ -176,7 +200,7 @@ class MotionUpdatePayloadValidationMixin(MotionBasePayloadValidationMixin):
             if not motion.get("text"):
                 errors.append(
                     {
-                        "origin": "text",
+                        "type": MotionErrorType.TEXT,
                         "message": "Cannot update text, because it was not set in the old values.",
                     }
                 )
@@ -184,12 +208,15 @@ class MotionUpdatePayloadValidationMixin(MotionBasePayloadValidationMixin):
             if not motion.get("amendment_paragraphs"):
                 errors.append(
                     {
-                        "origin": "amendment_paragraphs",
+                        "type": MotionErrorType.AMENDMENT_PARAGRAPHS,
                         "message": "Cannot update amendment_paragraphs, because it was not set in the old values.",
                     }
                 )
         if instance.get("reason") == "" and self.check_reason_required(meeting_id):
             errors.append(
-                {"origin": "reason", "message": "Reason is required to update."}
+                {
+                    "type": MotionErrorType.REASON,
+                    "message": "Reason is required to update.",
+                }
             )
         return errors
