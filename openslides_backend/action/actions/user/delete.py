@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -28,5 +28,5 @@ class UserDelete(UserScopeMixin, ConditionalSpeakerCascadeMixin, DeleteAction):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance["id"])
 
-    def get_removed_meeting_id(self, action_date: Dict[str, Any]) -> int | None:
+    def get_removed_meeting_id(self, instance: Dict[str, Any]) -> Optional[int]:
         return 0

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
@@ -69,7 +69,7 @@ class ConditionalSpeakerCascadeMixin(Action):
 
         return super().update_instance(instance)
 
-    def get_removed_meeting_id(self, action_date: Dict[str, Any]) -> int | None:
+    def get_removed_meeting_id(self, instance: Dict[str, Any]) -> Optional[int]:
         """
         Get the id of the meetings from which the user is removed.
         If the user is removed from all meetings, the return value will be 0.

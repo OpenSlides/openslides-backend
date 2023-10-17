@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -106,7 +106,7 @@ class UserUpdate(
         check_gender_helper(self.datastore, instance)
         return instance
 
-    def get_removed_meeting_id(self, action_date: Dict[str, Any]) -> int | None:
-        if action_date.get("group_ids") == []:
-            return action_date.get("meeting_id")
+    def get_removed_meeting_id(self, instance: Dict[str, Any]) -> Optional[int]:
+        if instance.get("group_ids") == []:
+            return instance.get("meeting_id")
         return None
