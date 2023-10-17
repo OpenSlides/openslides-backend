@@ -1,7 +1,8 @@
 from typing import Any, Dict, Optional
 
+from openslides_backend.shared.filters import And, FilterOperator
+
 from ....services.datastore.commands import GetManyRequest
-from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ..speaker.delete import SpeakerDeleteAction
 
@@ -14,40 +15,25 @@ class ConditionalSpeakerCascadeMixin(Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         removed_meeting_id = self.get_removed_meeting_id(instance)
         if removed_meeting_id is not None:
-            delete_all = removed_meeting_id == 0
-            user = self.datastore.get(
-                fqid_from_collection_and_id("user", instance["id"]),
-                [
-                    "meeting_user_ids",
-                ],
+            filter_: Any = FilterOperator("user_id", "=", instance["id"])
+            if removed_meeting_id:
+                filter_ = And(
+                    filter_, FilterOperator("meeting_id", "=", removed_meeting_id)
+                )
+            meeting_users = self.datastore.filter(
+                "meeting_user", filter_, ["speaker_ids"]
             )
-            meeting_users = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "meeting_user",
-                        user.get("meeting_user_ids", []),
-                        [
-                            "speaker_ids",
-                            "user_id",
-                            "meeting_id",
-                        ],
-                    )
-                ]
-            )
-            filtered_meeting_users = [
-                meeting_user
-                for meeting_user in meeting_users.get("meeting_user", {}).values()
-                if delete_all or meeting_user["meeting_id"] == removed_meeting_id
+            speaker_ids = [
+                speaker_id
+                for val in meeting_users.values()
+                if val.get("speaker_ids")
+                for speaker_id in val.get("speaker_ids", [])
             ]
             speakers = self.datastore.get_many(
                 [
                     GetManyRequest(
                         "speaker",
-                        [
-                            speaker_id
-                            for instance in filtered_meeting_users
-                            for speaker_id in instance.get("speaker_ids", [])
-                        ],
+                        speaker_ids,
                         [
                             "begin_time",
                             "id",
