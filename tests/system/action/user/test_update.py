@@ -2123,10 +2123,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/4444", {"group_ids": [], "meta_deleted": False}
+            "meeting_user/4444",
+            {"group_ids": [], "speaker_ids": [24], "meta_deleted": False},
         )
         self.assert_model_exists(
-            "meeting_user/5555", {"group_ids": [53], "meta_deleted": False}
+            "meeting_user/5555",
+            {"group_ids": [53], "speaker_ids": [25], "meta_deleted": False},
         )
         self.assert_model_exists(
             "speaker/24", {"meeting_user_id": 4444, "meeting_id": 4}
@@ -2178,7 +2180,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/4444", {"group_ids": [43], "meta_deleted": False}
+            "meeting_user/4444",
+            {"group_ids": [43], "speaker_ids": [14, 24], "meta_deleted": False},
         )
         self.assert_model_exists(
             "speaker/24", {"meeting_user_id": 4444, "meeting_id": 4}
