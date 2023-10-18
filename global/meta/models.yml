@@ -407,7 +407,6 @@ meeting_user:
   speaker_ids:
     type: relation-list
     to: speaker/meeting_user_id
-    on_delete: CASCADE
     restriction_mode: A
   supported_motion_ids:
     type: relation-list
@@ -2118,7 +2117,6 @@ speaker:
   meeting_user_id:
     type: relation
     to: meeting_user/speaker_ids
-    required: true
     equal_fields: meeting_id
     restriction_mode: A
   point_of_order_category_id:
