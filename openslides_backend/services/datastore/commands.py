@@ -108,9 +108,9 @@ class Write(Command):
         return json.dumps(self.write_requests, cls=WriteRequestJSONEncoder)
 
 
-class WriteActionWorker(Write):
+class WriteWithoutEvents(Write):
     """
-    WriteActionWorker command, same as Write, but on separate route
+    WriteWithoutEvents command, same as Write, but on separate route
     """
 
 

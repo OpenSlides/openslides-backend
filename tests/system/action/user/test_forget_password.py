@@ -121,6 +121,9 @@ class UserForgetPassword(BaseActionTestCase):
             "For completeness your username: test2" in handler.emails[1]["data"]
             or "For completeness your username: admin" in handler.emails[1]["data"]
         )
+        assert ("test2" in handler.emails[0]["data"]) != (
+            "test2" in handler.emails[1]["data"]
+        )
         assert "https://openslides.example.com" in handler.emails[1]["data"]
 
     def test_forget_password_no_user_found(self) -> None:
