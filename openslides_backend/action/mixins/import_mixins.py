@@ -293,6 +293,7 @@ class HeaderEntry(TypedDict):
     type: str
     is_object: NotRequired[bool]
     is_list: NotRequired[bool]
+    is_hidden: NotRequired[bool]
 
 
 class StatisticEntry(TypedDict):

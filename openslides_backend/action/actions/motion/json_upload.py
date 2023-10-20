@@ -1,3 +1,4 @@
+from re import search, sub
 from typing import Any, Dict, List, Optional, cast
 
 from openslides_backend.shared.filters import FilterOperator
@@ -78,14 +79,24 @@ class MotionJsonUpload(
         {"property": "text", "type": "string"},
         {"property": "number", "type": "string", "is_object": True},
         {"property": "reason", "type": "string"},
-        {"property": "submitters_verbose", "type": "string", "is_list": True},
+        {
+            "property": "submitters_verbose",
+            "type": "string",
+            "is_list": True,
+            "is_hidden": True,
+        },
         {
             "property": "submitters_username",
             "type": "string",
             "is_object": True,
             "is_list": True,
         },
-        {"property": "supporters_verbose", "type": "string", "is_list": True},
+        {
+            "property": "supporters_verbose",
+            "type": "string",
+            "is_list": True,
+            "is_hidden": True,
+        },
         {
             "property": "supporters_username",
             "type": "string",
@@ -96,7 +107,12 @@ class MotionJsonUpload(
         {"property": "category_prefix", "type": "string"},
         {"property": "tags", "type": "string", "is_object": True, "is_list": True},
         {"property": "block", "type": "string", "is_object": True},
-        {"property": "motion_amendment", "type": "boolean", "is_object": True},
+        {
+            "property": "motion_amendment",
+            "type": "boolean",
+            "is_object": True,
+            "is_hidden": True,
+        },
     ]
     permission = Permissions.Motion.CAN_MANAGE
     row_state: ImportState
@@ -105,6 +121,7 @@ class MotionJsonUpload(
     category_lookup: Lookup
     tags_lookup: Lookup
     block_lookup: Lookup
+    _first_state_id: int
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # transform instance into a correct create/update payload
@@ -150,10 +167,17 @@ class MotionJsonUpload(
         id_: Optional[int] = None
         meeting_id: int = entry["meeting_id"]
 
-        # TODO if motion_amendment is true, throw error
+        if (is_amendment := entry.get("motion_amendment")) and type(
+            is_amendment
+        ) == bool:
+            entry["motion_amendment"] = {
+                "value": is_amendment,
+                "info": ImportState.WARNING,
+            }
+            messages.append("Amendments cannot be correctly imported")
 
         if (category_name := entry.get("category_name")) and type(category_name) == str:
-            categories = self.number_lookup.name_to_ids[category_name]
+            categories = self.category_lookup.name_to_ids[category_name]
             if (category_prefix := entry.get("category_prefix")) and type(
                 category_prefix
             ) == str:
@@ -203,27 +227,148 @@ class MotionJsonUpload(
                     "value": number,
                     "info": ImportState.ERROR,
                 }
-                messages.append("Found more motions with the same number")
+                messages.append("Found multiple motions with the same number")
         else:
-            default_workflows = self.datastore.filter(
-                "motion_workflow",
-                FilterOperator("default_workflow_meeting_id", "=", meeting_id),
-                mapped_fields=["first_state_id"],
-            ).values()
-            if len(default_workflows) != 1:
-                raise ActionException("Couldn't determine default workflow")
             value: Dict[str, Any] = {}
             self.set_number(
                 value,
                 meeting_id,
-                default_workflows[0].get("first_state_id"),
+                self._get_first_workflow_state_id(meeting_id),
                 None,
                 entry["category_name"].get("id"),
             )
             if number := value["number"]:
                 entry["number"] = {"value": number, "info": ImportState.GENERATED}
 
-        # TODO transform entry for submitter, supporter, tags and block
+        for field in ["submitters", "supporters"]:
+            if users := entry.get(field + "_username"):
+                if not isinstance(users, list):
+                    users = [users]
+                verbose = entry.get(field + "_verbose", [])
+                if not isinstance(verbose, list):
+                    verbose = [verbose]
+                verbose_user_mismatch = len(verbose) > len(users)
+                entry_list: list[Dict[str, Any]] = []
+                message_set = set()
+                for user in users:
+                    if isinstance(user, str):
+                        if verbose_user_mismatch:
+                            entry_list.append(
+                                {"value": user, "info": ImportState.ERROR}
+                            )
+                        check_result = self.username_lookup.check_duplicate(user)
+                        user_id = cast(
+                            int, self.username_lookup.get_field_by_name(user, "id")
+                        )
+                        if check_result == ResultType.FOUND_ID and user_id != 0:
+                            entry_list.append(
+                                {
+                                    "value": user,
+                                    "info": ImportState.DONE,
+                                    "id": user_id,
+                                }
+                            )
+                        elif check_result == ResultType.NOT_FOUND or user_id == 0:
+                            entry_list.append(
+                                {
+                                    "value": user,
+                                    "info": ImportState.WARNING,
+                                }
+                            )
+                            message_set.add(
+                                "Could not find the user for at least one username"
+                            )
+                        elif check_result == ResultType.FOUND_MORE_IDS:
+                            entry_list.append(
+                                {
+                                    "value": user,
+                                    "info": ImportState.WARNING,
+                                }
+                            )
+                            message_set.add(
+                                "Found multiple users for at least one username"
+                            )
+                entry[field + "_username"] = entry_list
+                if verbose_user_mismatch:
+                    self.row_state = ImportState.ERROR
+                    message_set.add(
+                        "Verbose field is set and has more entries than the username field"
+                    )
+                messages.extend(
+                    [
+                        field[0].upper() + field[1:] + ": " + message
+                        for message in message_set
+                    ]
+                )
+
+        if tags := entry.get("tags"):
+            if not isinstance(tags, list):
+                tags = [tags]
+            entry_list = []
+            message_set = set()
+            for tag in tags:
+                if isinstance(tag, str):
+                    check_result = self.tags_lookup.check_duplicate(tag)
+                    tag_id = cast(int, self.tags_lookup.get_field_by_name(tag, "id"))
+                    if check_result == ResultType.FOUND_ID and tag_id != 0:
+                        entry_list.append(
+                            {
+                                "value": tag,
+                                "info": ImportState.DONE,
+                                "id": tag_id,
+                            }
+                        )
+                    elif check_result == ResultType.NOT_FOUND or tag_id == 0:
+                        entry_list.append(
+                            {
+                                "value": tag,
+                                "info": ImportState.WARNING,
+                            }
+                        )
+                        message_set.add("Could not find at least one tag")
+                    elif check_result == ResultType.FOUND_MORE_IDS:
+                        entry_list.append(
+                            {
+                                "value": tag,
+                                "info": ImportState.WARNING,
+                            }
+                        )
+                        message_set.add("Found multiple tags with the same name")
+                entry["tags"] = entry_list
+                messages.extend([message for message in message_set])
+
+        if (block := entry.get("block")) and type(block) == str:
+            check_result = self.block_lookup.check_duplicate(block)
+            block_id = cast(int, self.block_lookup.get_field_by_name(block, "id"))
+            if check_result == ResultType.FOUND_ID and block_id != 0:
+                entry["block"] = {
+                    "value": block,
+                    "info": ImportState.DONE,
+                    "id": block_id,
+                }
+            elif check_result == ResultType.NOT_FOUND or block_id == 0:
+                entry["block"] = {
+                    "value": block,
+                    "info": ImportState.WARNING,
+                }
+                messages.append("Couldn't find motion block")
+            elif check_result == ResultType.FOUND_MORE_IDS:
+                entry["block"] = {
+                    "value": block,
+                    "info": ImportState.WARNING,
+                }
+                messages.append("Found multiple motion blocks with the same name")
+
+        if (
+            (text := entry.get("text"))
+            and type(text) == str
+            and not search("/^<\\w+[^>]*>[\\w\\W]*?<\\/\\w>$/", text)
+        ):
+            entry["text"] = (
+                "<p>"
+                + sub("/\\n/g", "<br />", sub("/\\n([ \\t]*\\n)+/g", "</p><p>", text))
+                + "</p>"
+            )
 
         # check via mixin
         payload = {
@@ -253,13 +398,11 @@ class MotionJsonUpload(
         errors: List[MotionActionErrorData] = []
         if id_:
             payload = {"id": id_, **payload}
-            self.row_state = ImportState.DONE
             errors = self.get_update_payload_integrity_error_message(
                 payload, meeting_id
             )
         else:
             payload = {"meeting_id": meeting_id, **payload}
-            self.row_state = ImportState.NEW
             errors = self.get_create_payload_integrity_error_message(
                 payload, meeting_id
             )
@@ -319,6 +462,20 @@ class MotionJsonUpload(
             field="name",
             mapped_fields=[],
         )
+
+    def _get_first_workflow_state_id(self, meeting_id: int) -> int:
+        if not self._first_state_id:
+            default_workflows = self.datastore.filter(
+                "motion_workflow",
+                FilterOperator("default_workflow_meeting_id", "=", meeting_id),
+                mapped_fields=["first_state_id"],
+            ).values()
+            if len(default_workflows) != 1:
+                raise ActionException("Couldn't determine default workflow")
+            self._first_state_id = cast(
+                int, list(default_workflows)[0].get("first_state_id")
+            )
+        return self._first_state_id
 
     def _get_field_array(self, entry: Dict[str, Any], fieldname: str) -> List[str]:
         date = entry.get(fieldname)
