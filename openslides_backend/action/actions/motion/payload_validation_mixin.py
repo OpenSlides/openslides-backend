@@ -19,6 +19,7 @@ class MotionErrorType(str, Enum):
     AMENDMENT_PARAGRAPHS = "amendment_paragraphs"
     REASON = "reason"
     WORKFLOW = "workflow"
+    TITLE = "title"
 
 
 MotionActionErrorData = TypedDict(
@@ -103,6 +104,10 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
         self, instance: Dict[str, Any], meeting_id: int
     ) -> List[MotionActionErrorData]:
         errors: List[MotionActionErrorData] = []
+        if not instance.get("title"):
+            errors.append(
+                {"type": MotionErrorType.TITLE, "message": "Title is required"}
+            )
         if instance.get("lead_motion_id"):
             if instance.get("statute_paragraph_id"):
                 errors.append(

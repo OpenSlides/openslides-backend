@@ -122,6 +122,7 @@ class MotionJsonUpload(
     tags_lookup: Lookup
     block_lookup: Lookup
     _first_state_id: int
+    _operator_username: str
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # transform instance into a correct create/update payload
@@ -227,7 +228,7 @@ class MotionJsonUpload(
                     "value": number,
                     "info": ImportState.ERROR,
                 }
-                messages.append("Found multiple motions with the same number")
+                messages.append("Error: Found multiple motions with the same number")
         else:
             value: Dict[str, Any] = {}
             self.set_number(
@@ -292,7 +293,7 @@ class MotionJsonUpload(
                 if verbose_user_mismatch:
                     self.row_state = ImportState.ERROR
                     message_set.add(
-                        "Verbose field is set and has more entries than the username field"
+                        "Error: Verbose field is set and has more entries than the username field"
                     )
                 messages.extend(
                     [
@@ -300,6 +301,9 @@ class MotionJsonUpload(
                         for message in message_set
                     ]
                 )
+
+        if len((cast(List[dict[str, Any]], entry.get("submitters_username", [])))) == 0:
+            entry["submitter_usernames"] = [self._get_self_username_object()]
 
         if tags := entry.get("tags"):
             if not isinstance(tags, list):
@@ -369,6 +373,10 @@ class MotionJsonUpload(
                 + sub("/\\n/g", "<br />", sub("/\\n([ \\t]*\\n)+/g", "</p><p>", text))
                 + "</p>"
             )
+
+        for field in ["title", "text", "reason"]:
+            if (date := entry.get(field)) and type(date) == str:
+                entry[field] = {"value": date, "info": ImportState.DONE}
 
         # check via mixin
         payload = {
@@ -463,6 +471,18 @@ class MotionJsonUpload(
             mapped_fields=[],
         )
 
+    def _get_self_username_object(self) -> Dict[str, Any]:
+        if not self._operator_username:
+            user = self.datastore.get("user/" + str(self.user_id), ["username"])
+            if not (user and user.get("username")):
+                raise ActionException("Couldn't find operator's username")
+            self._operatoe_username = cast(str, user["username"])
+        return {
+            "value": self._operator_username,
+            "info": ImportState.GENERATED,
+            "id": self.user_id,
+        }
+
     def _get_first_workflow_state_id(self, meeting_id: int) -> int:
         if not self._first_state_id:
             default_workflows = self.datastore.filter(
@@ -505,8 +525,10 @@ class MotionJsonUpload(
                 fieldname = "text"
             case MotionErrorType.REASON:
                 fieldname = "reason"
+            case MotionErrorType.TITLE:
+                fieldname = "title"
             case _:
-                raise ActionException(err["message"])
+                raise ActionException("Error: " + err["message"])
         if not (entry.get(fieldname) and isinstance(entry[fieldname], dict)):
             entry[fieldname] = {
                 "value": entry.get(fieldname, ""),
@@ -514,4 +536,5 @@ class MotionJsonUpload(
             }
         else:
             entry[fieldname]["info"] = ImportState.ERROR
+        self.import_state = ImportState.ERROR
         return entry
