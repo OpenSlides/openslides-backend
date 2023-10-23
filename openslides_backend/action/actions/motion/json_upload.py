@@ -64,10 +64,10 @@ class MotionJsonUpload(
                             "motion_amendment": {"type": "string"},
                         },
                     },
-                    "required": ["title", "text"],
+                    "required": [],
                     "additionalProperties": False,
                 },
-                "minItems": 2,
+                "minItems": 1,
                 "uniqueItems": False,
             },
             "meeting_id": required_id_schema,
@@ -121,8 +121,8 @@ class MotionJsonUpload(
     category_lookup: Lookup
     tags_lookup: Lookup
     block_lookup: Lookup
-    _first_state_id: int
-    _operator_username: str
+    _first_state_id: Optional[int] = None
+    _operator_username: Optional[str] = None
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # transform instance into a correct create/update payload
@@ -230,15 +230,16 @@ class MotionJsonUpload(
                 }
                 messages.append("Error: Found multiple motions with the same number")
         else:
+            self.row_state = ImportState.NEW
             value: Dict[str, Any] = {}
             self.set_number(
                 value,
                 meeting_id,
                 self._get_first_workflow_state_id(meeting_id),
                 None,
-                entry["category_name"].get("id"),
+                entry.get("category_name.id"),
             )
-            if number := value["number"]:
+            if number := value.get("number"):
                 entry["number"] = {"value": number, "info": ImportState.GENERATED}
 
         for field in ["submitters", "supporters"]:
@@ -392,7 +393,7 @@ class MotionJsonUpload(
                     "supporter_meeting_user_ids": "supporters_username",
                     "tag_ids": "tags",
                 }.items()
-                if entry[v]
+                if entry.get(v)
             },
             **{
                 k: self._get_field_id(entry, v)
@@ -400,7 +401,7 @@ class MotionJsonUpload(
                     "category_id": "category_name",
                     "block_id": "block",
                 }.items()
-                if entry[v]
+                if entry.get(v)
             },
         }
         errors: List[MotionActionErrorData] = []
@@ -417,7 +418,7 @@ class MotionJsonUpload(
 
         for err in errors:
             entry = self._add_error_to_entry(entry, err)
-            messages.append(err["message"])
+            messages.append("Error: " + err["message"])
 
         return {"state": self.row_state, "messages": messages, "data": entry}
 
@@ -476,7 +477,7 @@ class MotionJsonUpload(
             user = self.datastore.get("user/" + str(self.user_id), ["username"])
             if not (user and user.get("username")):
                 raise ActionException("Couldn't find operator's username")
-            self._operatoe_username = cast(str, user["username"])
+            self._operator_username = cast(str, user["username"])
         return {
             "value": self._operator_username,
             "info": ImportState.GENERATED,
@@ -536,5 +537,5 @@ class MotionJsonUpload(
             }
         else:
             entry[fieldname]["info"] = ImportState.ERROR
-        self.import_state = ImportState.ERROR
+        self.row_state = ImportState.ERROR
         return entry
