@@ -183,6 +183,42 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert motion.get("workflow_timestamp")
         assert motion.get("created")
 
+    def test_create_with_set_number(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                    "motions_default_workflow_id": 12,
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_workflow_timestamp": True,
+                    "set_number": True,
+                },
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "title_test1",
+                "meeting_id": 222,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+        motion = self.get_model("motion/1")
+        assert motion.get("state_id") == 34
+        assert motion.get("workflow_timestamp")
+        assert motion.get("created")
+
     def test_create_workflow_id_from_meeting(self) -> None:
         self.set_models(
             {

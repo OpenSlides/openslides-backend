@@ -232,6 +232,7 @@ class MotionJsonUpload(
         else:
             self.row_state = ImportState.NEW
             value: Dict[str, Any] = {}
+            # TODO: Do this without using set_number or rewrite set_number to accept if there is no id in the instance
             self.set_number(
                 value,
                 meeting_id,
