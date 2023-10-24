@@ -39,6 +39,7 @@ def init(env: Env, service_name: str) -> None:
 def instrument_requests() -> None:
     RequestsInstrumentor().instrument()
 
+
 def make_span(env: Env, name: str, attributes: Optional[Dict[str, str]] = None) -> Any:
     """
     Returns a new child span to the currently active span.
