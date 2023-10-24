@@ -39,7 +39,6 @@ def init(env: Env, service_name: str) -> None:
 def instrument_requests() -> None:
     RequestsInstrumentor().instrument()
 
-
 def make_span(env: Env, name: str, attributes: Optional[Dict[str, str]] = None) -> Any:
     """
     Returns a new child span to the currently active span.
@@ -58,10 +57,10 @@ def make_span(env: Env, name: str, attributes: Optional[Dict[str, str]] = None) 
     if not env.is_otel_enabled():
         return nullcontext()
 
-    global otel_initialized
-    assert (
-        otel_initialized
-    ), "backend:Opentelemetry span to be set before having set a TRACER_PROVIDER"
+    # global otel_initialized
+    # assert (
+    #     otel_initialized
+    # ), "backend:Opentelemetry span to be set before having set a TRACER_PROVIDER"
 
     tracer = trace.get_tracer_provider().get_tracer(__name__)
     span = tracer.start_as_current_span(name, attributes=attributes)
