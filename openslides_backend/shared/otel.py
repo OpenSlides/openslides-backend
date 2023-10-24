@@ -7,8 +7,10 @@ from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.trace import _TRACER_PROVIDER
+
 from .interfaces.env import Env
+
+otel_initialized = False
 
 
 def init(env: Env, service_name: str) -> None:
@@ -17,22 +19,21 @@ def init(env: Env, service_name: str) -> None:
     """
     if not env.is_otel_enabled():
         return
-    global _TRACER_PROVIDER
-
-    if not _TRACER_PROVIDER:
-        span_exporter = OTLPSpanExporter(
-            endpoint="http://collector:4317",
-            insecure=True
-            # optional
-            # credentials=ChannelCredentials(credentials),
-            # headers=(("metadata", "metadata")),
-        )
-        _TRACER_PROVIDER = TracerProvider(
-            resource=Resource.create({SERVICE_NAME: service_name})
-        )
-        trace.set_tracer_provider(_TRACER_PROVIDER)
-        span_processor = BatchSpanProcessor(span_exporter)
-        _TRACER_PROVIDER.add_span_processor(span_processor)
+    span_exporter = OTLPSpanExporter(
+        endpoint="http://collector:4317",
+        insecure=True
+        # optional
+        # credentials=ChannelCredentials(credentials),
+        # headers=(("metadata", "metadata")),
+    )
+    tracer_provider = TracerProvider(
+        resource=Resource.create({SERVICE_NAME: service_name})
+    )
+    trace.set_tracer_provider(tracer_provider)
+    span_processor = BatchSpanProcessor(span_exporter)
+    tracer_provider.add_span_processor(span_processor)
+    global otel_initialized
+    otel_initialized = True
 
 
 def instrument_requests() -> None:
@@ -57,8 +58,11 @@ def make_span(env: Env, name: str, attributes: Optional[Dict[str, str]] = None) 
     if not env.is_otel_enabled():
         return nullcontext()
 
-    print(f"backend/otel.py make_service span_name:{name}")
-    assert _TRACER_PROVIDER, "Opentelemetry span to be set before having set a TRACER_PROVIDER"
+    global otel_initialized
+    assert (
+        otel_initialized
+    ), "backend:Opentelemetry span to be set before having set a TRACER_PROVIDER"
+
     tracer = trace.get_tracer_provider().get_tracer(__name__)
     span = tracer.start_as_current_span(name, attributes=attributes)
 
