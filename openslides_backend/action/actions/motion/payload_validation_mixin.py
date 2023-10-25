@@ -40,9 +40,9 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
         self, instance: Dict[str, Any], meeting_id: int
     ) -> List[MotionActionErrorData]:
         errors: List[MotionActionErrorData] = []
-        if instance.get("number"):
+        if instance.get("number.value"):
             if not self._check_if_unique(
-                instance["number"], meeting_id, instance["id"]
+                instance["number"]["value"], meeting_id, instance.get("id")
             ):
                 errors.append(
                     {

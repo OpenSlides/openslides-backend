@@ -1,5 +1,5 @@
 from re import search, sub
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, Iterable, List, Optional, cast
 
 from openslides_backend.shared.filters import FilterOperator
 
@@ -132,6 +132,7 @@ class MotionJsonUpload(
 
         data = instance.pop("data")
         data = self.add_payload_index_to_action_data(data)
+        self.setup_lookups(data)
 
         # enrich data with meeting_id
         for entry in data:
@@ -423,7 +424,7 @@ class MotionJsonUpload(
 
         return {"state": self.row_state, "messages": messages, "data": entry}
 
-    def setup_lookups(self, data: List[Dict[str, Any]]) -> None:
+    def setup_lookups(self, data: Iterable[Dict[str, Any]]) -> None:
         self.number_lookup = Lookup(
             self.datastore,
             "motion",

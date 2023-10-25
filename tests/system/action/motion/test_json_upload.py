@@ -29,6 +29,7 @@ SetupMeetingSetting = TypedDict(
         "fields": List[str],
         "motions": NotRequired[Dict[int, SetupMotionSetting]],
         "workflow": NotRequired[SetupWorkflowSetting],
+        "set_number": NotRequired[bool],
     },
 )
 
@@ -52,7 +53,6 @@ class MotionJsonUpload(BaseActionTestCase):
             "is_active_in_organization_id": 1,
             "motions_reason_required": True,
         }
-        first_state_prototype = {"set_number": True}
         amendment_prototype = {
             "amendment_paragraphs": {"1": "one"},
             "text": "<p>I am an amendment 2</p>",
@@ -72,15 +72,24 @@ class MotionJsonUpload(BaseActionTestCase):
                 "default_workflow_meeting_id": meeting_id,
                 "state_ids": [state_id, state_id + 1, state_id + 2],
                 "first_state_id": state_id,
+                "meeting_id": meeting_id,
             }
-            if workflow := setting.get("workflow"):
-                model_data[
-                    "motion_state/" + str(state_id)
-                ] = self.build_base_model_data_from_prototype(
-                    first_state_prototype, workflow.get("first_state_fields", [])
-                )
-            else:
-                model_data["motion_state/" + str(state_id)] = {}
+            state_data: Dict[str, Any] = {
+                "meeting_id": meeting_id,
+                "workflow_id": workflow_id,
+                "first_state_of_workflow_id": workflow_id,
+            }
+            if setting.get("set_number"):
+                state_data = {**state_data, "set_number": True}
+            model_data["motion_state/" + str(state_id)] = state_data
+            model_data["motion_state/" + str(state_id + 1)] = {
+                "meeting_id": meeting_id,
+                "workflow_id": workflow_id,
+            }
+            model_data["motion_state/" + str(state_id + 2)] = {
+                "meeting_id": meeting_id,
+                "workflow_id": workflow_id,
+            }
             workflow_id += 1
             state_id += 3
             if motion_settings := setting.get("motions"):
@@ -95,7 +104,11 @@ class MotionJsonUpload(BaseActionTestCase):
                         "meeting_id": meeting_id,
                     }
                     if motion_setting.get("has_number"):
-                        motion_data["number"] = "NUM" + str(motion_number_value)
+                        motion_data = {
+                            **motion_data,
+                            "number": "NUM" + str(motion_number_value),
+                            "number_value": motion_number_value,
+                        }
                         motion_number_value += 1
                     if amendment_settings := motion_setting.get("amendments"):
                         amendment_ids = [id_ for id_ in amendment_settings]
@@ -111,9 +124,11 @@ class MotionJsonUpload(BaseActionTestCase):
                                 "lead_motion_id": motion_id,
                             }
                             if amendment_setting.get("has_number"):
-                                amendment_data["number"] = "AMNDMNT" + str(
-                                    amendment_number_value
-                                )
+                                amendment_data = {
+                                    **amendment_data,
+                                    "number": "AMNDMNT" + str(amendment_number_value),
+                                    "number_value": amendment_number_value,
+                                }
                                 amendment_number_value += 1
                             model_data["motion/" + str(amendment_id)] = amendment_data
                     model_data["motion/" + str(motion_id)] = motion_data
@@ -146,7 +161,7 @@ class MotionJsonUpload(BaseActionTestCase):
         if is_reason_required:
             setting["fields"].append("motions_reason_required")
         if is_set_number:
-            setting["workflow"] = {"first_state_fields": ["set_number"]}
+            setting["set_number"] = True
         return setting
 
     def test_json_upload_empty_data(self) -> None:
@@ -159,12 +174,16 @@ class MotionJsonUpload(BaseActionTestCase):
 
     def assert_simple_create(
         self,
-        meeting_id: int,
         is_reason_required: bool = False,
         is_set_number: bool = False,
     ) -> None:
+        meeting_id = 42
         self.set_up_models(
-            {42: self.get_base_meeting_setting(223, is_reason_required, is_set_number)}
+            {
+                meeting_id: self.get_base_meeting_setting(
+                    223, is_reason_required, is_set_number
+                )
+            }
         )
         response = self.request(
             "motion.json_upload",
@@ -174,11 +193,66 @@ class MotionJsonUpload(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["rows"][0] == {
+        data = {
+            "meeting_id": meeting_id,
+            "title": {"value": "test", "info": ImportState.DONE},
+            "text": {"value": "<p>my</p>", "info": ImportState.DONE},
+            "reason": {"value": "stuff", "info": ImportState.DONE},
+            "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
+        }
+        if is_set_number:
+            data.update({"number": {"info": ImportState.GENERATED, "value": "2"}})
+        expected = {
             "state": ImportState.NEW,
             "messages": [],
-            "data": {
+            "data": data,
+        }
+        assert response.json["results"][0][0]["rows"][0] == expected
+
+    def test_json_upload_simple_create(self) -> None:
+        self.assert_simple_create()
+
+    def test_json_upload_simple_create_reason_required(self) -> None:
+        self.assert_simple_create(is_reason_required=True)
+
+    def test_json_upload_simple_create_set_number(self) -> None:
+        self.assert_simple_create(is_set_number=True)
+
+    def test_json_upload_simple_create_reason_required_and_set_number(
+        self,
+    ) -> None:
+        self.assert_simple_create(is_reason_required=True, is_set_number=True)
+
+    def assert_simple_update(
+        self,
+        is_reason_required: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.set_up_models(
+            {
+                meeting_id: self.get_base_meeting_setting(
+                    223, is_reason_required, is_set_number
+                )
+            }
+        )
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {"number": "NUM1", "title": "test", "text": "my", "reason": "stuff"}
+                ],
                 "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        expected = {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "id": 224,
+                "meeting_id": meeting_id,
+                "number": {"id": 224, "value": "NUM1", "info": ImportState.DONE},
                 "title": {"value": "test", "info": ImportState.DONE},
                 "text": {"value": "<p>my</p>", "info": ImportState.DONE},
                 "reason": {"value": "stuff", "info": ImportState.DONE},
@@ -187,20 +261,21 @@ class MotionJsonUpload(BaseActionTestCase):
                 ],
             },
         }
+        assert response.json["results"][0][0]["rows"][0] == expected
 
-    def test_json_upload_simple_create(self) -> None:
-        self.assert_simple_create(42)
+    def test_json_upload_simple_update(self) -> None:
+        self.assert_simple_update()
 
-    def test_json_upload_simple_create_reason_required(self) -> None:
-        self.assert_simple_create(42, is_reason_required=True)
+    def test_json_upload_simple_update_reason_required(self) -> None:
+        self.assert_simple_update(is_reason_required=True)
 
-    def test_json_upload_simple_create_set_number(self) -> None:
-        self.assert_simple_create(42, is_set_number=True)
+    def test_json_upload_simple_update_set_number(self) -> None:
+        self.assert_simple_update(is_set_number=True)
 
-    def test_json_upload_simple_create_reason_required_and_set_number(
+    def test_json_upload_simple_update_reason_required_and_set_number(
         self,
     ) -> None:
-        self.assert_simple_create(42, is_reason_required=True, is_set_number=True)
+        self.assert_simple_update(is_reason_required=True, is_set_number=True)
 
     def test_json_upload_create_missing_title(self) -> None:
         self.set_up_models({42: self.get_base_meeting_setting(223)})
