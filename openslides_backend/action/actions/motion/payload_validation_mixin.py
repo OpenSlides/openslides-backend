@@ -33,16 +33,16 @@ MotionActionErrorData = TypedDict(
 
 class MotionBasePayloadValidationMixin(SetNumberMixin):
     """
-    Contains functions necessary for thevalidation of both motion.create and motion.update actions
+    Contains functions necessary for the validation of both motion.create and motion.update actions
     """
 
     def conduct_common_checks(
         self, instance: Dict[str, Any], meeting_id: int
     ) -> List[MotionActionErrorData]:
         errors: List[MotionActionErrorData] = []
-        if instance.get("number.value"):
+        if instance.get("number"):
             if not self._check_if_unique(
-                instance["number"]["value"], meeting_id, instance.get("id")
+                instance["number"], meeting_id, instance.get("id")
             ):
                 errors.append(
                     {

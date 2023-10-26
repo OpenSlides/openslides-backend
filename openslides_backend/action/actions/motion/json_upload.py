@@ -27,6 +27,10 @@ LIST_TYPE = {
     ]
 }
 
+# T = TypeVar("T", TypedDict)
+
+# class Expandable
+
 
 @register_action("motion.json_upload")
 class MotionJsonUpload(
@@ -384,7 +388,7 @@ class MotionJsonUpload(
         # check via mixin
         payload = {
             **{
-                k: v
+                k: v.get("value")
                 for k, v in entry.items()
                 if k in ["title", "text", "number", "reason"]
             },
