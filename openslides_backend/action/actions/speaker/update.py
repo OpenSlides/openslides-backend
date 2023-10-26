@@ -30,24 +30,25 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState):
             ["meeting_user_id", "meeting_id"],
             lock_result=False,
         )
-        meeting_user = self.datastore.get(
-            fqid_from_collection_and_id("meeting_user", speaker["meeting_user_id"]),
-            ["user_id"],
-            lock_result=False,
-        )
-        if meeting_user.get("user_id") == self.user_id and (
-            has_perm(
-                self.datastore,
-                self.user_id,
-                Permissions.ListOfSpeakers.CAN_SEE,
-                speaker["meeting_id"],
+        if speaker.get("meeting_user_id"):
+            meeting_user = self.datastore.get(
+                fqid_from_collection_and_id("meeting_user", speaker["meeting_user_id"]),
+                ["user_id"],
+                lock_result=False,
             )
-            or has_perm(
-                self.datastore,
-                self.user_id,
-                Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
-                speaker["meeting_id"],
-            )
-        ):
-            return
+            if meeting_user.get("user_id") == self.user_id and (
+                has_perm(
+                    self.datastore,
+                    self.user_id,
+                    Permissions.ListOfSpeakers.CAN_SEE,
+                    speaker["meeting_id"],
+                )
+                or has_perm(
+                    self.datastore,
+                    self.user_id,
+                    Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+                    speaker["meeting_id"],
+                )
+            ):
+                return
         super().check_permissions(instance)
