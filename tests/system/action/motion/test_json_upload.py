@@ -319,7 +319,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
         }
         if is_set_number:
-            data.update({"number": {"info": ImportState.GENERATED, "value": "2"}})
+            data.update({"number": {"info": ImportState.GENERATED, "value": "3"}})
         expected = {
             "state": ImportState.NEW,
             "messages": [],
@@ -334,7 +334,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
         }
         if is_set_number:
-            data.update({"number": {"info": ImportState.GENERATED, "value": "3"}})
+            data.update({"number": {"info": ImportState.GENERATED, "value": "4"}})
         expected = {
             "state": ImportState.NEW,
             "messages": [],

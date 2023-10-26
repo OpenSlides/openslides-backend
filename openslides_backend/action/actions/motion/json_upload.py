@@ -370,11 +370,11 @@ class MotionJsonUpload(
         if (
             (text := entry.get("text"))
             and type(text) == str
-            and not search("/^<\\w+[^>]*>[\\w\\W]*?<\\/\\w>$/", text)
+            and not search(r"^<\w+[^>]*>[\w\W]*?<\/\w>$", text)
         ):
             entry["text"] = (
                 "<p>"
-                + sub("/\\n/g", "<br />", sub("/\\n([ \\t]*\\n)+/g", "</p><p>", text))
+                + sub(r"\n", "<br />", sub(r"\n([ \t]*\n)+", "</p><p>", text))
                 + "</p>"
             )
 
@@ -418,6 +418,12 @@ class MotionJsonUpload(
             errors = self.get_create_payload_integrity_error_message(
                 payload, meeting_id
             )
+            if not (
+                self.row_state == ImportState.WARNING
+                or self.row_state == ImportState.ERROR
+            ):
+                motion_id = self.datastore.reserve_id("motion")
+                self.apply_instance(payload, "motion/" + str(motion_id))
 
         for err in errors:
             entry = self._add_error_to_entry(entry, err)
