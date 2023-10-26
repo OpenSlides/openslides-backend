@@ -156,6 +156,9 @@ class MotionJsonUpload(BaseActionTestCase):
                         (base_motion_id + 3): {"fields": ["text"], "has_number": True},
                     },
                 },
+                (base_motion_id + 4): {
+                    "has_number": True,
+                },
             },
         }
         if is_reason_required:
@@ -193,6 +196,7 @@ class MotionJsonUpload(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == 1
         data = {
             "meeting_id": meeting_id,
             "title": {"value": "test", "info": ImportState.DONE},
@@ -201,7 +205,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
         }
         if is_set_number:
-            data.update({"number": {"info": ImportState.GENERATED, "value": "2"}})
+            data.update({"number": {"info": ImportState.GENERATED, "value": "3"}})
         expected = {
             "state": ImportState.NEW,
             "messages": [],
@@ -246,6 +250,7 @@ class MotionJsonUpload(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == 1
         expected = {
             "state": ImportState.DONE,
             "messages": [],
@@ -277,6 +282,146 @@ class MotionJsonUpload(BaseActionTestCase):
     ) -> None:
         self.assert_simple_update(is_reason_required=True, is_set_number=True)
 
+    def assert_dual_simple_create(
+        self,
+        is_reason_required: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.set_up_models(
+            {
+                meeting_id: self.get_base_meeting_setting(
+                    223, is_reason_required, is_set_number
+                )
+            }
+        )
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {"title": "test", "text": "my", "reason": "stuff"},
+                    {
+                        "title": "test also",
+                        "text": "<p>my other</p>",
+                        "reason": "stuff",
+                    },
+                ],
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == 2
+        data = {
+            "meeting_id": meeting_id,
+            "title": {"value": "test", "info": ImportState.DONE},
+            "text": {"value": "<p>my</p>", "info": ImportState.DONE},
+            "reason": {"value": "stuff", "info": ImportState.DONE},
+            "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
+        }
+        if is_set_number:
+            data.update({"number": {"info": ImportState.GENERATED, "value": "2"}})
+        expected = {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": data,
+        }
+        assert response.json["results"][0][0]["rows"][0] == expected
+        data = {
+            "meeting_id": meeting_id,
+            "title": {"value": "test also", "info": ImportState.DONE},
+            "text": {"value": "<p>my other</p>", "info": ImportState.DONE},
+            "reason": {"value": "stuff", "info": ImportState.DONE},
+            "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
+        }
+        if is_set_number:
+            data.update({"number": {"info": ImportState.GENERATED, "value": "3"}})
+        expected = {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": data,
+        }
+        assert response.json["results"][0][0]["rows"][1] == expected
+
+    def test_json_upload_dual_create(self) -> None:
+        self.assert_dual_simple_create()
+
+    def test_json_upload_dual_create_reason_required(self) -> None:
+        self.assert_dual_simple_create(is_reason_required=True)
+
+    def test_json_upload_dual_create_set_number(self) -> None:
+        self.assert_dual_simple_create(is_set_number=True)
+
+    def test_json_upload_dual_create_reason_required_and_set_number(
+        self,
+    ) -> None:
+        self.assert_dual_simple_create(is_reason_required=True, is_set_number=True)
+
+    def assert_dual_simple_update(
+        self,
+        is_reason_required: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.set_up_models(
+            {
+                meeting_id: self.get_base_meeting_setting(
+                    223, is_reason_required, is_set_number
+                )
+            }
+        )
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {
+                        "number": "NUM1",
+                        "title": "test",
+                        "text": "my",
+                        "reason": "stuff",
+                    },
+                    {
+                        "number": "NUM2",
+                        "title": "test also",
+                        "text": "<p>my other</p>",
+                        "reason": "stuff",
+                    },
+                ],
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == 2
+        expected = {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "id": 224,
+                "meeting_id": meeting_id,
+                "number": {"id": 224, "value": "NUM1", "info": ImportState.DONE},
+                "title": {"value": "test", "info": ImportState.DONE},
+                "text": {"value": "<p>my</p>", "info": ImportState.DONE},
+                "reason": {"value": "stuff", "info": ImportState.DONE},
+                "submitter_usernames": [
+                    {"id": 1, "info": "generated", "value": "admin"}
+                ],
+            },
+        }
+        assert response.json["results"][0][0]["rows"][0] == expected
+
+    def test_json_upload_dual_update(self) -> None:
+        self.assert_dual_simple_update()
+
+    def test_json_upload_dual_update_reason_required(self) -> None:
+        self.assert_dual_simple_update(is_reason_required=True)
+
+    def test_json_upload_dual_update_set_number(self) -> None:
+        self.assert_dual_simple_update(is_set_number=True)
+
+    def test_json_upload_dual_update_reason_required_and_set_number(
+        self,
+    ) -> None:
+        self.assert_dual_simple_update(is_reason_required=True, is_set_number=True)
+
     def test_json_upload_create_missing_title(self) -> None:
         self.set_up_models({42: self.get_base_meeting_setting(223)})
         response = self.request(
@@ -293,6 +438,11 @@ class MotionJsonUpload(BaseActionTestCase):
             in response.json["results"][0][0]["rows"][0]["messages"]
         )
 
+        assert response.json["results"][0][0]["rows"][0]["data"]["title"] == {
+            "value": "",
+            "info": ImportState.ERROR,
+        }
+
     def test_json_upload_create_missing_text(self) -> None:
         self.set_up_models({42: self.get_base_meeting_setting(223)})
         response = self.request(
@@ -308,6 +458,10 @@ class MotionJsonUpload(BaseActionTestCase):
             "Error: Text is required"
             in response.json["results"][0][0]["rows"][0]["messages"]
         )
+        assert response.json["results"][0][0]["rows"][0]["data"]["text"] == {
+            "value": "",
+            "info": ImportState.ERROR,
+        }
 
     def test_json_upload_create_missing_reason(self) -> None:
         self.set_up_models({42: self.get_base_meeting_setting(223)})
@@ -326,6 +480,82 @@ class MotionJsonUpload(BaseActionTestCase):
                 "meeting_id": 42,
                 "title": {"value": "test", "info": ImportState.DONE},
                 "text": {"value": "<p>my</p>", "info": ImportState.DONE},
+                "submitter_usernames": [
+                    {"id": 1, "info": "generated", "value": "admin"}
+                ],
+            },
+        }
+
+    def test_json_upload_create_missing_reason_although_required(self) -> None:
+        self.set_up_models(
+            {42: self.get_base_meeting_setting(223, is_reason_required=True)}
+        )
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [{"title": "test", "text": "my"}],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Reason is required"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+        assert response.json["results"][0][0]["rows"][0]["data"]["reason"] == {
+            "value": "",
+            "info": ImportState.ERROR,
+        }
+
+    def assert_custom_number_create(
+        self, is_set_number: bool = False
+    ) -> List[Dict[str, Any]]:
+        self.set_up_models(
+            {42: self.get_base_meeting_setting(223, is_set_number=is_set_number)}
+        )
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {"number": "Z01", "title": "test", "text": "my", "reason": "stuff"}
+                ],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        return response.json["results"][0][0]["rows"]
+
+    def test_json_upload_custom_number_create(self) -> None:
+        rows = self.assert_custom_number_create()
+        assert len(rows) == 1
+        assert rows[0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "meeting_id": 42,
+                "number": {"value": "Z01", "info": ImportState.DONE},
+                "text": {"value": "<p>my</p>", "info": ImportState.DONE},
+                "title": {"value": "test", "info": ImportState.DONE},
+                "reason": {"value": "stuff", "info": ImportState.DONE},
+                "submitter_usernames": [
+                    {"id": 1, "info": "generated", "value": "admin"}
+                ],
+            },
+        }
+
+    def test_json_upload_custom_number_create_with_set_number(self) -> None:
+        rows = self.assert_custom_number_create(True)
+        assert len(rows) == 1
+        assert rows[0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "meeting_id": 42,
+                "number": {"value": "Z01", "info": ImportState.DONE},
+                "title": {"value": "test", "info": ImportState.DONE},
+                "text": {"value": "<p>my</p>", "info": ImportState.DONE},
+                "reason": {"value": "stuff", "info": ImportState.DONE},
                 "submitter_usernames": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],

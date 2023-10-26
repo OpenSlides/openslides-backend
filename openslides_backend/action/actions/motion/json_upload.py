@@ -27,10 +27,6 @@ LIST_TYPE = {
     ]
 }
 
-# T = TypeVar("T", TypedDict)
-
-# class Expandable
-
 
 @register_action("motion.json_upload")
 class MotionJsonUpload(
@@ -370,6 +366,7 @@ class MotionJsonUpload(
                 }
                 messages.append("Found multiple motion blocks with the same name")
 
+        # TODO: Currently doesn't recognize pre-existing tags
         if (
             (text := entry.get("text"))
             and type(text) == str
