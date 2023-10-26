@@ -258,6 +258,7 @@ class HeaderEntry(TypedDict):
     property: str
     type: str
     is_object: NotRequired[bool]
+    is_list: NotRequired[bool]
 
 
 class StatisticEntry(TypedDict):
@@ -384,3 +385,15 @@ class JsonUploadMixin(BaseImportJsonUpload):
                             f"Unknown type in conversion: type:{type_} is_object:{str(is_object)} is_list:{str(is_list)}"
                         )
         super().validate_instance(instance)
+        if "meeting_id" in instance:
+            id_ = instance["meeting_id"]
+            meeting = self.datastore.get(
+                fqid_from_collection_and_id("meeting", id_),
+                ["id"],
+                lock_result=False,
+                raise_exception=False,
+            )
+            if not meeting:
+                raise ActionException(
+                    f"Participant import try to use not existing meeting {id_}"
+                )
