@@ -137,3 +137,51 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("speaker/890")
+
+    def test_delete_with_removed_user(self) -> None:
+        self.set_models(
+            {
+                "meeting/111": {
+                    "speaker_ids": [890],
+                    "is_active_in_organization_id": 1,
+                },
+                "user/7": {
+                    "username": "test_username1",
+                    "meeting_user_ids": [7],
+                },
+                "meeting_user/7": {
+                    "meeting_id": 111,
+                    "user_id": 7,
+                    "speaker_ids": [890],
+                    "group_ids": [],
+                },
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 111},
+                "speaker/890": {
+                    "meeting_user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 111,
+                },
+            }
+        )
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("speaker/890")
+        self.assert_model_exists("meeting_user/7", {"speaker_ids": []})
+
+    def test_delete_with_deleted_user(self) -> None:
+        self.set_models(
+            {
+                "meeting/111": {
+                    "speaker_ids": [890],
+                    "is_active_in_organization_id": 1,
+                },
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 111},
+                "speaker/890": {
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 111,
+                },
+            }
+        )
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("speaker/890")
