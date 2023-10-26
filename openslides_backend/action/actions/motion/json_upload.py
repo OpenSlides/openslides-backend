@@ -422,6 +422,7 @@ class MotionJsonUpload(
                 self.row_state == ImportState.WARNING
                 or self.row_state == ImportState.ERROR
             ):
+                # Important for motion number generation
                 motion_id = self.datastore.reserve_id("motion")
                 self.apply_instance(payload, "motion/" + str(motion_id))
 

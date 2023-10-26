@@ -45,96 +45,122 @@ class MotionJsonUpload(BaseActionTestCase):
         return data
 
     def set_up_models(self, meetings: Dict[int, SetupMeetingSetting]) -> None:
-        workflow_id = 1
-        state_id = 1
-        model_data = {}
+        model_data: Dict[str, Any] = {}
+        next_ids = {"workflow": 1, "state": 1}
         meeting_prototype = {
             "name": "test",
             "is_active_in_organization_id": 1,
             "motions_reason_required": True,
         }
-        amendment_prototype = {
-            "amendment_paragraphs": {"1": "one"},
-            "text": "<p>I am an amendment 2</p>",
-        }
         for meeting_id in meetings:
-            motion_number_value = 1
-            amendment_number_value = 1
             setting = meetings[meeting_id]
             meeting_data = {
                 **self.build_base_model_data_from_prototype(
                     meeting_prototype, setting["fields"]
                 ),
-                "motions_default_workflow_id": workflow_id,
                 "name": "test meeting" + str(meeting_id),
             }
-            model_data["motion_workflow/" + str(workflow_id)] = {
-                "default_workflow_meeting_id": meeting_id,
-                "state_ids": [state_id, state_id + 1, state_id + 2],
-                "first_state_id": state_id,
-                "meeting_id": meeting_id,
-            }
-            state_data: Dict[str, Any] = {
-                "meeting_id": meeting_id,
-                "workflow_id": workflow_id,
-                "first_state_of_workflow_id": workflow_id,
-            }
-            if setting.get("set_number"):
-                state_data = {**state_data, "set_number": True}
-            model_data["motion_state/" + str(state_id)] = state_data
-            model_data["motion_state/" + str(state_id + 1)] = {
-                "meeting_id": meeting_id,
-                "workflow_id": workflow_id,
-            }
-            model_data["motion_state/" + str(state_id + 2)] = {
-                "meeting_id": meeting_id,
-                "workflow_id": workflow_id,
-            }
-            workflow_id += 1
-            state_id += 3
+            self.set_up_workflow(
+                model_data,
+                meeting_data,
+                meeting_id,
+                next_ids,
+                setting.get("set_number", False),
+            )
             if motion_settings := setting.get("motions"):
-                motion_ids = [id_ for id_ in motion_settings]
-                meeting_data["motion_ids"] = motion_ids
-                all_amendment_ids = []
-                for motion_id in motion_ids:
-                    motion_setting = motion_settings[motion_id]
-                    motion_data = {
-                        "title": "Title" + str(motion_id),
-                        "text": "<p>Text</p>",
-                        "meeting_id": meeting_id,
-                    }
-                    if motion_setting.get("has_number"):
-                        motion_data = {
-                            **motion_data,
-                            "number": "NUM" + str(motion_number_value),
-                            "number_value": motion_number_value,
-                        }
-                        motion_number_value += 1
-                    if amendment_settings := motion_setting.get("amendments"):
-                        amendment_ids = [id_ for id_ in amendment_settings]
-                        all_amendment_ids.extend(amendment_ids)
-                        for amendment_id in amendment_ids:
-                            amendment_setting = amendment_settings[amendment_id]
-                            amendment_data = {
-                                **self.build_base_model_data_from_prototype(
-                                    amendment_prototype, amendment_setting["fields"]
-                                ),
-                                "title": "Amendment to " + str(motion_data["title"]),
-                                "meeting_id": meeting_id,
-                                "lead_motion_id": motion_id,
-                            }
-                            if amendment_setting.get("has_number"):
-                                amendment_data = {
-                                    **amendment_data,
-                                    "number": "AMNDMNT" + str(amendment_number_value),
-                                    "number_value": amendment_number_value,
-                                }
-                                amendment_number_value += 1
-                            model_data["motion/" + str(amendment_id)] = amendment_data
-                    model_data["motion/" + str(motion_id)] = motion_data
-                meeting_data["motion_ids"].extend(all_amendment_ids)
+                self.set_up_motions(
+                    model_data, meeting_id, meeting_data, motion_settings
+                )
             model_data["meeting/" + str(meeting_id)] = meeting_data
         self.set_models(model_data)
+
+    def set_up_motions(
+        self,
+        model_data: Dict[str, Any],
+        meeting_id: int,
+        meeting_data: Dict[str, Any],
+        motion_settings: Dict[int, SetupMotionSetting],
+    ) -> None:
+        amendment_prototype = {
+            "amendment_paragraphs": {"1": "one"},
+            "text": "<p>I am an amendment 2</p>",
+        }
+        motion_ids = [id_ for id_ in motion_settings]
+        meeting_data["motion_ids"] = motion_ids
+        motion_number_value = 1
+        amendment_number_value = 1
+        for motion_id in motion_ids.copy():
+            motion_setting = motion_settings[motion_id]
+            motion_data = {
+                "title": "Title" + str(motion_id),
+                "text": "<p>Text</p>",
+                "meeting_id": meeting_id,
+            }
+            if motion_setting.get("has_number"):
+                motion_data = {
+                    **motion_data,
+                    "number": "NUM" + str(motion_number_value),
+                    "number_value": motion_number_value,
+                }
+                motion_number_value += 1
+            if amendment_settings := motion_setting.get("amendments"):
+                amendment_ids = [id_ for id_ in amendment_settings]
+                motion_ids.extend(amendment_ids)
+                for amendment_id in amendment_ids:
+                    amendment_setting = amendment_settings[amendment_id]
+                    amendment_data = {
+                        **self.build_base_model_data_from_prototype(
+                            amendment_prototype, amendment_setting["fields"]
+                        ),
+                        "title": "Amendment to " + str(motion_data["title"]),
+                        "meeting_id": meeting_id,
+                        "lead_motion_id": motion_id,
+                    }
+                    if amendment_setting.get("has_number"):
+                        amendment_data = {
+                            **amendment_data,
+                            "number": "AMNDMNT" + str(amendment_number_value),
+                            "number_value": amendment_number_value,
+                        }
+                        amendment_number_value += 1
+                    model_data["motion/" + str(amendment_id)] = amendment_data
+            model_data["motion/" + str(motion_id)] = motion_data
+
+    def set_up_workflow(
+        self,
+        model_data: Dict[str, Any],
+        meeting_data: Dict[str, Any],
+        meeting_id: int,
+        next_ids: Dict[str, int],
+        is_set_number: bool,
+    ) -> None:
+        workflow_id = next_ids["workflow"]
+        state_id = next_ids["state"]
+        meeting_data["motions_default_workflow_id"] = workflow_id
+        model_data["motion_workflow/" + str(workflow_id)] = {
+            "default_workflow_meeting_id": meeting_id,
+            "state_ids": [state_id, state_id + 1, state_id + 2],
+            "first_state_id": state_id,
+            "meeting_id": meeting_id,
+        }
+        state_data: Dict[str, Any] = {
+            "meeting_id": meeting_id,
+            "workflow_id": workflow_id,
+            "first_state_of_workflow_id": workflow_id,
+        }
+        if is_set_number:
+            state_data = {**state_data, "set_number": True}
+        model_data["motion_state/" + str(state_id)] = state_data
+        model_data["motion_state/" + str(state_id + 1)] = {
+            "meeting_id": meeting_id,
+            "workflow_id": workflow_id,
+        }
+        model_data["motion_state/" + str(state_id + 2)] = {
+            "meeting_id": meeting_id,
+            "workflow_id": workflow_id,
+        }
+        next_ids["workflow"] += 1
+        next_ids["state"] += 3
 
     def get_base_meeting_setting(
         self,
