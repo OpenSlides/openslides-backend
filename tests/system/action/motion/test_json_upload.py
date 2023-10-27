@@ -871,3 +871,11 @@ class MotionJsonUpload(BaseActionTestCase):
         self,
     ) -> None:
         self.assert_with_categories(request_with_numbers=True, is_set_number=True)
+
+    #TODO Add more category test cases: 
+    # prefix not given,
+    # name not given 
+    # not found, 
+    # found two categories,
+    # call one of two categories with the same prefix but different names
+    # call one of two categories with the same name but different prefixes
