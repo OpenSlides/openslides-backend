@@ -7,7 +7,11 @@ from tests.system.action.base import BaseActionTestCase
 
 SetupAmendmentSetting = TypedDict(
     "SetupAmendmentSetting",
-    {"fields": List[str], "has_number": NotRequired[bool]},
+    {
+        "fields": List[str],
+        "has_number": NotRequired[bool],
+        "category_id": NotRequired[int],
+    },
 )
 
 SetupMotionSetting = TypedDict(
@@ -15,6 +19,7 @@ SetupMotionSetting = TypedDict(
     {
         "amendments": NotRequired[Dict[int, SetupAmendmentSetting]],
         "has_number": NotRequired[bool],
+        "category_id": NotRequired[int],
     },
 )
 
@@ -23,11 +28,16 @@ SetupWorkflowSetting = TypedDict(
     {"first_state_fields": List[str]},
 )
 
+SetupCategorySetting = TypedDict(
+    "SetupCategorySetting", {"name": str, "prefix": NotRequired[str]}
+)
+
 SetupMeetingSetting = TypedDict(
     "SetupMeetingSetting",
     {
         "fields": List[str],
         "motions": NotRequired[Dict[int, SetupMotionSetting]],
+        "categories": NotRequired[Dict[int, SetupCategorySetting]],
         "workflow": NotRequired[SetupWorkflowSetting],
         "set_number": NotRequired[bool],
     },
@@ -51,6 +61,8 @@ class MotionJsonUpload(BaseActionTestCase):
             "name": "test",
             "is_active_in_organization_id": 1,
             "motions_reason_required": True,
+            "motions_number_type": "per_category",
+            "motions_number_min_digits": 2,
         }
         for meeting_id in meetings:
             setting = meetings[meeting_id]
@@ -67,12 +79,36 @@ class MotionJsonUpload(BaseActionTestCase):
                 next_ids,
                 setting.get("set_number", False),
             )
+            if category_settings := setting.get("categories"):
+                self.set_up_categories(
+                    model_data, meeting_id, meeting_data, category_settings
+                )
             if motion_settings := setting.get("motions"):
                 self.set_up_motions(
                     model_data, meeting_id, meeting_data, motion_settings
                 )
             model_data["meeting/" + str(meeting_id)] = meeting_data
         self.set_models(model_data)
+
+    def set_up_categories(
+        self,
+        model_data: Dict[str, Any],
+        meeting_id: int,
+        meeting_data: Dict[str, Any],
+        category_settings: Dict[int, SetupCategorySetting],
+    ) -> None:
+        category_ids = [id_ for id_ in category_settings]
+        meeting_data["motion_category_ids"] = category_ids
+        for id_ in category_ids:
+            category = category_settings[id_]
+            category_data = {
+                "meeting_id": meeting_id,
+                "name": category["name"],
+                "motion_ids": [],
+            }
+            if category.get("prefix"):
+                category_data["prefix"] = category["prefix"]
+            model_data["motion_category/" + str(id_)] = category_data
 
     def set_up_motions(
         self,
@@ -99,10 +135,16 @@ class MotionJsonUpload(BaseActionTestCase):
             if motion_setting.get("has_number"):
                 motion_data = {
                     **motion_data,
-                    "number": "NUM" + str(motion_number_value),
+                    "number": "NUM0" + str(motion_number_value),
                     "number_value": motion_number_value,
                 }
                 motion_number_value += 1
+            if motion_setting.get("category_id"):
+                category_id = motion_setting["category_id"]
+                motion_data["category_id"] = category_id
+                model_data["motion_category/" + str(category_id)]["motion_ids"].append(
+                    motion_id
+                )
             if amendment_settings := motion_setting.get("amendments"):
                 amendment_ids = [id_ for id_ in amendment_settings]
                 motion_ids.extend(amendment_ids)
@@ -123,6 +165,12 @@ class MotionJsonUpload(BaseActionTestCase):
                             "number_value": amendment_number_value,
                         }
                         amendment_number_value += 1
+                    if amendment_setting.get("category_id"):
+                        category_id = amendment_setting["category_id"]
+                        amendment_data["category_id"] = category_id
+                        model_data["motion_category/" + str(category_id)][
+                            "motion_ids"
+                        ].append(amendment_id)
                     model_data["motion/" + str(amendment_id)] = amendment_data
             model_data["motion/" + str(motion_id)] = motion_data
 
@@ -169,7 +217,12 @@ class MotionJsonUpload(BaseActionTestCase):
         is_set_number: bool = False,
     ) -> SetupMeetingSetting:
         setting: SetupMeetingSetting = {
-            "fields": ["name", "is_active_in_organization_id"],
+            "fields": [
+                "name",
+                "is_active_in_organization_id",
+                "motions_number_type",
+                "motions_number_min_digits",
+            ],
             "motions": {
                 base_motion_id: {},
                 (base_motion_id + 1): {
@@ -231,7 +284,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
         }
         if is_set_number:
-            data.update({"number": {"info": ImportState.GENERATED, "value": "3"}})
+            data.update({"number": {"info": ImportState.GENERATED, "value": "03"}})
         expected = {
             "state": ImportState.NEW,
             "messages": [],
@@ -270,7 +323,12 @@ class MotionJsonUpload(BaseActionTestCase):
             "motion.json_upload",
             {
                 "data": [
-                    {"number": "NUM1", "title": "test", "text": "my", "reason": "stuff"}
+                    {
+                        "number": "NUM01",
+                        "title": "test",
+                        "text": "my",
+                        "reason": "stuff",
+                    }
                 ],
                 "meeting_id": meeting_id,
             },
@@ -283,7 +341,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "data": {
                 "id": 224,
                 "meeting_id": meeting_id,
-                "number": {"id": 224, "value": "NUM1", "info": ImportState.DONE},
+                "number": {"id": 224, "value": "NUM01", "info": ImportState.DONE},
                 "title": {"value": "test", "info": ImportState.DONE},
                 "text": {"value": "<p>my</p>", "info": ImportState.DONE},
                 "reason": {"value": "stuff", "info": ImportState.DONE},
@@ -345,7 +403,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
         }
         if is_set_number:
-            data.update({"number": {"info": ImportState.GENERATED, "value": "3"}})
+            data.update({"number": {"info": ImportState.GENERATED, "value": "03"}})
         expected = {
             "state": ImportState.NEW,
             "messages": [],
@@ -360,7 +418,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
         }
         if is_set_number:
-            data.update({"number": {"info": ImportState.GENERATED, "value": "4"}})
+            data.update({"number": {"info": ImportState.GENERATED, "value": "04"}})
         expected = {
             "state": ImportState.NEW,
             "messages": [],
@@ -400,13 +458,13 @@ class MotionJsonUpload(BaseActionTestCase):
             {
                 "data": [
                     {
-                        "number": "NUM1",
+                        "number": "NUM01",
                         "title": "test",
                         "text": "my",
                         "reason": "stuff",
                     },
                     {
-                        "number": "NUM2",
+                        "number": "NUM02",
                         "title": "test also",
                         "text": "<p>my other</p>",
                         "reason": "stuff",
@@ -423,7 +481,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "data": {
                 "id": 224,
                 "meeting_id": meeting_id,
-                "number": {"id": 224, "value": "NUM1", "info": ImportState.DONE},
+                "number": {"id": 224, "value": "NUM01", "info": ImportState.DONE},
                 "title": {"value": "test", "info": ImportState.DONE},
                 "text": {"value": "<p>my</p>", "info": ImportState.DONE},
                 "reason": {"value": "stuff", "info": ImportState.DONE},
@@ -588,9 +646,8 @@ class MotionJsonUpload(BaseActionTestCase):
             },
         }
 
-    def assert_duplicate_numbers(self, is_update: bool = False) -> None:
+    def assert_duplicate_numbers(self, number: str) -> Dict[str, Any]:
         meeting_id = 42
-        number = "NUM1" if is_update else "NUM4"
         self.set_up_models({meeting_id: self.get_base_meeting_setting(223)})
         response = self.request(
             "motion.json_upload",
@@ -614,18 +671,203 @@ class MotionJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         assert len(response.json["results"][0][0]["rows"]) == 2
-        assert response.json["results"][0][0]["state"] == ImportState.ERROR
-        assert (
-            "Error: Found multiple motions with the same number"
-            in response.json["results"][0][0]["rows"][0]["messages"]
-        )
-        assert response.json["results"][0][0]["rows"][0]["data"]["number"] == {
-            "value": number,
-            "info": ImportState.ERROR,
-        }
+        return response.json["results"][0][0]
 
     def test_json_upload_duplicate_numbers_create(self) -> None:
-        self.assert_duplicate_numbers()
+        result = self.assert_duplicate_numbers("NUM04")
+        assert result["state"] == ImportState.ERROR
+        for i in [0, 1]:
+            assert result["rows"][i]["state"] == ImportState.ERROR
+            assert (
+                "Error: Found multiple motions with the same number"
+                in result["rows"][i]["messages"]
+            )
+            assert result["rows"][i]["data"]["number"] == {
+                "value": "NUM04",
+                "info": ImportState.ERROR,
+            }
 
+    # TODO: This ought to be checking for errors instead
     def test_json_upload_duplicate_numbers_update(self) -> None:
-        self.assert_duplicate_numbers(is_update=True)
+        result = self.assert_duplicate_numbers("NUM01")
+        assert result["state"] == ImportState.DONE
+        for i in [0, 1]:
+            assert result["rows"][i]["state"] == ImportState.DONE
+            assert result["rows"][i]["messages"] == []
+            assert result["rows"][i]["data"]["number"] == {
+                "id": 224,
+                "value": "NUM01",
+                "info": ImportState.DONE,
+            }
+
+    def extend_meeting_setting_with_categories(
+        self,
+        setting: SetupMeetingSetting,
+        categories: Dict[int, SetupCategorySetting],
+        motion_to_category_ids: Dict[int, int],
+    ) -> SetupMeetingSetting:
+        setting["categories"] = categories
+        if setting.get("motions"):
+            for motion_id in setting["motions"]:
+                motion = setting["motions"][motion_id]
+                self.add_category_id(motion_id, motion, motion_to_category_ids)
+                if motion.get("amendments"):
+                    for amendment_id in motion["amendments"]:
+                        self.add_category_id(
+                            amendment_id,
+                            motion["amendments"][amendment_id],
+                            motion_to_category_ids,
+                        )
+        return setting
+
+    def add_category_id(
+        self,
+        motion_id: int,
+        motion: Any,
+        motion_to_category_ids: Dict[int, int],
+    ) -> None:
+        if motion_to_category_ids.get(motion_id):
+            motion["category_id"] = motion_to_category_ids[motion_id]
+
+    def get_category_extended_base_meeting_setting(
+        self,
+        base_motion_id: int,
+        base_category_id: int,
+        is_reason_required: bool = False,
+        is_set_number: bool = False,
+    ) -> SetupMeetingSetting:
+        return self.extend_meeting_setting_with_categories(
+            self.get_base_meeting_setting(
+                base_motion_id, is_reason_required, is_set_number
+            ),
+            {
+                base_category_id: {
+                    "name": "General category",
+                    "prefix": "NUM",
+                },
+                (base_category_id + 1): {
+                    "name": "Amendment category",
+                    "prefix": "AMNDMNT",
+                },
+                (base_category_id + 2): {
+                    "name": "Empty category",
+                },
+                (base_category_id + 3): {
+                    "name": "Amendment category 2",
+                    "prefix": "AMNDMNT",
+                },
+                (base_category_id + 4): {
+                    "name": "General category",
+                    "prefix": "COPY",
+                },
+                (base_category_id + 5): {
+                    "name": "Another category",
+                    "prefix": "CAT",
+                },
+            },
+            {
+                base_motion_id: (base_category_id + 2),
+                (base_motion_id + 1): base_category_id,
+                (base_motion_id + 1): (base_category_id + 1),
+                (base_motion_id + 1): (base_category_id + 3),
+                (base_motion_id + 1): base_category_id,
+            },
+        )
+
+    def assert_with_categories(
+        self,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.set_up_models(
+            {
+                meeting_id: self.get_category_extended_base_meeting_setting(
+                    223, 2223, False, is_set_number
+                )
+            }
+        )
+        data: List[Dict[str, Any]] = list(
+            (
+                {
+                    "title": "test",
+                    "text": "my",
+                    "reason": "stuff",
+                    "category_name": "Another category",
+                    "category_prefix": "CAT",
+                },
+                {
+                    "title": "test also",
+                    "text": "<p>my other</p>",
+                    "reason": "stuff",
+                    "category_name": "Another category",
+                    "category_prefix": "CAT",
+                },
+            ),
+        )
+        if is_update:
+            for i in range(len(data)):
+                data[i]["number"] = "NUM0" + str(i + 1)
+        elif request_with_numbers:
+            for i in range(len(data)):
+                data[i]["number"] = "NOM0" + str(i + 1)
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": data,
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 2
+        for i in range(2):
+            assert (
+                rows[i]["state"] == ImportState.DONE if is_update else ImportState.NEW
+            )
+            assert rows[i]["data"]["category_name"] == {
+                "id": 2228,
+                "info": "done",
+                "value": "Another category",
+            }
+            assert rows[i]["data"]["category_prefix"] == "CAT"
+            if is_update:
+                assert rows[i]["data"].get("number") == {
+                    "id": 224 if i == 0 else 227,
+                    "info": ImportState.DONE,
+                    "value": "NUM0" + str(i + 1),
+                }
+            elif request_with_numbers:
+                assert rows[i]["data"].get("number") == {
+                    "info": ImportState.DONE,
+                    "value": "NOM0" + str(i + 1),
+                }
+            elif is_set_number:
+                assert rows[i]["data"].get("number") == {
+                    "info": ImportState.GENERATED,
+                    "value": "CAT0" + str(i + 1),
+                }
+            else:
+                assert rows[i]["data"].get("number") is None
+
+    def test_json_upload_create_with_categories(self) -> None:
+        self.assert_with_categories()
+
+    def test_json_upload_update_with_categories(self) -> None:
+        self.assert_with_categories(True)
+
+    def test_json_upload_create_with_categories_with_numbers(self) -> None:
+        self.assert_with_categories(request_with_numbers=True)
+
+    def test_json_upload_create_with_categories_with_set_number(self) -> None:
+        self.assert_with_categories(is_set_number=True)
+
+    def test_json_upload_update_with_categories_with_set_number(self) -> None:
+        self.assert_with_categories(True, is_set_number=True)
+
+    def test_json_upload_create_with_categories_with_numbers_and_set_number(
+        self,
+    ) -> None:
+        self.assert_with_categories(request_with_numbers=True, is_set_number=True)

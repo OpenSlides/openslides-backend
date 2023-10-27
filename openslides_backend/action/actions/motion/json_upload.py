@@ -231,15 +231,17 @@ class MotionJsonUpload(
                 }
                 messages.append("Error: Found multiple motions with the same number")
         else:
+            category_id: Optional[int] = None
+            if entry.get("category_name"):
+                category_id = entry["category_name"].get("id")
             self.row_state = ImportState.NEW
             value: Dict[str, Any] = {}
-            # TODO: Do this without using set_number or rewrite set_number to accept if there is no id in the instance
             self.set_number(
                 value,
                 meeting_id,
                 self._get_first_workflow_state_id(meeting_id),
                 None,
-                entry.get("category_name.id"),
+                category_id,
             )
             if number := value.get("number"):
                 entry["number"] = {"value": number, "info": ImportState.GENERATED}
@@ -423,6 +425,7 @@ class MotionJsonUpload(
                 or self.row_state == ImportState.ERROR
             ):
                 # Important for motion number generation
+                # TODO: Replace reserve_id with something that doesn't indefinately close up that id
                 motion_id = self.datastore.reserve_id("motion")
                 self.apply_instance(payload, "motion/" + str(motion_id))
 
