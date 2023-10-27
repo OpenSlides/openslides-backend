@@ -587,3 +587,45 @@ class MotionJsonUpload(BaseActionTestCase):
                 ],
             },
         }
+
+    def assert_duplicate_numbers(self, is_update: bool = False) -> None:
+        meeting_id = 42
+        number = "NUM1" if is_update else "NUM4"
+        self.set_up_models({meeting_id: self.get_base_meeting_setting(223)})
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {
+                        "number": number,
+                        "title": "test",
+                        "text": "my",
+                        "reason": "stuff",
+                    },
+                    {
+                        "number": number,
+                        "title": "test also",
+                        "text": "<p>my other</p>",
+                        "reason": "stuff",
+                    },
+                ],
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == 2
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Found multiple motions with the same number"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+        assert response.json["results"][0][0]["rows"][0]["data"]["number"] == {
+            "value": number,
+            "info": ImportState.ERROR,
+        }
+
+    def test_json_upload_duplicate_numbers_create(self) -> None:
+        self.assert_duplicate_numbers()
+
+    def test_json_upload_duplicate_numbers_update(self) -> None:
+        self.assert_duplicate_numbers(is_update=True)
