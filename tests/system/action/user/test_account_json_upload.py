@@ -1,8 +1,7 @@
 from time import time
 
 from openslides_backend.action.mixins.import_mixins import ImportState
-from openslides_backend.permissions.management_levels import \
-    OrganizationManagementLevel
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from tests.system.action.base import BaseActionTestCase
 
@@ -1025,12 +1024,22 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         result = response.json["results"][0][0]
         assert result["state"] == ImportState.ERROR
-        assert result["rows"][0]["messages"] == ["Found more users with the same username"]
+        assert result["rows"][0]["messages"] == [
+            "Found more users with the same username"
+        ]
         assert result["rows"][0]["state"] == ImportState.ERROR
-        assert result["rows"][0]["data"]["username"] == {'value': 'test', 'info': 'error'}
-        assert result["rows"][1]["messages"] == ["Found more users with the same username"]
+        assert result["rows"][0]["data"]["username"] == {
+            "value": "test",
+            "info": "error",
+        }
+        assert result["rows"][1]["messages"] == [
+            "Found more users with the same username"
+        ]
         assert result["rows"][1]["state"] == ImportState.ERROR
-        assert result["rows"][1]["data"]["username"] == {'value': 'test', 'info': 'error'}
+        assert result["rows"][1]["data"]["username"] == {
+            "value": "test",
+            "info": "error",
+        }
 
     def test_json_upload_duplicate_existing_name_email(self) -> None:
         self.set_models(
@@ -1048,8 +1057,18 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "account.json_upload",
             {
                 "data": [
-                    {"first_name": "Max", "last_name": "Mustermann", "email": "max@mustermann.org", "default_vote_weight": "1.0",},
-                    {"first_name": "Max", "last_name": "Mustermann", "email": "max@mustermann.org", "default_vote_weight": "2.0",},
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "max@mustermann.org",
+                        "default_vote_weight": "1.0",
+                    },
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "max@mustermann.org",
+                        "default_vote_weight": "2.0",
+                    },
                 ]
             },
         )
@@ -1058,7 +1077,19 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert result["state"] == ImportState.ERROR
         assert result["rows"][0]["messages"] == ["Found more users with name and email"]
         assert result["rows"][0]["state"] == ImportState.ERROR
-        assert result["rows"][0]["data"] == {"first_name": "Max", "last_name": "Mustermann", "email": "max@mustermann.org", "default_vote_weight": "1.000000", "username": {"value": "MaxMustermann", "info": ImportState.GENERATED}}
+        assert result["rows"][0]["data"] == {
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "email": "max@mustermann.org",
+            "default_vote_weight": "1.000000",
+            "username": {"value": "MaxMustermann", "info": ImportState.GENERATED},
+        }
         assert result["rows"][1]["messages"] == ["Found more users with name and email"]
         assert result["rows"][1]["state"] == ImportState.ERROR
-        assert result["rows"][1]["data"] == {"first_name": "Max", "last_name": "Mustermann", "email": "max@mustermann.org", "default_vote_weight": "2.000000", "username": {"value": "MaxMustermann1", "info": ImportState.GENERATED}}
+        assert result["rows"][1]["data"] == {
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "email": "max@mustermann.org",
+            "default_vote_weight": "2.000000",
+            "username": {"value": "MaxMustermann1", "info": ImportState.GENERATED},
+        }
