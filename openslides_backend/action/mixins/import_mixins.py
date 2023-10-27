@@ -66,8 +66,11 @@ class Lookup:
         self.name_to_ids: Dict[SearchFieldType, List[Dict[str, Any]]] = defaultdict(
             list
         )
-        for name, _ in name_entries:
-            self.name_to_ids[name] = []
+        for name, name_entry in name_entries:
+            if name in self.name_to_ids:
+                self.name_to_ids[name].append(name_entry)
+            else:
+                self.name_to_ids[name] = []
         self.id_to_name: Dict[int, List[SearchFieldType]] = defaultdict(list)
         or_filters: List[Filter] = []
         if "id" not in mapped_fields:

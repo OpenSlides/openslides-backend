@@ -146,6 +146,23 @@ class TopicJsonUpload(BaseActionTestCase):
             },
         )
 
+    def test_json_upload_duplicate_in_existing_topic(self) -> None:
+        self.set_models({"topic/10": {"title": "test"}})
+        response = self.request(
+            "topic.json_upload",
+            {
+                "meeting_id": 22,
+                "data": [{"title": "test"}, {"title": "test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
+        assert result["rows"][0]["state"] == ImportState.ERROR
+        assert result["rows"][0]["messages"] == ["Duplicated topic name 'test'."]
+        assert result["rows"][1]["state"] == ImportState.ERROR
+        assert result["rows"][1]["messages"] == ["Duplicated topic name 'test'."]
+
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
             {}, "topic.json_upload", {"data": [{"title": "test"}], "meeting_id": 1}
