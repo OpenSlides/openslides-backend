@@ -75,7 +75,7 @@ class Lookup:
         or_filters: List[Filter] = []
         if "id" not in mapped_fields:
             mapped_fields.append("id")
-        if type(field) == str:
+        if type(field) is str:
             if field not in mapped_fields:
                 mapped_fields.append(field)
             if name_entries:
@@ -109,9 +109,9 @@ class Lookup:
                 if not values[0].get("id"):
                     values.append(entry)
             else:
-                if type(self.field) == str:
+                if type(self.field) is str:
                     obj = entry[self.field]
-                    if type(obj) == dict and obj.get("id"):
+                    if type(obj) is dict and obj.get("id"):
                         obj["info"] = ImportState.ERROR
                 values.append(entry)
 
@@ -119,8 +119,8 @@ class Lookup:
         if len(values := self.name_to_ids.get(name, [])) == 1:
             if (entry := values[0]).get("id"):
                 if (
-                    type(self.field) == str
-                    and type(obj := entry[self.field]) == dict
+                    type(self.field) is str
+                    and type(obj := entry[self.field]) is dict
                     and obj["info"] == ImportState.ERROR
                 ):
                     return ResultType.NOT_FOUND_ANYMORE
@@ -140,8 +140,8 @@ class Lookup:
         return None
 
     def add_item(self, entry: Dict[str, Any]) -> None:
-        if type(self.field) == str:
-            if type(key := entry[self.field]) == dict:
+        if type(self.field) is str:
+            if type(key := entry[self.field]) is dict:
                 key = key["value"]
             self.name_to_ids[key].append(entry)
             if entry.get("id"):
@@ -160,10 +160,10 @@ class BaseImportJsonUpload(SingularActionMixin):
     ) -> int:
         count = 0
         for col in data:
-            if type(col) == dict:
+            if type(col) is dict:
                 if col.get("info") == ImportState.WARNING:
                     count += 1
-            elif type(col) == list:
+            elif type(col) is list:
                 count += BaseImportJsonUpload.count_warnings_in_payload(col)
         return count
 
@@ -171,9 +171,9 @@ class BaseImportJsonUpload(SingularActionMixin):
     def get_value_from_union_str_object(
         field: Optional[Union[str, Dict[str, Any]]]
     ) -> Optional[str]:
-        if type(field) == dict:
+        if type(field) is dict:
             return field.get("value", "")
-        elif type(field) == str:
+        elif type(field) is str:
             return field
         else:
             return None
@@ -227,7 +227,7 @@ class ImportMixin(BaseImportJsonUpload):
             used_list = fields if fields else entry.keys()
             for field in used_list:
                 if field in entry:
-                    if type(dvalue := entry[field]) == dict:
+                    if type(dvalue := entry[field]) is dict:
                         entry[field] = dvalue["value"]
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
