@@ -165,7 +165,8 @@ class Checker:
                 )
         if type in ("number", "float", "decimal(6)"):
             valid_attributes.append("minimum")
-            self.validate_value_for_type(type, field.get("minimum", 0), collectionfield)
+            if "minimum" in field:
+                self.validate_value_for_type(type, field["minimum"], collectionfield)
         if type in ("string", "text"):
             for attr in ("minLength", "maxLength"):
                 valid_attributes.append(attr)
