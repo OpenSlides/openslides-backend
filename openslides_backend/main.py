@@ -101,7 +101,7 @@ def start_them_all(env: Environment) -> None:  # pragma: no cover
     for process in processes.values():
         process.start()
 
-    def sigterm_handler(signalnum: int, current_stack_frame: Any) -> None:
+    def sigterm_handler(signalnum: int, _: Any) -> None:
         strsignal = signal.strsignal  # type: ignore
         print(
             f"Parent process {os.getpid()} received {strsignal(signalnum)} "

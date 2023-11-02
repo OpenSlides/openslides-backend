@@ -251,6 +251,26 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_update_prevent_zero_vote_weight(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "username_srtgb123",
+                    "default_vote_weight": "1.000000",
+                },
+                "meeting/1": {
+                    "name": "test_meeting_1",
+                    "is_active_in_organization_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "user.update",
+            {"id": 111, "default_vote_weight": "0.000000", "meeting_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("user/111", {"default_vote_weight": "1.000000"})
+
     def test_update_self_vote_delegation(self) -> None:
         self.set_models(
             {
