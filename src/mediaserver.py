@@ -2,7 +2,6 @@ import atexit
 import base64
 import json
 import sys
-from functools import partial
 from signal import SIGINT, SIGTERM, signal
 
 from flask import Flask, Response, jsonify, redirect, request
@@ -135,4 +134,4 @@ def shutdown(database):
 atexit.register(shutdown, database)
 
 for sig in (SIGTERM, SIGINT):
-    signal(sig, partial(sys.exit, 0))
+    signal(sig, lambda *_: sys.exit(0))
