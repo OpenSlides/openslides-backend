@@ -1,4 +1,4 @@
-FROM python:3.10.3-slim-buster
+FROM python:3.11.4-slim-buster
 
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y curl ncat git mime-support gcc libc-dev libpq-dev
