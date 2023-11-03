@@ -216,6 +216,8 @@ class DecimalField(Field):
         schema = self.extend_schema(super().get_schema(), **decimal_schema)
         if not self.required:
             schema["type"] = ["string", "null"]
+        # remove minimum since it is checked in the validate method
+        schema.pop("minimum", None)
         return schema
 
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
