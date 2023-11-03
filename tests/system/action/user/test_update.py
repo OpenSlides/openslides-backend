@@ -251,6 +251,26 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_update_prevent_zero_vote_weight(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "username_srtgb123",
+                    "default_vote_weight": "1.000000",
+                },
+                "meeting/1": {
+                    "name": "test_meeting_1",
+                    "is_active_in_organization_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "user.update",
+            {"id": 111, "default_vote_weight": "0.000000", "meeting_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("user/111", {"default_vote_weight": "1.000000"})
+
     def test_update_self_vote_delegation(self) -> None:
         self.set_models(
             {
@@ -2067,4 +2087,125 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertIn(
             "user 111 is a Single Sign On user and may not set the local default_passwort or the right to change it locally.",
             response.json["message"],
+        )
+
+    def test_group_removal_with_speaker(self) -> None:
+        self.set_models(
+            {
+                "user/1234": {
+                    "username": "username_abcdefgh123",
+                    "meeting_user_ids": [4444, 5555],
+                },
+                "meeting_user/4444": {
+                    "meeting_id": 4,
+                    "user_id": 1234,
+                    "speaker_ids": [14, 24],
+                    "group_ids": [42],
+                },
+                "meeting_user/5555": {
+                    "meeting_id": 5,
+                    "user_id": 1234,
+                    "speaker_ids": [25],
+                    "group_ids": [53],
+                },
+                "meeting/4": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [4444],
+                    "committee_id": 1,
+                },
+                "meeting/5": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [5555],
+                    "committee_id": 1,
+                },
+                "committee/1": {"meeting_ids": [4, 5]},
+                "speaker/14": {"meeting_user_id": 4444, "meeting_id": 4},
+                "speaker/24": {
+                    "meeting_user_id": 4444,
+                    "meeting_id": 4,
+                    "begin_time": 987654321,
+                },
+                "speaker/25": {"meeting_user_id": 5555, "meeting_id": 5},
+                "group/42": {"meeting_id": 4, "meeting_user_ids": [4444]},
+                "group/53": {"meeting_id": 5, "meeting_user_ids": [5555]},
+            }
+        )
+        response = self.request(
+            "user.update", {"id": 1234, "group_ids": [], "meeting_id": 4}
+        )
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1234",
+            {
+                "username": "username_abcdefgh123",
+                "meeting_user_ids": [4444, 5555],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/4444",
+            {"group_ids": [], "speaker_ids": [24], "meta_deleted": False},
+        )
+        self.assert_model_exists(
+            "meeting_user/5555",
+            {"group_ids": [53], "speaker_ids": [25], "meta_deleted": False},
+        )
+        self.assert_model_exists(
+            "speaker/24", {"meeting_user_id": 4444, "meeting_id": 4}
+        )
+        self.assert_model_exists(
+            "speaker/25", {"meeting_user_id": 5555, "meeting_id": 5}
+        )
+        self.assert_model_deleted("speaker/14")
+
+    def test_partial_group_removal_with_speaker(self) -> None:
+        self.set_models(
+            {
+                "user/1234": {
+                    "username": "username_abcdefgh123",
+                    "meeting_user_ids": [4444],
+                },
+                "meeting_user/4444": {
+                    "meeting_id": 4,
+                    "user_id": 1234,
+                    "speaker_ids": [14, 24],
+                    "group_ids": [42, 43],
+                },
+                "meeting/4": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [4444],
+                    "committee_id": 1,
+                },
+                "committee/1": {"meeting_ids": [4]},
+                "speaker/14": {"meeting_user_id": 4444, "meeting_id": 4},
+                "speaker/24": {
+                    "meeting_user_id": 4444,
+                    "meeting_id": 4,
+                    "begin_time": 987654321,
+                },
+                "group/42": {"meeting_id": 4, "meeting_user_ids": [4444]},
+                "group/43": {"meeting_id": 4, "meeting_user_ids": [4444]},
+            }
+        )
+        response = self.request(
+            "user.update", {"id": 1234, "group_ids": [43], "meeting_id": 4}
+        )
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1234",
+            {
+                "username": "username_abcdefgh123",
+                "meeting_user_ids": [4444],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/4444",
+            {"group_ids": [43], "speaker_ids": [14, 24], "meta_deleted": False},
+        )
+        self.assert_model_exists(
+            "speaker/24", {"meeting_user_id": 4444, "meeting_id": 4}
+        )
+        self.assert_model_exists(
+            "speaker/14", {"meeting_user_id": 4444, "meeting_id": 4}
         )

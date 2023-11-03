@@ -17,6 +17,7 @@ ALLOWED_HTML_TAGS_STRICT = {
     "blockquote",
     # text formating
     "strike",
+    "s",
     "del",
     "ins",
     "strong",

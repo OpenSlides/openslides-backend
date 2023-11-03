@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "566944b1e2fa1b4b216537f3acbb3e5f"
+MODELS_YML_CHECKSUM = "832b7041a4dcc2876ea20c34fb5d7cf9"
 
 
 class Organization(Model):
@@ -100,7 +100,7 @@ class User(Model):
     default_number = fields.CharField()
     default_structure_level = fields.CharField()
     default_vote_weight = fields.DecimalField(
-        default="1.000000", constraints={"minimum": 0}
+        default="1.000000", constraints={"minimum": "0.000001"}
     )
     last_email_sent = fields.TimestampField()
     is_demo_user = fields.BooleanField()
@@ -151,15 +151,13 @@ class MeetingUser(Model):
     number = fields.CharField()
     structure_level = fields.CharField()
     about_me = fields.HTMLStrictField()
-    vote_weight = fields.DecimalField(constraints={"minimum": 0})
+    vote_weight = fields.DecimalField(constraints={"minimum": "0.000001"})
     user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
     meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
     personal_note_ids = fields.RelationListField(
         to={"personal_note": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    speaker_ids = fields.RelationListField(
-        to={"speaker": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
-    )
+    speaker_ids = fields.RelationListField(to={"speaker": "meeting_user_id"})
     supported_motion_ids = fields.RelationListField(
         to={"motion": "supporter_meeting_user_ids"}
     )
@@ -1051,7 +1049,7 @@ class Speaker(Model):
         to={"list_of_speakers": "speaker_ids"}, required=True, equal_fields="meeting_id"
     )
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "speaker_ids"}, required=True, equal_fields="meeting_id"
+        to={"meeting_user": "speaker_ids"}, equal_fields="meeting_id"
     )
     point_of_order_category_id = fields.RelationField(
         to={"point_of_order_category": "speaker_ids"}, equal_fields="meeting_id"

@@ -279,7 +279,7 @@ user:
   default_vote_weight:
     type: decimal(6)
     default: "1.000000"
-    minimum: 0
+    minimum: "0.000001"
     restriction_mode: A
   last_email_sent:
     type: timestamp
@@ -385,7 +385,7 @@ meeting_user:
     restriction_mode: A
   vote_weight:
     type: decimal(6)
-    minimum: 0
+    minimum: "0.000001"
     restriction_mode: A
 
   user_id:
@@ -407,7 +407,6 @@ meeting_user:
   speaker_ids:
     type: relation-list
     to: speaker/meeting_user_id
-    on_delete: CASCADE
     restriction_mode: A
   supported_motion_ids:
     type: relation-list
@@ -2118,7 +2117,6 @@ speaker:
   meeting_user_id:
     type: relation
     to: meeting_user/speaker_ids
-    required: true
     equal_fields: meeting_id
     restriction_mode: A
   point_of_order_category_id:
