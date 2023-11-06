@@ -646,7 +646,7 @@ class MotionJsonUpload(BaseActionTestCase):
             },
         }
 
-    def assert_duplicate_numbers(self, number: str) -> Dict[str, Any]:
+    def assert_duplicate_numbers(self, number: str) -> None:
         meeting_id = 42
         self.set_up_models({meeting_id: self.get_base_meeting_setting(223)})
         response = self.request(
@@ -671,10 +671,7 @@ class MotionJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         assert len(response.json["results"][0][0]["rows"]) == 2
-        return response.json["results"][0][0]
-
-    def test_json_upload_duplicate_numbers_create(self) -> None:
-        result = self.assert_duplicate_numbers("NUM04")
+        result = response.json["results"][0][0]
         assert result["state"] == ImportState.ERROR
         for i in [0, 1]:
             assert result["rows"][i]["state"] == ImportState.ERROR
@@ -683,22 +680,15 @@ class MotionJsonUpload(BaseActionTestCase):
                 in result["rows"][i]["messages"]
             )
             assert result["rows"][i]["data"]["number"] == {
-                "value": "NUM04",
+                "value": number,
                 "info": ImportState.ERROR,
             }
 
-    # TODO: This ought to be checking for errors instead
+    def test_json_upload_duplicate_numbers_create(self) -> None:
+        self.assert_duplicate_numbers("NUM04")
+
     def test_json_upload_duplicate_numbers_update(self) -> None:
-        result = self.assert_duplicate_numbers("NUM01")
-        assert result["state"] == ImportState.DONE
-        for i in [0, 1]:
-            assert result["rows"][i]["state"] == ImportState.DONE
-            assert result["rows"][i]["messages"] == []
-            assert result["rows"][i]["data"]["number"] == {
-                "id": 224,
-                "value": "NUM01",
-                "info": ImportState.DONE,
-            }
+        self.assert_duplicate_numbers("NUM01")
 
     def extend_meeting_setting_with_categories(
         self,
@@ -872,10 +862,10 @@ class MotionJsonUpload(BaseActionTestCase):
     ) -> None:
         self.assert_with_categories(request_with_numbers=True, is_set_number=True)
 
-    #TODO Add more category test cases: 
+    # TODO Add more category test cases:
     # prefix not given,
-    # name not given 
-    # not found, 
+    # name not given
+    # not found,
     # found two categories,
     # call one of two categories with the same prefix but different names
     # call one of two categories with the same name but different prefixes
