@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict
 
 from typing_extensions import NotRequired
 
@@ -775,6 +775,56 @@ class MotionJsonUpload(BaseActionTestCase):
             },
         )
 
+    def make_conditional_number_assertions_for_category_test(
+        self,
+        rows: List[Dict[str, Any]],
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+        ids_for_row_indices: Dict[int, Optional[int]] = {},
+        generated_numbers_for_row_indices: Dict[int, Optional[str]] = {},
+    ) -> None:
+        for i in range(len(rows)):
+            if is_update:
+                assert rows[i]["data"].get("number") == {
+                    "id": ids_for_row_indices[i],
+                    "info": ImportState.DONE,
+                    "value": "NUM0" + str(i + 1),
+                }
+            elif request_with_numbers:
+                assert rows[i]["data"].get("number") == {
+                    "info": ImportState.DONE,
+                    "value": "NOM0" + str(i + 1),
+                }
+            elif is_set_number:
+                assert rows[i]["data"].get("number") == {
+                    "info": ImportState.GENERATED,
+                    "value": generated_numbers_for_row_indices[i],
+                }
+            else:
+                assert rows[i]["data"].get("number") is None
+
+    def make_category_request(
+        self,
+        data: List[Dict[str, Any]],
+        meeting_id: int,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+    ) -> Any:
+        if is_update:
+            for i in range(len(data)):
+                data[i]["number"] = "NUM0" + str(i + 1)
+        elif request_with_numbers:
+            for i in range(len(data)):
+                data[i]["number"] = "NOM0" + str(i + 1)
+        return self.request(
+            "motion.json_upload",
+            {
+                "data": data,
+                "meeting_id": meeting_id,
+            },
+        )
+
     def assert_with_categories(
         self,
         is_update: bool = False,
@@ -807,24 +857,14 @@ class MotionJsonUpload(BaseActionTestCase):
                 },
             ),
         )
-        if is_update:
-            for i in range(len(data)):
-                data[i]["number"] = "NUM0" + str(i + 1)
-        elif request_with_numbers:
-            for i in range(len(data)):
-                data[i]["number"] = "NOM0" + str(i + 1)
-        response = self.request(
-            "motion.json_upload",
-            {
-                "data": data,
-                "meeting_id": meeting_id,
-            },
+        response = self.make_category_request(
+            data, meeting_id, is_update, request_with_numbers
         )
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["state"] == ImportState.DONE
         rows = response.json["results"][0][0]["rows"]
         assert len(rows) == 2
-        for i in range(2):
+        for i in range(len(rows)):
             assert (
                 rows[i]["state"] == ImportState.DONE if is_update else ImportState.NEW
             )
@@ -834,24 +874,14 @@ class MotionJsonUpload(BaseActionTestCase):
                 "value": "Another category",
             }
             assert rows[i]["data"]["category_prefix"] == "CAT"
-            if is_update:
-                assert rows[i]["data"].get("number") == {
-                    "id": 224 if i == 0 else 227,
-                    "info": ImportState.DONE,
-                    "value": "NUM0" + str(i + 1),
-                }
-            elif request_with_numbers:
-                assert rows[i]["data"].get("number") == {
-                    "info": ImportState.DONE,
-                    "value": "NOM0" + str(i + 1),
-                }
-            elif is_set_number:
-                assert rows[i]["data"].get("number") == {
-                    "info": ImportState.GENERATED,
-                    "value": "CAT0" + str(i + 1),
-                }
-            else:
-                assert rows[i]["data"].get("number") is None
+        self.make_conditional_number_assertions_for_category_test(
+            rows,
+            is_update,
+            request_with_numbers,
+            is_set_number,
+            {0: 224, 1: 227},
+            {0: "CAT01", 1: "CAT02"},
+        )
 
     def test_json_upload_create_with_categories(self) -> None:
         self.assert_with_categories()
@@ -898,18 +928,9 @@ class MotionJsonUpload(BaseActionTestCase):
                 },
             ),
         )
-        if is_update:
-            data[0]["number"] = "NUM01"
-        elif request_with_numbers:
-            data[0]["number"] = "NOM01"
-        response = self.request(
-            "motion.json_upload",
-            {
-                "data": data,
-                "meeting_id": meeting_id,
-            },
+        return self.make_category_request(
+            data, meeting_id, is_update, request_with_numbers
         )
-        return response
 
     def assert_with_categories_no_prefix(
         self,
@@ -931,24 +952,9 @@ class MotionJsonUpload(BaseActionTestCase):
             "value": "Empty category",
         }
         assert rows[0]["data"].get("category_prefix") is None
-        if is_update:
-            assert rows[0]["data"].get("number") == {
-                "id": 224,
-                "info": ImportState.DONE,
-                "value": "NUM01",
-            }
-        elif request_with_numbers:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.DONE,
-                "value": "NOM01",
-            }
-        elif is_set_number:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.GENERATED,
-                "value": "01",
-            }
-        else:
-            assert rows[0]["data"].get("number") is None
+        self.make_conditional_number_assertions_for_category_test(
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "01"}
+        )
 
     def test_json_upload_create_with_categories_no_prefix(self) -> None:
         self.assert_with_categories_no_prefix()
@@ -992,24 +998,9 @@ class MotionJsonUpload(BaseActionTestCase):
             "value": "General category",
         }
         assert rows[0]["data"].get("category_prefix") is None
-        if is_update:
-            assert rows[0]["data"].get("number") == {
-                "id": 224,
-                "info": ImportState.DONE,
-                "value": "NUM01",
-            }
-        elif request_with_numbers:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.DONE,
-                "value": "NOM01",
-            }
-        elif is_set_number:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.GENERATED,
-                "value": "01",
-            }
-        else:
-            assert rows[0]["data"].get("number") is None
+        self.make_conditional_number_assertions_for_category_test(
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "01"}
+        )
 
     def test_json_upload_create_with_categories_no_prefix_find_correct(self) -> None:
         self.assert_with_categories_no_prefix_find_correct()
@@ -1059,24 +1050,9 @@ class MotionJsonUpload(BaseActionTestCase):
         }
         assert rows[0]["data"].get("category_prefix") is None
         assert "Category could not be found" in rows[0]["messages"]
-        if is_update:
-            assert rows[0]["data"].get("number") == {
-                "id": 224,
-                "info": ImportState.DONE,
-                "value": "NUM01",
-            }
-        elif request_with_numbers:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.DONE,
-                "value": "NOM01",
-            }
-        elif is_set_number:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.GENERATED,
-                "value": "03",
-            }
-        else:
-            assert rows[0]["data"].get("number") is None
+        self.make_conditional_number_assertions_for_category_test(
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "03"}
+        )
 
     def test_json_upload_create_with_categories_no_prefix_with_warning(self) -> None:
         self.assert_with_categories_no_prefix_with_warning()
@@ -1130,16 +1106,8 @@ class MotionJsonUpload(BaseActionTestCase):
                 },
             ),
         )
-        if is_update:
-            data[0]["number"] = "NUM01"
-        elif request_with_numbers:
-            data[0]["number"] = "NOM01"
-        response = self.request(
-            "motion.json_upload",
-            {
-                "data": data,
-                "meeting_id": meeting_id,
-            },
+        response = self.make_category_request(
+            data, meeting_id, is_update, request_with_numbers
         )
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["state"] == ImportState.WARNING
@@ -1152,24 +1120,9 @@ class MotionJsonUpload(BaseActionTestCase):
         }
         assert rows[0]["data"]["category_prefix"] == "COPY"
         assert "Category could not be found" in rows[0]["messages"]
-        if is_update:
-            assert rows[0]["data"].get("number") == {
-                "id": 224,
-                "info": ImportState.DONE,
-                "value": "NUM01",
-            }
-        elif request_with_numbers:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.DONE,
-                "value": "NOM01",
-            }
-        elif is_set_number:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.GENERATED,
-                "value": "03",
-            }
-        else:
-            assert rows[0]["data"].get("number") is None
+        self.make_conditional_number_assertions_for_category_test(
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "03"}
+        )
 
     def test_json_upload_create_with_categories_no_name(self) -> None:
         self.assert_with_categories_no_name()
@@ -1218,16 +1171,8 @@ class MotionJsonUpload(BaseActionTestCase):
                 },
             ),
         )
-        if is_update:
-            data[0]["number"] = "NUM01"
-        elif request_with_numbers:
-            data[0]["number"] = "NOM01"
-        response = self.request(
-            "motion.json_upload",
-            {
-                "data": data,
-                "meeting_id": meeting_id,
-            },
+        response = self.make_category_request(
+            data, meeting_id, is_update, request_with_numbers
         )
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["state"] == ImportState.WARNING
@@ -1240,24 +1185,9 @@ class MotionJsonUpload(BaseActionTestCase):
         }
         assert rows[0]["data"]["category_prefix"] == "UNKNWN"
         assert "Category could not be found" in rows[0]["messages"]
-        if is_update:
-            assert rows[0]["data"].get("number") == {
-                "id": 224,
-                "info": ImportState.DONE,
-                "value": "NUM01",
-            }
-        elif request_with_numbers:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.DONE,
-                "value": "NOM01",
-            }
-        elif is_set_number:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.GENERATED,
-                "value": "03",
-            }
-        else:
-            assert rows[0]["data"].get("number") is None
+        self.make_conditional_number_assertions_for_category_test(
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "03"}
+        )
 
     def test_json_upload_create_with_categories_with_warning(self) -> None:
         self.assert_with_categories_with_warning()
@@ -1310,16 +1240,8 @@ class MotionJsonUpload(BaseActionTestCase):
                 },
             ),
         )
-        if is_update:
-            data[0]["number"] = "NUM01"
-        elif request_with_numbers:
-            data[0]["number"] = "NOM01"
-        response = self.request(
-            "motion.json_upload",
-            {
-                "data": data,
-                "meeting_id": meeting_id,
-            },
+        response = self.make_category_request(
+            data, meeting_id, is_update, request_with_numbers
         )
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["state"] == ImportState.WARNING
@@ -1332,24 +1254,9 @@ class MotionJsonUpload(BaseActionTestCase):
         }
         assert rows[0]["data"]["category_prefix"] == "DUPE"
         assert "Category could not be found" in rows[0]["messages"]
-        if is_update:
-            assert rows[0]["data"].get("number") == {
-                "id": 224,
-                "info": ImportState.DONE,
-                "value": "NUM01",
-            }
-        elif request_with_numbers:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.DONE,
-                "value": "NOM01",
-            }
-        elif is_set_number:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.GENERATED,
-                "value": "03",
-            }
-        else:
-            assert rows[0]["data"].get("number") is None
+        self.make_conditional_number_assertions_for_category_test(
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "03"}
+        )
 
     def test_json_upload_create_with_categories_with_duplicate_categories(self) -> None:
         self.assert_with_categories_with_duplicate_categories()
@@ -1404,16 +1311,8 @@ class MotionJsonUpload(BaseActionTestCase):
                 },
             ),
         )
-        if is_update:
-            data[0]["number"] = "NUM01"
-        elif request_with_numbers:
-            data[0]["number"] = "NOM01"
-        response = self.request(
-            "motion.json_upload",
-            {
-                "data": data,
-                "meeting_id": meeting_id,
-            },
+        response = self.make_category_request(
+            data, meeting_id, is_update, request_with_numbers
         )
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["state"] == ImportState.DONE
@@ -1426,24 +1325,14 @@ class MotionJsonUpload(BaseActionTestCase):
             "value": "Amendment category",
         }
         assert rows[0]["data"]["category_prefix"] == "AMNDMNT"
-        if is_update:
-            assert rows[0]["data"].get("number") == {
-                "id": 224,
-                "info": ImportState.DONE,
-                "value": "NUM01",
-            }
-        elif request_with_numbers:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.DONE,
-                "value": "NOM01",
-            }
-        elif is_set_number:
-            assert rows[0]["data"].get("number") == {
-                "info": ImportState.GENERATED,
-                "value": "AMNDMNT01",
-            }
-        else:
-            assert rows[0]["data"].get("number") is None
+        self.make_conditional_number_assertions_for_category_test(
+            rows,
+            is_update,
+            request_with_numbers,
+            is_set_number,
+            {0: 224},
+            {0: "AMNDMNT01"},
+        )
 
     def test_json_upload_create_with_categories_same_prefix(self) -> None:
         self.assert_with_categories_one_of_two_with_same_prefix()
