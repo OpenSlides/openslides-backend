@@ -124,6 +124,8 @@ class MotionJsonUpload(
     _first_state_id: Optional[int] = None
     _operator_username: Optional[str] = None
 
+    _last_motion_mock_id: Optional[int] = None
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # transform instance into a correct create/update payload
         # try to find a pre-existing motion with the same number
@@ -422,9 +424,7 @@ class MotionJsonUpload(
                 self.row_state == ImportState.WARNING
                 or self.row_state == ImportState.ERROR
             ):
-                # Important for motion number generation
-                # TODO: Replace reserve_id with something that doesn't indefinately close up that id
-                motion_id = self.datastore.reserve_id("motion")
+                motion_id = self._get_motion_mock_id()
                 self.apply_instance(payload, "motion/" + str(motion_id))
 
         for err in errors:
@@ -551,3 +551,12 @@ class MotionJsonUpload(
             entry[fieldname]["info"] = ImportState.ERROR
         self.row_state = ImportState.ERROR
         return entry
+
+    def _get_motion_mock_id(self) -> int:
+        if self._last_motion_mock_id is None:
+            self._last_motion_mock_id = (
+                self.datastore.max("motion", FilterOperator("id", "!=", 0), field="id")
+                or 0
+            )
+        self._last_motion_mock_id += 1
+        return self._last_motion_mock_id

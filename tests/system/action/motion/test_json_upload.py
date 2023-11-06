@@ -757,6 +757,14 @@ class MotionJsonUpload(BaseActionTestCase):
                 (base_category_id + 6): {
                     "name": "General category",
                 },
+                (base_category_id + 7): {
+                    "name": "Duplicate category",
+                    "prefix": "DUPE",
+                },
+                (base_category_id + 8): {
+                    "name": "Duplicate category",
+                    "prefix": "DUPE",
+                },
             },
             {
                 base_motion_id: (base_category_id + 2),
@@ -1277,7 +1285,192 @@ class MotionJsonUpload(BaseActionTestCase):
             request_with_numbers=True, is_set_number=True
         )
 
-    # TODO Add more category test cases:
-    # found two categories,
-    # call one of two categories with the same prefix but different names
-    # call one of two categories with the same name but different prefixes
+    def assert_with_categories_with_duplicate_categories(
+        self,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.set_up_models(
+            {
+                meeting_id: self.get_category_extended_base_meeting_setting(
+                    223, 2223, False, is_set_number
+                )
+            }
+        )
+        data: List[Dict[str, Any]] = list(
+            (
+                {
+                    "title": "test",
+                    "text": "my",
+                    "reason": "stuff",
+                    "category_name": "Duplicate category",
+                    "category_prefix": "DUPE",
+                },
+            ),
+        )
+        if is_update:
+            data[0]["number"] = "NUM01"
+        elif request_with_numbers:
+            data[0]["number"] = "NOM01"
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": data,
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 1
+        assert rows[0]["state"] == ImportState.DONE if is_update else ImportState.NEW
+        assert rows[0]["data"]["category_name"] == {
+            "info": ImportState.WARNING,
+            "value": "Duplicate category",
+        }
+        assert rows[0]["data"]["category_prefix"] == "DUPE"
+        assert "Category could not be found" in rows[0]["messages"]
+        if is_update:
+            assert rows[0]["data"].get("number") == {
+                "id": 224,
+                "info": ImportState.DONE,
+                "value": "NUM01",
+            }
+        elif request_with_numbers:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.DONE,
+                "value": "NOM01",
+            }
+        elif is_set_number:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.GENERATED,
+                "value": "03",
+            }
+        else:
+            assert rows[0]["data"].get("number") is None
+
+    def test_json_upload_create_with_categories_with_duplicate_categories(self) -> None:
+        self.assert_with_categories_with_duplicate_categories()
+
+    def test_json_upload_update_with_categories_with_duplicate_categories(self) -> None:
+        self.assert_with_categories_with_duplicate_categories(True)
+
+    def test_json_upload_create_with_categories_with_numbers_with_duplicate_categories(
+        self,
+    ) -> None:
+        self.assert_with_categories_with_duplicate_categories(request_with_numbers=True)
+
+    def test_json_upload_create_with_categories_with_set_number_with_duplicate_categories(
+        self,
+    ) -> None:
+        self.assert_with_categories_with_duplicate_categories(is_set_number=True)
+
+    def test_json_upload_update_with_categories_with_set_number_with_duplicate_categories(
+        self,
+    ) -> None:
+        self.assert_with_categories_with_duplicate_categories(True, is_set_number=True)
+
+    def test_json_upload_create_with_categories_with_numbers_and_set_number_with_duplicate_categories(
+        self,
+    ) -> None:
+        self.assert_with_categories_with_duplicate_categories(
+            request_with_numbers=True, is_set_number=True
+        )
+
+    def assert_with_categories_one_of_two_with_same_prefix(
+        self,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.set_up_models(
+            {
+                meeting_id: self.get_category_extended_base_meeting_setting(
+                    223, 2223, False, is_set_number
+                )
+            }
+        )
+        data: List[Dict[str, Any]] = list(
+            (
+                {
+                    "title": "test",
+                    "text": "my",
+                    "reason": "stuff",
+                    "category_name": "Amendment category",
+                    "category_prefix": "AMNDMNT",
+                },
+            ),
+        )
+        if is_update:
+            data[0]["number"] = "NUM01"
+        elif request_with_numbers:
+            data[0]["number"] = "NOM01"
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": data,
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 1
+        assert rows[0]["state"] == ImportState.DONE if is_update else ImportState.NEW
+        assert rows[0]["data"]["category_name"] == {
+            "id": 2224,
+            "info": ImportState.DONE,
+            "value": "Amendment category",
+        }
+        assert rows[0]["data"]["category_prefix"] == "AMNDMNT"
+        if is_update:
+            assert rows[0]["data"].get("number") == {
+                "id": 224,
+                "info": ImportState.DONE,
+                "value": "NUM01",
+            }
+        elif request_with_numbers:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.DONE,
+                "value": "NOM01",
+            }
+        elif is_set_number:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.GENERATED,
+                "value": "AMNDMNT01",
+            }
+        else:
+            assert rows[0]["data"].get("number") is None
+
+    def test_json_upload_create_with_categories_same_prefix(self) -> None:
+        self.assert_with_categories_one_of_two_with_same_prefix()
+
+    def test_json_upload_update_with_categories_same_prefix(self) -> None:
+        self.assert_with_categories_one_of_two_with_same_prefix(True)
+
+    def test_json_upload_create_with_categories_with_numbers_same_prefix(self) -> None:
+        self.assert_with_categories_one_of_two_with_same_prefix(
+            request_with_numbers=True
+        )
+
+    def test_json_upload_create_with_categories_with_set_number_same_prefix(
+        self,
+    ) -> None:
+        self.assert_with_categories_one_of_two_with_same_prefix(is_set_number=True)
+
+    def test_json_upload_update_with_categories_with_set_number_same_prefix(
+        self,
+    ) -> None:
+        self.assert_with_categories_one_of_two_with_same_prefix(
+            True, is_set_number=True
+        )
+
+    def test_json_upload_create_with_categories_with_numbers_and_set_number_same_prefix(
+        self,
+    ) -> None:
+        self.assert_with_categories_one_of_two_with_same_prefix(
+            request_with_numbers=True, is_set_number=True
+        )
