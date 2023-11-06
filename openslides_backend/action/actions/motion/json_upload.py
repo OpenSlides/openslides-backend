@@ -117,7 +117,8 @@ class MotionJsonUpload(
     permission = Permissions.Motion.CAN_MANAGE
     row_state: ImportState
     number_lookup: Lookup
-    username_lookup: Lookup
+    submitter_lookup: Lookup
+    supporter_lookup: Lookup
     category_lookup: Lookup
     tags_lookup: Lookup
     block_lookup: Lookup
@@ -134,7 +135,7 @@ class MotionJsonUpload(
 
         data = instance.pop("data")
         data = self.add_payload_index_to_action_data(data)
-        self.setup_lookups(data)
+        self.setup_lookups(data, instance["meeting_id"])
 
         # enrich data with meeting_id
         for entry in data:
@@ -256,16 +257,18 @@ class MotionJsonUpload(
                 verbose_user_mismatch = len(verbose) > len(users)
                 entry_list: list[Dict[str, Any]] = []
                 message_set = set()
+                if field == "submitter":
+                    lookup = self.submitter_lookup
+                else:
+                    lookup = self.supporter_lookup
                 for user in users:
                     if isinstance(user, str):
                         if verbose_user_mismatch:
                             entry_list.append(
                                 {"value": user, "info": ImportState.ERROR}
                             )
-                        check_result = self.username_lookup.check_duplicate(user)
-                        user_id = cast(
-                            int, self.username_lookup.get_field_by_name(user, "id")
-                        )
+                        check_result = lookup.check_duplicate(user)
+                        user_id = cast(int, lookup.get_field_by_name(user, "id"))
                         if check_result == ResultType.FOUND_ID and user_id != 0:
                             entry_list.append(
                                 {
@@ -433,13 +436,14 @@ class MotionJsonUpload(
 
         return {"state": self.row_state, "messages": messages, "data": entry}
 
-    def setup_lookups(self, data: Iterable[Dict[str, Any]]) -> None:
+    def setup_lookups(self, data: Iterable[Dict[str, Any]], meeting_id: int) -> None:
         self.number_lookup = Lookup(
             self.datastore,
             "motion",
             [(number, entry) for entry in data if (number := entry.get("number"))],
             field="number",
             mapped_fields=[],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
         self.block_lookup = Lookup(
             self.datastore,
@@ -447,6 +451,7 @@ class MotionJsonUpload(
             [(title, entry) for entry in data if (title := entry.get("block"))],
             field="title",
             mapped_fields=[],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
         self.category_lookup = Lookup(
             self.datastore,
@@ -455,22 +460,31 @@ class MotionJsonUpload(
             field="category_name",
             collection_field="name",
             mapped_fields=["prefix"],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
-        self.username_lookup = Lookup(
+        self.submitter_lookup = Lookup(
             self.datastore,
             "user",
             [
                 (username, entry)
                 for entry in data
-                for username in set(
-                    [
-                        *self._get_field_array(entry, "submitters_username"),
-                        *self._get_field_array(entry, "supporters_username"),
-                    ]
-                )
+                for username in self._get_field_array(entry, "submitters_username")
             ],
             field="username",
             mapped_fields=[],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+        )
+        self.supporter_lookup = Lookup(
+            self.datastore,
+            "user",
+            [
+                (username, entry)
+                for entry in data
+                for username in self._get_field_array(entry, "supporters_username")
+            ],
+            field="username",
+            mapped_fields=[],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
         self.tags_lookup = Lookup(
             self.datastore,
@@ -482,6 +496,7 @@ class MotionJsonUpload(
             ],
             field="name",
             mapped_fields=[],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
 
     def _get_self_username_object(self) -> Dict[str, Any]:

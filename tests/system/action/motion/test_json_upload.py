@@ -5,21 +5,38 @@ from typing_extensions import NotRequired
 from openslides_backend.action.mixins.import_mixins import ImportState
 from tests.system.action.base import BaseActionTestCase
 
+SetupUserSetting = TypedDict(
+    "SetupUserSetting",
+    {
+        "username": str,
+        "meeting_ids": NotRequired[List[int]],
+        "submitted_motion_ids": NotRequired[List[int]],
+        "supported_motion_ids": NotRequired[List[int]],
+    },
+)
+
+SetupCommonMotionSetting = TypedDict(
+    "SetupCommonMotionSetting",
+    {
+        "has_number": bool,
+        "category_id": int,
+    },
+    total=False,
+)
+
 SetupAmendmentSetting = TypedDict(
     "SetupAmendmentSetting",
     {
+        "base": SetupCommonMotionSetting,
         "fields": List[str],
-        "has_number": NotRequired[bool],
-        "category_id": NotRequired[int],
     },
 )
 
 SetupMotionSetting = TypedDict(
     "SetupMotionSetting",
     {
+        "base": SetupCommonMotionSetting,
         "amendments": NotRequired[Dict[int, SetupAmendmentSetting]],
-        "has_number": NotRequired[bool],
-        "category_id": NotRequired[int],
     },
 )
 
@@ -54,7 +71,11 @@ class MotionJsonUpload(BaseActionTestCase):
                 data[field] = prototype[field]
         return data
 
-    def set_up_models(self, meetings: Dict[int, SetupMeetingSetting]) -> None:
+    def set_up_models(
+        self,
+        meetings: Dict[int, SetupMeetingSetting],
+        users: Optional[List[SetupUserSetting]] = None,
+    ) -> None:
         model_data: Dict[str, Any] = {}
         next_ids = {"workflow": 1, "state": 1}
         meeting_prototype = {
@@ -88,7 +109,19 @@ class MotionJsonUpload(BaseActionTestCase):
                     model_data, meeting_id, meeting_data, motion_settings
                 )
             model_data["meeting/" + str(meeting_id)] = meeting_data
+        if users:
+            for idx, user_setting in enumerate(users):
+                self.set_up_user(idx + 2, user_setting, model_data)
         self.set_models(model_data)
+
+    def set_up_user(
+        self,
+        user_id: int,
+        setting: SetupUserSetting,
+        model_data: Dict[str, Dict[str, Any]],
+    ) -> None:
+        # TODO: implement
+        pass
 
     def set_up_categories(
         self,
@@ -132,15 +165,15 @@ class MotionJsonUpload(BaseActionTestCase):
                 "text": "<p>Text</p>",
                 "meeting_id": meeting_id,
             }
-            if motion_setting.get("has_number"):
+            if motion_setting["base"].get("has_number"):
                 motion_data = {
                     **motion_data,
                     "number": "NUM0" + str(motion_number_value),
                     "number_value": motion_number_value,
                 }
                 motion_number_value += 1
-            if motion_setting.get("category_id"):
-                category_id = motion_setting["category_id"]
+            if motion_setting["base"].get("category_id"):
+                category_id = motion_setting["base"]["category_id"]
                 motion_data["category_id"] = category_id
                 model_data["motion_category/" + str(category_id)]["motion_ids"].append(
                     motion_id
@@ -158,15 +191,15 @@ class MotionJsonUpload(BaseActionTestCase):
                         "meeting_id": meeting_id,
                         "lead_motion_id": motion_id,
                     }
-                    if amendment_setting.get("has_number"):
+                    if amendment_setting["base"].get("has_number"):
                         amendment_data = {
                             **amendment_data,
                             "number": "AMNDMNT" + str(amendment_number_value),
                             "number_value": amendment_number_value,
                         }
                         amendment_number_value += 1
-                    if amendment_setting.get("category_id"):
-                        category_id = amendment_setting["category_id"]
+                    if amendment_setting["base"].get("category_id"):
+                        category_id = amendment_setting["base"]["category_id"]
                         amendment_data["category_id"] = category_id
                         model_data["motion_category/" + str(category_id)][
                             "motion_ids"
@@ -224,19 +257,22 @@ class MotionJsonUpload(BaseActionTestCase):
                 "motions_number_min_digits",
             ],
             "motions": {
-                base_motion_id: {},
+                base_motion_id: {"base": {}},
                 (base_motion_id + 1): {
-                    "has_number": True,
+                    "base": {"has_number": True},
                     "amendments": {
                         (base_motion_id + 2): {
                             "fields": ["amendment_paragraphs"],
-                            "has_number": True,
+                            "base": {"has_number": True},
                         },
-                        (base_motion_id + 3): {"fields": ["text"], "has_number": True},
+                        (base_motion_id + 3): {
+                            "fields": ["text"],
+                            "base": {"has_number": True},
+                        },
                     },
                 },
                 (base_motion_id + 4): {
-                    "has_number": True,
+                    "base": {"has_number": True},
                 },
             },
         }
@@ -717,7 +753,7 @@ class MotionJsonUpload(BaseActionTestCase):
         motion_to_category_ids: Dict[int, int],
     ) -> None:
         if motion_to_category_ids.get(motion_id):
-            motion["category_id"] = motion_to_category_ids[motion_id]
+            motion["base"]["category_id"] = motion_to_category_ids[motion_id]
 
     def get_category_extended_base_meeting_setting(
         self,
@@ -1363,3 +1399,30 @@ class MotionJsonUpload(BaseActionTestCase):
         self.assert_with_categories_one_of_two_with_same_prefix(
             request_with_numbers=True, is_set_number=True
         )
+
+    def test_json_upload_with_similar_category_in_different_meeting(self) -> None:
+        self.set_up_models(
+            {
+                42: self.get_category_extended_base_meeting_setting(223, 2223),
+                43: self.get_category_extended_base_meeting_setting(334, 3334),
+            }
+        )
+        data: List[Dict[str, Any]] = list(
+            (
+                {
+                    "title": "test",
+                    "text": "my",
+                    "reason": "stuff",
+                    "category_name": "Amendment category",
+                    "category_prefix": "AMNDMNT",
+                },
+            ),
+        )
+        response = self.make_category_request(data, 42, False, False)
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert response.json["results"][0][0]["rows"][0]["data"]["category_name"] == {
+            "id": 2224,
+            "info": ImportState.DONE,
+            "value": "Amendment category",
+        }
