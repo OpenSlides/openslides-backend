@@ -61,12 +61,14 @@ class Lookup:
         field: SearchFieldType = "name",
         mapped_fields: Optional[List[str]] = None,
         global_and_filter: Optional[Filter] = None,
+        collection_field: Optional[SearchFieldType] = None,
     ) -> None:
         if mapped_fields is None:
             mapped_fields = []
         self.datastore = datastore
         self.collection = collection
         self.field = field
+        self.collection_field = collection_field or self.field
         self.name_to_ids: Dict[SearchFieldType, List[Dict[str, Any]]] = defaultdict(
             list
         )
@@ -79,18 +81,26 @@ class Lookup:
         or_filters: List[Filter] = []
         if "id" not in mapped_fields:
             mapped_fields.append("id")
-        if type(field) is str:
-            if field not in mapped_fields:
-                mapped_fields.append(field)
+        if type(self.collection_field) is str:
+            if self.collection_field not in mapped_fields:
+                mapped_fields.append(self.collection_field)
             if name_entries:
                 or_filters = [
-                    FilterOperator(field, "=", name) for name, _ in name_entries
+                    FilterOperator(self.collection_field, "=", name)
+                    for name, _ in name_entries
                 ]
         else:
-            mapped_fields.extend((f for f in field if f not in mapped_fields))
+            mapped_fields.extend(
+                (f for f in self.collection_field if f not in mapped_fields)
+            )
             if name_entries:
                 or_filters = [
-                    And(*[FilterOperator(field[i], "=", name_tpl[i]) for i in range(3)])
+                    And(
+                        *[
+                            FilterOperator(self.collection_field[i], "=", name_tpl[i])
+                            for i in range(3)
+                        ]
+                    )
                     for name_tpl, _ in name_entries
                 ]
         if or_filters:
@@ -144,8 +154,8 @@ class Lookup:
         return None
 
     def add_item(self, entry: Dict[str, Any]) -> None:
-        if type(self.field) is str:
-            if type(key := entry[self.field]) is dict:
+        if type(self.collection_field) is str:
+            if type(key := entry[self.collection_field]) is dict:
                 key = key["value"]
         else:
             key = tuple(entry.get(f, "") for f in self.field)

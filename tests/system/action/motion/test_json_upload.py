@@ -754,6 +754,9 @@ class MotionJsonUpload(BaseActionTestCase):
                     "name": "Another category",
                     "prefix": "CAT",
                 },
+                (base_category_id + 6): {
+                    "name": "General category",
+                },
             },
             {
                 base_motion_id: (base_category_id + 2),
@@ -862,10 +865,419 @@ class MotionJsonUpload(BaseActionTestCase):
     ) -> None:
         self.assert_with_categories(request_with_numbers=True, is_set_number=True)
 
+    def get_response_for_categories_no_prefix(
+        self,
+        name: str,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+    ) -> Any:
+        meeting_id = 42
+        self.set_up_models(
+            {
+                meeting_id: self.get_category_extended_base_meeting_setting(
+                    223, 2223, False, is_set_number
+                )
+            }
+        )
+        data: List[Dict[str, Any]] = list(
+            (
+                {
+                    "title": "New title",
+                    "text": "New text",
+                    "reason": "New reason",
+                    "category_name": name,
+                },
+            ),
+        )
+        if is_update:
+            data[0]["number"] = "NUM01"
+        elif request_with_numbers:
+            data[0]["number"] = "NOM01"
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": data,
+                "meeting_id": meeting_id,
+            },
+        )
+        return response
+
+    def assert_with_categories_no_prefix(
+        self,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        response = self.get_response_for_categories_no_prefix(
+            "Empty category", is_update, request_with_numbers, is_set_number
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 1
+        assert rows[0]["state"] == ImportState.DONE if is_update else ImportState.NEW
+        assert rows[0]["data"]["category_name"] == {
+            "id": 2225,
+            "info": "done",
+            "value": "Empty category",
+        }
+        assert rows[0]["data"].get("category_prefix") is None
+        if is_update:
+            assert rows[0]["data"].get("number") == {
+                "id": 224,
+                "info": ImportState.DONE,
+                "value": "NUM01",
+            }
+        elif request_with_numbers:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.DONE,
+                "value": "NOM01",
+            }
+        elif is_set_number:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.GENERATED,
+                "value": "01",
+            }
+        else:
+            assert rows[0]["data"].get("number") is None
+
+    def test_json_upload_create_with_categories_no_prefix(self) -> None:
+        self.assert_with_categories_no_prefix()
+
+    def test_json_upload_update_with_categories_no_prefix(self) -> None:
+        self.assert_with_categories_no_prefix(True)
+
+    def test_json_upload_create_with_categories_with_numbers_no_prefix(self) -> None:
+        self.assert_with_categories_no_prefix(request_with_numbers=True)
+
+    def test_json_upload_create_with_categories_with_set_number_no_prefix(self) -> None:
+        self.assert_with_categories_no_prefix(is_set_number=True)
+
+    def test_json_upload_update_with_categories_with_set_number_no_prefix(self) -> None:
+        self.assert_with_categories_no_prefix(True, is_set_number=True)
+
+    def test_json_upload_create_with_categories_with_numbers_and_set_number_no_prefix(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_prefix(
+            request_with_numbers=True, is_set_number=True
+        )
+
+    def assert_with_categories_no_prefix_find_correct(
+        self,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        response = self.get_response_for_categories_no_prefix(
+            "General category", is_update, request_with_numbers, is_set_number
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 1
+        assert rows[0]["state"] == ImportState.DONE if is_update else ImportState.NEW
+        assert rows[0]["data"]["category_name"] == {
+            "id": 2229,
+            "info": "done",
+            "value": "General category",
+        }
+        assert rows[0]["data"].get("category_prefix") is None
+        if is_update:
+            assert rows[0]["data"].get("number") == {
+                "id": 224,
+                "info": ImportState.DONE,
+                "value": "NUM01",
+            }
+        elif request_with_numbers:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.DONE,
+                "value": "NOM01",
+            }
+        elif is_set_number:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.GENERATED,
+                "value": "01",
+            }
+        else:
+            assert rows[0]["data"].get("number") is None
+
+    def test_json_upload_create_with_categories_no_prefix_find_correct(self) -> None:
+        self.assert_with_categories_no_prefix_find_correct()
+
+    def test_json_upload_update_with_categories_no_prefix_find_correct(self) -> None:
+        self.assert_with_categories_no_prefix_find_correct(True)
+
+    def test_json_upload_create_with_categories_with_numbers_no_prefix_find_correct(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_prefix_find_correct(request_with_numbers=True)
+
+    def test_json_upload_create_with_categories_with_set_number_no_prefix_find_correct(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_prefix_find_correct(is_set_number=True)
+
+    def test_json_upload_update_with_categories_with_set_number_no_prefix_find_correct(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_prefix_find_correct(True, is_set_number=True)
+
+    def test_json_upload_create_with_categories_with_numbers_and_set_number_no_prefix_find_correct(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_prefix_find_correct(
+            request_with_numbers=True, is_set_number=True
+        )
+
+    def assert_with_categories_no_prefix_with_warning(
+        self,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        response = self.get_response_for_categories_no_prefix(
+            "Another category", is_update, request_with_numbers, is_set_number
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 1
+        assert rows[0]["state"] == ImportState.DONE if is_update else ImportState.NEW
+        assert rows[0]["data"]["category_name"] == {
+            "info": ImportState.WARNING,
+            "value": "Another category",
+        }
+        assert rows[0]["data"].get("category_prefix") is None
+        assert "Category could not be found" in rows[0]["messages"]
+        if is_update:
+            assert rows[0]["data"].get("number") == {
+                "id": 224,
+                "info": ImportState.DONE,
+                "value": "NUM01",
+            }
+        elif request_with_numbers:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.DONE,
+                "value": "NOM01",
+            }
+        elif is_set_number:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.GENERATED,
+                "value": "03",
+            }
+        else:
+            assert rows[0]["data"].get("number") is None
+
+    def test_json_upload_create_with_categories_no_prefix_with_warning(self) -> None:
+        self.assert_with_categories_no_prefix_with_warning()
+
+    def test_json_upload_update_with_categories_no_prefix_with_warning(self) -> None:
+        self.assert_with_categories_no_prefix_with_warning(True)
+
+    def test_json_upload_create_with_categories_with_numbers_no_prefix_with_warning(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_prefix_with_warning(request_with_numbers=True)
+
+    def test_json_upload_create_with_categories_with_set_number_no_prefix_with_warning(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_prefix_with_warning(is_set_number=True)
+
+    def test_json_upload_update_with_categories_with_set_number_no_prefix_with_warning(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_prefix_with_warning(True, is_set_number=True)
+
+    def test_json_upload_create_with_categories_with_numbers_and_set_number_no_prefix_with_warning(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_prefix_with_warning(
+            request_with_numbers=True, is_set_number=True
+        )
+
+    def assert_with_categories_no_name(
+        self,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.set_up_models(
+            {
+                meeting_id: self.get_category_extended_base_meeting_setting(
+                    223, 2223, False, is_set_number
+                )
+            }
+        )
+        data: List[Dict[str, Any]] = list(
+            (
+                {
+                    "title": "test",
+                    "text": "my",
+                    "reason": "stuff",
+                    "category_prefix": "COPY",
+                },
+            ),
+        )
+        if is_update:
+            data[0]["number"] = "NUM01"
+        elif request_with_numbers:
+            data[0]["number"] = "NOM01"
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": data,
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 1
+        assert rows[0]["state"] == ImportState.DONE if is_update else ImportState.NEW
+        assert rows[0]["data"]["category_name"] == {
+            "info": ImportState.WARNING,
+            "value": "",
+        }
+        assert rows[0]["data"]["category_prefix"] == "COPY"
+        assert "Category could not be found" in rows[0]["messages"]
+        if is_update:
+            assert rows[0]["data"].get("number") == {
+                "id": 224,
+                "info": ImportState.DONE,
+                "value": "NUM01",
+            }
+        elif request_with_numbers:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.DONE,
+                "value": "NOM01",
+            }
+        elif is_set_number:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.GENERATED,
+                "value": "03",
+            }
+        else:
+            assert rows[0]["data"].get("number") is None
+
+    def test_json_upload_create_with_categories_no_name(self) -> None:
+        self.assert_with_categories_no_name()
+
+    def test_json_upload_update_with_categories_no_name(self) -> None:
+        self.assert_with_categories_no_name(True)
+
+    def test_json_upload_create_with_categories_with_numbers_no_name(self) -> None:
+        self.assert_with_categories_no_name(request_with_numbers=True)
+
+    def test_json_upload_create_with_categories_with_set_number_no_name(self) -> None:
+        self.assert_with_categories_no_name(is_set_number=True)
+
+    def test_json_upload_update_with_categories_with_set_number_no_name(self) -> None:
+        self.assert_with_categories_no_name(True, is_set_number=True)
+
+    def test_json_upload_create_with_categories_with_numbers_and_set_number_no_name(
+        self,
+    ) -> None:
+        self.assert_with_categories_no_name(
+            request_with_numbers=True, is_set_number=True
+        )
+
+    def assert_with_categories_with_warning(
+        self,
+        is_update: bool = False,
+        request_with_numbers: bool = False,
+        is_set_number: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.set_up_models(
+            {
+                meeting_id: self.get_category_extended_base_meeting_setting(
+                    223, 2223, False, is_set_number
+                )
+            }
+        )
+        data: List[Dict[str, Any]] = list(
+            (
+                {
+                    "title": "test",
+                    "text": "my",
+                    "reason": "stuff",
+                    "category_name": "Unknown category",
+                    "category_prefix": "UNKNWN",
+                },
+            ),
+        )
+        if is_update:
+            data[0]["number"] = "NUM01"
+        elif request_with_numbers:
+            data[0]["number"] = "NOM01"
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": data,
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 1
+        assert rows[0]["state"] == ImportState.DONE if is_update else ImportState.NEW
+        assert rows[0]["data"]["category_name"] == {
+            "info": ImportState.WARNING,
+            "value": "Unknown category",
+        }
+        assert rows[0]["data"]["category_prefix"] == "UNKNWN"
+        assert "Category could not be found" in rows[0]["messages"]
+        if is_update:
+            assert rows[0]["data"].get("number") == {
+                "id": 224,
+                "info": ImportState.DONE,
+                "value": "NUM01",
+            }
+        elif request_with_numbers:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.DONE,
+                "value": "NOM01",
+            }
+        elif is_set_number:
+            assert rows[0]["data"].get("number") == {
+                "info": ImportState.GENERATED,
+                "value": "03",
+            }
+        else:
+            assert rows[0]["data"].get("number") is None
+
+    def test_json_upload_create_with_categories_with_warning(self) -> None:
+        self.assert_with_categories_with_warning()
+
+    def test_json_upload_update_with_categories_with_warning(self) -> None:
+        self.assert_with_categories_with_warning(True)
+
+    def test_json_upload_create_with_categories_with_numbers_with_warning(self) -> None:
+        self.assert_with_categories_with_warning(request_with_numbers=True)
+
+    def test_json_upload_create_with_categories_with_set_number_with_warning(
+        self,
+    ) -> None:
+        self.assert_with_categories_with_warning(is_set_number=True)
+
+    def test_json_upload_update_with_categories_with_set_number_with_warning(
+        self,
+    ) -> None:
+        self.assert_with_categories_with_warning(True, is_set_number=True)
+
+    def test_json_upload_create_with_categories_with_numbers_and_set_number_with_warning(
+        self,
+    ) -> None:
+        self.assert_with_categories_with_warning(
+            request_with_numbers=True, is_set_number=True
+        )
+
     # TODO Add more category test cases:
-    # prefix not given,
-    # name not given
-    # not found,
     # found two categories,
     # call one of two categories with the same prefix but different names
     # call one of two categories with the same name but different prefixes

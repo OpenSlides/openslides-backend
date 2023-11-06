@@ -179,15 +179,13 @@ class MotionJsonUpload(
             messages.append("Amendments cannot be correctly imported")
 
         if (category_name := entry.get("category_name")) and type(category_name) == str:
+            category_prefix = entry.get("category_prefix")
             categories = self.category_lookup.name_to_ids[category_name]
-            if (category_prefix := entry.get("category_prefix")) and type(
-                category_prefix
-            ) == str:
-                categories = [
-                    category
-                    for category in categories
-                    if category.get("prefix") == category_prefix and category.get("id")
-                ]
+            categories = [
+                category
+                for category in categories
+                if category.get("prefix") == category_prefix and category.get("id")
+            ]
             if len(categories) == 1:
                 entry["category_name"] = {
                     "value": category_name,
@@ -454,7 +452,8 @@ class MotionJsonUpload(
             self.datastore,
             "motion_category",
             [(name, entry) for entry in data if (name := entry.get("category_name"))],
-            field="name",
+            field="category_name",
+            collection_field="name",
             mapped_fields=["prefix"],
         )
         self.username_lookup = Lookup(
