@@ -471,8 +471,7 @@ class MotionJsonUpload(
                 for username in self._get_field_array(entry, "submitters_username")
             ],
             field="username",
-            mapped_fields=[],
-            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+            mapped_fields=["meeting_user_ids"],
         )
         self.supporter_lookup = Lookup(
             self.datastore,
@@ -483,8 +482,7 @@ class MotionJsonUpload(
                 for username in self._get_field_array(entry, "supporters_username")
             ],
             field="username",
-            mapped_fields=[],
-            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+            mapped_fields=["meeting_user_ids"],
         )
         self.tags_lookup = Lookup(
             self.datastore,
