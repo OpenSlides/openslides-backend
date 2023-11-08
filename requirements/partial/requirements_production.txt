@@ -7,7 +7,7 @@ lxml==4.9.3
 pypdf[crypto]==3.12.2
 requests==2.31.0
 roman==4.1
-simplejson==3.19.1
+simplejson==3.19.2
 Werkzeug==2.3.6
 
 # authlib
