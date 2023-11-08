@@ -92,6 +92,11 @@ class MotionJsonUpload(BaseActionTestCase):
                     meeting_prototype, setting["fields"]
                 ),
                 "name": "test meeting" + str(meeting_id),
+                "group_ids": meeting_id * 10,
+            }
+            model_data["group/" + str(meeting_id * 10)] = {
+                "meeting_id": meeting_id,
+                "name": "test",
             }
             self.set_up_workflow(
                 model_data,
@@ -120,8 +125,53 @@ class MotionJsonUpload(BaseActionTestCase):
         setting: SetupUserSetting,
         model_data: Dict[str, Dict[str, Any]],
     ) -> None:
-        # TODO: implement
-        pass
+        user_data: Dict[str, Any] = {"username": setting["username"]}
+        meeting_ids = setting.get("meeting_ids", [])
+        for meeting_id in meeting_ids:
+            if meeting := model_data.get("meeting/" + str(meeting_id)):
+                user_data["meeting_user_ids"] = [
+                    *user_data.get("meeting_user_ids", []),
+                    user_id * 10,
+                ]
+                meeting_user_data: Dict[str, Any] = {
+                    "user_id": user_id,
+                    "meeting_id": meeting_id,
+                    "group_ids": meeting_id * 10,
+                }
+                meeting["meeting_user_ids"] = [
+                    *meeting.get("meeting_user_ids", []),
+                    user_id * 10,
+                ]
+                model_data["group/" + str(meeting_id * 10)][
+                    "meeting_user_ids"
+                ] = meeting["meeting_user_ids"]
+                motion_submitter_ids = []
+                supported_motion_ids = []
+                for motion_id in meeting.get("motion_ids", []):
+                    motion = model_data["motion/" + str(motion_id)]
+                    if motion_id in setting.get("submitted_motion_ids", []):
+                        motion["submitter_ids"] = [
+                            *motion.get("submitter_ids", []),
+                            user_id * 100,
+                        ]
+                        model_data["motion_submitter/" + str(user_id * 100)] = {
+                            "motion_id": motion_id,
+                            "meeting_id": meeting_id,
+                            "meeting_user_id": user_id * 10,
+                        }
+                        motion_submitter_ids.append(user_id * 100)
+                    if motion_id in setting.get("supported_motion_ids", []):
+                        supported_motion_ids.append(motion_id)
+                        motion["supporter_meeting_user_ids"] = [
+                            *motion.get("supporter_meeting_user_ids", []),
+                            user_id * 10,
+                        ]
+                if len(supported_motion_ids):
+                    meeting_user_data["supported_motion_ids"] = supported_motion_ids
+                if len(motion_submitter_ids):
+                    meeting_user_data["motion_submitter_ids"] = motion_submitter_ids
+                model_data["meeting_user/" + str(user_id * 10)] = meeting_user_data
+        model_data["user/" + str(user_id)] = user_data
 
     def set_up_categories(
         self,
