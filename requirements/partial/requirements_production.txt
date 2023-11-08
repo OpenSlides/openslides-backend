@@ -16,6 +16,6 @@ git+https://github.com/OpenSlides/openslides-auth-service.git@38120960193a6c7c63
 # opentelemetry
 opentelemetry-api==1.19.0
 opentelemetry-sdk==1.19.0
-opentelemetry-exporter-otlp==1.19.0
+opentelemetry-exporter-otlp==1.21.0
 opentelemetry-instrumentation-flask==0.40b0
 opentelemetry-instrumentation-requests==0.40b0
