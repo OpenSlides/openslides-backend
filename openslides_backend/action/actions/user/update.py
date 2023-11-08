@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -9,6 +9,7 @@ from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixin import (
     LimitOfUserMixin,
@@ -25,6 +26,7 @@ class UserUpdate(
     UpdateAction,
     LimitOfUserMixin,
     UpdateHistoryMixin,
+    ConditionalSpeakerCascadeMixin,
 ):
     """
     Action to update a user.
@@ -67,6 +69,7 @@ class UserUpdate(
                 "is_active",
                 "organization_management_level",
                 "saml_id",
+                "password",
             ],
         )
         if user.get("saml_id") and (
@@ -75,6 +78,10 @@ class UserUpdate(
             raise ActionException(
                 f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
             )
+        if instance.get("saml_id") and user.get("password"):
+            instance["can_change_own_password"] = False
+            instance["default_password"] = ""
+            instance["password"] = ""
 
         if (
             instance["id"] == self.user_id
@@ -98,3 +105,8 @@ class UserUpdate(
 
         check_gender_helper(self.datastore, instance)
         return instance
+
+    def get_removed_meeting_id(self, instance: Dict[str, Any]) -> Optional[int]:
+        if instance.get("group_ids") == []:
+            return instance.get("meeting_id")
+        return None

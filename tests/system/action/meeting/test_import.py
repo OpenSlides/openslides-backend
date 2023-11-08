@@ -1486,6 +1486,23 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("action_worker/1")
 
+    def test_dont_import_import_preview(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "import_preview": {
+                    "1": {
+                        "id": 1,
+                        "name": "testcase",
+                        "state": "done",
+                        "created": round(time.time() - 3),
+                    }
+                }
+            }
+        )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("import_preview/1")
+
     def test_bad_format_invalid_id_key(self) -> None:
         request_data = self.create_request_data({"tag": {"1": {"id": 2}}})
         response = self.request("meeting.import", request_data)

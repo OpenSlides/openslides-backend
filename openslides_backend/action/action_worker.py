@@ -18,8 +18,6 @@ from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
 from .util.typing import ActionsResponse, Payload
 
-THREAD_WATCH_TIMEOUT = 1.0
-
 
 def handle_action_in_worker_thread(
     payload: Payload,
@@ -51,7 +49,9 @@ def handle_action_in_worker_thread(
     action_worker_thread.start()
     while not action_worker_thread.started:
         sleep(0.001)  # The action_worker_thread should gain the lock and NOT this one
-    if lock.acquire(timeout=THREAD_WATCH_TIMEOUT):
+
+    timeout = float(handler.env.OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT)
+    if lock.acquire(timeout=timeout):
         lock.release()
         if hasattr(action_worker_thread, "exception"):
             raise action_worker_thread.exception
@@ -106,7 +106,7 @@ class ActionWorkerWriting(object):
                 self.new_id = self.datastore.reserve_id(collection="action_worker")
                 self.fqid = fqid_from_collection_and_id("action_worker", self.new_id)
             try:
-                self.datastore.write_action_worker(
+                self.datastore.write_without_events(
                     WriteRequest(
                         events=[
                             Event(
@@ -138,7 +138,7 @@ class ActionWorkerWriting(object):
     def continue_action_worker_write(self) -> None:
         current_time = round(time())
         with self.datastore.get_database_context():
-            self.datastore.write_action_worker(
+            self.datastore.write_without_events(
                 WriteRequest(
                     events=[
                         Event(
@@ -190,7 +190,7 @@ class ActionWorkerWriting(object):
                     f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {message}"
                 )
 
-            self.datastore.write_action_worker(
+            self.datastore.write_without_events(
                 WriteRequest(
                     events=[
                         Event(
