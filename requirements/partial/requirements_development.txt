@@ -1,4 +1,4 @@
-aiosmtpd==1.4.4
+aiosmtpd==1.4.4.post2
 autoflake==2.2.0
 black==23.7.0
 debugpy==1.6.7
