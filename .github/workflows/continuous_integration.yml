@@ -51,6 +51,15 @@ jobs:
     - name: Run tests
       run: dev/run-tests.sh
 
+  test-local-setup:
+    name: Build and test local dev setup
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run local setup
+      run: dev/run-local.sh
+
   check-coding-style:
     name: Check coding style
     runs-on: ubuntu-latest
