@@ -14,8 +14,8 @@ Werkzeug==3.0.1
 git+https://github.com/OpenSlides/openslides-auth-service.git@38120960193a6c7c637ecc91a4b4dff51e7df90c#egg=authlib&subdirectory=auth/libraries/pip-auth
 
 # opentelemetry
-opentelemetry-api==1.19.0
-opentelemetry-sdk==1.19.0
-opentelemetry-exporter-otlp==1.19.0
-opentelemetry-instrumentation-flask==0.40b0
-opentelemetry-instrumentation-requests==0.40b0
+opentelemetry-api==1.21.0
+opentelemetry-sdk==1.21.0
+opentelemetry-exporter-otlp==1.21.0
+opentelemetry-instrumentation-flask==0.42b0
+opentelemetry-instrumentation-requests==0.42b0
