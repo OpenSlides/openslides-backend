@@ -76,7 +76,8 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
         data = self.add_payload_index_to_action_data(data)
-        self.setup_lookups(data, instance.get("meeting_id"))
+        self.setup_lookups(data, self.meeting_id)
+        self.distribute_found_value_to_data(data)
         self.create_usernames(data)
 
         self.rows = [self.validate_entry(entry) for entry in data]
@@ -370,3 +371,28 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
         ):
             for id, values in lookup.id_to_name.items():
                 self.all_id_mapping[id].extend(values)
+
+    def distribute_found_value_to_data(self, data: List[Dict[str, Any]]) -> None:
+        for entry in data:
+            if "username" in entry:
+                continue
+            if "saml_id" in entry:
+                lookup_result = self.saml_id_lookup.name_to_ids[entry["saml_id"]][0]
+            else:
+                key = (
+                    entry.get("first_name", ""),
+                    entry.get("last_name", ""),
+                    entry.get("email", ""),
+                )
+                lookup_result = self.names_email_lookup.name_to_ids[key][0]
+            if not (id_ := lookup_result.get("id")):
+                continue
+            if "id" not in entry:
+                entry["id"] = id_
+            if "username" not in entry:
+                entry["username"] = {
+                    "id": id_,
+                    "value": lookup_result["username"],
+                    "info": ImportState.DONE,
+                }
+                self.username_lookup.add_item(entry)

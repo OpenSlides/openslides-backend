@@ -202,11 +202,10 @@ class AccountJsonUpload(BaseActionTestCase):
             {
                 "state": ImportState.ERROR,
                 "messages": [
-                    "The account with id 3 was found multiple times by different search criteria."
+                    "Found more users with the same username",
                 ],
                 "data": {
-                    "username": {"value": "test", "info": "done", "id": 3},
-                    "id": 3,
+                    "username": {"value": "test", "info": ImportState.ERROR},
                 },
             },
             {
@@ -271,10 +270,11 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": ["Found more users with name and email"],
                 "data": {
+                    "id": 4,
                     "first_name": "Max",
                     "last_name": "Mustermann",
                     "email": "max@mustermann.org",
-                    "username": {"value": "MaxMustermann", "info": "generated"},
+                    "username": {"id": 4, "value": "test2", "info": ImportState.DONE},
                 },
             }
         ]
@@ -1078,18 +1078,20 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert result["rows"][0]["messages"] == ["Found more users with name and email"]
         assert result["rows"][0]["state"] == ImportState.ERROR
         assert result["rows"][0]["data"] == {
+            "id": 3,
             "first_name": "Max",
             "last_name": "Mustermann",
             "email": "max@mustermann.org",
             "default_vote_weight": "1.000000",
-            "username": {"value": "MaxMustermann", "info": ImportState.GENERATED},
+            "username": {"value": "test", "info": ImportState.DONE, "id": 3},
         }
         assert result["rows"][1]["messages"] == ["Found more users with name and email"]
         assert result["rows"][1]["state"] == ImportState.ERROR
         assert result["rows"][1]["data"] == {
+            "id": 3,
             "first_name": "Max",
             "last_name": "Mustermann",
             "email": "max@mustermann.org",
             "default_vote_weight": "2.000000",
-            "username": {"value": "MaxMustermann1", "info": ImportState.GENERATED},
+            "username": {"value": "test", "info": ImportState.DONE, "id": 3},
         }

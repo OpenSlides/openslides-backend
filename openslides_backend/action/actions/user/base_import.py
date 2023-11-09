@@ -1,16 +1,9 @@
 from typing import Any, Dict, List, cast
 
-from ....models.models import ImportPreview
 from ....shared.exceptions import ActionException
-from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import (
-    ImportMixin,
-    ImportRow,
-    ImportState,
-    Lookup,
-    ResultType,
-)
-from ...util.default_schema import DefaultSchema
+from ...mixins.import_mixins import (ImportMixin, ImportRow, ImportState,
+                                     Lookup, ResultType)
+from ...util.typing import ActionData
 from .create import UserCreate
 from .update import UserUpdate
 
@@ -20,42 +13,41 @@ class BaseUserImport(ImportMixin):
     Action to import a result from the action_worker.
     """
 
-    model = ImportPreview()
-    schema = DefaultSchema(model).get_default_schema(
-        additional_required_fields={
-            "id": required_id_schema,
-            "import": {"type": "boolean"},
-        }
-    )
     skip_archived_meeting_check = True
 
+    def prefetch(self, action_data: ActionData) -> None:
+        super().prefetch(action_data)
+        self.rows = self.result["rows"]
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
         if not instance["import"]:
             return {}
 
-        instance = super().update_instance(instance)
         self.setup_lookups()
 
-        self.rows = [self.validate_entry(row) for row in self.result["rows"]]
+        self.rows = [self.validate_entry(row) for row in self.rows]
 
         if self.import_state != ImportState.ERROR:
-            create_action_payload: List[Dict[str, Any]] = []
-            update_action_payload: List[Dict[str, Any]] = []
-            self.set_flatten_object_fields()
-            for row in self.rows:
-                if row["state"] == ImportState.NEW:
-                    create_action_payload.append(row["data"])
-                else:
-                    update_action_payload.append(row["data"])
-            if create_action_payload:
-                self.execute_other_action(UserCreate, create_action_payload)
-            if update_action_payload:
-                self.execute_other_action(UserUpdate, update_action_payload)
+            rows = self.flatten_copied_object_fields(
+                ["username", "saml_id", "default_password"]
+            )
+            self.create_other_actions(rows)
 
         return {}
 
-    def set_flatten_object_fields(self) -> None:
-        self.flatten_object_fields(["username", "saml_id", "default_password"])
+    def create_other_actions(self, rows: List[ImportRow]) -> None:
+        create_action_payload: List[Dict[str, Any]] = []
+        update_action_payload: List[Dict[str, Any]] = []
+        for row in rows:
+            if row["state"] == ImportState.NEW:
+                create_action_payload.append(row["data"])
+            else:
+                update_action_payload.append(row["data"])
+        if create_action_payload:
+            self.execute_other_action(UserCreate, create_action_payload)
+        if update_action_payload:
+            self.execute_other_action(UserUpdate, update_action_payload)
 
     def validate_entry(self, row: ImportRow) -> ImportRow:
         entry = row["data"]

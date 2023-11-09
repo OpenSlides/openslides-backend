@@ -509,6 +509,22 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_password": {"info": "done", "value": "new default password"},
         }
 
+    def test_json_upload_names_and_email_find_username_ok(self) -> None:
+        self.json_upload_names_and_email_find_username()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        row = response_import.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == []
+        assert row["data"] == {
+            "id": 34,
+            "email": "test@ntvtn.de",
+            "username": {"id": 34, "info": "done", "value": "test"},
+            "last_name": "Mustermann",
+            "first_name": "Max",
+            "default_password": {"info": "done", "value": "new default password"},
+        }
+
     def test_json_upload_names_and_email_generate_username(self) -> None:
         self.json_upload_names_and_email_generate_username()
         response_import = self.request("account.import", {"id": 1, "import": True})

@@ -1,3 +1,4 @@
+import copy
 import csv
 from collections import defaultdict
 from decimal import Decimal
@@ -7,12 +8,15 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 from typing_extensions import NotRequired, TypedDict
 
+from ...models.models import ImportPreview
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
 from ...shared.interfaces.services import DatastoreService
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
+from ...shared.schema import required_id_schema
+from ..util.default_schema import DefaultSchema
 from ..util.typing import ActionData, ActionResultElement
 from .singular_action_mixin import SingularActionMixin
 
@@ -143,14 +147,13 @@ class Lookup:
         if type(self.field) is str:
             if type(key := entry[self.field]) is dict:
                 key = key["value"]
-            self.name_to_ids[key].append(entry)
-            if entry.get("id"):
-                self.id_to_name[entry["id"]].append(entry[self.field])
         else:
             key = tuple(entry.get(f, "") for f in self.field)
+        if id_ := entry.get("id"):
+            self.id_to_name[id_].append(key)
+            self.name_to_ids[key].insert(0, entry)
+        else:
             self.name_to_ids[key].append(entry)
-            if entry.get("id"):
-                self.id_to_name[entry["id"]].append(key)
 
 
 class BaseImportJsonUpload(SingularActionMixin):
@@ -184,13 +187,21 @@ class ImportMixin(BaseImportJsonUpload):
     Mixin for import actions. It works together with the json_upload.
     """
 
+    model = ImportPreview()
+    schema = DefaultSchema(model).get_default_schema(
+        additional_required_fields={
+            "id": required_id_schema,
+            "import": {"type": "boolean"},
+        }
+    )
+
     import_name: str
     rows: List[ImportRow] = []
     result: Dict[str, List] = {}
     import_state = ImportState.DONE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        store_id = instance["id"]
+    def prefetch(self, action_data: ActionData) -> None:
+        store_id = cast(List[Dict[str, Any]], action_data)[0]["id"]
         import_preview = self.datastore.get(
             fqid_from_collection_and_id("import_preview", store_id),
             ["result", "state", "name"],
@@ -207,7 +218,6 @@ class ImportMixin(BaseImportJsonUpload):
         if import_preview.get("state") == ImportState.ERROR:
             raise ActionException("Error in import. Data will not be imported.")
         self.result = import_preview.get("result", {})
-        return instance
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
         return {}
@@ -218,17 +228,27 @@ class ImportMixin(BaseImportJsonUpload):
     def create_action_result_element(
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
-        return {"rows": self.result.get("rows", []), "state": self.import_state}
+        return {"rows": self.rows, "state": self.import_state}
 
-    def flatten_object_fields(self, fields: Optional[List[str]] = None) -> None:
-        """replace objects from self.rows["data"] with their values. Uses the fields, if given, otherwise all"""
-        for row in self.rows:
+    def flatten_copied_object_fields(
+        self, fields: Optional[List[str]] = None
+    ) -> List[ImportRow]:
+        """The self.rows will be deepcopied, flattened and returned, without
+        changes on the self.rows.
+        This is necessary for using the data in the executution of actions.
+        The requests response should be given with the unchanged self.rows.
+        Uses the fields parameter to replace the objects by their values,
+        if given, otherwise all
+        """
+        rows = copy.deepcopy(self.rows)
+        for row in rows:
             entry = row["data"]
             used_list = fields if fields else entry.keys()
             for field in used_list:
                 if field in entry:
                     if type(dvalue := entry[field]) is dict:
                         entry[field] = dvalue["value"]
+        return rows
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:
@@ -271,6 +291,7 @@ class JsonUploadMixin(BaseImportJsonUpload):
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
     import_state: ImportState
+    meeting_id: Optional[int] = None
 
     def set_state(self, number_errors: int, number_warnings: int) -> None:
         """
@@ -296,7 +317,14 @@ class JsonUploadMixin(BaseImportJsonUpload):
                         fields={
                             "id": self.new_store_id,
                             "name": import_name,
-                            "result": {"rows": self.rows},
+                            "result": {
+                                k: v
+                                for k, v in [
+                                    ("rows", self.rows),
+                                    ("meeting_id", self.meeting_id),
+                                ]
+                                if v is not None
+                            },
                             "created": time_created,
                             "state": self.import_state,
                         },

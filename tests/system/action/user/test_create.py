@@ -1088,7 +1088,6 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "usersname",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                "saml_id": "123samlid",
             },
         )
         self.assert_status_code(response, 200)
@@ -1116,22 +1115,26 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of can_manage_organization or the saml_id!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization.",
             response.json["message"],
         )
 
-    def test_create_permission_group_E_no_OML_and_saml_id(self) -> None:
+    def test_create_permission_group_H_internal_saml_id(self) -> None:
         self.permission_setup()
+        self.set_user_groups(self.user_id, [2])  # Admin-group
+
         response = self.request(
             "user.create",
             {
                 "username": "username",
-                "saml_id": "123saml",
+                "saml_id": "11111",
+                "meeting_id": 1,
+                "group_ids": [2],
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of OrganizationManagementLevel or the saml_id!",
+            "The field 'saml_id' can only be used in internal action calls",
             response.json["message"],
         )
 

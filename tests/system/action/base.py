@@ -4,18 +4,19 @@ from typing import Any, Dict, List, Optional, Union, cast
 from unittest.mock import MagicMock
 
 from openslides_backend.action.action_worker import gunicorn_post_request
-from openslides_backend.action.relations.relation_manager import RelationManager
+from openslides_backend.action.relations.relation_manager import \
+    RelationManager
 from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import ActionResults, Payload
 from openslides_backend.http.views.action_view import ActionView
-from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.management_levels import \
+    OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.with_database_context import (
-    with_database_context,
-)
+from openslides_backend.services.datastore.with_database_context import \
+    with_database_context
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import FullQualifiedId

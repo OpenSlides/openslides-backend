@@ -2,10 +2,8 @@ from collections import defaultdict
 from functools import reduce
 from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
-from ....permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from ....permissions.management_levels import (CommitteeManagementLevel,
+                                               OrganizationManagementLevel)
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
@@ -145,6 +143,7 @@ class PermissionVarStore:
 
 
 class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
+    permstore: PermissionVarStore
     field_rights: Dict[str, list] = {
         "A": [
             "title",
@@ -174,25 +173,31 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         ],
         "C": ["meeting_id", "group_ids"],
         "D": ["committee_ids", "committee_management_ids"],
-        "E": ["organization_management_level", "saml_id"],
+        "E": ["organization_management_level"],
         "F": ["default_password"],
         "G": ["is_demo_user"],
+        "H": ["saml_id"],
     }
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(
+        self, instance: Dict[str, Any], raise_exception: bool = True
+    ) -> Optional[List[str]]:
         """
         Checks the permissions on a per field and user.scope base, details see
         https://github.com/OpenSlides/OpenSlides/wiki/user.update or user.create
         The fields groups and their necessary permissions are also documented there.
         """
+        self.raise_exception = raise_exception  # If False failing fields were returned
+        failing_fields = []
         self.assert_not_anonymous()
 
         if "forwarding_committee_ids" in instance:
             raise PermissionDenied("forwarding_committee_ids is not allowed.")
 
-        permstore = PermissionVarStore(self.datastore, self.user_id)
-        if permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
-            return
+        if not hasattr(self, "permstore"):
+            self.permstore = PermissionVarStore(self.datastore, self.user_id)
+        if self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
+            return None
 
         # store scope, id and OML-permission for requested user
         (
@@ -202,43 +207,56 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         ) = self.get_user_scope(instance.get("id") or instance)
 
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
-        self._check_for_higher_OML(permstore, actual_group_fields, instance)
+        self._check_for_higher_OML(actual_group_fields, instance)
 
         # Ordered by supposed velocity advantages. Changing order only can effect the sequence of detected errors for tests
-        self.check_group_E(permstore, actual_group_fields["E"], instance)
-        self.check_group_D(permstore, actual_group_fields["D"], instance)
-        self.check_group_C(permstore, actual_group_fields["C"], instance)
-        self.check_group_B(permstore, actual_group_fields["B"], instance)
-        self.check_group_A(permstore, actual_group_fields["A"])
-        self.check_group_F(permstore, actual_group_fields["F"])
-        self.check_group_G(permstore, actual_group_fields["G"])
+        failing_fields += self.check_group_E(actual_group_fields["E"], instance) or []
+        failing_fields += self.check_group_D(actual_group_fields["D"], instance) or []
+        failing_fields += self.check_group_C(actual_group_fields["C"], instance) or []
+        failing_fields += self.check_group_B(actual_group_fields["B"], instance) or []
+        failing_fields += self.check_group_A(actual_group_fields["A"]) or []
+        failing_fields += self.check_group_F(actual_group_fields["F"]) or []
+        failing_fields += self.check_group_G(actual_group_fields["G"]) or []
+        failing_fields += self.check_group_H(actual_group_fields["H"]) or []
+        if not self.raise_exception:
+            return failing_fields
+        return None
 
     def check_group_A(
         self,
-        permstore: PermissionVarStore,
         fields: List[str],
-    ) -> None:
+    ) -> Optional[List[str]]:
         """Check Group A: Depending on scope of user to act on"""
         if (
             not fields
-            or permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS
+            or self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return
 
         if self.instance_user_scope == UserScope.Organization:
-            raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
-        if self.instance_user_scope == UserScope.Committee:
-            if self.instance_user_scope_id not in permstore.user_committees:
+            if self.raise_exception:
                 raise MissingPermission(
-                    {
-                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
-                    }
+                    {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
                 )
+            else:
+                return fields
+        if self.instance_user_scope == UserScope.Committee:
+            if self.instance_user_scope_id not in self.permstore.user_committees:
+                if self.raise_exception:
+                    raise MissingPermission(
+                        {
+                            OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                            CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
+                        }
+                    )
+                else:
+                    return fields
         elif (
-            self.instance_user_scope_id not in permstore.user_committees_meetings
-            and self.instance_user_scope_id not in permstore.user_meetings
+            self.instance_user_scope_id not in self.permstore.user_committees_meetings
+            and self.instance_user_scope_id not in self.permstore.user_meetings
         ):
+            if not self.raise_exception:
+                return fields
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", self.instance_user_scope_id),
                 ["committee_id"],
@@ -253,47 +271,59 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             )
 
     def check_group_B(
-        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
-    ) -> None:
+        self, fields: List[str], instance: Dict[str, Any]
+    ) -> Optional[List[str]]:
         """Check Group B meeting fields: Only meeting.permissions for each meeting"""
         if fields:
             meeting_ids = self._meetings_from_group_B_fields_from_instance(instance)
-            if diff := meeting_ids - permstore.user_meetings:
-                raise MissingPermission(
-                    {Permissions.User.CAN_MANAGE: meeting_id for meeting_id in diff}
-                )
+            if diff := meeting_ids - self.permstore.user_meetings:
+                if self.raise_exception:
+                    raise MissingPermission(
+                        {Permissions.User.CAN_MANAGE: meeting_id for meeting_id in diff}
+                    )
+                return fields
 
     def check_group_C(
-        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
-    ) -> None:
+        self, fields: List[str], instance: Dict[str, Any]
+    ) -> Optional[List[str]]:
         """Check Group C group_ids: OML, CML or meeting.permissions for each meeting"""
-        if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
+        if (
+            fields
+            and self.permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
             touch_meeting_id = instance.get("meeting_id")
             if (
-                touch_meeting_id not in permstore.user_committees_meetings
-                and touch_meeting_id not in permstore.user_meetings
+                touch_meeting_id not in self.permstore.user_committees_meetings
+                and touch_meeting_id not in self.permstore.user_meetings
             ):
-                raise PermissionDenied(
-                    f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting {touch_meeting_id}"
-                )
+                if self.raise_exception:
+                    raise PermissionDenied(
+                        f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting {touch_meeting_id}"
+                    )
+                return fields
 
     def check_group_D(
-        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
-    ) -> None:
+        self, fields: List[str], instance: Dict[str, Any]
+    ) -> Optional[List[str]]:
         """Check Group D committee-related fields: OML or CML level for each committee"""
-        if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
+        if (
+            fields
+            and self.permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
             committees = self._get_all_committees_from_instance(instance)
-            if diff := committees - permstore.user_committees:
-                raise MissingPermission(
-                    {
-                        CommitteeManagementLevel.CAN_MANAGE: committee_id
-                        for committee_id in diff
-                    }
-                )
+            if diff := committees - self.permstore.user_committees:
+                if self.raise_exception:
+                    raise MissingPermission(
+                        {
+                            CommitteeManagementLevel.CAN_MANAGE: committee_id
+                            for committee_id in diff
+                        }
+                    )
+                return fields
 
     def check_group_E(
-        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
-    ) -> None:
+        self, fields: List[str], instance: Dict[str, Any]
+    ) -> Optional[List[str]]:
         """Check Group E organization_management_level: OML level necessary"""
         if fields:
             expected_oml = max(
@@ -302,20 +332,22 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 ),
                 OrganizationManagementLevel.CAN_MANAGE_USERS,
             )
-            if expected_oml > permstore.user_oml:
-                raise PermissionDenied(
-                    f"Your organization management level is not high enough to set a Level of {instance.get('organization_management_level', OrganizationManagementLevel.CAN_MANAGE_USERS.get_verbose_type())} or the saml_id!"
-                )
+            if expected_oml > self.permstore.user_oml:
+                if self.raise_exception:
+                    raise PermissionDenied(
+                        f"Your organization management level is not high enough to set a Level of {instance.get('organization_management_level', OrganizationManagementLevel.CAN_MANAGE_USERS.get_verbose_type())}."
+                    )
+                return fields
+        return None
 
     def check_group_F(
         self,
-        permstore: PermissionVarStore,
         fields: List[str],
-    ) -> None:
+    ) -> Optional[List[str]]:
         """Check F common fields: scoped permissions necessary, but if instance user has
         an oml-permission, that of the request user must be higher"""
         if not fields:
-            return
+            return None
 
         if (
             self.instance_user_oml_permission
@@ -327,46 +359,68 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 )
             else:
                 expected_oml_permission = OrganizationManagementLevel.CAN_MANAGE_USERS
-            if expected_oml_permission > permstore.user_oml:
-                raise MissingPermission({expected_oml_permission: 1})
+            if expected_oml_permission > self.permstore.user_oml:
+                if self.raise_exception:
+                    raise MissingPermission({expected_oml_permission: 1})
+                return fields
             else:
-                return
+                return None
         else:
-            if permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS:
-                return
+            if self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS:
+                return None
         if self.instance_user_scope == UserScope.Committee:
-            if self.instance_user_scope_id not in permstore.user_committees:
-                raise MissingPermission(
-                    {
-                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                        CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
-                    }
-                )
+            if self.instance_user_scope_id not in self.permstore.user_committees:
+                if self.raise_exception:
+                    raise MissingPermission(
+                        {
+                            OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                            CommitteeManagementLevel.CAN_MANAGE: self.instance_user_scope_id,
+                        }
+                    )
+                return fields
         elif (
-            self.instance_user_scope_id not in permstore.user_committees_meetings
-            and self.instance_user_scope_id not in permstore.user_meetings
+            self.instance_user_scope_id not in self.permstore.user_committees_meetings
+            and self.instance_user_scope_id not in self.permstore.user_meetings
         ):
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", self.instance_user_scope_id),
                 ["committee_id"],
                 lock_result=False,
             )
-            raise MissingPermission(
-                {
-                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
-                    CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                    Permissions.User.CAN_MANAGE: self.instance_user_scope_id,
-                }
-            )
+            if self.raise_exception:
+                raise MissingPermission(
+                    {
+                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                        CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
+                        Permissions.User.CAN_MANAGE: self.instance_user_scope_id,
+                    }
+                )
+            return fields
+        return None
 
-    def check_group_G(self, permstore: PermissionVarStore, fields: List[str]) -> None:
+    def check_group_G(self, fields: List[str]) -> Optional[List[str]]:
         """Group G: OML SUPERADMIN necessary"""
-        if fields and permstore.user_oml < OrganizationManagementLevel.SUPERADMIN:
-            raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
+        if fields and self.permstore.user_oml < OrganizationManagementLevel.SUPERADMIN:
+            if self.raise_exception:
+                raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
+            else:
+                return fields
+
+    def check_group_H(
+        self,
+        fields: List[str],
+    ) -> Optional[List[str]]:
+        """Check Group H: Like group A, but only on internal calls, which will never call the check_permissions automatically"""
+        if not fields:
+            return None
+        if self.raise_exception:
+            raise PermissionDenied(
+                "The field 'saml_id' can only be used in internal action calls"
+            )
+        return self.check_group_A(fields)
 
     def _check_for_higher_OML(
         self,
-        permstore: PermissionVarStore,
         fields: Dict[str, List[str]],
         instance: Dict[str, Any],
     ) -> None:
@@ -376,7 +430,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         ):
             if (
                 OrganizationManagementLevel(self.instance_user_oml_permission)
-                > permstore.user_oml
+                > self.permstore.user_oml
             ):
                 raise PermissionDenied(
                     f"Your organization management level is not high enough to change a user with a Level of {self.instance_user_oml_permission}!"

@@ -1327,7 +1327,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of can_manage_organization or the saml_id!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization.",
             response.json["message"],
         )
 
@@ -1354,7 +1354,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_perm_group_E_saml_id_high_enough(self) -> None:
+    def test_no_perm_group_H_internal_saml_id(self) -> None:
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -1367,27 +1367,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "saml_id": "test saml id",
             },
         )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/111",
-            {
-                "saml_id": "test saml id",
-            },
-        )
-
-    def test_no_perm_group_E_saml_id(self) -> None:
-        self.permission_setup()
-
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "saml_id": "test saml id",
-            },
-        )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of OrganizationManagementLevel or the saml_id!",
+            "The field 'saml_id' can only be used in internal action calls",
             response.json["message"],
         )
 
