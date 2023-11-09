@@ -89,6 +89,46 @@ organization:
       - diverse
       - non-binary
     restriction_mode: A
+  users_email_sender:
+    type: string
+    default: OpenSlides
+    restriction_mode: A
+  users_email_replyto:
+    type: string
+    restriction_mode: A
+  users_email_subject:
+    type: string
+    default: OpenSlides access data
+    restriction_mode: A
+  users_email_body:
+    type: text
+    default: >-
+      Dear {name},
+
+
+      this is your personal OpenSlides login:
+
+
+      {url}
+
+      Username: {username}
+
+      Password: {password}
+
+
+
+      This email was generated automatically.
+    restriction_mode: A
+  url:
+    type: string
+    default: https://example.com
+    restriction_mode: A
+  list_of_speakers_enable_subdivisions:
+    type: boolean
+    restriction_mode: B
+  list_of_speakers_default_subdivision_time:
+    type: number
+    restriction_mode: B
 
   # Configuration (only for the server owner)
   enable_electronic_voting:
@@ -186,40 +226,10 @@ organization:
     type: relation-list
     restriction_mode: C
     to: user/organization_id
-  users_email_sender:
-    type: string
-    default: OpenSlides
-    restriction_mode: A
-  users_email_replyto:
-    type: string
-    restriction_mode: A
-  users_email_subject:
-    type: string
-    default: OpenSlides access data
-    restriction_mode: A
-  users_email_body:
-    type: text
-    default: >-
-      Dear {name},
-
-
-      this is your personal OpenSlides login:
-
-
-      {url}
-
-      Username: {username}
-
-      Password: {password}
-
-
-
-      This email was generated automatically.
-    restriction_mode: A
-  url:
-    type: string
-    default: https://example.com
-    restriction_mode: A
+  subdivision_ids:
+    type: relation-list
+    restriction_mode: B
+    to: subdivision/organization_id
 
 user:
   id:
@@ -353,6 +363,10 @@ user:
     type: relation-list
     to: poll_candidate/user_id
     restriction_mode: A
+  subdivision_ids:
+    type: relation-list
+    restriction_mode: A
+    to: subdivision/user_ids
 
   meeting_ids:
     type: number[]
@@ -631,6 +645,39 @@ theme:
     restriction_mode: A
     to: organization/theme_ids
     type: relation
+
+subdivision:
+  id:
+    type: number
+    required: true
+    restriction_mode: A
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  color:
+    type: color
+    restriction_mode: A
+  allow_additional_time:
+    type: boolean
+    restriction_mode: A
+  organization_id:
+    type: relation
+    restriction_mode: B
+    to: organization/subdivision_ids
+  user_ids:
+    type: relation-list
+    restriction_mode: B
+    to: user/subdivision_ids
+  subdivision_meeting_ids:
+    type: relation-list
+    restriction_mode: B
+    to: subdivision_meeting/subdivision_id
+    on_delete: CASCADE
+  subdivision_list_of_speakers_ids:
+    type: relation-list
+    restriction_mode: B
+    to: subdivision_list_of_speakers/subdivision_id
 
 committee:
   id:
@@ -1016,6 +1063,19 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
+  list_of_speakers_enable_subdivision_countdowns:
+    type: boolean
+    restriction_mode: B
+  list_of_speakers_default_subdivision_time:
+    type: number
+    restriction_mode: B
+  list_of_speakers_enable_interposed_question:
+    type: boolean
+    restriction_mode: B
+  list_of_speakers_intervention_time:
+    type: number
+    restriction_mode: B
+    description: 0 disables intervention speakers.
 
   # Motions
   motions_default_workflow_id:
@@ -1552,6 +1612,11 @@ meeting:
     to: chat_message/meeting_id
     on_delete: CASCADE
     restriction_mode: B
+  subdivision_meeting_ids:
+    type: relation-list
+    to: subdivision_meeting/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
 
   # Logos and Fonts
   logo_projector_main_id:
@@ -1738,6 +1803,25 @@ meeting:
     type: relation
     to: group/admin_group_for_meeting_id
     restriction_mode: B
+    
+subdivision_meeting:
+  id:
+    type: number
+    required: true
+    restriction_mode: A
+  meeting_id:
+    type: relation
+    required: true
+    to: meeting/subdivision_meeting_ids
+    restriction_mode: A
+  subdivision_id:
+    type: relation
+    required: true
+    to: subdivision/subdivision_meeting_ids
+    restriction_mode: A
+  default_time:
+    type: number
+    restriction_mode: A
 
 group:
   id:
@@ -1950,6 +2034,9 @@ agenda_item:
     description: Given in seconds
     minimum: 0
     restriction_mode: B
+  moderator_notes:
+    type: HTMLStrict
+    restriction_mode: D
   is_internal:
     type: boolean
     description: Calculated by the server
@@ -2042,6 +2129,11 @@ list_of_speakers:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
+  subdivision_list_of_speaker_ids:
+    type: relation-list
+    restriction_mode: A
+    to: subdivision_list_of_speakers/list_of_speakers_id
+    on_delete: CASCADE
   projection_ids:
     type: relation-list
     to: projection/content_object_id
@@ -2053,6 +2145,44 @@ list_of_speakers:
     to: meeting/list_of_speakers_ids
     required: true
     restriction_mode: A
+
+subdivision_list_of_speakers:
+  id:
+    type: number
+    required: true
+    restriction_mode: A
+  subdivision_id:
+    type: relation
+    required: true
+    restriction_mode: A
+    to: subdivision/subdivision_list_of_speakers_ids
+  list_of_speakers_id:
+    type: relation
+    required: true
+    restriction_mode: A
+    to: list_of_speakers/subdivision_list_of_speaker_ids
+  speaker_ids:
+    type: relation-list
+    restriction_mode: A
+    to: speaker/subdivision_list_of_speakers_id
+  initial_time:
+    type: number
+    required: true
+    restriction_mode: A
+    description: The initial time of this subdivision for this LoS
+  additional_time:
+    type: number
+    restriction_mode: A
+    description: The summed added time of this subdivision for this LoS
+  remaining_time:
+    type: number
+    required: true
+    restriction_mode: A
+    description: The currently remaining time of this subdivision for this LoS
+  current_start_time:
+    type: timestamp
+    restriction_mode: A
+    description: The current start time of a speaker for this subdivision. Is only set if a currently speaking speaker exists
 
 point_of_order_category:
   id:
@@ -2099,6 +2229,8 @@ speaker:
       - contribution
       - pro
       - contra
+      - intervention
+      - interposed_question
     restriction_mode: A
   note:
     type: string
@@ -2114,6 +2246,10 @@ speaker:
     required: true
     equal_fields: meeting_id
     restriction_mode: A
+  subdivision_list_of_speakers_id:
+    type: relation
+    restriction_mode: A
+    to: subdivision_list_of_speakers/speaker_ids
   meeting_user_id:
     type: relation
     to: meeting_user/speaker_ids

@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "832b7041a4dcc2876ea20c34fb5d7cf9"
+MODELS_YML_CHECKSUM = "6e3c7a2d9d14eb8f59856824b726cb79"
 
 
 class Organization(Model):
@@ -19,6 +19,15 @@ class Organization(Model):
     login_text = fields.TextField()
     reset_password_verbose_errors = fields.BooleanField()
     genders = fields.CharArrayField(default=["male", "female", "diverse", "non-binary"])
+    users_email_sender = fields.CharField(default="OpenSlides")
+    users_email_replyto = fields.CharField()
+    users_email_subject = fields.CharField(default="OpenSlides access data")
+    users_email_body = fields.TextField(
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
+    )
+    url = fields.CharField(default="https://example.com")
+    list_of_speakers_enable_subdivisions = fields.BooleanField()
+    list_of_speakers_default_subdivision_time = fields.IntegerField()
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
@@ -65,13 +74,7 @@ class Organization(Model):
         to={"mediafile": "owner_id"}, on_delete=fields.OnDelete.CASCADE
     )
     user_ids = fields.RelationListField(to={"user": "organization_id"})
-    users_email_sender = fields.CharField(default="OpenSlides")
-    users_email_replyto = fields.CharField()
-    users_email_subject = fields.CharField(default="OpenSlides access data")
-    users_email_body = fields.TextField(
-        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
-    )
-    url = fields.CharField(default="https://example.com")
+    subdivision_ids = fields.RelationListField(to={"subdivision": "organization_id"})
 
 
 class User(Model):
@@ -131,6 +134,7 @@ class User(Model):
     vote_ids = fields.RelationListField(to={"vote": "user_id"})
     delegated_vote_ids = fields.RelationListField(to={"vote": "delegated_user_id"})
     poll_candidate_ids = fields.RelationListField(to={"poll_candidate": "user_id"})
+    subdivision_ids = fields.RelationListField(to={"subdivision": "user_ids"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -249,6 +253,24 @@ class Theme(Model):
     theme_for_organization_id = fields.RelationField(to={"organization": "theme_id"})
     organization_id = fields.OrganizationField(
         to={"organization": "theme_ids"}, required=True
+    )
+
+
+class Subdivision(Model):
+    collection = "subdivision"
+    verbose_name = "subdivision"
+
+    id = fields.IntegerField(required=True)
+    name = fields.CharField(required=True)
+    color = fields.ColorField()
+    allow_additional_time = fields.BooleanField()
+    organization_id = fields.OrganizationField(to={"organization": "subdivision_ids"})
+    user_ids = fields.RelationListField(to={"user": "subdivision_ids"})
+    subdivision_meeting_ids = fields.RelationListField(
+        to={"subdivision_meeting": "subdivision_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    subdivision_list_of_speakers_ids = fields.RelationListField(
+        to={"subdivision_list_of_speakers": "subdivision_id"}
     )
 
 
@@ -412,6 +434,12 @@ class Meeting(Model, MeetingModelMixin):
     list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)
     list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
     list_of_speakers_initially_closed = fields.BooleanField(default=False)
+    list_of_speakers_enable_subdivision_countdowns = fields.BooleanField()
+    list_of_speakers_default_subdivision_time = fields.IntegerField()
+    list_of_speakers_enable_interposed_question = fields.BooleanField()
+    list_of_speakers_intervention_time = fields.IntegerField(
+        constraints={"description": "0 disables intervention speakers."}
+    )
     motions_default_workflow_id = fields.RelationField(
         to={"motion_workflow": "default_workflow_meeting_id"}, required=True
     )
@@ -656,6 +684,9 @@ class Meeting(Model, MeetingModelMixin):
     chat_message_ids = fields.RelationListField(
         to={"chat_message": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
+    subdivision_meeting_ids = fields.RelationListField(
+        to={"subdivision_meeting": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
     logo_projector_main_id = fields.RelationField(
         to={"mediafile": "used_as_logo_projector_main_in_meeting_id"}
     )
@@ -800,6 +831,20 @@ class Meeting(Model, MeetingModelMixin):
     admin_group_id = fields.RelationField(to={"group": "admin_group_for_meeting_id"})
 
 
+class SubdivisionMeeting(Model):
+    collection = "subdivision_meeting"
+    verbose_name = "subdivision meeting"
+
+    id = fields.IntegerField(required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "subdivision_meeting_ids"}, required=True
+    )
+    subdivision_id = fields.RelationField(
+        to={"subdivision": "subdivision_meeting_ids"}, required=True
+    )
+    default_time = fields.IntegerField()
+
+
 class Group(Model):
     collection = "group"
     verbose_name = "group"
@@ -941,6 +986,7 @@ class AgendaItem(Model, AgendaItemModelMixin):
     duration = fields.IntegerField(
         constraints={"description": "Given in seconds", "minimum": 0}
     )
+    moderator_notes = fields.HTMLStrictField()
     is_internal = fields.BooleanField(
         read_only=True, constraints={"description": "Calculated by the server"}
     )
@@ -1007,6 +1053,10 @@ class ListOfSpeakers(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
+    subdivision_list_of_speaker_ids = fields.RelationListField(
+        to={"subdivision_list_of_speakers": "list_of_speakers_id"},
+        on_delete=fields.OnDelete.CASCADE,
+    )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -1014,6 +1064,44 @@ class ListOfSpeakers(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "list_of_speakers_ids"}, required=True
+    )
+
+
+class SubdivisionListOfSpeakers(Model):
+    collection = "subdivision_list_of_speakers"
+    verbose_name = "subdivision list of speakers"
+
+    id = fields.IntegerField(required=True)
+    subdivision_id = fields.RelationField(
+        to={"subdivision": "subdivision_list_of_speakers_ids"}, required=True
+    )
+    list_of_speakers_id = fields.RelationField(
+        to={"list_of_speakers": "subdivision_list_of_speaker_ids"}, required=True
+    )
+    speaker_ids = fields.RelationListField(
+        to={"speaker": "subdivision_list_of_speakers_id"}
+    )
+    initial_time = fields.IntegerField(
+        required=True,
+        constraints={
+            "description": "The initial time of this subdivision for this LoS"
+        },
+    )
+    additional_time = fields.IntegerField(
+        constraints={
+            "description": "The summed added time of this subdivision for this LoS"
+        }
+    )
+    remaining_time = fields.IntegerField(
+        required=True,
+        constraints={
+            "description": "The currently remaining time of this subdivision for this LoS"
+        },
+    )
+    current_start_time = fields.TimestampField(
+        constraints={
+            "description": "The current start time of a speaker for this subdivision. Is only set if a currently speaking speaker exists"
+        }
     )
 
 
@@ -1041,12 +1129,23 @@ class Speaker(Model):
     end_time = fields.TimestampField(read_only=True)
     weight = fields.IntegerField(default=10000)
     speech_state = fields.CharField(
-        constraints={"enum": ["contribution", "pro", "contra"]}
+        constraints={
+            "enum": [
+                "contribution",
+                "pro",
+                "contra",
+                "intervention",
+                "interposed_question",
+            ]
+        }
     )
     note = fields.CharField(constraints={"maxLength": 250})
     point_of_order = fields.BooleanField()
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "speaker_ids"}, required=True, equal_fields="meeting_id"
+    )
+    subdivision_list_of_speakers_id = fields.RelationField(
+        to={"subdivision_list_of_speakers": "speaker_ids"}
     )
     meeting_user_id = fields.RelationField(
         to={"meeting_user": "speaker_ids"}, equal_fields="meeting_id"
