@@ -24,7 +24,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         response = self.request("motion_workflow.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['name', 'meeting_id'] properties",
+            "data must contain ['meeting_id', 'name'] properties",
             response.json["message"],
         )
 
@@ -34,7 +34,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['name', 'meeting_id'] properties",
+            "data must contain ['meeting_id', 'name'] properties",
             response.json["message"],
         )
 

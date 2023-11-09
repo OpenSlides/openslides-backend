@@ -19,7 +19,7 @@ class OrganizationTagCreate(BaseActionTestCase):
         response = self.request("organization_tag.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['name', 'color', 'organization_id'] properties",
+            "data must contain ['color', 'name', 'organization_id'] properties",
             response.json["message"],
         )
 
