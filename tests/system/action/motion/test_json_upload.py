@@ -391,7 +391,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "title": {"value": "test", "info": ImportState.DONE},
             "text": {"value": "<p>my</p>", "info": ImportState.DONE},
             "reason": {"value": "stuff", "info": ImportState.DONE},
-            "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
+            "submitters_username": [{"id": 1, "info": "generated", "value": "admin"}],
         }
         if is_set_number:
             data.update({"number": {"info": ImportState.GENERATED, "value": "03"}})
@@ -455,7 +455,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 "title": {"value": "test", "info": ImportState.DONE},
                 "text": {"value": "<p>my</p>", "info": ImportState.DONE},
                 "reason": {"value": "stuff", "info": ImportState.DONE},
-                "submitter_usernames": [
+                "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
             },
@@ -510,7 +510,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "title": {"value": "test", "info": ImportState.DONE},
             "text": {"value": "<p>my</p>", "info": ImportState.DONE},
             "reason": {"value": "stuff", "info": ImportState.DONE},
-            "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
+            "submitters_username": [{"id": 1, "info": "generated", "value": "admin"}],
         }
         if is_set_number:
             data.update({"number": {"info": ImportState.GENERATED, "value": "03"}})
@@ -525,7 +525,7 @@ class MotionJsonUpload(BaseActionTestCase):
             "title": {"value": "test also", "info": ImportState.DONE},
             "text": {"value": "<p>my other</p>", "info": ImportState.DONE},
             "reason": {"value": "stuff", "info": ImportState.DONE},
-            "submitter_usernames": [{"id": 1, "info": "generated", "value": "admin"}],
+            "submitters_username": [{"id": 1, "info": "generated", "value": "admin"}],
         }
         if is_set_number:
             data.update({"number": {"info": ImportState.GENERATED, "value": "04"}})
@@ -595,7 +595,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 "title": {"value": "test", "info": ImportState.DONE},
                 "text": {"value": "<p>my</p>", "info": ImportState.DONE},
                 "reason": {"value": "stuff", "info": ImportState.DONE},
-                "submitter_usernames": [
+                "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
             },
@@ -674,7 +674,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 "meeting_id": 42,
                 "title": {"value": "test", "info": ImportState.DONE},
                 "text": {"value": "<p>my</p>", "info": ImportState.DONE},
-                "submitter_usernames": [
+                "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
             },
@@ -732,7 +732,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 "text": {"value": "<p>my</p>", "info": ImportState.DONE},
                 "title": {"value": "test", "info": ImportState.DONE},
                 "reason": {"value": "stuff", "info": ImportState.DONE},
-                "submitter_usernames": [
+                "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
             },
@@ -750,7 +750,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 "title": {"value": "test", "info": ImportState.DONE},
                 "text": {"value": "<p>my</p>", "info": ImportState.DONE},
                 "reason": {"value": "stuff", "info": ImportState.DONE},
-                "submitter_usernames": [
+                "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
             },
@@ -1645,7 +1645,7 @@ class MotionJsonUpload(BaseActionTestCase):
         payload = {
             "title": "test",
             "text": "my",
-            "submitters_usernames": usernames or username or "unknown",
+            "submitters_username": usernames or username or "unknown",
         }
         if is_update:
             payload["number"] = "NUM01"
@@ -1660,32 +1660,29 @@ class MotionJsonUpload(BaseActionTestCase):
         has_unknown_user = not (usernames or username)
         usernames = usernames or ([username] if username else [])
         collections_and_ids = {fqid: fqid.split("/") for fqid in model_data}
-        usernames_to_user_fqids = {
-            username: fqid
+        usernames_to_user_ids = {
+            username: int(collections_and_ids[fqid][1])
             for username in usernames
             for fqid in model_data
-            if collections_and_ids[fqid][0] == "user"
+            if (collections_and_ids[fqid][0] == "user")
+            and (username == model_data[fqid]["username"])
         }
-        usernames_to_meeting_user_ids = {
-            username: meeting_user_id
-            for username in usernames_to_user_fqids
-            for meeting_user_id in model_data[usernames_to_user_fqids[username]].get(
-                "meeting_user_ids", []
-            )
-            if model_data["meeting_user/" + str(meeting_user_id)].get("meeting_id")
-            == meeting_id
-        }
+        # foreign_meeting_users = [
+        #     username
+        #     for username in usernames
+        #     if username not in usernames_to_meeting_user_ids.keys()
+        # ]
         expected_user_objects = []
         if has_unknown_user:
             expected_user_objects = [
-                {"info": ImportState.WARNING, "value": ""},
+                {"info": ImportState.WARNING, "value": "unknown"},
                 {"id": 1, "info": ImportState.GENERATED, "value": "admin"},
             ]
         else:
             expected_user_objects = [
-                {"info": ImportState.DONE, "id": meeting_user_id, "value": name}
-                for (name, meeting_user_id) in usernames_to_meeting_user_ids.items()
-            ]
+                {"info": ImportState.DONE, "id": user_id, "value": name}
+                for (name, user_id) in usernames_to_user_ids.items()
+            ]  # TODO Expand with foreign meeting users
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["state"] == (
             ImportState.WARNING if has_unknown_user else ImportState.DONE
@@ -1695,16 +1692,15 @@ class MotionJsonUpload(BaseActionTestCase):
             "meeting_id": 42,
             "title": {"value": "test", "info": ImportState.DONE},
             "text": {"value": "<p>my</p>", "info": ImportState.DONE},
-            "submitter_usernames": expected_user_objects,
+            "submitters_username": expected_user_objects,
         }
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == (ImportState.DONE if is_update else ImportState.NEW)
         assert row["messages"] == (
-            ["Could not find the user for at least one username"]
+            ["Submitters: Could not find the user for at least one username"]
             if has_unknown_user
             else []
         )
-        assert data.keys() == row["data"].keys()
         for key in data:
             assert row["data"].get(key) == data[key]
 

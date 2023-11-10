@@ -133,8 +133,8 @@ class Lookup:
         if len(values := self.name_to_ids.get(name, [])) == 1:
             if (entry := values[0]).get("id"):
                 if (
-                    type(self.field) is str
-                    and type(obj := entry[self.field]) is dict
+                    type(self.collection_field) is str
+                    and type(obj := entry[self.collection_field]) is dict
                     and obj["info"] == ImportState.ERROR
                 ):
                     return ResultType.NOT_FOUND_ANYMORE

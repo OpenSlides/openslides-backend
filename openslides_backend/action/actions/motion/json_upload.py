@@ -1,7 +1,7 @@
 from re import search, sub
 from typing import Any, Dict, Iterable, List, Optional, cast
 
-from openslides_backend.shared.filters import FilterOperator
+from openslides_backend.shared.filters import And, FilterOperator, Or
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -126,6 +126,8 @@ class MotionJsonUpload(
     _operator_username: Optional[str] = None
 
     _last_motion_mock_id: Optional[int] = None
+    _user_ids_to_meeting_user: Dict[int, Any]
+    _supporter_ids_to_user_id: Dict[int, int]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # transform instance into a correct create/update payload
@@ -171,6 +173,7 @@ class MotionJsonUpload(
         messages: List[str] = []
         id_: Optional[int] = None
         meeting_id: int = entry["meeting_id"]
+        set_entry_id = False
 
         if (is_amendment := entry.get("motion_amendment")) and type(
             is_amendment
@@ -212,7 +215,7 @@ class MotionJsonUpload(
             id_ = cast(int, self.number_lookup.get_field_by_name(number, "id"))
             if check_result == ResultType.FOUND_ID and id_ != 0:
                 self.row_state = ImportState.DONE
-                entry["id"] = id_
+                set_entry_id = True
                 entry["number"] = {
                     "value": number,
                     "info": ImportState.DONE,
@@ -247,36 +250,43 @@ class MotionJsonUpload(
             if number := value.get("number"):
                 entry["number"] = {"value": number, "info": ImportState.GENERATED}
 
-        for field in ["submitters", "supporters"]:
-            if users := entry.get(field + "_username"):
-                if not isinstance(users, list):
-                    users = [users]
-                verbose = entry.get(field + "_verbose", [])
-                if not isinstance(verbose, list):
-                    verbose = [verbose]
-                verbose_user_mismatch = len(verbose) > len(users)
-                entry_list: list[Dict[str, Any]] = []
-                message_set = set()
-                if field == "submitter":
-                    lookup = self.submitter_lookup
-                else:
-                    lookup = self.supporter_lookup
-                for user in users:
-                    if isinstance(user, str):
-                        if verbose_user_mismatch:
-                            entry_list.append(
-                                {"value": user, "info": ImportState.ERROR}
-                            )
+        if users := entry.get("submitters_username"):
+            if not isinstance(users, list):
+                users = [users]
+            verbose = entry.get("submitters_verbose", [])
+            if not isinstance(verbose, list):
+                verbose = [verbose]
+            verbose_user_mismatch = len(verbose) > len(users)
+            entry_list: list[Dict[str, Any]] = []
+            message_set = set()
+            lookup = self.submitter_lookup
+            for user in users:
+                if isinstance(user, str):
+                    if verbose_user_mismatch:
+                        entry_list.append({"value": user, "info": ImportState.ERROR})
+                    else:
                         check_result = lookup.check_duplicate(user)
                         user_id = cast(int, lookup.get_field_by_name(user, "id"))
                         if check_result == ResultType.FOUND_ID and user_id != 0:
-                            entry_list.append(
-                                {
-                                    "value": user,
-                                    "info": ImportState.DONE,
-                                    "id": user_id,
-                                }
-                            )
+                            if len(
+                                self._user_ids_to_meeting_user.get(user_id, {}).get(
+                                    "group_ids", []
+                                )
+                            ):
+                                entry_list.append(
+                                    {
+                                        "value": user,
+                                        "info": ImportState.DONE,
+                                        "id": user_id,
+                                    }
+                                )
+                            else:
+                                entry_list.append(
+                                    {"value": user, "info": ImportState.WARNING}
+                                )
+                                message_set.add(
+                                    "Submitters: At least one user is not part of this meeting"
+                                )
                         elif check_result == ResultType.NOT_FOUND or user_id == 0:
                             entry_list.append(
                                 {
@@ -285,7 +295,7 @@ class MotionJsonUpload(
                                 }
                             )
                             message_set.add(
-                                "Could not find the user for at least one username"
+                                "Submitters: Could not find the user for at least one username"
                             )
                         elif check_result == ResultType.FOUND_MORE_IDS:
                             entry_list.append(
@@ -295,23 +305,96 @@ class MotionJsonUpload(
                                 }
                             )
                             message_set.add(
-                                "Found multiple users for at least one username"
+                                "Submitters: Found multiple users for at least one username"
                             )
-                entry[field + "_username"] = entry_list
-                if verbose_user_mismatch:
-                    self.row_state = ImportState.ERROR
-                    message_set.add(
-                        "Error: Verbose field is set and has more entries than the username field"
-                    )
-                messages.extend(
-                    [
-                        field[0].upper() + field[1:] + ": " + message
-                        for message in message_set
-                    ]
+            entry["submitters_username"] = entry_list
+            if verbose_user_mismatch:
+                self.row_state = ImportState.ERROR
+                message_set.add(
+                    "Error: Submitters: Verbose field is set and has more entries than the username field"
                 )
+            messages.extend([message for message in message_set])
 
         if len((cast(List[dict[str, Any]], entry.get("submitters_username", [])))) == 0:
-            entry["submitter_usernames"] = [self._get_self_username_object()]
+            entry["submitters_username"] = [self._get_self_username_object()]
+        elif (
+            len(
+                [
+                    entry
+                    for entry in (
+                        cast(List[dict[str, Any]], entry.get("submitters_username", []))
+                    )
+                    if entry.get("info") and (entry["info"] != ImportState.WARNING)
+                ]
+            )
+            == 0
+        ):
+            entry["submitters_username"].append(self._get_self_username_object())
+
+        if users := entry.get("supporters_username"):
+            if not isinstance(users, list):
+                users = [users]
+            verbose = entry.get("supporters_verbose", [])
+            if not isinstance(verbose, list):
+                verbose = [verbose]
+            verbose_user_mismatch = len(verbose) > len(users)
+            entry_list = []
+            message_set = set()
+            lookup = self.supporter_lookup
+            for user in users:
+                if isinstance(user, str):
+                    if verbose_user_mismatch:
+                        entry_list.append({"value": user, "info": ImportState.ERROR})
+                    else:
+                        check_result = lookup.check_duplicate(user)
+                        user_id = cast(int, lookup.get_field_by_name(user, "id"))
+                        if check_result == ResultType.FOUND_ID and user_id != 0:
+                            if len(
+                                self._user_ids_to_meeting_user.get(user_id, {}).get(
+                                    "group_ids", []
+                                )
+                            ):
+                                entry_list.append(
+                                    {
+                                        "value": user,
+                                        "info": ImportState.DONE,
+                                        "id": user_id,
+                                    }
+                                )
+                            else:
+                                entry_list.append(
+                                    {"value": user, "info": ImportState.WARNING}
+                                )
+                                message_set.add(
+                                    "Supporters: At least one user is not part of this meeting"
+                                )
+                        elif check_result == ResultType.NOT_FOUND or user_id == 0:
+                            entry_list.append(
+                                {
+                                    "value": user,
+                                    "info": ImportState.WARNING,
+                                }
+                            )
+                            message_set.add(
+                                "Supporters: Could not find the user for at least one username"
+                            )
+                        elif check_result == ResultType.FOUND_MORE_IDS:
+                            entry_list.append(
+                                {
+                                    "value": user,
+                                    "info": ImportState.WARNING,
+                                }
+                            )
+                            message_set.add(
+                                "Supporters: Found multiple users for at least one username"
+                            )
+            entry["supporters_username"] = entry_list
+            if verbose_user_mismatch:
+                self.row_state = ImportState.ERROR
+                message_set.add(
+                    "Error: Supporters: Verbose field is set and has more entries than the username field"
+                )
+            messages.extend([message for message in message_set])
 
         if tags := entry.get("tags"):
             if not isinstance(tags, list):
@@ -370,6 +453,9 @@ class MotionJsonUpload(
                     "info": ImportState.WARNING,
                 }
                 messages.append("Found multiple motion blocks with the same name")
+
+        if id_ and set_entry_id:
+            entry["id"] = id_
 
         # TODO: Currently doesn't recognize pre-existing tags
         if (
@@ -470,7 +556,8 @@ class MotionJsonUpload(
                 for entry in data
                 for username in self._get_field_array(entry, "submitters_username")
             ],
-            field="username",
+            field="submitters_username",
+            collection_field="username",
             mapped_fields=["meeting_user_ids"],
         )
         self.supporter_lookup = Lookup(
@@ -481,9 +568,50 @@ class MotionJsonUpload(
                 for entry in data
                 for username in self._get_field_array(entry, "supporters_username")
             ],
-            field="username",
+            field="supporters_username",
+            collection_field="username",
             mapped_fields=["meeting_user_ids"],
         )
+        all_user_ids = set(
+            list(self.submitter_lookup.id_to_name.keys())
+            + list(self.supporter_lookup.id_to_name.keys())
+        )
+        all_meeting_users: Dict[int, Dict[str, Any]] = {}
+        if len(all_user_ids):
+            all_meeting_users = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("meeting_id", "=", meeting_id),
+                    Or(
+                        *[
+                            FilterOperator("user_id", "=", user_id)
+                            for user_id in all_user_ids
+                        ]
+                    ),
+                ),
+                [
+                    "user_id",
+                    "motion_submitter_ids",
+                    "supported_motion_ids",
+                    "group_ids",
+                ],
+                lock_result=False,
+            )
+        self._user_ids_to_meeting_user = {
+            all_meeting_users[meeting_user_id]["user_id"]: all_meeting_users[
+                meeting_user_id
+            ]
+            for meeting_user_id in all_meeting_users
+            if all_meeting_users[meeting_user_id].get("user_id")
+        }
+        self._supporter_ids_to_user_id = {
+            supporter_id: all_meeting_users[meeting_user_id]["user_id"]
+            for meeting_user_id in all_meeting_users
+            for supporter_id in all_meeting_users[meeting_user_id].get(
+                "motion_supporter_ids", []
+            )
+            if all_meeting_users[meeting_user_id].get("user_id")
+        }
         self.tags_lookup = Lookup(
             self.datastore,
             "tag",
