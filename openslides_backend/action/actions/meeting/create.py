@@ -101,9 +101,8 @@ class MeetingCreate(
                 "external_id": "Default",
                 "meeting_id": instance["id"],
                 "permissions": [
+                    Permissions.AgendaItem.CAN_SEE,
                     Permissions.Assignment.CAN_SEE,
-                    Permissions.ListOfSpeakers.CAN_SEE,
-                    Permissions.Mediafile.CAN_SEE,
                     Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
                     Permissions.Motion.CAN_SEE,
