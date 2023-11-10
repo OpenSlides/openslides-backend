@@ -47,7 +47,7 @@ class AccountImport(ImportMixin):
 
         self.rows = [self.validate_entry(row) for row in self.result["rows"]]
 
-        # TODO
+        # TODO also with motion_submitter.create and -delete
         # if self.import_state != ImportState.ERROR:
         #     create_action_payload: List[Dict[str, Any]] = []
         #     update_action_payload: List[Dict[str, Any]] = []
