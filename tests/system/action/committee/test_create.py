@@ -144,7 +144,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         response = self.request("committee.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['organization_id', 'name'] properties",
+            "data must contain ['name', 'organization_id'] properties",
             response.json["message"],
         )
         self.assert_model_not_exists("committee/1")

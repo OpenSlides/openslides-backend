@@ -149,7 +149,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         response = self.request("motion_submitter.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['motion_id', 'meeting_user_id'] properties",
+            "data must contain ['meeting_user_id', 'motion_id'] properties",
             response.json["message"],
         )
 

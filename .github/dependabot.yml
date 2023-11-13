@@ -20,7 +20,7 @@ updates:
       - "jsangmeister"
     ignore:
       - dependency-name: "python"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-minor"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
