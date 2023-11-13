@@ -7,9 +7,6 @@ msgstr ""
 msgid "Admin"
 msgstr ""
 
-msgid "Committees"
-msgstr ""
-
 msgid "Complex Workflow"
 msgstr ""
 
