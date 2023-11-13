@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict, Union, cast
 
 from typing_extensions import NotRequired
 
@@ -12,6 +12,7 @@ SetupUserSetting = TypedDict(
         "meeting_ids": NotRequired[List[int]],
         "submitted_motion_ids": NotRequired[List[int]],
         "supported_motion_ids": NotRequired[List[int]],
+        "no_group": NotRequired[bool],
     },
 )
 
@@ -68,6 +69,19 @@ UsernameTestData = TypedDict(
     },
     total=False,
 )
+
+UsernameTestAssertionData = TypedDict(
+    "UsernameTestAssertionData",
+    {
+        "usernames": List[str],
+        "own_meeting_usernames": List[str],
+        "own_meeting_groupless_usernames": List[str],
+        "unknown_user_present": bool,
+        "usernames_to_user_ids": Dict[str, int],
+    },
+)
+
+UsernameTestExpectationInfo = Dict[str, UsernameTestAssertionData]
 
 
 class MotionJsonUpload(BaseActionTestCase):
@@ -151,15 +165,16 @@ class MotionJsonUpload(BaseActionTestCase):
                 meeting_user_data: Dict[str, Any] = {
                     "user_id": user_id,
                     "meeting_id": meeting_id,
-                    "group_ids": [meeting_id * 10],
                 }
                 meeting["meeting_user_ids"] = [
                     *meeting.get("meeting_user_ids", []),
                     next_meeting_user_id,
                 ]
-                model_data["group/" + str(meeting_id * 10)][
-                    "meeting_user_ids"
-                ] = meeting["meeting_user_ids"]
+                if not setting.get("no_group"):
+                    meeting_user_data["group_ids"] = [meeting_id * 10]
+                    model_data["group/" + str(meeting_id * 10)][
+                        "meeting_user_ids"
+                    ] = meeting["meeting_user_ids"]
                 motion_submitter_ids = []
                 supported_motion_ids = []
                 for motion_id in meeting.get("motion_ids", []):
@@ -1519,8 +1534,9 @@ class MotionJsonUpload(BaseActionTestCase):
         meeting_ids: List[int] = [],
         submitted_motion_ids: List[int] = [],
         supported_motion_ids: List[int] = [],
+        no_group: bool = False,
     ) -> SetupUserSetting:
-        user_data: SetupUserSetting = {"username": username}
+        user_data: SetupUserSetting = {"username": username, "no_group": no_group}
         meeting_ids = [
             meeting_id for meeting_id in meeting_ids if meeting_settings.get(meeting_id)
         ]
@@ -1576,6 +1592,13 @@ class MotionJsonUpload(BaseActionTestCase):
                 meeting_settings,
                 [base_meeting_id],
                 [base_motion_id],
+            ),
+            self.generate_user_setting(
+                "firstMeetingGrouplessSubmitter",
+                meeting_settings,
+                [base_meeting_id],
+                [base_motion_id],
+                no_group=True,
             ),
             self.generate_user_setting(
                 "firstMeetingSupporter",
@@ -1681,9 +1704,9 @@ class MotionJsonUpload(BaseActionTestCase):
         )
         return (response, model_data)
 
-    def get_own_meeting_users_and_user_id_dict(
+    def get_own_meeting_users_groupless_users_and_user_id_dict(
         self, usernames: List[str], meeting_id: int, model_data: Dict[str, Any]
-    ) -> Tuple[List[str], Dict[str, int]]:
+    ) -> Tuple[List[str], List[str], Dict[str, int]]:
         collections_and_ids = {fqid: fqid.split("/") for fqid in model_data}
         usernames_to_user_ids = {
             username: int(collections_and_ids[fqid][1])
@@ -1702,27 +1725,47 @@ class MotionJsonUpload(BaseActionTestCase):
             and collections_and_ids[fqid][0] == "user"
             and model_data[fqid]["username"] == username
         ]
-        return (own_meeting_usernames, usernames_to_user_ids)
+        own_meeting_groupless_usernames = [
+            username
+            for username in own_meeting_usernames
+            for fqid in model_data
+            if len(model_data[fqid].get("meeting_user_ids", []))
+            and (
+                not model_data[
+                    "meeting_user/"
+                    + str(model_data[fqid].get("meeting_user_ids", [0])[0])
+                ].get("group_ids")
+            )
+            and collections_and_ids[fqid][0] == "user"
+            and model_data[fqid]["username"] == username
+        ]
+        return (
+            own_meeting_usernames,
+            own_meeting_groupless_usernames,
+            usernames_to_user_ids,
+        )
 
     def get_expected_user_objects(
         self,
-        usernames: List[str],
-        own_meeting_usernames: List[str],
-        usernames_to_user_ids: Dict[str, int],
-        unknown_user_present: bool,
+        user_data: UsernameTestAssertionData,
         add_default_if_necessary: bool = False,
     ) -> List[Dict[str, Any]]:
         expected_user_objects: List[Dict[str, Any]] = [
             {"info": ImportState.WARNING, "value": name}
-            if (name not in own_meeting_usernames)
+            if (
+                (
+                    name not in user_data["own_meeting_usernames"]
+                    or name in user_data["own_meeting_groupless_usernames"]
+                )
+            )
             else {
                 "info": ImportState.DONE,
-                "id": usernames_to_user_ids[name],
+                "id": user_data["usernames_to_user_ids"][name],
                 "value": name,
             }
-            for name in usernames
+            for name in user_data["usernames"]
         ]
-        if unknown_user_present:
+        if user_data["unknown_user_present"]:
             expected_user_objects.append(
                 {"info": ImportState.WARNING, "value": "unknown"}
             )
@@ -1744,36 +1787,54 @@ class MotionJsonUpload(BaseActionTestCase):
 
     def make_simple_user_assertions_in_first_meeting(
         self,
-        usertype: str,
         response: Any,
-        expected_data: Dict[str, Any],
-        usernames: List[str],
-        own_meeting_usernames: List[str],
-        unknown_user_present: bool,
+        user_data: UsernameTestExpectationInfo,
         is_update: bool = False,
         multiple: bool = False,
     ) -> None:
         self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == (
-            ImportState.WARNING
-            if unknown_user_present or (len(own_meeting_usernames) != len(usernames))
-            else ImportState.DONE
-        )
         assert len(response.json["results"][0][0]["rows"]) == (2 if multiple else 1)
+        has_warning = False
+        expected_data: Dict[str, Any] = {}
+        for key in user_data:
+            expected_data.update(
+                {
+                    f"{key}s_username": self.get_expected_user_objects(
+                        user_data[key], key == "submitter"
+                    )
+                }
+            )
         for row in response.json["results"][0][0]["rows"]:
-            assert row["state"] == (ImportState.DONE if is_update else ImportState.NEW)
             expected_messages: List[str] = []
-            if unknown_user_present:
-                expected_messages.append(f"Could not find at least one {usertype}")
-            if len(own_meeting_usernames) != len(usernames):
-                expected_messages.append(
-                    f"At least one {usertype} is not part of this meeting"
+            for usertype in user_data:
+                user_date = user_data[usertype]
+                has_foreign_users = (
+                    len(user_date["own_meeting_usernames"])
+                    != len(user_date["usernames"])
+                ) or len(user_date["own_meeting_groupless_usernames"]) != 0
+                has_warning = (
+                    has_warning
+                    or user_date["unknown_user_present"]
+                    or has_foreign_users
                 )
+                assert row["state"] == (
+                    ImportState.DONE if is_update else ImportState.NEW
+                )
+
+                if user_date["unknown_user_present"]:
+                    expected_messages.append(f"Could not find at least one {usertype}")
+                if has_foreign_users:
+                    expected_messages.append(
+                        f"At least one {usertype} is not part of this meeting"
+                    )
+                for key in expected_data:
+                    assert row["data"].get(key) == expected_data[key]
             assert len(row["messages"]) == len(expected_messages)
             for message in expected_messages:
                 assert message in row["messages"]
-            for key in expected_data:
-                assert row["data"].get(key) == expected_data[key]
+        assert response.json["results"][0][0]["state"] == (
+            ImportState.WARNING if has_warning else ImportState.DONE
+        )
 
     def assert_with_submitters_in_first_meeting(
         self,
@@ -1793,8 +1854,7 @@ class MotionJsonUpload(BaseActionTestCase):
             is_update,
             multiple,
         )
-        has_unknown_user = not username_data
-        unknown_user_present = add_unknown_user or has_unknown_user
+        unknown_user_present = add_unknown_user or not username_data
         usernames = (
             [username_data]
             if type(username_data) == str
@@ -1802,30 +1862,21 @@ class MotionJsonUpload(BaseActionTestCase):
         )
         (
             own_meeting_usernames,
+            own_meeting_groupless_usernames,
             usernames_to_user_ids,
-        ) = self.get_own_meeting_users_and_user_id_dict(
+        ) = self.get_own_meeting_users_groupless_users_and_user_id_dict(
             usernames, meeting_id, model_data
         )
-        expected_user_objects = self.get_expected_user_objects(
-            usernames,
-            own_meeting_usernames,
-            usernames_to_user_ids,
-            unknown_user_present,
-            True,
-        )
-        data = {
-            "meeting_id": meeting_id,
-            "title": {"value": "test", "info": ImportState.DONE},
-            "text": {"value": "<p>my</p>", "info": ImportState.DONE},
-            "submitters_username": expected_user_objects,
+        user_data: UsernameTestAssertionData = {
+            "usernames": usernames,
+            "own_meeting_usernames": own_meeting_usernames,
+            "unknown_user_present": unknown_user_present,
+            "usernames_to_user_ids": usernames_to_user_ids,
+            "own_meeting_groupless_usernames": own_meeting_groupless_usernames,
         }
         self.make_simple_user_assertions_in_first_meeting(
-            "submitter",
             response,
-            data,
-            usernames,
-            own_meeting_usernames,
-            unknown_user_present,
+            {"submitter": user_data},
             is_update,
             multiple,
         )
@@ -1841,6 +1892,14 @@ class MotionJsonUpload(BaseActionTestCase):
 
     def test_json_upload_update_with_simple_submitter(self) -> None:
         self.assert_with_submitters_in_first_meeting("firstMeeting", is_update=True)
+
+    def test_json_upload_create_with_groupless_submitter(self) -> None:
+        self.assert_with_submitters_in_first_meeting("firstMeetingGrouplessSubmitter")
+
+    def test_json_upload_update_with_groupless_submitter(self) -> None:
+        self.assert_with_submitters_in_first_meeting(
+            "firstMeetingGrouplessSubmitter", is_update=True
+        )
 
     def test_json_upload_create_with_simple_submitter_in_list(self) -> None:
         self.assert_with_submitters_in_first_meeting(["firstMeeting"])
@@ -1905,8 +1964,7 @@ class MotionJsonUpload(BaseActionTestCase):
             is_update,
             multiple,
         )
-        has_unknown_user = not username_data
-        unknown_user_present = add_unknown_user or has_unknown_user
+        unknown_user_present = add_unknown_user or not username_data
         usernames = (
             [username_data]
             if type(username_data) == str
@@ -1914,29 +1972,21 @@ class MotionJsonUpload(BaseActionTestCase):
         )
         (
             own_meeting_usernames,
+            own_meeting_groupless_usernames,
             usernames_to_user_ids,
-        ) = self.get_own_meeting_users_and_user_id_dict(
+        ) = self.get_own_meeting_users_groupless_users_and_user_id_dict(
             usernames, meeting_id, model_data
         )
-        expected_user_objects = self.get_expected_user_objects(
-            usernames,
-            own_meeting_usernames,
-            usernames_to_user_ids,
-            add_unknown_user or has_unknown_user,
-        )
-        data = {
-            "meeting_id": meeting_id,
-            "title": {"value": "test", "info": ImportState.DONE},
-            "text": {"value": "<p>my</p>", "info": ImportState.DONE},
-            "supporters_username": expected_user_objects,
+        user_data: UsernameTestAssertionData = {
+            "usernames": usernames,
+            "own_meeting_usernames": own_meeting_usernames,
+            "unknown_user_present": unknown_user_present,
+            "usernames_to_user_ids": usernames_to_user_ids,
+            "own_meeting_groupless_usernames": own_meeting_groupless_usernames,
         }
         self.make_simple_user_assertions_in_first_meeting(
-            "supporter",
             response,
-            data,
-            usernames,
-            own_meeting_usernames,
-            unknown_user_present,
+            {"supporter": user_data},
             is_update,
             multiple,
         )
@@ -1952,6 +2002,14 @@ class MotionJsonUpload(BaseActionTestCase):
 
     def test_json_upload_update_with_simple_supporter(self) -> None:
         self.assert_with_supporters_in_first_meeting("firstMeeting", is_update=True)
+
+    def test_json_upload_create_with_groupless_supporter(self) -> None:
+        self.assert_with_supporters_in_first_meeting("firstMeetingGrouplessSubmitter")
+
+    def test_json_upload_update_with_groupless_supporter(self) -> None:
+        self.assert_with_supporters_in_first_meeting(
+            "firstMeetingGrouplessSubmitter", is_update=True
+        )
 
     def test_json_upload_create_with_simple_supporter_in_list(self) -> None:
         self.assert_with_supporters_in_first_meeting(["firstMeeting"])
@@ -1998,5 +2056,511 @@ class MotionJsonUpload(BaseActionTestCase):
             "firstMeeting", is_update=True, multiple=True
         )
 
-    # TODO: Test with submitters_verbose and test with meeting user without groups
-    # TODO add verbose checking, allow for other numbers?
+    def assert_with_both_usertypes_in_first_meeting(
+        self,
+        submitter_username_data: Optional[Union[List[str], str]] = None,
+        supporter_username_data: Optional[Union[List[str], str]] = None,
+        add_unknown_user: bool = False,
+        is_update: bool = False,
+        multiple: bool = False,
+    ) -> None:
+        meeting_id = 42
+        (
+            response,
+            model_data,
+        ) = self.get_user_request_response_and_model_data_in_first_meeting(
+            meeting_id,
+            {
+                "submitters": submitter_username_data,
+                "supporters": supporter_username_data,
+            },
+            add_unknown_user,
+            is_update,
+            multiple,
+        )
+        data: UsernameTestExpectationInfo = {}
+        for key, username_data in {
+            "submitter": submitter_username_data,
+            "supporter": supporter_username_data,
+        }.items():
+            unknown_user_present = add_unknown_user or not username_data
+            usernames = (
+                [username_data]
+                if type(username_data) == str
+                else cast(List[str], username_data) or []
+            )
+            (
+                own_meeting_usernames,
+                own_meeting_groupless_usernames,
+                usernames_to_user_ids,
+            ) = self.get_own_meeting_users_groupless_users_and_user_id_dict(
+                usernames, meeting_id, model_data
+            )
+            data[key] = {
+                "usernames": usernames,
+                "own_meeting_usernames": own_meeting_usernames,
+                "unknown_user_present": unknown_user_present,
+                "usernames_to_user_ids": usernames_to_user_ids,
+                "own_meeting_groupless_usernames": own_meeting_groupless_usernames,
+            }
+        self.make_simple_user_assertions_in_first_meeting(
+            response,
+            data,
+            is_update,
+            multiple,
+        )
+
+    def test_json_upload_create_with_both_usertypes_unknown_users(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting()
+
+    def test_json_upload_update_with_both_usertypes_unknown_users(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(is_update=True)
+
+    def test_json_upload_create_with_both_usertypes_simple(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            "firstMeeting", "firstMeetingBoth"
+        )
+
+    def test_json_upload_update_with_both_usertypes_simple(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            "firstMeeting", "firstMeetingBoth", is_update=True
+        )
+
+    def test_json_upload_create_with_both_usertypes_and_groupless_user(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            "firstMeetingGrouplessSubmitter", "firstMeetingGrouplessSubmitter"
+        )
+
+    def test_json_upload_update_with_both_usertypes_and_groupless_user(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            "firstMeetingGrouplessSubmitter",
+            "firstMeetingGrouplessSubmitter",
+            is_update=True,
+        )
+
+    def test_json_upload_create_with_both_usertypes_in_lists(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            ["firstMeeting"], ["firstMeeting"]
+        )
+
+    def test_json_upload_update_with_both_usertypes_in_lists(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            ["firstMeeting"], ["firstMeetingSubmitter"], is_update=True
+        )
+
+    def test_json_upload_create_with_both_usertypes_unknown_in_list(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            ["firstMeeting"], ["multiMeeting"], add_unknown_user=True
+        )
+
+    def test_json_upload_update_with_both_usertypes_unknown_in_list(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            ["firstMeeting"], ["multiMeeting"], add_unknown_user=True, is_update=True
+        )
+
+    def test_json_upload_create_with_both_usertypes_foreign_in_list(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            ["noMeeting", "firstMeeting"], ["secondMeeting", "multiMeeting"]
+        )
+
+    def test_json_upload_update_with_both_usertypes_foreign_in_list(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            ["noMeeting", "firstMeeting"],
+            ["secondMeeting", "multiMeeting"],
+            is_update=True,
+        )
+
+    def test_json_upload_create_with_both_usertypes_and_multiple_rows(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            "firstMeeting", "firstMeeting", multiple=True
+        )
+
+    def test_json_upload_update_with_both_usertypes_and_multiple_rows(self) -> None:
+        self.assert_with_both_usertypes_in_first_meeting(
+            "firstMeeting", "firstMeeting", is_update=True, multiple=True
+        )
+
+    def assert_with_verbose_users_in_first_meeting(
+        self,
+        usernames: Optional[List[str]],
+        verbose_usernames: List[str],
+        username_fields: List[str] = ["submitter"],
+        is_update: bool = False,
+        multiple: bool = False,
+    ) -> None:
+        meeting_id = 42
+        rows = 2 if multiple else 1
+        self.set_up_models(*self.get_base_user_and_meeting_settings())
+        payloads = []
+        for i in range(rows):
+            payload: Dict[str, Any] = {
+                "title": "test",
+                "text": "my",
+            }
+            for field in username_fields:
+                payload[f"{field}s_verbose"] = verbose_usernames
+                if usernames:
+                    payload[f"{field}s_username"] = usernames
+            if is_update:
+                payload["number"] = "NUM0" + str(i + 1)
+            payloads.append(payload)
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": payloads,
+                "meeting_id": meeting_id,
+            },
+        )
+        has_error = (not not usernames) and len(usernames) < len(verbose_usernames)
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == (2 if multiple else 1)
+        assert (
+            response.json["results"][0][0]["state"] == ImportState.ERROR
+        ) == has_error
+        for row in response.json["results"][0][0]["rows"]:
+            for user in [
+                *(
+                    row["data"].get("submitters_username", [])
+                    if "submitter" in username_fields
+                    else []
+                ),
+                *(
+                    row["data"].get("supporters_username", [])
+                    if "supporter" in username_fields
+                    else []
+                ),
+            ]:
+                assert (user.get("info") == ImportState.ERROR) == has_error
+            assert row["state"] == (
+                ImportState.ERROR
+                if has_error
+                else ImportState.DONE
+                if is_update
+                else ImportState.NEW
+            )
+            for fieldname in username_fields:
+                assert (
+                    f"Error: Verbose field is set and has more entries than the username field for {fieldname}s"
+                    in row["messages"]
+                ) == has_error
+
+    knights = [
+        "Sir Galahad the Pure",
+        "Sir Bedivere the Wise",
+        "Sir Lancelot the Brave",
+        "Sir Robin the-not-quite-so-brave-as-Sir-Lancelot",
+        "Arthur, King of the Britons",
+    ]
+    legal_first_meeting_usernames = [
+        "firstMeeting",
+        "firstMeetingSubmitter",
+        "firstMeetingSupporter",
+        "firstMeetingBoth",
+    ]
+
+    def test_json_upload_create_submitters_less_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights[:3]
+        )
+
+    def test_json_upload_update_submitters_less_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights[:3], is_update=True
+        )
+
+    def test_json_upload_create_submitters_less_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights[:3], multiple=True
+        )
+
+    def test_json_upload_update_submitters_less_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights[:3],
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_submitters_equal_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights[:4]
+        )
+
+    def test_json_upload_update_submitters_equal_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights[:4], is_update=True
+        )
+
+    def test_json_upload_create_submitters_equal_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights[:4], multiple=True
+        )
+
+    def test_json_upload_update_submitters_equal_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights[:4],
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_submitters_more_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights
+        )
+
+    def test_json_upload_update_submitters_more_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights, is_update=True
+        )
+
+    def test_json_upload_create_submitters_more_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights, multiple=True
+        )
+
+    def test_json_upload_update_submitters_more_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights,
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_submitters_with_verbose_fields_no_usernames(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(None, self.knights)
+
+    def test_json_upload_update_submitters_with_verbose_fields_no_usernames(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            None, self.knights, is_update=True
+        )
+
+    def test_json_upload_create_submitters_with_verbose_fields_no_usernames_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            None, self.knights, multiple=True
+        )
+
+    def test_json_upload_update_submitters_with_verbose_fields_no_usernames_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            None, self.knights, is_update=True, multiple=True
+        )
+
+    def test_json_upload_create_supporters_less_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights[:3], ["supporter"]
+        )
+
+    def test_json_upload_update_supporters_less_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights[:3],
+            ["supporter"],
+            is_update=True,
+        )
+
+    def test_json_upload_create_supporters_less_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights[:3],
+            ["supporter"],
+            multiple=True,
+        )
+
+    def test_json_upload_update_supporters_less_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights[:3],
+            ["supporter"],
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_supporters_equal_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights[:4], ["supporter"]
+        )
+
+    def test_json_upload_update_supporters_equal_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights[:4],
+            ["supporter"],
+            is_update=True,
+        )
+
+    def test_json_upload_create_supporters_equal_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights[:4],
+            ["supporter"],
+            multiple=True,
+        )
+
+    def test_json_upload_update_supporters_equal_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights[:4],
+            ["supporter"],
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_supporters_more_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames, self.knights, ["supporter"]
+        )
+
+    def test_json_upload_update_supporters_more_verbose_fields(self) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights,
+            ["supporter"],
+            is_update=True,
+        )
+
+    def test_json_upload_create_supporters_more_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights,
+            ["supporter"],
+            multiple=True,
+        )
+
+    def test_json_upload_update_supporters_more_verbose_fields_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            self.legal_first_meeting_usernames,
+            self.knights,
+            ["supporter"],
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_supporters_with_verbose_fields_no_usernames(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            None, self.knights, ["supporter"]
+        )
+
+    def test_json_upload_update_supporters_with_verbose_fields_no_usernames(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            None, self.knights, ["supporter"], is_update=True
+        )
+
+    def test_json_upload_create_supporters_with_verbose_fields_no_usernames_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            None, self.knights, ["supporter"], multiple=True
+        )
+
+    def test_json_upload_update_supporters_with_verbose_fields_no_usernames_multiple_rows(
+        self,
+    ) -> None:
+        self.assert_with_verbose_users_in_first_meeting(
+            None, self.knights, ["supporter"], is_update=True, multiple=True
+        )
+
+    def assert_and_check_for_duplicate_users_in_row(
+        self,
+        usernames: List[str],
+        username_fields: List[str] = ["submitter"],
+        is_update: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.set_up_models(*self.get_base_user_and_meeting_settings())
+        payload: Dict[str, Any] = {
+            "title": "test",
+            "text": "my",
+        }
+        for field in username_fields:
+            payload[f"{field}s_username"] = usernames
+        if is_update:
+            payload["number"] = "NUM01"
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [payload],
+                "meeting_id": meeting_id,
+            },
+        )
+        has_warnings = len(usernames) != len(set(usernames))
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == 1
+        assert (
+            response.json["results"][0][0]["state"] == ImportState.WARNING
+        ) == has_warnings
+        row = response.json["results"][0][0]["rows"][0]
+        user_set: Set[str] = set([])
+        for user in [
+            *row["data"].get("submitters_username", []),
+            *row["data"].get("supporters_username", []),
+        ]:
+            assert (user.get("info") == ImportState.WARNING) == (
+                user["value"] in user_set
+            )
+            user_set.add(user["value"])
+        assert row["state"] == (ImportState.DONE if is_update else ImportState.NEW)
+        for fieldname in username_fields:
+            assert (
+                f"At least one {fieldname} has been named multiple times"
+                in row["messages"]
+            ) == has_warnings
+
+    def test_json_upload_create_with_duplicate_submitters(self) -> None:
+        self.assert_and_check_for_duplicate_users_in_row(
+            [*self.legal_first_meeting_usernames, "firstMeeting", "multiMeeting"]
+        )
+
+    def test_json_upload_update_with_duplicate_submitters(self) -> None:
+        self.assert_and_check_for_duplicate_users_in_row(
+            [*self.legal_first_meeting_usernames, "firstMeeting", "multiMeeting"],
+            is_update=True,
+        )
+
+    def test_json_upload_create_with_duplicate_supporters(self) -> None:
+        self.assert_and_check_for_duplicate_users_in_row(
+            [*self.legal_first_meeting_usernames, "firstMeeting", "multiMeeting"],
+            ["supporter"],
+        )
+
+    def test_json_upload_update_with_duplicate_supporters(self) -> None:
+        self.assert_and_check_for_duplicate_users_in_row(
+            [*self.legal_first_meeting_usernames, "firstMeeting", "multiMeeting"],
+            ["supporter"],
+            is_update=True,
+        )

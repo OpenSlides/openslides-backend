@@ -1,5 +1,5 @@
 from re import search, sub
-from typing import Any, Dict, Iterable, List, Optional, cast
+from typing import Any, Dict, Iterable, List, Optional, Set, cast
 
 from openslides_backend.shared.filters import And, FilterOperator, Or
 
@@ -250,6 +250,7 @@ class MotionJsonUpload(
             if number := value.get("number"):
                 entry["number"] = {"value": number, "info": ImportState.GENERATED}
 
+        has_submitter_error: bool = False
         for fieldname in ["submitter", "supporter"]:
             if users := entry.get(f"{fieldname}s_username"):
                 if not isinstance(users, list):
@@ -258,6 +259,7 @@ class MotionJsonUpload(
                 if not isinstance(verbose, list):
                     verbose = [verbose]
                 verbose_user_mismatch = len(verbose) > len(users)
+                username_set: Set[str] = set([])
                 entry_list: list[Dict[str, Any]] = []
                 message_set = set()
                 lookup = (
@@ -271,7 +273,15 @@ class MotionJsonUpload(
                             entry_list.append(
                                 {"value": user, "info": ImportState.ERROR}
                             )
+                        elif user in username_set:
+                            entry_list.append(
+                                {"value": user, "info": ImportState.WARNING}
+                            )
+                            message_set.add(
+                                f"At least one {fieldname} has been named multiple times"
+                            )
                         else:
+                            username_set.add(user)
                             found_users = lookup.get_matching_data_by_name(user)
                             if len(found_users) == 1 and found_users[0].get("id") != 0:
                                 user_id = cast(int, found_users[0].get("id"))
@@ -320,23 +330,32 @@ class MotionJsonUpload(
                     message_set.add(
                         f"Error: Verbose field is set and has more entries than the username field for {fieldname}s"
                     )
+                    if fieldname == "submitter":
+                        has_submitter_error = True
                 messages.extend([message for message in message_set])
 
-        if len((cast(List[dict[str, Any]], entry.get("submitters_username", [])))) == 0:
-            entry["submitters_username"] = [self._get_self_username_object()]
-        elif (
-            len(
-                [
-                    entry
-                    for entry in (
-                        cast(List[dict[str, Any]], entry.get("submitters_username", []))
-                    )
-                    if entry.get("info") and (entry["info"] != ImportState.WARNING)
-                ]
-            )
-            == 0
-        ):
-            entry["submitters_username"].append(self._get_self_username_object())
+        if not has_submitter_error:
+            if (
+                len((cast(List[dict[str, Any]], entry.get("submitters_username", []))))
+                == 0
+            ):
+                entry["submitters_username"] = [self._get_self_username_object()]
+            elif (
+                len(
+                    [
+                        entry
+                        for entry in (
+                            cast(
+                                List[dict[str, Any]],
+                                entry.get("submitters_username", []),
+                            )
+                        )
+                        if entry.get("info") and (entry["info"] != ImportState.WARNING)
+                    ]
+                )
+                == 0
+            ):
+                entry["submitters_username"].append(self._get_self_username_object())
 
         if tags := entry.get("tags"):
             if not isinstance(tags, list):
@@ -524,6 +543,8 @@ class MotionJsonUpload(
                 "meeting_user",
                 And(
                     FilterOperator("meeting_id", "=", meeting_id),
+                    FilterOperator("group_ids", "!=", []),
+                    FilterOperator("group_ids", "!=", None),
                     Or(
                         *[
                             FilterOperator("user_id", "=", user_id)
