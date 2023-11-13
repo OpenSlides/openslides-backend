@@ -54,7 +54,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_name",
                 "committee_id": 1,
-                "group_ids": [2, 3, 4, 5, 6],
+                "group_ids": [2, 3, 4, 5],
                 "default_group_id": 2,
                 "admin_group_id": 3,
                 "motion_workflow_ids": [1, 2],
@@ -78,7 +78,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("group/3", {"name": "Admin"})
         self.assert_model_exists("group/4", {"name": "Delegates"})
         self.assert_model_exists("group/5", {"name": "Staff"})
-        self.assert_model_exists("group/6", {"name": "Committees"})
         self.assert_model_exists(
             "motion_workflow/1",
             {
@@ -442,9 +441,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         Translator.set_translation_language("de")
-        for i, name in enumerate(
-            ["Default", "Admin", "Delegates", "Staff", "Committees"], 2
-        ):
+        for i, name in enumerate(["Default", "Admin", "Delegates", "Staff"], 2):
             self.assert_model_exists(
                 f"group/{i}", {"name": _(name), "external_id": name}
             )

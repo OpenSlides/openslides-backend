@@ -1,10 +1,10 @@
 aiosmtpd==1.4.4.post2
 autoflake==2.2.1
 black==23.11.0
-debugpy==1.6.7
+debugpy==1.8.0
 flake8==6.1.0
 isort==5.12.0
-mypy==1.4.1
+mypy==1.6.1
 pip-check==2.8.1
 pytest==7.4.3
 pytest-cov==4.1.0
@@ -14,6 +14,6 @@ pyyaml==6.0.1
 # typing
 types-babel==2.11.0.15
 types-bleach==6.1.0.0
-types-PyYAML==6.0.12.11
+types-PyYAML==6.0.12.12
 types-requests==2.31.0.10
 types-simplejson==3.19.0.2
