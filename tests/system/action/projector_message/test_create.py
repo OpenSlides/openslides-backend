@@ -26,7 +26,7 @@ class ProjectorMessageCreate(BaseActionTestCase):
         response = self.request("projector_message.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['message', 'meeting_id'] properties",
+            "data must contain ['meeting_id', 'message'] properties",
             response.json["message"],
         )
 

@@ -2116,7 +2116,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.meeting must contain ['_migration_index', 'meeting'] properties",
+            "data.meeting must contain ['_migration_index'] properties",
             response.json["message"],
         )
 

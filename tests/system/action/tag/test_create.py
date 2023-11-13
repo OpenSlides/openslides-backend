@@ -18,7 +18,7 @@ class TagActionTest(BaseActionTestCase):
         response = self.request("tag.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['name', 'meeting_id'] properties",
+            "data must contain ['meeting_id', 'name'] properties",
             response.json["message"],
         )
 

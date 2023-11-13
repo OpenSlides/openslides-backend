@@ -431,6 +431,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['list_of_speakers_id', 'meeting_user_id'] properties",
+            "data must contain ['meeting_user_id'] properties",
             response.json["message"],
         )
