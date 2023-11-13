@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "6e3c7a2d9d14eb8f59856824b726cb79"
+MODELS_YML_CHECKSUM = "51b8a0f13bd7ec7d9b4355c7ccde2af9"
 
 
 class Organization(Model):
@@ -19,13 +19,6 @@ class Organization(Model):
     login_text = fields.TextField()
     reset_password_verbose_errors = fields.BooleanField()
     genders = fields.CharArrayField(default=["male", "female", "diverse", "non-binary"])
-    users_email_sender = fields.CharField(default="OpenSlides")
-    users_email_replyto = fields.CharField()
-    users_email_subject = fields.CharField(default="OpenSlides access data")
-    users_email_body = fields.TextField(
-        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
-    )
-    url = fields.CharField(default="https://example.com")
     list_of_speakers_enable_subdivisions = fields.BooleanField()
     list_of_speakers_default_subdivision_time = fields.IntegerField()
     enable_electronic_voting = fields.BooleanField()
@@ -75,6 +68,13 @@ class Organization(Model):
     )
     user_ids = fields.RelationListField(to={"user": "organization_id"})
     subdivision_ids = fields.RelationListField(to={"subdivision": "organization_id"})
+    users_email_sender = fields.CharField(default="OpenSlides")
+    users_email_replyto = fields.CharField()
+    users_email_subject = fields.CharField(default="OpenSlides access data")
+    users_email_body = fields.TextField(
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
+    )
+    url = fields.CharField(default="https://example.com")
 
 
 class User(Model):
@@ -611,6 +611,10 @@ class Meeting(Model, MeetingModelMixin):
     list_of_speakers_ids = fields.RelationListField(
         to={"list_of_speakers": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
+    subdivision_list_of_speakers_ids = fields.RelationListField(
+        to={"subdivision_list_of_speakers": "meeting_id"},
+        on_delete=fields.OnDelete.CASCADE,
+    )
     point_of_order_category_ids = fields.RelationListField(
         to={"point_of_order_category": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -1102,6 +1106,9 @@ class SubdivisionListOfSpeakers(Model):
         constraints={
             "description": "The current start time of a speaker for this subdivision. Is only set if a currently speaking speaker exists"
         }
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "subdivision_list_of_speakers_ids"}, required=True
     )
 
 

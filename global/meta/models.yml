@@ -89,40 +89,6 @@ organization:
       - diverse
       - non-binary
     restriction_mode: A
-  users_email_sender:
-    type: string
-    default: OpenSlides
-    restriction_mode: A
-  users_email_replyto:
-    type: string
-    restriction_mode: A
-  users_email_subject:
-    type: string
-    default: OpenSlides access data
-    restriction_mode: A
-  users_email_body:
-    type: text
-    default: >-
-      Dear {name},
-
-
-      this is your personal OpenSlides login:
-
-
-      {url}
-
-      Username: {username}
-
-      Password: {password}
-
-
-
-      This email was generated automatically.
-    restriction_mode: A
-  url:
-    type: string
-    default: https://example.com
-    restriction_mode: A
   list_of_speakers_enable_subdivisions:
     type: boolean
     restriction_mode: B
@@ -230,6 +196,40 @@ organization:
     type: relation-list
     restriction_mode: B
     to: subdivision/organization_id
+  users_email_sender:
+    type: string
+    default: OpenSlides
+    restriction_mode: A
+  users_email_replyto:
+    type: string
+    restriction_mode: A
+  users_email_subject:
+    type: string
+    default: OpenSlides access data
+    restriction_mode: A
+  users_email_body:
+    type: text
+    default: >-
+      Dear {name},
+
+
+      this is your personal OpenSlides login:
+
+
+      {url}
+
+      Username: {username}
+
+      Password: {password}
+
+
+
+      This email was generated automatically.
+    restriction_mode: A
+  url:
+    type: string
+    default: https://example.com
+    restriction_mode: A
 
 user:
   id:
@@ -1492,6 +1492,11 @@ meeting:
     to: list_of_speakers/meeting_id
     on_delete: CASCADE
     restriction_mode: B
+  subdivision_list_of_speakers_ids:
+    type: relation-list
+    to: subdivision_list_of_speakers/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
   point_of_order_category_ids:
     type: relation-list
     to: point_of_order_category/meeting_id
@@ -2183,6 +2188,11 @@ subdivision_list_of_speakers:
     type: timestamp
     restriction_mode: A
     description: The current start time of a speaker for this subdivision. Is only set if a currently speaking speaker exists
+  meeting_id:
+    type: relation
+    to: meeting/subdivision_list_of_speakers_ids
+    required: true
+    restriction_mode: A
 
 point_of_order_category:
   id:
