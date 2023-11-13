@@ -33,7 +33,7 @@ def test_with_sql_dump():
                         cursor.copy_expert(line, data)
                     cursor.execute("SET session_replication_role = 'origin'")
                 else:
-                    cursor.execute(line, [])
+                    cursor.execute(content, [])
     migration_handler = injector.get(MigrationHandler)
     migration_handler.register_migrations(
         *MigrationWrapper.load_migrations("openslides_backend.migrations.migrations")
