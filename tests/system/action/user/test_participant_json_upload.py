@@ -2,6 +2,7 @@ from time import time
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from tests.system.action.base import BaseActionTestCase
 
@@ -155,6 +156,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 "name": "participant",
                 "state": ImportState.DONE,
                 "result": {
+                    "meeting_id": 1,
                     "rows": [
                         {
                             "state": ImportState.NEW,
@@ -185,16 +187,20 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert result == {
             "id": 1,
             "headers": [
-                {"property": "title", "type": "string"},
-                {"property": "first_name", "type": "string"},
-                {"property": "last_name", "type": "string"},
-                {"property": "is_active", "type": "boolean"},
-                {"property": "is_physical_person", "type": "boolean"},
+                {"property": "title", "type": "string", "is_object": True},
+                {"property": "first_name", "type": "string", "is_object": True},
+                {"property": "last_name", "type": "string", "is_object": True},
+                {"property": "is_active", "type": "boolean", "is_object": True},
+                {
+                    "property": "is_physical_person",
+                    "type": "boolean",
+                    "is_object": True,
+                },
                 {"property": "default_password", "type": "string", "is_object": True},
-                {"property": "email", "type": "string"},
+                {"property": "email", "type": "string", "is_object": True},
                 {"property": "username", "type": "string", "is_object": True},
-                {"property": "gender", "type": "string"},
-                {"property": "pronoun", "type": "string"},
+                {"property": "gender", "type": "string", "is_object": True},
+                {"property": "pronoun", "type": "string", "is_object": True},
                 {"property": "saml_id", "type": "string", "is_object": True},
                 {"property": "structure_level", "type": "string"},
                 {"property": "number", "type": "string"},
@@ -250,8 +256,108 @@ class ParticipantJsonUpload(BaseActionTestCase):
             {},
             "participant.json_upload",
             {"meeting_id": 1, "data": [{"username": "test"}]},
-            OrganizationManagementLevel.CAN_MANAGE_USERS,
+            Permissions.User.CAN_MANAGE,
         )
+
+    def test_json_upload_names_and_email_find_add_meeting_data(self) -> None:
+        self.set_models(
+            {
+                "user/34": {
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "test@ntvtn.de",
+                    "username": "test",
+                },
+                "group/1": {"default_group_for_meeting_id": 1},
+            }
+        )
+        fix_fields = {
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "email": "test@ntvtn.de",
+            "structure_level": "meeting1 structure level",
+            "number": "meeting1 number",
+            "comment": "meeting1 comment",
+        }
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "default_password": "new default password",
+                        "vote_weight": "1.456",
+                        "is_present": "f",
+                        **fix_fields,
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["data"]["id"] == 34
+        assert row["data"]["default_password"] == {
+            "value": "new default password",
+            "info": "done",
+        }
+        assert row["data"]["username"] == {"value": "test", "info": "done", "id": 34}
+        assert row["data"]["vote_weight"] == "1.456000"
+        assert row["data"]["is_present"] is False
+        assert row["data"]["groups"] == [
+            {"value": "testgroup", "info": "generated", "id": 1}
+        ]
+        for key in fix_fields.keys():
+            assert (
+                row["data"][key]
+                if isinstance(row["data"][key], str)
+                else row["data"][key]["value"] == fix_fields[key]
+            )
+
+    def test_json_upload_names_generate_username_password_create_meeting(self) -> None:
+        self.set_models(
+            {
+                "user/34": {
+                    "username": "MaxMustermann",
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                },
+                "group/1": {"default_group_for_meeting_id": 1},
+            }
+        )
+
+        fix_fields = {
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "structure_level": "meeting1 structure level",
+        }
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [{"vote_weight": "1.456", "is_present": "0", **fix_fields}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.NEW
+        for key in fix_fields.keys():
+            assert (
+                entry["data"][key]
+                if isinstance(entry["data"][key], str)
+                else entry["data"][key]["value"] == fix_fields[key]
+            )
+        assert entry["data"]["username"] == {
+            "value": "MaxMustermann1",
+            "info": ImportState.GENERATED,
+        }
+        assert entry["data"]["default_password"]["info"] == ImportState.GENERATED
+        assert entry["data"]["vote_weight"] == "1.456000"
+        assert entry["data"]["structure_level"] == "meeting1 structure level"
+        assert entry["data"]["is_present"] is False
+        assert entry["data"]["groups"] == [
+            {"value": "testgroup", "info": "generated", "id": 1}
+        ]
 
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
@@ -327,13 +433,19 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "info": "generated",
             "value": "test_saml_id21",
         }
-        assert import_preview["result"]["rows"][2]["data"]["last_name"] == "ml_id2"
-        assert import_preview["result"]["rows"][2]["data"]["first_name"] == "test_sa"
+        assert import_preview["result"]["rows"][2]["data"]["last_name"] == {
+            "value": "ml_id2",
+            "info": "done",
+        }
+        assert import_preview["result"]["rows"][2]["data"]["first_name"] == {
+            "value": "test_sa",
+            "info": "done",
+        }
         assert import_preview["result"]["rows"][2]["data"]["groups"] == [
             {"value": "group1", "info": ImportState.GENERATED, "id": 1}
         ]
 
-    def json_upload_set_saml_id_in_existing_account(self) -> None:
+    def json_upload_set_saml_id_in_existing_participant(self) -> None:
         self.set_models(
             {
                 "user/2": {
@@ -375,7 +487,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
-    def json_upload_update_saml_id_in_existing_account(self) -> None:
+    def json_upload_update_saml_id_in_existing_participant(self) -> None:
         self.set_models(
             {
                 "user/2": {
@@ -410,91 +522,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
-    def json_upload_names_and_email_find_add_meeting_data(self) -> None:
-        self.set_models(
-            {
-                "user/34": {
-                    "first_name": "Max",
-                    "last_name": "Mustermann",
-                    "email": "test@ntvtn.de",
-                    "username": "test",
-                }
-            }
-        )
-        fix_fields = {
-            "first_name": "Max",
-            "last_name": "Mustermann",
-            "email": "test@ntvtn.de",
-            "structure_level": "meeting1 structure level",
-            "number": "meeting1 number",
-            "comment": "meeting1 comment",
-        }
-        response = self.request(
-            "participant.json_upload",
-            {
-                "meeting_id": 1,
-                "data": [
-                    {
-                        "default_password": "new default password",
-                        "vote_weight": "1.456",
-                        "is_present": "f",
-                        **fix_fields,
-                    }
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        row = response.json["results"][0][0]["rows"][0]
-        assert row["state"] == ImportState.DONE
-        assert row["data"] == {
-            "id": 34,
-            "default_password": {"value": "new default password", "info": "done"},
-            "username": {"value": "test", "info": "done", "id": 34},
-            "vote_weight": "1.456000",
-            "is_present": False,
-            "groups": [{"value": "group1", "info": "generated", "id": 1}],
-            **fix_fields,
-        }
-
-    def json_upload_names_generate_username_password_create_meeting(self) -> None:
-        self.set_models(
-            {
-                "user/34": {
-                    "username": "MaxMustermann",
-                    "first_name": "Max",
-                    "last_name": "Mustermann",
-                }
-            }
-        )
-
-        fix_fields = {
-            "first_name": "Max",
-            "last_name": "Mustermann",
-            "structure_level": "meeting1 structure level",
-            "number": "meeting1 number",
-            "comment": "meeting1 comment",
-        }
-        response = self.request(
-            "participant.json_upload",
-            {
-                "meeting_id": 1,
-                "data": [{"vote_weight": "1.456", "is_present": "0", **fix_fields}],
-            },
-        )
-        self.assert_status_code(response, 200)
-        entry = response.json["results"][0][0]["rows"][0]
-        assert entry["state"] == ImportState.NEW
-        for key in fix_fields.keys():
-            assert entry["data"][key] == fix_fields[key]
-        assert entry["data"]["username"] == {
-            "value": "MaxMustermann1",
-            "info": ImportState.GENERATED,
-        }
-        assert entry["data"]["default_password"]["info"] == ImportState.GENERATED
-        assert entry["data"]["vote_weight"] == "1.456000"
-        assert entry["data"]["is_present"] is False
-
-    def json_upload_username_10_saml_id_11_update_meeting(self) -> None:
+    def json_upload_username_set_saml_id_remove_presence(self) -> None:
         self.set_models(
             {
                 "user/10": {
@@ -511,10 +539,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "structure_level": "old sl",
                     "number": "old number",
                     "comment": "old comment",
-                },
-                "user/11": {
-                    "username": "user11",
-                    "saml_id": "saml_id11",
                 },
             }
         )
@@ -600,6 +624,18 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "default_password": "secret",
                     "can_change_own_password": True,
                     "default_vote_weight": "3.300000",
+                    "meeting_user_ids": [31, 34],
+                },
+                "meeting_user/31": {
+                    "user_id": 3,
+                    "meeting_id": 1,
+                    "group_ids": [1, 2],
+                    "vote_weight": "3.310000",
+                },
+                "meeting_user/34": {
+                    "user_id": 3,
+                    "meeting_id": 4,
+                    "group_ids": [5],
                 },
                 "user/4": {
                     "username": "user4",
@@ -611,6 +647,24 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "can_change_own_password": True,
                     "default_vote_weight": "4.300000",
                 },
+                "group/1": {
+                    "meeting_id": 1,
+                    "meeting_user_ids": [31],
+                },
+                "group/2": {
+                    "meeting_id": 1,
+                    "meeting_user_ids": [31],
+                },
+                "group/5": {
+                    "meeting_id": 4,
+                    "meeting_user_ids": [34],
+                },
+                "group/7": {
+                    "meeting_id": 1,
+                    "name": "group7M1",
+                },
+                "meeting/1": {"meeting_user_ids": [31], "group_ids": [1, 2, 3, 7]},
+                "meeting/4": {"meeting_user_ids": [34]},
             }
         )
         response = self.request(
@@ -621,12 +675,18 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     {
                         "username": "user2",
                         "saml_id": "test_saml_id2",
+                        "groups": ["group3", "group4"],
                     },
-                    {"saml_id": "saml3", "default_vote_weight": "3.345678"},
+                    {
+                        "saml_id": "saml3",
+                        "vote_weight": "3.345678",
+                        "groups": ["group3"],
+                    },
                     {
                         "first_name": "Martin",
                         "last_name": "Luther King",
                         "email": "mlk@america.com",
+                        "groups": ["group4"],
                     },
                     {
                         "username": "new_user5",
@@ -634,10 +694,12 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     },
                     {
                         "saml_id": "new_saml6",
+                        "groups": ["group4"],
                     },
                     {
                         "first_name": "Joan",
                         "last_name": "Baez7",
+                        "groups": ["group2", "group4", "unknown", "group7M1"],
                     },
                 ],
             },
@@ -648,14 +710,18 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Following groups were not found: 'group4'",
         ]
         assert import_preview["result"]["rows"][0]["data"] == {
             "id": 2,
             "saml_id": {"info": "new", "value": "test_saml_id2"},
             "username": {"id": 2, "info": "done", "value": "user2"},
             "default_password": {"info": "warning", "value": ""},
-            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+            "groups": [
+                {"id": 3, "info": "done", "value": "group3"},
+                {"info": "warning", "value": "group4"},
+            ],
         }
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
@@ -667,18 +733,24 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "saml_id": {"info": ImportState.DONE, "value": "saml3"},
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+            "groups": [{"id": 3, "info": "done", "value": "group3"}],
+            "vote_weight": "3.345678",
         }
 
         assert import_preview["result"]["rows"][2]["state"] == ImportState.DONE
-        assert import_preview["result"]["rows"][2]["messages"] == []
+        assert import_preview["result"]["rows"][2]["messages"] == [
+            "Following groups were not found: 'group4'"
+        ]
         assert import_preview["result"]["rows"][2]["data"] == {
             "id": 4,
             "email": "mlk@america.com",
             "username": {"id": 4, "info": "done", "value": "user4"},
             "last_name": "Luther King",
             "first_name": "Martin",
-            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+            "groups": [
+                {"info": "warning", "value": "group4"},
+                {"id": 1, "info": "generated", "value": "group1"},
+            ],
         }
 
         assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
@@ -694,17 +766,23 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][4]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Following groups were not found: 'group4'",
         ]
         assert import_preview["result"]["rows"][4]["data"] == {
             "saml_id": {"info": "new", "value": "new_saml6"},
             "username": {"info": "generated", "value": "new_saml6"},
             "default_password": {"info": "warning", "value": ""},
-            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+            "groups": [
+                {"info": "warning", "value": "group4"},
+                {"id": 1, "info": "generated", "value": "group1"},
+            ],
         }
 
         assert import_preview["result"]["rows"][5]["state"] == ImportState.NEW
-        assert import_preview["result"]["rows"][5]["messages"] == []
+        assert import_preview["result"]["rows"][5]["messages"] == [
+            "Following groups were not found: 'group4, unknown'"
+        ]
         default_password = import_preview["result"]["rows"][5]["data"].pop(
             "default_password"
         )
@@ -714,5 +792,122 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "username": {"info": "generated", "value": "JoanBaez7"},
             "last_name": "Baez7",
             "first_name": "Joan",
-            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+            "groups": [
+                {"id": 2, "info": "done", "value": "group2"},
+                {"info": "warning", "value": "group4"},
+                {"info": "warning", "value": "unknown"},
+                {"id": 7, "info": "done", "value": "group7M1"},
+            ],
+        }
+
+    def json_upload_not_sufficient_field_permission_update(self) -> None:
+        """try to change users first_name, but missing rights for user_scope committee"""
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None},
+                "user/2": {
+                    "username": "user2",
+                    "first_name": "John",
+                    "meeting_user_ids": [11, 44],
+                    "meeting_ids": [1, 4],
+                },
+                "committee/60": {"meeting_ids": [1, 4]},
+                "meeting/1": {"meeting_user_ids": [11]},
+                "meeting/4": {"meeting_user_ids": [44], "committee_id": 60},
+                "meeting_user/11": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
+                "meeting_user/44": {"meeting_id": 4, "user_id": 2, "group_ids": [5]},
+                "group/1": {"meeting_user_ids": [11]},
+                "group/5": {"meeting_user_ids": [44]},
+            }
+        )
+        self.set_user_groups(1, [3])
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "user2",  # group A, will be removed
+                        "first_name": "Jim",  # group A, will be removed
+                        "vote_weight": "1.23456",  # group B
+                        "groups": ["group1", "group2", "group3", "group4"],  # group C
+                        "committee_management_ids": [1],  # group D, not in payload
+                        "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,  # group E, # group D, not in payload
+                        "saml_id": "saml_id1",  # group E, will be removed
+                        "default_password": "def_password",  # group F, will be removed
+                        "is_demo_user": True,  # group G
+                    }
+                ],
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Following groups were not found: 'group4'",
+            "Following fields were removed from payload, because the user has no permisions to change them: username, first_name, saml_id, default_password",
+        ]
+        assert row["data"] == {
+            "id": 2,
+            "username": {"value": "user2", "info": "remove", "id": 2},
+            "first_name": {"value": "Jim", "info": "remove"},
+            "vote_weight": "1.234560",
+            "saml_id": {"value": "saml_id1", "info": "remove"},
+            "default_password": {"value": "", "info": "remove"},
+            "groups": [
+                {"value": "group1", "info": "done", "id": 1},
+                {"value": "group2", "info": "done", "id": 2},
+                {"value": "group3", "info": "done", "id": 3},
+                {"value": "group4", "info": "warning"},
+            ],
+        }
+
+    def json_upload_sufficient_field_permission_create(self) -> None:
+        self.update_model("user/1", {"organization_management_level": None})
+        self.set_user_groups(1, [3])
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "user2",
+                        "first_name": "Jim",  # group A
+                        "vote_weight": "1.23456",  # group B
+                        "groups": ["group1", "group2", "group3", "group4"],  # group C
+                        "committee_management_ids": [1],  # group D, not in payload
+                        "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,  # group E, not in payload
+                        "saml_id": "saml_id1",  # group E
+                        "default_password": "def_password",  # group F, will be cleared
+                        "is_demo_user": True,  # group G
+                    }
+                ],
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.NEW
+        assert row["messages"] == [
+            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Following groups were not found: 'group4'",
+        ]
+        assert row["data"] == {
+            "username": {"value": "user2", "info": "done"},
+            "first_name": {"value": "Jim", "info": "done"},
+            "vote_weight": "1.234560",
+            "saml_id": {"value": "saml_id1", "info": "new"},
+            "default_password": {"value": "", "info": "warning"},
+            "groups": [
+                {"value": "group1", "info": "done", "id": 1},
+                {"value": "group2", "info": "done", "id": 2},
+                {"value": "group3", "info": "done", "id": 3},
+                {"value": "group4", "info": "warning"},
+            ],
         }

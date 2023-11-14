@@ -1,8 +1,13 @@
 from typing import Any, Dict, List, cast
 
 from ....shared.exceptions import ActionException
-from ...mixins.import_mixins import (ImportMixin, ImportRow, ImportState,
-                                     Lookup, ResultType)
+from ...mixins.import_mixins import (
+    ImportMixin,
+    ImportRow,
+    ImportState,
+    Lookup,
+    ResultType,
+)
 from ...util.typing import ActionData
 from .create import UserCreate
 from .update import UserUpdate
@@ -29,9 +34,7 @@ class BaseUserImport(ImportMixin):
         self.rows = [self.validate_entry(row) for row in self.rows]
 
         if self.import_state != ImportState.ERROR:
-            rows = self.flatten_copied_object_fields(
-                ["username", "saml_id", "default_password"]
-            )
+            rows = self.flatten_copied_object_fields()
             self.create_other_actions(rows)
 
         return {}
@@ -128,11 +131,7 @@ class BaseUserImport(ImportMixin):
                     entry[field] = False
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
-        return {
-            "state": row["state"],
-            "data": row["data"],
-            "messages": row.get("messages", []),
-        }
+        return row
 
     def setup_lookups(self) -> None:
         rows = self.result["rows"]
