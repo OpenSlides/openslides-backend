@@ -57,6 +57,8 @@ SetupMeetingSetting = TypedDict(
         "motions": NotRequired[Dict[int, SetupMotionSetting]],
         "categories": NotRequired[Dict[int, SetupCategorySetting]],
         "workflow": NotRequired[SetupWorkflowSetting],
+        "tags": NotRequired[Dict[int, str]],
+        "blocks": NotRequired[Dict[int, str]],
         "set_number": NotRequired[bool],
     },
 )
@@ -136,6 +138,20 @@ class MotionJsonUpload(BaseActionTestCase):
                 self.set_up_motions(
                     model_data, meeting_id, meeting_data, motion_settings
                 )
+            if tag_settings := setting.get("tags"):
+                meeting_data["tag_ids"] = list(tag_settings.keys())
+                for tag_id in tag_settings:
+                    model_data[f"tag/{tag_id}"] = {
+                        "name": tag_settings[tag_id],
+                        "meeting_id": meeting_id,
+                    }
+            if block_settings := setting.get("blocks"):
+                meeting_data["motion_block_ids"] = list(block_settings.keys())
+                for block_id in block_settings:
+                    model_data[f"motion_block/{block_id}"] = {
+                        "title": block_settings[block_id],
+                        "meeting_id": meeting_id,
+                    }
             model_data["meeting/" + str(meeting_id)] = meeting_data
         if users:
             for idx, user_setting in enumerate(users):
@@ -378,7 +394,9 @@ class MotionJsonUpload(BaseActionTestCase):
             setting["set_number"] = True
         return setting
 
-    # -------------------- Basic tests --------------------
+    # -------------------------------------------------------
+    # --------------------[ Basic tests ]--------------------
+    # -------------------------------------------------------
 
     def test_json_upload_empty_data(self) -> None:
         response = self.request(
@@ -824,7 +842,9 @@ class MotionJsonUpload(BaseActionTestCase):
     def test_json_upload_duplicate_numbers_update(self) -> None:
         self.assert_duplicate_numbers("NUM01")
 
-    # -------------------- Test with categories --------------------
+    # -------------------------------------------------------
+    # ---------------[ Test with categories ]----------------
+    # -------------------------------------------------------
 
     def extend_meeting_setting_with_categories(
         self,
@@ -1525,7 +1545,9 @@ class MotionJsonUpload(BaseActionTestCase):
             "value": "Amendment category",
         }
 
-    # -------------------- Test with users --------------------
+    # -------------------------------------------------------
+    # ------------------[ Test with users ]------------------
+    # -------------------------------------------------------
 
     def generate_user_setting(
         self,
@@ -2537,7 +2559,7 @@ class MotionJsonUpload(BaseActionTestCase):
         assert row["state"] == (ImportState.DONE if is_update else ImportState.NEW)
         for fieldname in username_fields:
             assert (
-                f"At least one {fieldname} has been named multiple times"
+                f"At least one {fieldname} has been referenced multiple times"
                 in row["messages"]
             ) == has_warnings
 
@@ -2563,4 +2585,420 @@ class MotionJsonUpload(BaseActionTestCase):
             [*self.legal_first_meeting_usernames, "firstMeeting", "multiMeeting"],
             ["supporter"],
             is_update=True,
+        )
+
+    # -------------------------------------------------------
+    # ------------------[ Test with tags ]-------------------
+    # -------------------------------------------------------
+
+    def get_base_meeting_setting_with_tags(
+        self, base_motion_id: int, base_tag_id: int, extra_tags: List[str] = []
+    ) -> SetupMeetingSetting:
+        setting = self.get_base_meeting_setting(base_motion_id, False, False)
+        setting["tags"] = {
+            base_tag_id: "Tag-liatelle",
+            (base_tag_id + 1): "Tag-you're-it",
+            (base_tag_id + 2): "Price tag",
+            (base_tag_id + 3): "Tag-ether",
+            (base_tag_id + 4): "Tag-ether",
+            **{
+                base_tag_id + 5 + index: extra_tags[index]
+                for index in range(len(extra_tags))
+            },
+        }
+        return setting
+
+    def setup_assert_with_tags(
+        self,
+        base_meeting_id: int = 42,
+    ) -> None:
+        base_motion_id = 100
+        base_tag_id = 1000
+        self.set_up_models(
+            {
+                base_meeting_id: self.get_base_meeting_setting_with_tags(
+                    base_motion_id, base_tag_id, ["Got tag go"]
+                ),
+                (base_meeting_id + 1): self.get_base_meeting_setting_with_tags(
+                    base_motion_id * 2, base_tag_id * 2, ["rag-tag"]
+                ),
+            }
+        )
+
+    def assert_with_tags(
+        self,
+        common_tags: int = 1,
+        add_exclusive_tag: bool = False,
+        add_unidentifiable_tag: bool = False,
+        add_foreign_tag: bool = False,
+        add_unknown_tag: bool = False,
+        duplicates_in_row: bool = False,
+        is_update: bool = False,
+        multiple: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.setup_assert_with_tags(meeting_id)
+        use_tags: List[str] = []
+        number_of_common_tags = 0
+        expected_not_found = 0
+        expect_duplicates = False
+        messages: List[str] = []
+        if common_tags:
+            number_of_common_tags = max(min(common_tags, 3), 1)
+            use_tags = ["Tag-liatelle", "Tag-you're-it", "Price tag"][
+                :number_of_common_tags
+            ]
+        if add_exclusive_tag:
+            use_tags.append("Got tag go")
+        if add_unidentifiable_tag:
+            use_tags.append("Tag-ether")
+            messages.append("Found multiple tags with the same name")
+        if add_foreign_tag:
+            use_tags.append("rag-tag")
+            expected_not_found = 1
+        if add_unknown_tag:
+            use_tags.append("Not a tag")
+            expected_not_found += 1
+        if duplicates_in_row:
+            if number_of_common_tags:
+                use_tags.append("Tag-liatelle")
+            else:
+                number_of_common_tags = 1
+                use_tags = ["Tag-liatelle", *use_tags, "Tag-liatelle"]
+            expect_duplicates = True
+            messages.append("At least one tag has been referenced multiple times")
+        if expected_not_found:
+            messages.append("Could not find at least one tag")
+        has_warnings = add_unidentifiable_tag or expected_not_found or expect_duplicates
+        expected_data: List[Dict[str, Any]] = []
+        for i in range(len(use_tags)):
+            tag = use_tags[i]
+            if number_of_common_tags > 0:
+                expected_data.append(
+                    {"info": ImportState.DONE, "id": 1000 + i, "value": tag}
+                )
+                number_of_common_tags -= 1
+            elif add_exclusive_tag:
+                expected_data.append(
+                    {"info": ImportState.DONE, "id": 1000 + 5, "value": tag}
+                )
+                add_exclusive_tag = False
+            else:
+                expected_data.append({"info": ImportState.WARNING, "value": tag})
+        rows = 2 if multiple else 1
+        payloads: List[Dict[str, Any]] = []
+        for i in range(rows):
+            payload: Dict[str, Any] = {
+                "title": "Tagged",
+                "text": "to infinity",
+                "tags": use_tags,
+            }
+            if is_update:
+                payload["number"] = f"NUM0{i + 1}"
+            payloads.append(payload)
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": payloads,
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == rows
+        assert response.json["results"][0][0]["state"] == (
+            ImportState.WARNING if has_warnings else ImportState.DONE
+        )
+        for i in range(rows):
+            row = response.json["results"][0][0]["rows"][i]
+            assert row["state"] == (ImportState.DONE if is_update else ImportState.NEW)
+            row_data = row.get("data", {})
+            assert row_data.get("tags") == expected_data
+            assert len(row.get("messages", [])) == len(messages)
+            for message in messages:
+                assert message in row["messages"]
+
+    def test_json_upload_create_with_tags(self) -> None:
+        self.assert_with_tags(3)
+
+    def test_json_upload_update_with_tags(self) -> None:
+        self.assert_with_tags(3, add_exclusive_tag=True, is_update=True)
+
+    def test_json_upload_create_multiple_motions_with_tags(self) -> None:
+        self.assert_with_tags(
+            3, add_exclusive_tag=True, add_unidentifiable_tag=True, multiple=True
+        )
+
+    def test_json_upload_update_multiple_motions_with_tags(self) -> None:
+        self.assert_with_tags(
+            3,
+            add_exclusive_tag=True,
+            add_unidentifiable_tag=True,
+            add_foreign_tag=True,
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_with_tags_2(self) -> None:
+        self.assert_with_tags(
+            3,
+            add_exclusive_tag=True,
+            add_unidentifiable_tag=True,
+            add_foreign_tag=True,
+            add_unknown_tag=True,
+        )
+
+    def test_json_upload_update_with_tags_2(self) -> None:
+        self.assert_with_tags(
+            1,
+            add_exclusive_tag=True,
+            add_unidentifiable_tag=True,
+            add_foreign_tag=True,
+            add_unknown_tag=True,
+            duplicates_in_row=True,
+            is_update=True,
+        )
+
+    def test_json_upload_create_multiple_motions_with_tags_2(self) -> None:
+        self.assert_with_tags(
+            1,
+            add_unidentifiable_tag=True,
+            add_foreign_tag=True,
+            add_unknown_tag=True,
+            duplicates_in_row=True,
+            multiple=True,
+        )
+
+    def test_json_upload_update_multiple_motions_with_tags_2(self) -> None:
+        self.assert_with_tags(
+            1,
+            add_foreign_tag=True,
+            add_unknown_tag=True,
+            duplicates_in_row=True,
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_with_tags_3(self) -> None:
+        self.assert_with_tags(1, add_unknown_tag=True, duplicates_in_row=True)
+
+    def test_json_upload_update_with_tags_3(self) -> None:
+        self.assert_with_tags(1, duplicates_in_row=True, is_update=True)
+
+    def test_json_upload_create_multiple_motions_with_tags_3(self) -> None:
+        self.assert_with_tags(0, multiple=True)
+
+    def test_json_upload_update_multiple_motions_with_tags_3(self) -> None:
+        self.assert_with_tags(
+            0, add_unidentifiable_tag=True, is_update=True, multiple=True
+        )
+
+    def test_json_upload_create_with_tags_4(self) -> None:
+        self.assert_with_tags(0, add_foreign_tag=True, duplicates_in_row=True)
+
+    def test_json_upload_update_with_tags_4(self) -> None:
+        self.assert_with_tags(0, add_unknown_tag=True, is_update=True)
+
+    def test_json_upload_create_multiple_motions_with_tags_4(self) -> None:
+        self.assert_with_tags(
+            0, add_exclusive_tag=True, duplicates_in_row=True, multiple=True
+        )
+
+    def test_json_upload_update_multiple_motions_with_tags_4(self) -> None:
+        self.assert_with_tags(
+            3,
+            add_unidentifiable_tag=True,
+            add_unknown_tag=True,
+            is_update=True,
+            multiple=True,
+        )
+
+    # -------------------------------------------------------
+    # ------------------[ Test with block ]------------------
+    # -------------------------------------------------------
+
+    def get_base_meeting_setting_with_blocks(
+        self, base_motion_id: int, base_block_id: int, extra_blocks: List[str] = []
+    ) -> SetupMeetingSetting:
+        setting = self.get_base_meeting_setting(base_motion_id, False, False)
+        setting["blocks"] = {
+            base_block_id: "Blockolade",
+            (base_block_id + 1): "Blockodile",
+            (base_block_id + 2): "Blockoli",
+            (base_block_id + 3): "Block chain",
+            (base_block_id + 4): "Block chain",
+            **{
+                base_block_id + 5 + index: extra_blocks[index]
+                for index in range(len(extra_blocks))
+            },
+        }
+        return setting
+
+    def setup_assert_with_blocks(
+        self,
+        base_meeting_id: int = 42,
+    ) -> None:
+        base_motion_id = 100
+        base_block_id = 1000
+        self.set_up_models(
+            {
+                base_meeting_id: self.get_base_meeting_setting_with_blocks(
+                    base_motion_id, base_block_id, ["Block and roll"]
+                ),
+                (base_meeting_id + 1): self.get_base_meeting_setting_with_blocks(
+                    base_motion_id * 2, base_block_id * 2, ["Blocked"]
+                ),
+            }
+        )
+
+    def assert_with_blocks(
+        self,
+        block: str,
+        expected_id: Optional[int] = None,
+        expected_message: Optional[str] = None,
+        is_update: bool = False,
+        multiple: bool = False,
+    ) -> None:
+        meeting_id = 42
+        self.setup_assert_with_blocks(meeting_id)
+        messages: List[str] = []
+        rows = 2 if multiple else 1
+        payloads: List[Dict[str, Any]] = []
+        for i in range(rows):
+            payload: Dict[str, Any] = {
+                "title": "Blocks",
+                "text": "are cool",
+                "block": block,
+            }
+            if is_update:
+                payload["number"] = f"NUM0{i + 1}"
+            payloads.append(payload)
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": payloads,
+                "meeting_id": meeting_id,
+            },
+        )
+        expected_data: Dict[str, Any] = {
+            "info": ImportState.WARNING if expected_message else ImportState.DONE,
+            "value": block,
+        }
+        if expected_id:
+            expected_data["id"] = expected_id
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == rows
+        assert response.json["results"][0][0]["state"] == (
+            ImportState.WARNING if expected_message else ImportState.DONE
+        )
+        for i in range(rows):
+            row = response.json["results"][0][0]["rows"][i]
+            assert row["state"] == (ImportState.DONE if is_update else ImportState.NEW)
+            row_data = row.get("data", {})
+            assert row_data.get("block") == expected_data
+            assert len(row.get("messages", [])) == (1 if expected_message else 0)
+            for message in messages:
+                assert message in row["messages"]
+
+    def test_json_upload_create_with_simple_block(self) -> None:
+        self.assert_with_blocks("Block and roll", 1005)
+
+    def test_json_upload_update_with_simple_block(self) -> None:
+        self.assert_with_blocks("Block and roll", 1005, is_update=True)
+
+    def test_json_upload_create_multiple_motions_with_simple_block(self) -> None:
+        self.assert_with_blocks("Block and roll", 1005, multiple=True)
+
+    def test_json_upload_update_multiple_motions_with_simple_block(self) -> None:
+        self.assert_with_blocks("Block and roll", 1005, is_update=True, multiple=True)
+
+    def test_json_upload_create_with_multi_meeting_block(self) -> None:
+        self.assert_with_blocks("Blockolade", 1000)
+
+    def test_json_upload_update_with_multi_meeting_block(self) -> None:
+        self.assert_with_blocks("Blockodile", 1001, is_update=True)
+
+    def test_json_upload_create_multiple_motions_with_multi_meeting_block(self) -> None:
+        self.assert_with_blocks("Blockoli", 1002, multiple=True)
+
+    def test_json_upload_update_multiple_motions_with_multi_meeting_block(self) -> None:
+        self.assert_with_blocks("Blockolade", 1000, is_update=True, multiple=True)
+
+    def test_json_upload_create_with_unidentifiable_block(self) -> None:
+        self.assert_with_blocks(
+            "Block chain",
+            expected_message="Found multiple motion blocks with the same name",
+        )
+
+    def test_json_upload_update_with_unidentifiable_block(self) -> None:
+        self.assert_with_blocks(
+            "Block chain",
+            expected_message="Found multiple motion blocks with the same name",
+            is_update=True,
+        )
+
+    def test_json_upload_create_multiple_motions_with_unidentifiable_block(
+        self,
+    ) -> None:
+        self.assert_with_blocks(
+            "Block chain",
+            expected_message="Found multiple motion blocks with the same name",
+            multiple=True,
+        )
+
+    def test_json_upload_update_multiple_motions_with_unidentifiable_block(
+        self,
+    ) -> None:
+        self.assert_with_blocks(
+            "Block chain",
+            expected_message="Found multiple motion blocks with the same name",
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_with_foreign_block(self) -> None:
+        self.assert_with_blocks(
+            "Blocked", expected_message="Could not find motion block"
+        )
+
+    def test_json_upload_update_with_foreign_block(self) -> None:
+        self.assert_with_blocks(
+            "Blocked", expected_message="Could not find motion block", is_update=True
+        )
+
+    def test_json_upload_create_multiple_motions_with_foreign_block(self) -> None:
+        self.assert_with_blocks(
+            "Blocked", expected_message="Could not find motion block", multiple=True
+        )
+
+    def test_json_upload_update_multiple_motions_with_foreign_block(self) -> None:
+        self.assert_with_blocks(
+            "Blocked",
+            expected_message="Could not find motion block",
+            is_update=True,
+            multiple=True,
+        )
+
+    def test_json_upload_create_with_unknown_block(self) -> None:
+        self.assert_with_blocks(
+            "James Block", expected_message="Could not find motion block"
+        )
+
+    def test_json_upload_update_with_unknown_block(self) -> None:
+        self.assert_with_blocks(
+            "James Block",
+            expected_message="Could not find motion block",
+            is_update=True,
+        )
+
+    def test_json_upload_create_multiple_motions_with_unknown_block(self) -> None:
+        self.assert_with_blocks(
+            "James Block", expected_message="Could not find motion block", multiple=True
+        )
+
+    def test_json_upload_update_multiple_motions_with_unknown_block(self) -> None:
+        self.assert_with_blocks(
+            "James Block",
+            expected_message="Could not find motion block",
+            is_update=True,
+            multiple=True,
         )

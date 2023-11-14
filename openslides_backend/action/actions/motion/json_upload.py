@@ -278,7 +278,7 @@ class MotionJsonUpload(
                                 {"value": user, "info": ImportState.WARNING}
                             )
                             message_set.add(
-                                f"At least one {fieldname} has been named multiple times"
+                                f"At least one {fieldname} has been referenced multiple times"
                             )
                         else:
                             username_set.add(user)
@@ -362,53 +362,61 @@ class MotionJsonUpload(
                 tags = [tags]
             entry_list = []
             message_set = set()
+            tags_set: Set[str] = set()
             for tag in tags:
                 if isinstance(tag, str):
-                    check_result = self.tags_lookup.check_duplicate(tag)
-                    tag_id = cast(int, self.tags_lookup.get_field_by_name(tag, "id"))
-                    if check_result == ResultType.FOUND_ID and tag_id != 0:
-                        entry_list.append(
-                            {
-                                "value": tag,
-                                "info": ImportState.DONE,
-                                "id": tag_id,
-                            }
+                    if tag in tags_set:
+                        entry_list.append({"value": tag, "info": ImportState.WARNING})
+                        message_set.add(
+                            "At least one tag has been referenced multiple times"
                         )
-                    elif check_result == ResultType.NOT_FOUND or tag_id == 0:
-                        entry_list.append(
-                            {
-                                "value": tag,
-                                "info": ImportState.WARNING,
-                            }
-                        )
-                        message_set.add("Could not find at least one tag")
-                    elif check_result == ResultType.FOUND_MORE_IDS:
-                        entry_list.append(
-                            {
-                                "value": tag,
-                                "info": ImportState.WARNING,
-                            }
-                        )
-                        message_set.add("Found multiple tags with the same name")
-                entry["tags"] = entry_list
-                messages.extend([message for message in message_set])
+                    else:
+                        tags_set.add(tag)
+                        found_tags = self.tags_lookup.get_matching_data_by_name(tag)
+                        if len(found_tags) == 1 and found_tags[0].get("id") != 0:
+                            tag_id = cast(int, found_tags[0].get("id"))
+                            entry_list.append(
+                                {
+                                    "value": tag,
+                                    "info": ImportState.DONE,
+                                    "id": tag_id,
+                                }
+                            )
+                        elif len(found_tags) <= 1:
+                            entry_list.append(
+                                {
+                                    "value": tag,
+                                    "info": ImportState.WARNING,
+                                }
+                            )
+                            message_set.add("Could not find at least one tag")
+                        else:
+                            entry_list.append(
+                                {
+                                    "value": tag,
+                                    "info": ImportState.WARNING,
+                                }
+                            )
+                            message_set.add("Found multiple tags with the same name")
+            entry["tags"] = entry_list
+            messages.extend([message for message in message_set])
 
         if (block := entry.get("block")) and type(block) == str:
-            check_result = self.block_lookup.check_duplicate(block)
-            block_id = cast(int, self.block_lookup.get_field_by_name(block, "id"))
-            if check_result == ResultType.FOUND_ID and block_id != 0:
+            found_blocks = self.block_lookup.get_matching_data_by_name(block)
+            if len(found_blocks) == 1 and found_blocks[0].get("id") != 0:
+                block_id = cast(int, found_blocks[0].get("id"))
                 entry["block"] = {
                     "value": block,
                     "info": ImportState.DONE,
                     "id": block_id,
                 }
-            elif check_result == ResultType.NOT_FOUND or block_id == 0:
+            elif len(found_blocks) <= 1:
                 entry["block"] = {
                     "value": block,
                     "info": ImportState.WARNING,
                 }
-                messages.append("Couldn't find motion block")
-            elif check_result == ResultType.FOUND_MORE_IDS:
+                messages.append("Could not find motion block")
+            else:
                 entry["block"] = {
                     "value": block,
                     "info": ImportState.WARNING,
@@ -496,7 +504,8 @@ class MotionJsonUpload(
             self.datastore,
             "motion_block",
             [(title, entry) for entry in data if (title := entry.get("block"))],
-            field="title",
+            collection_field="title",
+            field="block",
             mapped_fields=[],
             global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
@@ -583,7 +592,8 @@ class MotionJsonUpload(
                 for entry in data
                 for name in self._get_field_array(entry, "tags")
             ],
-            field="name",
+            field="tags",
+            collection_field="name",
             mapped_fields=[],
             global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
