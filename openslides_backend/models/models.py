@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "7982f08ca2930a4632825cfe6be0864a"
+MODELS_YML_CHECKSUM = "8e108a014c7898355e6d913877567f2c"
 
 
 class Organization(Model):
@@ -98,7 +98,6 @@ class User(Model):
     gender = fields.CharField()
     email = fields.CharField()
     default_number = fields.CharField()
-    default_structure_level = fields.CharField()
     default_vote_weight = fields.DecimalField(
         default="1.000000", constraints={"minimum": "0.000001"}
     )
@@ -149,7 +148,6 @@ class MeetingUser(Model):
     id = fields.IntegerField(required=True)
     comment = fields.HTMLStrictField()
     number = fields.CharField()
-    structure_level = fields.CharField()
     about_me = fields.HTMLStrictField()
     vote_weight = fields.DecimalField(constraints={"minimum": "0.000001"})
     user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)

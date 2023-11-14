@@ -9,9 +9,11 @@ class MeetingUserCreate(BaseActionTestCase):
                 "meeting/10": {
                     "is_active_in_organization_id": 1,
                     "committee_id": 1,
+                    "structure_level_ids": [31],
                     "group_ids": [21],
                 },
                 "group/21": {"meeting_id": 10},
+                "structure_level/31": {"meeting_id": 10},
             }
         )
         test_dict = {
@@ -19,7 +21,7 @@ class MeetingUserCreate(BaseActionTestCase):
             "meeting_id": 10,
             "comment": "test blablaba",
             "number": "XII",
-            "structure_level": "A",
+            "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
             "group_ids": [21],
