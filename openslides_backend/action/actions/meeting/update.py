@@ -81,6 +81,7 @@ meeting_settings_keys = [
     "list_of_speakers_can_set_contribution_self",
     "list_of_speakers_speaker_note_for_everyone",
     "list_of_speakers_initially_closed",
+    "list_of_speakers_default_structure_level_time",
     "motions_default_workflow_id",
     "motions_default_amendment_workflow_id",
     "motions_default_statute_amendment_workflow_id",
