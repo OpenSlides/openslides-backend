@@ -203,7 +203,7 @@ class Checker:
             "tag",
             "agenda_item",
             "list_of_speakers",
-            "subdivision_list_of_speakers",
+            "structure_level_list_of_speakers",
             "speaker",
             "topic",
             "motion",
@@ -229,7 +229,7 @@ class Checker:
             "chat_group",
             "chat_message",
             "point_of_order_category",
-            "subdivision_meeting",
+            "structure_level",
         ]
         if self.mode == "all":
             self.allowed_collections = [
@@ -239,7 +239,6 @@ class Checker:
                 "organization_tag",
                 "theme",
                 "committee",
-                "subdivision",
             ] + meeting_collections
         else:
             self.allowed_collections = meeting_collections

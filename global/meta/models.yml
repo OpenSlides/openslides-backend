@@ -89,12 +89,6 @@ organization:
       - diverse
       - non-binary
     restriction_mode: A
-  list_of_speakers_enable_subdivisions:
-    type: boolean
-    restriction_mode: B
-  list_of_speakers_default_subdivision_time:
-    type: number
-    restriction_mode: B
 
   # Configuration (only for the server owner)
   enable_electronic_voting:
@@ -192,10 +186,6 @@ organization:
     type: relation-list
     restriction_mode: C
     to: user/organization_id
-  subdivision_ids:
-    type: relation-list
-    restriction_mode: B
-    to: subdivision/organization_id
   users_email_sender:
     type: string
     default: OpenSlides
@@ -363,10 +353,6 @@ user:
     type: relation-list
     to: poll_candidate/user_id
     restriction_mode: A
-  subdivision_ids:
-    type: relation-list
-    restriction_mode: A
-    to: subdivision/user_ids
 
   meeting_ids:
     type: number[]
@@ -447,17 +433,15 @@ meeting_user:
     type: relation-list
     to: chat_message/meeting_user_id
     restriction_mode: A
-  # All foreign keys are meeting-specific:
-  # - Keys are smaller (Space is in O(n^2) for n keys
-  #   in the relation), so this saves storagespace
-  # - This makes quering things like this possible:
-  #   "Give me all groups for User X in Meeting Y" without
-  #   the need to get all groups and filter them for the meeting
   group_ids:
     type: relation-list
     to: group/meeting_user_ids
     equal_fields: meeting_id
     restriction_mode: A
+  structure_level_ids:
+    type: relation-list
+    restriction_mode: A
+    to: structure_level/meeting_user_ids
 
 organization_tag:
   id:
@@ -645,39 +629,6 @@ theme:
     restriction_mode: A
     to: organization/theme_ids
     type: relation
-
-subdivision:
-  id:
-    type: number
-    required: true
-    restriction_mode: A
-  name:
-    type: string
-    required: true
-    restriction_mode: A
-  color:
-    type: color
-    restriction_mode: A
-  allow_additional_time:
-    type: boolean
-    restriction_mode: A
-  organization_id:
-    type: relation
-    restriction_mode: B
-    to: organization/subdivision_ids
-  user_ids:
-    type: relation-list
-    restriction_mode: B
-    to: user/subdivision_ids
-  subdivision_meeting_ids:
-    type: relation-list
-    restriction_mode: B
-    to: subdivision_meeting/subdivision_id
-    on_delete: CASCADE
-  subdivision_list_of_speakers_ids:
-    type: relation-list
-    restriction_mode: B
-    to: subdivision_list_of_speakers/subdivision_id
 
 committee:
   id:
@@ -1063,12 +1014,10 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
-  list_of_speakers_enable_subdivision_countdowns:
-    type: boolean
-    restriction_mode: B
-  list_of_speakers_default_subdivision_time:
+  list_of_speakers_default_structure_level_time:
     type: number
     restriction_mode: B
+    description: 0 disables structure level countdowns.
   list_of_speakers_enable_interposed_question:
     type: boolean
     restriction_mode: B
@@ -1492,9 +1441,9 @@ meeting:
     to: list_of_speakers/meeting_id
     on_delete: CASCADE
     restriction_mode: B
-  subdivision_list_of_speakers_ids:
+  structure_level_list_of_speakers_ids:
     type: relation-list
-    to: subdivision_list_of_speakers/meeting_id
+    to: structure_level_list_of_speakers/meeting_id
     on_delete: CASCADE
     restriction_mode: B
   point_of_order_category_ids:
@@ -1617,9 +1566,9 @@ meeting:
     to: chat_message/meeting_id
     on_delete: CASCADE
     restriction_mode: B
-  subdivision_meeting_ids:
+  structure_level_ids:
     type: relation-list
-    to: subdivision_meeting/meeting_id
+    to: structure_level/meeting_id
     on_delete: CASCADE
     restriction_mode: B
 
@@ -1808,24 +1757,37 @@ meeting:
     type: relation
     to: group/admin_group_for_meeting_id
     restriction_mode: B
-    
-subdivision_meeting:
+
+structure_level:
   id:
     type: number
     required: true
     restriction_mode: A
-  meeting_id:
-    type: relation
+  name:
+    type: string
     required: true
-    to: meeting/subdivision_meeting_ids
     restriction_mode: A
-  subdivision_id:
-    type: relation
-    required: true
-    to: subdivision/subdivision_meeting_ids
+  color:
+    type: color
     restriction_mode: A
   default_time:
     type: number
+    restriction_mode: A
+  allow_additional_time:
+    type: boolean
+    restriction_mode: A
+  meeting_user_ids:
+    type: relation-list
+    restriction_mode: B
+    to: meeting_user/structure_level_ids
+  structure_level_list_of_speakers_ids:
+    type: relation-list
+    restriction_mode: B
+    to: structure_level_list_of_speakers/structure_level_id
+  meeting_id:
+    type: relation
+    required: true
+    to: meeting/structure_level_ids
     restriction_mode: A
 
 group:
@@ -1847,6 +1809,8 @@ group:
         - agenda_item.can_manage
         - agenda_item.can_see
         - agenda_item.can_see_internal
+        - agenda_item.can_manage_moderator_notes
+        - agenda_item.can_see_moderator_notes
         - assignment.can_manage
         - assignment.can_nominate_other
         - assignment.can_nominate_self
@@ -2134,10 +2098,10 @@ list_of_speakers:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
-  subdivision_list_of_speaker_ids:
+  structure_level_list_of_speaker_ids:
     type: relation-list
     restriction_mode: A
-    to: subdivision_list_of_speakers/list_of_speakers_id
+    to: structure_level_list_of_speakers/list_of_speakers_id
     on_delete: CASCADE
   projection_ids:
     type: relation-list
@@ -2151,46 +2115,46 @@ list_of_speakers:
     required: true
     restriction_mode: A
 
-subdivision_list_of_speakers:
+structure_level_list_of_speakers:
   id:
     type: number
     required: true
     restriction_mode: A
-  subdivision_id:
+  structure_level_id:
     type: relation
     required: true
     restriction_mode: A
-    to: subdivision/subdivision_list_of_speakers_ids
+    to: structure_level/structure_level_list_of_speakers_ids
   list_of_speakers_id:
     type: relation
     required: true
     restriction_mode: A
-    to: list_of_speakers/subdivision_list_of_speaker_ids
+    to: list_of_speakers/structure_level_list_of_speaker_ids
   speaker_ids:
     type: relation-list
     restriction_mode: A
-    to: speaker/subdivision_list_of_speakers_id
+    to: speaker/structure_level_list_of_speakers_id
   initial_time:
     type: number
     required: true
     restriction_mode: A
-    description: The initial time of this subdivision for this LoS
+    description: The initial time of this structure_level for this LoS
   additional_time:
     type: number
     restriction_mode: A
-    description: The summed added time of this subdivision for this LoS
+    description: The summed added time of this structure_level for this LoS
   remaining_time:
     type: number
     required: true
     restriction_mode: A
-    description: The currently remaining time of this subdivision for this LoS
+    description: The currently remaining time of this structure_level for this LoS
   current_start_time:
     type: timestamp
     restriction_mode: A
-    description: The current start time of a speaker for this subdivision. Is only set if a currently speaking speaker exists
+    description: The current start time of a speaker for this structure_level. Is only set if a currently speaking speaker exists
   meeting_id:
     type: relation
-    to: meeting/subdivision_list_of_speakers_ids
+    to: meeting/structure_level_list_of_speakers_ids
     required: true
     restriction_mode: A
 
@@ -2256,10 +2220,10 @@ speaker:
     required: true
     equal_fields: meeting_id
     restriction_mode: A
-  subdivision_list_of_speakers_id:
+  structure_level_list_of_speakers_id:
     type: relation
     restriction_mode: A
-    to: subdivision_list_of_speakers/speaker_ids
+    to: structure_level_list_of_speakers/speaker_ids
   meeting_user_id:
     type: relation
     to: meeting_user/speaker_ids
