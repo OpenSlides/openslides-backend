@@ -86,16 +86,7 @@ UsernameTestAssertionData = TypedDict(
 UsernameTestExpectationInfo = Dict[str, UsernameTestAssertionData]
 
 
-class MotionJsonUpload(BaseActionTestCase):
-    def build_base_model_data_from_prototype(
-        self, prototype: Dict[str, Any], fields: List[str]
-    ) -> Dict[str, Any]:
-        data = {}
-        for field in fields:
-            if prototype.get(field):
-                data[field] = prototype[field]
-        return data
-
+class MotionImportTestMixin(BaseActionTestCase):
     def set_up_models(
         self,
         meetings: Dict[int, SetupMeetingSetting],
@@ -113,7 +104,7 @@ class MotionJsonUpload(BaseActionTestCase):
         for meeting_id in meetings:
             setting = meetings[meeting_id]
             meeting_data = {
-                **self.build_base_model_data_from_prototype(
+                **self._build_base_model_data_from_prototype(
                     meeting_prototype, setting["fields"]
                 ),
                 "name": "test meeting" + str(meeting_id),
@@ -123,7 +114,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 "meeting_id": meeting_id,
                 "name": "test",
             }
-            self.set_up_workflow(
+            self._set_up_workflow(
                 model_data,
                 meeting_data,
                 meeting_id,
@@ -131,11 +122,11 @@ class MotionJsonUpload(BaseActionTestCase):
                 setting.get("set_number", False),
             )
             if category_settings := setting.get("categories"):
-                self.set_up_categories(
+                self._set_up_categories(
                     model_data, meeting_id, meeting_data, category_settings
                 )
             if motion_settings := setting.get("motions"):
-                self.set_up_motions(
+                self._set_up_motions(
                     model_data, meeting_id, meeting_data, motion_settings
                 )
             if tag_settings := setting.get("tags"):
@@ -155,14 +146,23 @@ class MotionJsonUpload(BaseActionTestCase):
             model_data["meeting/" + str(meeting_id)] = meeting_data
         if users:
             for idx, user_setting in enumerate(users):
-                self.set_up_user(idx + 2, user_setting, model_data)
+                self._set_up_user(idx + 2, user_setting, model_data)
         # model_data_keys = list(model_data.keys())
         # model_data_keys.sort()
         # sorted_model_data = { key:model_data[key] for key in model_data_keys}
         self.set_models(model_data)
         return model_data
 
-    def set_up_user(
+    def _build_base_model_data_from_prototype(
+        self, prototype: Dict[str, Any], fields: List[str]
+    ) -> Dict[str, Any]:
+        data = {}
+        for field in fields:
+            if prototype.get(field):
+                data[field] = prototype[field]
+        return data
+
+    def _set_up_user(
         self,
         user_id: int,
         setting: SetupUserSetting,
@@ -229,7 +229,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 next_meeting_user_id += 1
         model_data["user/" + str(user_id)] = user_data
 
-    def set_up_categories(
+    def _set_up_categories(
         self,
         model_data: Dict[str, Any],
         meeting_id: int,
@@ -249,7 +249,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 category_data["prefix"] = category.get("prefix")
             model_data["motion_category/" + str(id_)] = category_data
 
-    def set_up_motions(
+    def _set_up_motions(
         self,
         model_data: Dict[str, Any],
         meeting_id: int,
@@ -290,7 +290,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 for amendment_id in amendment_ids:
                     amendment_setting = amendment_settings[amendment_id]
                     amendment_data = {
-                        **self.build_base_model_data_from_prototype(
+                        **self._build_base_model_data_from_prototype(
                             amendment_prototype, amendment_setting["fields"]
                         ),
                         "title": "Amendment to " + str(motion_data["title"]),
@@ -313,7 +313,7 @@ class MotionJsonUpload(BaseActionTestCase):
                     model_data["motion/" + str(amendment_id)] = amendment_data
             model_data["motion/" + str(motion_id)] = motion_data
 
-    def set_up_workflow(
+    def _set_up_workflow(
         self,
         model_data: Dict[str, Any],
         meeting_data: Dict[str, Any],
@@ -394,6 +394,281 @@ class MotionJsonUpload(BaseActionTestCase):
             setting["set_number"] = True
         return setting
 
+    def get_category_extended_base_meeting_setting(
+        self,
+        base_motion_id: int,
+        base_category_id: int,
+        is_reason_required: bool = False,
+        is_set_number: bool = False,
+    ) -> SetupMeetingSetting:
+        return self.extend_meeting_setting_with_categories(
+            self.get_base_meeting_setting(
+                base_motion_id, is_reason_required, is_set_number
+            ),
+            {
+                base_category_id: {
+                    "name": "General category",
+                    "prefix": "NUM",
+                },
+                (base_category_id + 1): {
+                    "name": "Amendment category",
+                    "prefix": "AMNDMNT",
+                },
+                (base_category_id + 2): {
+                    "name": "Empty category",
+                },
+                (base_category_id + 3): {
+                    "name": "Amendment category 2",
+                    "prefix": "AMNDMNT",
+                },
+                (base_category_id + 4): {
+                    "name": "General category",
+                    "prefix": "COPY",
+                },
+                (base_category_id + 5): {
+                    "name": "Another category",
+                    "prefix": "CAT",
+                },
+                (base_category_id + 6): {
+                    "name": "General category",
+                },
+                (base_category_id + 7): {
+                    "name": "Duplicate category",
+                    "prefix": "DUPE",
+                },
+                (base_category_id + 8): {
+                    "name": "Duplicate category",
+                    "prefix": "DUPE",
+                },
+            },
+            {
+                base_motion_id: (base_category_id + 2),
+                (base_motion_id + 1): base_category_id,
+                (base_motion_id + 1): (base_category_id + 1),
+                (base_motion_id + 1): (base_category_id + 3),
+                (base_motion_id + 1): base_category_id,
+            },
+        )
+
+    def get_base_user_and_meeting_settings(
+        self,
+        base_meeting_id: int = 42,
+        base_motion_id: int = 222,
+        is_reason_required: bool = False,
+        is_set_number: bool = False,
+    ) -> Tuple[Dict[int, SetupMeetingSetting], List[SetupUserSetting]]:
+        meeting_settings = {
+            base_meeting_id: self.get_base_meeting_setting(
+                base_motion_id, is_reason_required, is_set_number
+            ),
+            (base_meeting_id + 1): self.get_base_meeting_setting(
+                base_motion_id + 100, is_reason_required, is_set_number
+            ),
+        }
+        user_settings = [
+            # One non-meeting user
+            self._generate_user_setting("noMeeting", meeting_settings),
+            # some first-meeting users
+            self._generate_user_setting(
+                "firstMeeting", meeting_settings, [base_meeting_id]
+            ),
+            self._generate_user_setting(
+                "firstMeetingSubmitter",
+                meeting_settings,
+                [base_meeting_id],
+                [base_motion_id],
+            ),
+            self._generate_user_setting(
+                "firstMeetingGrouplessSubmitter",
+                meeting_settings,
+                [base_meeting_id],
+                [base_motion_id],
+                no_group=True,
+            ),
+            self._generate_user_setting(
+                "firstMeetingSupporter",
+                meeting_settings,
+                [base_meeting_id],
+                supported_motion_ids=[base_motion_id + 3],
+            ),
+            self._generate_user_setting(
+                "firstMeetingBoth",
+                meeting_settings,
+                [base_meeting_id],
+                [base_motion_id + 1],
+                [base_motion_id + 2],
+            ),
+            # some second-meeting users
+            self._generate_user_setting(
+                "secondMeeting", meeting_settings, [base_meeting_id + 1]
+            ),
+            self._generate_user_setting(
+                "secondMeetingSubmitter",
+                meeting_settings,
+                [base_meeting_id + 1],
+                [base_motion_id + 100, base_motion_id + 101],
+            ),
+            self._generate_user_setting(
+                "secondMeetingSupporter",
+                meeting_settings,
+                [base_meeting_id + 1],
+                supported_motion_ids=[base_motion_id + 100, base_motion_id + 101],
+            ),
+            self._generate_user_setting(
+                "secondMeetingBoth",
+                meeting_settings,
+                [base_meeting_id + 1],
+                [base_motion_id + 101, base_motion_id + 102],
+                supported_motion_ids=[base_motion_id + 100, base_motion_id + 103],
+            ),
+            # some multi-meeting users
+            self._generate_user_setting(
+                "multiMeeting",
+                meeting_settings,
+                [base_meeting_id, base_meeting_id + 1],
+            ),
+            self._generate_user_setting(
+                "multiMeetingSubmitter",
+                meeting_settings,
+                [base_meeting_id, base_meeting_id + 1],
+                [base_motion_id + 3],
+            ),
+            self._generate_user_setting(
+                "multiMeetingSupporter",
+                meeting_settings,
+                [base_meeting_id, base_meeting_id + 1],
+                supported_motion_ids=[base_motion_id + 103],
+            ),
+            self._generate_user_setting(
+                "multiMeetingBoth",
+                meeting_settings,
+                [base_meeting_id, base_meeting_id + 1],
+                [base_motion_id + 3, base_motion_id + 100],
+                [base_motion_id + 101, base_motion_id + 102],
+            ),
+        ]
+        return (meeting_settings, user_settings)
+
+    def get_base_meeting_setting_with_tags(
+        self, base_motion_id: int, base_tag_id: int, extra_tags: List[str] = []
+    ) -> SetupMeetingSetting:
+        return self.extend_meeting_setting_with_tags(
+            self.get_base_meeting_setting(base_motion_id, False, False),
+            base_tag_id,
+            extra_tags,
+        )
+
+    def extend_meeting_setting_with_tags(
+        self, setting: SetupMeetingSetting, base_tag_id: int, extra_tags: List[str] = []
+    ) -> SetupMeetingSetting:
+        setting["tags"] = {
+            base_tag_id: "Tag-liatelle",
+            (base_tag_id + 1): "Tag-you're-it",
+            (base_tag_id + 2): "Price tag",
+            (base_tag_id + 3): "Tag-ether",
+            (base_tag_id + 4): "Tag-ether",
+            **{
+                base_tag_id + 5 + index: extra_tags[index]
+                for index in range(len(extra_tags))
+            },
+        }
+        return setting
+
+    def get_base_meeting_setting_with_blocks(
+        self, base_motion_id: int, base_block_id: int, extra_blocks: List[str] = []
+    ) -> SetupMeetingSetting:
+        return self.extend_meeting_setting_with_blocks(
+            self.get_base_meeting_setting(base_motion_id, False, False),
+            base_block_id,
+            extra_blocks,
+        )
+
+    def extend_meeting_setting_with_blocks(
+        self,
+        setting: SetupMeetingSetting,
+        base_block_id: int,
+        extra_blocks: List[str] = [],
+    ) -> SetupMeetingSetting:
+        setting["blocks"] = {
+            base_block_id: "Blockolade",
+            (base_block_id + 1): "Blockodile",
+            (base_block_id + 2): "Blockoli",
+            (base_block_id + 3): "Block chain",
+            (base_block_id + 4): "Block chain",
+            **{
+                base_block_id + 5 + index: extra_blocks[index]
+                for index in range(len(extra_blocks))
+            },
+        }
+        return setting
+
+    def extend_meeting_setting_with_categories(
+        self,
+        setting: SetupMeetingSetting,
+        categories: Dict[int, SetupCategorySetting],
+        motion_to_category_ids: Dict[int, int],
+    ) -> SetupMeetingSetting:
+        setting["categories"] = categories
+        for motion_id in setting.get("motions", {}):
+            motion = setting.get("motions", {})[motion_id]
+            self._add_category_id(motion_id, motion, motion_to_category_ids)
+            for amendment_id in motion.get("amendments", {}):
+                self._add_category_id(
+                    amendment_id,
+                    motion.get("amendments", {})[amendment_id],
+                    motion_to_category_ids,
+                )
+        return setting
+
+    def _add_category_id(
+        self,
+        motion_id: int,
+        motion: Any,
+        motion_to_category_ids: Dict[int, int],
+    ) -> None:
+        if motion_to_category_ids.get(motion_id):
+            motion["base"]["category_id"] = motion_to_category_ids[motion_id]
+
+    def _generate_user_setting(
+        self,
+        username: str,
+        meeting_settings: Dict[int, SetupMeetingSetting],
+        meeting_ids: List[int] = [],
+        submitted_motion_ids: List[int] = [],
+        supported_motion_ids: List[int] = [],
+        no_group: bool = False,
+    ) -> SetupUserSetting:
+        user_data: SetupUserSetting = {"username": username, "no_group": no_group}
+        meeting_ids = [
+            meeting_id for meeting_id in meeting_ids if meeting_settings.get(meeting_id)
+        ]
+        if len(meeting_ids) == 0:
+            return user_data
+        user_data["meeting_ids"] = meeting_ids
+        motion_ids: List[int] = []
+        for meeting_id in meeting_ids:
+            meeting_setting = meeting_settings[meeting_id]
+            motion_ids.extend(meeting_setting.get("motions", {}).keys())
+            for motion_id in meeting_setting.get("motions", {}):
+                motion_ids.extend(
+                    meeting_setting.get("motions", {})[motion_id]
+                    .get("amendments", {})
+                    .keys()
+                )
+        submitted_motion_ids = [
+            motion_id for motion_id in motion_ids if motion_id in submitted_motion_ids
+        ]
+        supported_motion_ids = [
+            motion_id for motion_id in motion_ids if motion_id in supported_motion_ids
+        ]
+        if len(submitted_motion_ids):
+            user_data["submitted_motion_ids"] = submitted_motion_ids
+        if len(supported_motion_ids):
+            user_data["supported_motion_ids"] = supported_motion_ids
+        return user_data
+
+
+class MotionJsonUpload(MotionImportTestMixin):
     # -------------------------------------------------------
     # --------------------[ Basic tests ]--------------------
     # -------------------------------------------------------
@@ -845,89 +1120,6 @@ class MotionJsonUpload(BaseActionTestCase):
     # -------------------------------------------------------
     # ---------------[ Test with categories ]----------------
     # -------------------------------------------------------
-
-    def extend_meeting_setting_with_categories(
-        self,
-        setting: SetupMeetingSetting,
-        categories: Dict[int, SetupCategorySetting],
-        motion_to_category_ids: Dict[int, int],
-    ) -> SetupMeetingSetting:
-        setting["categories"] = categories
-        for motion_id in setting.get("motions", {}):
-            motion = setting.get("motions", {})[motion_id]
-            self.add_category_id(motion_id, motion, motion_to_category_ids)
-            for amendment_id in motion.get("amendments", {}):
-                self.add_category_id(
-                    amendment_id,
-                    motion.get("amendments", {})[amendment_id],
-                    motion_to_category_ids,
-                )
-        return setting
-
-    def add_category_id(
-        self,
-        motion_id: int,
-        motion: Any,
-        motion_to_category_ids: Dict[int, int],
-    ) -> None:
-        if motion_to_category_ids.get(motion_id):
-            motion["base"]["category_id"] = motion_to_category_ids[motion_id]
-
-    def get_category_extended_base_meeting_setting(
-        self,
-        base_motion_id: int,
-        base_category_id: int,
-        is_reason_required: bool = False,
-        is_set_number: bool = False,
-    ) -> SetupMeetingSetting:
-        return self.extend_meeting_setting_with_categories(
-            self.get_base_meeting_setting(
-                base_motion_id, is_reason_required, is_set_number
-            ),
-            {
-                base_category_id: {
-                    "name": "General category",
-                    "prefix": "NUM",
-                },
-                (base_category_id + 1): {
-                    "name": "Amendment category",
-                    "prefix": "AMNDMNT",
-                },
-                (base_category_id + 2): {
-                    "name": "Empty category",
-                },
-                (base_category_id + 3): {
-                    "name": "Amendment category 2",
-                    "prefix": "AMNDMNT",
-                },
-                (base_category_id + 4): {
-                    "name": "General category",
-                    "prefix": "COPY",
-                },
-                (base_category_id + 5): {
-                    "name": "Another category",
-                    "prefix": "CAT",
-                },
-                (base_category_id + 6): {
-                    "name": "General category",
-                },
-                (base_category_id + 7): {
-                    "name": "Duplicate category",
-                    "prefix": "DUPE",
-                },
-                (base_category_id + 8): {
-                    "name": "Duplicate category",
-                    "prefix": "DUPE",
-                },
-            },
-            {
-                base_motion_id: (base_category_id + 2),
-                (base_motion_id + 1): base_category_id,
-                (base_motion_id + 1): (base_category_id + 1),
-                (base_motion_id + 1): (base_category_id + 3),
-                (base_motion_id + 1): base_category_id,
-            },
-        )
 
     def make_conditional_number_assertions_for_category_test(
         self,
@@ -1549,143 +1741,6 @@ class MotionJsonUpload(BaseActionTestCase):
     # ------------------[ Test with users ]------------------
     # -------------------------------------------------------
 
-    def generate_user_setting(
-        self,
-        username: str,
-        meeting_settings: Dict[int, SetupMeetingSetting],
-        meeting_ids: List[int] = [],
-        submitted_motion_ids: List[int] = [],
-        supported_motion_ids: List[int] = [],
-        no_group: bool = False,
-    ) -> SetupUserSetting:
-        user_data: SetupUserSetting = {"username": username, "no_group": no_group}
-        meeting_ids = [
-            meeting_id for meeting_id in meeting_ids if meeting_settings.get(meeting_id)
-        ]
-        if len(meeting_ids) == 0:
-            return user_data
-        user_data["meeting_ids"] = meeting_ids
-        motion_ids: List[int] = []
-        for meeting_id in meeting_ids:
-            meeting_setting = meeting_settings[meeting_id]
-            motion_ids.extend(meeting_setting.get("motions", {}).keys())
-            for motion_id in meeting_setting.get("motions", {}):
-                motion_ids.extend(
-                    meeting_setting.get("motions", {})[motion_id]
-                    .get("amendments", {})
-                    .keys()
-                )
-        submitted_motion_ids = [
-            motion_id for motion_id in motion_ids if motion_id in submitted_motion_ids
-        ]
-        supported_motion_ids = [
-            motion_id for motion_id in motion_ids if motion_id in supported_motion_ids
-        ]
-        if len(submitted_motion_ids):
-            user_data["submitted_motion_ids"] = submitted_motion_ids
-        if len(supported_motion_ids):
-            user_data["supported_motion_ids"] = supported_motion_ids
-        return user_data
-
-    def get_base_user_and_meeting_settings(
-        self,
-        base_meeting_id: int = 42,
-        base_motion_id: int = 222,
-        is_reason_required: bool = False,
-        is_set_number: bool = False,
-    ) -> Tuple[Dict[int, SetupMeetingSetting], List[SetupUserSetting]]:
-        meeting_settings = {
-            base_meeting_id: self.get_base_meeting_setting(
-                base_motion_id, is_reason_required, is_set_number
-            ),
-            (base_meeting_id + 1): self.get_base_meeting_setting(
-                base_motion_id + 100, is_reason_required, is_set_number
-            ),
-        }
-        user_settings = [
-            # One non-meeting user
-            self.generate_user_setting("noMeeting", meeting_settings),
-            # some first-meeting users
-            self.generate_user_setting(
-                "firstMeeting", meeting_settings, [base_meeting_id]
-            ),
-            self.generate_user_setting(
-                "firstMeetingSubmitter",
-                meeting_settings,
-                [base_meeting_id],
-                [base_motion_id],
-            ),
-            self.generate_user_setting(
-                "firstMeetingGrouplessSubmitter",
-                meeting_settings,
-                [base_meeting_id],
-                [base_motion_id],
-                no_group=True,
-            ),
-            self.generate_user_setting(
-                "firstMeetingSupporter",
-                meeting_settings,
-                [base_meeting_id],
-                supported_motion_ids=[base_motion_id + 3],
-            ),
-            self.generate_user_setting(
-                "firstMeetingBoth",
-                meeting_settings,
-                [base_meeting_id],
-                [base_motion_id + 1],
-                [base_motion_id + 2],
-            ),
-            # some second-meeting users
-            self.generate_user_setting(
-                "secondMeeting", meeting_settings, [base_meeting_id + 1]
-            ),
-            self.generate_user_setting(
-                "secondMeetingSubmitter",
-                meeting_settings,
-                [base_meeting_id + 1],
-                [base_motion_id + 100, base_motion_id + 101],
-            ),
-            self.generate_user_setting(
-                "secondMeetingSupporter",
-                meeting_settings,
-                [base_meeting_id + 1],
-                supported_motion_ids=[base_motion_id + 100, base_motion_id + 101],
-            ),
-            self.generate_user_setting(
-                "secondMeetingBoth",
-                meeting_settings,
-                [base_meeting_id + 1],
-                [base_motion_id + 101, base_motion_id + 102],
-                supported_motion_ids=[base_motion_id + 100, base_motion_id + 103],
-            ),
-            # some multi-meeting users
-            self.generate_user_setting(
-                "multiMeeting",
-                meeting_settings,
-                [base_meeting_id, base_meeting_id + 1],
-            ),
-            self.generate_user_setting(
-                "multiMeetingSubmitter",
-                meeting_settings,
-                [base_meeting_id, base_meeting_id + 1],
-                [base_motion_id + 3],
-            ),
-            self.generate_user_setting(
-                "multiMeetingSupporter",
-                meeting_settings,
-                [base_meeting_id, base_meeting_id + 1],
-                supported_motion_ids=[base_motion_id + 103],
-            ),
-            self.generate_user_setting(
-                "multiMeetingBoth",
-                meeting_settings,
-                [base_meeting_id, base_meeting_id + 1],
-                [base_motion_id + 3, base_motion_id + 100],
-                [base_motion_id + 101, base_motion_id + 102],
-            ),
-        ]
-        return (meeting_settings, user_settings)
-
     def get_user_request_response_and_model_data_in_first_meeting(
         self,
         meeting_id: int,
@@ -1704,7 +1759,7 @@ class MotionJsonUpload(BaseActionTestCase):
                 uname_data = username_dict[key]
                 (username, usernames) = (
                     (uname_data, None)
-                    if type(uname_data) == str
+                    if isinstance(uname_data, str)
                     else (None, cast(List[str], uname_data))
                 )
                 if add_unknown_user:
@@ -1879,7 +1934,7 @@ class MotionJsonUpload(BaseActionTestCase):
         unknown_user_present = add_unknown_user or not username_data
         usernames = (
             [username_data]
-            if type(username_data) == str
+            if isinstance(username_data, str)
             else cast(List[str], username_data) or []
         )
         (
@@ -1989,7 +2044,7 @@ class MotionJsonUpload(BaseActionTestCase):
         unknown_user_present = add_unknown_user or not username_data
         usernames = (
             [username_data]
-            if type(username_data) == str
+            if isinstance(username_data, str)
             else cast(List[str], username_data) or []
         )
         (
@@ -2108,7 +2163,7 @@ class MotionJsonUpload(BaseActionTestCase):
             unknown_user_present = add_unknown_user or not username_data
             usernames = (
                 [username_data]
-                if type(username_data) == str
+                if isinstance(username_data, str)
                 else cast(List[str], username_data) or []
             )
             (
@@ -2591,23 +2646,6 @@ class MotionJsonUpload(BaseActionTestCase):
     # ------------------[ Test with tags ]-------------------
     # -------------------------------------------------------
 
-    def get_base_meeting_setting_with_tags(
-        self, base_motion_id: int, base_tag_id: int, extra_tags: List[str] = []
-    ) -> SetupMeetingSetting:
-        setting = self.get_base_meeting_setting(base_motion_id, False, False)
-        setting["tags"] = {
-            base_tag_id: "Tag-liatelle",
-            (base_tag_id + 1): "Tag-you're-it",
-            (base_tag_id + 2): "Price tag",
-            (base_tag_id + 3): "Tag-ether",
-            (base_tag_id + 4): "Tag-ether",
-            **{
-                base_tag_id + 5 + index: extra_tags[index]
-                for index in range(len(extra_tags))
-            },
-        }
-        return setting
-
     def setup_assert_with_tags(
         self,
         base_meeting_id: int = 42,
@@ -2815,23 +2853,6 @@ class MotionJsonUpload(BaseActionTestCase):
     # -------------------------------------------------------
     # ------------------[ Test with block ]------------------
     # -------------------------------------------------------
-
-    def get_base_meeting_setting_with_blocks(
-        self, base_motion_id: int, base_block_id: int, extra_blocks: List[str] = []
-    ) -> SetupMeetingSetting:
-        setting = self.get_base_meeting_setting(base_motion_id, False, False)
-        setting["blocks"] = {
-            base_block_id: "Blockolade",
-            (base_block_id + 1): "Blockodile",
-            (base_block_id + 2): "Blockoli",
-            (base_block_id + 3): "Block chain",
-            (base_block_id + 4): "Block chain",
-            **{
-                base_block_id + 5 + index: extra_blocks[index]
-                for index in range(len(extra_blocks))
-            },
-        }
-        return setting
 
     def setup_assert_with_blocks(
         self,

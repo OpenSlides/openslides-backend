@@ -1,4 +1,4 @@
-from typing import Any, Dict, cast
+from typing import Any, Dict, List, cast
 
 from openslides_backend.action.mixins.import_mixins import (
     ImportMixin,
@@ -10,10 +10,14 @@ from openslides_backend.action.mixins.import_mixins import (
 from openslides_backend.action.util.register import register_action
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.filters import And, FilterOperator, Or
 
 from ....models.models import ImportPreview
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...util.default_schema import DefaultSchema
+from .create import MotionCreate
+from .update import MotionUpdate
 
 
 @register_action("motion.import")
@@ -33,7 +37,8 @@ class AccountImport(ImportMixin):
     skip_archived_meeting_check = True
     import_name = "motion"
     number_lookup: Lookup
-    username_lookup: Lookup
+    submitter_lookup: Lookup
+    supporter_lookup: Lookup
     category_lookup: Lookup
     tags_lookup: Lookup
     block_lookup: Lookup
@@ -43,24 +48,26 @@ class AccountImport(ImportMixin):
             return {}
 
         instance = super().update_instance(instance)
-        self.setup_lookups()
+        meeting_id = self.get_meeting_id(instance)
+        self.setup_lookups(meeting_id)
 
         self.rows = [self.validate_entry(row) for row in self.result["rows"]]
 
         # TODO also with motion_submitter.create and -delete
-        # if self.import_state != ImportState.ERROR:
-        #     create_action_payload: List[Dict[str, Any]] = []
-        #     update_action_payload: List[Dict[str, Any]] = []
-        #     self.flatten_object_fields(["text", "reason", "title", "number"])
-        #     for row in self.rows:
-        #         if row["state"] == ImportState.NEW:
-        #             create_action_payload.append(row["data"])
-        #         else:
-        #             update_action_payload.append(row["data"])
-        #     if create_action_payload:
-        #         self.execute_other_action(MotionCreate, create_action_payload)
-        #     if update_action_payload:
-        #         self.execute_other_action(MotionUpdate, update_action_payload)
+        if self.import_state != ImportState.ERROR:
+            create_action_payload: List[Dict[str, Any]] = []
+            update_action_payload: List[Dict[str, Any]] = []
+            self.flatten_object_fields(["text", "reason", "title", "number"])
+            for row in self.rows:
+                if row["state"] == ImportState.NEW:
+                    create_action_payload.append(row["data"])
+                else:
+                    # TODO: Split off submitter and handle it separately
+                    update_action_payload.append(row["data"])
+            if create_action_payload:
+                self.execute_other_action(MotionCreate, create_action_payload)
+            if update_action_payload:
+                self.execute_other_action(MotionUpdate, update_action_payload)
 
         return {}
 
@@ -171,7 +178,7 @@ class AccountImport(ImportMixin):
             "messages": row.get("messages", []),
         }
 
-    def setup_lookups(self) -> None:
+    def setup_lookups(self, meeting_id: int) -> None:
         rows = self.result["rows"]
         self.number_lookup = Lookup(
             self.datastore,
@@ -180,9 +187,11 @@ class AccountImport(ImportMixin):
                 (entry["number"]["value"], entry)
                 for row in rows
                 if "number" in (entry := row["data"])
+                and entry["number"].get("info") != ImportState.WARNING
             ],
             field="number",
-            mapped_fields=[],
+            mapped_fields=["submitter_ids"],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
         self.block_lookup = Lookup(
             self.datastore,
@@ -193,8 +202,10 @@ class AccountImport(ImportMixin):
                 if "block" in (entry := row["data"])
                 and entry["block"].get("info") != ImportState.WARNING
             ],
-            field="title",
+            collection_field="title",
+            field="block",
             mapped_fields=[],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
         self.category_lookup = Lookup(
             self.datastore,
@@ -205,33 +216,82 @@ class AccountImport(ImportMixin):
                 if "category_name" in (entry := row["data"])
                 and entry["category_name"].get("info") != ImportState.WARNING
             ],
-            field="name",
+            field="category_name",
+            collection_field="name",
             mapped_fields=["prefix"],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
-        self.username_lookup = Lookup(
+
+        self.submitter_lookup = Lookup(
             self.datastore,
             "user",
-            list(
-                set(
-                    *[
-                        (user["value"], entry)
-                        for row in rows
-                        if "submitters_username" in (entry := row["data"])
-                        for user in entry["submitters_username"]
-                        if user.get("info") != ImportState.WARNING
-                    ],
-                    *[
-                        (user["value"], entry)
-                        for row in rows
-                        if "supporters_username" in (entry := row["data"])
-                        for user in entry["supporters_username"]
-                        if user.get("info") != ImportState.WARNING
-                    ],
-                )
-            ),
-            field="username",
-            mapped_fields=[],
+            [
+                (user["value"], entry)
+                for row in rows
+                if "submitters_username" in (entry := row["data"])
+                for user in entry["submitters_username"]
+                if user.get("info") != ImportState.WARNING
+            ],
+            field="submitters_username",
+            collection_field="username",
+            mapped_fields=["meeting_user_ids"],
         )
+        self.supporter_lookup = Lookup(
+            self.datastore,
+            "user",
+            [
+                (user["value"], entry)
+                for row in rows
+                if "supporters_username" in (entry := row["data"])
+                for user in entry["supporters_username"]
+                if user.get("info") != ImportState.WARNING
+            ],
+            field="supporters_username",
+            collection_field="username",
+            mapped_fields=["meeting_user_ids"],
+        )
+        all_user_ids = set(
+            list(self.submitter_lookup.id_to_name.keys())
+            + list(self.supporter_lookup.id_to_name.keys())
+        )
+        all_meeting_users: Dict[int, Dict[str, Any]] = {}
+        if len(all_user_ids):
+            all_meeting_users = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("meeting_id", "=", meeting_id),
+                    FilterOperator("group_ids", "!=", []),
+                    FilterOperator("group_ids", "!=", None),
+                    Or(
+                        *[
+                            FilterOperator("user_id", "=", user_id)
+                            for user_id in all_user_ids
+                        ]
+                    ),
+                ),
+                [
+                    "user_id",
+                    "motion_submitter_ids",
+                    "supported_motion_ids",
+                    "group_ids",
+                ],
+                lock_result=False,
+            )
+        self._user_ids_to_meeting_user = {
+            all_meeting_users[meeting_user_id]["user_id"]: all_meeting_users[
+                meeting_user_id
+            ]
+            for meeting_user_id in all_meeting_users
+            if all_meeting_users[meeting_user_id].get("user_id")
+        }
+        self._supporter_ids_to_user_id = {
+            supporter_id: all_meeting_users[meeting_user_id]["user_id"]
+            for meeting_user_id in all_meeting_users
+            for supporter_id in all_meeting_users[meeting_user_id].get(
+                "motion_supporter_ids", []
+            )
+            if all_meeting_users[meeting_user_id].get("user_id")
+        }
         self.tags_lookup = Lookup(
             self.datastore,
             "tag",
@@ -242,6 +302,19 @@ class AccountImport(ImportMixin):
                 for tag in entry["tags"]
                 if tag.get("info") != ImportState.WARNING
             ],
-            field="name",
+            field="tags",
+            collection_field="name",
             mapped_fields=[],
+            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        store_id = instance["id"]
+        worker = self.datastore.get(
+            fqid_from_collection_and_id("import_preview", store_id),
+            ["name", "result"],
+            lock_result=False,
+        )
+        if worker.get("name") == self.import_name:
+            return next(iter(worker.get("result", {})["rows"]))["data"]["meeting_id"]
+        raise ActionException("Import data cannot be found.")

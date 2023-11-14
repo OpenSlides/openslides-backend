@@ -175,16 +175,18 @@ class MotionJsonUpload(
         meeting_id: int = entry["meeting_id"]
         set_entry_id = False
 
-        if (is_amendment := entry.get("motion_amendment")) and type(
-            is_amendment
-        ) == bool:
+        if (is_amendment := entry.get("motion_amendment")) and isinstance(
+            is_amendment, bool
+        ):
             entry["motion_amendment"] = {
                 "value": is_amendment,
                 "info": ImportState.WARNING,
             }
             messages.append("Amendments cannot be correctly imported")
 
-        if (category_name := entry.get("category_name")) and type(category_name) == str:
+        if (category_name := entry.get("category_name")) and isinstance(
+            category_name, str
+        ):
             category_prefix = entry.get("category_prefix")
             categories = self.category_lookup.get_matching_data_by_name(category_name)
             categories = [
@@ -204,13 +206,13 @@ class MotionJsonUpload(
                     "info": ImportState.WARNING,
                 }
                 messages.append("Category could not be found")
-        elif (category_prefix := entry.get("category_prefix")) and type(
-            category_prefix
-        ) == str:
+        elif (category_prefix := entry.get("category_prefix")) and isinstance(
+            category_prefix, str
+        ):
             entry["category_name"] = {"value": "", "info": ImportState.WARNING}
             messages.append("Category could not be found")
 
-        if (number := entry.get("number")) and type(number) == str:
+        if (number := entry.get("number")) and isinstance(number, str):
             check_result = self.number_lookup.check_duplicate(number)
             id_ = cast(int, self.number_lookup.get_field_by_name(number, "id"))
             if check_result == ResultType.FOUND_ID and id_ != 0:
@@ -401,7 +403,7 @@ class MotionJsonUpload(
             entry["tags"] = entry_list
             messages.extend([message for message in message_set])
 
-        if (block := entry.get("block")) and type(block) == str:
+        if (block := entry.get("block")) and isinstance(block, str):
             found_blocks = self.block_lookup.get_matching_data_by_name(block)
             if len(found_blocks) == 1 and found_blocks[0].get("id") != 0:
                 block_id = cast(int, found_blocks[0].get("id"))
@@ -429,7 +431,7 @@ class MotionJsonUpload(
         # TODO: Currently doesn't recognize pre-existing tags
         if (
             (text := entry.get("text"))
-            and type(text) == str
+            and isinstance(text, str)
             and not search(r"^<\w+[^>]*>[\w\W]*?<\/\w>$", text)
         ):
             entry["text"] = (
@@ -439,7 +441,7 @@ class MotionJsonUpload(
             )
 
         for field in ["title", "text", "reason"]:
-            if (date := entry.get(field)) and type(date) == str:
+            if (date := entry.get(field)) and isinstance(date, str):
                 entry[field] = {"value": date, "info": ImportState.DONE}
 
         # check via mixin
