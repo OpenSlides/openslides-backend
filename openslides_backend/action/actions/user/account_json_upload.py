@@ -116,7 +116,7 @@ class AccountJsonUpload(JsonUploadMixin, UsernameMixin):
         id_: Optional[int] = None
         old_saml_id: Optional[str] = None
         old_default_password: Optional[str] = None
-        if (username := entry.get("username")) and type(username) == str:
+        if (username := entry.get("username")) and isinstance(username, str):
             check_result = self.username_lookup.check_duplicate(username)
             id_ = cast(int, self.username_lookup.get_field_by_name(username, "id"))
             if check_result == ResultType.FOUND_ID and id_ != 0:

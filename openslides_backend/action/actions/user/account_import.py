@@ -130,7 +130,7 @@ class AccountImport(ImportMixin):
 
             if (
                 (default_password := entry.get("default_password"))
-                and type(default_password) == dict
+                and isinstance(default_password, dict)
                 and default_password["info"] == ImportState.WARNING
             ):
                 field = "can_change_own_password"
