@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "c3c99b1e3f621e7c318e7413236a3335"
+MODELS_YML_CHECKSUM = "1e58a101a9259849c50df5db9d5ae430"
 
 
 class Organization(Model):
@@ -178,7 +178,7 @@ class MeetingUser(Model):
         to={"group": "meeting_user_ids"}, equal_fields="meeting_id"
     )
     structure_level_ids = fields.RelationListField(
-        to={"structure_level": "meeting_user_ids"}
+        to={"structure_level": "meeting_user_ids"}, equal_fields="meeting_id"
     )
 
 
@@ -416,7 +416,10 @@ class Meeting(Model, MeetingModelMixin):
     list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
     list_of_speakers_initially_closed = fields.BooleanField(default=False)
     list_of_speakers_default_structure_level_time = fields.IntegerField(
-        constraints={"description": "0 disables structure level countdowns."}
+        constraints={
+            "minimum": 0,
+            "description": "0 disables structure level countdowns.",
+        }
     )
     list_of_speakers_enable_interposed_question = fields.BooleanField()
     list_of_speakers_intervention_time = fields.IntegerField(
@@ -824,13 +827,14 @@ class StructureLevel(Model):
     id = fields.IntegerField(required=True)
     name = fields.CharField(required=True)
     color = fields.ColorField()
-    default_time = fields.IntegerField()
+    default_time = fields.IntegerField(constraints={"minimum": 0})
     allow_additional_time = fields.BooleanField()
     meeting_user_ids = fields.RelationListField(
-        to={"meeting_user": "structure_level_ids"}
+        to={"meeting_user": "structure_level_ids"}, equal_fields="meeting_id"
     )
     structure_level_list_of_speakers_ids = fields.RelationListField(
-        to={"structure_level_list_of_speakers": "structure_level_id"}
+        to={"structure_level_list_of_speakers": "structure_level_id"},
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "structure_level_ids"}, required=True
@@ -1047,9 +1051,10 @@ class ListOfSpeakers(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    structure_level_list_of_speaker_ids = fields.RelationListField(
+    structure_level_list_of_speakers_ids = fields.RelationListField(
         to={"structure_level_list_of_speakers": "list_of_speakers_id"},
         on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
@@ -1067,18 +1072,23 @@ class StructureLevelListOfSpeakers(Model):
 
     id = fields.IntegerField(required=True)
     structure_level_id = fields.RelationField(
-        to={"structure_level": "structure_level_list_of_speakers_ids"}, required=True
+        to={"structure_level": "structure_level_list_of_speakers_ids"},
+        required=True,
+        equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
-        to={"list_of_speakers": "structure_level_list_of_speaker_ids"}, required=True
+        to={"list_of_speakers": "structure_level_list_of_speakers_ids"},
+        required=True,
+        equal_fields="meeting_id",
     )
     speaker_ids = fields.RelationListField(
-        to={"speaker": "structure_level_list_of_speakers_id"}
+        to={"speaker": "structure_level_list_of_speakers_id"}, equal_fields="meeting_id"
     )
     initial_time = fields.IntegerField(
         required=True,
         constraints={
-            "description": "The initial time of this structure_level for this LoS"
+            "minimum": 1,
+            "description": "The initial time of this structure_level for this LoS",
         },
     )
     additional_time = fields.IntegerField(
@@ -1142,7 +1152,8 @@ class Speaker(Model):
         to={"list_of_speakers": "speaker_ids"}, required=True, equal_fields="meeting_id"
     )
     structure_level_list_of_speakers_id = fields.RelationField(
-        to={"structure_level_list_of_speakers": "speaker_ids"}
+        to={"structure_level_list_of_speakers": "speaker_ids"},
+        equal_fields="meeting_id",
     )
     meeting_user_id = fields.RelationField(
         to={"meeting_user": "speaker_ids"}, equal_fields="meeting_id"

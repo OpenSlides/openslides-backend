@@ -440,6 +440,7 @@ meeting_user:
     restriction_mode: A
   structure_level_ids:
     type: relation-list
+    equal_fields: meeting_id
     restriction_mode: A
     to: structure_level/meeting_user_ids
 
@@ -1016,6 +1017,7 @@ meeting:
     restriction_mode: B
   list_of_speakers_default_structure_level_time:
     type: number
+    minimum: 0
     restriction_mode: B
     description: 0 disables structure level countdowns.
   list_of_speakers_enable_interposed_question:
@@ -1772,16 +1774,19 @@ structure_level:
     restriction_mode: A
   default_time:
     type: number
+    minimum: 0
     restriction_mode: A
   allow_additional_time:
     type: boolean
     restriction_mode: A
   meeting_user_ids:
     type: relation-list
+    equal_fields: meeting_id
     restriction_mode: B
     to: meeting_user/structure_level_ids
   structure_level_list_of_speakers_ids:
     type: relation-list
+    equal_fields: meeting_id
     restriction_mode: B
     to: structure_level_list_of_speakers/structure_level_id
   meeting_id:
@@ -2098,9 +2103,10 @@ list_of_speakers:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
-  structure_level_list_of_speaker_ids:
+  structure_level_list_of_speakers_ids:
     type: relation-list
     restriction_mode: A
+    equal_fields: meeting_id
     to: structure_level_list_of_speakers/list_of_speakers_id
     on_delete: CASCADE
   projection_ids:
@@ -2123,19 +2129,23 @@ structure_level_list_of_speakers:
   structure_level_id:
     type: relation
     required: true
+    equal_fields: meeting_id
     restriction_mode: A
     to: structure_level/structure_level_list_of_speakers_ids
   list_of_speakers_id:
     type: relation
     required: true
+    equal_fields: meeting_id
     restriction_mode: A
-    to: list_of_speakers/structure_level_list_of_speaker_ids
+    to: list_of_speakers/structure_level_list_of_speakers_ids
   speaker_ids:
     type: relation-list
+    equal_fields: meeting_id
     restriction_mode: A
     to: speaker/structure_level_list_of_speakers_id
   initial_time:
     type: number
+    minimum: 1
     required: true
     restriction_mode: A
     description: The initial time of this structure_level for this LoS
@@ -2222,6 +2232,7 @@ speaker:
     restriction_mode: A
   structure_level_list_of_speakers_id:
     type: relation
+    equal_fields: meeting_id
     restriction_mode: A
     to: structure_level_list_of_speakers/speaker_ids
   meeting_user_id:
