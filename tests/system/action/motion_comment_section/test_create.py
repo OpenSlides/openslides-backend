@@ -50,7 +50,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         response = self.request("motion_comment_section.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['name', 'meeting_id'] properties",
+            "data must contain ['meeting_id', 'name'] properties",
             response.json["message"],
         )
 

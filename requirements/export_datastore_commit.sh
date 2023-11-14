@@ -1,2 +1,2 @@
 #!/bin/bash
-export DATASTORE_COMMIT_HASH=3d217923ab5ed5a4a4bae8f334f6e8404ab884be
+export DATASTORE_COMMIT_HASH=c504ee995bee16faf22501909cdd4efafd6aafff
