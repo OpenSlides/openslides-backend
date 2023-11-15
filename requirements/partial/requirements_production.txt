@@ -4,7 +4,7 @@ dependency_injector==4.41.0
 fastjsonschema==2.18.1
 gunicorn==21.2.0
 lxml==4.9.3
-pypdf[crypto]==3.17.0
+pypdf[crypto]==3.17.1
 requests==2.31.0
 roman==4.1
 simplejson==3.19.2
