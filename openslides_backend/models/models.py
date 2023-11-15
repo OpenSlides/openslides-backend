@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "56fbad900f7fe5e7b83cfaed9aa40576"
+MODELS_YML_CHECKSUM = "ec42a701621d4e6b2f104078335edee1"
 
 
 class Organization(Model):
@@ -184,6 +184,9 @@ class MeetingUser(Model):
     )
     group_ids = fields.RelationListField(
         to={"group": "meeting_user_ids"}, equal_fields="meeting_id"
+    )
+    structure_level_ids = fields.RelationListField(
+        to={"structure_level": "meeting_user_ids"}, equal_fields="meeting_id"
     )
 
 
@@ -420,6 +423,16 @@ class Meeting(Model, MeetingModelMixin):
     list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)
     list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
     list_of_speakers_initially_closed = fields.BooleanField(default=False)
+    list_of_speakers_default_structure_level_time = fields.IntegerField(
+        constraints={
+            "minimum": 0,
+            "description": "0 disables structure level countdowns.",
+        }
+    )
+    list_of_speakers_enable_interposed_question = fields.BooleanField()
+    list_of_speakers_intervention_time = fields.IntegerField(
+        constraints={"description": "0 disables intervention speakers."}
+    )
     motions_default_workflow_id = fields.RelationField(
         to={"motion_workflow": "default_workflow_meeting_id"}, required=True
     )
@@ -591,6 +604,10 @@ class Meeting(Model, MeetingModelMixin):
     list_of_speakers_ids = fields.RelationListField(
         to={"list_of_speakers": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
+    structure_level_list_of_speakers_ids = fields.RelationListField(
+        to={"structure_level_list_of_speakers": "meeting_id"},
+        on_delete=fields.OnDelete.CASCADE,
+    )
     point_of_order_category_ids = fields.RelationListField(
         to={"point_of_order_category": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -663,6 +680,9 @@ class Meeting(Model, MeetingModelMixin):
     )
     chat_message_ids = fields.RelationListField(
         to={"chat_message": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    structure_level_ids = fields.RelationListField(
+        to={"structure_level": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     logo_projector_main_id = fields.RelationField(
         to={"mediafile": "used_as_logo_projector_main_in_meeting_id"}
@@ -808,6 +828,27 @@ class Meeting(Model, MeetingModelMixin):
     admin_group_id = fields.RelationField(to={"group": "admin_group_for_meeting_id"})
 
 
+class StructureLevel(Model):
+    collection = "structure_level"
+    verbose_name = "structure level"
+
+    id = fields.IntegerField(required=True)
+    name = fields.CharField(required=True)
+    color = fields.ColorField()
+    default_time = fields.IntegerField(constraints={"minimum": 0})
+    allow_additional_time = fields.BooleanField()
+    meeting_user_ids = fields.RelationListField(
+        to={"meeting_user": "structure_level_ids"}, equal_fields="meeting_id"
+    )
+    structure_level_list_of_speakers_ids = fields.RelationListField(
+        to={"structure_level_list_of_speakers": "structure_level_id"},
+        equal_fields="meeting_id",
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "structure_level_ids"}, required=True
+    )
+
+
 class Group(Model):
     collection = "group"
     verbose_name = "group"
@@ -821,6 +862,8 @@ class Group(Model):
                 "agenda_item.can_manage",
                 "agenda_item.can_see",
                 "agenda_item.can_see_internal",
+                "agenda_item.can_manage_moderator_notes",
+                "agenda_item.can_see_moderator_notes",
                 "assignment.can_manage",
                 "assignment.can_nominate_other",
                 "assignment.can_nominate_self",
@@ -951,6 +994,7 @@ class AgendaItem(Model, AgendaItemModelMixin):
     duration = fields.IntegerField(
         constraints={"description": "Given in seconds", "minimum": 0}
     )
+    moderator_notes = fields.HTMLStrictField()
     is_internal = fields.BooleanField(
         read_only=True, constraints={"description": "Calculated by the server"}
     )
@@ -1017,6 +1061,11 @@ class ListOfSpeakers(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
+    structure_level_list_of_speakers_ids = fields.RelationListField(
+        to={"structure_level_list_of_speakers": "list_of_speakers_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
+    )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -1024,6 +1073,52 @@ class ListOfSpeakers(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "list_of_speakers_ids"}, required=True
+    )
+
+
+class StructureLevelListOfSpeakers(Model):
+    collection = "structure_level_list_of_speakers"
+    verbose_name = "structure level list of speakers"
+
+    id = fields.IntegerField(required=True)
+    structure_level_id = fields.RelationField(
+        to={"structure_level": "structure_level_list_of_speakers_ids"},
+        required=True,
+        equal_fields="meeting_id",
+    )
+    list_of_speakers_id = fields.RelationField(
+        to={"list_of_speakers": "structure_level_list_of_speakers_ids"},
+        required=True,
+        equal_fields="meeting_id",
+    )
+    speaker_ids = fields.RelationListField(
+        to={"speaker": "structure_level_list_of_speakers_id"}, equal_fields="meeting_id"
+    )
+    initial_time = fields.IntegerField(
+        required=True,
+        constraints={
+            "minimum": 1,
+            "description": "The initial time of this structure_level for this LoS",
+        },
+    )
+    additional_time = fields.IntegerField(
+        constraints={
+            "description": "The summed added time of this structure_level for this LoS"
+        }
+    )
+    remaining_time = fields.IntegerField(
+        required=True,
+        constraints={
+            "description": "The currently remaining time of this structure_level for this LoS"
+        },
+    )
+    current_start_time = fields.TimestampField(
+        constraints={
+            "description": "The current start time of a speaker for this structure_level. Is only set if a currently speaking speaker exists"
+        }
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "structure_level_list_of_speakers_ids"}, required=True
     )
 
 
@@ -1051,12 +1146,24 @@ class Speaker(Model):
     end_time = fields.TimestampField(read_only=True)
     weight = fields.IntegerField(default=10000)
     speech_state = fields.CharField(
-        constraints={"enum": ["contribution", "pro", "contra"]}
+        constraints={
+            "enum": [
+                "contribution",
+                "pro",
+                "contra",
+                "intervention",
+                "interposed_question",
+            ]
+        }
     )
     note = fields.CharField(constraints={"maxLength": 250})
     point_of_order = fields.BooleanField()
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "speaker_ids"}, required=True, equal_fields="meeting_id"
+    )
+    structure_level_list_of_speakers_id = fields.RelationField(
+        to={"structure_level_list_of_speakers": "speaker_ids"},
+        equal_fields="meeting_id",
     )
     meeting_user_id = fields.RelationField(
         to={"meeting_user": "speaker_ids"}, equal_fields="meeting_id"
