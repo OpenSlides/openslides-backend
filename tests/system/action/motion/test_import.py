@@ -108,19 +108,19 @@ class MotionJsonUpload(MotionImportTestMixin):
     # --------------------[ Basic tests ]--------------------
     # -------------------------------------------------------
 
-    def test_import_create_simple(self) -> None:
-        next_id = self.set_up_models_with_import_previews_and_get_next_motion_id()
-        response = self.request("motion.import", {"id": 2, "import": True})
+    def assert_simple_import(
+        self, response: Any, motion_id: int, row_data: Dict[str, str]
+    ) -> None:
         self.assert_status_code(response, 200)
         user = self.assert_model_exists(
-            f"motion/{next_id}",
-            {"title": "New", "text": "Motion"},
+            f"motion/{motion_id}",
+            row_data,
         )
         assert len(user.get("submitter_ids", [])) == 1
         submitter_id = user.get("submitter_ids", [])[0]
         submitter = self.assert_model_exists(
             f"motion_submitter/{submitter_id}",
-            {"meeting_id": 42, "motion_id": next_id},
+            {"meeting_id": 42, "motion_id": motion_id},
         )
         assert (meeting_user_id := submitter.get("meeting_user_id"))
         submitter = self.assert_model_exists(
@@ -128,6 +128,11 @@ class MotionJsonUpload(MotionImportTestMixin):
             {"meeting_id": 42, "user_id": 1},
         )
         self.assert_model_not_exists("import_preview/2")
+
+    def test_import_create_simple(self) -> None:
+        next_id = self.set_up_models_with_import_previews_and_get_next_motion_id()
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_simple_import(response, next_id, {"title": "New", "text": "Motion"})
 
     def test_import_update_simple(self) -> None:
         self.set_up_models_with_import_previews_and_get_next_motion_id(
@@ -139,23 +144,29 @@ class MotionJsonUpload(MotionImportTestMixin):
             ]
         )
         response = self.request("motion.import", {"id": 2, "import": True})
-        self.assert_status_code(response, 200)
-        user = self.assert_model_exists(
-            f"motion/{101}",
-            {"title": "New", "text": "Motion"},
+        self.assert_simple_import(
+            response, 101, {"title": "New", "text": "Motion", "number": "NUM01"}
         )
-        assert len(user.get("submitter_ids", [])) == 1
-        submitter_id = user.get("submitter_ids", [])[0]
-        submitter = self.assert_model_exists(
-            f"motion_submitter/{submitter_id}",
-            {"meeting_id": 42, "motion_id": 101},
+
+    def test_import_create_simple_with_reason_required(self) -> None:
+        self.set_up_models_with_import_previews_and_get_next_motion_id(
+            is_reason_required=True
         )
-        assert (meeting_user_id := submitter.get("meeting_user_id"))
-        submitter = self.assert_model_exists(
-            f"meeting_user/{meeting_user_id}",
-            {"meeting_id": 42, "user_id": 1},
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_status_code(response, 400)
+
+    def test_import_update_simple_with_reason_required(self) -> None:
+        self.set_up_models_with_import_previews_and_get_next_motion_id(
+            [
+                {
+                    "number": {"info": ImportState.DONE, "id": 101, "value": "NUM01"},
+                    "id": 101,
+                }
+            ],
+            is_reason_required=True,
         )
-        self.assert_model_not_exists("import_preview/2")
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_status_code(response, 400)
 
     def test_import_abort(self) -> None:
         next_id = self.set_up_models_with_import_previews_and_get_next_motion_id()
@@ -180,9 +191,47 @@ class MotionJsonUpload(MotionImportTestMixin):
     # ---------------[ Test with categories ]----------------
     # -------------------------------------------------------
 
+    # def assert_import_with_category(self, response: Any, motion_id: int, row_data: Dict[str, str])-> None:
+    #     self.assert_status_code(response, 200)
+    #     user = self.assert_model_exists(
+    #         f"motion/{motion_id}",
+    #         row_data,
+    #     )
+    #     assert len(user.get("submitter_ids", [])) == 1
+    #     submitter_id = user.get("submitter_ids", [])[0]
+    #     submitter = self.assert_model_exists(
+    #         f"motion_submitter/{submitter_id}",
+    #         {"meeting_id": 42, "motion_id": motion_id},
+    #     )
+    #     assert (meeting_user_id := submitter.get("meeting_user_id"))
+    #     submitter = self.assert_model_exists(
+    #         f"meeting_user/{meeting_user_id}",
+    #         {"meeting_id": 42, "user_id": 1},
+    #     )
+    #     self.assert_model_not_exists("import_preview/2")
+
+    # def test_import_create_with_category(self) -> None:
+    #     next_id = self.set_up_models_with_import_previews_and_get_next_motion_id()
+    #     response = self.request("motion.import", {"id": 2, "import": True})
+    #     self.assert_import_with_category(response, next_id, {"title": "New", "text": "Motion"})
+
+    # def test_import_update_with_category(self) -> None:
+    #     self.set_up_models_with_import_previews_and_get_next_motion_id(
+    #         [
+    #             {
+    #                 "number": {"info": ImportState.DONE, "id": 101, "value": "NUM01"},
+    #                 "id": 101,
+    #             }
+    #         ]
+    #     )
+    #     response = self.request("motion.import", {"id": 2, "import": True})
+    #     self.assert_import_with_category(response, 101, {"title": "New", "text": "Motion", "number": "NUM01"})
+
     # -------------------------------------------------------
     # ------------------[ Test with users ]------------------
     # -------------------------------------------------------
+
+    # TODO: Are submitters sorted?
 
     # -------------------------------------------------------
     # ------------------[ Test with tags ]-------------------

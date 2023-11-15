@@ -164,6 +164,7 @@ class AccountImport(ImportMixin):
                 self.execute_other_action(
                     MotionSubmitterDeleteAction, submitter_delete_action_payload
                 )
+            # TODO: call submitter sort
         return {}
 
     def get_ids_from_object_list(self, object_list: List[Dict[str, Any]]) -> List[int]:
