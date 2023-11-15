@@ -687,7 +687,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         response = self.request(
             "motion.json_upload",
             {
-                "data": [{"title": "test", "text": "my", "motion_amendment": True}],
+                "data": [{"title": "test", "text": "my", "motion_amendment": "1"}],
                 "meeting_id": meeting_id,
             },
         )
@@ -703,7 +703,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         }
         expected = {
             "state": ImportState.NEW,
-            "messages": ["Motion amendments cannot be imported"],
+            "messages": ["Amendments cannot be correctly imported"],
             "data": data,
         }
         assert response.json["results"][0][0]["rows"][0] == expected

@@ -61,7 +61,7 @@ class MotionJsonUpload(
                             "category_prefix": {"type": "string"},
                             "tags": LIST_TYPE,
                             "block": {"type": "string"},
-                            "motion_amendment": {"type": "string"},
+                            "motion_amendment": {"type": "boolean"},
                         },
                     },
                     "required": [],
