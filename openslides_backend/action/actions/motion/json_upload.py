@@ -127,7 +127,6 @@ class MotionJsonUpload(
 
     _last_motion_mock_id: Optional[int] = None
     _user_ids_to_meeting_user: Dict[int, Any]
-    _supporter_ids_to_user_id: Dict[int, int]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # transform instance into a correct create/update payload
@@ -576,14 +575,6 @@ class MotionJsonUpload(
                 meeting_user_id
             ]
             for meeting_user_id in all_meeting_users
-            if all_meeting_users[meeting_user_id].get("user_id")
-        }
-        self._supporter_ids_to_user_id = {
-            supporter_id: all_meeting_users[meeting_user_id]["user_id"]
-            for meeting_user_id in all_meeting_users
-            for supporter_id in all_meeting_users[meeting_user_id].get(
-                "motion_supporter_ids", []
-            )
             if all_meeting_users[meeting_user_id].get("user_id")
         }
         self.tags_lookup = Lookup(

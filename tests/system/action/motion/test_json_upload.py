@@ -681,6 +681,33 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.assert_status_code(response, 400)
         assert "data.data must contain at least 1 items" in response.json["message"]
 
+    def test_json_upload_amendment(self) -> None:
+        meeting_id = 42
+        self.set_up_models({meeting_id: self.get_base_meeting_setting(200)})
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [{"title": "test", "text": "my", "motion_amendment": True}],
+                "meeting_id": meeting_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == 1
+        assert response.json["results"][0][0]["state"] == ImportState.WARNING
+        data = {
+            "meeting_id": meeting_id,
+            "title": {"value": "test", "info": ImportState.DONE},
+            "text": {"value": "<p>my</p>", "info": ImportState.DONE},
+            "motion_amendment": {"value": True, "info": ImportState.WARNING},
+            "submitters_username": [{"id": 1, "info": "generated", "value": "admin"}],
+        }
+        expected = {
+            "state": ImportState.NEW,
+            "messages": ["Motion amendments cannot be imported"],
+            "data": data,
+        }
+        assert response.json["results"][0][0]["rows"][0] == expected
+
     def assert_simple_create(
         self,
         is_reason_required: bool = False,

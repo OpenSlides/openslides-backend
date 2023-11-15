@@ -16,6 +16,9 @@ from ....models.models import ImportPreview
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...util.default_schema import DefaultSchema
+from ..meeting_user.create import MeetingUserCreate
+from ..motion_submitter.create import MotionSubmitterCreateAction
+from ..motion_submitter.delete import MotionSubmitterDeleteAction
 from .create import MotionCreate
 from .update import MotionUpdate
 
@@ -42,6 +45,8 @@ class AccountImport(ImportMixin):
     category_lookup: Lookup
     tags_lookup: Lookup
     block_lookup: Lookup
+    _user_ids_to_meeting_user: Dict[int, Any]
+    _submitter_ids_to_user_id: Dict[int, int]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if not instance["import"]:
@@ -53,23 +58,124 @@ class AccountImport(ImportMixin):
 
         self.rows = [self.validate_entry(row) for row in self.result["rows"]]
 
-        # TODO also with motion_submitter.create and -delete
         if self.import_state != ImportState.ERROR:
             create_action_payload: List[Dict[str, Any]] = []
             update_action_payload: List[Dict[str, Any]] = []
+            submitter_create_action_payload: List[Dict[str, Any]] = []
+            submitter_delete_action_payload: List[Dict[str, Any]] = []
+
             self.flatten_object_fields(["text", "reason", "title", "number"])
+
             for row in self.rows:
+                data = row["data"]
+                self.remove_fields_from_data(
+                    data,
+                    ["submitters_verbose", "supporters_verbose", "motion_amendment"],
+                )
+                if (category := data.pop("category_name", None)) and category[
+                    "info"
+                ] == ImportState.DONE:
+                    data["category_id"] = category["id"]
+                if (block := data.pop("block", None)) and block[
+                    "info"
+                ] == ImportState.DONE:
+                    data["block_id"] = block["id"]
+                if len(tag_ids := self.get_ids_from_object_list(data.pop("tags", []))):
+                    data["tag_ids"] = tag_ids
+                meeting_users_to_create = [
+                    {"user_id": submitter["id"], "meeting_id": meeting_id}
+                    for submitter in data["submitters_username"]
+                    if submitter["info"] == ImportState.GENERATED
+                    and submitter["id"] not in self._user_ids_to_meeting_user.keys()
+                ]
+                if len(meeting_users_to_create):
+                    meeting_users = cast(
+                        List[Dict[str, int]],
+                        self.execute_other_action(
+                            MeetingUserCreate, meeting_users_to_create
+                        ),
+                    )
+                    for i in range(len(meeting_users)):
+                        self._user_ids_to_meeting_user[
+                            meeting_users_to_create[i]["user_id"]
+                        ] = meeting_users[i]
+                submitters = self.get_ids_from_object_list(
+                    data.pop("submitters_username")
+                )
+                supporters = [
+                    self._user_ids_to_meeting_user[supporter_id]["id"]
+                    for supporter_id in self.get_ids_from_object_list(
+                        data.pop("supporters_username", [])
+                    )
+                ]
+                if len(supporters):
+                    data["supporter_meeting_user_ids"] = supporters
                 if row["state"] == ImportState.NEW:
-                    create_action_payload.append(row["data"])
+                    if len(submitters):
+                        data.update({"submitter_ids": submitters})
+                    create_action_payload.append(data)
                 else:
-                    # TODO: Split off submitter and handle it separately
-                    update_action_payload.append(row["data"])
+                    id_ = row["data"]["id"]
+                    motion = self.number_lookup.get_matching_data_by_name(
+                        data["number"]
+                    )[0]
+                    if len(submitters):
+                        motion_submitter_ids: List[int] = motion.get(
+                            "submitter_ids", []
+                        )
+                        matched_submitters = {
+                            self._submitter_ids_to_user_id[submitter_id]: submitter_id
+                            for submitter_id in motion_submitter_ids
+                            if self._submitter_ids_to_user_id.get(submitter_id)
+                            in submitters
+                        }
+                        submitter_create_action_payload.extend(
+                            [
+                                {
+                                    "meeting_user_id": self._user_ids_to_meeting_user[
+                                        user_id
+                                    ]["id"],
+                                    "motion_id": id_,
+                                }
+                                for user_id in submitters
+                                if user_id not in matched_submitters.keys()
+                            ]
+                        )
+                        submitter_delete_action_payload.extend(
+                            [
+                                {"id": submitter_id}
+                                for submitter_id in motion_submitter_ids
+                                if submitter_id not in matched_submitters.values()
+                            ]
+                        )
+
+                    data.pop("meeting_id", None)
+                    update_action_payload.append(data)
+
             if create_action_payload:
                 self.execute_other_action(MotionCreate, create_action_payload)
             if update_action_payload:
                 self.execute_other_action(MotionUpdate, update_action_payload)
-
+            if len(submitter_create_action_payload):
+                self.execute_other_action(
+                    MotionSubmitterCreateAction, submitter_create_action_payload
+                )
+            if len(submitter_delete_action_payload):
+                self.execute_other_action(
+                    MotionSubmitterDeleteAction, submitter_delete_action_payload
+                )
         return {}
+
+    def get_ids_from_object_list(self, object_list: List[Dict[str, Any]]) -> List[int]:
+        return [
+            obj["id"] for obj in object_list if obj.get("info") != ImportState.WARNING
+        ]
+
+    def remove_fields_from_data(
+        self, data: Dict[str, Any], fieldnames: List[str]
+    ) -> None:
+        for fieldname in fieldnames:
+            data.pop(fieldname, None)
 
     def validate_entry(self, row: ImportRow) -> ImportRow:
         entry = row["data"]
@@ -284,11 +390,11 @@ class AccountImport(ImportMixin):
             for meeting_user_id in all_meeting_users
             if all_meeting_users[meeting_user_id].get("user_id")
         }
-        self._supporter_ids_to_user_id = {
-            supporter_id: all_meeting_users[meeting_user_id]["user_id"]
+        self._submitter_ids_to_user_id = {
+            submitter_id: all_meeting_users[meeting_user_id]["user_id"]
             for meeting_user_id in all_meeting_users
-            for supporter_id in all_meeting_users[meeting_user_id].get(
-                "motion_supporter_ids", []
+            for submitter_id in all_meeting_users[meeting_user_id].get(
+                "motion_submitter_ids", []
             )
             if all_meeting_users[meeting_user_id].get("user_id")
         }
