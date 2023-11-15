@@ -10,7 +10,6 @@ from ...mixins.create_action_with_inferred_meeting import (
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_user.create import MeetingUserCreate
-from ..meeting_user.update import MeetingUserUpdate
 from .mixins import PermissionMixin
 
 
@@ -44,18 +43,6 @@ class PersonalNoteCreateAction(
         )
         if filtered_meeting_user:
             meeting_user = list(filtered_meeting_user.values())[0]
-            self.execute_other_action(
-                MeetingUserUpdate,
-                [
-                    {
-                        "id": meeting_user["id"],
-                        "personal_note_ids": (
-                            (meeting_user.get("personal_note_ids") or [])
-                            + [instance["id"]]
-                        ),
-                    }
-                ],
-            )
             instance["meeting_user_id"] = meeting_user["id"]
         else:
             action_results = self.execute_other_action(
@@ -64,7 +51,6 @@ class PersonalNoteCreateAction(
                     {
                         "user_id": self.user_id,
                         "meeting_id": instance["meeting_id"],
-                        "personal_note_ids": [instance["id"]],
                     }
                 ],
             )
@@ -73,7 +59,7 @@ class PersonalNoteCreateAction(
         if not (instance.get("star") or instance.get("note")):
             raise ActionException("Can't create personal note without star or note.")
 
-        # check, if (meeting_user_id, content_object_id) already in the databse.
+        # check, if (meeting_user_id, content_object_id) already in the database.
         filter_ = And(
             FilterOperator("meeting_user_id", "=", instance["meeting_user_id"]),
             FilterOperator(
