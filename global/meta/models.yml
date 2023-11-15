@@ -402,36 +402,44 @@ meeting_user:
   personal_note_ids:
     type: relation-list
     to: personal_note/meeting_user_id
+    equal_fields: meeting_id
     on_delete: CASCADE
     restriction_mode: B
   speaker_ids:
     type: relation-list
     to: speaker/meeting_user_id
+    equal_fields: meeting_id
     restriction_mode: A
   supported_motion_ids:
     type: relation-list
     to: motion/supporter_meeting_user_ids
+    equal_fields: meeting_id
     restriction_mode: A
   motion_submitter_ids:
     type: relation-list
     to: motion_submitter/meeting_user_id
+    equal_fields: meeting_id
     on_delete: CASCADE
     restriction_mode: A
   assignment_candidate_ids:
     type: relation-list
     to: assignment_candidate/meeting_user_id
+    equal_fields: meeting_id
     restriction_mode: A
   vote_delegated_to_id:
     type: relation
     to: meeting_user/vote_delegations_from_ids
+    equal_fields: meeting_id
     restriction_mode: A
   vote_delegations_from_ids:
     type: relation-list
     to: meeting_user/vote_delegated_to_id
+    equal_fields: meeting_id
     restriction_mode: A
   chat_message_ids:
     type: relation-list
     to: chat_message/meeting_user_id
+    equal_fields: meeting_id
     restriction_mode: A
   group_ids:
     type: relation-list
@@ -1940,6 +1948,7 @@ personal_note:
   meeting_user_id:
     type: relation
     to: meeting_user/personal_note_ids
+    equal_fields: meeting_id
     restriction_mode: A
     required: true
   content_object_id:

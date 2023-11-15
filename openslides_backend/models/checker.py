@@ -79,11 +79,11 @@ def check_color(value: Any) -> bool:
 
 
 def check_number(value: Any) -> bool:
-    return value is None or type(value) == int
+    return value is None or isinstance(value, int)
 
 
 def check_float(value: Any) -> bool:
-    return value is None or type(value) in (int, float)
+    return value is None or isinstance(value, (int, float))
 
 
 def check_boolean(value: Any) -> bool:
