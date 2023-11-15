@@ -10,6 +10,8 @@ agenda_item:
     can_manage:
         can_see_internal:
             can_see:
+    can_manage_moderator_notes:
+        can_see_moderator_notes:
 assignment:
     can_manage:
         can_nominate_other:
