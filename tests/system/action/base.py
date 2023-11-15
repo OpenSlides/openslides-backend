@@ -417,7 +417,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             self.set_models(models)
         self.set_user_groups(self.user_id, [3])
         if permission:
-            if type(permission) == OrganizationManagementLevel:
+            if isinstance(permission, OrganizationManagementLevel):
                 self.set_organization_management_level(
                     cast(OrganizationManagementLevel, permission), self.user_id
                 )

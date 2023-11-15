@@ -208,7 +208,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         Checks permission by requesting permission service or using internal check.
         """
         if self.permission:
-            if type(self.permission) == OrganizationManagementLevel:
+            if isinstance(self.permission, OrganizationManagementLevel):
                 if has_organization_management_level(
                     self.datastore,
                     self.user_id,
@@ -216,7 +216,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 ):
                     return
                 raise MissingPermission(self.permission)
-            elif type(self.permission) == CommitteeManagementLevel:
+            elif isinstance(self.permission, CommitteeManagementLevel):
                 """
                 set permission in class to: permission = CommitteeManagementLevel.CAN_MANAGE
                 A specialized realisation see in create_update_permissions_mixin.py
