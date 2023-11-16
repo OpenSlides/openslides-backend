@@ -802,6 +802,10 @@ class MotionJsonUpload(MotionImportTestMixin):
                 "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
+                "category_name": {"value": "", "info": "done"},
+                "block": {"value": "", "info": "done"},
+                "supporters_username": [],
+                "tags": [],
             },
         }
         assert response.json["results"][0][0]["rows"][0] == expected
@@ -942,6 +946,10 @@ class MotionJsonUpload(MotionImportTestMixin):
                 "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
+                "category_name": {"value": "", "info": "done"},
+                "block": {"value": "", "info": "done"},
+                "supporters_username": [],
+                "tags": [],
             },
         }
         assert response.json["results"][0][0]["rows"][0] == expected
@@ -1001,6 +1009,47 @@ class MotionJsonUpload(MotionImportTestMixin):
             "info": ImportState.ERROR,
         }
 
+    def test_json_upload_update_missing_title(self) -> None:
+        self.set_up_models({42: self.get_base_meeting_setting(223)})
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [{"text": "my", "reason": "stuff", "number": "NUM01"}],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Title is required"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+
+        assert response.json["results"][0][0]["rows"][0]["data"]["title"] == {
+            "value": "",
+            "info": ImportState.ERROR,
+        }
+
+    def test_json_upload_update_missing_text(self) -> None:
+        self.set_up_models({42: self.get_base_meeting_setting(223)})
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [{"title": "test", "reason": "stuff", "number": "NUM01"}],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Text is required"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+        assert response.json["results"][0][0]["rows"][0]["data"]["text"] == {
+            "value": "",
+            "info": ImportState.ERROR,
+        }
+
     def test_json_upload_create_missing_reason(self) -> None:
         self.set_up_models({42: self.get_base_meeting_setting(223)})
         response = self.request(
@@ -1039,6 +1088,28 @@ class MotionJsonUpload(MotionImportTestMixin):
         assert response.json["results"][0][0]["state"] == ImportState.ERROR
         assert (
             "Error: Reason is required"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+        assert response.json["results"][0][0]["rows"][0]["data"]["reason"] == {
+            "value": "",
+            "info": ImportState.ERROR,
+        }
+
+    def test_json_upload_update_missing_reason_although_required(self) -> None:
+        self.set_up_models(
+            {42: self.get_base_meeting_setting(223, is_reason_required=True)}
+        )
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [{"title": "test", "text": "my", "number": "NUM01"}],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Reason is required to update."
             in response.json["results"][0][0]["rows"][0]["messages"]
         )
         assert response.json["results"][0][0]["rows"][0]["data"]["reason"] == {

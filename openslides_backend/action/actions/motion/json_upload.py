@@ -443,6 +443,21 @@ class MotionJsonUpload(
             if (date := entry.get(field)) and isinstance(date, str):
                 entry[field] = {"value": date, "info": ImportState.DONE}
 
+        if id_:
+            for field in [
+                "title",
+                "text",
+                "number",
+                "reason",
+                "category_name",
+                "block",
+            ]:
+                if not entry.get(field):
+                    entry[field] = {"value": "", "info": ImportState.DONE}
+            for field in ["submitters_username", "supporters_username", "tags"]:
+                if not entry.get(field):
+                    entry[field] = []
+
         # check via mixin
         payload = {
             **{
@@ -457,7 +472,6 @@ class MotionJsonUpload(
                     "supporter_meeting_user_ids": "supporters_username",
                     "tag_ids": "tags",
                 }.items()
-                if entry.get(v)
             },
             **{
                 k: self._get_field_id(entry, v)
@@ -468,12 +482,21 @@ class MotionJsonUpload(
                 if entry.get(v)
             },
         }
+
         errors: List[MotionActionErrorData] = []
         if id_:
             payload = {"id": id_, **payload}
             errors = self.get_update_payload_integrity_error_message(
                 payload, meeting_id
             )
+            for field in [MotionErrorType.TITLE, MotionErrorType.TEXT]:
+                if not payload.get(field):
+                    errors.append(
+                        {
+                            "type": field,
+                            "message": f"{field[0].capitalize() + field[1:]} is required",
+                        }
+                    )
         else:
             payload = {"meeting_id": meeting_id, **payload}
             errors = self.get_create_payload_integrity_error_message(
@@ -626,7 +649,7 @@ class MotionJsonUpload(
         return []
 
     def _get_field_ids(self, entry: Dict[str, Any], fieldname: str) -> List[int]:
-        value = entry[fieldname]
+        value = entry.get(fieldname, [])
         if not isinstance(value, list):
             value = [entry[fieldname]]
         return [val["id"] for val in value if val.get("id")]
