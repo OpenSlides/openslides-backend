@@ -18,10 +18,7 @@ SetupUserSetting = TypedDict(
 
 SetupCommonMotionSetting = TypedDict(
     "SetupCommonMotionSetting",
-    {
-        "has_number": bool,
-        "category_id": int,
-    },
+    {"has_number": bool, "category_id": int, "tag_ids": List[int], "block_id": int},
     total=False,
 )
 
@@ -125,16 +122,13 @@ class MotionImportTestMixin(BaseActionTestCase):
                 self._set_up_categories(
                     model_data, meeting_id, meeting_data, category_settings
                 )
-            if motion_settings := setting.get("motions"):
-                self._set_up_motions(
-                    model_data, meeting_id, meeting_data, motion_settings
-                )
             if tag_settings := setting.get("tags"):
                 meeting_data["tag_ids"] = list(tag_settings.keys())
                 for tag_id in tag_settings:
                     model_data[f"tag/{tag_id}"] = {
                         "name": tag_settings[tag_id],
                         "meeting_id": meeting_id,
+                        "tagged_ids": [],
                     }
             if block_settings := setting.get("blocks"):
                 meeting_data["motion_block_ids"] = list(block_settings.keys())
@@ -142,7 +136,12 @@ class MotionImportTestMixin(BaseActionTestCase):
                     model_data[f"motion_block/{block_id}"] = {
                         "title": block_settings[block_id],
                         "meeting_id": meeting_id,
+                        "motion_ids": [],
                     }
+            if motion_settings := setting.get("motions"):
+                self._set_up_motions(
+                    model_data, meeting_id, meeting_data, motion_settings
+                )
             model_data["meeting/" + str(meeting_id)] = meeting_data
         if users:
             for idx, user_setting in enumerate(users):
@@ -278,12 +277,9 @@ class MotionImportTestMixin(BaseActionTestCase):
                     "number_value": motion_number_value,
                 }
                 motion_number_value += 1
-            if motion_setting["base"].get("category_id"):
-                category_id = motion_setting["base"].get("category_id")
-                motion_data["category_id"] = category_id
-                model_data["motion_category/" + str(category_id)]["motion_ids"].append(
-                    motion_id
-                )
+            self._set_up_extras_for_motion(
+                model_data, motion_id, motion_setting, motion_data
+            )
             if amendment_settings := motion_setting.get("amendments"):
                 amendment_ids = [id_ for id_ in amendment_settings]
                 motion_ids.extend(amendment_ids)
@@ -304,14 +300,32 @@ class MotionImportTestMixin(BaseActionTestCase):
                             "number_value": amendment_number_value,
                         }
                         amendment_number_value += 1
-                    if amendment_setting["base"].get("category_id"):
-                        category_id = amendment_setting["base"].get("category_id")
-                        amendment_data["category_id"] = category_id
-                        model_data["motion_category/" + str(category_id)][
-                            "motion_ids"
-                        ].append(amendment_id)
+                    self._set_up_extras_for_motion(
+                        model_data, amendment_id, amendment_setting, amendment_data
+                    )
                     model_data["motion/" + str(amendment_id)] = amendment_data
             model_data["motion/" + str(motion_id)] = motion_data
+
+    def _set_up_extras_for_motion(
+        self,
+        model_data: Dict[str, Dict[str, Any]],
+        motion_id: int,
+        motion_setting: Any,
+        motion_data: Dict[str, Any],
+    ) -> None:
+        base = cast(SetupCommonMotionSetting, motion_setting["base"])
+        if category_id := base.get("category_id"):
+            motion_data["category_id"] = category_id
+            model_data["motion_category/" + str(category_id)]["motion_ids"].append(
+                motion_id
+            )
+        if tag_ids := base.get("tag_ids"):
+            motion_data["tag_ids"] = tag_ids
+            for tag_id in tag_ids:
+                model_data["tag/" + str(tag_id)]["tagged_ids"].append(f"motion/{motion_id}")
+        if block_id := base.get("block_id"):
+            motion_data["block_id"] = block_id
+            model_data["motion_block/" + str(block_id)]["motion_ids"].append(motion_id)
 
     def _set_up_workflow(
         self,
@@ -444,9 +458,9 @@ class MotionImportTestMixin(BaseActionTestCase):
             {
                 base_motion_id: (base_category_id + 2),
                 (base_motion_id + 1): base_category_id,
-                (base_motion_id + 1): (base_category_id + 1),
-                (base_motion_id + 1): (base_category_id + 3),
-                (base_motion_id + 1): base_category_id,
+                (base_motion_id + 2): (base_category_id + 1),
+                (base_motion_id + 3): (base_category_id + 3),
+                (base_motion_id + 4): base_category_id,
             },
         )
 
@@ -559,7 +573,11 @@ class MotionImportTestMixin(BaseActionTestCase):
         )
 
     def extend_meeting_setting_with_tags(
-        self, setting: SetupMeetingSetting, base_tag_id: int, extra_tags: List[str] = []
+        self,
+        setting: SetupMeetingSetting,
+        base_tag_id: int,
+        extra_tags: List[str] = [],
+        motion_to_tag_ids: Dict[int, List[int]] = {},
     ) -> SetupMeetingSetting:
         setting["tags"] = {
             base_tag_id: "Tag-liatelle",
@@ -572,6 +590,15 @@ class MotionImportTestMixin(BaseActionTestCase):
                 for index in range(len(extra_tags))
             },
         }
+        for motion_id in setting.get("motions", {}):
+            motion = setting.get("motions", {})[motion_id]
+            self._add_tag_ids(motion_id, motion, motion_to_tag_ids)
+            for amendment_id in motion.get("amendments", {}):
+                self._add_tag_ids(
+                    amendment_id,
+                    motion.get("amendments", {})[amendment_id],
+                    motion_to_tag_ids,
+                )
         return setting
 
     def get_base_meeting_setting_with_blocks(
@@ -588,6 +615,7 @@ class MotionImportTestMixin(BaseActionTestCase):
         setting: SetupMeetingSetting,
         base_block_id: int,
         extra_blocks: List[str] = [],
+        motion_to_block_ids: Dict[int, int] = {},
     ) -> SetupMeetingSetting:
         setting["blocks"] = {
             base_block_id: "Blockolade",
@@ -600,6 +628,15 @@ class MotionImportTestMixin(BaseActionTestCase):
                 for index in range(len(extra_blocks))
             },
         }
+        for motion_id in setting.get("motions", {}):
+            motion = setting.get("motions", {})[motion_id]
+            self._add_block_id(motion_id, motion, motion_to_block_ids)
+            for amendment_id in motion.get("amendments", {}):
+                self._add_block_id(
+                    amendment_id,
+                    motion.get("amendments", {})[amendment_id],
+                    motion_to_block_ids,
+                )
         return setting
 
     def extend_meeting_setting_with_categories(
@@ -628,6 +665,24 @@ class MotionImportTestMixin(BaseActionTestCase):
     ) -> None:
         if motion_to_category_ids.get(motion_id):
             motion["base"]["category_id"] = motion_to_category_ids[motion_id]
+
+    def _add_tag_ids(
+        self,
+        motion_id: int,
+        motion: Any,
+        motion_to_tag_ids: Dict[int, List[int]],
+    ) -> None:
+        if motion_to_tag_ids.get(motion_id):
+            motion["base"]["tag_ids"] = motion_to_tag_ids[motion_id]
+
+    def _add_block_id(
+        self,
+        motion_id: int,
+        motion: Any,
+        motion_to_block_ids: Dict[int, int],
+    ) -> None:
+        if motion_to_block_ids.get(motion_id):
+            motion["base"]["block_id"] = motion_to_block_ids[motion_id]
 
     def _generate_user_setting(
         self,
@@ -1613,7 +1668,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         assert rows[0]["data"].get("category_prefix") is None
         assert "Category could not be found" in rows[0]["messages"]
         self.make_conditional_number_assertions_for_category_test(
-            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "03"}
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "01"}
         )
 
     def test_json_upload_create_with_categories_no_prefix_with_warning(self) -> None:
@@ -1683,7 +1738,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         assert rows[0]["data"]["category_prefix"] == "COPY"
         assert "Category could not be found" in rows[0]["messages"]
         self.make_conditional_number_assertions_for_category_test(
-            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "03"}
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "01"}
         )
 
     def test_json_upload_create_with_categories_no_name(self) -> None:
@@ -1748,7 +1803,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         assert rows[0]["data"]["category_prefix"] == "UNKNWN"
         assert "Category could not be found" in rows[0]["messages"]
         self.make_conditional_number_assertions_for_category_test(
-            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "03"}
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "01"}
         )
 
     def test_json_upload_create_with_categories_with_warning(self) -> None:
@@ -1817,7 +1872,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         assert rows[0]["data"]["category_prefix"] == "DUPE"
         assert "Category could not be found" in rows[0]["messages"]
         self.make_conditional_number_assertions_for_category_test(
-            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "03"}
+            rows, is_update, request_with_numbers, is_set_number, {0: 224}, {0: "01"}
         )
 
     def test_json_upload_create_with_categories_with_duplicate_categories(self) -> None:
@@ -1893,7 +1948,7 @@ class MotionJsonUpload(MotionImportTestMixin):
             request_with_numbers,
             is_set_number,
             {0: 224},
-            {0: "AMNDMNT01"},
+            {0: "AMNDMNT02"},
         )
 
     def test_json_upload_create_with_categories_same_prefix(self) -> None:

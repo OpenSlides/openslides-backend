@@ -113,13 +113,15 @@ class AccountImport(ImportMixin):
                     create_action_payload.append(data)
                 else:
                     id_ = row["data"]["id"]
-                    motion = self.number_lookup.get_matching_data_by_name(
-                        data["number"]
-                    )[0]
+                    motion = {k: v for k, v in (self.number_lookup.get_matching_data_by_name(data["number"])[0]).items()}
+                    for field in ["category_id", "block_id"]:
+                        if row["data"].get(field) is None:
+                            if not motion.get(field):
+                                row["data"].pop(field)
                     if len(submitters):
                         motion_submitter_ids: List[int] = motion.get(
                             "submitter_ids", []
-                        )
+                        ) or []
                         matched_submitters = {
                             self._submitter_ids_to_user_id[submitter_id]: submitter_id
                             for submitter_id in motion_submitter_ids
@@ -294,7 +296,7 @@ class AccountImport(ImportMixin):
                 and entry["number"].get("info") != ImportState.WARNING
             ],
             field="number",
-            mapped_fields=["submitter_ids"],
+            mapped_fields=["submitter_ids", "category_id", "block_id"],
             global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
         self.block_lookup = Lookup(

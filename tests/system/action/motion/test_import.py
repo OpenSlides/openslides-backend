@@ -24,27 +24,55 @@ class MotionJsonUpload(MotionImportTestMixin):
                 self.extend_meeting_setting_with_tags(
                     self.extend_meeting_setting_with_categories(
                         settings[base_meeting_id],
-                        categories={},
-                        motion_to_category_ids={},
+                        categories={
+                            400: {"name": "Category A", "prefix": "A"},
+                            401: {"name": "Category B", "prefix": "B"},
+                            403: {"name": "Copygory", "prefix": "COPY"},
+                            404: {"name": "Copygory", "prefix": "COPY"},
+                            405: {"name": "Copygory", "prefix": "KOPIE"},
+                            406: {"name": "Weak Copygory", "prefix": "COPY"},
+                            407: {"name": "No prefix"},
+                        },
+                        motion_to_category_ids={
+                            base_motion_id: 407,
+                            (base_motion_id + 1): 400,
+                            (base_motion_id + 2): 401,
+                            (base_motion_id + 3): 403,
+                            (base_motion_id + 4): 405,
+                        },
                     ),
                     base_tag_id,
-                    extra_tags=[],
+                    extra_tags=["Got tag go"],
+                    motion_to_tag_ids={
+                        (base_motion_id + i): [base_tag_id] for i in range(5)
+                    },
                 ),
                 base_block_id,
-                extra_blocks=[],
+                extra_blocks=["Block and roll"],
+                motion_to_block_ids={
+                    (base_motion_id + i): base_block_id for i in range(5)
+                },
             ),
             (base_meeting_id + 1): self.extend_meeting_setting_with_blocks(
                 self.extend_meeting_setting_with_tags(
                     self.extend_meeting_setting_with_categories(
                         settings[base_meeting_id + 1],
-                        categories={},
-                        motion_to_category_ids={},
+                        categories={
+                            801: {"name": "Category B", "prefix": "B"},
+                            802: {"name": "Category C", "prefix": "C"},
+                        },
+                        motion_to_category_ids={
+                            base_motion_id * 2: 801,
+                            (base_motion_id * 2 + 1): 802,
+                        },
                     ),
                     base_tag_id * 2,
-                    extra_tags=[],
+                    extra_tags=["rag-tag"],
+                    motion_to_tag_ids={},
                 ),
                 base_block_id * 2,
-                extra_blocks=[],
+                extra_blocks=["Blocked"],
+                motion_to_block_ids={(base_motion_id * 2): (base_block_id * 2)},
             ),
         }
         model_data = {
@@ -118,7 +146,7 @@ class MotionJsonUpload(MotionImportTestMixin):
     # -------------------------------------------------------
 
     def assert_simple_import(
-        self, response: Any, motion_id: int, row_data: Dict[str, str]
+        self, response: Any, motion_id: int, row_data: Dict[str, Any]
     ) -> None:
         self.assert_status_code(response, 200)
         user = self.assert_model_exists(
@@ -152,9 +180,66 @@ class MotionJsonUpload(MotionImportTestMixin):
                 }
             ]
         )
+        self.assert_model_exists("motion/101", {"number": "NUM01", "category_id": 400, "block_id": 1000, "tag_ids": [10000], "submitter_ids": [70000]})
         response = self.request("motion.import", {"id": 2, "import": True})
         self.assert_simple_import(
-            response, 101, {"title": "New", "text": "Motion", "number": "NUM01"}
+            response,
+            101,
+            {"title": "New", "text": "Motion", "number": "NUM01", "category_id": None, "block_id": None, "tag_ids": [], "submitter_ids": [150101]},
+        )
+
+    def test_import_update_simple_2(self) -> None:
+        self.set_up_models_with_import_previews_and_get_next_motion_id(
+            [
+                {
+                    "number": {"info": ImportState.DONE, "id": 102, "value": "AMNDMNT1"},
+                    "text": {"info": ImportState.DONE, "value": ""},
+                    "id": 102,
+                }
+            ]
+        )
+        self.assert_model_exists("motion/102", {"number": "AMNDMNT1", "supporter_meeting_user_ids": [700]})
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_simple_import(
+            response,
+            102,
+            {"title": "New", "text": "", "number": "AMNDMNT1", "supporter_meeting_user_ids": []},
+        )
+        
+    def test_import_update_complex(self) -> None:
+        self.set_up_models_with_import_previews_and_get_next_motion_id(
+            [
+                {
+                    "number": {"info": ImportState.DONE, "id": 101, "value": "NUM01"},
+                    "title": {"info": ImportState.DONE, "value": "Always look on..."},
+                    "text": {"info": ImportState.DONE, "value": "...the bright side.."},
+                    "reason": {"info": ImportState.DONE, "value": "...of life"},
+                    # "category_name": {"info": ImportState.DONE, "id":, "value":""},
+                    # "category_prefix": "",
+                    # "block": {"info": ImportState.DONE, "id":, "value":""},
+                    # "submitters_username": [
+                    #     {"info": ImportState.DONE, "id":, "value":""},
+                    #     {"info": ImportState.DONE, "id":, "value":""},
+                    #     {"info": ImportState.DONE, "id":, "value":""}
+                    # ],
+                    # "supporters_username": [
+                    #     {"info": ImportState.DONE, "id":, "value":""},
+                    #     {"info": ImportState.DONE, "id":, "value":""}
+                    # ],
+                    # "tags": [
+                    #     {"info": ImportState.DONE, "id":, "value":""},
+                    #     {"info": ImportState.DONE, "id":, "value":""}
+                    # ],
+                    "id": 101,
+                }
+            ]
+        )
+        self.assert_model_exists("motion/101", {"number": "NUM01", "category_id": 400, "block_id": 1000, "tag_ids": [10000], "submitter_ids": [70000]})
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_simple_import(
+            response,
+            101,
+            {"title": "New", "text": "Motion", "number": "NUM01", "category_id": None, "block_id": None, "tag_ids": [], "submitter_ids": [150101]},
         )
 
     def test_import_create_simple_with_reason_required(self) -> None:
