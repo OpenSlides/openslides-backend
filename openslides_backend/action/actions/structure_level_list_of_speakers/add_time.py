@@ -30,11 +30,20 @@ class StructureLevelListOfSpeakersAddTimeAction(SingularActionMixin, UpdateActio
                     [instance["id"]],
                     ["current_start_time", "remaining_time", "list_of_speakers_id"],
                 ),
-                GetManyRequest("meeting", [meeting_id], ["structure_level_ids"]),
+                GetManyRequest(
+                    "meeting",
+                    [meeting_id],
+                    [
+                        "list_of_speakers_default_structure_level_time",
+                        "structure_level_ids",
+                    ],
+                ),
             ]
         )
         db_instance = result[self.model.collection][instance["id"]]
         meeting = result["meeting"][meeting_id]
+        if meeting.get("list_of_speakers_default_structure_level_time", 0) <= 0:
+            raise ActionException("Structure level countdowns are deactivated")
         if db_instance.get("current_start_time") is not None:
             raise ActionException("Stop the current speaker before adding time")
         if db_instance["remaining_time"] >= 0:
