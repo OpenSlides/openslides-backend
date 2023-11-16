@@ -41,6 +41,7 @@ def prepare_actions_map() -> None:
         projector_message,
         speaker,
         structure_level,
+        structure_level_list_of_speakers,
         tag,
         theme,
         topic,
