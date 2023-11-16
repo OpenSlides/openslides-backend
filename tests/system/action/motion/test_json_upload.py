@@ -700,6 +700,12 @@ class MotionJsonUpload(MotionImportTestMixin):
             "text": {"value": "<p>my</p>", "info": ImportState.DONE},
             "motion_amendment": {"value": True, "info": ImportState.WARNING},
             "submitters_username": [{"id": 1, "info": "generated", "value": "admin"}],
+            "number": {"info": ImportState.DONE, "value": ""},
+            "reason": {"info": ImportState.DONE, "value": ""},
+            "category_name": {"info": ImportState.DONE, "value": ""},
+            "block": {"info": ImportState.DONE, "value": ""},
+            "tags": [],
+            "supporters_username": [],
         }
         expected = {
             "state": ImportState.NEW,
@@ -736,6 +742,11 @@ class MotionJsonUpload(MotionImportTestMixin):
             "text": {"value": "<p>my</p>", "info": ImportState.DONE},
             "reason": {"value": "stuff", "info": ImportState.DONE},
             "submitters_username": [{"id": 1, "info": "generated", "value": "admin"}],
+            "number": {"info": ImportState.DONE, "value": ""},
+            "category_name": {"info": ImportState.DONE, "value": ""},
+            "block": {"info": ImportState.DONE, "value": ""},
+            "tags": [],
+            "supporters_username": [],
         }
         if is_set_number:
             data.update({"number": {"info": ImportState.GENERATED, "value": "03"}})
@@ -859,6 +870,11 @@ class MotionJsonUpload(MotionImportTestMixin):
             "text": {"value": "<p>my</p>", "info": ImportState.DONE},
             "reason": {"value": "stuff", "info": ImportState.DONE},
             "submitters_username": [{"id": 1, "info": "generated", "value": "admin"}],
+            "number": {"info": ImportState.DONE, "value": ""},
+            "category_name": {"info": ImportState.DONE, "value": ""},
+            "block": {"info": ImportState.DONE, "value": ""},
+            "tags": [],
+            "supporters_username": [],
         }
         if is_set_number:
             data.update({"number": {"info": ImportState.GENERATED, "value": "03"}})
@@ -874,6 +890,11 @@ class MotionJsonUpload(MotionImportTestMixin):
             "text": {"value": "<p>my other</p>", "info": ImportState.DONE},
             "reason": {"value": "stuff", "info": ImportState.DONE},
             "submitters_username": [{"id": 1, "info": "generated", "value": "admin"}],
+            "number": {"info": ImportState.DONE, "value": ""},
+            "category_name": {"info": ImportState.DONE, "value": ""},
+            "block": {"info": ImportState.DONE, "value": ""},
+            "tags": [],
+            "supporters_username": [],
         }
         if is_set_number:
             data.update({"number": {"info": ImportState.GENERATED, "value": "04"}})
@@ -1070,6 +1091,95 @@ class MotionJsonUpload(MotionImportTestMixin):
                 "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
+                "number": {"info": ImportState.DONE, "value": ""},
+                "reason": {"info": ImportState.DONE, "value": ""},
+                "category_name": {"info": ImportState.DONE, "value": ""},
+                "block": {"info": ImportState.DONE, "value": ""},
+                "tags": [],
+                "supporters_username": [],
+            },
+        }
+
+    def test_json_upload_create_fields_empty(self) -> None:
+        self.set_up_models({42: self.get_base_meeting_setting(223)})
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {
+                        "title": "test",
+                        "text": "<p>my</p>",
+                        "submitters_username": "",
+                        "number": "",
+                        "reason": "",
+                        "category_name": "",
+                        "block": "",
+                        "tags": "",
+                        "supporters_username": "",
+                    }
+                ],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "meeting_id": 42,
+                "title": {"value": "test", "info": ImportState.DONE},
+                "text": {"value": "<p>my</p>", "info": ImportState.DONE},
+                "submitters_username": [
+                    {"id": 1, "info": "generated", "value": "admin"}
+                ],
+                "number": {"info": ImportState.DONE, "value": ""},
+                "reason": {"info": ImportState.DONE, "value": ""},
+                "category_name": {"info": ImportState.DONE, "value": ""},
+                "block": {"info": ImportState.DONE, "value": ""},
+                "tags": [],
+                "supporters_username": [],
+            },
+        }
+
+    def test_json_upload_update_fields_empty(self) -> None:
+        self.set_up_models({42: self.get_base_meeting_setting(223)})
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {
+                        "title": "test",
+                        "text": "<p>my</p>",
+                        "submitters_username": "",
+                        "number": "NUM01",
+                        "reason": "",
+                        "category_name": "",
+                        "block": "",
+                        "tags": "",
+                        "supporters_username": "",
+                    }
+                ],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "meeting_id": 42,
+                "id": 224,
+                "title": {"value": "test", "info": ImportState.DONE},
+                "text": {"value": "<p>my</p>", "info": ImportState.DONE},
+                "submitters_username": [
+                    {"id": 1, "info": "generated", "value": "admin"}
+                ],
+                "number": {"info": ImportState.DONE, "value": "NUM01", "id": 224},
+                "reason": {"info": ImportState.DONE, "value": ""},
+                "category_name": {"info": ImportState.DONE, "value": ""},
+                "block": {"info": ImportState.DONE, "value": ""},
+                "tags": [],
+                "supporters_username": [],
             },
         }
 
@@ -1150,6 +1260,10 @@ class MotionJsonUpload(MotionImportTestMixin):
                 "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
+                "category_name": {"info": ImportState.DONE, "value": ""},
+                "block": {"info": ImportState.DONE, "value": ""},
+                "tags": [],
+                "supporters_username": [],
             },
         }
 
@@ -1168,6 +1282,10 @@ class MotionJsonUpload(MotionImportTestMixin):
                 "submitters_username": [
                     {"id": 1, "info": "generated", "value": "admin"}
                 ],
+                "category_name": {"info": ImportState.DONE, "value": ""},
+                "block": {"info": ImportState.DONE, "value": ""},
+                "tags": [],
+                "supporters_username": [],
             },
         }
 
@@ -1246,7 +1364,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                     "value": generated_numbers_for_row_indices[i],
                 }
             else:
-                assert rows[i]["data"].get("number") is None
+                assert rows[i]["data"].get("number") == {"value": "", "info": "done"}
 
     def make_category_request(
         self,

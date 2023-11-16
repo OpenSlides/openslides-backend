@@ -75,13 +75,12 @@ class AccountImport(ImportMixin):
                 if (category := data.pop("category_name", None)) and category[
                     "info"
                 ] == ImportState.DONE:
-                    data["category_id"] = category["id"]
+                    data["category_id"] = category["id"] if category.get("id") else None
                 if (block := data.pop("block", None)) and block[
                     "info"
                 ] == ImportState.DONE:
-                    data["block_id"] = block["id"]
-                if len(tag_ids := self.get_ids_from_object_list(data.pop("tags", []))):
-                    data["tag_ids"] = tag_ids
+                    data["block_id"] = block["id"] if block.get("id") else None
+                data["tag_ids"] = self.get_ids_from_object_list(data.pop("tags", []))
                 meeting_users_to_create = [
                     {"user_id": submitter["id"], "meeting_id": meeting_id}
                     for submitter in data["submitters_username"]
@@ -108,11 +107,9 @@ class AccountImport(ImportMixin):
                         data.pop("supporters_username", [])
                     )
                 ]
-                if len(supporters):
-                    data["supporter_meeting_user_ids"] = supporters
+                data["supporter_meeting_user_ids"] = supporters
                 if row["state"] == ImportState.NEW:
-                    if len(submitters):
-                        data.update({"submitter_ids": submitters})
+                    data.update({"submitter_ids": submitters})
                     create_action_payload.append(data)
                 else:
                     id_ = row["data"]["id"]

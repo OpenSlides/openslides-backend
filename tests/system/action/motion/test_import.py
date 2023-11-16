@@ -68,6 +68,8 @@ class MotionJsonUpload(MotionImportTestMixin):
                                     "value": "Motion",
                                     "info": ImportState.DONE,
                                 },
+                                "number": {"value": "", "info": ImportState.DONE},
+                                "reason": {"value": "", "info": ImportState.DONE},
                                 "submitters_username": [
                                     {
                                         "value": "admin",
@@ -75,6 +77,13 @@ class MotionJsonUpload(MotionImportTestMixin):
                                         "id": 1,
                                     }
                                 ],
+                                "supporters_username": [],
+                                "category_name": {
+                                    "value": "",
+                                    "info": ImportState.DONE,
+                                },
+                                "tags": [],
+                                "block": {"value": "", "info": ImportState.DONE},
                                 **date,
                                 "meeting_id": base_meeting_id,
                             },
@@ -154,8 +163,8 @@ class MotionJsonUpload(MotionImportTestMixin):
         )
         response = self.request("motion.import", {"id": 2, "import": True})
         self.assert_status_code(response, 400)
+        assert response.json["message"] == "Reason is required"
 
-    # TODO: Was sollte hier geschehen?
     def test_import_update_simple_with_reason_required(self) -> None:
         self.set_up_models_with_import_previews_and_get_next_motion_id(
             [
@@ -168,6 +177,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         )
         response = self.request("motion.import", {"id": 2, "import": True})
         self.assert_status_code(response, 400)
+        assert response.json["message"] == "Reason is required to update."
 
     def test_import_abort(self) -> None:
         next_id = self.set_up_models_with_import_previews_and_get_next_motion_id()
