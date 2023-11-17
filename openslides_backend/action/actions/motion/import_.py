@@ -19,6 +19,7 @@ from ...util.default_schema import DefaultSchema
 from ..meeting_user.create import MeetingUserCreate
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..motion_submitter.delete import MotionSubmitterDeleteAction
+from ..motion_submitter.sort import MotionSubmitterSort
 from .create import MotionCreate
 from .update import MotionUpdate
 
@@ -66,6 +67,10 @@ class AccountImport(ImportMixin):
 
             self.flatten_object_fields(["text", "reason", "title", "number"])
 
+            motion_to_submitter_user_ids: Dict[int, List[int]] = {}
+            old_submitters: Dict[
+                int, Dict[int, int]
+            ] = {}  # {motion_id: {user_id:submitter_id}}
             for row in self.rows:
                 data = row["data"]
                 self.remove_fields_from_data(
@@ -108,20 +113,29 @@ class AccountImport(ImportMixin):
                     )
                 ]
                 data["supporter_meeting_user_ids"] = supporters
+                data.pop("category_prefix", None)
                 if row["state"] == ImportState.NEW:
                     data.update({"submitter_ids": submitters})
                     create_action_payload.append(data)
                 else:
-                    id_ = row["data"]["id"]
-                    motion = {k: v for k, v in (self.number_lookup.get_matching_data_by_name(data["number"])[0]).items()}
+                    id_ = data["id"]
+                    motion_to_submitter_user_ids[id_] = submitters
+                    motion = {
+                        k: v
+                        for k, v in (
+                            self.number_lookup.get_matching_data_by_name(
+                                data["number"]
+                            )[0]
+                        ).items()
+                    }
                     for field in ["category_id", "block_id"]:
-                        if row["data"].get(field) is None:
+                        if data.get(field) is None:
                             if not motion.get(field):
-                                row["data"].pop(field)
+                                data.pop(field)
                     if len(submitters):
-                        motion_submitter_ids: List[int] = motion.get(
-                            "submitter_ids", []
-                        ) or []
+                        motion_submitter_ids: List[int] = (
+                            motion.get("submitter_ids", []) or []
+                        )
                         matched_submitters = {
                             self._submitter_ids_to_user_id[submitter_id]: submitter_id
                             for submitter_id in motion_submitter_ids
@@ -147,23 +161,68 @@ class AccountImport(ImportMixin):
                                 if submitter_id not in matched_submitters.values()
                             ]
                         )
+                        old_submitters[id_] = matched_submitters
 
                     data.pop("meeting_id", None)
                     update_action_payload.append(data)
 
+            created_submitters: List[Dict[str, int]] = []
             if create_action_payload:
                 self.execute_other_action(MotionCreate, create_action_payload)
             if update_action_payload:
                 self.execute_other_action(MotionUpdate, update_action_payload)
             if len(submitter_create_action_payload):
-                self.execute_other_action(
-                    MotionSubmitterCreateAction, submitter_create_action_payload
+                created_submitters = cast(
+                    List[Dict[str, int]],
+                    self.execute_other_action(
+                        MotionSubmitterCreateAction, submitter_create_action_payload
+                    ),
                 )
             if len(submitter_delete_action_payload):
                 self.execute_other_action(
                     MotionSubmitterDeleteAction, submitter_delete_action_payload
                 )
+            new_submitters: Dict[
+                int, Dict[int, int]
+            ] = {}  # {motion_id: {meeting_user_id:submitter_id}}
+            for i in range(len(created_submitters)):
+                motion_id = submitter_create_action_payload[i]["motion_id"]
+                new_submitters[motion_id] = {
+                    **new_submitters.get(motion_id, {}),
+                    submitter_create_action_payload[i][
+                        "meeting_user_id"
+                    ]: created_submitters[i]["id"],
+                }
             # TODO: call submitter sort
+            sort_payload: List[Dict[str, Any]] = []
+            for motion_id in motion_to_submitter_user_ids:
+                sorted_motion_submitter_ids: List[int] = []
+                for submitter_user_id in motion_to_submitter_user_ids[motion_id]:
+                    meeting_user_id = cast(
+                        int, self._user_ids_to_meeting_user[submitter_user_id]["id"]
+                    )
+                    if submitter_user_id in old_submitters.get(motion_id, {}).keys():
+                        sorted_motion_submitter_ids.append(
+                            old_submitters[motion_id][submitter_user_id]
+                        )
+                    elif meeting_user_id in new_submitters.get(motion_id, {}).keys():
+                        sorted_motion_submitter_ids.append(
+                            new_submitters[motion_id][meeting_user_id]
+                        )
+                    else:
+                        raise Exception(
+                            f"Submitter sorting failed due to submitter for user/{submitter_user_id} not being found"
+                        )
+                if len(sorted_motion_submitter_ids):
+                    sort_payload.append(
+                        {
+                            "motion_id": motion_id,
+                            "motion_submitter_ids": sorted_motion_submitter_ids,
+                        }
+                    )
+            if len(sort_payload):
+                self.execute_other_action(MotionSubmitterSort, sort_payload)
+
         return {}
 
     def get_ids_from_object_list(self, object_list: List[Dict[str, Any]]) -> List[int]:
@@ -188,7 +247,7 @@ class AccountImport(ImportMixin):
             if check_result == ResultType.FOUND_ID and id_ != 0:
                 if row["state"] != ImportState.DONE:
                     row["messages"].append(
-                        f"Error: row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
+                        f"Error: Row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
                     )
                     row["state"] = ImportState.ERROR
                     entry["number"]["info"] = ImportState.ERROR
@@ -200,26 +259,24 @@ class AccountImport(ImportMixin):
                     row["state"] = ImportState.ERROR
                     entry["number"]["info"] = ImportState.ERROR
                     row["messages"].append(
-                        f"Error: number '{number}' found in different id ({id_} instead of {entry['id']})"
+                        f"Error: Number '{number}' found in different id ({id_} instead of {entry['id']})"
                     )
             elif check_result == ResultType.FOUND_MORE_IDS:
                 row["state"] = ImportState.ERROR
                 entry["number"]["info"] = ImportState.ERROR
                 row["messages"].append(
-                    f"Error: number '{number}' is duplicated in import."
+                    f"Error: Number '{number}' is duplicated in import."
                 )
             elif check_result == ResultType.NOT_FOUND_ANYMORE:
                 row["messages"].append(
-                    f"Error: motion {entry['number']['id']} not found anymore for updating motion '{number}'."
+                    f"Error: Motion {entry['number']['id']} not found anymore for updating motion '{number}'."
                 )
                 row["state"] = ImportState.ERROR
 
         category_name = self.get_value_from_union_str_object(entry.get("category_name"))
         if category_name and entry["category_name"].get("info") == ImportState.DONE:
             categories = self.category_lookup.name_to_ids[category_name]
-            if category_prefix := self.get_value_from_union_str_object(
-                entry.get("category_name")
-            ):
+            if category_prefix := entry.get("category_prefix"):
                 categories = [
                     category
                     for category in categories
@@ -376,6 +433,7 @@ class AccountImport(ImportMixin):
                     ),
                 ),
                 [
+                    "id",
                     "user_id",
                     "motion_submitter_ids",
                     "supported_motion_ids",
@@ -393,8 +451,8 @@ class AccountImport(ImportMixin):
         self._submitter_ids_to_user_id = {
             submitter_id: all_meeting_users[meeting_user_id]["user_id"]
             for meeting_user_id in all_meeting_users
-            for submitter_id in all_meeting_users[meeting_user_id].get(
-                "motion_submitter_ids", []
+            for submitter_id in (
+                all_meeting_users[meeting_user_id].get("motion_submitter_ids", []) or []
             )
             if all_meeting_users[meeting_user_id].get("user_id")
         }

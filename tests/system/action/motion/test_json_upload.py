@@ -205,6 +205,7 @@ class MotionImportTestMixin(BaseActionTestCase):
                             "motion_id": motion_id,
                             "meeting_id": meeting_id,
                             "meeting_user_id": next_meeting_user_id,
+                            "weight": len(motion.get("submitter_ids", [])),
                         }
                         motion_submitter_ids.append(next_motion_submitter_id)
                         next_motion_submitter_id += 1
@@ -322,7 +323,9 @@ class MotionImportTestMixin(BaseActionTestCase):
         if tag_ids := base.get("tag_ids"):
             motion_data["tag_ids"] = tag_ids
             for tag_id in tag_ids:
-                model_data["tag/" + str(tag_id)]["tagged_ids"].append(f"motion/{motion_id}")
+                model_data["tag/" + str(tag_id)]["tagged_ids"].append(
+                    f"motion/{motion_id}"
+                )
         if block_id := base.get("block_id"):
             motion_data["block_id"] = block_id
             model_data["motion_block/" + str(block_id)]["motion_ids"].append(motion_id)
