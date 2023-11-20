@@ -249,174 +249,6 @@ class MotionJsonUpload(MotionImportTestMixin):
             },
         )
 
-    def prepare_complex_test(
-        self, changed_entries: Dict[str, Any] = {}, is_update: bool = False
-    ) -> int:
-        data = {
-            "number": {"info": ImportState.DONE, "value": "DUM01"},
-            "title": {"info": ImportState.DONE, "value": "Always look on..."},
-            "text": {
-                "info": ImportState.DONE,
-                "value": "...the bright side...",
-            },
-            "reason": {"info": ImportState.DONE, "value": "...of life!"},
-            "category_name": {
-                "info": ImportState.DONE,
-                "id": 401,
-                "value": "Category B",
-            },
-            "category_prefix": "B",
-            "block": {
-                "info": ImportState.DONE,
-                "id": 1001,
-                "value": "Blockodile",
-            },
-            "submitters_username": [
-                {"info": ImportState.DONE, "id": 3, "value": "firstMeeting"},
-                {"info": ImportState.DONE, "id": 12, "value": "multiMeeting"},
-                {
-                    "info": ImportState.DONE,
-                    "id": 7,
-                    "value": "firstMeetingBoth",
-                },
-                {
-                    "info": ImportState.DONE,
-                    "id": 4,
-                    "value": "firstMeetingSubmitter",
-                },
-            ],
-            "supporters_username": [
-                {
-                    "info": ImportState.DONE,
-                    "id": 13,
-                    "value": "multiMeetingSubmitter",
-                },
-                {
-                    "info": ImportState.DONE,
-                    "id": 6,
-                    "value": "firstMeetingSupporter",
-                },
-            ],
-            "tags": [
-                {"info": ImportState.DONE, "id": 10003, "value": "Tag-ether"},
-                {"info": ImportState.DONE, "id": 10002, "value": "Price tag"},
-            ],
-        }
-        if is_update:
-            data.update(
-                {
-                    "id": 101,
-                    "number": {"info": ImportState.DONE, "id": 101, "value": "NUM01"},
-                }
-            )
-        for key in changed_entries:
-            data[key] = changed_entries[key]
-        return self.set_up_models_with_import_previews_and_get_next_motion_id([data])
-
-    def test_import_update_complex(self) -> None:
-        self.prepare_complex_test(is_update=True)
-        response = self.request("motion.import", {"id": 2, "import": True})
-        self.assert_simple_import(
-            response,
-            101,
-            {
-                "title": "Always look on...",
-                "text": "...the bright side...",
-                "reason": "...of life!",
-                "number": "NUM01",
-                "category_id": 401,
-                "block_id": 1001,
-                "submitter_ids": [70000, 150101, 150102, 150103],
-                "supporter_meeting_user_ids": [1300, 600],
-                "tag_ids": [10003, 10002],
-            },
-            {7: 3, 3: 1, 12: 2, 4: 4},
-        )
-
-    def test_import_create_complex(self) -> None:
-        next_id = self.prepare_complex_test()
-        response = self.request("motion.import", {"id": 2, "import": True})
-        self.assert_simple_import(
-            response,
-            next_id,
-            {
-                "title": "Always look on...",
-                "text": "...the bright side...",
-                "reason": "...of life!",
-                "number": "DUM01",
-                "category_id": 401,
-                "block_id": 1001,
-                "submitter_ids": [150101, 150102, 150103, 150104],
-                "supporter_meeting_user_ids": [1300, 600],
-                "tag_ids": [10003, 10002],
-            },
-            {3: 1, 12: 2, 7: 3, 4: 4},
-        )
-
-    def assert_error_for_changed_property(
-        self, response: Any, changed_keys: List[str], error_messages: list[str]
-    ) -> None:
-        assert response.json["results"][0][0]["state"] == ImportState.ERROR
-        errors = response.json["results"][0][0]["rows"][0]["messages"]
-        for message in error_messages:
-            assert message in errors
-        assert len(errors) == len(error_messages)
-        data = response.json["results"][0][0]["rows"][0]["data"]
-        for key in data:
-            if key in changed_keys:
-                if isinstance(data[key], Dict):
-                    assert data[key]["info"] == ImportState.ERROR
-                elif isinstance(data[key], List):
-                    assert ImportState.ERROR in [date["info"] for date in data[key]]
-            elif isinstance(data[key], Dict):
-                assert data[key]["info"] != ImportState.ERROR
-            elif isinstance(data[key], List):
-                assert ImportState.ERROR not in [date["info"] for date in data[key]]
-
-    def test_import_update_changed_number_name(self) -> None:
-        self.prepare_complex_test(
-            {
-                "number": {
-                    "id": 101,
-                    "info": ImportState.DONE,
-                    "value": "This shouldn't be found",
-                }
-            },
-            is_update=True,
-        )
-        response = self.request("motion.import", {"id": 2, "import": True})
-        self.assert_error_for_changed_property(
-            response,
-            ["number"],
-            ["Error: TODO"],
-        )
-
-    def assert_changed_submitter_name(self, is_update: bool = False) -> None:
-        self.prepare_complex_test(
-            {
-                "submitters_username": [
-                    {
-                        "id": 7,
-                        "info": ImportState.DONE,
-                        "value": "updatedUser",
-                    }
-                ]
-            },
-            is_update,
-        )
-        response = self.request("motion.import", {"id": 2, "import": True})
-        self.assert_error_for_changed_property(
-            response,
-            ["submitters_username"],
-            ["Error: TODO"],
-        )
-
-    def test_import_create_changed_submitter_name(self) -> None:
-        self.assert_changed_submitter_name()
-
-    def test_import_update_changed_submitter_name(self) -> None:
-        self.assert_changed_submitter_name(True)
-
     def test_import_create_simple_with_reason_required(self) -> None:
         self.set_up_models_with_import_previews_and_get_next_motion_id(
             is_reason_required=True
@@ -458,51 +290,350 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.assert_status_code(response, 400)
         assert "Import data cannot be found." in response.json["message"]
 
+    def prepare_complex_test(
+        self,
+        changed_entries: Dict[str, Any] = {},
+        is_update: bool = False,
+        multiple: bool = False,
+    ) -> int:
+        payload: List[Dict[str, Any]] = []
+        for i in range(2 if multiple else 1):
+            data: Dict[str, Any] = {
+                "number": {"info": ImportState.DONE, "value": f"DUM0{i + 1}"},
+                "title": {"info": ImportState.DONE, "value": "Always look on..."},
+                "text": {
+                    "info": ImportState.DONE,
+                    "value": "...the bright side...",
+                },
+                "reason": {"info": ImportState.DONE, "value": "...of life!"},
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 405,
+                    "value": "Copygory",
+                },
+                "category_prefix": "KOPIE",
+                "block": {
+                    "info": ImportState.DONE,
+                    "id": 1001,
+                    "value": "Blockodile",
+                },
+                "submitters_username": [
+                    {"info": ImportState.DONE, "id": 3, "value": "firstMeeting"},
+                    {"info": ImportState.DONE, "id": 12, "value": "multiMeeting"},
+                    {
+                        "info": ImportState.DONE,
+                        "id": 7,
+                        "value": "firstMeetingBoth",
+                    },
+                    {
+                        "info": ImportState.DONE,
+                        "id": 4,
+                        "value": "firstMeetingSubmitter",
+                    },
+                ],
+                "supporters_username": [
+                    {
+                        "info": ImportState.DONE,
+                        "id": 13,
+                        "value": "multiMeetingSubmitter",
+                    },
+                    {
+                        "info": ImportState.DONE,
+                        "id": 6,
+                        "value": "firstMeetingSupporter",
+                    },
+                ],
+                "tags": [
+                    {"info": ImportState.DONE, "id": 10005, "value": "Got tag go"},
+                    {"info": ImportState.DONE, "id": 10002, "value": "Price tag"},
+                ],
+            }
+            if is_update:
+                id_ = 104 if i else 101
+                data.update(
+                    {
+                        "id": id_,
+                        "number": {
+                            "info": ImportState.DONE,
+                            "id": id_,
+                            "value": f"NUM0{i + 1}",
+                        },
+                    }
+                )
+            for key in changed_entries:
+                data[key] = changed_entries[key]
+            payload.append(data)
+        return self.set_up_models_with_import_previews_and_get_next_motion_id(payload)
+
+    def test_import_update_complex(self) -> None:
+        self.prepare_complex_test(is_update=True)
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_simple_import(
+            response,
+            101,
+            {
+                "title": "Always look on...",
+                "text": "...the bright side...",
+                "reason": "...of life!",
+                "number": "NUM01",
+                "category_id": 405,
+                "block_id": 1001,
+                "submitter_ids": [70000, 150101, 150102, 150103],
+                "supporter_meeting_user_ids": [1300, 600],
+                "tag_ids": [10005, 10002],
+            },
+            {7: 3, 3: 1, 12: 2, 4: 4},
+        )
+
+    def test_import_create_complex(self) -> None:
+        next_id = self.prepare_complex_test()
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_simple_import(
+            response,
+            next_id,
+            {
+                "title": "Always look on...",
+                "text": "...the bright side...",
+                "reason": "...of life!",
+                "number": "DUM01",
+                "category_id": 405,
+                "block_id": 1001,
+                "submitter_ids": [150101, 150102, 150103, 150104],
+                "supporter_meeting_user_ids": [1300, 600],
+                "tag_ids": [10005, 10002],
+            },
+            {3: 1, 12: 2, 7: 3, 4: 4},
+        )
+
+    def assert_error_for_changed_property(
+        self, response: Any, changed_keys: List[str], error_messages: list[str]
+    ) -> None:
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        errors = response.json["results"][0][0]["rows"][0]["messages"]
+        for message in error_messages:
+            assert message in errors
+        assert len(errors) == len(error_messages)
+        data = response.json["results"][0][0]["rows"][0]["data"]
+        for key in data:
+            if key in changed_keys:
+                if isinstance(data[key], Dict):
+                    assert data[key]["info"] == ImportState.ERROR
+                elif isinstance(data[key], List):
+                    assert ImportState.ERROR in [date["info"] for date in data[key]]
+            elif isinstance(data[key], Dict):
+                assert data[key]["info"] != ImportState.ERROR
+            elif isinstance(data[key], List):
+                assert ImportState.ERROR not in [date["info"] for date in data[key]]
+
+    def test_import_update_changed_number_name(self) -> None:
+        self.prepare_complex_test(
+            {
+                "number": {
+                    "id": 101,
+                    "info": ImportState.DONE,
+                    "value": "This shouldn't be found",
+                }
+            },
+            is_update=True,
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_error_for_changed_property(
+            response,
+            ["number"],
+            [
+                "Error: Motion 101 not found anymore for updating motion 'This shouldn't be found'."
+            ],
+        )
+
+    def assert_changed_submitter_name(self, is_update: bool = False) -> None:
+        self.prepare_complex_test(
+            {
+                "submitters_username": [
+                    {
+                        "id": 7,
+                        "info": ImportState.DONE,
+                        "value": "updatedUser",
+                    }
+                ]
+            },
+            is_update,
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_error_for_changed_property(
+            response,
+            ["submitters_username"],
+            ["Error: Couldn't find submitter anymore"],
+        )
+
+    def test_import_create_changed_submitter_name(self) -> None:
+        self.assert_changed_submitter_name()
+
+    def test_import_update_changed_submitter_name(self) -> None:
+        self.assert_changed_submitter_name(True)
+
+    def assert_changed_supporter_name(self, is_update: bool = False) -> None:
+        self.prepare_complex_test(
+            {
+                "supporters_username": [
+                    {
+                        "id": 13,
+                        "info": ImportState.DONE,
+                        "value": "updatedUser",
+                    }
+                ]
+            },
+            is_update,
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_error_for_changed_property(
+            response,
+            ["supporters_username"],
+            ["Error: Couldn't find supporter anymore"],
+        )
+
+    def test_import_create_changed_supporter_name(self) -> None:
+        self.assert_changed_supporter_name()
+
+    def test_import_update_changed_supporter_name(self) -> None:
+        self.assert_changed_supporter_name(True)
+
+    def assert_changed_tag_name(self, is_update: bool = False) -> None:
+        self.prepare_complex_test(
+            {
+                "tags": [
+                    {"info": ImportState.DONE, "id": 10005, "value": "Got tag go"},
+                    {"info": ImportState.DONE, "id": 10002, "value": "Tag auch"},
+                ]
+            },
+            is_update,
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_error_for_changed_property(
+            response,
+            ["tags"],
+            ["Error: Couldn't find tag anymore"],
+        )
+
+    def test_import_create_changed_tag_name(self) -> None:
+        self.assert_changed_tag_name()
+
+    def test_import_update_changed_tag_name(self) -> None:
+        self.assert_changed_tag_name(True)
+
+    def assert_changed_block_name(self, is_update: bool = False) -> None:
+        self.prepare_complex_test(
+            {
+                "block": {
+                    "info": ImportState.DONE,
+                    "id": 1001,
+                    "value": "Blockschokolade",
+                }
+            },
+            is_update,
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_error_for_changed_property(
+            response,
+            ["block"],
+            ["Error: Couldn't find motion block anymore"],
+        )
+
+    def test_import_create_changed_block_name(self) -> None:
+        self.assert_changed_block_name()
+
+    def test_import_update_changed_block_name(self) -> None:
+        self.assert_changed_block_name(True)
+
+    def assert_changed_category(
+        self,
+        is_update: bool = False,
+        other_name: bool = False,
+        other_prefix: bool = False,
+    ) -> None:
+        self.prepare_complex_test(
+            {
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 405,
+                    "value": ("Cat, egg or I" if other_name else "Copygory"),
+                },
+                "category_prefix": ("L" if other_prefix else "KOPIE"),
+            },
+            is_update,
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_error_for_changed_property(
+            response,
+            ["category_name"],
+            ["Error: Category could not be found anymore"],
+        )
+
+    def test_import_create_changed_category_name(self) -> None:
+        self.assert_changed_category(other_name=True)
+
+    def test_import_update_changed_category_name(self) -> None:
+        self.assert_changed_category(True, other_name=True)
+
+    def test_import_create_changed_category_prefix(self) -> None:
+        self.assert_changed_category(other_prefix=True)
+
+    def test_import_update_changed_category_prefix(self) -> None:
+        self.assert_changed_category(True, other_prefix=True)
+
+    def test_import_create_changed_category_both(self) -> None:
+        self.assert_changed_category(other_name=True, other_prefix=True)
+
+    def test_import_update_changed_category_both(self) -> None:
+        self.assert_changed_category(True, other_name=True, other_prefix=True)
+
+    def assert_with_multiple(self, is_update: bool = False) -> None:
+        next_id = self.prepare_complex_test(is_update=is_update, multiple=True)
+        response = self.request("motion.import", {"id": 2, "import": True})
+        assert response.json["results"][0][0]["state"] != ImportState.ERROR
+        for i in range(2):
+            assert (
+                response.json["results"][0][0]["rows"][i]["state"] != ImportState.ERROR
+            )
+            if is_update:
+                if i == 0:
+                    submitter_ids = [70000, 150101, 150102, 150103]
+                    submitter_user_id_to_weight = {7: 3, 3: 1, 12: 2, 4: 4}
+                else:
+                    submitter_ids = [150104 + j for j in range(4)]
+                    submitter_user_id_to_weight = {3: 1, 12: 2, 7: 3, 4: 4}
+            else:
+                submitter_ids = [150101 + j + i * 4 for j in range(4)]
+                submitter_user_id_to_weight = {3: 1, 12: 2, 7: 3, 4: 4}
+            self.assert_simple_import(
+                response,
+                ((101 + (i * 3)) if is_update else (next_id + i)),
+                {
+                    "title": "Always look on...",
+                    "text": "...the bright side...",
+                    "reason": "...of life!",
+                    "number": f"NUM0{i + 1}" if is_update else f"DUM0{i + 1}",
+                    "category_id": 405,
+                    "block_id": 1001,
+                    "submitter_ids": submitter_ids,
+                    "supporter_meeting_user_ids": [1300, 600],
+                    "tag_ids": [10005, 10002],
+                },
+                submitter_user_id_to_weight,
+            )
+
+    def test_import_create_with_multiple(self) -> None:
+        self.assert_with_multiple()
+
+    def test_import_update_with_multiple(self) -> None:
+        self.assert_with_multiple(True)
+
     # -------------------------------------------------------
     # ---------------[ Test with categories ]----------------
     # -------------------------------------------------------
 
-    # def assert_import_with_category(self, response: Any, motion_id: int, row_data: Dict[str, str])-> None:
-    #     self.assert_status_code(response, 200)
-    #     user = self.assert_model_exists(
-    #         f"motion/{motion_id}",
-    #         row_data,
-    #     )
-    #     assert len(user.get("submitter_ids", [])) == 1
-    #     submitter_id = user.get("submitter_ids", [])[0]
-    #     submitter = self.assert_model_exists(
-    #         f"motion_submitter/{submitter_id}",
-    #         {"meeting_id": 42, "motion_id": motion_id},
-    #     )
-    #     assert (meeting_user_id := submitter.get("meeting_user_id"))
-    #     submitter = self.assert_model_exists(
-    #         f"meeting_user/{meeting_user_id}",
-    #         {"meeting_id": 42, "user_id": 1},
-    #     )
-    #     self.assert_model_not_exists("import_preview/2")
-
-    # def test_import_create_with_category(self) -> None:
-    #     next_id = self.set_up_models_with_import_previews_and_get_next_motion_id()
-    #     response = self.request("motion.import", {"id": 2, "import": True})
-    #     self.assert_import_with_category(response, next_id, {"title": "New", "text": "Motion"})
-
-    # def test_import_update_with_category(self) -> None:
-    #     self.set_up_models_with_import_previews_and_get_next_motion_id(
-    #         [
-    #             {
-    #                 "number": {"info": ImportState.DONE, "id": 101, "value": "NUM01"},
-    #                 "id": 101,
-    #             }
-    #         ]
-    #     )
-    #     response = self.request("motion.import", {"id": 2, "import": True})
-    #     self.assert_import_with_category(response, 101, {"title": "New", "text": "Motion", "number": "NUM01"})
-
     # -------------------------------------------------------
     # ------------------[ Test with users ]------------------
     # -------------------------------------------------------
-
-    # TODO: Are submitters sorted?
 
     # -------------------------------------------------------
     # ------------------[ Test with tags ]-------------------

@@ -72,23 +72,27 @@ class AccountImport(ImportMixin):
                 int, Dict[int, int]
             ] = {}  # {motion_id: {user_id:submitter_id}}
             for row in self.rows:
-                data = row["data"]
+                payload: Dict[str, Any] = row["data"].copy()
                 self.remove_fields_from_data(
-                    data,
+                    payload,
                     ["submitters_verbose", "supporters_verbose", "motion_amendment"],
                 )
-                if (category := data.pop("category_name", None)) and category[
+                if (category := payload.pop("category_name", None)) and category[
                     "info"
                 ] == ImportState.DONE:
-                    data["category_id"] = category["id"] if category.get("id") else None
-                if (block := data.pop("block", None)) and block[
+                    payload["category_id"] = (
+                        category["id"] if category.get("id") else None
+                    )
+                if (block := payload.pop("block", None)) and block[
                     "info"
                 ] == ImportState.DONE:
-                    data["block_id"] = block["id"] if block.get("id") else None
-                data["tag_ids"] = self.get_ids_from_object_list(data.pop("tags", []))
+                    payload["block_id"] = block["id"] if block.get("id") else None
+                payload["tag_ids"] = self.get_ids_from_object_list(
+                    payload.pop("tags", [])
+                )
                 meeting_users_to_create = [
                     {"user_id": submitter["id"], "meeting_id": meeting_id}
-                    for submitter in data["submitters_username"]
+                    for submitter in payload["submitters_username"]
                     if submitter["info"] == ImportState.GENERATED
                     and submitter["id"] not in self._user_ids_to_meeting_user.keys()
                 ]
@@ -104,34 +108,34 @@ class AccountImport(ImportMixin):
                             meeting_users_to_create[i]["user_id"]
                         ] = meeting_users[i]
                 submitters = self.get_ids_from_object_list(
-                    data.pop("submitters_username")
+                    payload.pop("submitters_username")
                 )
                 supporters = [
                     self._user_ids_to_meeting_user[supporter_id]["id"]
                     for supporter_id in self.get_ids_from_object_list(
-                        data.pop("supporters_username", [])
+                        payload.pop("supporters_username", [])
                     )
                 ]
-                data["supporter_meeting_user_ids"] = supporters
-                data.pop("category_prefix", None)
+                payload["supporter_meeting_user_ids"] = supporters
+                payload.pop("category_prefix", None)
                 if row["state"] == ImportState.NEW:
-                    data.update({"submitter_ids": submitters})
-                    create_action_payload.append(data)
+                    payload.update({"submitter_ids": submitters})
+                    create_action_payload.append(payload)
                 else:
-                    id_ = data["id"]
+                    id_ = payload["id"]
                     motion_to_submitter_user_ids[id_] = submitters
                     motion = {
                         k: v
                         for k, v in (
                             self.number_lookup.get_matching_data_by_name(
-                                data["number"]
+                                payload["number"]
                             )[0]
                         ).items()
                     }
                     for field in ["category_id", "block_id"]:
-                        if data.get(field) is None:
+                        if payload.get(field) is None:
                             if not motion.get(field):
-                                data.pop(field)
+                                payload.pop(field)
                     if len(submitters):
                         motion_submitter_ids: List[int] = (
                             motion.get("submitter_ids", []) or []
@@ -163,8 +167,8 @@ class AccountImport(ImportMixin):
                         )
                         old_submitters[id_] = matched_submitters
 
-                    data.pop("meeting_id", None)
-                    update_action_payload.append(data)
+                    payload.pop("meeting_id", None)
+                    update_action_payload.append(payload)
 
             created_submitters: List[Dict[str, int]] = []
             if create_action_payload:
@@ -193,7 +197,6 @@ class AccountImport(ImportMixin):
                         "meeting_user_id"
                     ]: created_submitters[i]["id"],
                 }
-            # TODO: call submitter sort
             sort_payload: List[Dict[str, Any]] = []
             for motion_id in motion_to_submitter_user_ids:
                 sorted_motion_submitter_ids: List[int] = []
@@ -220,14 +223,17 @@ class AccountImport(ImportMixin):
                             "motion_submitter_ids": sorted_motion_submitter_ids,
                         }
                     )
-            if len(sort_payload):
-                self.execute_other_action(MotionSubmitterSort, sort_payload)
+            for payload in sort_payload:
+                self.execute_other_action(MotionSubmitterSort, [payload])
 
         return {}
 
     def get_ids_from_object_list(self, object_list: List[Dict[str, Any]]) -> List[int]:
         return [
-            obj["id"] for obj in object_list if obj.get("info") != ImportState.WARNING
+            obj["id"]
+            for obj in object_list
+            if obj.get("info") != ImportState.WARNING
+            and obj.get("info") != ImportState.ERROR
         ]
 
     def remove_fields_from_data(
@@ -275,13 +281,17 @@ class AccountImport(ImportMixin):
 
         category_name = self.get_value_from_union_str_object(entry.get("category_name"))
         if category_name and entry["category_name"].get("info") == ImportState.DONE:
-            categories = self.category_lookup.name_to_ids[category_name]
-            if category_prefix := entry.get("category_prefix"):
-                categories = [
-                    category
-                    for category in categories
-                    if category.get("prefix") == category_prefix and category.get("id")
-                ]
+            category_prefix = entry.get("category_prefix")
+            if "id" not in entry["category_name"]:
+                raise ActionException(
+                    f"Invalid JsonUpload data: A category_name entry with state '{ImportState.DONE}' must have an 'id'"
+                )
+            categories = self.category_lookup.get_matching_data_by_name(category_name)
+            categories = [
+                category
+                for category in categories
+                if category.get("prefix") == category_prefix
+            ]
             if len(categories) == 1:
                 category = categories[0]
                 if category.get("id") != entry["category_name"].get("id"):
@@ -300,38 +310,110 @@ class AccountImport(ImportMixin):
                 }
                 row["state"] = ImportState.ERROR
                 row["messages"].append("Error: Category could not be found anymore")
+        elif entry["category_name"].get("info") == ImportState.ERROR:
+            row["messages"].append("Error: Category could not be found anymore")
+            row["state"] = ImportState.ERROR
 
         block = self.get_value_from_union_str_object(entry.get("block"))
         if block and entry["block"].get("info") == ImportState.DONE:
-            check_result = self.block_lookup.check_duplicate(block)
-            # TODO
-            block_id = cast(int, self.block_lookup.get_field_by_name(block, "id"))
-            if check_result == ResultType.FOUND_ID and block_id != 0:
-                if block_id != entry["block"]["id"]:
+            if "id" not in entry["block"]:
+                raise ActionException(
+                    f"Invalid JsonUpload data: A block entry with state '{ImportState.DONE}' must have an 'id'"
+                )
+            found_blocks = self.block_lookup.get_matching_data_by_name(block)
+            if len(found_blocks) == 1:
+                if found_blocks[0].get("id") != entry["block"]["id"]:
                     entry["block"] = {"value": block, "info": ImportState.ERROR}
                     row["messages"].append(
                         "Error: Motion block search didn't deliver the same result as in the preview"
                     )
-            elif (
-                check_result == ResultType.NOT_FOUND
-                or check_result == ResultType.NOT_FOUND_ANYMORE
-                or block_id == 0
-            ):
+                    row["state"] = ImportState.ERROR
+            else:
                 entry["block"] = {
                     "value": block,
                     "info": ImportState.ERROR,
                 }
                 row["messages"].append("Error: Couldn't find motion block anymore")
-            elif check_result == ResultType.FOUND_MORE_IDS:
-                entry["block"] = {
-                    "value": block,
-                    "info": ImportState.ERROR,
-                }
-                row["messages"].append(
-                    "Error: Found multiple motion blocks with the same name"
-                )
+                row["state"] = ImportState.ERROR
+        elif entry["block"].get("info") == ImportState.ERROR:
+            row["messages"].append("Error: Couldn't find motion block anymore")
+            row["state"] = ImportState.ERROR
 
-        # TODO tags and usernames validation
+        if isinstance(entry.get("tags"), List):
+            for tag_entry in entry.get("tags", []):
+                tag = self.get_value_from_union_str_object(tag_entry)
+                if tag and tag_entry.get("info") == ImportState.DONE:
+                    if "id" not in tag_entry:
+                        raise ActionException(
+                            f"Invalid JsonUpload data: A tag entry with state '{ImportState.DONE}' must have an 'id'"
+                        )
+                    found_tags = self.tags_lookup.get_matching_data_by_name(tag)
+                    if len(found_tags) == 1:
+                        if found_tags[0].get("id") != tag_entry["id"]:
+                            tag_entry["info"] = ImportState.ERROR
+                            tag_entry.pop("id")
+                            row["messages"].append(
+                                "Error: Tag search didn't deliver the same result as in the preview"
+                            )
+                            row["state"] = ImportState.ERROR
+                    else:
+                        tag_entry["info"] = ImportState.ERROR
+                        tag_entry.pop("id")
+                        row["messages"].append("Error: Couldn't find tag anymore")
+                        row["state"] = ImportState.ERROR
+
+        if isinstance(entry.get("submitters_username"), List):
+            for submitter_entry in entry.get("submitters_username", []):
+                submitter = self.get_value_from_union_str_object(submitter_entry)
+                if submitter and (
+                    submitter_entry.get("info") == ImportState.DONE
+                    or submitter_entry.get("info") == ImportState.GENERATED
+                ):
+                    if "id" not in submitter_entry:
+                        raise ActionException(
+                            f"Invalid JsonUpload data: A submitter entry with state '{ImportState.DONE}' or '{ImportState.GENERATED}' must have an 'id'"
+                        )
+                    found_submitters = self.submitter_lookup.get_matching_data_by_name(
+                        submitter
+                    )
+                    if len(found_submitters) == 1:
+                        if found_submitters[0].get("id") != submitter_entry["id"]:
+                            submitter_entry["info"] = ImportState.ERROR
+                            submitter_entry.pop("id")
+                            row["messages"].append(
+                                "Error: Submitter search didn't deliver the same result as in the preview"
+                            )
+                            row["state"] = ImportState.ERROR
+                    else:
+                        submitter_entry["info"] = ImportState.ERROR
+                        submitter_entry.pop("id")
+                        row["messages"].append("Error: Couldn't find submitter anymore")
+                        row["state"] = ImportState.ERROR
+
+        if isinstance(entry.get("supporters_username"), List):
+            for supporter_entry in entry.get("supporters_username", []):
+                supporter = self.get_value_from_union_str_object(supporter_entry)
+                if supporter and supporter_entry.get("info") == ImportState.DONE:
+                    if "id" not in supporter_entry:
+                        raise ActionException(
+                            f"Invalid JsonUpload data: A supporter entry with state '{ImportState.DONE}' must have an 'id'"
+                        )
+                    found_supporters = self.supporter_lookup.get_matching_data_by_name(
+                        supporter
+                    )
+                    if len(found_supporters) == 1:
+                        if found_supporters[0].get("id") != supporter_entry["id"]:
+                            supporter_entry["info"] = ImportState.ERROR
+                            supporter_entry.pop("id")
+                            row["messages"].append(
+                                "Error: Supporter search didn't deliver the same result as in the preview"
+                            )
+                            row["state"] = ImportState.ERROR
+                    else:
+                        supporter_entry["info"] = ImportState.ERROR
+                        supporter_entry.pop("id")
+                        row["messages"].append("Error: Couldn't find supporter anymore")
+                        row["state"] = ImportState.ERROR
 
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
