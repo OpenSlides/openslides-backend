@@ -50,13 +50,13 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "data": {
                 "username": {"value": "test", "info": ImportState.DONE},
                 "default_password": {"value": "secret", "info": ImportState.DONE},
-                "is_active": True,
-                "is_physical_person": False,
-                "number": "strange number",
-                "structure_level": "CEO",
-                "vote_weight": "1.120000",
-                "comment": "my comment",
-                "is_present": False,
+                "is_active": {"value": True, "info": ImportState.DONE},
+                "is_physical_person": {"value": False, "info": ImportState.DONE},
+                "number": {"value": "strange number", "info": ImportState.DONE},
+                "structure_level": {"value": "CEO", "info": ImportState.DONE},
+                "vote_weight": {"value": "1.120000", "info": ImportState.DONE},
+                "comment": {"value": "my comment", "info": ImportState.DONE},
+                "is_present": {"value": False, "info": ImportState.DONE},
                 "groups": [
                     {"value": "testgroup", "info": "done", "id": 1},
                     {"value": "notfound_group1", "info": ImportState.WARNING},
@@ -125,7 +125,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "data": {
                 "username": {"value": "", "info": ImportState.GENERATED},
                 "groups": [{"value": "testgroup", "info": ImportState.DONE, "id": 1}],
-                "number": "strange number",
+                "number": {"value": "strange number", "info": ImportState.DONE},
             },
         }
 
@@ -202,11 +202,11 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 {"property": "gender", "type": "string", "is_object": True},
                 {"property": "pronoun", "type": "string", "is_object": True},
                 {"property": "saml_id", "type": "string", "is_object": True},
-                {"property": "structure_level", "type": "string"},
-                {"property": "number", "type": "string"},
-                {"property": "vote_weight", "type": "decimal"},
-                {"property": "comment", "type": "string"},
-                {"property": "is_present", "type": "boolean"},
+                {"property": "structure_level", "type": "string", "is_object": True},
+                {"property": "number", "type": "string", "is_object": True},
+                {"property": "vote_weight", "type": "decimal", "is_object": True},
+                {"property": "comment", "type": "string", "is_object": True},
+                {"property": "is_present", "type": "boolean", "is_object": True},
                 {
                     "property": "groups",
                     "type": "string",
@@ -302,17 +302,13 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "info": "done",
         }
         assert row["data"]["username"] == {"value": "test", "info": "done", "id": 34}
-        assert row["data"]["vote_weight"] == "1.456000"
-        assert row["data"]["is_present"] is False
+        assert row["data"]["vote_weight"] == {"value": "1.456000", "info": "done"}
+        assert row["data"]["is_present"] == {"value": False, "info": "done"}
         assert row["data"]["groups"] == [
             {"value": "testgroup", "info": "generated", "id": 1}
         ]
         for key in fix_fields.keys():
-            assert (
-                row["data"][key]
-                if isinstance(row["data"][key], str)
-                else row["data"][key]["value"] == fix_fields[key]
-            )
+            assert row["data"][key]["value"] == fix_fields[key]
 
     def test_json_upload_names_generate_username_password_create_meeting(self) -> None:
         self.set_models(
@@ -342,19 +338,21 @@ class ParticipantJsonUpload(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.NEW
         for key in fix_fields.keys():
-            assert (
-                entry["data"][key]
-                if isinstance(entry["data"][key], str)
-                else entry["data"][key]["value"] == fix_fields[key]
-            )
+            assert entry["data"][key]["value"] == fix_fields[key]
         assert entry["data"]["username"] == {
             "value": "MaxMustermann1",
             "info": ImportState.GENERATED,
         }
         assert entry["data"]["default_password"]["info"] == ImportState.GENERATED
-        assert entry["data"]["vote_weight"] == "1.456000"
-        assert entry["data"]["structure_level"] == "meeting1 structure level"
-        assert entry["data"]["is_present"] is False
+        assert entry["data"]["vote_weight"] == {
+            "value": "1.456000",
+            "info": ImportState.DONE,
+        }
+        assert entry["data"]["structure_level"] == {
+            "value": "meeting1 structure level",
+            "info": ImportState.DONE,
+        }
+        assert entry["data"]["is_present"] == {"value": False, "info": ImportState.DONE}
         assert entry["data"]["groups"] == [
             {"value": "testgroup", "info": "generated", "id": 1}
         ]
@@ -403,7 +401,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
         data0 = import_preview["result"]["rows"][0]["data"]
@@ -476,7 +474,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
@@ -570,10 +568,12 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "username": {"value": "user10", "info": "done", "id": 10},
             "saml_id": {"value": "saml_id10", "info": "new"},
             "default_password": {"value": "", "info": "warning"},
-            "is_present": False,
-            "vote_weight": "2.800000",
+            "is_present": {"value": False, "info": "done"},
+            "vote_weight": {"value": "2.800000", "info": "done"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
-            **fix_fields,
+            **{
+                k: {"value": v, "info": ImportState.DONE} for k, v in fix_fields.items()
+            },
         }
 
     def json_upload_username_username_and_saml_id_found(self) -> None:
@@ -710,7 +710,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "participant"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Following groups were not found: 'group4'",
         ]
         assert import_preview["result"]["rows"][0]["data"] == {
@@ -726,7 +726,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][1]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         assert import_preview["result"]["rows"][1]["data"] == {
             "id": 3,
@@ -734,7 +734,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
             "groups": [{"id": 3, "info": "done", "value": "group3"}],
-            "vote_weight": "3.345678",
+            "vote_weight": {"info": ImportState.DONE, "value": "3.345678"},
         }
 
         assert import_preview["result"]["rows"][2]["state"] == ImportState.DONE
@@ -743,10 +743,10 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         ]
         assert import_preview["result"]["rows"][2]["data"] == {
             "id": 4,
-            "email": "mlk@america.com",
+            "email": {"value": "mlk@america.com", "info": ImportState.DONE},
             "username": {"id": 4, "info": "done", "value": "user4"},
-            "last_name": "Luther King",
-            "first_name": "Martin",
+            "last_name": {"value": "Luther King", "info": ImportState.DONE},
+            "first_name": {"value": "Martin", "info": ImportState.DONE},
             "groups": [
                 {"info": "warning", "value": "group4"},
                 {"id": 1, "info": "generated", "value": "group1"},
@@ -755,7 +755,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][3]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         assert import_preview["result"]["rows"][3]["data"] == {
             "saml_id": {"info": "new", "value": "saml5"},
@@ -766,7 +766,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][4]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Following groups were not found: 'group4'",
         ]
         assert import_preview["result"]["rows"][4]["data"] == {
@@ -790,8 +790,8 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert default_password["value"]
         assert import_preview["result"]["rows"][5]["data"] == {
             "username": {"info": "generated", "value": "JoanBaez7"},
-            "last_name": "Baez7",
-            "first_name": "Joan",
+            "last_name": {"value": "Baez7", "info": ImportState.DONE},
+            "first_name": {"value": "Joan", "info": ImportState.DONE},
             "groups": [
                 {"id": 2, "info": "done", "value": "group2"},
                 {"info": "warning", "value": "group4"},
@@ -810,6 +810,10 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "first_name": "John",
                     "meeting_user_ids": [11, 44],
                     "meeting_ids": [1, 4],
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                    "default_password": "secret",
+                    "can_change_own_password": True,
+                    "password": "secretcrypted",
                 },
                 "committee/60": {"meeting_ids": [1, 4]},
                 "meeting/1": {"meeting_user_ids": [11]},
@@ -847,15 +851,15 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Following groups were not found: 'group4'",
-            "Following fields were removed from payload, because the user has no permisions to change them: username, first_name, saml_id, default_password",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
         ]
         assert row["data"] == {
             "id": 2,
             "username": {"value": "user2", "info": "remove", "id": 2},
             "first_name": {"value": "Jim", "info": "remove"},
-            "vote_weight": "1.234560",
+            "vote_weight": {"value": "1.234560", "info": "done"},
             "saml_id": {"value": "saml_id1", "info": "remove"},
             "default_password": {"value": "", "info": "remove"},
             "groups": [
@@ -895,13 +899,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.NEW
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Following groups were not found: 'group4'",
         ]
         assert row["data"] == {
             "username": {"value": "user2", "info": "done"},
             "first_name": {"value": "Jim", "info": "done"},
-            "vote_weight": "1.234560",
+            "vote_weight": {"value": "1.234560", "info": "done"},
             "saml_id": {"value": "saml_id1", "info": "new"},
             "default_password": {"value": "", "info": "warning"},
             "groups": [

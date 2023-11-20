@@ -76,7 +76,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
         data = self.add_payload_index_to_action_data(data)
-        self.setup_lookups(data, self.meeting_id)
+        self.setup_lookups(data, instance.get("meeting_id"))
         self.distribute_found_value_to_data(data)
         self.create_usernames(data)
 
@@ -255,7 +255,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
             ):
                 entry["default_password"] = {"value": "", "info": ImportState.WARNING}
                 messages.append(
-                    "Will remove password and default_password and forbid changing your OpenSlides password."
+                    "Will remove default_password and forbid changing your OpenSlides password."
                 )
         else:
             self.handle_default_password(entry)

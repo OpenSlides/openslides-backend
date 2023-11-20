@@ -42,7 +42,7 @@ class TopicImport(ImportMixin):
             create_action_payload: List[Dict[str, Any]] = []
             update_action_payload: List[Dict[str, Any]] = []
             update_agenda_item_payload: List[Dict[str, Any]] = []
-            rows = self.flatten_copied_object_fields(["title"])
+            rows = self.flatten_copied_object_fields()
             for row in rows:
                 entry = row["data"]
                 if row["state"] == ImportState.NEW:

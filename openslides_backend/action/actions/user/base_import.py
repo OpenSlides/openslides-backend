@@ -1,13 +1,8 @@
 from typing import Any, Dict, List, cast
 
 from ....shared.exceptions import ActionException
-from ...mixins.import_mixins import (
-    ImportMixin,
-    ImportRow,
-    ImportState,
-    Lookup,
-    ResultType,
-)
+from ...mixins.import_mixins import (ImportMixin, ImportRow, ImportState,
+                                     Lookup, ResultType)
 from ...util.typing import ActionData
 from .create import UserCreate
 from .update import UserUpdate
@@ -34,10 +29,43 @@ class BaseUserImport(ImportMixin):
         self.rows = [self.validate_entry(row) for row in self.rows]
 
         if self.import_state != ImportState.ERROR:
-            rows = self.flatten_copied_object_fields()
+            rows = self.flatten_copied_object_fields(
+                self.handle_remove_and_group_fields
+            )
             self.create_other_actions(rows)
 
         return {}
+
+    def handle_remove_and_group_fields(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+        if (groups := entry.pop("groups", None)) is not None:
+            entry["group_ids"] = [id_ for group in groups if (id_ := group.get("id"))]
+
+        # set fields empty/False if saml_id will be set
+        field_values = (
+            ("can_change_own_password", False),
+            ("default_passwort", ""),
+        )
+        username = cast(str, self.get_value_from_union_str_object(entry["username"]))
+        if (
+            (obj := entry.get("saml_id"))
+            and obj["value"]
+            and obj["info"] != ImportState.REMOVE
+        ):
+            for field, value in field_values:
+                if self.username_lookup.get_field_by_name(username, field) or entry.get(
+                    field
+                ):
+                    entry[field] = value
+
+        # remove all fields fields marked with "remove"-state
+        to_remove = []
+        for k, v in entry.items():
+            if isinstance(v, dict):
+                if v.get("info") == ImportState.REMOVE:
+                    to_remove.append(k)
+        for k in to_remove:
+            entry.pop(k)
+        return entry
 
     def create_other_actions(self, rows: List[ImportRow]) -> None:
         create_action_payload: List[Dict[str, Any]] = []
@@ -121,14 +149,6 @@ class BaseUserImport(ImportMixin):
             elif check_result == ResultType.NOT_FOUND:
                 pass
 
-            if (
-                (default_password := entry.get("default_password"))
-                and type(default_password) == dict
-                and default_password["info"] == ImportState.WARNING
-            ):
-                field = "can_change_own_password"
-                if self.username_lookup.get_field_by_name(username, field):
-                    entry[field] = False
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
         return row

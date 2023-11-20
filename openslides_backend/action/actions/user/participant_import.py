@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
@@ -6,50 +6,55 @@ from ...mixins.import_mixins import ImportRow, ImportState
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .base_import import BaseUserImport
+from .participant_common import ParticipantCommon
 from .set_present import UserSetPresentAction
 
 
 @register_action("participant.import")
-class ParticipantImport(BaseUserImport):
+class ParticipantImport(BaseUserImport, ParticipantCommon):
     import_name = "participant"
 
     def prefetch(self, action_data: ActionData) -> None:
         super().prefetch(action_data)
-        self.meeting_id = self.result["meeting_id"]
-
-    def create_other_actions(self, rows: List[ImportRow]) -> None:
-        set_present_payload: List[Dict[str, Any]] = []
-        for row in rows:
-            if (present := row["data"].get("is_present")) is not None:
-                set_present_payload.append(
-                    {
-                        "id": row["data"]["id"],
-                        "meeting_id": self.meeting_id,
-                        "present": present,
-                    }
-                )
-                row["data"].pop("is_present")
-            groups = row["data"].pop("groups", [])
-            row["data"]["group_ids"] = [
-                id_ for group in groups if (id_ := group.get("id"))
-            ]
-            row["data"]["meeting_id"] = self.meeting_id
-
-        super().create_other_actions(rows)
-        if set_present_payload:
-            self.execute_other_action(UserSetPresentAction, set_present_payload)
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        """ " Passthru call on base import will check self.permission, which is not determined.
-        Instead use the single calls to user.create/update for permission checking"""
+        self.meeting_id = cast(int, self.result["meeting_id"])
 
     def validate_entry(self, row: ImportRow) -> ImportRow:
         row = super().validate_entry(row)
         entry = row["data"]
+        entry["meeting_id"] = self.meeting_id
         if "groups" not in entry:
             raise ActionException(
                 f"There is no group in the data of user '{self.get_value_from_union_str_object(entry.get('username'))}'. Is there a default group for the meeting?"
             )
+        groups = entry.pop("groups", None)
+        entry["group_ids"] = [
+            group_id for group in groups if (group_id := group.get("id"))
+        ]
+        failing_fields = self.permission_check.get_failing_fields(entry)
+        failing_fields_jsonupload = {
+            field
+            for field in entry
+            if isinstance(entry[field], dict)
+            and entry[field]["info"] == ImportState.REMOVE
+        }
+        if less_ff := list(failing_fields_jsonupload - set(failing_fields)):
+            less_ff.sort()
+            row["messages"].append(
+                f"In contrast to preview you may import field(s) '{', '.join(less_ff)}'"
+            )
+            for field in less_ff:
+                entry[field]["info"] = ImportState.DONE
+        if more_ff := list(set(failing_fields) - failing_fields_jsonupload):
+            more_ff.sort()
+            row["messages"].append(
+                f"Error: In contrast to preview you may not import field(s) '{', '.join(more_ff)}'"
+            )
+            row["state"] = ImportState.ERROR
+            for field in more_ff:
+                entry[field]["info"] = ImportState.ERROR
+        entry.pop("group_ids")
+        entry["groups"] = groups
+
         valid = False
         for group in (groups := entry["groups"]):
             if not (group_id := group.get("id")):
@@ -74,7 +79,28 @@ class ParticipantImport(BaseUserImport):
             row["state"] = ImportState.ERROR
             groups[0]["info"] = ImportState.ERROR
 
+        entry.pop("meeting_id")
+        if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
+            self.import_state = ImportState.ERROR
         return row
+
+    def create_other_actions(self, rows: List[ImportRow]) -> None:
+        set_present_payload: List[Dict[str, Any]] = []
+        for row in rows:
+            if (present := row["data"].get("is_present")) is not None:
+                set_present_payload.append(
+                    {
+                        "id": row["data"]["id"],
+                        "meeting_id": self.meeting_id,
+                        "present": present,
+                    }
+                )
+                row["data"].pop("is_present")
+            row["data"]["meeting_id"] = self.meeting_id
+
+        super().create_other_actions(rows)
+        if set_present_payload:
+            self.execute_other_action(UserSetPresentAction, set_present_payload)
 
     def setup_lookups(self) -> None:
         super().setup_lookups()

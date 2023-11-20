@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
-from openslides_backend.action.mixins.import_mixins import ImportMixin, ImportState
+from openslides_backend.action.mixins.import_mixins import ImportState
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -49,7 +50,12 @@ class ParticipantImport(BaseActionTestCase):
         self.set_models(
             {
                 "import_preview/1": self.import_preview1_data,
-                "meeting/1": {"is_active_in_organization_id": 1, "group_ids": [1]},
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                    "group_ids": [1],
+                    "committee_id": 1,
+                },
+                "committee/1": {"meeting_ids": [1], "organization_id": 1},
                 "group/1": {"name": "group1", "meeting_id": 1},
             }
         )
@@ -80,6 +86,10 @@ class ParticipantImport(BaseActionTestCase):
         self.assert_model_exists("import_preview/1", {"name": "account"})
 
     def test_import_names_and_email_and_create(self) -> None:
+        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
+            {"info": ImportState.DONE, "value": "group1", "id": 1}
+        ]
+        self.update_model("import_preview/1", self.import_preview1_data)
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -90,70 +100,47 @@ class ParticipantImport(BaseActionTestCase):
                 "gender": "male",
                 "last_name": "Tester",
                 "email": "email@test.com",
+                "meeting_ids": [1],
+                "meeting_user_ids": [1],
             },
         )
-
-    def get_import_preview_data(
-        self, number: int, row_state: ImportState, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        def get_import_state() -> ImportState:
-            """Precondition: There is only 1 row(_state)"""
-            if row_state == ImportState.ERROR:
-                return row_state
-            if ImportMixin.count_warnings_in_payload(data):
-                return ImportState.WARNING
-            else:
-                return ImportState.DONE
-
-        return {
-            f"import_preview/{number}": {
-                "state": get_import_state(),
-                "name": "participant",
-                "result": {
-                    "meeting_id": 1,
-                    "rows": [
-                        {
-                            "state": row_state,
-                            "messages": [],
-                            "data": data,
-                        },
-                    ],
-                },
-            }
-        }
-
-    def test_import_with_saml_id(self) -> None:
-        self.set_models(
-            self.get_import_preview_data(
-                7,
-                ImportState.NEW,
-                {"saml_id": {"value": "testsaml", "info": ImportState.NEW}},
-            )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
         )
-        response = self.request("participant.import", {"id": 7, "import": True})
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Invalid JsonUpload data: The data from json upload must contain a valid username object",
-            response.json["message"],
+        self.assert_model_exists(
+            "group/1",
+            {
+                "meeting_user_ids": [1],
+                "meeting_id": 1,
+            },
         )
 
     def test_import_saml_id_error_new_and_saml_id_exists(self) -> None:
         """Set saml_id 'testsaml' to user 1, add the import user 1 will be
         found and the import should result in an error."""
+        self.import_preview1_data["result"]["rows"][0]["data"]["username"] = {
+            "value": "testuser",
+            "info": ImportState.NEW,
+        }
+        self.import_preview1_data["result"]["rows"][0]["data"]["saml_id"] = {
+            "value": "testsaml",
+            "info": ImportState.NEW,
+        }
+        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
+            {"info": ImportState.DONE, "value": "group1", "id": 1}
+        ]
         self.set_models(
             {
                 "user/1": {"saml_id": "testsaml"},
-                **self.get_import_preview_data(
-                    6,
-                    ImportState.NEW,
-                    {
-                        "username": {"value": "testuser", "info": ImportState.NEW},
-                        "saml_id": {"value": "testsaml", "info": ImportState.NEW},
-                    },
-                ),
+                "import_preview/1": self.import_preview1_data,
             }
         )
-        response = self.request("participant.import", {"id": 6, "import": True})
+        response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
@@ -162,16 +149,9 @@ class ParticipantImport(BaseActionTestCase):
         ]
 
     def test_import_error_state_done_missing_username(self) -> None:
-        self.set_models(
-            self.get_import_preview_data(
-                6,
-                ImportState.DONE,
-                {
-                    "first_name": "Testy",
-                },
-            )
-        )
-        response = self.request("participant.import", {"id": 6, "import": True})
+        self.import_preview1_data["result"]["rows"][0]["data"].pop("username")
+        self.update_model("import_preview/1", self.import_preview1_data)
+        response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 400)
         self.assertIn(
             "Invalid JsonUpload data: The data from json upload must contain a valid username object",
@@ -179,73 +159,23 @@ class ParticipantImport(BaseActionTestCase):
         )
 
     def test_import_error_state_done_missing_user_in_db(self) -> None:
-        self.set_models(
-            self.get_import_preview_data(
-                6,
-                ImportState.DONE,
-                {
-                    "first_name": "Testy",
-                    "username": {
-                        "value": "fred",
-                        "info": ImportState.DONE,
-                        "id": 111,
-                    },
-                    "id": 111,
-                },
-            )
-        )
-        response = self.request("participant.import", {"id": 6, "import": True})
+        self.import_preview1_data["result"]["rows"][0]["data"]["username"] = {
+            "value": "fred",
+            "info": ImportState.DONE,
+            "id": 111,
+        }
+        self.import_preview1_data["result"]["rows"][0]["data"]["id"] = 111
+        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
+            {"info": ImportState.DONE, "value": "group1", "id": 1}
+        ]
+        self.update_model("import_preview/1", self.import_preview1_data)
+        response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == [
             "Error: user 111 not found anymore for updating user 'fred'."
         ]
-
-    def test_import_error_state_done_search_data_error(self) -> None:
-        self.set_models(
-            {
-                "import_preview/7": {
-                    "state": ImportState.DONE,
-                    "name": "participant",
-                    "result": {
-                        "meeting_id": 1,
-                        "rows": [
-                            {
-                                "state": ImportState.NEW,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "durban",
-                                        "info": ImportState.DONE,
-                                    }
-                                },
-                            },
-                            {
-                                "state": ImportState.DONE,
-                                "messages": [],
-                                "data": {
-                                    "username": {
-                                        "value": "durban",
-                                        "info": ImportState.DONE,
-                                    }
-                                },
-                            },
-                        ],
-                    },
-                }
-            }
-        )
-        response = self.request("participant.import", {"id": 7, "import": True})
-        self.assert_status_code(response, 200)
-        result = response.json["results"][0][0]
-        assert result["state"] == ImportState.ERROR
-        for i in range(2):
-            entry = result["rows"][i]
-            assert entry["state"] == ImportState.ERROR
-            assert entry["messages"] == [
-                "Error: username 'durban' is duplicated in import."
-            ]
 
     def test_import_error_state_import_preview(self) -> None:
         self.update_model("import_preview/1", {"state": ImportState.ERROR})
@@ -273,8 +203,8 @@ class ParticipantImport(BaseActionTestCase):
 class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInImport):
     def test_upload_import_with_generated_usernames_okay(self) -> None:
         self.json_upload_saml_id_new()
-        response_import = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/35",
             {
@@ -333,8 +263,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
 
     def test_json_upload_set_saml_id_in_existing_participant(self) -> None:
         self.json_upload_set_saml_id_in_existing_participant()
-        response_import = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
             {
@@ -350,8 +280,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
 
     def test_json_upload_update_saml_id_in_existing_participant(self) -> None:
         self.json_upload_update_saml_id_in_existing_participant()
-        response_import = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
             {
@@ -373,24 +303,24 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
 
     def test_json_upload_set_saml_id_remove_presence(self) -> None:
         self.json_upload_username_set_saml_id_remove_presence()
-        response_import = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
-        row = response_import.json["results"][0][0]["rows"][0]
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
         ]
         assert row["data"] == {
             "id": 10,
             "username": {"id": 10, "info": "done", "value": "user10"},
             "saml_id": {"info": "new", "value": "saml_id10"},
             "default_password": {"info": "warning", "value": ""},
-            "is_present": False,
-            "vote_weight": "2.800000",
+            "is_present": {"info": ImportState.DONE, "value": False},
+            "vote_weight": {"info": ImportState.DONE, "value": "2.800000"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
-            "structure_level": "new sl",
-            "number": "new number",
-            "comment": "new comment",
+            "structure_level": {"info": ImportState.DONE, "value": "new sl"},
+            "number": {"info": ImportState.DONE, "value": "new number"},
+            "comment": {"info": ImportState.DONE, "value": "new comment"},
         }
         self.assert_model_exists(
             "user/10",
@@ -416,12 +346,12 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
     def test_json_upload_error_set_saml_id(self) -> None:
         self.json_upload_username_set_saml_id_remove_presence()
         self.set_models({"user/11": {"saml_id": "saml_id10"}})
-        response_import = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
-        row = response_import.json["results"][0][0]["rows"][0]
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Error: saml_id 'saml_id10' found in different id (11 instead of 10)",
         ]
         assert row["data"] == {
@@ -429,12 +359,12 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "username": {"id": 10, "info": "done", "value": "user10"},
             "saml_id": {"info": "error", "value": "saml_id10"},
             "default_password": {"info": "warning", "value": ""},
-            "is_present": False,
-            "vote_weight": "2.800000",
+            "is_present": {"info": "done", "value": False},
+            "vote_weight": {"info": "done", "value": "2.800000"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
-            "structure_level": "new sl",
-            "number": "new number",
-            "comment": "new comment",
+            "structure_level": {"info": "done", "value": "new sl"},
+            "number": {"info": "done", "value": "new number"},
+            "comment": {"info": "done", "value": "new comment"},
         }
 
     def test_json_upload_user_not_found_anymore(
@@ -443,9 +373,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         self.json_upload_username_username_and_saml_id_found()
         self.request("user.delete", {"id": 11})
         assert self.assert_model_deleted("user/11")
-        response_import = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
-        row = response_import.json["results"][0][0]["rows"][0]
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Error: user 11 not found anymore for updating user 'user11'."
@@ -459,8 +389,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
 
     def test_json_upload_update_multiple_users_okay(self) -> None:
         self.json_upload_multiple_users()
-        response_import = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
             {
@@ -610,15 +540,13 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "user/12": {"username": "doubler6", "saml_id": "new_saml6"},
             },
         )
-        response_import = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
-        assert (result := response_import.json["results"][0][0])[
-            "state"
-        ] == ImportState.ERROR
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert (result := response.json["results"][0][0])["state"] == ImportState.ERROR
         row = result["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Following groups were not found: 'group4'",
             "Error: user 2 not found anymore for updating user 'user2'.",
             "Group '3 group3' don't exist anymore",
@@ -638,7 +566,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = result["rows"][1]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Group '3 group3' don't exist anymore",
             "Error in groups: No valid group found inside the pre checked groups from import, see warnings.",
         ]
@@ -647,8 +575,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "saml_id": {"info": ImportState.DONE, "value": "saml3"},
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "vote_weight": "3.345678",
-            "can_change_own_password": False,
+            "vote_weight": {"info": ImportState.DONE, "value": "3.345678"},
             "groups": [{"id": 3, "info": "error", "value": "group3"}],
         }
 
@@ -660,10 +587,10 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         ]
         assert row["data"] == {
             "id": 4,
-            "email": "mlk@america.com",
+            "email": {"value": "mlk@america.com", "info": ImportState.DONE},
             "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"},
-            "last_name": "Luther King",
-            "first_name": "Martin",
+            "last_name": {"value": "Luther King", "info": ImportState.DONE},
+            "first_name": {"value": "Martin", "info": ImportState.DONE},
             "groups": [
                 {"info": "warning", "value": "group4"},
                 {"id": 1, "info": "generated", "value": "group1"},
@@ -673,7 +600,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = result["rows"][3]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
         ]
         assert row["data"] == {
@@ -686,7 +613,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = result["rows"][4]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Following groups were not found: 'group4'",
             "Error: saml_id 'new_saml6' found in different id (12 instead of None)",
         ]
@@ -718,3 +645,148 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             {"info": "warning", "value": "unknown"},
             {"id": 7, "info": "warning", "value": "group7M1"},
         ]
+
+    def test_json_upload_with_sufficient_field_permission_update(self) -> None:
+        """fields in preview forbidden, in import allowed => okay"""
+        self.json_upload_not_sufficient_field_permission_update()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, 1
+        )
+        self.set_committee_management_level([60], 1)
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == [
+            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Following groups were not found: 'group4'",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
+            "In contrast to preview you may import field(s) 'first_name, saml_id, username'",
+        ]
+        assert row["data"] == {
+            "id": 2,
+            "saml_id": {"info": "done", "value": "saml_id1"},
+            "username": {"id": 2, "info": "done", "value": "user2"},
+            "first_name": {"info": "done", "value": "Jim"},
+            "vote_weight": {"info": "done", "value": "1.234560"},
+            "default_password": {"info": "remove", "value": ""},
+            "groups": [
+                {"id": 1, "info": "done", "value": "group1"},
+                {"id": 2, "info": "done", "value": "group2"},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"info": "warning", "value": "group4"},
+            ],
+        }
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "user2",
+                "saml_id": "saml_id1",
+                "first_name": "Jim",
+                "meeting_user_ids": [11, 44],
+                "meeting_ids": [1, 4],
+                "committee_ids": [60],
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                "default_password": "",
+                "can_change_own_password": False,
+                "password": "",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/11",
+            {
+                "vote_weight": "1.234560",
+            },
+        )
+
+    def test_json_upload_less_fields_field_permission_update(self) -> None:
+        """fields in preview allowed, in import forbidden => error"""
+        self.json_upload_not_sufficient_field_permission_update()
+        self.assert_model_exists(
+            "user/2",
+            {
+                "first_name": "John",
+                "saml_id": None,
+                "default_password": "secret",
+                "can_change_own_password": True,
+            },
+        )
+        self.assert_model_exists("meeting_user/11", {"vote_weight": None})
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == [
+            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Following groups were not found: 'group4'",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
+        ]
+        assert row["data"] == {
+            "id": 2,
+            "saml_id": {"info": "remove", "value": "saml_id1"},
+            "username": {"id": 2, "info": "remove", "value": "user2"},
+            "first_name": {"info": "remove", "value": "Jim"},
+            "vote_weight": {"info": "done", "value": "1.234560"},
+            "default_password": {"info": "remove", "value": ""},
+            "groups": [
+                {"id": 1, "info": "done", "value": "group1"},
+                {"id": 2, "info": "done", "value": "group2"},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"info": "warning", "value": "group4"},
+            ],
+        }
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "user2",
+                "first_name": "John",
+                "meeting_user_ids": [11, 44],
+                "meeting_ids": [1, 4],
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                "default_password": "secret",
+                "can_change_own_password": True,
+                "password": "secretcrypted",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/11",
+            {
+                "user_id": 2,
+                "vote_weight": "1.234560",
+                "group_ids": [1, 2, 3],
+            },
+        )
+
+    def test_json_upload_sufficient_field_permission_create(self) -> None:
+        self.json_upload_sufficient_field_permission_create()
+        self.set_models(
+            {
+                "meeting_user/1": {"group_ids": []},
+                "group/3": {"meeting_user_ids": []},
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                },
+            }
+        )
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == [
+            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Following groups were not found: 'group4'",
+            "Error: In contrast to preview you may not import field(s) 'vote_weight'",
+        ]
+        assert row["data"] == {
+            "saml_id": {"info": "new", "value": "saml_id1"},
+            "username": {"info": "done", "value": "user2"},
+            "first_name": {"info": "done", "value": "Jim"},
+            "vote_weight": {"info": "error", "value": "1.234560"},
+            "default_password": {"info": "warning", "value": ""},
+            "groups": [
+                {"id": 1, "info": "done", "value": "group1"},
+                {"id": 2, "info": "done", "value": "group2"},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"info": "warning", "value": "group4"},
+            ],
+        }

@@ -231,23 +231,37 @@ class ImportMixin(BaseImportJsonUpload):
         return {"rows": self.rows, "state": self.import_state}
 
     def flatten_copied_object_fields(
-        self, fields: Optional[List[str]] = None
+        self,
+        hook_method: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None,
     ) -> List[ImportRow]:
         """The self.rows will be deepcopied, flattened and returned, without
         changes on the self.rows.
         This is necessary for using the data in the executution of actions.
         The requests response should be given with the unchanged self.rows.
-        Uses the fields parameter to replace the objects by their values,
-        if given, otherwise all
+        Parameter:
+        hook_method:
+           Method to get an entry Dict[str,Any] and return it modified
         """
         rows = copy.deepcopy(self.rows)
         for row in rows:
             entry = row["data"]
-            used_list = fields if fields else entry.keys()
-            for field in used_list:
-                if field in entry:
-                    if type(dvalue := entry[field]) is dict:
-                        entry[field] = dvalue["value"]
+            if hook_method:
+                entry = hook_method(entry)
+                row["data"] = entry
+            for key, value in entry.items():
+                if isinstance(value, list):
+                    result_list = []
+                    for obj in value:
+                        if isinstance(obj, dict):
+                            if "id" in obj:
+                                result_list.append(obj["id"])
+                            else:
+                                result_list.append(obj["value"])
+                        else:
+                            result_list.append(obj)
+                    entry[key] = result_list
+                elif isinstance(dvalue := entry[key], dict):
+                    entry[key] = dvalue["value"]
         return rows
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
@@ -291,7 +305,7 @@ class JsonUploadMixin(BaseImportJsonUpload):
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
     import_state: ImportState
-    meeting_id: Optional[int] = None
+    meeting_id: int
 
     def set_state(self, number_errors: int, number_warnings: int) -> None:
         """
@@ -308,6 +322,9 @@ class JsonUploadMixin(BaseImportJsonUpload):
         self.new_store_id = self.datastore.reserve_id(collection="import_preview")
         fqid = fqid_from_collection_and_id("import_preview", self.new_store_id)
         time_created = int(time())
+        result: Dict[str, Union[List[Dict[str, Any]], int]] = {"rows": self.rows}
+        if hasattr(self, "meeting_id"):
+            result["meeting_id"] = self.meeting_id
         self.datastore.write_without_events(
             WriteRequest(
                 events=[
@@ -317,14 +334,7 @@ class JsonUploadMixin(BaseImportJsonUpload):
                         fields={
                             "id": self.new_store_id,
                             "name": import_name,
-                            "result": {
-                                k: v
-                                for k, v in [
-                                    ("rows", self.rows),
-                                    ("meeting_id", self.meeting_id),
-                                ]
-                                if v is not None
-                            },
+                            "result": result,
                             "created": time_created,
                             "state": self.import_state,
                         },

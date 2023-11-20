@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, cast
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.relations.relation_manager import RelationManager
+from openslides_backend.action.util.typing import ActionData, ActionResults
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -11,10 +12,15 @@ from openslides_backend.permissions.management_levels import (
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.interface import DatastoreService
-from openslides_backend.shared.exceptions import MissingPermission, PermissionDenied
+from openslides_backend.shared.exceptions import (
+    ActionException,
+    MissingPermission,
+    PermissionDenied,
+)
 from openslides_backend.shared.interfaces.env import Env
 from openslides_backend.shared.interfaces.logging import LoggingModule
 from openslides_backend.shared.interfaces.services import Services
+from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
@@ -150,6 +156,7 @@ class PermissionVarStore:
 
 
 class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
+    internal: bool
     permstore: PermissionVarStore
     field_rights: Dict[str, list] = {
         "A": [
@@ -186,6 +193,12 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         "H": ["saml_id"],
     }
 
+    def perform(
+        self, action_data: ActionData, user_id: int, internal: bool = False
+    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
+        self.internal = internal
+        return super().perform(action_data, user_id, internal)
+
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         """
         Checks the permissions on a per field and user.scope base, details see
@@ -199,6 +212,9 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
 
         if not hasattr(self, "permstore"):
             self.permstore = PermissionVarStore(self.datastore, self.user_id)
+        actual_group_fields = self._get_actual_grouping_from_instance(instance)
+        if not self.internal:
+            self.check_group_H(actual_group_fields["H"])
         if self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
             return None
 
@@ -209,7 +225,6 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             self.instance_user_oml_permission,
         ) = self.get_user_scope(instance.get("id") or instance)
 
-        actual_group_fields = self._get_actual_grouping_from_instance(instance)
         self._check_for_higher_OML(actual_group_fields, instance)
 
         # Ordered by supposed velocity advantages. Changing order only can effect the sequence of detected errors for tests
@@ -220,7 +235,6 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         self.check_group_A(actual_group_fields["A"])
         self.check_group_F(actual_group_fields["F"])
         self.check_group_G(actual_group_fields["G"])
-        self.check_group_H(actual_group_fields["H"])
 
     def check_group_A(
         self,
@@ -374,11 +388,10 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         fields: List[str],
     ) -> None:
         """Check Group H: Like group A, but only on internal calls, which will never call the check_permissions automatically"""
-        if not fields:
-            return None
-        raise PermissionDenied(
-            "The field 'saml_id' can only be used in internal action calls"
-        )
+        if fields and not self.internal:
+            raise ActionException(
+                "The field 'saml_id' can only be used in internal action calls"
+            )
 
     def _check_for_higher_OML(
         self,
@@ -483,8 +496,8 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
 
         This check here should be used in imports, where not permitted fields
         will be stripped by the import. They are caught here.
-        The groups B, C can't fail, because user.can_manage in the meeting is
-        the minimum permission for this import action.
+        The group C can't fail, because one of user.can_manage, committee- or oml-rights
+        is the minimum permission for this import action.
         group[H] fields are internal, but generally allowed in import.
         Therefore they have to be checked like group[A] fields
         """
@@ -509,6 +522,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         for method, fields, inst_param in [
             (self.check_group_E, actual_group_fields["E"], instance),
             (self.check_group_D, actual_group_fields["D"], instance),
+            (self.check_group_B, actual_group_fields["B"], instance),
             (self.check_group_A, actual_group_fields["A"], None),
             (self.check_group_F, actual_group_fields["F"], None),
             (self.check_group_G, actual_group_fields["G"], None),
@@ -526,6 +540,6 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
 
     def get_all_checked_fields(self) -> Set[str]:
         all_fields = set()
-        for letter in "ADEFGH":
+        for letter in "ABDEFGH":
             all_fields.update(self.field_rights[letter])
         return all_fields

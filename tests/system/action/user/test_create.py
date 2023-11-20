@@ -3,6 +3,8 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
+from ..test_internal_actions import BaseInternalActionTest
+
 
 class UserCreateActionTest(BaseActionTestCase):
     def permission_setup(self) -> None:
@@ -409,82 +411,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "last_name": "last name test",
             },
         )
-
-    def test_create_saml_id_and_default_pasword(self) -> None:
-        response = self.request(
-            "user.create",
-            {
-                "username": " username test ",
-                "saml_id": "123saml",
-                "default_password": "test",
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "user 123saml is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
-            in response.json["message"]
-        )
-
-    def test_create_saml_id_and_empty_values(self) -> None:
-        response = self.request(
-            "user.create",
-            {
-                "saml_id": "123saml",
-                "default_password": "",
-                "can_change_own_password": False,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/2",
-            {
-                "username": "123saml",
-                "saml_id": "123saml",
-                "default_password": "",
-                "can_change_own_password": False,
-                "password": None,
-                "is_physical_person": True,
-                "is_active": None,  # optional field and not set
-            },
-        )
-
-    def test_create_saml_id_but_duplicate_error1(self) -> None:
-        self.set_models({"user/2": {"username": "x", "saml_id": "123saml"}})
-        response = self.request(
-            "user.create",
-            {
-                "saml_id": "123saml",
-                "default_password": "",
-                "can_change_own_password": False,
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "A user with the saml_id 123saml already exists.", response.json["message"]
-        )
-
-    def test_create_saml_id_but_duplicate_error2(self) -> None:
-        self.set_models({"user/2": {"username": "123saml"}})
-        response = self.request(
-            "user.create",
-            {
-                "saml_id": "123saml",
-                "default_password": "",
-                "can_change_own_password": False,
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "A user with the username 123saml already exists.", response.json["message"]
-        )
-
-    def test_create_empty_saml_id_and_empty_values(self) -> None:
-        response = self.request(
-            "user.create",
-            {"saml_id": "  ", "username": "x"},
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn("This saml_id is forbidden.", response.json["message"])
 
     def test_create_permission_nothing(self) -> None:
         self.permission_setup()
@@ -1132,7 +1058,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "group_ids": [2],
             },
         )
-        self.assert_status_code(response, 403)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "The field 'saml_id' can only be used in internal action calls",
             response.json["message"],
@@ -1375,4 +1301,82 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"user_ids": None})
         self.assert_model_exists(
             "meeting/2", {"user_ids": [223], "meeting_user_ids": [1]}
+        )
+
+
+class UserCreateActionTestInternal(BaseInternalActionTest):
+    def test_create_empty_saml_id_and_empty_values(self) -> None:
+        response = self.internal_request(
+            "user.create",
+            {"saml_id": "  ", "username": "x"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("This saml_id is forbidden.", response.json["message"])
+
+    def test_create_saml_id_and_default_pasword(self) -> None:
+        response = self.internal_request(
+            "user.create",
+            {
+                "username": " username test ",
+                "saml_id": "123saml",
+                "default_password": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "user 123saml is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
+            in response.json["message"]
+        )
+
+    def test_create_saml_id_and_empty_values(self) -> None:
+        response = self.internal_request(
+            "user.create",
+            {
+                "saml_id": "123saml",
+                "default_password": "",
+                "can_change_own_password": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "123saml",
+                "saml_id": "123saml",
+                "default_password": "",
+                "can_change_own_password": False,
+                "password": None,
+                "is_physical_person": True,
+                "is_active": None,  # optional field and not set
+            },
+        )
+
+    def test_create_saml_id_but_duplicate_error1(self) -> None:
+        self.set_models({"user/2": {"username": "x", "saml_id": "123saml"}})
+        response = self.internal_request(
+            "user.create",
+            {
+                "saml_id": "123saml",
+                "default_password": "",
+                "can_change_own_password": False,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A user with the saml_id 123saml already exists.", response.json["message"]
+        )
+
+    def test_create_saml_id_but_duplicate_error2(self) -> None:
+        self.set_models({"user/2": {"username": "123saml"}})
+        response = self.internal_request(
+            "user.create",
+            {
+                "saml_id": "123saml",
+                "default_password": "",
+                "can_change_own_password": False,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A user with the username 123saml already exists.", response.json["message"]
         )

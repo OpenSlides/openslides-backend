@@ -1,27 +1,19 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from openslides_backend.models.models import MeetingUser
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
-from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.exceptions import ActionException, MissingPermission
+from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.filters import FilterOperator
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import required_id_schema, str_list_schema
 
 from ...mixins.import_mixins import ImportState
 from ...util.register import register_action
-from ..user.create_update_permissions_mixin import (
-    CreateUpdatePermissionsFailingFields,
-    PermissionVarStore,
-)
+from ...util.typing import ActionData
 from .base_json_upload import BaseUserJsonUpload
+from .participant_common import ParticipantCommon
 
 
 @register_action("participant.json_upload")
-class ParticipantJsonUpload(BaseUserJsonUpload):
+class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
     schema = BaseUserJsonUpload.get_schema(
         additional_required_fields={
             "meeting_id": required_id_schema,
@@ -49,53 +41,20 @@ class ParticipantJsonUpload(BaseUserJsonUpload):
         {"property": "gender", "type": "string", "is_object": True},
         {"property": "pronoun", "type": "string", "is_object": True},
         {"property": "saml_id", "type": "string", "is_object": True},
-        {"property": "structure_level", "type": "string"},
-        {"property": "number", "type": "string"},
-        {"property": "vote_weight", "type": "decimal"},
-        {"property": "comment", "type": "string"},
-        {"property": "is_present", "type": "boolean"},
+        {"property": "structure_level", "type": "string", "is_object": True},
+        {"property": "number", "type": "string", "is_object": True},
+        {"property": "vote_weight", "type": "decimal", "is_object": True},
+        {"property": "comment", "type": "string", "is_object": True},
+        {"property": "is_present", "type": "boolean", "is_object": True},
         {"property": "groups", "type": "string", "is_object": True, "is_list": True},
     ]
     import_name = "participant"
     groups: Dict[str, int] = {}
     default_group: Dict[str, Union[int, str]] = {}
-    user_permstore: PermissionVarStore
-    meeting_id: int
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        self.meeting_id = instance.get("meeting_id", 0)
-        return super().update_instance(instance)
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        meeting_id = instance["meeting_id"]
-        permstore = PermissionVarStore(self.datastore, self.user_id)
-        if (
-            meeting_id not in permstore.user_meetings
-            and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS
-            and meeting_id not in permstore.user_committees_meetings
-        ):
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", meeting_id),
-                ["committee_id"],
-                lock_result=False,
-            )
-            raise MissingPermission(
-                {
-                    Permissions.User.CAN_MANAGE: meeting_id,
-                    OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION: 1,
-                    CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                }
-            )
-
-        self.permission_check = CreateUpdatePermissionsFailingFields(
-            permstore,
-            self.services,
-            self.datastore,
-            self.relation_manager,
-            self.logging,
-            self.env,
-            self.skip_archived_meeting_check,
-            self.use_meeting_ids_for_archived_meeting_check,
+    def prefetch(self, action_data: ActionData) -> None:
+        self.meeting_id = cast(List[Dict[str, Any]], action_data)[0].get(
+            "meeting_id", 0
         )
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
@@ -147,19 +106,19 @@ class ParticipantJsonUpload(BaseUserJsonUpload):
             failing_fields.remove("username")
         if failing_fields:
             messages.append(
-                f"Following fields were removed from payload, because the user has no permisions to change them: {', '.join(failing_fields)}"
+                f"Following fields were removed from payload, because the user has no permissions to change them: {', '.join(failing_fields)}"
             )
         field_to_fail = (
             set(entry.keys()) & self.permission_check.get_all_checked_fields()
         )
         for field in field_to_fail:
             if field in failing_fields:
-                if isinstance(entry[field], str):
-                    entry[field] = {"value": entry[field], "info": ImportState.REMOVE}
-                else:
+                if isinstance(entry[field], dict):
                     entry[field]["info"] = ImportState.REMOVE
+                else:
+                    entry[field] = {"value": entry[field], "info": ImportState.REMOVE}
             else:
-                if isinstance(entry[field], str):
+                if not isinstance(entry[field], dict):
                     entry[field] = {"value": entry[field], "info": ImportState.DONE}
 
         if groups:

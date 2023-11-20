@@ -1367,7 +1367,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "saml_id": "test saml id",
             },
         )
-        self.assert_status_code(response, 403)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "The field 'saml_id' can only be used in internal action calls",
             response.json["message"],

@@ -575,7 +575,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Error: saml_id 'saml_id10' found in different id (11 instead of 10)",
         ]
         assert row["data"] == {
@@ -699,7 +699,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = result["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Error: user 2 not found anymore for updating user 'user2'.",
         ]
         assert row["data"] == {
@@ -713,7 +713,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = result["rows"][1]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Error: saml_id 'saml3' is duplicated in import.",
         ]
         assert row["data"] == {
@@ -722,7 +722,6 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
             "default_vote_weight": "3.345678",
-            "can_change_own_password": False,
         }
 
         row = result["rows"][2]
@@ -742,7 +741,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = result["rows"][3]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
         ]
         assert row["data"] == {
@@ -755,7 +754,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = result["rows"][4]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Will remove default_password and forbid changing your OpenSlides password.",
             "Error: saml_id 'new_saml6' found in different id (12 instead of None)",
         ]
         assert row["data"] == {
