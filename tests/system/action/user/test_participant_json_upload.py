@@ -87,10 +87,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             {"data": []},
         )
         self.assert_status_code(response, 400)
-        assert (
-            "data must contain ['data', 'meeting_id'] properties"
-            in response.json["message"]
-        )
+        assert "data must contain ['meeting_id'] properties" in response.json["message"]
 
     def test_json_upload_not_existing_meeting(self) -> None:
         response = self.request(

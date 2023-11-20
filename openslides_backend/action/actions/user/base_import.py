@@ -1,8 +1,13 @@
 from typing import Any, Dict, List, cast
 
 from ....shared.exceptions import ActionException
-from ...mixins.import_mixins import (ImportMixin, ImportRow, ImportState,
-                                     Lookup, ResultType)
+from ...mixins.import_mixins import (
+    ImportMixin,
+    ImportRow,
+    ImportState,
+    Lookup,
+    ResultType,
+)
 from ...util.typing import ActionData
 from .create import UserCreate
 from .update import UserUpdate
