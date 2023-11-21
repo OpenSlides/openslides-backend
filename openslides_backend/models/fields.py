@@ -223,7 +223,7 @@ class DecimalField(Field):
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
             if (min := self.constraints.get("minimum")) is not None:
-                if type(value) == str:
+                if isinstance(value, str):
                     assert Decimal(value) >= Decimal(
                         min
                     ), f"{self.own_field_name} must be bigger than or equal to {min}."

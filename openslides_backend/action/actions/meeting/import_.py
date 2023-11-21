@@ -30,7 +30,7 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.schema import models_map_object
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....shared.interfaces.event import Event, ListFields, ListFieldsValue
+from ....shared.interfaces.event import Event, ListFields, ListFieldsDict
 from ....shared.util import ALLOWED_HTML_TAGS_STRICT, ONE_ORGANIZATION_ID, validate_html
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -576,7 +576,7 @@ class MeetingImport(
         )
 
         # add meetings to organization if set in meeting
-        adder: ListFieldsValue = {}
+        adder: ListFieldsDict = {}
         if meeting.get("is_active_in_organization_id"):
             adder["active_meeting_ids"] = [meeting_id]
         if meeting.get("template_for_organization_id"):

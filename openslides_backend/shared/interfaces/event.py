@@ -15,12 +15,12 @@ class EventType(str, Enum):
         return repr(self.value)
 
 
-ListFieldsValue = Dict[str, Union[List[int], List[str]]]
+ListFieldsDict = Dict[str, Union[List[int], List[str]]]
 
 
 class ListFields(TypedDict):
-    add: NotRequired[ListFieldsValue]
-    remove: NotRequired[ListFieldsValue]
+    add: NotRequired[ListFieldsDict]
+    remove: NotRequired[ListFieldsDict]
 
 
 class Event(TypedDict):

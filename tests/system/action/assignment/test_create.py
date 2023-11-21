@@ -150,7 +150,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         response = self.request("assignment.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['title', 'meeting_id'] properties",
+            "data must contain ['meeting_id', 'title'] properties",
             response.json["message"],
         )
 

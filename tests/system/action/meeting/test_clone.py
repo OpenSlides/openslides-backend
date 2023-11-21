@@ -133,6 +133,7 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 1,
                     "user_id": 1,
                     "group_ids": [1],
+                    "vote_weight": "0.000000",
                 },
             }
         )
@@ -158,10 +159,22 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 1, "user_id": 1, "group_ids": [1]}
+            "meeting_user/1",
+            {
+                "meeting_id": 1,
+                "user_id": 1,
+                "group_ids": [1],
+                "vote_weight": "0.000000",
+            },
         )
         self.assert_model_exists(
-            "meeting_user/2", {"meeting_id": 2, "user_id": 1, "group_ids": [3]}
+            "meeting_user/2",
+            {
+                "meeting_id": 2,
+                "user_id": 1,
+                "group_ids": [3],
+                "vote_weight": "0.000001",
+            },
         )
 
     def test_clone_with_ex_users(self) -> None:

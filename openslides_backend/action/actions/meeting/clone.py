@@ -1,4 +1,5 @@
 import time
+from decimal import Decimal
 from typing import Any, Dict, List, cast
 
 from openslides_backend.models.checker import (
@@ -109,6 +110,12 @@ class MeetingClone(MeetingImport):
         for field in updatable_fields:
             if field in instance:
                 meeting[field] = instance.pop(field)
+
+        for mu in meeting_json.get("meeting_user", {}).values():
+            if (value := mu.get("vote_weight")) and Decimal(value) == Decimal(
+                "0.000000"
+            ):
+                mu["vote_weight"] = "0.000001"
 
         # check datavalidation
         checker = Checker(

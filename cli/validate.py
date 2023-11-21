@@ -220,7 +220,7 @@ class Checker:
             "text": str,
         }
         if type_str in basic_types:
-            if type(value) != basic_types[type_str]:
+            if not isinstance(value, basic_types[type_str]):
                 self.errors.append(
                     f"Value '{value}' for '{collectionfield}' is not a {type_str}."
                 )
@@ -230,7 +230,7 @@ class Checker:
                     f"Value '{value}' for '{collectionfield}' is not a {type_str}."
                 )
             for x in value:
-                if type(x) != basic_types[type_str[:-2]]:
+                if not isinstance(x, basic_types[type_str[:-2]]):
                     self.errors.append(
                         f"Listentry '{x}' for '{collectionfield}' is not a {type_str[:-2]}."
                     )
