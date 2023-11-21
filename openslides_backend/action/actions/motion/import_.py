@@ -21,11 +21,19 @@ from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..motion_submitter.delete import MotionSubmitterDeleteAction
 from ..motion_submitter.sort import MotionSubmitterSort
 from .create import MotionCreate
+from .payload_validation_mixin import (
+    MotionActionErrorData,
+    MotionCreatePayloadValidationMixin,
+    MotionErrorType,
+    MotionUpdatePayloadValidationMixin,
+)
 from .update import MotionUpdate
 
 
 @register_action("motion.import")
-class AccountImport(ImportMixin):
+class AccountImport(
+    ImportMixin, MotionCreatePayloadValidationMixin, MotionUpdatePayloadValidationMixin
+):
     """
     Action to import a result from the import_preview.
     """
@@ -71,7 +79,8 @@ class AccountImport(ImportMixin):
             old_submitters: Dict[
                 int, Dict[int, int]
             ] = {}  # {motion_id: {user_id:submitter_id}}
-            for row in self.rows:
+            for d in range(len(self.rows)):
+                row = self.rows[d]
                 payload: Dict[str, Any] = row["data"].copy()
                 self.remove_fields_from_data(
                     payload,
@@ -118,9 +127,13 @@ class AccountImport(ImportMixin):
                 ]
                 payload["supporter_meeting_user_ids"] = supporters
                 payload.pop("category_prefix", None)
+                errors: List[MotionActionErrorData] = []
                 if row["state"] == ImportState.NEW:
                     payload.update({"submitter_ids": submitters})
                     create_action_payload.append(payload)
+                    errors = self.get_create_payload_integrity_error_message(
+                        payload, meeting_id
+                    )
                 else:
                     id_ = payload["id"]
                     motion_to_submitter_user_ids[id_] = submitters
@@ -169,62 +182,97 @@ class AccountImport(ImportMixin):
 
                     payload.pop("meeting_id", None)
                     update_action_payload.append(payload)
-
-            created_submitters: List[Dict[str, int]] = []
-            if create_action_payload:
-                self.execute_other_action(MotionCreate, create_action_payload)
-            if update_action_payload:
-                self.execute_other_action(MotionUpdate, update_action_payload)
-            if len(submitter_create_action_payload):
-                created_submitters = cast(
-                    List[Dict[str, int]],
-                    self.execute_other_action(
-                        MotionSubmitterCreateAction, submitter_create_action_payload
-                    ),
-                )
-            if len(submitter_delete_action_payload):
-                self.execute_other_action(
-                    MotionSubmitterDeleteAction, submitter_delete_action_payload
-                )
-            new_submitters: Dict[
-                int, Dict[int, int]
-            ] = {}  # {motion_id: {meeting_user_id:submitter_id}}
-            for i in range(len(created_submitters)):
-                motion_id = submitter_create_action_payload[i]["motion_id"]
-                new_submitters[motion_id] = {
-                    **new_submitters.get(motion_id, {}),
-                    submitter_create_action_payload[i][
-                        "meeting_user_id"
-                    ]: created_submitters[i]["id"],
-                }
-            sort_payload: List[Dict[str, Any]] = []
-            for motion_id in motion_to_submitter_user_ids:
-                sorted_motion_submitter_ids: List[int] = []
-                for submitter_user_id in motion_to_submitter_user_ids[motion_id]:
-                    meeting_user_id = cast(
-                        int, self._user_ids_to_meeting_user[submitter_user_id]["id"]
+                    errors = self.get_update_payload_integrity_error_message(
+                        payload, meeting_id
                     )
-                    if submitter_user_id in old_submitters.get(motion_id, {}).keys():
-                        sorted_motion_submitter_ids.append(
-                            old_submitters[motion_id][submitter_user_id]
-                        )
-                    elif meeting_user_id in new_submitters.get(motion_id, {}).keys():
-                        sorted_motion_submitter_ids.append(
-                            new_submitters[motion_id][meeting_user_id]
-                        )
-                    else:
-                        raise Exception(
-                            f"Submitter sorting failed due to submitter for user/{submitter_user_id} not being found"
-                        )
-                if len(sorted_motion_submitter_ids):
-                    sort_payload.append(
-                        {
-                            "motion_id": motion_id,
-                            "motion_submitter_ids": sorted_motion_submitter_ids,
+                for err in errors:
+                    fieldname = ""
+                    match err["type"]:
+                        case MotionErrorType.UNIQUE_NUMBER:
+                            fieldname = "number"
+                        case MotionErrorType.TEXT:
+                            fieldname = "text"
+                        case MotionErrorType.REASON:
+                            fieldname = "reason"
+                        case MotionErrorType.TITLE:
+                            fieldname = "title"
+                        case _:
+                            raise ActionException("Error: " + err["message"])
+                    if not (
+                        row["data"].get(fieldname)
+                        and isinstance(row["data"][fieldname], dict)
+                    ):
+                        row["data"][fieldname] = {
+                            "value": row["data"].get(fieldname, ""),
+                            "info": ImportState.ERROR,
                         }
+                    else:
+                        row["data"][fieldname]["info"] = ImportState.ERROR
+                        row["data"][fieldname].pop("id", 0)
+                    row["messages"].append("Error: " + err["message"])
+                    self.result["rows"][d]["state"] = ImportState.ERROR
+                    self.import_state = ImportState.ERROR
+            if self.import_state != ImportState.ERROR:
+                created_submitters: List[Dict[str, int]] = []
+                if create_action_payload:
+                    self.execute_other_action(MotionCreate, create_action_payload)
+                if update_action_payload:
+                    self.execute_other_action(MotionUpdate, update_action_payload)
+                if len(submitter_create_action_payload):
+                    created_submitters = cast(
+                        List[Dict[str, int]],
+                        self.execute_other_action(
+                            MotionSubmitterCreateAction, submitter_create_action_payload
+                        ),
                     )
-            for payload in sort_payload:
-                self.execute_other_action(MotionSubmitterSort, [payload])
+                if len(submitter_delete_action_payload):
+                    self.execute_other_action(
+                        MotionSubmitterDeleteAction, submitter_delete_action_payload
+                    )
+                new_submitters: Dict[
+                    int, Dict[int, int]
+                ] = {}  # {motion_id: {meeting_user_id:submitter_id}}
+                for i in range(len(created_submitters)):
+                    motion_id = submitter_create_action_payload[i]["motion_id"]
+                    new_submitters[motion_id] = {
+                        **new_submitters.get(motion_id, {}),
+                        submitter_create_action_payload[i][
+                            "meeting_user_id"
+                        ]: created_submitters[i]["id"],
+                    }
+                sort_payload: List[Dict[str, Any]] = []
+                for motion_id in motion_to_submitter_user_ids:
+                    sorted_motion_submitter_ids: List[int] = []
+                    for submitter_user_id in motion_to_submitter_user_ids[motion_id]:
+                        meeting_user_id = cast(
+                            int, self._user_ids_to_meeting_user[submitter_user_id]["id"]
+                        )
+                        if (
+                            submitter_user_id
+                            in old_submitters.get(motion_id, {}).keys()
+                        ):
+                            sorted_motion_submitter_ids.append(
+                                old_submitters[motion_id][submitter_user_id]
+                            )
+                        elif (
+                            meeting_user_id in new_submitters.get(motion_id, {}).keys()
+                        ):
+                            sorted_motion_submitter_ids.append(
+                                new_submitters[motion_id][meeting_user_id]
+                            )
+                        else:
+                            raise Exception(
+                                f"Submitter sorting failed due to submitter for user/{submitter_user_id} not being found"
+                            )
+                    if len(sorted_motion_submitter_ids):
+                        sort_payload.append(
+                            {
+                                "motion_id": motion_id,
+                                "motion_submitter_ids": sorted_motion_submitter_ids,
+                            }
+                        )
+                for payload in sort_payload:
+                    self.execute_other_action(MotionSubmitterSort, [payload])
 
         return {}
 

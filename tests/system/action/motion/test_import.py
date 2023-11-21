@@ -254,8 +254,17 @@ class MotionJsonUpload(MotionImportTestMixin):
             is_reason_required=True
         )
         response = self.request("motion.import", {"id": 2, "import": True})
-        self.assert_status_code(response, 400)
-        assert response.json["message"] == "Reason is required"
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Reason is required"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        assert (
+            response.json["results"][0][0]["rows"][0]["data"]["reason"]["info"]
+            == ImportState.ERROR
+        )
 
     def test_import_update_simple_with_reason_required(self) -> None:
         self.set_up_models_with_import_previews_and_get_next_motion_id(
@@ -268,8 +277,17 @@ class MotionJsonUpload(MotionImportTestMixin):
             is_reason_required=True,
         )
         response = self.request("motion.import", {"id": 2, "import": True})
-        self.assert_status_code(response, 400)
-        assert response.json["message"] == "Reason is required to update."
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Reason is required to update."
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        assert (
+            response.json["results"][0][0]["rows"][0]["data"]["reason"]["info"]
+            == ImportState.ERROR
+        )
 
     def test_import_abort(self) -> None:
         next_id = self.set_up_models_with_import_previews_and_get_next_motion_id()

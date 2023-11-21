@@ -198,7 +198,7 @@ class MotionUpdatePayloadValidationMixin(MotionBasePayloadValidationMixin):
         errors: List[MotionActionErrorData] = []
         if instance.get("text") or instance.get("amendment_paragraphs"):
             motion = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                fqid_from_collection_and_id("motion", instance["id"]),
                 ["text", "amendment_paragraphs"],
             )
         if instance.get("text"):
