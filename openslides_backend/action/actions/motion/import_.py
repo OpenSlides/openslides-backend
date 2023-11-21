@@ -463,6 +463,8 @@ class AccountImport(
                         row["messages"].append("Error: Couldn't find supporter anymore")
                         row["state"] = ImportState.ERROR
 
+        row["messages"] = list(set(row["messages"]))
+
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
         return {

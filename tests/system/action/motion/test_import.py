@@ -645,18 +645,119 @@ class MotionJsonUpload(MotionImportTestMixin):
     def test_import_update_with_multiple(self) -> None:
         self.assert_with_multiple(True)
 
-    # -------------------------------------------------------
-    # ---------------[ Test with categories ]----------------
-    # -------------------------------------------------------
+    def prepare_complex_different_found_test(
+        self,
+        changed_entries: Dict[str, Any] = {},
+        is_update: bool = False,
+        multiple: bool = False,
+    ) -> int:
+        payload: List[Dict[str, Any]] = []
+        for i in range(2 if multiple else 1):
+            data: Dict[str, Any] = {
+                "number": {"info": ImportState.DONE, "value": f"DUM0{i + 1}"},
+                "title": {"info": ImportState.DONE, "value": "Always look on..."},
+                "text": {
+                    "info": ImportState.DONE,
+                    "value": "...the bright side...",
+                },
+                "reason": {"info": ImportState.DONE, "value": "...of life!"},
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 409,
+                    "value": "Copygory",
+                },
+                "category_prefix": "KOPIE",
+                "block": {
+                    "info": ImportState.DONE,
+                    "id": 1009,
+                    "value": "Blockodile",
+                },
+                "submitters_username": [
+                    {"info": ImportState.DONE, "id": 23, "value": "firstMeeting"},
+                    {"info": ImportState.DONE, "id": 22, "value": "multiMeeting"},
+                    {
+                        "info": ImportState.DONE,
+                        "id": 2,
+                        "value": "firstMeetingBoth",
+                    },
+                    {
+                        "info": ImportState.DONE,
+                        "id": 2,
+                        "value": "firstMeetingSubmitter",
+                    },
+                ],
+                "supporters_username": [
+                    {
+                        "info": ImportState.DONE,
+                        "id": 23,
+                        "value": "multiMeetingSubmitter",
+                    },
+                    {
+                        "info": ImportState.DONE,
+                        "id": 26,
+                        "value": "firstMeetingSupporter",
+                    },
+                ],
+                "tags": [
+                    {"info": ImportState.DONE, "id": 10008, "value": "Got tag go"},
+                    {"info": ImportState.DONE, "id": 10009, "value": "Price tag"},
+                ],
+            }
+            if is_update:
+                id_ = 109 if i else 108
+                data.update(
+                    {
+                        "id": id_,
+                        "number": {
+                            "info": ImportState.DONE,
+                            "id": id_,
+                            "value": f"NUM0{i + 1}",
+                        },
+                    }
+                )
+            for key in changed_entries:
+                data[key] = changed_entries[key]
+            payload.append(data)
+        return self.set_up_models_with_import_previews_and_get_next_motion_id(payload)
 
-    # -------------------------------------------------------
-    # ------------------[ Test with users ]------------------
-    # -------------------------------------------------------
+    def assert_different_found(self, response: Any, is_update: bool = False) -> None:
+        list_fields = ["tags", "supporters_username", "submitters_username"]
+        single_fields = ["category_name", "block"]
+        messages = [
+            "Error: Category search didn't deliver the same result as in the preview",
+            "Error: Motion block search didn't deliver the same result as in the preview",
+            "Error: Tag search didn't deliver the same result as in the preview",
+            "Error: Submitter search didn't deliver the same result as in the preview",
+            "Error: Supporter search didn't deliver the same result as in the preview",
+        ]
+        if is_update:
+            single_fields.append("number")
+            messages.append(
+                "Error: Number 'NUM01' found in different id (101 instead of 108)"
+            )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        for message in messages:
+            assert message in response.json["results"][0][0]["rows"][0]["messages"]
+        assert len(response.json["results"][0][0]["rows"][0]["messages"]) == len(
+            messages
+        )
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        for field in single_fields:
+            assert (
+                response.json["results"][0][0]["rows"][0]["data"][field]["info"]
+                == ImportState.ERROR
+            )
+        for field in list_fields:
+            for date in response.json["results"][0][0]["rows"][0]["data"][field]:
+                assert date["info"] == ImportState.ERROR
 
-    # -------------------------------------------------------
-    # ------------------[ Test with tags ]-------------------
-    # -------------------------------------------------------
+    def test_import_update_different_found(self) -> None:
+        self.prepare_complex_different_found_test(is_update=True)
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_different_found(response, True)
 
-    # -------------------------------------------------------
-    # ------------------[ Test with block ]------------------
-    # -------------------------------------------------------
+    def test_import_create_different_found(self) -> None:
+        self.prepare_complex_different_found_test()
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_different_found(response)
