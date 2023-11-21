@@ -237,7 +237,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['title', 'owner_id', 'filename', 'file'] properties",
+            "data must contain ['filename'] properties",
             response.json["message"],
         )
 

@@ -163,27 +163,17 @@ class Checker:
                 self.errors.append(
                     f"Default value for {collectionfield}' is not valid json."
                 )
-        if type == "number":
+        if type in ("number", "float", "decimal(6)"):
             valid_attributes.append("minimum")
-            if not isinstance(field.get("minimum", 0), int):
-                self.errors.append(f"'minimum' for {collectionfield} is not a number.")
-        if type == "float":
-            valid_attributes.append("minimum")
-            if not isinstance(field.get("minimum", 0), (int, float)):
-                self.errors.append(f"'minimum' for {collectionfield} is not a number.")
-        if type == "decimal(6)":
-            valid_attributes.append("minimum")
+            if "minimum" in field:
+                self.validate_value_for_type(type, field["minimum"], collectionfield)
         if type in ("string", "text"):
-            valid_attributes.append("maxLength")
-            if not isinstance(field.get("maxLength", 0), int):
-                self.errors.append(
-                    f"'maxLength' for {collectionfield} is not a number."
-                )
-            valid_attributes.append("minLength")
-            if not isinstance(field.get("minLength", 0), int):
-                self.errors.append(
-                    f"'minLength' for {collectionfield} is not a number."
-                )
+            for attr in ("minLength", "maxLength"):
+                valid_attributes.append(attr)
+                if not isinstance(field.get("maxLength", 0), int):
+                    self.errors.append(
+                        f"'maxLength' for {collectionfield} is not a number."
+                    )
         if type in DATA_TYPES:
             valid_attributes.append("default")
             if "default" in field:
@@ -230,36 +220,36 @@ class Checker:
             "text": str,
         }
         if type_str in basic_types:
-            if type(value) != basic_types[type_str]:
+            if not isinstance(value, basic_types[type_str]):
                 self.errors.append(
-                    f"Value '{value}' for {collectionfield}' is not a {type_str}."
+                    f"Value '{value}' for '{collectionfield}' is not a {type_str}."
                 )
         elif type_str in ("string[]", "number[]"):
             if not isinstance(value, list):
                 self.errors.append(
-                    f"Value '{value}' for {collectionfield}' is not a {type_str}."
+                    f"Value '{value}' for '{collectionfield}' is not a {type_str}."
                 )
             for x in value:
-                if type(x) != basic_types[type_str[:-2]]:
+                if not isinstance(x, basic_types[type_str[:-2]]):
                     self.errors.append(
-                        f"Listentry '{x}' for {collectionfield}' is not a {type_str[:-2]}."
+                        f"Listentry '{x}' for '{collectionfield}' is not a {type_str[:-2]}."
                     )
         elif type_str == "JSON":
             pass
         elif type_str == "float":
             if type(value) not in (int, float):
                 self.errors.append(
-                    f"Value '{value}' for {collectionfield}' is not a float."
+                    f"Value '{value}' for '{collectionfield}' is not a float."
                 )
         elif type_str == "decimal(6)":
             if not DECIMAL_PATTERN.match(value):
                 self.errors.append(
-                    f"Value '{value}' for {collectionfield}' is not a decimal(6)."
+                    f"Value '{value}' for '{collectionfield}' is not a decimal(6)."
                 )
         elif type_str == "color":
             if not COLOR_PATTERN.match(value):
                 self.errors.append(
-                    f"Value '{value}' for {collectionfield}' is not a color."
+                    f"Value '{value}' for '{collectionfield}' is not a color."
                 )
         else:
             raise NotImplementedError(type_str)

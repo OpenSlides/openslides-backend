@@ -18,6 +18,7 @@ ALLOWED_HTML_TAGS_STRICT = {
     # text formating
     "mark",
     "strike",
+    "s",
     "del",
     "ins",
     "strong",

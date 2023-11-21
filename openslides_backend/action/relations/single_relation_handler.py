@@ -151,7 +151,7 @@ class SingleRelationHandler:
                 # transform fqids back to ids
                 if not isinstance(related_field, BaseGenericRelationField):
                     modified_element = rel_update["modified_element"]
-                    assert type(modified_element) != int
+                    assert not isinstance(modified_element, int)
                     rel_update["modified_element"] = id_from_fqid(
                         cast(FullQualifiedId, modified_element)
                     )
