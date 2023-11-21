@@ -408,7 +408,9 @@ class BaseActionTestCase(BaseSystemTestCase):
         models: Dict[str, Dict[str, Any]],
         action: str,
         action_data: Dict[str, Any],
-        permission: Optional[Union[Permission, OrganizationManagementLevel]] = None,
+        permission: Optional[
+            Union[Permission, List[Permission], OrganizationManagementLevel]
+        ] = None,
         fail: Optional[bool] = None,
     ) -> None:
         self.create_meeting()
@@ -419,11 +421,11 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.set_user_groups(self.user_id, [3])
         if permission:
             if isinstance(permission, OrganizationManagementLevel):
-                self.set_organization_management_level(
-                    cast(OrganizationManagementLevel, permission), self.user_id
-                )
+                self.set_organization_management_level(permission, self.user_id)
+            elif isinstance(permission, list):
+                self.set_group_permissions(3, permission)
             else:
-                self.set_group_permissions(3, [cast(Permission, permission)])
+                self.set_group_permissions(3, [permission])
         response = self.request(action, action_data)
         if fail is None:
             fail = not permission

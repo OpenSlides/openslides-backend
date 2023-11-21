@@ -312,7 +312,10 @@ class AgendaItemSystemTest(BaseActionTestCase):
             {"topic/1": {"meeting_id": 1}},
             "agenda_item.create",
             {"content_object_id": "topic/1", "moderator_notes": "test"},
-            Permissions.AgendaItem.CAN_MANAGE_MODERATOR_NOTES,
+            [
+                Permissions.AgendaItem.CAN_MANAGE,
+                Permissions.AgendaItem.CAN_MANAGE_MODERATOR_NOTES,
+            ],
         )
 
     def test_create_replace_reverse_of_multi_content_object_id_required_error(
