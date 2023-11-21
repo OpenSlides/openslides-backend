@@ -7,8 +7,8 @@ from .history_mixin import MeetingUserHistoryMixin
 meeting_user_standard_fields = [
     "comment",
     "number",
-    "structure_level",
     "vote_weight",
+    "structure_level_ids",
 ]
 
 
