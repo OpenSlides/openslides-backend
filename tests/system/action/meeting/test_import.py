@@ -24,9 +24,6 @@ class MeetingImport(BaseActionTestCase):
                     "active_meeting_ids": [1],
                     "committee_ids": [1],
                 },
-                "user/1": {
-                    "default_structure_level": "admin in meeting1",
-                },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
                 "meeting/1": {
                     "committee_id": 1,
@@ -354,7 +351,6 @@ class MeetingImport(BaseActionTestCase):
             "gender": "male",
             "email": "",
             "default_number": "",
-            "default_structure_level": "",
             "default_vote_weight": "1.000000",
             "last_email_sent": None,
             "is_demo_user": False,
@@ -498,7 +494,7 @@ class MeetingImport(BaseActionTestCase):
                         "user_id": 1,
                         "personal_note_ids": [1],
                         "motion_submitter_ids": [],
-                        "structure_level": "meeting freak",
+                        "structure_level_ids": [1],
                         "group_ids": [1],
                     },
                 },
@@ -530,16 +526,24 @@ class MeetingImport(BaseActionTestCase):
                         "name": "testag",
                     }
                 },
+                "structure_level": {
+                    "1": {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "name": "meeting freak",
+                        "meeting_user_ids": [11],
+                    },
+                },
             }
         )
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [11]
         request_data["meeting"]["user"]["1"]["meeting_user_ids"] = [11]
-        request_data["meeting"]["user"]["1"]["default_structure_level"] = "default boss"
         request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["tag_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["structure_level_ids"] = [1]
 
         start = round(time.time())
         response = self.request("meeting.import", request_data)
@@ -560,7 +564,6 @@ class MeetingImport(BaseActionTestCase):
             "user/2",
             {
                 "username": "test",
-                "default_structure_level": "default boss",
                 "meeting_ids": [2],
                 "committee_ids": [1],
                 "meeting_user_ids": [1],
@@ -572,7 +575,7 @@ class MeetingImport(BaseActionTestCase):
             {
                 "meeting_id": 2,
                 "user_id": 2,
-                "structure_level": "meeting freak",
+                "structure_level_ids": [1],
                 "personal_note_ids": [1],
                 "motion_submitter_ids": [],
                 "group_ids": [2],
@@ -589,6 +592,9 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_model_exists(
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
+        )
+        self.assert_model_exists(
+            "structure_level/1", {"meeting_user_ids": [1], "name": "meeting freak"}
         )
         self.assert_model_exists(
             "committee/1", {"user_ids": [2, 1], "meeting_ids": [1, 2]}

@@ -273,9 +273,6 @@ user:
   default_number:
     type: string
     restriction_mode: A
-  default_structure_level:
-    type: string
-    restriction_mode: A
   default_vote_weight:
     type: decimal(6)
     default: "1.000000"
@@ -375,9 +372,6 @@ meeting_user:
     type: HTMLStrict
     restriction_mode: D
   number:
-    type: string
-    restriction_mode: A
-  structure_level:
     type: string
     restriction_mode: A
   about_me:
