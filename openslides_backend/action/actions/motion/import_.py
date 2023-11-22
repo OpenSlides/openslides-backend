@@ -10,7 +10,7 @@ from openslides_backend.action.mixins.import_mixins import (
 from openslides_backend.action.util.register import register_action
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.exceptions import ActionException
-from openslides_backend.shared.filters import And, FilterOperator, Or
+from openslides_backend.shared.filters import And, Filter, FilterOperator, Or
 
 from ....models.models import ImportPreview
 from ....shared.patterns import fqid_from_collection_and_id
@@ -49,11 +49,11 @@ class AccountImport(
     skip_archived_meeting_check = True
     import_name = "motion"
     number_lookup: Lookup
-    submitter_lookup: Lookup
-    supporter_lookup: Lookup
-    category_lookup: Lookup
-    tags_lookup: Lookup
-    block_lookup: Lookup
+    submitter_lookup: Dict[str, List[Dict[str, Any]]]
+    supporter_lookup: Dict[str, List[Dict[str, Any]]]
+    category_lookup: Dict[str, List[Dict[str, Any]]]
+    tags_lookup: Dict[str, List[Dict[str, Any]]]
+    block_lookup: Dict[str, List[Dict[str, Any]]]
     _user_ids_to_meeting_user: Dict[int, Any]
     _submitter_ids_to_user_id: Dict[int, int]
 
@@ -140,9 +140,13 @@ class AccountImport(
                     motion = {
                         k: v
                         for k, v in (
-                            self.number_lookup.get_matching_data_by_name(
-                                payload["number"]
-                            )[0]
+                            [
+                                motion
+                                for motion in self.number_lookup.name_to_ids.get(
+                                    payload["number"], []
+                                )
+                                if motion.get("id")
+                            ][0]
                         ).items()
                     }
                     for field in ["category_id", "block_id"]:
@@ -334,7 +338,7 @@ class AccountImport(
                 raise ActionException(
                     f"Invalid JsonUpload data: A category_name entry with state '{ImportState.DONE}' must have an 'id'"
                 )
-            categories = self.category_lookup.get_matching_data_by_name(category_name)
+            categories = self.category_lookup.get(category_name, [])
             categories = [
                 category
                 for category in categories
@@ -368,7 +372,7 @@ class AccountImport(
                 raise ActionException(
                     f"Invalid JsonUpload data: A block entry with state '{ImportState.DONE}' must have an 'id'"
                 )
-            found_blocks = self.block_lookup.get_matching_data_by_name(block)
+            found_blocks = self.block_lookup.get(block, [])
             if len(found_blocks) == 1:
                 if found_blocks[0].get("id") != entry["block"]["id"]:
                     entry["block"] = {"value": block, "info": ImportState.ERROR}
@@ -395,7 +399,7 @@ class AccountImport(
                         raise ActionException(
                             f"Invalid JsonUpload data: A tag entry with state '{ImportState.DONE}' must have an 'id'"
                         )
-                    found_tags = self.tags_lookup.get_matching_data_by_name(tag)
+                    found_tags = self.tags_lookup.get(tag, [])
                     if len(found_tags) == 1:
                         if found_tags[0].get("id") != tag_entry["id"]:
                             tag_entry["info"] = ImportState.ERROR
@@ -421,9 +425,7 @@ class AccountImport(
                         raise ActionException(
                             f"Invalid JsonUpload data: A submitter entry with state '{ImportState.DONE}' or '{ImportState.GENERATED}' must have an 'id'"
                         )
-                    found_submitters = self.submitter_lookup.get_matching_data_by_name(
-                        submitter
-                    )
+                    found_submitters = self.submitter_lookup.get(submitter, [])
                     if len(found_submitters) == 1:
                         if found_submitters[0].get("id") != submitter_entry["id"]:
                             submitter_entry["info"] = ImportState.ERROR
@@ -446,9 +448,7 @@ class AccountImport(
                         raise ActionException(
                             f"Invalid JsonUpload data: A supporter entry with state '{ImportState.DONE}' must have an 'id'"
                         )
-                    found_supporters = self.supporter_lookup.get_matching_data_by_name(
-                        supporter
-                    )
+                    found_supporters = self.supporter_lookup.get(supporter, [])
                     if len(found_supporters) == 1:
                         if found_supporters[0].get("id") != supporter_entry["id"]:
                             supporter_entry["info"] = ImportState.ERROR
@@ -488,66 +488,69 @@ class AccountImport(
             mapped_fields=["submitter_ids", "category_id", "block_id"],
             global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
-        self.block_lookup = Lookup(
-            self.datastore,
+        self.block_lookup = self.get_lookup_dict(
             "motion_block",
             [
-                (entry["block"]["value"], entry)
+                entry["block"]["value"]
                 for row in rows
                 if "block" in (entry := row["data"])
                 and entry["block"].get("info") != ImportState.WARNING
             ],
-            collection_field="title",
-            field="block",
-            mapped_fields=[],
-            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+            "title",
+            and_filters=[FilterOperator("meeting_id", "=", meeting_id)],
         )
-        self.category_lookup = Lookup(
-            self.datastore,
+        self.category_lookup = self.get_lookup_dict(
             "motion_category",
             [
-                (entry["category_name"]["value"], entry)
+                entry["category_name"]["value"]
                 for row in rows
                 if "category_name" in (entry := row["data"])
                 and entry["category_name"].get("info") != ImportState.WARNING
             ],
-            field="category_name",
-            collection_field="name",
-            mapped_fields=["prefix"],
-            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+            "name",
+            ["prefix"],
+            and_filters=[FilterOperator("meeting_id", "=", meeting_id)],
         )
 
-        self.submitter_lookup = Lookup(
-            self.datastore,
+        self.submitter_lookup = self.get_lookup_dict(
             "user",
             [
-                (user["value"], entry)
+                user["value"]
                 for row in rows
                 if "submitters_username" in (entry := row["data"])
                 for user in entry["submitters_username"]
                 if user.get("info") != ImportState.WARNING
             ],
-            field="submitters_username",
-            collection_field="username",
-            mapped_fields=["meeting_user_ids"],
+            "username",
+            ["meeting_user_ids"],
         )
-        self.supporter_lookup = Lookup(
-            self.datastore,
+        self.supporter_lookup = self.get_lookup_dict(
             "user",
             [
-                (user["value"], entry)
+                user["value"]
                 for row in rows
                 if "supporters_username" in (entry := row["data"])
                 for user in entry["supporters_username"]
                 if user.get("info") != ImportState.WARNING
             ],
-            field="supporters_username",
-            collection_field="username",
-            mapped_fields=["meeting_user_ids"],
+            "username",
+            ["meeting_user_ids"],
         )
         all_user_ids = set(
-            list(self.submitter_lookup.id_to_name.keys())
-            + list(self.supporter_lookup.id_to_name.keys())
+            list(
+                [
+                    submitter["id"]
+                    for submitters in self.submitter_lookup.values()
+                    for submitter in submitters
+                ]
+            )
+            + list(
+                [
+                    supporter["id"]
+                    for supporters in self.supporter_lookup.values()
+                    for supporter in supporters
+                ]
+            )
         )
         all_meeting_users: Dict[int, Dict[str, Any]] = {}
         if len(all_user_ids):
@@ -588,21 +591,45 @@ class AccountImport(
             )
             if all_meeting_users[meeting_user_id].get("user_id")
         }
-        self.tags_lookup = Lookup(
-            self.datastore,
+        self.tags_lookup = self.get_lookup_dict(
             "tag",
             [
-                (tag["value"], entry)
+                tag["value"]
                 for row in rows
                 if "tags" in (entry := row["data"])
                 for tag in entry["tags"]
                 if tag.get("info") != ImportState.WARNING
             ],
-            field="tags",
-            collection_field="name",
-            mapped_fields=[],
-            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+            "name",
+            and_filters=[FilterOperator("meeting_id", "=", meeting_id)],
         )
+
+    def get_lookup_dict(
+        self,
+        collection: str,
+        entries: List[str],
+        fieldname: str = "name",
+        mapped_fields: List[str] = [],
+        and_filters: List[Filter] = [],
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        lookup: Dict[str, List[Dict[str, Any]]] = {}
+        if len(entries):
+            data = self.datastore.filter(
+                collection,
+                And(
+                    *and_filters,
+                    Or([FilterOperator(fieldname, "=", name) for name in set(entries)]),
+                ),
+                [*mapped_fields, "id", fieldname],
+                lock_result=False,
+            )
+            for date_id in data:
+                date = data[date_id]
+                lookup[date[fieldname]] = [
+                    *lookup.get(date[fieldname], []),
+                    date,
+                ]
+        return lookup
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         store_id = instance["id"]

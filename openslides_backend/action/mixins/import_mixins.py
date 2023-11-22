@@ -72,11 +72,7 @@ class Lookup:
         self.name_to_ids: Dict[SearchFieldType, List[Dict[str, Any]]] = defaultdict(
             list
         )
-        self.name_to_found_models: Dict[
-            SearchFieldType, List[Dict[str, Any]]
-        ] = defaultdict(list)
         for name, name_entry in name_entries:
-            self.name_to_found_models[name] = []
             if name in self.name_to_ids:
                 self.name_to_ids[name].append(name_entry)
             else:
@@ -156,9 +152,6 @@ class Lookup:
         if len(self.name_to_ids.get(name, [])) == 1:
             return self.name_to_ids[name][0].get(fieldname)
         return None
-
-    def get_matching_data_by_name(self, name: SearchFieldType) -> List[Dict[str, Any]]:
-        return [date for date in self.name_to_found_models[name] if date.get("id")]
 
     def add_item(self, entry: Dict[str, Any]) -> None:
         if type(self.collection_field) is str:

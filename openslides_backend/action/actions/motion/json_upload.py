@@ -1,7 +1,7 @@
 from re import search, sub
 from typing import Any, Dict, Iterable, List, Optional, Set, cast
 
-from openslides_backend.shared.filters import And, FilterOperator, Or
+from openslides_backend.shared.filters import And, Filter, FilterOperator, Or
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -117,11 +117,11 @@ class MotionJsonUpload(
     permission = Permissions.Motion.CAN_MANAGE
     row_state: ImportState
     number_lookup: Lookup
-    submitter_lookup: Lookup
-    supporter_lookup: Lookup
-    category_lookup: Lookup
-    tags_lookup: Lookup
-    block_lookup: Lookup
+    submitter_lookup: Dict[str, List[Dict[str, Any]]] = {}
+    supporter_lookup: Dict[str, List[Dict[str, Any]]] = {}
+    category_lookup: Dict[str, List[Dict[str, Any]]] = {}
+    tags_lookup: Dict[str, List[Dict[str, Any]]] = {}
+    block_lookup: Dict[str, List[Dict[str, Any]]] = {}
     _first_state_id: Optional[int] = None
     _operator_username: Optional[str] = None
 
@@ -187,7 +187,7 @@ class MotionJsonUpload(
             category_name, str
         ):
             category_prefix = entry.get("category_prefix") or None
-            categories = self.category_lookup.get_matching_data_by_name(category_name)
+            categories = self.category_lookup.get(category_name, [])
             categories = [
                 category
                 for category in categories
@@ -283,7 +283,7 @@ class MotionJsonUpload(
                             )
                         else:
                             username_set.add(user)
-                            found_users = lookup.get_matching_data_by_name(user)
+                            found_users = lookup.get(user, [])
                             if len(found_users) == 1 and found_users[0].get("id") != 0:
                                 user_id = cast(int, found_users[0].get("id"))
                                 if len(
@@ -373,7 +373,7 @@ class MotionJsonUpload(
                         )
                     else:
                         tags_set.add(tag)
-                        found_tags = self.tags_lookup.get_matching_data_by_name(tag)
+                        found_tags = self.tags_lookup.get(tag, [])
                         if len(found_tags) == 1 and found_tags[0].get("id") != 0:
                             tag_id = cast(int, found_tags[0].get("id"))
                             entry_list.append(
@@ -403,7 +403,7 @@ class MotionJsonUpload(
             messages.extend([message for message in message_set])
 
         if (block := entry.get("block")) and isinstance(block, str):
-            found_blocks = self.block_lookup.get_matching_data_by_name(block)
+            found_blocks = self.block_lookup.get(block, [])
             if len(found_blocks) == 1 and found_blocks[0].get("id") != 0:
                 block_id = cast(int, found_blocks[0].get("id"))
                 entry["block"] = {
@@ -522,51 +522,58 @@ class MotionJsonUpload(
             mapped_fields=[],
             global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
         )
-        self.block_lookup = Lookup(
-            self.datastore,
+        self.block_lookup = self.get_lookup_dict(
             "motion_block",
-            [(title, entry) for entry in data if (title := entry.get("block"))],
-            collection_field="title",
-            field="block",
-            mapped_fields=[],
-            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+            [title for entry in data if (title := entry.get("block"))],
+            "title",
+            and_filters=[FilterOperator("meeting_id", "=", meeting_id)],
         )
-        self.category_lookup = Lookup(
-            self.datastore,
+        self.category_lookup = self.get_lookup_dict(
             "motion_category",
-            [(name, entry) for entry in data if (name := entry.get("category_name"))],
-            field="category_name",
-            collection_field="name",
-            mapped_fields=["prefix"],
-            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+            [name for entry in data if (name := entry.get("category_name"))],
+            "name",
+            ["prefix"],
+            and_filters=[FilterOperator("meeting_id", "=", meeting_id)],
         )
-        self.submitter_lookup = Lookup(
-            self.datastore,
+        self.submitter_lookup = self.get_lookup_dict(
             "user",
             [
-                (username, entry)
+                username
                 for entry in data
-                for username in self._get_field_array(entry, "submitters_username")
+                if (usernames := entry.get("submitters_username"))
+                for username in usernames
+                if username
             ],
-            field="submitters_username",
-            collection_field="username",
-            mapped_fields=["meeting_user_ids"],
+            "username",
+            ["meeting_user_ids"],
         )
-        self.supporter_lookup = Lookup(
-            self.datastore,
+        self.supporter_lookup = self.get_lookup_dict(
             "user",
             [
-                (username, entry)
+                username
                 for entry in data
-                for username in self._get_field_array(entry, "supporters_username")
+                if (usernames := entry.get("supporters_username"))
+                for username in usernames
+                if username
             ],
-            field="supporters_username",
-            collection_field="username",
-            mapped_fields=["meeting_user_ids"],
+            "username",
+            ["meeting_user_ids"],
         )
         all_user_ids = set(
-            list(self.submitter_lookup.id_to_name.keys())
-            + list(self.supporter_lookup.id_to_name.keys())
+            list(
+                [
+                    submitter["id"]
+                    for submitters in self.submitter_lookup.values()
+                    for submitter in submitters
+                ]
+            )
+            + list(
+                [
+                    supporter["id"]
+                    for supporters in self.supporter_lookup.values()
+                    for supporter in supporters
+                ]
+            )
         )
         all_meeting_users: Dict[int, Dict[str, Any]] = {}
         if len(all_user_ids):
@@ -598,19 +605,45 @@ class MotionJsonUpload(
             for meeting_user_id in all_meeting_users
             if all_meeting_users[meeting_user_id].get("user_id")
         }
-        self.tags_lookup = Lookup(
-            self.datastore,
+        self.tags_lookup = self.get_lookup_dict(
             "tag",
             [
-                (name, entry)
+                name
                 for entry in data
-                for name in self._get_field_array(entry, "tags")
+                if (names := entry.get("tags"))
+                for name in names
+                if name
             ],
-            field="tags",
-            collection_field="name",
-            mapped_fields=[],
-            global_and_filter=FilterOperator("meeting_id", "=", meeting_id),
+            "name",
+            and_filters=[FilterOperator("meeting_id", "=", meeting_id)],
         )
+
+    def get_lookup_dict(
+        self,
+        collection: str,
+        entries: List[str],
+        fieldname: str = "name",
+        mapped_fields: List[str] = [],
+        and_filters: List[Filter] = [],
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        lookup: Dict[str, List[Dict[str, Any]]] = {}
+        if len(entries):
+            data = self.datastore.filter(
+                collection,
+                And(
+                    *and_filters,
+                    Or([FilterOperator(fieldname, "=", name) for name in set(entries)]),
+                ),
+                [*mapped_fields, "id", fieldname],
+                lock_result=False,
+            )
+            for date_id in data:
+                date = data[date_id]
+                lookup[date[fieldname]] = [
+                    *lookup.get(date[fieldname], []),
+                    date,
+                ]
+        return lookup
 
     def _get_self_username_object(self) -> Dict[str, Any]:
         if not self._operator_username:
