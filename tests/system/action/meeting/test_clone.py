@@ -128,6 +128,7 @@ class MeetingClone(BaseActionTestCase):
                 "user/1": {
                     "meeting_user_ids": [1],
                     "meeting_ids": [1],
+                    "default_vote_weight": "0.000000",
                 },
                 "meeting_user/1": {
                     "meeting_id": 1,
