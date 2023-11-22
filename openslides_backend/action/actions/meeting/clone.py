@@ -2,11 +2,8 @@ import time
 from decimal import Decimal
 from typing import Any, Dict, List, cast
 
-from openslides_backend.models.checker import (
-    Checker,
-    CheckException,
-    external_motion_fields,
-)
+from openslides_backend.models.checker import (Checker, CheckException,
+                                               external_motion_fields)
 from openslides_backend.models.models import Meeting
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
@@ -111,7 +108,7 @@ class MeetingClone(MeetingImport):
             if field in instance:
                 meeting[field] = instance.pop(field)
 
-        def set_decimals_to_min_value(obj: Dict[str, Any], field: str) -> None:
+        def set_decimals_to_min_value(obj: Dict[str, Any], field:str) -> None:
             if (value := obj.get(field)) and Decimal(value) == Decimal("0.000000"):
                 obj[field] = "0.000001"
 
