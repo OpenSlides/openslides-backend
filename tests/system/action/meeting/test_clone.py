@@ -3,7 +3,8 @@ from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock
 
 from openslides_backend.models.models import AgendaItem, Meeting
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.shared.util import (ONE_ORGANIZATION_FQID,
+                                            ONE_ORGANIZATION_ID)
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
