@@ -427,7 +427,6 @@ class MotionJsonUpload(
         if id_ and set_entry_id:
             entry["id"] = id_
 
-        # TODO: Currently doesn't recognize pre-existing tags
         if (
             (text := entry.get("text"))
             and isinstance(text, str)
