@@ -9,10 +9,11 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .permission_mixin import AgendaItemPermissionMixin
 
 
 @register_action("agenda_item.create")
-class AgendaItemCreate(CreateActionWithInferredMeeting):
+class AgendaItemCreate(AgendaItemPermissionMixin, CreateActionWithInferredMeeting):
     """
     Action to create agenda items.
     """
@@ -28,6 +29,7 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
             "duration",
             "weight",
             "tag_ids",
+            "moderator_notes",
         ],
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
