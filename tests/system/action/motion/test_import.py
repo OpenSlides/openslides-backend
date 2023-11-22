@@ -940,3 +940,69 @@ class MotionJsonUpload(MotionImportTestMixin):
         )
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    knights = [
+        "Sir Galahad the Pure",
+        "Sir Bedivere the Wise",
+        "Sir Lancelot the Brave",
+        "Sir Robin the-not-quite-so-brave-as-Sir-Lancelot",
+        "Arthur, King of the Britons",
+    ]
+
+    def assert_with_verbose_fields(
+        self, separate_at: int, is_update: bool = False, multiple: bool = False
+    ) -> None:
+        separate_at = separate_at % 5
+        self.prepare_complex_test(
+            {
+                "submitters_verbose": self.knights[:separate_at],
+                "supporters_verbose": self.knights[separate_at:],
+            },
+            is_update,
+            multiple,
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_create_with_verbose_fields_0(self) -> None:
+        self.assert_with_verbose_fields(0)
+
+    def test_import_create_with_verbose_fields_1(self) -> None:
+        self.assert_with_verbose_fields(1, multiple=True)
+
+    def test_import_update_with_verbose_fields_2(self) -> None:
+        self.assert_with_verbose_fields(2, True)
+
+    def test_import_update_with_verbose_fields_3(self) -> None:
+        self.assert_with_verbose_fields(3, True, multiple=True)
+
+    def test_import_update_with_verbose_fields_4(self) -> None:
+        self.assert_with_verbose_fields(4, True)
+
+    def assert_with_amendment(
+        self, is_amendment: bool = False, is_update: bool = False
+    ) -> None:
+        self.prepare_complex_test(
+            {
+                "motion_amendment": {"value": "1", "info": ImportState.WARNING}
+                if is_amendment
+                else {"value": "0", "info": ImportState.DONE},
+            },
+            is_update,
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_create_with_amendment_false(self) -> None:
+        self.assert_with_amendment()
+
+    def test_import_create_with_amendment_true(self) -> None:
+        self.assert_with_amendment(True)
+
+    def test_import_update_with_amendment_false(self) -> None:
+        self.assert_with_amendment(False, True)
+
+    def test_import_update_with_amendment_true(self) -> None:
+        self.assert_with_amendment(True, True)
