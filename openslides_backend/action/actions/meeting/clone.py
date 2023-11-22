@@ -111,11 +111,15 @@ class MeetingClone(MeetingImport):
             if field in instance:
                 meeting[field] = instance.pop(field)
 
-        for mu in meeting_json.get("meeting_user", {}).values():
-            if (value := mu.get("vote_weight")) and Decimal(value) == Decimal(
-                "0.000000"
-            ):
-                mu["vote_weight"] = "0.000001"
+        def set_decimals_to_min_value(obj: Dict[str, Any], field: str) -> None:
+            if (value := obj.get(field)) and Decimal(value) == Decimal("0.000000"):
+                obj[field] = "0.000001"
+
+        for user in meeting_json.get("user", {}).values():
+            set_decimals_to_min_value(user, "default_vote_weight")
+
+        for meeting_user in meeting_json.get("meeting_user", {}).values():
+            set_decimals_to_min_value(meeting_user, "vote_weight")
 
         # check datavalidation
         checker = Checker(
