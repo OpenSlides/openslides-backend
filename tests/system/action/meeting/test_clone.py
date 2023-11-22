@@ -133,7 +133,7 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 1,
                     "user_id": 1,
                     "group_ids": [1],
-                    "vote_weight": "0.000000",
+                    "vote_weight": "1.000000",
                 },
             }
         )
@@ -164,7 +164,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 1,
                 "user_id": 1,
                 "group_ids": [1],
-                "vote_weight": "0.000000",
+                "vote_weight": "1.000000",
             },
         )
         self.assert_model_exists(
@@ -173,11 +173,11 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 2,
                 "user_id": 1,
                 "group_ids": [3],
-                "vote_weight": "0.000001",
+                "vote_weight": "1.000000",
             },
         )
 
-    def test_clone_with_users_vote_weight_1(self) -> None:
+    def test_clone_with_users_min_vote_weight_1(self) -> None:
         """if vote_weight not in meeting_user set it, if user's default_vote_weight is NOT set > 0"""
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
