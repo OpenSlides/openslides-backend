@@ -329,7 +329,7 @@ class AccountImport(
 
         category_name = self.get_value_from_union_str_object(entry.get("category_name"))
         if category_name and entry["category_name"].get("info") == ImportState.DONE:
-            category_prefix = entry.get("category_prefix")
+            category_prefix = entry.get("category_prefix") or None
             if "id" not in entry["category_name"]:
                 raise ActionException(
                     f"Invalid JsonUpload data: A category_name entry with state '{ImportState.DONE}' must have an 'id'"

@@ -649,75 +649,73 @@ class MotionJsonUpload(MotionImportTestMixin):
         self,
         changed_entries: Dict[str, Any] = {},
         is_update: bool = False,
-        multiple: bool = False,
     ) -> int:
         payload: List[Dict[str, Any]] = []
-        for i in range(2 if multiple else 1):
-            data: Dict[str, Any] = {
-                "number": {"info": ImportState.DONE, "value": f"DUM0{i + 1}"},
-                "title": {"info": ImportState.DONE, "value": "Always look on..."},
-                "text": {
+        data: Dict[str, Any] = {
+            "number": {"info": ImportState.DONE, "value": "DUM01"},
+            "title": {"info": ImportState.DONE, "value": "Always look on..."},
+            "text": {
+                "info": ImportState.DONE,
+                "value": "...the bright side...",
+            },
+            "reason": {"info": ImportState.DONE, "value": "...of life!"},
+            "category_name": {
+                "info": ImportState.DONE,
+                "id": 409,
+                "value": "Copygory",
+            },
+            "category_prefix": "KOPIE",
+            "block": {
+                "info": ImportState.DONE,
+                "id": 1009,
+                "value": "Blockodile",
+            },
+            "submitters_username": [
+                {"info": ImportState.DONE, "id": 23, "value": "firstMeeting"},
+                {"info": ImportState.DONE, "id": 22, "value": "multiMeeting"},
+                {
                     "info": ImportState.DONE,
-                    "value": "...the bright side...",
+                    "id": 2,
+                    "value": "firstMeetingBoth",
                 },
-                "reason": {"info": ImportState.DONE, "value": "...of life!"},
-                "category_name": {
+                {
                     "info": ImportState.DONE,
-                    "id": 409,
-                    "value": "Copygory",
+                    "id": 2,
+                    "value": "firstMeetingSubmitter",
                 },
-                "category_prefix": "KOPIE",
-                "block": {
+            ],
+            "supporters_username": [
+                {
                     "info": ImportState.DONE,
-                    "id": 1009,
-                    "value": "Blockodile",
+                    "id": 23,
+                    "value": "multiMeetingSubmitter",
                 },
-                "submitters_username": [
-                    {"info": ImportState.DONE, "id": 23, "value": "firstMeeting"},
-                    {"info": ImportState.DONE, "id": 22, "value": "multiMeeting"},
-                    {
+                {
+                    "info": ImportState.DONE,
+                    "id": 26,
+                    "value": "firstMeetingSupporter",
+                },
+            ],
+            "tags": [
+                {"info": ImportState.DONE, "id": 10008, "value": "Got tag go"},
+                {"info": ImportState.DONE, "id": 10009, "value": "Price tag"},
+            ],
+        }
+        if is_update:
+            id_ = 108
+            data.update(
+                {
+                    "id": id_,
+                    "number": {
                         "info": ImportState.DONE,
-                        "id": 2,
-                        "value": "firstMeetingBoth",
-                    },
-                    {
-                        "info": ImportState.DONE,
-                        "id": 2,
-                        "value": "firstMeetingSubmitter",
-                    },
-                ],
-                "supporters_username": [
-                    {
-                        "info": ImportState.DONE,
-                        "id": 23,
-                        "value": "multiMeetingSubmitter",
-                    },
-                    {
-                        "info": ImportState.DONE,
-                        "id": 26,
-                        "value": "firstMeetingSupporter",
-                    },
-                ],
-                "tags": [
-                    {"info": ImportState.DONE, "id": 10008, "value": "Got tag go"},
-                    {"info": ImportState.DONE, "id": 10009, "value": "Price tag"},
-                ],
-            }
-            if is_update:
-                id_ = 109 if i else 108
-                data.update(
-                    {
                         "id": id_,
-                        "number": {
-                            "info": ImportState.DONE,
-                            "id": id_,
-                            "value": f"NUM0{i + 1}",
-                        },
-                    }
-                )
-            for key in changed_entries:
-                data[key] = changed_entries[key]
-            payload.append(data)
+                        "value": "NUM01",
+                    },
+                }
+            )
+        for key in changed_entries:
+            data[key] = changed_entries[key]
+        payload.append(data)
         return self.set_up_models_with_import_previews_and_get_next_motion_id(payload)
 
     def assert_different_found(self, response: Any, is_update: bool = False) -> None:
@@ -761,3 +759,184 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.prepare_complex_different_found_test()
         response = self.request("motion.import", {"id": 2, "import": True})
         self.assert_different_found(response)
+
+    def assert_different_category(
+        self,
+        is_update: bool = False,
+        changed_entries: Dict[str, Any] = {
+            "category_name": {
+                "info": ImportState.DONE,
+                "id": 407,
+                "value": "No prefix",
+            },
+            "category_prefix": "",
+        },
+    ) -> Any:
+        self.prepare_complex_test(
+            changed_entries,
+            is_update,
+        )
+        return self.request("motion.import", {"id": 2, "import": True})
+
+    def test_import_create_category_no_prefix(self) -> None:
+        response = self.assert_different_category()
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_update_category_no_prefix(self) -> None:
+        response = self.assert_different_category(is_update=True)
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_create_category_single_meeting(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 400,
+                    "value": "Category A",
+                },
+                "category_prefix": "A",
+            }
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_update_category_single_meeting(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 400,
+                    "value": "Category A",
+                },
+                "category_prefix": "A",
+            },
+            is_update=True,
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_create_category_multi_meeting(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 401,
+                    "value": "Category B",
+                },
+                "category_prefix": "B",
+            }
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_update_category_multi_meeting(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 401,
+                    "value": "Category B",
+                },
+                "category_prefix": "B",
+            },
+            is_update=True,
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_create_category_duplicate(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 404,
+                    "value": "Copygory",
+                },
+                "category_prefix": "COPY",
+            }
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Category could not be found anymore"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+
+    def test_import_update_category_duplicate(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 403,
+                    "value": "Copygory",
+                },
+                "category_prefix": "COPY",
+            },
+            is_update=True,
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Category could not be found anymore"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+
+    def test_import_create_category_fake_duplicate_1(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 405,
+                    "value": "Copygory",
+                },
+                "category_prefix": "KOPIE",
+            }
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_update_category_fake_duplicate_1(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 405,
+                    "value": "Copygory",
+                },
+                "category_prefix": "KOPIE",
+            },
+            is_update=True,
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_create_category_fake_duplicate_2(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 406,
+                    "value": "Weak Copygory",
+                },
+                "category_prefix": "COPY",
+            }
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_import_update_category_fake_duplicate_2(self) -> None:
+        response = self.assert_different_category(
+            changed_entries={
+                "category_name": {
+                    "info": ImportState.DONE,
+                    "id": 406,
+                    "value": "Weak Copygory",
+                },
+                "category_prefix": "COPY",
+            },
+            is_update=True,
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE

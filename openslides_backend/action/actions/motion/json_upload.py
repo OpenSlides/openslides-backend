@@ -186,7 +186,7 @@ class MotionJsonUpload(
         if (category_name := entry.get("category_name")) and isinstance(
             category_name, str
         ):
-            category_prefix = entry.get("category_prefix")
+            category_prefix = entry.get("category_prefix") or None
             categories = self.category_lookup.get_matching_data_by_name(category_name)
             categories = [
                 category
@@ -205,7 +205,7 @@ class MotionJsonUpload(
                     "info": ImportState.WARNING,
                 }
                 messages.append("Category could not be found")
-        elif (category_prefix := entry.get("category_prefix")) and isinstance(
+        elif (category_prefix := entry.get("category_prefix") or None) and isinstance(
             category_prefix, str
         ):
             entry["category_name"] = {"value": "", "info": ImportState.WARNING}
