@@ -2,11 +2,8 @@ import time
 from decimal import Decimal
 from typing import Any, Dict, List, cast
 
-from openslides_backend.models.checker import (
-    Checker,
-    CheckException,
-    external_motion_fields,
-)
+from openslides_backend.models.checker import (Checker, CheckException,
+                                               external_motion_fields)
 from openslides_backend.models.models import Meeting
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
