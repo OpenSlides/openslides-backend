@@ -4,12 +4,12 @@ from urllib import parse
 from authlib import (
     ANONYMOUS_USER,
     AUTHENTICATION_HEADER,
+    AUTHORIZATION_HEADER,
     COOKIE_NAME,
     AuthenticateException,
     AuthHandler,
     InvalidCredentialsException,
 )
-from authlib.constants import AUTHORIZATION_HEADER
 
 from ...shared.exceptions import AuthenticationException
 from ...shared.interfaces.logging import LoggingModule
@@ -35,7 +35,7 @@ class AuthenticationHTTPAdapter(AuthenticationService):
         Returns a new access token, too, if one is received from auth service.
         """
 
-        access_token = headers.get(AUTHENTICATION_HEADER, None)
+        access_token = headers.get(AUTHENTICATION_HEADER)
         cookie = cookies.get(COOKIE_NAME, "")
         self.logger.debug(
             f"Start request to authentication service with the following data: access_token: {headers}, cookie: {cookie}"
