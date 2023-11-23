@@ -75,10 +75,10 @@ class MotionJsonUpload(
     )
 
     headers = [
-        {"property": "title", "type": "string"},
-        {"property": "text", "type": "string"},
+        {"property": "title", "type": "string", "is_object": True},
+        {"property": "text", "type": "string", "is_object": True},
         {"property": "number", "type": "string", "is_object": True},
-        {"property": "reason", "type": "string"},
+        {"property": "reason", "type": "string", "is_object": True},
         {
             "property": "submitters_verbose",
             "type": "string",
@@ -104,7 +104,7 @@ class MotionJsonUpload(
             "is_list": True,
         },
         {"property": "category_name", "type": "string", "is_object": True},
-        {"property": "category_prefix", "type": "string"},
+        {"property": "category_prefix", "type": "string", "is_object": True},
         {"property": "tags", "type": "string", "is_object": True, "is_list": True},
         {"property": "block", "type": "string", "is_object": True},
         {

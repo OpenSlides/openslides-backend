@@ -1006,3 +1006,183 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def test_import_update_with_amendment_true(self) -> None:
         self.assert_with_amendment(True, True)
+
+    def assert_after_json_upload(
+        self,
+        response: Any,
+        meeting_id: int,
+        motion_id: int,
+        motion_data: Dict[str, Any],
+        submitter_user_ids: List[int] = [1],
+        supporter_user_ids: List[int] = [],
+    ) -> None:
+        self.assert_status_code(response, 200)
+        motion = self.assert_model_exists(
+            f"motion/{motion_id}",
+            motion_data,
+        )
+        assert len(motion.get("submitter_ids", [])) == len(submitter_user_ids)
+        submitter_ids = motion.get("submitter_ids", [])
+        for i in range(len(submitter_ids)):
+            submitter_id = submitter_ids[i]
+            submitter = self.assert_model_exists(
+                f"motion_submitter/{submitter_id}",
+                {"meeting_id": meeting_id, "motion_id": motion_id},
+            )
+            assert (meeting_user_id := submitter.get("meeting_user_id"))
+            self.assert_model_exists(
+                f"meeting_user/{meeting_user_id}",
+                {"meeting_id": meeting_id, "user_id": submitter_user_ids[i]},
+            )
+        assert len(motion.get("supporter_meeting_user_ids", [])) == len(
+            supporter_user_ids
+        )
+        supporter_ids = motion.get("supporter_meeting_user_ids", [])
+        for i in range(len(supporter_ids)):
+            supporter_id = supporter_ids[i]
+            self.assert_model_exists(
+                f"meeting_user/{supporter_id}",
+                {"meeting_id": meeting_id, "user_id": supporter_user_ids[i]},
+            )
+
+    def test_import_create_with_json_upload_format_1(self) -> None:
+        next_id = self.set_up_models_with_import_previews_and_get_next_motion_id()
+        json_upload_response = self.request(
+            "motion.json_upload",
+            {
+                "data": [{"title": "test", "text": "my", "motion_amendment": "1"}],
+                "meeting_id": 42,
+            },
+        )
+        response = self.request(
+            "motion.import",
+            {"id": json_upload_response.json["results"][0][0]["id"], "import": True},
+        )
+        self.assert_after_json_upload(
+            response, 42, next_id, {"title": "test", "text": "<p>my</p>"}
+        )
+
+    def test_import_update_with_json_upload_format_1(self) -> None:
+        self.set_up_models_with_import_previews_and_get_next_motion_id(
+            is_reason_required=True
+        )
+        json_upload_response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {
+                        "number": "NUM01",
+                        "title": "test",
+                        "text": "my",
+                        "reason": "stuff",
+                        "motion_amendment": "1",
+                    }
+                ],
+                "meeting_id": 42,
+            },
+        )
+        response = self.request(
+            "motion.import",
+            {"id": json_upload_response.json["results"][0][0]["id"], "import": True},
+        )
+        self.assert_after_json_upload(
+            response,
+            42,
+            101,
+            {
+                "number": "NUM01",
+                "title": "test",
+                "text": "<p>my</p>",
+                "reason": "stuff",
+            },
+        )
+
+    def test_import_create_with_json_upload_format_2(self) -> None:
+        next_id = self.set_up_models_with_import_previews_and_get_next_motion_id(
+            is_set_number=True
+        )
+        json_upload_response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {
+                        "title": "test",
+                        "text": "my",
+                        "number": "",
+                        "reason": "",
+                        "submitters_verbose": self.knights[:3],
+                        "submitters_username": [
+                            "firstMeeting",
+                            "firstMeetingSupporter",
+                            "firstMeetingBoth",
+                            "multiMeeting",
+                        ],
+                        "supporters_verbose": self.knights[3],
+                        "supporters_username": "firstMeetingSubmitter",
+                        "category_name": "Copygory",
+                        "category_prefix": "KOPIE",
+                        "tags": "Tag-liatelle",
+                        "block": "Blockolade",
+                    }
+                ],
+                "meeting_id": 42,
+            },
+        )
+        response = self.request(
+            "motion.import",
+            {"id": json_upload_response.json["results"][0][0]["id"], "import": True},
+        )
+        self.assert_after_json_upload(
+            response,
+            42,
+            next_id,
+            {
+                "title": "test",
+                "text": "<p>my</p>",
+                "category_id": 405,
+                "tag_ids": [10000],
+                "block_id": 1000,
+            },
+            [3, 6, 7, 12],
+            [4],
+        )
+
+    def test_import_update_with_json_upload_format_2(self) -> None:
+        self.set_up_models_with_import_previews_and_get_next_motion_id()
+        json_upload_response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {
+                        "number": "NUM01",
+                        "title": "test",
+                        "text": "my",
+                        "reason": "stuff",
+                        "submitters_verbose": "",
+                        "submitters_username": "",
+                        "supporters_verbose": "",
+                        "supporters_username": "",
+                        "category_name": "",
+                        "category_prefix": "",
+                        "tags": "",
+                        "block": "",
+                    }
+                ],
+                "meeting_id": 42,
+            },
+        )
+        response = self.request(
+            "motion.import",
+            {"id": json_upload_response.json["results"][0][0]["id"], "import": True},
+        )
+        self.assert_after_json_upload(
+            response,
+            42,
+            101,
+            {
+                "number": "NUM01",
+                "title": "test",
+                "text": "<p>my</p>",
+                "reason": "stuff",
+            },
+        )
