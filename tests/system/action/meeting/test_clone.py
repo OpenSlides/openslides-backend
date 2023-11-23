@@ -3,8 +3,7 @@ from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock
 
 from openslides_backend.models.models import AgendaItem, Meeting
-from openslides_backend.shared.util import (ONE_ORGANIZATION_FQID,
-                                            ONE_ORGANIZATION_ID)
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
@@ -180,7 +179,7 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_with_users_min_vote_weight_NN_N(self) -> None:
         """if vote_weight and default vote weight are None, both could remain None, because
-           they are not required"""
+        they are not required"""
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["meeting_user_ids"] = [1]

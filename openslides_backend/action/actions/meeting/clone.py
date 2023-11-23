@@ -2,8 +2,11 @@ import time
 from decimal import Decimal
 from typing import Any, Dict, List, cast
 
-from openslides_backend.models.checker import (Checker, CheckException,
-                                               external_motion_fields)
+from openslides_backend.models.checker import (
+    Checker,
+    CheckException,
+    external_motion_fields,
+)
 from openslides_backend.models.models import Meeting, MeetingUser
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
@@ -108,7 +111,9 @@ class MeetingClone(MeetingImport):
             if field in instance:
                 meeting[field] = instance.pop(field)
 
-        vote_weight_min = Decimal(MeetingUser.vote_weight.constraints.get("minimum"))
+        vote_weight_min = Decimal(
+            MeetingUser.vote_weight.constraints.get("minimum", "0.000001")
+        )
         for meeting_user in meeting_json.get("meeting_user", {}).values():
             if (value := meeting_user.get("vote_weight")) is not None:
                 if Decimal(value) < vote_weight_min:
@@ -128,7 +133,6 @@ class MeetingClone(MeetingImport):
             if (value := user.get("default_vote_weight")) is not None:
                 if Decimal(value) < vote_weight_min:
                     user["default_vote_weight"] = "0.000001"
-
 
         # check datavalidation
         checker = Checker(
