@@ -104,7 +104,7 @@ class MotionJsonUpload(
             "is_list": True,
         },
         {"property": "category_name", "type": "string", "is_object": True},
-        {"property": "category_prefix", "type": "string", "is_object": True},
+        {"property": "category_prefix", "type": "string"},
         {"property": "tags", "type": "string", "is_object": True, "is_list": True},
         {"property": "block", "type": "string", "is_object": True},
         {
