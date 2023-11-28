@@ -22,6 +22,8 @@ class CheckSpeechState(Action):
             [
                 "list_of_speakers_can_set_contribution_self",
                 "list_of_speakers_enable_pro_contra_speech",
+                "list_of_speakers_enable_interposed_question",
+                "list_of_speakers_intervention_time",
             ],
             lock_result=False,
         )
@@ -55,3 +57,19 @@ class CheckSpeechState(Action):
         ):
             if not allowed_pro_contra:
                 raise ActionException("Pro/Contra is not enabled.")
+        elif instance.get("speech_state") in ("intervention", "interposed_question"):
+            if instance.get("point_of_order"):
+                raise ActionException(
+                    "Point of order is not allowed for this speech state."
+                )
+            if (
+                instance.get("speech_state") == "intervention"
+                and meeting.get("list_of_speakers_intervention_time", 0) <= 0
+            ):
+                raise ActionException("Interventions are not enabled.")
+            elif instance.get(
+                "speech_state"
+            ) == "interposed_question" and not meeting.get(
+                "list_of_speakers_enable_interposed_question"
+            ):
+                raise ActionException("Interposed questions are not enabled.")

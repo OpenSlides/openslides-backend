@@ -29,8 +29,9 @@ class SpeakerCreateAction(
     model = Speaker()
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
-        required_properties=["list_of_speakers_id", "meeting_user_id"],
+        required_properties=["list_of_speakers_id"],
         optional_properties=[
+            "meeting_user_id",
             "point_of_order",
             "note",
             "speech_state",
@@ -42,58 +43,18 @@ class SpeakerCreateAction(
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
 
-        if "structure_level_id" in instance:
-            # find the structure_level_list_of_speakers_id for this list_of_speakers and
-            # structure_level by checking the intersection of the two relations
-            result = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "list_of_speakers",
-                        [instance["list_of_speakers_id"]],
-                        ["structure_level_list_of_speakers_ids"],
-                    ),
-                    GetManyRequest(
-                        "structure_level",
-                        [instance["structure_level_id"]],
-                        ["structure_level_list_of_speakers_ids"],
-                    ),
-                ]
-            )
-            los_model = result["list_of_speakers"][instance["list_of_speakers_id"]]
-            structure_level = result["structure_level"][instance["structure_level_id"]]
-            los_set = set(los_model.get("structure_level_list_of_speakers_ids", []))
-            structure_level_set = set(
-                structure_level.get("structure_level_list_of_speakers_ids", [])
-            )
-            intersection = los_set.intersection(structure_level_set)
-            if len(intersection) == 0:
-                # structure_level_list_of_speakers does not exist yet
-                action_results = self.execute_other_action(
-                    StructureLevelListOfSpeakersCreateAction,
-                    [
-                        {
-                            "list_of_speakers_id": instance["list_of_speakers_id"],
-                            "structure_level_id": instance["structure_level_id"],
-                        }
-                    ],
-                )
-                assert action_results and action_results[0]
-                sllos_id = action_results[0]["id"]
-            else:
-                sllos_id = intersection.pop()
-            instance["structure_level_list_of_speakers_id"] = sllos_id
-            del instance["structure_level_id"]
-
+        self.handle_structure_level(instance)
         self.check_speech_state({}, instance)
-        weight_max = self._get_max_weight(
-            instance["list_of_speakers_id"], instance["meeting_id"]
-        )
-        if weight_max is None:
+
+        is_interposed_question = instance.get("speech_state") == "interposed_question"
+        list_of_speakers_id = instance["list_of_speakers_id"]
+        max_weight = self._get_max_weight(list_of_speakers_id, instance["meeting_id"])
+        if max_weight is None:
             instance["weight"] = 1
             return instance
 
-        if not instance.get("point_of_order"):
-            instance["weight"] = weight_max + 1
+        if not instance.get("point_of_order") and not is_interposed_question:
+            instance["weight"] = max_weight + 1
             return instance
 
         meeting = self.datastore.get(
@@ -103,8 +64,22 @@ class SpeakerCreateAction(
                 "point_of_order_category_ids",
             ],
         )
-        list_of_speakers_id = instance["list_of_speakers_id"]
-        if meeting.get("list_of_speakers_enable_point_of_order_categories"):
+        if is_interposed_question:
+            min_weight = self._get_no_interposed_question_min(
+                list_of_speakers_id, instance["meeting_id"]
+            )
+            if min_weight is None:
+                instance["weight"] = max_weight + 1
+                return instance
+
+            instance["weight"] = min_weight
+            speaker_ids = self._insert_before_weight(
+                instance["id"],
+                min_weight,
+                list_of_speakers_id,
+                instance["meeting_id"],
+            )
+        elif meeting.get("list_of_speakers_enable_point_of_order_categories"):
             # fetch point of order categories
             result = self.datastore.get_many(
                 [
@@ -148,13 +123,13 @@ class SpeakerCreateAction(
                     break
                 index -= 1
             los.insert(index + 1, {"id": instance["id"]})
-            speaker_ids: List[int] = [speaker["id"] for speaker in los]
+            speaker_ids = [speaker["id"] for speaker in los]
         else:
             weight_no_poos_min = self._get_no_poo_min(
                 list_of_speakers_id, instance["meeting_id"]
             )
             if weight_no_poos_min is None:
-                instance["weight"] = weight_max + 1
+                instance["weight"] = max_weight + 1
                 return instance
 
             instance["weight"] = weight_no_poos_min
@@ -229,6 +204,66 @@ class SpeakerCreateAction(
             field="weight",
         )
 
+    def _get_no_interposed_question_min(
+        self, list_of_speakers_id: int, meeting_id: int
+    ) -> Optional[int]:
+        return self.datastore.min(
+            collection="speaker",
+            filter=And(
+                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                Or(
+                    FilterOperator("speech_state", "=", None),
+                    FilterOperator("speech_state", "!=", "interposed_question"),
+                ),
+                FilterOperator("begin_time", "=", None),
+                FilterOperator("meeting_id", "=", meeting_id),
+            ),
+            field="weight",
+        )
+
+    def handle_structure_level(self, instance: Dict[str, Any]) -> None:
+        if "structure_level_id" in instance:
+            # find the structure_level_list_of_speakers_id for this list_of_speakers and
+            # structure_level by checking the intersection of the two relations
+            result = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "list_of_speakers",
+                        [instance["list_of_speakers_id"]],
+                        ["structure_level_list_of_speakers_ids"],
+                    ),
+                    GetManyRequest(
+                        "structure_level",
+                        [instance["structure_level_id"]],
+                        ["structure_level_list_of_speakers_ids"],
+                    ),
+                ]
+            )
+            los_model = result["list_of_speakers"][instance["list_of_speakers_id"]]
+            structure_level = result["structure_level"][instance["structure_level_id"]]
+            los_set = set(los_model.get("structure_level_list_of_speakers_ids", []))
+            structure_level_set = set(
+                structure_level.get("structure_level_list_of_speakers_ids", [])
+            )
+            intersection = los_set.intersection(structure_level_set)
+            if len(intersection) == 0:
+                # structure_level_list_of_speakers does not exist yet
+                action_results = self.execute_other_action(
+                    StructureLevelListOfSpeakersCreateAction,
+                    [
+                        {
+                            "list_of_speakers_id": instance["list_of_speakers_id"],
+                            "structure_level_id": instance["structure_level_id"],
+                        }
+                    ],
+                )
+                assert action_results and action_results[0]
+                sllos_id = action_results[0]["id"]
+            else:
+                sllos_id = intersection.pop()
+            instance["structure_level_list_of_speakers_id"] = sllos_id
+            del instance["structure_level_id"]
+
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Checks
@@ -239,10 +274,18 @@ class SpeakerCreateAction(
         - that user has to be present to be added to the list of speakers
         - that request-user cannot create a speaker without being point_of_order, a not closed los is closed and no list_of_speakers.can_manage permission
         """
-        meeting_user = self.datastore.get(
-            fqid_from_collection_and_id("meeting_user", instance["meeting_user_id"]),
-            ["user_id"],
-        )
+        if "meeting_user_id" in instance:
+            meeting_user = self.datastore.get(
+                fqid_from_collection_and_id(
+                    "meeting_user", instance["meeting_user_id"]
+                ),
+                ["user_id"],
+            )
+        else:
+            if instance.get("speech_state") != "interposed_question":
+                raise ActionException("meeting_user_id is required.")
+            meeting_user = {"user_id": None}
+
         if (
             instance.get("point_of_order")
             and meeting_user.get("user_id") != self.user_id
@@ -300,7 +343,7 @@ class SpeakerCreateAction(
                 or meeting.get("list_of_speakers_closing_disables_point_of_order")
             )
             and los.get("closed")
-            and meeting_user["user_id"] == self.user_id
+            and meeting_user["user_id"] in (self.user_id, None)
             and not has_perm(
                 self.datastore,
                 self.user_id,
@@ -309,43 +352,49 @@ class SpeakerCreateAction(
             )
         ):
             raise ActionException("The list of speakers is closed.")
-        if meeting.get("list_of_speakers_present_users_only"):
-            user_fqid = fqid_from_collection_and_id("user", meeting_user["user_id"])
-            user = self.datastore.get(user_fqid, ["is_present_in_meeting_ids"])
-            if meeting_id not in user.get("is_present_in_meeting_ids", ()):
-                raise ActionException(
-                    "Only present users can be on the lists of speakers."
-                )
 
-        # Results are necessary, because of getting a lock_result
-        filter_obj = And(
-            FilterOperator("list_of_speakers_id", "=", instance["list_of_speakers_id"]),
-            FilterOperator("begin_time", "=", None),
-            FilterOperator("meeting_id", "=", meeting_id),
-        )
-        speakers = self.datastore.filter(
-            collection="speaker",
-            filter=filter_obj,
-            mapped_fields=["meeting_user_id", "point_of_order"],
-        )
-        for speaker in speakers.values():
-            if speaker["meeting_user_id"] == instance["meeting_user_id"] and bool(
-                speaker.get("point_of_order")
-            ) == bool(instance.get("point_of_order")):
-                raise ActionException(
-                    f"User {meeting_user['user_id']} is already on the list of speakers."
-                )
+        if "meeting_user_id" in instance:
+            if meeting.get("list_of_speakers_present_users_only"):
+                user_fqid = fqid_from_collection_and_id("user", meeting_user["user_id"])
+                user = self.datastore.get(user_fqid, ["is_present_in_meeting_ids"])
+                if meeting_id not in user.get("is_present_in_meeting_ids", ()):
+                    raise ActionException(
+                        "Only present users can be on the lists of speakers."
+                    )
+
+            # Results are necessary, because of getting a lock_result
+            filter_obj = And(
+                FilterOperator(
+                    "list_of_speakers_id", "=", instance["list_of_speakers_id"]
+                ),
+                FilterOperator("begin_time", "=", None),
+                FilterOperator("meeting_id", "=", meeting_id),
+            )
+            speakers = self.datastore.filter(
+                collection="speaker",
+                filter=filter_obj,
+                mapped_fields=["meeting_user_id", "point_of_order"],
+            )
+            for speaker in speakers.values():
+                if speaker["meeting_user_id"] == instance["meeting_user_id"] and bool(
+                    speaker.get("point_of_order")
+                ) == bool(instance.get("point_of_order")):
+                    raise ActionException(
+                        f"User {meeting_user['user_id']} is already on the list of speakers."
+                    )
         return super().validate_fields(instance)
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        meeting_user = self.datastore.get(
-            fqid_from_collection_and_id("meeting_user", instance["meeting_user_id"]),
-            ["user_id"],
-        )
-        if meeting_user.get("user_id") == self.user_id:
-            permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER
-        else:
-            permission = Permissions.ListOfSpeakers.CAN_MANAGE
+        permission = Permissions.ListOfSpeakers.CAN_MANAGE
+        if "meeting_user_id" in instance:
+            meeting_user = self.datastore.get(
+                fqid_from_collection_and_id(
+                    "meeting_user", instance["meeting_user_id"]
+                ),
+                ["user_id"],
+            )
+            if meeting_user.get("user_id") == self.user_id:
+                permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER
 
         meeting_id = self.get_meeting_id(instance)
         if has_perm(self.datastore, self.user_id, permission, meeting_id):

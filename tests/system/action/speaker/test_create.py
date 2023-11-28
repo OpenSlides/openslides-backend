@@ -1,3 +1,4 @@
+from time import time
 from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
@@ -163,7 +164,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         response = self.request("speaker.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['list_of_speakers_id', 'meeting_user_id'] properties",
+            "data must contain ['list_of_speakers_id'] properties",
             response.json["message"],
         )
 
@@ -171,7 +172,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         response = self.request("speaker.create", {"wrong_field": "text_AefohteiF8"})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['list_of_speakers_id', 'meeting_user_id'] properties",
+            "data must contain ['list_of_speakers_id'] properties",
             response.json["message"],
         )
 
@@ -853,5 +854,147 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "speaker_ids": [1],
                 "initial_time": 100,
                 "remaining_time": 100,
+            },
+        )
+
+    def test_create_intervention(self) -> None:
+        self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "speech_state": "intervention",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "weight": 1,
+                "speech_state": "intervention",
+            },
+        )
+
+    def test_create_interposed_question(self) -> None:
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_interposed_question"
+        ] = True
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "speech_state": "interposed_question",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "weight": 1,
+                "speech_state": "interposed_question",
+            },
+        )
+
+    def test_create_interposed_question_without_meeting_user_id(self) -> None:
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_interposed_question"
+        ] = True
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {"list_of_speakers_id": 23, "speech_state": "interposed_question"},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "list_of_speakers_id": 23,
+                "weight": 1,
+                "speech_state": "interposed_question",
+            },
+        )
+
+    def test_create_other_state_without_meeting_user_id(self) -> None:
+        self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
+        self.set_models(self.test_models)
+        for state in ("pro", "contra", "contribution", "intervention"):
+            response = self.request(
+                "speaker.create", {"list_of_speakers_id": 23, "speech_state": state}
+            )
+            self.assert_status_code(response, 400)
+
+    def test_create_interposed_question_with_multiple_speakers(self) -> None:
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_interposed_question"
+        ] = True
+        self.set_models(
+            {
+                **self.test_models,
+                "speaker/1": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "begin_time": round(time()),
+                },
+                "speaker/2": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 2,
+                    "speech_state": "interposed_question",
+                },
+                "speaker/3": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 3,
+                    "point_of_order": True,
+                },
+                "speaker/4": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 4,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.create",
+            {"list_of_speakers_id": 23, "speech_state": "interposed_question"},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "weight": 1,
+            },
+        )
+        self.assert_model_exists(
+            "speaker/2",
+            {
+                "weight": 1,
+            },
+        )
+        self.assert_model_exists(
+            "speaker/5",
+            {
+                "weight": 2,
+            },
+        )
+        self.assert_model_exists(
+            "speaker/3",
+            {
+                "weight": 3,
+            },
+        )
+        self.assert_model_exists(
+            "speaker/4",
+            {
+                "weight": 4,
             },
         )
