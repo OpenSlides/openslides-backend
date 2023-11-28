@@ -146,9 +146,6 @@ class MotionImportTestMixin(BaseActionTestCase):
         if users:
             for idx, user_setting in enumerate(users):
                 self._set_up_user(idx + 2, user_setting, model_data)
-        # model_data_keys = list(model_data.keys())
-        # model_data_keys.sort()
-        # sorted_model_data = { key:model_data[key] for key in model_data_keys}
         self.set_models(model_data)
         return model_data
 

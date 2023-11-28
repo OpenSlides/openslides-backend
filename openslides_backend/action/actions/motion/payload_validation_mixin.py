@@ -37,12 +37,15 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
     """
 
     def conduct_common_checks(
-        self, instance: Dict[str, Any], meeting_id: int
+        self,
+        instance: Dict[str, Any],
+        meeting_id: int,
+        previous_numbers: List[str] = [],
     ) -> List[MotionActionErrorData]:
         errors: List[MotionActionErrorData] = []
         if instance.get("number"):
             if not self._check_if_unique(
-                instance["number"], meeting_id, instance.get("id")
+                instance["number"], meeting_id, instance.get("id"), previous_numbers
             ):
                 errors.append(
                     {

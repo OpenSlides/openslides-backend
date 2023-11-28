@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
@@ -16,6 +16,7 @@ class SetNumberMixin(Action):
         category_id: Optional[int],
         existing_number: Optional[str] = None,
         existing_number_value: Optional[int] = None,
+        other_forbidden_numbers: List[str] = [],
     ) -> None:
         """
         Sets the motion number and the motion number value.
@@ -23,7 +24,10 @@ class SetNumberMixin(Action):
         # Conditions to stop generate an automatic number.
         if instance.get("number"):
             if not self._check_if_unique(
-                instance["number"], meeting_id, instance.get("id")
+                instance["number"],
+                meeting_id,
+                instance.get("id"),
+                other_forbidden_numbers,
             ):
                 raise ActionException("Number is not unique.")
             return
@@ -55,7 +59,9 @@ class SetNumberMixin(Action):
             meeting.get("motions_number_min_digits", 0), "0"
         )
         number = f"{prefix}{number_value_str}"
-        while not self._check_if_unique(number, meeting_id, instance.get("id")):
+        while not self._check_if_unique(
+            number, meeting_id, instance.get("id"), other_forbidden_numbers
+        ):
             number_value += 1
             number_value_str = str(number_value).rjust(
                 meeting.get("motions_number_min_digits", 0), "0"
@@ -124,7 +130,11 @@ class SetNumberMixin(Action):
         return max_result
 
     def _check_if_unique(
-        self, number: str, meeting_id: int, own_id: Optional[int]
+        self,
+        number: str,
+        meeting_id: int,
+        own_id: Optional[int],
+        other_forbidden_numbers: List[str] = [],
     ) -> bool:
         filter = And(
             FilterOperator("meeting_id", "=", meeting_id),
@@ -132,5 +142,7 @@ class SetNumberMixin(Action):
         )
         if own_id:
             filter = And(filter, FilterOperator("id", "!=", own_id))
-        exists = self.datastore.exists(collection="motion", filter=filter)
+        exists = self.datastore.exists(collection="motion", filter=filter) or (
+            number in other_forbidden_numbers
+        )
         return not exists

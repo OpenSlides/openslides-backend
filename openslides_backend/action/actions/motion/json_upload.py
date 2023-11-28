@@ -1,3 +1,4 @@
+from collections import defaultdict
 from re import search, sub
 from typing import Any, Dict, Iterable, List, Optional, Set, cast
 
@@ -124,6 +125,7 @@ class MotionJsonUpload(
     block_lookup: Dict[str, List[Dict[str, Any]]] = {}
     _first_state_id: Optional[int] = None
     _operator_username: Optional[str] = None
+    _previous_numbers: List[str]
 
     _last_motion_mock_id: Optional[int] = None
     _user_ids_to_meeting_user: Dict[int, Any]
@@ -142,6 +144,7 @@ class MotionJsonUpload(
         for entry in data:
             entry["meeting_id"] = instance["meeting_id"]
 
+        self._previous_numbers = []
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
@@ -247,9 +250,11 @@ class MotionJsonUpload(
                 self._get_first_workflow_state_id(meeting_id),
                 None,
                 category_id,
+                other_forbidden_numbers=self._previous_numbers,
             )
             if number := value.get("number"):
                 entry["number"] = {"value": number, "info": ImportState.GENERATED}
+                self._previous_numbers.append(number)
 
         has_submitter_error: bool = False
         for fieldname in ["submitter", "supporter"]:
@@ -500,12 +505,6 @@ class MotionJsonUpload(
             errors = self.get_create_payload_integrity_error_message(
                 payload, meeting_id
             )
-            if not (
-                self.row_state == ImportState.WARNING
-                or self.row_state == ImportState.ERROR
-            ):
-                motion_id = self._get_motion_mock_id()
-                self.apply_instance(payload, "motion/" + str(motion_id))
 
         for err in errors:
             entry = self._add_error_to_entry(entry, err)
@@ -626,7 +625,7 @@ class MotionJsonUpload(
         mapped_fields: List[str] = [],
         and_filters: List[Filter] = [],
     ) -> Dict[str, List[Dict[str, Any]]]:
-        lookup: Dict[str, List[Dict[str, Any]]] = {}
+        lookup: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         if len(entries):
             data = self.datastore.filter(
                 collection,
@@ -637,12 +636,8 @@ class MotionJsonUpload(
                 [*mapped_fields, "id", fieldname],
                 lock_result=False,
             )
-            for date_id in data:
-                date = data[date_id]
-                lookup[date[fieldname]] = [
-                    *lookup.get(date[fieldname], []),
-                    date,
-                ]
+            for date in data.values():
+                lookup[date[fieldname]].append(date)
         return lookup
 
     def _get_self_username_object(self) -> Dict[str, Any]:
@@ -712,12 +707,3 @@ class MotionJsonUpload(
             entry[fieldname]["info"] = ImportState.ERROR
         self.row_state = ImportState.ERROR
         return entry
-
-    def _get_motion_mock_id(self) -> int:
-        if self._last_motion_mock_id is None:
-            self._last_motion_mock_id = (
-                self.datastore.max("motion", FilterOperator("id", "!=", 0), field="id")
-                or 0
-            )
-        self._last_motion_mock_id += 1
-        return self._last_motion_mock_id
