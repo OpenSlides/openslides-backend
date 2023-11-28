@@ -54,18 +54,12 @@ class StructureLevelListOfSpeakersAddTimeAction(SingularActionMixin, UpdateActio
         result = self.datastore.get_many(
             [
                 GetManyRequest(
-                    "structure_level",
-                    meeting["structure_level_ids"],
-                    ["allow_additional_time"],
-                ),
-                GetManyRequest(
                     "list_of_speakers",
                     [db_instance["list_of_speakers_id"]],
                     ["structure_level_list_of_speakers_ids"],
                 ),
             ]
         )
-        structure_levels = result["structure_level"]
         los = result["list_of_speakers"][db_instance["list_of_speakers_id"]]
         result = self.datastore.get_many(
             [
@@ -80,30 +74,27 @@ class StructureLevelListOfSpeakersAddTimeAction(SingularActionMixin, UpdateActio
             sllos["structure_level_id"]: sllos
             for sllos in result[self.model.collection].values()
         }
-        for id, structure_level in structure_levels.items():
-            if structure_level.get("allow_additional_time"):
-                if not (sllos := sllos_map.get(id)):
-                    action_results = self.execute_other_action(
-                        StructureLevelListOfSpeakersCreateAction,
-                        [
-                            {
-                                "structure_level_id": id,
-                                "list_of_speakers_id": db_instance[
-                                    "list_of_speakers_id"
-                                ],
-                            }
-                        ],
-                    )
-                    assert action_results and action_results[0]
-                    sllos = self.datastore.get(
-                        fqid_from_collection_and_id(
-                            self.model.collection, action_results[0]["id"]
-                        ),
-                        ["id", "additional_time", "remaining_time"],
-                    )
-                t = db_instance["remaining_time"]
-                yield {
-                    "id": sllos["id"],
-                    "additional_time": sllos.get("additional_time", 0) - t,
-                    "remaining_time": sllos["remaining_time"] - t,
-                }
+        for id in meeting["structure_level_ids"]:
+            if not (sllos := sllos_map.get(id)):
+                action_results = self.execute_other_action(
+                    StructureLevelListOfSpeakersCreateAction,
+                    [
+                        {
+                            "structure_level_id": id,
+                            "list_of_speakers_id": db_instance["list_of_speakers_id"],
+                        }
+                    ],
+                )
+                assert action_results and action_results[0]
+                sllos = self.datastore.get(
+                    fqid_from_collection_and_id(
+                        self.model.collection, action_results[0]["id"]
+                    ),
+                    ["id", "additional_time", "remaining_time"],
+                )
+            t = db_instance["remaining_time"]
+            yield {
+                "id": sllos["id"],
+                "additional_time": sllos.get("additional_time", 0) - t,
+                "remaining_time": sllos["remaining_time"] - t,
+            }

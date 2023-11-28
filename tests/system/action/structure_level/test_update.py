@@ -20,7 +20,6 @@ class StructureLevelUpdateTest(BaseActionTestCase):
                 "name": "test2",
                 "color": "#abf257",
                 "default_time": 600,
-                "allow_additional_time": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -31,7 +30,6 @@ class StructureLevelUpdateTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "color": "#abf257",
                 "default_time": 600,
-                "allow_additional_time": True,
             },
         )
 

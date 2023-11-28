@@ -2498,7 +2498,6 @@
             "name": "Test structure level",
             "color": "#000000",
             "default_time": 600,
-            "allow_additional_time": true,
             "meeting_user_ids": [1]
         },
         "2": {
@@ -2507,7 +2506,6 @@
             "name": "Test structure level a",
             "color": "#000000",
             "default_time": 600,
-            "allow_additional_time": true,
             "meeting_user_ids": [2]
         },
         "3": {
@@ -2516,7 +2514,6 @@
             "name": "Test structure level b",
             "color": "#000000",
             "default_time": 600,
-            "allow_additional_time": true,
             "meeting_user_ids": [3]
         }
     }
