@@ -82,6 +82,8 @@ meeting_settings_keys = [
     "list_of_speakers_speaker_note_for_everyone",
     "list_of_speakers_initially_closed",
     "list_of_speakers_default_structure_level_time",
+    "list_of_speakers_enable_interposed_question",
+    "list_of_speakers_intervention_time",
     "motions_default_workflow_id",
     "motions_default_amendment_workflow_id",
     "motions_default_statute_amendment_workflow_id",
