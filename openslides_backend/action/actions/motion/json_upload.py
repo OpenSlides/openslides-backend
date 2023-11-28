@@ -127,7 +127,6 @@ class MotionJsonUpload(
     _operator_username: Optional[str] = None
     _previous_numbers: List[str]
 
-    _last_motion_mock_id: Optional[int] = None
     _user_ids_to_meeting_user: Dict[int, Any]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
