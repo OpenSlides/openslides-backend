@@ -113,6 +113,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     events: List[Event]
     results: ActionResults
     cascaded_actions_history: HistoryInformation
+    internal: bool
 
     def __init__(
         self,
@@ -146,6 +147,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         self.user_id = user_id
         self.index = 0
+        self.internal = internal
 
         # prefetch as much data as possible
         self.prefetch(action_data)
