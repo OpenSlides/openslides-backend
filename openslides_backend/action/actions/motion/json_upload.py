@@ -131,8 +131,8 @@ class MotionJsonUpload(
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # transform instance into a correct create/update payload
         # try to find a pre-existing motion with the same number
-        # if there is one, validate for a motion.create, otherwise for a motion.update
-        # using get_create_payload_integrity_error_message and get_update_payload_integrity_error_message
+        # if there is one, validate for a motion.update, otherwise for a motion.create
+        # using get_update_payload_integrity_error_message and get_create_payload_integrity_error_message
 
         data = instance.pop("data")
         data = self.add_payload_index_to_action_data(data)
