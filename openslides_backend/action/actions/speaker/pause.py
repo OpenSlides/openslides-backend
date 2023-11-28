@@ -16,23 +16,17 @@ from ...util.register import register_action
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 
 
-@register_action("speaker.end_speech")
-class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
-    """
-    Action to stop speakers.
-    """
-
+@register_action("speaker.pause")
+class SpeakerPause(SingularActionMixin, CountdownControl, UpdateAction):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_default_schema(
         required_properties=["id"],
-        title="End speach schema",
-        description="Schema to stop a speaker's speach.",
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        speaker = self.datastore.get(
+        db_instance = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [
                 "begin_time",
@@ -43,33 +37,28 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
                 "structure_level_list_of_speakers_id",
             ],
         )
-        if speaker.get("begin_time") is None or speaker.get("end_time") is not None:
-            raise ActionException(
-                f"Speaker {instance['id']} is not speaking at the moment."
-            )
-        instance["end_time"] = round(time.time())
+        if (
+            db_instance.get("begin_time") is None
+            or db_instance.get("end_time") is not None
+            or db_instance.get("pause_time") is not None
+        ):
+            raise ActionException("Speaker is not currently speaking.")
 
-        total_pause = speaker.get("total_pause", 0)
-        if speaker.get("pause_time"):
-            instance["total_pause"] = total_pause = (
-                speaker["total_pause"] + instance["end_time"] - speaker["pause_time"]
-            )
-            instance["pause_time"] = None
+        instance["pause_time"] = round(time.time())
 
         # update countdowns
-        self.control_los_countdown(speaker["meeting_id"], CountdownCommand.RESET)
-        if level_id := speaker.get("structure_level_list_of_speakers_id"):
+        self.control_los_countdown(db_instance["meeting_id"], CountdownCommand.STOP)
+        if level_id := db_instance.get("structure_level_list_of_speakers_id"):
             self.execute_other_action(
                 StructureLevelListOfSpeakersUpdateAction,
                 [
                     {
                         "id": level_id,
                         "current_start_time": None,
-                        "spoken_time": instance["end_time"]
-                        - speaker["begin_time"]
-                        - total_pause,
+                        "spoken_time": instance["pause_time"]
+                        - db_instance["begin_time"]
+                        - db_instance.get("total_pause", 0),
                     }
                 ],
             )
-
         return instance

@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from openslides_backend.action.actions.speaker.end_speech import SpeakerEndSpeach
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
@@ -15,7 +15,7 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..projector_countdown.mixins import CountdownControl
+from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 
 
 @register_action("speaker.speak")
@@ -36,11 +36,12 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
         instance = super().update_instance(instance)
         db_instance = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            mapped_fields=[
+            [
                 "list_of_speakers_id",
                 "meeting_id",
                 "begin_time",
                 "end_time",
+                "speech_state",
                 "structure_level_list_of_speakers_id",
             ],
         )
@@ -68,21 +69,19 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
         assert db_instance.get("end_time") is None
         instance["begin_time"] = now
 
-        # reset projector countdown
-        meeting = self.datastore.get(
-            fqid_from_collection_and_id("meeting", db_instance["meeting_id"]),
-            [
-                "list_of_speakers_couple_countdown",
-                "list_of_speakers_countdown_id",
-            ],
-            lock_result=False,
+        # update countdowns, differentiate by speaker type
+        countdown_time: Optional[int] = None
+        if db_instance.get("speech_state") == "intervention":
+            meeting = self.datastore.get(
+                fqid_from_collection_and_id("meeting", db_instance["meeting_id"]),
+                ["list_of_speakers_intervention_time"],
+            )
+            countdown_time = meeting["list_of_speakers_intervention_time"]
+        elif db_instance.get("speech_state") == "interposed_question":
+            countdown_time = 0
+        self.control_los_countdown(
+            db_instance["meeting_id"], CountdownCommand.RESTART, countdown_time
         )
-        if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
-            "list_of_speakers_countdown_id"
-        ):
-            self.control_countdown(meeting["list_of_speakers_countdown_id"], "restart")
-
-        # update structure level countdown
         if level_id := db_instance.get("structure_level_list_of_speakers_id"):
             self.execute_other_action(
                 StructureLevelListOfSpeakersUpdateAction,

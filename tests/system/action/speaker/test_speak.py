@@ -22,6 +22,22 @@ class SpeakerSpeakTester(BaseActionTestCase):
         }
         self.set_models(self.models)
 
+    def add_coupled_countdown(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_couple_countdown": True,
+                    "list_of_speakers_countdown_id": 75,
+                },
+                "projector_countdown/75": {
+                    "running": False,
+                    "default_time": 60,
+                    "countdown_time": 30.0,
+                    "meeting_id": 1,
+                },
+            }
+        )
+
     def test_speak_correct(self) -> None:
         response = self.request("speaker.speak", {"id": 890})
         self.assert_status_code(response, 200)
@@ -85,26 +101,58 @@ class SpeakerSpeakTester(BaseActionTestCase):
         self.assertIsNotNone(speaker.get("begin_time"))
 
     def test_speak_update_countdown(self) -> None:
+        self.add_coupled_countdown()
+        now = floor(time())
+        response = self.request("speaker.speak", {"id": 890})
+        self.assert_status_code(response, 200)
+        countdown = self.get_model("projector_countdown/75")
+        assert countdown.get("running")
+        assert now <= countdown["countdown_time"] - 60 <= ceil(time())
+
+    def test_speak_intervention(self) -> None:
+        self.add_coupled_countdown()
         self.set_models(
             {
                 "meeting/1": {
-                    "list_of_speakers_couple_countdown": True,
-                    "list_of_speakers_countdown_id": 75,
+                    "list_of_speakers_intervention_time": 100,
                 },
-                "projector_countdown/75": {
-                    "running": False,
-                    "default_time": 60,
-                    "countdown_time": 30.0,
-                    "meeting_id": 1,
+                "speaker/890": {
+                    "speech_state": "intervention",
                 },
             }
         )
         now = floor(time())
         response = self.request("speaker.speak", {"id": 890})
         self.assert_status_code(response, 200)
-        countdown = self.get_model("projector_countdown/75")
-        assert countdown.get("running")
-        assert now <= countdown["countdown_time"] <= ceil(time()) + 300
+        countdown = self.assert_model_exists(
+            "projector_countdown/75",
+            {
+                "running": True,
+                "default_time": 100,
+            },
+        )
+        assert now <= countdown["countdown_time"] - 100 <= ceil(time())
+
+    def test_speak_interposed_question(self) -> None:
+        self.add_coupled_countdown()
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": "interposed_question",
+                },
+            }
+        )
+        now = floor(time())
+        response = self.request("speaker.speak", {"id": 890})
+        self.assert_status_code(response, 200)
+        countdown = self.assert_model_exists(
+            "projector_countdown/75",
+            {
+                "running": True,
+                "default_time": 0,
+            },
+        )
+        assert now <= countdown["countdown_time"] <= ceil(time())
 
     def test_speak_with_structure_level(self) -> None:
         self.set_models(
