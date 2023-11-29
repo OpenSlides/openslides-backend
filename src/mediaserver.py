@@ -62,7 +62,9 @@ def serve(file_id):
     response = Response(chunked(block_size, data), mimetype=mimetype)
     # http headers can only be encoded using latin1
     filename_latin1 = filename.encode("latin1", errors="replace").decode("latin1")
-    response.headers["Content-Disposition"] = f'inline; filename="{filename_latin1}"'
+    response.headers[
+        "Content-Disposition"
+    ] = f'attachment; filename="{filename_latin1}"'
 
     client_cache_duration = int(app.config["MEDIA_CLIENT_CACHE_DURATION"] or 0)
     if client_cache_duration > 0 and not is_dev_mode():
