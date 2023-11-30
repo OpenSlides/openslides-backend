@@ -1778,9 +1778,6 @@ structure_level:
     type: number
     minimum: 0
     restriction_mode: A
-  allow_additional_time:
-    type: boolean
-    restriction_mode: A
   meeting_user_ids:
     type: relation-list
     equal_fields: meeting_id
