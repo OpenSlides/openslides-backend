@@ -9,6 +9,7 @@ requests==2.31.0
 roman==4.1
 simplejson==3.19.2
 Werkzeug==3.0.1
+python-magic==0.4.27
 
 # authlib
 git+https://github.com/OpenSlides/openslides-auth-service.git@38120960193a6c7c637ecc91a4b4dff51e7df90c#egg=authlib&subdirectory=auth/libraries/pip-auth

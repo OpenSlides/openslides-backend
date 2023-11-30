@@ -4,6 +4,7 @@ from io import BytesIO
 from time import time
 from typing import Any, Dict, List, TypedDict
 
+import magic
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
@@ -87,13 +88,23 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         instance["create_timestamp"] = round(time())
         filename_ = instance.get("filename", "")
         file_ = instance.pop("file")
-        instance["mimetype"] = mimetypes.guess_type(filename_)[0]
-        if instance["mimetype"] is None:
-            raise ActionException(f"Cannot guess mimetype for {filename_}.")
         decoded_file = base64.b64decode(file_)
+        mimetype_ = magic.from_buffer(decoded_file, mime=True)
+        possible_extensions = mimetypes.guess_all_extensions(mimetype_)
+        if mimetype_ is None:
+            raise ActionException(f"Cannot guess mimetype for {filename_}.")
+        matching_file_extension = False
+        for extension in possible_extensions:
+            matching_file_extension = matching_file_extension or (
+                filename_.endswith(extension)
+            )
+        if not matching_file_extension:
+            raise ActionException(
+                f"{filename_} does not have a file extension that matches the determined mimetype {mimetype_}."
+            )
         instance["filesize"] = len(decoded_file)
         id_ = instance["id"]
-        mimetype_ = instance["mimetype"]
+        instance["mimetype"] = mimetype_
         if instance["mimetype"] == "application/pdf":
             instance["pdf_information"] = self.get_pdf_information(decoded_file)
         collection, _ = self.get_owner_data(instance)
