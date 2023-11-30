@@ -2203,6 +2203,14 @@ speaker:
     type: timestamp
     read_only: true
     restriction_mode: A
+  pause_time:
+    type: timestamp
+    read_only: true
+    restriction_mode: A
+  total_pause:
+    type: number
+    read_only: true
+    restriction_mode: A
   weight:
     type: number
     default: 10000

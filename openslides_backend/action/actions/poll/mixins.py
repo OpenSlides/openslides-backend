@@ -16,7 +16,7 @@ from ....shared.patterns import (
 )
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
-from ..projector_countdown.mixins import CountdownControl
+from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token
 
@@ -77,7 +77,7 @@ class StopControl(CountdownControl, Action):
             ],
         )
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
-            self.control_countdown(meeting["poll_countdown_id"], "reset")
+            self.control_countdown(meeting["poll_countdown_id"], CountdownCommand.RESET)
 
         # stop poll in vote service and create vote objects
         results = self.vote_service.stop(instance["id"])
