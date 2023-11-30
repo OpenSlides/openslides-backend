@@ -433,5 +433,5 @@ class JsonUploadMixin(BaseImportJsonUpload):
             )
             if not meeting:
                 raise ActionException(
-                    f"Participant import try to use not existing meeting {id_}"
+                    f"Participant import tries to use non-existent meeting {id_}"
                 )

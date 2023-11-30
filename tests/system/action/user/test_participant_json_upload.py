@@ -96,7 +96,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Participant import try to use not existing meeting 111"
+            "Participant import tries to use non-existent meeting 111"
             in response.json["message"]
         )
 

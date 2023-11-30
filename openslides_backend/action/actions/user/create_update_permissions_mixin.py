@@ -477,7 +477,6 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         use_meeting_ids_for_archived_meeting_check: Optional[bool] = None,
     ) -> None:
         self.permstore = permstore
-        self.user_id = self.permstore.user_id
         super().__init__(
             services,
             datastore,
