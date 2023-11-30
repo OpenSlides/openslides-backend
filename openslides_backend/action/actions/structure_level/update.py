@@ -15,7 +15,7 @@ from ...util.register import register_action
 class StructureLevelUpdateAction(CheckUniqueInContextMixin, UpdateAction):
     model = StructureLevel()
     schema = DefaultSchema(StructureLevel()).get_update_schema(
-        optional_properties=["name", "color", "default_time", "allow_additional_time"],
+        optional_properties=["name", "color", "default_time"],
     )
     permission = Permissions.User.CAN_MANAGE
 

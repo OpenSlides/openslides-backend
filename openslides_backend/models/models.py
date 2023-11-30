@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "cfe23a6d30617d74c334a6127cc28eea"
+MODELS_YML_CHECKSUM = "771311e8071ad009a3f2fc3a960a9d38"
 
 
 class Organization(Model):
@@ -834,7 +834,6 @@ class StructureLevel(Model):
     name = fields.CharField(required=True)
     color = fields.ColorField()
     default_time = fields.IntegerField(constraints={"minimum": 0})
-    allow_additional_time = fields.BooleanField()
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "structure_level_ids"}, equal_fields="meeting_id"
     )

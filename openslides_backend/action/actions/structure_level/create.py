@@ -16,7 +16,7 @@ class StructureLevelCreateAction(CheckUniqueInContextMixin, CreateAction):
     model = StructureLevel()
     schema = DefaultSchema(StructureLevel()).get_create_schema(
         required_properties=["meeting_id", "name"],
-        optional_properties=["color", "default_time", "allow_additional_time"],
+        optional_properties=["color", "default_time"],
     )
     permission = Permissions.User.CAN_MANAGE
 

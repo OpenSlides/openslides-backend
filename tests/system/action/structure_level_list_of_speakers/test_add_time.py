@@ -12,39 +12,31 @@ class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
             "meeting/1": {
                 "is_active_in_organization_id": 1,
                 "list_of_speakers_default_structure_level_time": 1000,
-                "structure_level_ids": [1, 2, 3, 4, 5],
+                "structure_level_ids": [1, 2, 3, 4],
                 "list_of_speakers_ids": [1, 2],
-                "structure_level_list_of_speakers_ids": [1, 2, 3, 4, 5],
+                "structure_level_list_of_speakers_ids": [1, 2, 3, 4],
             },
             "list_of_speakers/1": {
                 "meeting_id": 1,
-                "structure_level_list_of_speakers_ids": [1, 2, 3, 4],
+                "structure_level_list_of_speakers_ids": [1, 2, 3],
             },
             "list_of_speakers/2": {
                 "meeting_id": 1,
-                "structure_level_list_of_speakers_ids": [5],
+                "structure_level_list_of_speakers_ids": [4],
             },
             "structure_level/1": {
                 "meeting_id": 1,
-                "allow_additional_time": True,
-                "structure_level_list_of_speakers_ids": [1, 5],
+                "structure_level_list_of_speakers_ids": [1, 4],
             },
             "structure_level/2": {
                 "meeting_id": 1,
-                "allow_additional_time": True,
                 "structure_level_list_of_speakers_ids": [2],
             },
             "structure_level/3": {
                 "meeting_id": 1,
-                "allow_additional_time": True,
                 "structure_level_list_of_speakers_ids": [3],
             },
-            "structure_level/4": {
-                "meeting_id": 1,
-                "allow_additional_time": False,
-                "structure_level_list_of_speakers_ids": [4],
-            },
-            "structure_level/5": {"meeting_id": 1, "allow_additional_time": True},
+            "structure_level/4": {"meeting_id": 1},
             "structure_level_list_of_speakers/1": {
                 "meeting_id": 1,
                 "structure_level_id": 1,
@@ -66,12 +58,6 @@ class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
                 "remaining_time": 400,
             },
             "structure_level_list_of_speakers/4": {
-                "meeting_id": 1,
-                "structure_level_id": 4,
-                "list_of_speakers_id": 1,
-                "remaining_time": 500,
-            },
-            "structure_level_list_of_speakers/5": {
                 "meeting_id": 1,
                 "structure_level_id": 1,
                 "list_of_speakers_id": 2,
@@ -118,21 +104,14 @@ class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
         self.assert_model_exists(
             "structure_level_list_of_speakers/4",
             {
-                "remaining_time": 500,
+                "remaining_time": 300,
                 "additional_time": None,
             },
         )
         self.assert_model_exists(
             "structure_level_list_of_speakers/5",
             {
-                "remaining_time": 300,
-                "additional_time": None,
-            },
-        )
-        self.assert_model_exists(
-            "structure_level_list_of_speakers/6",
-            {
-                "structure_level_id": 5,
+                "structure_level_id": 4,
                 "list_of_speakers_id": 1,
                 "initial_time": 1000,
                 "remaining_time": 1100,
