@@ -38,6 +38,7 @@ class CreatePoll(BaseActionTestCase):
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
                 "backend": "long",
+                "amount_global_yes": "2.000000",
             },
         )
         self.assert_status_code(response, 200)
@@ -62,10 +63,13 @@ class CreatePoll(BaseActionTestCase):
         assert option.get("text") == "test2"
         assert option.get("poll_id") == 1
         assert option.get("meeting_id") == 1
+        assert option.get("yes") == "10.000000"
         global_option = self.get_model("option/2")
         assert global_option.get("text") == "global option"
         assert global_option.get("used_as_global_option_in_poll_id") == 1
         assert global_option.get("meeting_id") == 1
+        assert global_option.get("yes") == "2.000000"
+        assert global_option.get("no") == "-2.000000"
         self.assert_history_information("assignment/1", ["Ballot created"])
 
     def test_create_correct_publish_immediately(self) -> None:
@@ -175,6 +179,7 @@ class CreatePoll(BaseActionTestCase):
                 "meeting_id": 1,
                 "onehundred_percent_base": "YNA",
                 "content_object_id": "assignment/1",
+                "amount_global_yes": "5.000000",
             },
         )
         self.assert_status_code(response, 200)
@@ -209,6 +214,7 @@ class CreatePoll(BaseActionTestCase):
         assert option_4.get("used_as_global_option_in_poll_id") == 1
         assert option_4.get("meeting_id") == 1
         assert option_4.get("weight") == 1
+        assert option_4.get("yes") is None
 
     def test_all_fields(self) -> None:
         response = self.request(
