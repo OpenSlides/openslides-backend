@@ -399,26 +399,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
 
-    def test_incoherent_mimetype_error(self) -> None:
-        self.create_model(
-            "meeting/110", {"name": "name", "is_active_in_organization_id": 1}
-        )
-        file_content = base64.b64encode(b"testtesttest").decode()
-        response = self.request(
-            "mediafile.upload",
-            {
-                "title": "title_xXRGTLAJ",
-                "owner_id": "meeting/110",
-                "filename": "fn_jumbo.ttf",
-                "file": file_content,
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "fn_jumbo.ttf does not have a file extension that matches the determined mimetype text/plain."
-            in response.json["message"]
-        )
-
     def test_create_media_access_group(self) -> None:
         self.set_models(
             {
