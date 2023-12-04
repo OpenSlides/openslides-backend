@@ -53,6 +53,11 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
             ],
         )
 
+    def test_missing_meeting_id(self) -> None:
+        status_code, data = self.request("get_forwarding_meetings", {})
+        self.assertEqual(status_code, 400)
+        assert "data must contain ['meeting_id'] properties" == data["message"]
+
     def test_no_permissions(self) -> None:
         self.set_models(
             {
