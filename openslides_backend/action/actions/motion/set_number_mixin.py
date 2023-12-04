@@ -142,7 +142,7 @@ class SetNumberMixin(Action):
         )
         if own_id:
             filter = And(filter, FilterOperator("id", "!=", own_id))
-        exists = self.datastore.exists(collection="motion", filter=filter) or (
-            number in other_forbidden_numbers
+        exists = (number in other_forbidden_numbers) or self.datastore.exists(
+            collection="motion", filter=filter
         )
         return not exists
