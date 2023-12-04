@@ -441,6 +441,22 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         Translator.set_translation_language("de")
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "description": "Präsentations- und Versammlungssystem",
+                "welcome_title": "Willkommen bei OpenSlides",
+                "welcome_text": "Platz für Ihren Begrüßungstext.",
+                "motions_preamble": "Die Versammlung möge beschließen:",
+                "motions_export_title": "Anträge",
+                "assignments_export_title": "Wahlen",
+                "users_pdf_welcometitle": "Willkommen bei OpenSlides",
+                "users_pdf_welcometext": "[Platz für Ihren Begrüßungs- und Hilfetext.]",
+                "users_email_sender": "OpenSlides",
+                "users_email_subject": "OpenSlides-Zugangsdaten",
+                "users_email_body": "Hallo {name},\n\nhier ist Ihr persönlicher OpenSlides-Zugang:\n\n{url}\nBenutzername: {username}\nPasswort: {password}\n\n\nDiese E-Mail wurde automatisch erstellt.",
+            },
+        )
         for i, name in enumerate(["Default", "Admin", "Delegates", "Staff"], 2):
             self.assert_model_exists(
                 f"group/{i}", {"name": _(name), "external_id": name}

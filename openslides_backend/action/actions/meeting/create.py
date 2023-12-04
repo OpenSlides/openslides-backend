@@ -31,7 +31,7 @@ class MeetingCreate(
 ):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_create_schema(
-        required_properties=["committee_id", "name"],
+        required_properties=["committee_id", "name", "language"],
         optional_properties=[
             "description",
             "location",
@@ -45,9 +45,6 @@ class MeetingCreate(
             "admin_ids": id_list_schema,
             "set_as_template": {"type": "boolean"},
         },
-        additional_required_fields={
-            "language": {"type": "string"},
-        },
     )
     dependencies = [
         MotionWorkflowCreateSimpleWorkflowAction,
@@ -56,11 +53,10 @@ class MeetingCreate(
     ]
     skip_archived_meeting_check = True
     translation_of_defaults = [
-        "name",
         "description",
         "welcome_title",
         "welcome_text",
-        "motion_preamble",
+        "motions_preamble",
         "motions_export_title",
         "assignments_export_title",
         "users_pdf_welcometitle",
@@ -70,8 +66,11 @@ class MeetingCreate(
         "users_email_body",
     ]
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         Translator.set_translation_language(instance["language"])
+        return super().base_update_instance(instance)
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         # handle set_as_template
         if instance.pop("set_as_template", None):
@@ -248,6 +247,7 @@ class MeetingCreate(
                 and field.default is not None
             ):
                 if field.own_field_name in self.translation_of_defaults:
+                    # breakpoint()
                     instance[field.own_field_name] = _(field.default)
                 else:
                     instance[field.own_field_name] = field.default
