@@ -247,7 +247,6 @@ class MeetingCreate(
                 and field.default is not None
             ):
                 if field.own_field_name in self.translation_of_defaults:
-                    # breakpoint()
                     instance[field.own_field_name] = _(field.default)
                 else:
                     instance[field.own_field_name] = field.default
