@@ -2,22 +2,372 @@
 -- schema.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
--- MODELS_YML_CHECKSUM = '9c485092b6516914134f32fe623bba9b'
+-- MODELS_YML_CHECKSUM = '9ce83c005fe22c28b6dd3d3b9765e7d0'
+-- Type definitions
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_organization_default_language') THEN
+        CREATE TYPE enum_organization_default_language AS ENUM ('en', 'de', 'it', 'es', 'ru', 'cs');
+    ELSE
+        RAISE NOTICE 'type "enum_organization_default_language" already exists, skipping';
+    END IF;
+END$$;
 
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_user_organization_management_level') THEN
+        CREATE TYPE enum_user_organization_management_level AS ENUM ('superadmin', 'can_manage_organization', 'can_manage_users');
+    ELSE
+        RAISE NOTICE 'type "enum_user_organization_management_level" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_language') THEN
+        CREATE TYPE enum_meeting_language AS ENUM ('en', 'de', 'it', 'es', 'ru', 'cs');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_language" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_applause_type') THEN
+        CREATE TYPE enum_meeting_applause_type AS ENUM ('applause-type-bar', 'applause-type-particles');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_applause_type" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_export_csv_encoding') THEN
+        CREATE TYPE enum_meeting_export_csv_encoding AS ENUM ('utf-8', 'iso-8859-15');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_export_csv_encoding" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_export_pdf_pagenumber_alignment') THEN
+        CREATE TYPE enum_meeting_export_pdf_pagenumber_alignment AS ENUM ('left', 'right', 'center');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_export_pdf_pagenumber_alignment" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_export_pdf_fontsize') THEN
+        CREATE TYPE enum_meeting_export_pdf_fontsize AS ENUM ('10', '11', '12');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_export_pdf_fontsize" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_export_pdf_pagesize') THEN
+        CREATE TYPE enum_meeting_export_pdf_pagesize AS ENUM ('A4', 'A5');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_export_pdf_pagesize" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_agenda_numeral_system') THEN
+        CREATE TYPE enum_meeting_agenda_numeral_system AS ENUM ('arabic', 'roman');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_agenda_numeral_system" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_agenda_item_creation') THEN
+        CREATE TYPE enum_meeting_agenda_item_creation AS ENUM ('always', 'never', 'default_yes', 'default_no');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_agenda_item_creation" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_agenda_new_items_default_visibility') THEN
+        CREATE TYPE enum_meeting_agenda_new_items_default_visibility AS ENUM ('common', 'internal', 'hidden');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_agenda_new_items_default_visibility" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_default_line_numbering') THEN
+        CREATE TYPE enum_meeting_motions_default_line_numbering AS ENUM ('outside', 'inline', 'none');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_motions_default_line_numbering" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_recommendation_text_mode') THEN
+        CREATE TYPE enum_meeting_motions_recommendation_text_mode AS ENUM ('original', 'changed', 'diff', 'agreed');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_motions_recommendation_text_mode" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_default_sorting') THEN
+        CREATE TYPE enum_meeting_motions_default_sorting AS ENUM ('number', 'weight');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_motions_default_sorting" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_number_type') THEN
+        CREATE TYPE enum_meeting_motions_number_type AS ENUM ('per_category', 'serially_numbered', 'manually');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_motions_number_type" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motions_amendments_text_mode') THEN
+        CREATE TYPE enum_meeting_motions_amendments_text_mode AS ENUM ('freestyle', 'fulltext', 'paragraph');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_motions_amendments_text_mode" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motion_poll_ballot_paper_selection') THEN
+        CREATE TYPE enum_meeting_motion_poll_ballot_paper_selection AS ENUM ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_motion_poll_ballot_paper_selection" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_motion_poll_default_backend') THEN
+        CREATE TYPE enum_meeting_motion_poll_default_backend AS ENUM ('long', 'fast');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_motion_poll_default_backend" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_users_pdf_wlan_encryption') THEN
+        CREATE TYPE enum_meeting_users_pdf_wlan_encryption AS ENUM ('', 'WEP', 'WPA', 'nopass');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_users_pdf_wlan_encryption" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_assignment_poll_ballot_paper_selection') THEN
+        CREATE TYPE enum_meeting_assignment_poll_ballot_paper_selection AS ENUM ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_assignment_poll_ballot_paper_selection" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_assignment_poll_default_backend') THEN
+        CREATE TYPE enum_meeting_assignment_poll_default_backend AS ENUM ('long', 'fast');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_assignment_poll_default_backend" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_poll_ballot_paper_selection') THEN
+        CREATE TYPE enum_meeting_poll_ballot_paper_selection AS ENUM ('NUMBER_OF_DELEGATES', 'NUMBER_OF_ALL_PARTICIPANTS', 'CUSTOM_NUMBER');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_poll_ballot_paper_selection" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_meeting_poll_default_backend') THEN
+        CREATE TYPE enum_meeting_poll_default_backend AS ENUM ('long', 'fast');
+    ELSE
+        RAISE NOTICE 'type "enum_meeting_poll_default_backend" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_group_permissions') THEN
+        CREATE TYPE enum_group_permissions AS ENUM ('agenda_item.can_manage', 'agenda_item.can_see', 'agenda_item.can_see_internal', 'assignment.can_manage', 'assignment.can_nominate_other', 'assignment.can_nominate_self', 'assignment.can_see', 'chat.can_manage', 'list_of_speakers.can_be_speaker', 'list_of_speakers.can_manage', 'list_of_speakers.can_see', 'mediafile.can_manage', 'mediafile.can_see', 'meeting.can_manage_logos_and_fonts', 'meeting.can_manage_settings', 'meeting.can_see_autopilot', 'meeting.can_see_frontpage', 'meeting.can_see_history', 'meeting.can_see_livestream', 'motion.can_create', 'motion.can_create_amendments', 'motion.can_forward', 'motion.can_manage', 'motion.can_manage_metadata', 'motion.can_manage_polls', 'motion.can_see', 'motion.can_see_internal', 'motion.can_support', 'poll.can_manage', 'projector.can_manage', 'projector.can_see', 'tag.can_manage', 'user.can_manage', 'user.can_manage_presence', 'user.can_see');
+    ELSE
+        RAISE NOTICE 'type "enum_group_permissions" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_agenda_item_type') THEN
+        CREATE TYPE enum_agenda_item_type AS ENUM ('common', 'internal', 'hidden');
+    ELSE
+        RAISE NOTICE 'type "enum_agenda_item_type" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_speaker_speech_state') THEN
+        CREATE TYPE enum_speaker_speech_state AS ENUM ('contribution', 'pro', 'contra');
+    ELSE
+        RAISE NOTICE 'type "enum_speaker_speech_state" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_motion_change_recommendation_type') THEN
+        CREATE TYPE enum_motion_change_recommendation_type AS ENUM ('replacement', 'insertion', 'deletion', 'other');
+    ELSE
+        RAISE NOTICE 'type "enum_motion_change_recommendation_type" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_motion_state_css_class') THEN
+        CREATE TYPE enum_motion_state_css_class AS ENUM ('grey', 'red', 'green', 'lightblue', 'yellow');
+    ELSE
+        RAISE NOTICE 'type "enum_motion_state_css_class" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_motion_state_restrictions') THEN
+        CREATE TYPE enum_motion_state_restrictions AS ENUM ('motion.can_see_internal', 'motion.can_manage_metadata', 'motion.can_manage', 'is_submitter');
+    ELSE
+        RAISE NOTICE 'type "enum_motion_state_restrictions" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_motion_state_merge_amendment_into_final') THEN
+        CREATE TYPE enum_motion_state_merge_amendment_into_final AS ENUM ('do_not_merge', 'undefined', 'do_merge');
+    ELSE
+        RAISE NOTICE 'type "enum_motion_state_merge_amendment_into_final" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_type') THEN
+        CREATE TYPE enum_poll_type AS ENUM ('analog', 'named', 'pseudoanonymous', 'cryptographic');
+    ELSE
+        RAISE NOTICE 'type "enum_poll_type" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_backend') THEN
+        CREATE TYPE enum_poll_backend AS ENUM ('long', 'fast');
+    ELSE
+        RAISE NOTICE 'type "enum_poll_backend" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_pollmethod') THEN
+        CREATE TYPE enum_poll_pollmethod AS ENUM ('Y', 'YN', 'YNA', 'N');
+    ELSE
+        RAISE NOTICE 'type "enum_poll_pollmethod" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_state') THEN
+        CREATE TYPE enum_poll_state AS ENUM ('created', 'started', 'finished', 'published');
+    ELSE
+        RAISE NOTICE 'type "enum_poll_state" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_poll_onehundred_percent_base') THEN
+        CREATE TYPE enum_poll_onehundred_percent_base AS ENUM ('Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'disabled');
+    ELSE
+        RAISE NOTICE 'type "enum_poll_onehundred_percent_base" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_assignment_phase') THEN
+        CREATE TYPE enum_assignment_phase AS ENUM ('search', 'voting', 'finished');
+    ELSE
+        RAISE NOTICE 'type "enum_assignment_phase" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_action_worker_state') THEN
+        CREATE TYPE enum_action_worker_state AS ENUM ('running', 'end', 'aborted');
+    ELSE
+        RAISE NOTICE 'type "enum_action_worker_state" already exists, skipping';
+    END IF;
+END$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_import_preview_state') THEN
+        CREATE TYPE enum_import_preview_state AS ENUM ('warning', 'error', 'done');
+    ELSE
+        RAISE NOTICE 'type "enum_import_preview_state" already exists, skipping';
+    END IF;
+END$$;
+
+
+-- Table and view definitions
 CREATE TABLE IF NOT EXISTS organizationT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    name varchar(50),
+    name varchar(256),
     description text,
     legal_notice text,
     privacy_policy text,
     login_text text,
     reset_password_verbose_errors boolean,
+    genders varchar(256)[] DEFAULT '{"male", "female", "diverse", "non-binary"}',
     enable_electronic_voting boolean,
     enable_chat boolean,
-    limit_of_meetings integer DEFAULT '0',
-    limit_of_users integer DEFAULT '0',
-    default_language varchar(256) NOT NULL,
-    theme_id integer NOT NULL,
+    limit_of_meetings integer CONSTRAINT minimum_limit_of_meetings CHECK (limit_of_meetings >= 0) DEFAULT 0,
+    limit_of_users integer CONSTRAINT minimum_limit_of_users CHECK (limit_of_users >= 0) DEFAULT 0,
+    default_language enum_organization_default_language NOT NULL,
+    saml_enabled boolean,
+    saml_login_button_text varchar(256) DEFAULT 'SAML login',
+    saml_attr_mapping jsonb,
+    saml_metadata_idp text,
+    saml_metadata_sp text,
+    saml_private_key text,
     users_email_sender varchar(256) DEFAULT 'OpenSlides',
     users_email_replyto varchar(256),
     users_email_subject varchar(256) DEFAULT 'OpenSlides access data',
@@ -34,94 +384,115 @@ This email was generated automatically.',
     url varchar(256) DEFAULT 'https://example.com'
 );
 
+comment on column organizationT.limit_of_meetings is 'Maximum of active meetings for the whole organization. 0 means no limitation at all';
+comment on column organizationT.limit_of_users is 'Maximum of active users for the whole organization. 0 means no limitation at all';
+
+
+/*
+ Fields without SQL definition for table organization
+
+    vote_decrypt_public_main_key type:string is marked as a calculated field
+    committee_ids type:relation-list no method defined
+    active_meeting_ids type:relation-list no method defined
+    archived_meeting_ids type:relation-list no method defined
+    template_meeting_ids type:relation-list no method defined
+    organization_tag_ids type:relation-list no method defined
+    theme_id type:relation no method defined
+    theme_ids type:relation-list no method defined
+    mediafile_ids type:relation-list no method defined
+    user_ids type:relation-list no method defined
+
+*/
 
 CREATE TABLE IF NOT EXISTS userT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     username varchar(256) NOT NULL,
-    saml_id varchar(256),
+    saml_id varchar(256) CONSTRAINT minLength_saml_id CHECK (char_length(saml_id) >= 1),
     pronoun varchar(32),
     title varchar(256),
     first_name varchar(256),
     last_name varchar(256),
     is_active boolean,
-    is_physical_person boolean DEFAULT 'True',
+    is_physical_person boolean DEFAULT True,
     password varchar(256),
     default_password varchar(256),
-    can_change_own_password boolean DEFAULT 'True',
+    can_change_own_password boolean DEFAULT True,
     gender varchar(256),
     email varchar(256),
     default_number varchar(256),
     default_structure_level varchar(256),
-    default_vote_weight decimal(6) DEFAULT '1.000000',
+    default_vote_weight decimal(6) CONSTRAINT minimum_default_vote_weight CHECK (default_vote_weight >= 0.000001) DEFAULT '1.000000',
     last_email_sent timestamptz,
     is_demo_user boolean,
     last_login timestamptz,
-    organization_management_level varchar(256)
+    organization_management_level enum_user_organization_management_level,
+    meeting_ids integer[]
 );
 
-
-CREATE TABLE IF NOT EXISTS committee_manager_to_user (
-    user_id integer NOT NULL,
-    committee_id integer NOT NULL
-);
+comment on column userT.saml_id is 'unique-key from IdP for SAML login';
+comment on column userT.organization_management_level is 'Hierarchical permission level for the whole organization.';
+comment on column userT.meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.';
 
 
-CREATE TABLE IF NOT EXISTS group_to_user (
-    user_id integer NOT NULL,
-    group_id integer NOT NULL
-);
+/*
+ Fields without SQL definition for table user
 
+    is_present_in_meeting_ids type:relation-list no method defined
+    committee_ids type:relation-list no method defined
+    committee_management_ids type:relation-list no method defined
+    forwarding_committee_ids type:relation-list no method defined
+    meeting_user_ids type:relation-list no method defined
+    poll_voted_ids type:relation-list no method defined
+    option_ids type:relation-list no method defined
+    vote_ids type:relation-list no method defined
+    delegated_vote_ids type:relation-list no method defined
+    poll_candidate_ids type:relation-list no method defined
+    organization_id type:relation no method defined
 
-CREATE TABLE IF NOT EXISTS poll_to_user (
-    user_id integer NOT NULL,
-    poll_id integer NOT NULL
-);
+*/
 
-
-CREATE TABLE IF NOT EXISTS presence_user_in_meeting (
-    meeting_id integer NOT NULL,
-    user_id integer NOT NULL,
-    begin timestamptz NOT NULL
-);
-
-
-CREATE TABLE IF NOT EXISTS meeting_user (
-    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+CREATE TABLE IF NOT EXISTS meeting_userT (
+    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY NOT NULL,
     comment text,
     number varchar(256),
     structure_level varchar(256),
     about_me text,
-    vote_weight decimal(6),
-    user_id integer NOT NULL,
-    meeting_id integer NOT NULL,
-    speaker_ids integer[],
-    supported_motion_ids integer[],
-    motion_submitter_ids integer[],
-    assignment_candidate_ids integer[],
-    vote_delegated_to_id integer,
-    vote_delegations_from_ids integer[],
-    chat_message_ids integer[],
-    group_ids integer[]
+    vote_weight decimal(6) CONSTRAINT minimum_vote_weight CHECK (vote_weight >= 0.000001)
 );
 
+/*
+ Fields without SQL definition for table meeting_user
 
-CREATE TABLE IF NOT EXISTS organization_tag (
+    user_id type:relation no method defined
+    meeting_id type:relation no method defined
+    personal_note_ids type:relation-list no method defined
+    speaker_ids type:relation-list no method defined
+    supported_motion_ids type:relation-list no method defined
+    motion_submitter_ids type:relation-list no method defined
+    assignment_candidate_ids type:relation-list no method defined
+    vote_delegated_to_id type:relation no method defined
+    vote_delegations_from_ids type:relation-list no method defined
+    chat_message_ids type:relation-list no method defined
+    group_ids type:relation-list no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS organization_tagT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256) NOT NULL,
-    color integer CHECK (color >= 0 and color <= 16777215) NOT NULL,
-    tagged_ids varchar(256)[]
+    color integer CHECK (color >= 0 and color <= 16777215) NOT NULL
 );
 
+/*
+ Fields without SQL definition for table organization_tag
 
-CREATE TABLE IF NOT EXISTS organization_tag_to_committee_meeting (
-    organization_tag_id integer NOT NULL,
-    meeting_id integer,
-    committee_id integer
-);
+    tagged_ids type:generic-relation-list no method defined
+    organization_id type:relation no method defined
 
+*/
 
-CREATE TABLE IF NOT EXISTS theme (
-    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+CREATE TABLE IF NOT EXISTS themeT (
+    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY NOT NULL,
     name varchar(256) NOT NULL,
     accent_100 integer CHECK (accent_100 >= 0 and accent_100 <= 16777215),
     accent_200 integer CHECK (accent_200 >= 0 and accent_200 <= 16777215),
@@ -171,132 +542,147 @@ CREATE TABLE IF NOT EXISTS theme (
     abstain integer CHECK (abstain >= 0 and abstain <= 16777215)
 );
 
+/*
+ Fields without SQL definition for table theme
+
+    theme_for_organization_id type:relation no method defined
+    organization_id type:relation no method defined
+
+*/
 
 CREATE TABLE IF NOT EXISTS committeeT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256) NOT NULL,
     description text,
-    default_meeting_id integer,
-    forwarding_user_id integer
+    external_id varchar(256)
 );
 
+comment on column committeeT.external_id is 'unique';
 
-CREATE TABLE IF NOT EXISTS forwarding_committee_to_committee (
-    forwarding_committee_id integer NOT NULL,
-    receiving_committee_id integer NOT NULL
-);
 
+/*
+ Fields without SQL definition for table committee
+
+    meeting_ids type:relation-list no method defined
+    default_meeting_id type:relation no method defined
+    user_ids type:relation-list no method defined
+    manager_ids type:relation-list no method defined
+    forward_to_committee_ids type:relation-list no method defined
+    receive_forwardings_from_committee_ids type:relation-list no method defined
+    forwarding_user_id type:relation no method defined
+    organization_tag_ids type:relation-list no method defined
+    organization_id type:relation no method defined
+
+*/
 
 CREATE TABLE IF NOT EXISTS meetingT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    external_id varchar(256),
     welcome_title varchar(256) DEFAULT 'Welcome to OpenSlides',
     welcome_text text DEFAULT 'Space for your welcome text.',
     name varchar(100) NOT NULL DEFAULT 'OpenSlides',
-    state varchar(256) DEFAULT 'active',
     description varchar(100) DEFAULT 'Presentation and assembly system',
     location varchar(256),
     start_time timestamptz,
     end_time timestamptz,
     imported_at timestamptz,
-    language varchar(256),
+    language enum_meeting_language,
     jitsi_domain varchar(256),
     jitsi_room_name varchar(256),
     jitsi_room_password varchar(256),
-    template_for_organization boolean DEFAULT 'False',
-    enable_anonymous boolean DEFAULT 'False',
+    enable_anonymous boolean DEFAULT False,
     custom_translations jsonb,
-    conference_show boolean DEFAULT 'False',
-    conference_auto_connect boolean DEFAULT 'False',
-    conference_los_restriction boolean DEFAULT 'True',
+    conference_show boolean DEFAULT False,
+    conference_auto_connect boolean DEFAULT False,
+    conference_los_restriction boolean DEFAULT True,
     conference_stream_url varchar(256),
     conference_stream_poster_url varchar(256),
-    conference_open_microphone boolean DEFAULT 'False',
-    conference_open_video boolean DEFAULT 'False',
-    conference_auto_connect_next_speakers integer DEFAULT '0',
-    conference_enable_helpdesk boolean DEFAULT 'False',
-    applause_enable boolean DEFAULT 'False',
-    applause_type varchar(256) DEFAULT 'applause-type-bar',
-    applause_show_level boolean DEFAULT 'False',
-    applause_min_amount integer DEFAULT '1',
-    applause_max_amount integer DEFAULT '0',
-    applause_timeout integer DEFAULT '5',
+    conference_open_microphone boolean DEFAULT False,
+    conference_open_video boolean DEFAULT False,
+    conference_auto_connect_next_speakers integer DEFAULT 0,
+    conference_enable_helpdesk boolean DEFAULT False,
+    applause_enable boolean DEFAULT False,
+    applause_type enum_meeting_applause_type DEFAULT 'applause-type-bar',
+    applause_show_level boolean DEFAULT False,
+    applause_min_amount integer CONSTRAINT minimum_applause_min_amount CHECK (applause_min_amount >= 0) DEFAULT 1,
+    applause_max_amount integer CONSTRAINT minimum_applause_max_amount CHECK (applause_max_amount >= 0) DEFAULT 0,
+    applause_timeout integer CONSTRAINT minimum_applause_timeout CHECK (applause_timeout >= 0) DEFAULT 5,
     applause_particle_image_url varchar(256),
-    projector_countdown_default_time integer NOT NULL DEFAULT '60',
-    projector_countdown_warning_time integer NOT NULL DEFAULT '0',
-    export_csv_encoding varchar(256) DEFAULT 'utf-8',
+    projector_countdown_default_time integer NOT NULL DEFAULT 60,
+    projector_countdown_warning_time integer NOT NULL CONSTRAINT minimum_projector_countdown_warning_time CHECK (projector_countdown_warning_time >= 0) DEFAULT 0,
+    export_csv_encoding enum_meeting_export_csv_encoding DEFAULT 'utf-8',
     export_csv_separator varchar(256) DEFAULT ';',
-    export_pdf_pagenumber_alignment varchar(256) DEFAULT 'center',
-    export_pdf_fontsize integer DEFAULT '10',
-    export_pdf_line_height real DEFAULT '1.25',
-    export_pdf_page_margin_left integer DEFAULT '20',
-    export_pdf_page_margin_top integer DEFAULT '25',
-    export_pdf_page_margin_right integer DEFAULT '20',
-    export_pdf_page_margin_bottom integer DEFAULT '20',
-    export_pdf_pagesize varchar(256) DEFAULT 'A4',
-    agenda_show_subtitles boolean DEFAULT 'False',
-    agenda_enable_numbering boolean DEFAULT 'True',
+    export_pdf_pagenumber_alignment enum_meeting_export_pdf_pagenumber_alignment DEFAULT 'center',
+    export_pdf_fontsize enum_meeting_export_pdf_fontsize DEFAULT '10',
+    export_pdf_line_height real CONSTRAINT minimum_export_pdf_line_height CHECK (export_pdf_line_height >= 1.0) DEFAULT 1.25,
+    export_pdf_page_margin_left integer CONSTRAINT minimum_export_pdf_page_margin_left CHECK (export_pdf_page_margin_left >= 0) DEFAULT 20,
+    export_pdf_page_margin_top integer CONSTRAINT minimum_export_pdf_page_margin_top CHECK (export_pdf_page_margin_top >= 0) DEFAULT 25,
+    export_pdf_page_margin_right integer CONSTRAINT minimum_export_pdf_page_margin_right CHECK (export_pdf_page_margin_right >= 0) DEFAULT 20,
+    export_pdf_page_margin_bottom integer CONSTRAINT minimum_export_pdf_page_margin_bottom CHECK (export_pdf_page_margin_bottom >= 0) DEFAULT 20,
+    export_pdf_pagesize enum_meeting_export_pdf_pagesize DEFAULT 'A4',
+    agenda_show_subtitles boolean DEFAULT False,
+    agenda_enable_numbering boolean DEFAULT True,
     agenda_number_prefix varchar(20),
-    agenda_numeral_system varchar(256) DEFAULT 'arabic',
-    agenda_item_creation varchar(256) DEFAULT 'default_no',
-    agenda_new_items_default_visibility varchar(256) DEFAULT 'internal',
-    agenda_show_internal_items_on_projector boolean DEFAULT 'False',
-    list_of_speakers_amount_last_on_projector integer DEFAULT '0',
-    list_of_speakers_amount_next_on_projector integer DEFAULT '-1',
-    list_of_speakers_couple_countdown boolean DEFAULT 'True',
-    list_of_speakers_show_amount_of_speakers_on_slide boolean DEFAULT 'True',
-    list_of_speakers_present_users_only boolean DEFAULT 'False',
-    list_of_speakers_show_first_contribution boolean DEFAULT 'False',
-    list_of_speakers_enable_point_of_order_speakers boolean DEFAULT 'True',
-    list_of_speakers_enable_pro_contra_speech boolean DEFAULT 'False',
-    list_of_speakers_can_set_contribution_self boolean DEFAULT 'False',
-    list_of_speakers_speaker_note_for_everyone boolean DEFAULT 'True',
-    list_of_speakers_initially_closed boolean DEFAULT 'False',
-    motions_default_workflow_id integer NOT NULL,
-    motions_default_amendment_workflow_id integer NOT NULL,
-    motions_default_statute_amendment_workflow_id integer NOT NULL,
+    agenda_numeral_system enum_meeting_agenda_numeral_system DEFAULT 'arabic',
+    agenda_item_creation enum_meeting_agenda_item_creation DEFAULT 'default_no',
+    agenda_new_items_default_visibility enum_meeting_agenda_new_items_default_visibility DEFAULT 'internal',
+    agenda_show_internal_items_on_projector boolean DEFAULT False,
+    list_of_speakers_amount_last_on_projector integer CONSTRAINT minimum_list_of_speakers_amount_last_on_projector CHECK (list_of_speakers_amount_last_on_projector >= -1) DEFAULT 0,
+    list_of_speakers_amount_next_on_projector integer CONSTRAINT minimum_list_of_speakers_amount_next_on_projector CHECK (list_of_speakers_amount_next_on_projector >= -1) DEFAULT -1,
+    list_of_speakers_couple_countdown boolean DEFAULT True,
+    list_of_speakers_show_amount_of_speakers_on_slide boolean DEFAULT True,
+    list_of_speakers_present_users_only boolean DEFAULT False,
+    list_of_speakers_show_first_contribution boolean DEFAULT False,
+    list_of_speakers_enable_point_of_order_speakers boolean DEFAULT True,
+    list_of_speakers_enable_point_of_order_categories boolean DEFAULT False,
+    list_of_speakers_closing_disables_point_of_order boolean DEFAULT False,
+    list_of_speakers_enable_pro_contra_speech boolean DEFAULT False,
+    list_of_speakers_can_set_contribution_self boolean DEFAULT False,
+    list_of_speakers_speaker_note_for_everyone boolean DEFAULT True,
+    list_of_speakers_initially_closed boolean DEFAULT False,
     motions_preamble text DEFAULT 'The assembly may decide:',
-    motions_default_line_numbering varchar(256) DEFAULT 'outside',
-    motions_line_length integer DEFAULT '85',
-    motions_reason_required boolean DEFAULT 'False',
-    motions_enable_text_on_projector boolean DEFAULT 'True',
-    motions_enable_reason_on_projector boolean DEFAULT 'False',
-    motions_enable_sidebox_on_projector boolean DEFAULT 'False',
-    motions_enable_recommendation_on_projector boolean DEFAULT 'True',
-    motions_show_referring_motions boolean DEFAULT 'True',
-    motions_show_sequential_number boolean DEFAULT 'True',
+    motions_default_line_numbering enum_meeting_motions_default_line_numbering DEFAULT 'outside',
+    motions_line_length integer CONSTRAINT minimum_motions_line_length CHECK (motions_line_length >= 40) DEFAULT 85,
+    motions_reason_required boolean DEFAULT False,
+    motions_enable_text_on_projector boolean DEFAULT True,
+    motions_enable_reason_on_projector boolean DEFAULT False,
+    motions_enable_sidebox_on_projector boolean DEFAULT False,
+    motions_enable_recommendation_on_projector boolean DEFAULT True,
+    motions_show_referring_motions boolean DEFAULT True,
+    motions_show_sequential_number boolean DEFAULT True,
     motions_recommendations_by varchar(256),
-    motions_block_slide_columns integer,
+    motions_block_slide_columns integer CONSTRAINT minimum_motions_block_slide_columns CHECK (motions_block_slide_columns >= 1),
     motions_statute_recommendations_by varchar(256),
-    motions_recommendation_text_mode varchar(256) DEFAULT 'diff',
-    motions_default_sorting varchar(256) DEFAULT 'number',
-    motions_number_type varchar(256) DEFAULT 'per_category',
-    motions_number_min_digits integer DEFAULT '2',
-    motions_number_with_blank boolean DEFAULT 'False',
-    motions_statutes_enabled boolean DEFAULT 'False',
-    motions_amendments_enabled boolean DEFAULT 'True',
-    motions_amendments_in_main_list boolean DEFAULT 'True',
-    motions_amendments_of_amendments boolean DEFAULT 'False',
+    motions_recommendation_text_mode enum_meeting_motions_recommendation_text_mode DEFAULT 'diff',
+    motions_default_sorting enum_meeting_motions_default_sorting DEFAULT 'number',
+    motions_number_type enum_meeting_motions_number_type DEFAULT 'per_category',
+    motions_number_min_digits integer DEFAULT 2,
+    motions_number_with_blank boolean DEFAULT False,
+    motions_statutes_enabled boolean DEFAULT False,
+    motions_amendments_enabled boolean DEFAULT True,
+    motions_amendments_in_main_list boolean DEFAULT True,
+    motions_amendments_of_amendments boolean DEFAULT False,
     motions_amendments_prefix varchar(256) DEFAULT '-Ä',
-    motions_amendments_text_mode varchar(256) DEFAULT 'paragraph',
-    motions_amendments_multiple_paragraphs boolean DEFAULT 'True',
-    motions_supporters_min_amount integer DEFAULT '0',
+    motions_amendments_text_mode enum_meeting_motions_amendments_text_mode DEFAULT 'paragraph',
+    motions_amendments_multiple_paragraphs boolean DEFAULT True,
+    motions_supporters_min_amount integer CONSTRAINT minimum_motions_supporters_min_amount CHECK (motions_supporters_min_amount >= 0) DEFAULT 0,
     motions_export_title varchar(256) DEFAULT 'Motions',
     motions_export_preamble text,
-    motions_export_submitter_recommendation boolean DEFAULT 'True',
-    motions_export_follow_recommendation boolean DEFAULT 'False',
-    motion_poll_ballot_paper_selection varchar(256) DEFAULT 'CUSTOM_NUMBER',
-    motion_poll_ballot_paper_number integer DEFAULT '8',
+    motions_export_submitter_recommendation boolean DEFAULT True,
+    motions_export_follow_recommendation boolean DEFAULT False,
+    motion_poll_ballot_paper_selection enum_meeting_motion_poll_ballot_paper_selection DEFAULT 'CUSTOM_NUMBER',
+    motion_poll_ballot_paper_number integer DEFAULT 8,
     motion_poll_default_type varchar(256) DEFAULT 'pseudoanonymous',
     motion_poll_default_onehundred_percent_base varchar(256) DEFAULT 'YNA',
-    motion_poll_default_backend varchar(256) DEFAULT 'fast',
-    users_enable_presence_view boolean DEFAULT 'False',
-    users_enable_vote_weight boolean DEFAULT 'False',
-    users_allow_self_set_present boolean DEFAULT 'True',
+    motion_poll_default_backend enum_meeting_motion_poll_default_backend DEFAULT 'fast',
+    users_enable_presence_view boolean DEFAULT False,
+    users_enable_vote_weight boolean DEFAULT False,
+    users_allow_self_set_present boolean DEFAULT True,
     users_pdf_welcometitle varchar(256) DEFAULT 'Welcome to OpenSlides',
     users_pdf_welcometext text DEFAULT '[Place for your welcome and help text.]',
     users_pdf_wlan_ssid varchar(256),
     users_pdf_wlan_password varchar(256),
-    users_pdf_wlan_encryption varchar(256),
+    users_pdf_wlan_encryption enum_meeting_users_pdf_wlan_encryption DEFAULT 'WPA',
     users_email_sender varchar(256) DEFAULT 'OpenSlides',
     users_email_replyto varchar(256),
     users_email_subject varchar(256) DEFAULT 'OpenSlides access data',
@@ -313,139 +699,285 @@ This email was generated automatically.',
     users_enable_vote_delegations boolean,
     assignments_export_title varchar(256) DEFAULT 'Elections',
     assignments_export_preamble text,
-    assignment_poll_ballot_paper_selection varchar(256) DEFAULT 'CUSTOM_NUMBER',
-    assignment_poll_ballot_paper_number integer DEFAULT '8',
-    assignment_poll_add_candidates_to_list_of_speakers boolean DEFAULT 'False',
-    assignment_poll_enable_max_votes_per_option boolean DEFAULT 'False',
-    assignment_poll_sort_poll_result_by_votes boolean DEFAULT 'True',
+    assignment_poll_ballot_paper_selection enum_meeting_assignment_poll_ballot_paper_selection DEFAULT 'CUSTOM_NUMBER',
+    assignment_poll_ballot_paper_number integer DEFAULT 8,
+    assignment_poll_add_candidates_to_list_of_speakers boolean DEFAULT False,
+    assignment_poll_enable_max_votes_per_option boolean DEFAULT False,
+    assignment_poll_sort_poll_result_by_votes boolean DEFAULT True,
     assignment_poll_default_type varchar(256) DEFAULT 'pseudoanonymous',
     assignment_poll_default_method varchar(256) DEFAULT 'Y',
     assignment_poll_default_onehundred_percent_base varchar(256) DEFAULT 'valid',
-    assignment_poll_default_backend varchar(256) DEFAULT 'fast',
-    poll_ballot_paper_selection varchar(256),
+    assignment_poll_default_backend enum_meeting_assignment_poll_default_backend DEFAULT 'fast',
+    poll_ballot_paper_selection enum_meeting_poll_ballot_paper_selection,
     poll_ballot_paper_number integer,
     poll_sort_poll_result_by_votes boolean,
     poll_default_type varchar(256) DEFAULT 'analog',
     poll_default_method varchar(256),
     poll_default_onehundred_percent_base varchar(256) DEFAULT 'YNA',
-    poll_default_backend varchar(256) DEFAULT 'fast',
-    poll_couple_countdown boolean DEFAULT 'True',
-    logo_projector_main_id integer,
-    logo_projector_header_id integer,
-    logo_web_header_id integer,
-    logo_pdf_header_l_id integer,
-    logo_pdf_header_r_id integer,
-    logo_pdf_footer_l_id integer,
-    logo_pdf_footer_r_id integer,
-    logo_pdf_ballot_paper_id integer,
-    font_regular_id integer,
-    font_italic_id integer,
-    font_bold_id integer,
-    font_bold_italic_id integer,
-    font_monospace_id integer,
-    font_chyron_speaker_name_id integer,
-    font_projector_h1_id integer,
-    font_projector_h2_id integer,
-    committee_id integer NOT NULL,
-    reference_projector_id integer NOT NULL,
-    default_group_id integer NOT NULL,
-    admin_group_id integer
+    poll_default_backend enum_meeting_poll_default_backend DEFAULT 'fast',
+    poll_couple_countdown boolean DEFAULT True,
+    user_ids integer[]
 );
 
+comment on column meetingT.external_id is 'unique in committee';
+comment on column meetingT.user_ids is 'Calculated. All user ids from all users assigned to groups of this meeting.';
+
+
+/*
+ Fields without SQL definition for table meeting
+
+    is_active_in_organization_id type:relation no method defined
+    is_archived_in_organization_id type:relation no method defined
+    template_for_organization_id type:relation no method defined
+    motions_default_workflow_id type:relation no method defined
+    motions_default_amendment_workflow_id type:relation no method defined
+    motions_default_statute_amendment_workflow_id type:relation no method defined
+    motion_poll_default_group_ids type:relation-list no method defined
+    poll_candidate_list_ids type:relation-list no method defined
+    poll_candidate_ids type:relation-list no method defined
+    meeting_user_ids type:relation-list no method defined
+    assignment_poll_default_group_ids type:relation-list no method defined
+    poll_default_group_ids type:relation-list no method defined
+    topic_poll_default_group_ids type:relation-list no method defined
+    projector_ids type:relation-list no method defined
+    all_projection_ids type:relation-list no method defined
+    projector_message_ids type:relation-list no method defined
+    projector_countdown_ids type:relation-list no method defined
+    tag_ids type:relation-list no method defined
+    agenda_item_ids type:relation-list no method defined
+    list_of_speakers_ids type:relation-list no method defined
+    point_of_order_category_ids type:relation-list no method defined
+    speaker_ids type:relation-list no method defined
+    topic_ids type:relation-list no method defined
+    group_ids type:relation-list no method defined
+    mediafile_ids type:relation-list no method defined
+    motion_ids type:relation-list no method defined
+    forwarded_motion_ids type:relation-list no method defined
+    motion_comment_section_ids type:relation-list no method defined
+    motion_category_ids type:relation-list no method defined
+    motion_block_ids type:relation-list no method defined
+    motion_workflow_ids type:relation-list no method defined
+    motion_statute_paragraph_ids type:relation-list no method defined
+    motion_comment_ids type:relation-list no method defined
+    motion_submitter_ids type:relation-list no method defined
+    motion_change_recommendation_ids type:relation-list no method defined
+    motion_state_ids type:relation-list no method defined
+    poll_ids type:relation-list no method defined
+    option_ids type:relation-list no method defined
+    vote_ids type:relation-list no method defined
+    assignment_ids type:relation-list no method defined
+    assignment_candidate_ids type:relation-list no method defined
+    personal_note_ids type:relation-list no method defined
+    chat_group_ids type:relation-list no method defined
+    chat_message_ids type:relation-list no method defined
+    logo_projector_main_id type:relation no method defined
+    logo_projector_header_id type:relation no method defined
+    logo_web_header_id type:relation no method defined
+    logo_pdf_header_l_id type:relation no method defined
+    logo_pdf_header_r_id type:relation no method defined
+    logo_pdf_footer_l_id type:relation no method defined
+    logo_pdf_footer_r_id type:relation no method defined
+    logo_pdf_ballot_paper_id type:relation no method defined
+    font_regular_id type:relation no method defined
+    font_italic_id type:relation no method defined
+    font_bold_id type:relation no method defined
+    font_bold_italic_id type:relation no method defined
+    font_monospace_id type:relation no method defined
+    font_chyron_speaker_name_id type:relation no method defined
+    font_projector_h1_id type:relation no method defined
+    font_projector_h2_id type:relation no method defined
+    committee_id type:relation no method defined
+    default_meeting_for_committee_id type:relation no method defined
+    organization_tag_ids type:relation-list no method defined
+    present_user_ids type:relation-list no method defined
+    reference_projector_id type:relation no method defined
+    list_of_speakers_countdown_id type:relation no method defined
+    poll_countdown_id type:relation no method defined
+    projection_ids type:relation-list no method defined
+    default_projector_agenda_item_list_ids type:relation-list no method defined
+    default_projector_topic_ids type:relation-list no method defined
+    default_projector_list_of_speakers_ids type:relation-list no method defined
+    default_projector_current_list_of_speakers_ids type:relation-list no method defined
+    default_projector_motion_ids type:relation-list no method defined
+    default_projector_amendment_ids type:relation-list no method defined
+    default_projector_motion_block_ids type:relation-list no method defined
+    default_projector_assignment_ids type:relation-list no method defined
+    default_projector_mediafile_ids type:relation-list no method defined
+    default_projector_message_ids type:relation-list no method defined
+    default_projector_countdown_ids type:relation-list no method defined
+    default_projector_assignment_poll_ids type:relation-list no method defined
+    default_projector_motion_poll_ids type:relation-list no method defined
+    default_projector_poll_ids type:relation-list no method defined
+    default_group_id type:relation no method defined
+    admin_group_id type:relation no method defined
+
+*/
 
 CREATE TABLE IF NOT EXISTS groupT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    external_id varchar(256),
     name varchar(256) NOT NULL,
-    permissions varchar(256)[],
-    weight integer,
-    mediafile_access_group_ids integer[],
-    mediafile_inherited_access_group_ids integer[],
-    read_comment_section_ids integer[],
-    write_comment_section_ids integer[],
-    poll_ids integer[],
-    used_as_motion_poll_default_id integer,
-    used_as_assignment_poll_default_id integer,
-    used_as_topic_poll_default_id integer,
-    used_as_poll_default_id integer,
-    meeting_id integer NOT NULL
+    permissions enum_group_permissions[],
+    weight integer
 );
 
+comment on column groupT.external_id is 'unique in meeting';
 
-CREATE TABLE IF NOT EXISTS personal_note (
+
+/*
+ Fields without SQL definition for table group
+
+    meeting_user_ids type:relation-list no method defined
+    default_group_for_meeting_id type:relation no method defined
+    admin_group_for_meeting_id type:relation no method defined
+    mediafile_access_group_ids type:relation-list no method defined
+    mediafile_inherited_access_group_ids type:relation-list no method defined
+    read_comment_section_ids type:relation-list no method defined
+    write_comment_section_ids type:relation-list no method defined
+    read_chat_group_ids type:relation-list no method defined
+    write_chat_group_ids type:relation-list no method defined
+    poll_ids type:relation-list no method defined
+    used_as_motion_poll_default_id type:relation no method defined
+    used_as_assignment_poll_default_id type:relation no method defined
+    used_as_topic_poll_default_id type:relation no method defined
+    used_as_poll_default_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS personal_noteT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     note text,
-    star boolean,
-    user_id integer NOT NULL,
-    motion_id integer,
-    meeting_id integer NOT NULL
+    star boolean
 );
 
+/*
+ Fields without SQL definition for table personal_note
 
-CREATE TABLE IF NOT EXISTS tag (
+    meeting_user_id type:relation no method defined
+    content_object_id type:generic-relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS tagT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    name varchar(256) NOT NULL,
-    tagged_ids integer[],
-    meeting_id integer NOT NULL
+    name varchar(256) NOT NULL
 );
 
+/*
+ Fields without SQL definition for table tag
 
-CREATE TABLE IF NOT EXISTS agenda_item (
+    tagged_ids type:generic-relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS agenda_itemT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     item_number varchar(256),
     comment varchar(256),
-    closed boolean DEFAULT 'False',
-    type varchar(256) DEFAULT 'common',
-    duration integer,
+    closed boolean DEFAULT False,
+    type enum_agenda_item_type DEFAULT 'common',
+    duration integer CONSTRAINT minimum_duration CHECK (duration >= 0),
     is_internal boolean,
     is_hidden boolean,
     level integer,
-    weight integer DEFAULT '10000',
-    content_object_id integer NOT NULL,
-    parent_id integer,
-    tag_ids integer[],
-    projection_ids integer[],
-    meeting_id integer NOT NULL
+    weight integer
 );
 
+comment on column agenda_itemT.duration is 'Given in seconds';
+comment on column agenda_itemT.is_internal is 'Calculated by the server';
+comment on column agenda_itemT.is_hidden is 'Calculated by the server';
+comment on column agenda_itemT.level is 'Calculated by the server';
 
-CREATE TABLE IF NOT EXISTS list_of_speakers (
+
+/*
+ Fields without SQL definition for table agenda_item
+
+    content_object_id type:generic-relation no method defined
+    parent_id type:relation no method defined
+    child_ids type:relation-list no method defined
+    tag_ids type:relation-list no method defined
+    projection_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS list_of_speakersT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    closed boolean DEFAULT 'False',
-    sequential_number integer NOT NULL,
-    content_object_id integer NOT NULL,
-    speaker_ids integer[],
-    projection_ids integer[],
-    meeting_id integer NOT NULL
+    closed boolean DEFAULT False,
+    sequential_number integer NOT NULL
 );
 
+comment on column list_of_speakersT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-CREATE TABLE IF NOT EXISTS speaker (
+
+/*
+ Fields without SQL definition for table list_of_speakers
+
+    content_object_id type:generic-relation no method defined
+    speaker_ids type:relation-list no method defined
+    projection_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS point_of_order_categoryT (
+    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    text varchar(256) NOT NULL,
+    rank integer NOT NULL
+);
+
+/*
+ Fields without SQL definition for table point_of_order_category
+
+    meeting_id type:relation no method defined
+    speaker_ids type:relation-list no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS speakerT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     begin_time timestamptz,
     end_time timestamptz,
-    weight integer DEFAULT '10000',
-    speech_state varchar(256),
+    weight integer DEFAULT 10000,
+    speech_state enum_speaker_speech_state,
     note varchar(250),
-    point_of_order boolean,
-    list_of_speakers_id integer NOT NULL,
-    user_id integer NOT NULL
+    point_of_order boolean
 );
 
+/*
+ Fields without SQL definition for table speaker
 
-CREATE TABLE IF NOT EXISTS topic (
+    list_of_speakers_id type:relation no method defined
+    meeting_user_id type:relation no method defined
+    point_of_order_category_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS topicT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title varchar(256) NOT NULL,
     text text,
-    sequential_number integer NOT NULL,
-    attachment_ids integer[],
-    agenda_item_id integer NOT NULL,
-    list_of_speakers_id integer NOT NULL,
-    tag_ids integer[],
-    poll_ids integer[],
-    projection_ids integer[],
-    meeting_id integer NOT NULL
+    sequential_number integer NOT NULL
 );
 
+comment on column topicT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
+
+
+/*
+ Fields without SQL definition for table topic
+
+    attachment_ids type:relation-list no method defined
+    agenda_item_id type:relation no method defined
+    list_of_speakers_id type:relation no method defined
+    poll_ids type:relation-list no method defined
+    projection_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
 
 CREATE TABLE IF NOT EXISTS motionT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -454,190 +986,263 @@ CREATE TABLE IF NOT EXISTS motionT (
     sequential_number integer NOT NULL,
     title varchar(256) NOT NULL,
     text text,
-    amendment_paragraph jsonb,
+    amendment_paragraphs jsonb,
     modified_final_version text,
     reason text,
-    category_weight integer DEFAULT '10000',
+    category_weight integer DEFAULT 10000,
     state_extension varchar(256),
     recommendation_extension varchar(256),
-    sort_weight integer DEFAULT '10000',
+    sort_weight integer DEFAULT 10000,
     created timestamptz,
     last_modified timestamptz,
-    start_line_number integer DEFAULT '1',
-    forwarded timestamptz,
-    lead_motion_id integer,
-    amendment_ids integer[],
-    sort_parent_id integer,
-    origin_id integer,
-    origin_meeting_id integer,
-    derived_motion_ids integer[],
-    all_origin_ids integer[],
-    all_derived_motion_ids integer[],
-    state_id integer NOT NULL,
-    recommendation_id integer,
-    state_extension_reference_ids integer[],
-    referenced_in_motion_state_extension_ids integer[],
-    recommendation_extension_reference_ids integer[],
-    referenced_in_motion_recommendation_extension_ids integer[],
-    category_id integer,
-    block_id integer,
-    submitter_ids integer[],
-    supporter_meeting_user_ids integer[],
-    poll_ids integer[],
-    option_ids integer[],
-    change_recommendation_ids integer[],
-    statute_paragraph_id integer,
-    comment_ids integer[],
-    agenda_item_id integer,
-    list_of_speakers_id integer NOT NULL,
-    tag_ids integer[],
-    attachment_ids integer[],
-    projection_ids integer[],
-    personal_note_ids integer[],
-    meeting_id integer NOT NULL
+    workflow_timestamp timestamptz,
+    start_line_number integer CONSTRAINT minimum_start_line_number CHECK (start_line_number >= 1) DEFAULT 1,
+    forwarded timestamptz
 );
 
+comment on column motionT.number_value is 'The number value of this motion. This number is auto-generated and read-only.';
+comment on column motionT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-CREATE TABLE IF NOT EXISTS motion_submitter (
+
+/*
+ Fields without SQL definition for table motion
+
+    lead_motion_id type:relation no method defined
+    amendment_ids type:relation-list no method defined
+    sort_parent_id type:relation no method defined
+    sort_child_ids type:relation-list no method defined
+    origin_id type:relation no method defined
+    origin_meeting_id type:relation no method defined
+    derived_motion_ids type:relation-list no method defined
+    all_origin_ids type:relation-list no method defined
+    all_derived_motion_ids type:relation-list no method defined
+    state_id type:relation no method defined
+    recommendation_id type:relation no method defined
+    state_extension_reference_ids type:generic-relation-list no method defined
+    referenced_in_motion_state_extension_ids type:relation-list no method defined
+    recommendation_extension_reference_ids type:generic-relation-list no method defined
+    referenced_in_motion_recommendation_extension_ids type:relation-list no method defined
+    category_id type:relation no method defined
+    block_id type:relation no method defined
+    submitter_ids type:relation-list no method defined
+    supporter_meeting_user_ids type:relation-list no method defined
+    poll_ids type:relation-list no method defined
+    option_ids type:relation-list no method defined
+    change_recommendation_ids type:relation-list no method defined
+    statute_paragraph_id type:relation no method defined
+    comment_ids type:relation-list no method defined
+    agenda_item_id type:relation no method defined
+    list_of_speakers_id type:relation no method defined
+    tag_ids type:relation-list no method defined
+    attachment_ids type:relation-list no method defined
+    projection_ids type:relation-list no method defined
+    personal_note_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS motion_submitterT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    weight integer,
-    user_id integer NOT NULL,
-    motion_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    weight integer
 );
 
+/*
+ Fields without SQL definition for table motion_submitter
 
-CREATE TABLE IF NOT EXISTS motion_comment (
+    meeting_user_id type:relation no method defined
+    motion_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS motion_commentT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    comment text,
-    motion_id integer NOT NULL,
-    section_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    comment text
 );
 
+/*
+ Fields without SQL definition for table motion_comment
 
-CREATE TABLE IF NOT EXISTS motion_comment_section (
+    motion_id type:relation no method defined
+    section_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS motion_comment_sectionT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256) NOT NULL,
-    weight integer DEFAULT '10000',
+    weight integer DEFAULT 10000,
     sequential_number integer NOT NULL,
-    submitter_can_write boolean,
-    comment_ids integer[],
-    read_group_ids integer[],
-    write_group_ids integer[]
+    submitter_can_write boolean
 );
 
+comment on column motion_comment_sectionT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-CREATE TABLE IF NOT EXISTS motion_category (
+
+/*
+ Fields without SQL definition for table motion_comment_section
+
+    comment_ids type:relation-list no method defined
+    read_group_ids type:relation-list no method defined
+    write_group_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS motion_categoryT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256) NOT NULL,
     prefix varchar(256),
-    weight integer DEFAULT '10000',
+    weight integer DEFAULT 10000,
     level integer,
-    sequential_number integer NOT NULL,
-    parent_id integer,
-    meeting_id integer NOT NULL
+    sequential_number integer NOT NULL
 );
 
+comment on column motion_categoryT.level is 'Calculated field.';
+comment on column motion_categoryT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-CREATE TABLE IF NOT EXISTS motion_block (
+
+/*
+ Fields without SQL definition for table motion_category
+
+    parent_id type:relation no method defined
+    child_ids type:relation-list no method defined
+    motion_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS motion_blockT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title varchar(256) NOT NULL,
     internal boolean,
-    sequential_number integer NOT NULL,
-    motion_ids integer[],
-    agenda_item_id integer,
-    list_of_speakers_id integer NOT NULL,
-    projection_ids integer[],
-    meeting_id integer NOT NULL
+    sequential_number integer NOT NULL
 );
 
+comment on column motion_blockT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-CREATE TABLE IF NOT EXISTS motion_change_recommendation (
+
+/*
+ Fields without SQL definition for table motion_block
+
+    motion_ids type:relation-list no method defined
+    agenda_item_id type:relation no method defined
+    list_of_speakers_id type:relation no method defined
+    projection_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS motion_change_recommendationT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    rejected boolean DEFAULT 'False',
-    internal boolean DEFAULT 'False',
-    type varchar(256) DEFAULT 'replacement',
+    rejected boolean DEFAULT False,
+    internal boolean DEFAULT False,
+    type enum_motion_change_recommendation_type DEFAULT 'replacement',
     other_description varchar(256),
-    line_from integer,
-    line_to integer,
+    line_from integer CONSTRAINT minimum_line_from CHECK (line_from >= 0),
+    line_to integer CONSTRAINT minimum_line_to CHECK (line_to >= 0),
     text text,
-    creation_time timestamptz,
-    motion_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    creation_time timestamptz
 );
 
+/*
+ Fields without SQL definition for table motion_change_recommendation
 
-CREATE TABLE IF NOT EXISTS motion_state (
+    motion_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS motion_stateT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256) NOT NULL,
     weight integer NOT NULL,
     recommendation_label varchar(256),
-    css_class varchar(256) NOT NULL DEFAULT 'lightblue',
-    restrictions varchar(256)[],
-    allow_support boolean DEFAULT 'False',
-    allow_create_poll boolean DEFAULT 'False',
-    allow_submitter_edit boolean DEFAULT 'False',
-    set_number boolean DEFAULT 'True',
-    show_state_extension_field boolean DEFAULT 'False',
-    show_recommendation_extension_field boolean DEFAULT 'False',
-    merge_amendment_into_final varchar(256) DEFAULT 'undefined',
+    css_class enum_motion_state_css_class NOT NULL DEFAULT 'lightblue',
+    restrictions enum_motion_state_restrictions[],
+    allow_support boolean DEFAULT False,
+    allow_create_poll boolean DEFAULT False,
+    allow_submitter_edit boolean DEFAULT False,
+    set_number boolean DEFAULT True,
+    show_state_extension_field boolean DEFAULT False,
+    show_recommendation_extension_field boolean DEFAULT False,
+    merge_amendment_into_final enum_motion_state_merge_amendment_into_final DEFAULT 'undefined',
     allow_motion_forwarding boolean,
-    set_created_timestamp boolean,
-    submitter_withdraw_state_id integer,
-    submitter_withdraw_back_ids integer[],
-    next_state_ids integer[],
-    previous_state_ids integer[],
-    motion_ids integer[],
-    motion_recommendation_ids integer[],
-    workflow_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    set_workflow_timestamp boolean
 );
 
+/*
+ Fields without SQL definition for table motion_state
 
-CREATE TABLE IF NOT EXISTS motion_state_to_state (
-    previous_state_id integer NOT NULL,
-    next_state_id integer NOT NULL
-);
+    submitter_withdraw_state_id type:relation no method defined
+    submitter_withdraw_back_ids type:relation-list no method defined
+    next_state_ids type:relation-list no method defined
+    previous_state_ids type:relation-list no method defined
+    motion_ids type:relation-list no method defined
+    motion_recommendation_ids type:relation-list no method defined
+    workflow_id type:relation no method defined
+    first_state_of_workflow_id type:relation no method defined
+    meeting_id type:relation no method defined
 
+*/
 
-CREATE TABLE IF NOT EXISTS motion_workflow (
+CREATE TABLE IF NOT EXISTS motion_workflowT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256) NOT NULL,
-    sequential_number integer NOT NULL,
-    state_ids integer[],
-    first_state_id integer NOT NULL,
-    meeting_id integer NOT NULL
+    sequential_number integer NOT NULL
 );
 
+comment on column motion_workflowT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-CREATE TABLE IF NOT EXISTS motion_statute_paragraph (
+
+/*
+ Fields without SQL definition for table motion_workflow
+
+    state_ids type:relation-list no method defined
+    first_state_id type:relation no method defined
+    default_workflow_meeting_id type:relation no method defined
+    default_amendment_workflow_meeting_id type:relation no method defined
+    default_statute_amendment_workflow_meeting_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS motion_statute_paragraphT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title varchar(256) NOT NULL,
     text text,
-    weight integer DEFAULT '10000',
-    sequential_number integer NOT NULL,
-    motion_ids integer[],
-    meeting_id integer NOT NULL
+    weight integer DEFAULT 10000,
+    sequential_number integer NOT NULL
 );
 
+comment on column motion_statute_paragraphT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-CREATE TABLE IF NOT EXISTS poll (
+
+/*
+ Fields without SQL definition for table motion_statute_paragraph
+
+    motion_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS pollT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     description text,
     title varchar(256) NOT NULL,
-    type varchar(256) NOT NULL,
-    backend varchar(256) NOT NULL DEFAULT 'fast',
+    type enum_poll_type NOT NULL,
+    backend enum_poll_backend NOT NULL DEFAULT 'fast',
     is_pseudoanonymized boolean,
-    pollmethod varchar(256) NOT NULL,
-    state varchar(256) DEFAULT 'created',
-    min_votes_amount integer DEFAULT '1',
-    max_votes_amount integer DEFAULT '1',
-    max_votes_per_option integer DEFAULT '1',
-    global_yes boolean DEFAULT 'False',
-    global_no boolean DEFAULT 'False',
-    global_abstain boolean DEFAULT 'False',
-    onehundred_percent_base varchar(256) NOT NULL DEFAULT 'disabled',
+    pollmethod enum_poll_pollmethod NOT NULL,
+    state enum_poll_state DEFAULT 'created',
+    min_votes_amount integer CONSTRAINT minimum_min_votes_amount CHECK (min_votes_amount >= 1) DEFAULT 1,
+    max_votes_amount integer CONSTRAINT minimum_max_votes_amount CHECK (max_votes_amount >= 1) DEFAULT 1,
+    max_votes_per_option integer CONSTRAINT minimum_max_votes_per_option CHECK (max_votes_per_option >= 1) DEFAULT 1,
+    global_yes boolean DEFAULT False,
+    global_no boolean DEFAULT False,
+    global_abstain boolean DEFAULT False,
+    onehundred_percent_base enum_poll_onehundred_percent_base NOT NULL DEFAULT 'disabled',
     votesvalid decimal(6),
     votesinvalid decimal(6),
     votescast decimal(6),
@@ -646,87 +1251,137 @@ CREATE TABLE IF NOT EXISTS poll (
     crypt_key varchar(256),
     crypt_signature varchar(256),
     votes_raw text,
-    votes_signature varchar(256),
-    content_object_id integer NOT NULL,
-    option_ids integer[],
-    global_option_id integer,
-    voted_ids integer[],
-    entitled_group_ids integer[],
-    projection_ids integer[],
-    meeting_id integer NOT NULL
+    votes_signature varchar(256)
 );
 
+comment on column pollT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
+comment on column pollT.crypt_key is 'base64 public key to cryptographic votes.';
+comment on column pollT.crypt_signature is 'base64 signature of cryptographic_key.';
+comment on column pollT.votes_raw is 'original form of decrypted votes.';
+comment on column pollT.votes_signature is 'base64 signature of votes_raw field.';
 
-CREATE TABLE IF NOT EXISTS option (
+
+/*
+ Fields without SQL definition for table poll
+
+    vote_count type:number is marked as a calculated field
+    content_object_id type:generic-relation no method defined
+    option_ids type:relation-list no method defined
+    global_option_id type:relation no method defined
+    voted_ids type:relation-list no method defined
+    entitled_group_ids type:relation-list no method defined
+    projection_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS optionT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    weight integer DEFAULT '10000',
+    weight integer DEFAULT 10000,
     text text,
     yes decimal(6),
     no decimal(6),
-    abstain decimal(6),
-    poll_id integer,
-    vote_ids integer[],
-    content_motion_id integer,
-    content_user_id integer,
-    content_poll_candidate_list_id integer
+    abstain decimal(6)
 );
 
+/*
+ Fields without SQL definition for table option
 
-CREATE TABLE IF NOT EXISTS vote (
+    poll_id type:relation no method defined
+    used_as_global_option_in_poll_id type:relation no method defined
+    vote_ids type:relation-list no method defined
+    content_object_id type:generic-relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS voteT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     weight decimal(6),
     value varchar(256),
-    user_token varchar(256) NOT NULL,
-    option_id integer NOT NULL,
-    user_id integer,
-    delegated_user_id integer
+    user_token varchar(256) NOT NULL
 );
 
+/*
+ Fields without SQL definition for table vote
 
-CREATE TABLE IF NOT EXISTS assignment (
+    option_id type:relation no method defined
+    user_id type:relation no method defined
+    delegated_user_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS assignmentT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title varchar(256) NOT NULL,
     description text,
-    open_posts integer DEFAULT '0',
-    phase varchar(256) DEFAULT 'search',
+    open_posts integer CONSTRAINT minimum_open_posts CHECK (open_posts >= 0) DEFAULT 0,
+    phase enum_assignment_phase DEFAULT 'search',
     default_poll_description text,
     number_poll_candidates boolean,
-    sequential_number integer NOT NULL,
-    candidate_ids integer[],
-    poll_ids integer[],
-    agenda_item_id integer,
-    list_of_speakers_id integer NOT NULL,
-    tag_ids integer[],
-    attachment_ids integer[],
-    projection_ids integer[],
-    meeting_id integer NOT NULL
+    sequential_number integer NOT NULL
 );
 
+comment on column assignmentT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-CREATE TABLE IF NOT EXISTS assignment_candidate (
+
+/*
+ Fields without SQL definition for table assignment
+
+    candidate_ids type:relation-list no method defined
+    poll_ids type:relation-list no method defined
+    agenda_item_id type:relation no method defined
+    list_of_speakers_id type:relation no method defined
+    tag_ids type:relation-list no method defined
+    attachment_ids type:relation-list no method defined
+    projection_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS assignment_candidateT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    weight integer DEFAULT '10000',
-    assignment_id integer NOT NULL,
-    user_id integer
+    weight integer DEFAULT 10000
 );
 
+/*
+ Fields without SQL definition for table assignment_candidate
 
-CREATE TABLE IF NOT EXISTS poll_candidate_list (
-    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    poll_candidate_ids integer[],
-    option_id integer NOT NULL
+    assignment_id type:relation no method defined
+    meeting_user_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS poll_candidate_listT (
+    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY
 );
 
+/*
+ Fields without SQL definition for table poll_candidate_list
 
-CREATE TABLE IF NOT EXISTS poll_candidate (
+    poll_candidate_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+    option_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS poll_candidateT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    poll_candidate_list_id integer NOT NULL,
-    user_id integer NOT NULL,
     weight integer NOT NULL
 );
 
+/*
+ Fields without SQL definition for table poll_candidate
 
-CREATE TABLE IF NOT EXISTS mediafile (
+    poll_candidate_list_id type:relation no method defined
+    user_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS mediafileT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title varchar(256),
     is_directory boolean,
@@ -736,26 +1391,54 @@ CREATE TABLE IF NOT EXISTS mediafile (
     pdf_information jsonb,
     create_timestamp timestamptz,
     is_public boolean NOT NULL,
-    token varchar(256),
-    inherited_access_group_ids integer[],
-    access_group_ids integer[],
-    parent_id integer,
-    list_of_speakers_id integer,
-    projection_ids integer[],
-    attachment_ids integer[],
-    owner_meeting_id integer,
-    owner_organization_id integer
+    token varchar(256)
 );
 
+comment on column mediafileT.title is 'Title and parent_id must be unique.';
+comment on column mediafileT.filesize is 'In bytes, not the human readable format anymore.';
+comment on column mediafileT.filename is 'The uploaded filename. Will be used for downloading. Only writeable on create.';
+comment on column mediafileT.is_public is 'Calculated field. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)';
 
-CREATE TABLE IF NOT EXISTS projector (
+
+/*
+ Fields without SQL definition for table mediafile
+
+    inherited_access_group_ids type:relation-list no method defined
+    access_group_ids type:relation-list no method defined
+    parent_id type:relation no method defined
+    child_ids type:relation-list no method defined
+    list_of_speakers_id type:relation no method defined
+    projection_ids type:relation-list no method defined
+    attachment_ids type:generic-relation-list no method defined
+    owner_id type:generic-relation no method defined
+    used_as_logo_projector_main_in_meeting_id type:relation no method defined
+    used_as_logo_projector_header_in_meeting_id type:relation no method defined
+    used_as_logo_web_header_in_meeting_id type:relation no method defined
+    used_as_logo_pdf_header_l_in_meeting_id type:relation no method defined
+    used_as_logo_pdf_header_r_in_meeting_id type:relation no method defined
+    used_as_logo_pdf_footer_l_in_meeting_id type:relation no method defined
+    used_as_logo_pdf_footer_r_in_meeting_id type:relation no method defined
+    used_as_logo_pdf_ballot_paper_in_meeting_id type:relation no method defined
+    used_as_font_regular_in_meeting_id type:relation no method defined
+    used_as_font_italic_in_meeting_id type:relation no method defined
+    used_as_font_bold_in_meeting_id type:relation no method defined
+    used_as_font_bold_italic_in_meeting_id type:relation no method defined
+    used_as_font_monospace_in_meeting_id type:relation no method defined
+    used_as_font_chyron_speaker_name_in_meeting_id type:relation no method defined
+    used_as_font_projector_h1_in_meeting_id type:relation no method defined
+    used_as_font_projector_h2_in_meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS projectorT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256),
-    scale integer DEFAULT '0',
-    scroll integer DEFAULT '0',
-    width integer DEFAULT '1200',
-    aspect_ratio_numerator integer DEFAULT '16',
-    aspect_ratio_denominator integer DEFAULT '9',
+    is_internal boolean DEFAULT False,
+    scale integer DEFAULT 0,
+    scroll integer CONSTRAINT minimum_scroll CHECK (scroll >= 0) DEFAULT 0,
+    width integer CONSTRAINT minimum_width CHECK (width >= 1) DEFAULT 1200,
+    aspect_ratio_numerator integer CONSTRAINT minimum_aspect_ratio_numerator CHECK (aspect_ratio_numerator >= 1) DEFAULT 16,
+    aspect_ratio_denominator integer CONSTRAINT minimum_aspect_ratio_denominator CHECK (aspect_ratio_denominator >= 1) DEFAULT 9,
     color integer CHECK (color >= 0 and color <= 16777215) DEFAULT 0,
     background_color integer CHECK (background_color >= 0 and background_color <= 16777215) DEFAULT 16777215,
     header_background_color integer CHECK (header_background_color >= 0 and header_background_color <= 16777215) DEFAULT 3241878,
@@ -763,315 +1446,141 @@ CREATE TABLE IF NOT EXISTS projector (
     header_h1_color integer CHECK (header_h1_color >= 0 and header_h1_color <= 16777215) DEFAULT 3241878,
     chyron_background_color integer CHECK (chyron_background_color >= 0 and chyron_background_color <= 16777215) DEFAULT 3241878,
     chyron_font_color integer CHECK (chyron_font_color >= 0 and chyron_font_color <= 16777215) DEFAULT 16777215,
-    show_header_footer boolean DEFAULT 'True',
-    show_title boolean DEFAULT 'True',
-    show_logo boolean DEFAULT 'True',
-    show_clock boolean DEFAULT 'True',
-    sequential_number integer NOT NULL,
-    current_projection_ids integer[],
-    preview_projection_ids integer[],
-    history_projection_ids integer[],
-    used_as_reference_projector_meeting_id integer,
-    used_as_default_projector_for_agenda_all_items_in_meeting_id integer,
-    used_as_default_projector_for_topics_in_meeting_id integer,
-    used_as_default_projector_for_list_of_speakers_in_meeting_id integer,
-    used_as_default_projector_for_cur_list_of_speaker_in_meeting_id integer,
-    used_as_default_projector_for_motion_in_meeting_id integer,
-    used_as_default_projector_for_amendment_in_meeting_id integer,
-    used_as_default_projector_for_motion_block_in_meeting_id integer,
-    used_as_default_projector_for_assignment_in_meeting_id integer,
-    used_as_default_projector_for_mediafile_in_meeting_id integer,
-    used_as_default_projector_for_projector_message_in_meeting_id integer,
-    used_as_default_projector_for_projector_countdown_in_meeting_id integer,
-    used_as_default_projector_for_assignment_poll_in_meeting_id integer,
-    used_as_default_projector_for_motion_poll_in_meeting_id integer,
-    used_as_default_projector_for_poll_in_meeting_id integer,
-    meeting_id integer NOT NULL
+    show_header_footer boolean DEFAULT True,
+    show_title boolean DEFAULT True,
+    show_logo boolean DEFAULT True,
+    show_clock boolean DEFAULT True,
+    sequential_number integer NOT NULL
 );
 
+comment on column projectorT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-CREATE TABLE IF NOT EXISTS projection (
+
+/*
+ Fields without SQL definition for table projector
+
+    current_projection_ids type:relation-list no method defined
+    preview_projection_ids type:relation-list no method defined
+    history_projection_ids type:relation-list no method defined
+    used_as_reference_projector_meeting_id type:relation no method defined
+    used_as_default_projector_for_agenda_item_list_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_topic_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_list_of_speakers_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_current_list_of_speakers_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_motion_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_amendment_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_motion_block_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_assignment_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_mediafile_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_message_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_countdown_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_assignment_poll_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_motion_poll_in_meeting_id type:relation no method defined
+    used_as_default_projector_for_poll_in_meeting_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS projectionT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     options jsonb,
-    stable boolean DEFAULT 'False',
+    stable boolean DEFAULT False,
     weight integer,
-    type varchar(256),
-    current_projector_id integer,
-    preview_projector_id integer,
-    history_projector_id integer,
-    projection_meeting_id integer,
-    projection_motion_id integer,
-    projection_mediafile_id integer,
-    projection_list_of_speakers_id integer,
-    projection_motion_block_id integer,
-    projection_assignment_id integer,
-    projection_agenda_item_id integer,
-    projection_topic_id integer,
-    projection_poll_id integer,
-    projection_projector_message_id integer,
-    projection_projector_countdown_id integer,
-    meeting_id integer NOT NULL
+    type varchar(256)
 );
 
+/*
+ Fields without SQL definition for table projection
 
-CREATE TABLE IF NOT EXISTS projector_message (
+    content type:JSON is marked as a calculated field
+    current_projector_id type:relation no method defined
+    preview_projector_id type:relation no method defined
+    history_projector_id type:relation no method defined
+    content_object_id type:generic-relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS projector_messageT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    message text,
-    projection_ids integer[],
-    meeting_id integer NOT NULL
+    message text
 );
 
+/*
+ Fields without SQL definition for table projector_message
 
-CREATE TABLE IF NOT EXISTS projector_countdown (
+    projection_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS projector_countdownT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     title varchar(256) NOT NULL,
     description varchar(256) DEFAULT '',
     default_time integer,
-    countdown_time real DEFAULT '60',
-    running boolean DEFAULT 'False',
-    projection_ids integer[],
-    used_as_list_of_speakers_countdown_meeting_id integer,
-    used_as_poll_countdown_meeting_id integer,
-    meeting_id integer NOT NULL
+    countdown_time real DEFAULT 60,
+    running boolean DEFAULT False
 );
 
+/*
+ Fields without SQL definition for table projector_countdown
+
+    projection_ids type:relation-list no method defined
+    used_as_list_of_speakers_countdown_meeting_id type:relation no method defined
+    used_as_poll_countdown_meeting_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
 
 CREATE TABLE IF NOT EXISTS chat_groupT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256) NOT NULL,
-    weight integer DEFAULT '10000',
-    meeting_id integer NOT NULL
+    weight integer DEFAULT 10000
 );
 
+/*
+ Fields without SQL definition for table chat_group
 
-CREATE TABLE IF NOT EXISTS chat_group_to_group (
-    chat_group_id integer NOT NULL,
-    group_id integer NOT NULL,
-    read boolean DEFAULT 'True',
-    write boolean DEFAULT 'False'
-);
+    chat_message_ids type:relation-list no method defined
+    read_group_ids type:relation-list no method defined
+    write_group_ids type:relation-list no method defined
+    meeting_id type:relation no method defined
 
+*/
 
-CREATE TABLE IF NOT EXISTS chat_message (
+CREATE TABLE IF NOT EXISTS chat_messageT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     content text NOT NULL,
-    created timestamptz NOT NULL,
-    user_id integer NOT NULL,
-    chat_group_id integer NOT NULL
+    created timestamptz NOT NULL
 );
 
+/*
+ Fields without SQL definition for table chat_message
 
-CREATE TABLE IF NOT EXISTS action_worker (
+    meeting_user_id type:relation no method defined
+    chat_group_id type:relation no method defined
+    meeting_id type:relation no method defined
+
+*/
+
+CREATE TABLE IF NOT EXISTS action_workerT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256) NOT NULL,
-    state varchar(256) NOT NULL,
+    state enum_action_worker_state NOT NULL,
     created timestamptz NOT NULL,
     timestamp timestamptz NOT NULL,
     result jsonb
 );
 
-ALTER TABLE organizationT ADD FOREIGN KEY (theme_id) REFERENCES theme(id);
-ALTER TABLE committee_manager_to_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE committee_manager_to_user ADD FOREIGN KEY (committee_id) REFERENCES committeeT(id);
-ALTER TABLE group_to_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE group_to_user ADD FOREIGN KEY (group_id) REFERENCES groupT(id);
-ALTER TABLE poll_to_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE poll_to_user ADD FOREIGN KEY (poll_id) REFERENCES poll(id);
-ALTER TABLE meeting_user ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE meeting_user ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE meeting_user ADD FOREIGN KEY (vote_delegated_to_id) REFERENCES meeting_user(id);
-ALTER TABLE organization_tag_to_committee_meeting ADD FOREIGN KEY (organization_tag_id) REFERENCES organization_tag(id);
-ALTER TABLE organization_tag_to_committee_meeting ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE organization_tag_to_committee_meeting ADD FOREIGN KEY (committee_id) REFERENCES committeeT(id);
-ALTER TABLE committeeT ADD FOREIGN KEY (default_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE committeeT ADD FOREIGN KEY (forwarding_user_id) REFERENCES userT(id);
-ALTER TABLE forwarding_committee_to_committee ADD FOREIGN KEY (forwarding_committee_id) REFERENCES committeeT(id);
-ALTER TABLE forwarding_committee_to_committee ADD FOREIGN KEY (receiving_committee_id) REFERENCES committeeT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (motions_default_workflow_id) REFERENCES motion_workflow(id) INITIALLY DEFERRED;
-ALTER TABLE meetingT ADD FOREIGN KEY (motions_default_amendment_workflow_id) REFERENCES motion_workflow(id) INITIALLY DEFERRED;
-ALTER TABLE meetingT ADD FOREIGN KEY (motions_default_statute_amendment_workflow_id) REFERENCES motion_workflow(id) INITIALLY DEFERRED;
-ALTER TABLE meetingT ADD FOREIGN KEY (logo_projector_main_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (logo_projector_header_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (logo_web_header_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (logo_pdf_header_l_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (logo_pdf_header_r_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (logo_pdf_footer_l_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (logo_pdf_footer_r_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (logo_pdf_ballot_paper_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (font_regular_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (font_italic_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (font_bold_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (font_bold_italic_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (font_monospace_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (font_chyron_speaker_name_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (font_projector_h1_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (font_projector_h2_id) REFERENCES mediafile(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (committee_id) REFERENCES committeeT(id);
-ALTER TABLE meetingT ADD FOREIGN KEY (reference_projector_id) REFERENCES projector(id) INITIALLY DEFERRED;
-ALTER TABLE meetingT ADD FOREIGN KEY (default_group_id) REFERENCES groupT(id) INITIALLY DEFERRED;
-ALTER TABLE meetingT ADD FOREIGN KEY (admin_group_id) REFERENCES groupT(id) INITIALLY DEFERRED;
-ALTER TABLE groupT ADD FOREIGN KEY (used_as_motion_poll_default_id) REFERENCES meetingT(id);
-ALTER TABLE groupT ADD FOREIGN KEY (used_as_assignment_poll_default_id) REFERENCES meetingT(id);
-ALTER TABLE groupT ADD FOREIGN KEY (used_as_topic_poll_default_id) REFERENCES meetingT(id);
-ALTER TABLE groupT ADD FOREIGN KEY (used_as_poll_default_id) REFERENCES meetingT(id);
-ALTER TABLE groupT ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE personal_note ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE personal_note ADD FOREIGN KEY (motion_id) REFERENCES motionT(id);
-ALTER TABLE personal_note ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE tag ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE agenda_item ADD FOREIGN KEY (parent_id) REFERENCES agenda_item(id);
-ALTER TABLE agenda_item ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE list_of_speakers ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE speaker ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
-ALTER TABLE speaker ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE topic ADD FOREIGN KEY (agenda_item_id) REFERENCES agenda_item(id);
-ALTER TABLE topic ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
-ALTER TABLE topic ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motionT ADD FOREIGN KEY (lead_motion_id) REFERENCES motionT(id);
-ALTER TABLE motionT ADD FOREIGN KEY (sort_parent_id) REFERENCES motionT(id);
-ALTER TABLE motionT ADD FOREIGN KEY (origin_id) REFERENCES motionT(id);
-ALTER TABLE motionT ADD FOREIGN KEY (origin_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motionT ADD FOREIGN KEY (state_id) REFERENCES motion_state(id);
-ALTER TABLE motionT ADD FOREIGN KEY (recommendation_id) REFERENCES motion_state(id);
-ALTER TABLE motionT ADD FOREIGN KEY (category_id) REFERENCES motion_category(id);
-ALTER TABLE motionT ADD FOREIGN KEY (block_id) REFERENCES motion_block(id);
-ALTER TABLE motionT ADD FOREIGN KEY (statute_paragraph_id) REFERENCES motion_statute_paragraph(id);
-ALTER TABLE motionT ADD FOREIGN KEY (agenda_item_id) REFERENCES agenda_item(id);
-ALTER TABLE motionT ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
-ALTER TABLE motionT ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_submitter ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE motion_submitter ADD FOREIGN KEY (motion_id) REFERENCES motionT(id);
-ALTER TABLE motion_submitter ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_comment ADD FOREIGN KEY (motion_id) REFERENCES motionT(id);
-ALTER TABLE motion_comment ADD FOREIGN KEY (section_id) REFERENCES motion_comment_section(id);
-ALTER TABLE motion_comment ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_category ADD FOREIGN KEY (parent_id) REFERENCES motion_category(id);
-ALTER TABLE motion_category ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_block ADD FOREIGN KEY (agenda_item_id) REFERENCES agenda_item(id);
-ALTER TABLE motion_block ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
-ALTER TABLE motion_block ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_change_recommendation ADD FOREIGN KEY (motion_id) REFERENCES motionT(id);
-ALTER TABLE motion_change_recommendation ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_state ADD FOREIGN KEY (submitter_withdraw_state_id) REFERENCES motion_state(id);
-ALTER TABLE motion_state ADD FOREIGN KEY (workflow_id) REFERENCES motion_workflow(id);
-ALTER TABLE motion_state ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_state_to_state ADD FOREIGN KEY (previous_state_id) REFERENCES motion_state(id);
-ALTER TABLE motion_state_to_state ADD FOREIGN KEY (next_state_id) REFERENCES motion_state(id);
-ALTER TABLE motion_workflow ADD FOREIGN KEY (first_state_id) REFERENCES motion_state(id) INITIALLY DEFERRED;
-ALTER TABLE motion_workflow ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE motion_statute_paragraph ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE poll ADD FOREIGN KEY (global_option_id) REFERENCES option(id);
-ALTER TABLE poll ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE option ADD FOREIGN KEY (poll_id) REFERENCES poll(id);
-ALTER TABLE option ADD FOREIGN KEY (content_motion_id) REFERENCES motionT(id);
-ALTER TABLE option ADD FOREIGN KEY (content_user_id) REFERENCES userT(id);
-ALTER TABLE option ADD FOREIGN KEY (content_poll_candidate_list_id) REFERENCES poll_candidate_list(id);
-ALTER TABLE vote ADD FOREIGN KEY (option_id) REFERENCES option(id);
-ALTER TABLE vote ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE vote ADD FOREIGN KEY (delegated_user_id) REFERENCES userT(id);
-ALTER TABLE assignment ADD FOREIGN KEY (agenda_item_id) REFERENCES agenda_item(id);
-ALTER TABLE assignment ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
-ALTER TABLE assignment ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE assignment_candidate ADD FOREIGN KEY (assignment_id) REFERENCES assignment(id);
-ALTER TABLE assignment_candidate ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE poll_candidate_list ADD FOREIGN KEY (option_id) REFERENCES option(id);
-ALTER TABLE poll_candidate ADD FOREIGN KEY (poll_candidate_list_id) REFERENCES poll_candidate_list(id);
-ALTER TABLE poll_candidate ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE mediafile ADD FOREIGN KEY (parent_id) REFERENCES mediafile(id);
-ALTER TABLE mediafile ADD FOREIGN KEY (list_of_speakers_id) REFERENCES list_of_speakers(id);
-ALTER TABLE mediafile ADD FOREIGN KEY (owner_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE mediafile ADD FOREIGN KEY (owner_organization_id) REFERENCES organizationT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_agenda_all_items_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_topics_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_list_of_speakers_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_cur_list_of_speaker_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_motion_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_amendment_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_motion_block_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_assignment_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_mediafile_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_projector_message_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_projector_countdown_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_assignment_poll_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_motion_poll_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (used_as_default_projector_for_poll_in_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projection ADD FOREIGN KEY (current_projector_id) REFERENCES projector(id);
-ALTER TABLE projection ADD FOREIGN KEY (preview_projector_id) REFERENCES projector(id);
-ALTER TABLE projection ADD FOREIGN KEY (history_projector_id) REFERENCES projector(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_motion_id) REFERENCES motionT(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_mediafile_id) REFERENCES mediafile(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_list_of_speakers_id) REFERENCES list_of_speakers(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_motion_block_id) REFERENCES motion_block(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_assignment_id) REFERENCES assignment(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_agenda_item_id) REFERENCES agenda_item(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_topic_id) REFERENCES topic(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_poll_id) REFERENCES poll(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_projector_message_id) REFERENCES projector_message(id);
-ALTER TABLE projection ADD FOREIGN KEY (projection_projector_countdown_id) REFERENCES projector_countdown(id);
-ALTER TABLE projection ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector_message ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector_countdown ADD FOREIGN KEY (used_as_list_of_speakers_countdown_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector_countdown ADD FOREIGN KEY (used_as_poll_countdown_meeting_id) REFERENCES meetingT(id);
-ALTER TABLE projector_countdown ADD FOREIGN KEY (meeting_id) REFERENCES meetingT(id);
-ALTER TABLE chat_group_to_group ADD FOREIGN KEY (chat_group_id) REFERENCES chat_groupT(id);
-ALTER TABLE chat_group_to_group ADD FOREIGN KEY (group_id) REFERENCES groupT(id);
-ALTER TABLE chat_message ADD FOREIGN KEY (user_id) REFERENCES userT(id);
-ALTER TABLE chat_message ADD FOREIGN KEY (chat_group_id) REFERENCES chat_groupT(id);
 
-CREATE OR REPLACE VIEW organization AS SELECT *,
-(select array_agg(c.id) from committeeT c) as committee_ids,
-(select array_agg(m.id) from meetingT m where m.state = 'active') as active_meeting_ids,
-(select array_agg(m.id) from meetingT m where m.state = 'archived') as archived_meeting_ids,
-(select array_agg(m.id) from meetingT m where m.template_for_organization) as template_meeting_ids,
-(select array_agg(u.id) from userT u) as user_ids
-FROM organizationT o;
+CREATE TABLE IF NOT EXISTS import_previewT (
+    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name varchar(256) NOT NULL,
+    state enum_import_preview_state NOT NULL,
+    created timestamptz NOT NULL,
+    result jsonb
+);
 
 
-CREATE OR REPLACE VIEW user_ AS SELECT *,
-(select array_agg(committee_id) from (
-    select m.committee_id as committee_id from group_to_user gtu
-      join groupT g on g.id = gtu.group_id
-      join meetingT m on m.id = g.meeting_id
-      where gtu.user_id = u.id
-    union
-    select ctu.committee_id as committee_id from committee_manager_to_user ctu where ctu.user_id = u.id
-  ) as cs) as committee_ids,
-(select array_agg(g.meeting_id) from group_to_user gtu join groupT g on g.id = gtu.group_id where gtu.user_id = u.id) as meeting_ids
-FROM userT u;
-
-
-CREATE OR REPLACE VIEW committee AS SELECT *,
-(select array_agg(f.receiving_committee_id) from forwarding_committee_to_committee f where f.forwarding_committee_id = c.id) as forward_to_committee_ids,
-(select array_agg(f.forwarding_committee_id) from forwarding_committee_to_committee f where f.receiving_committee_id = c.id) as receive_from_committee_ids,
-(select array_agg(user_id) from (
-  select gtu.user_id as user_id from meetingT m
-    join groupT g on g.meeting_id = m.id
-    join group_to_user gtu on gtu.group_id = g.id
-    where m.committee_id = c.id
-  union
-  select ctu.user_id as user_id from committee_manager_to_user ctu where ctu.committee_id = c.id
-) as x) as user_ids
-FROM committeeT c;
-
-
-CREATE OR REPLACE VIEW meeting AS SELECT *,
-(select array_agg(gtu.user_id) from groupT g join group_to_user gtu on gtu.group_id = g.id where g.meeting_id = m.id) as user_ids
-FROM meetingT m;
-
-
-CREATE OR REPLACE VIEW group_ AS SELECT *,
-(select m.id from meetingT m where m.default_group_id = g.id) as default_group_for_meeting_id,
-(select m.id from meetingT m where m.admin_group_id = g.id) as admin_group_for_meeting_id,
-(select array_agg(gtg.chat_group_id) from chat_group_to_group gtg where gtg.group_id = g.id and gtg.read) as read_chat_group_ids,
-(select array_agg(gtg.chat_group_id) from chat_group_to_group gtg where gtg.group_id = g.id and gtg.write) as write_chat_group_ids
-FROM groupT g;
-
-
-CREATE OR REPLACE VIEW chat_group AS SELECT *,
-(select array_agg(m.id) from chat_message m where m.chat_group_id = cg.id) as chat_message_ids,
-(select array_agg(gtg.group_id) from chat_group_to_group gtg where gtg.chat_group_id = cg.id and gtg.read) as read_group_ids,
-(select array_agg(gtg.group_id) from chat_group_to_group gtg where gtg.chat_group_id = cg.id and gtg.write) as write_group_ids
-FROM chat_groupT cg;
-
+/*   Missing attribute handling for to, on_delete, equal_fields, items */
