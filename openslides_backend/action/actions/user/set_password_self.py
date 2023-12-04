@@ -36,7 +36,7 @@ class UserSetPasswordSelf(UpdateAction, CheckForArchivedMeetingMixin):
             raise ActionException(
                 f"user {db_instance['saml_id']} is a Single Sign On user and has no local Openslides passwort."
             )
-        if not self.auth.is_equals(old_pw, db_instance["password"]):
+        if not self.auth.is_equal(old_pw, db_instance["password"]):
             raise ActionException("Wrong password")
 
         instance["password"] = self.auth.hash(new_pw)

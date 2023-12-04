@@ -17,7 +17,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert self.auth.is_equals(self.password, model.get("password", ""))
+        assert self.auth.is_equal(self.password, model.get("password", ""))
 
     def test_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
@@ -35,7 +35,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert self.auth.is_equals(self.password, model.get("password", ""))
+        assert self.auth.is_equal(self.password, model.get("password", ""))
 
     def test_scope_meeting_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -43,7 +43,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert self.auth.is_equals(self.password, model.get("password", ""))
+        assert self.auth.is_equal(self.password, model.get("password", ""))
 
     def test_scope_meeting_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
@@ -51,7 +51,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert self.auth.is_equals(self.password, model.get("password", ""))
+        assert self.auth.is_equal(self.password, model.get("password", ""))
 
     def test_scope_committee_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
@@ -69,7 +69,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert self.auth.is_equals(self.password, model.get("password", ""))
+        assert self.auth.is_equal(self.password, model.get("password", ""))
 
     def test_scope_committee_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -77,7 +77,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert self.auth.is_equals(self.password, model.get("password", ""))
+        assert self.auth.is_equal(self.password, model.get("password", ""))
 
     def test_scope_committee_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
@@ -105,7 +105,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert self.auth.is_equals(self.password, model.get("password", ""))
+        assert self.auth.is_equal(self.password, model.get("password", ""))
 
     def test_scope_organization_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
