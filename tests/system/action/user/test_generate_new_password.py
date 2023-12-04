@@ -14,7 +14,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         assert (hash := model.get("password")) is not None
         assert (password := model.get("default_password")) is not None
         assert all(char in PASSWORD_CHARS for char in password)
-        assert self.auth.is_equals(password, hash)
+        assert self.auth.is_equal(password, hash)
 
     def test_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
