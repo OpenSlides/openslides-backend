@@ -19,7 +19,7 @@ get_forwarding_meetings_schema = fastjsonschema.compile(
         "properties": {
             "meeting_id": required_id_schema,
         },
-        "required": ["meeting_id"]
+        "required": ["meeting_id"],
     }
 )
 
