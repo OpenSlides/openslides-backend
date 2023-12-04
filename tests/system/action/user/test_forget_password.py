@@ -110,16 +110,16 @@ class UserForgetPassword(BaseActionTestCase):
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
         assert handler.emails[0]["to"][0] == "test@ntvtn.de"
         assert (
-            "For completeness your username: admin" in handler.emails[0]["data"]
-            or "For completeness your username: test2" in handler.emails[0]["data"]
+            "Reset your OpenSlides password: admin" in handler.emails[0]["data"]
+            or "Reset your OpenSlides password: test2" in handler.emails[0]["data"]
         )
         assert "https://openslides.example.com" in handler.emails[0]["data"]
 
         assert handler.emails[1]["from"] == EmailSettings.default_from_email
         assert handler.emails[1]["to"][0] == "test@ntvtn.de"
         assert (
-            "For completeness your username: test2" in handler.emails[1]["data"]
-            or "For completeness your username: admin" in handler.emails[1]["data"]
+            "Reset your OpenSlides password: test2" in handler.emails[1]["data"]
+            or "Reset your OpenSlides password: admin" in handler.emails[1]["data"]
         )
         assert ("test2" in handler.emails[0]["data"]) != (
             "test2" in handler.emails[1]["data"]

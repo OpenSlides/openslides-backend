@@ -41,9 +41,7 @@ class UserForgetPassword(UpdateAction):
 Please open the following link and choose a new password:
 {url}/login/forget-password-confirm?user_id={user_id}&token={token}
 
-The link will only be valid for 10 minutes.
-
-For completeness your username: {username}"""
+The link will only be valid for 10 minutes."""
         )
         self.PW_FORGET_EMAIL_SUBJECT = _("Reset your OpenSlides password")
         for instance in action_data:
