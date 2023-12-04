@@ -65,6 +65,9 @@ class PollCreateAction(
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
+            "amount_global_yes": decimal_schema,
+            "amount_global_no": decimal_schema,
+            "amount_global_abstain": decimal_schema,
         },
     )
     poll_history_information = "created"
@@ -156,6 +159,13 @@ class PollCreateAction(
             "meeting_id": instance["meeting_id"],
             "weight": 1,
         }
+        if instance["type"] == "analog":
+            for option in ["yes", "no", "abstain"]:
+                if instance["type"] == "analog" and instance.get(f"global_{option}"):
+                    global_data[option] = self.parse_vote_value(
+                        instance, f"amount_global_{option}"
+                    )
+                instance.pop(f"amount_global_{option}", None)
         action_data.append(global_data)
 
         # Execute the create option actions
