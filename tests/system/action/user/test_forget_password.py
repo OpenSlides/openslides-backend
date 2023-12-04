@@ -27,7 +27,7 @@ class UserForgetPassword(BaseActionTestCase):
         user = self.get_model("user/1")
         assert user.get("last_email_sent", 0) >= start_time
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
-        assert "Reset your OpenSlides password" in handler.emails[0]["data"]
+        assert "Reset your OpenSlides password: admin" in handler.emails[0]["data"]
 
     def test_forget_password_send_mail_correct_translated(self) -> None:
         self.set_models(
