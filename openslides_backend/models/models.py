@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "56fbad900f7fe5e7b83cfaed9aa40576"
+MODELS_YML_CHECKSUM = "245195a7e4707073f685fd2a0e43829b"
 
 
 class Organization(Model):
@@ -322,7 +322,7 @@ class Meeting(Model, MeetingModelMixin):
     end_time = fields.TimestampField()
     imported_at = fields.TimestampField()
     language = fields.CharField(
-        read_only=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
+        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
     )
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
