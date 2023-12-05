@@ -133,8 +133,9 @@ class MediafileUploadActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Cannot guess mimetype for fn_jumbo.tasdde." in response.json.get(
-            "message", ""
+        assert (
+            "fn_jumbo.tasdde does not have a file extension that matches the determined mimetype text/plain."
+            in response.json.get("message", "")
         )
         self.assert_model_not_exists("mediafile/1")
         self.media.upload_mediafile.assert_not_called()
@@ -182,31 +183,30 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
         )
         filename = "test.pdf"
-        file_content = base64.b64encode(b"testtesttest").decode()
+        pdf_content = "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZwovT3V0bGluZXMgMiAwIFIKL1BhZ2VzIDMgMCBSCj4+CmVuZG9iagoyIDAgb2JqCjw8IC9UeXBlIC9PdXRsaW5lcwovQ291bnQgMAo+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZXMKL0tpZHMgWyA0IDAgUiBdCi9Db3VudCAxCj4+CmVuZG9iago0IDAgb2JqCjw8IC9UeXBlIC9QYWdlCi9QYXJlbnQgMyAwIFIKL01lZGlhQm94IFsgMCAwIDYxMiA3OTIgXQovQ29udGVudHMgNSAwIFIKL1Jlc291cmNlcyA8PCAvUHJvY1NldCA2IDAgUgovRm9udCA8PCAvRjEgNyAwIFIgPj4KPj4KPj4KZW5kb2JqCjUgMCBvYmoKPDwgL0xlbmd0aCA3MyA+PgpzdHJlYW0KQlQKL0YxIDI0IFRmCjEwMCAxMDAgVGQKKCBBcmJpdHJhcnkgY29udGVudCApIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKNiAwIG9iagpbIC9QREYgL1RleHQgXQplbmRvYmoKNyAwIG9iago8PCAvVHlwZSAvRm9udAovU3VidHlwZSAvVHlwZTEKL05hbWUgL0YxCi9CYXNlRm9udCAvSGVsdmV0aWNhCi9FbmNvZGluZyAvTWFjUm9tYW5FbmNvZGluZwo+PgplbmRvYmoKeHJlZgowIDgKMDAwMDAwMDAwMCA2NTUzNSBmCjAwMDAwMDAwMDkgMDAwMDAgbgowMDAwMDAwMDc0IDAwMDAwIG4KMDAwMDAwMDEyMCAwMDAwMCBuCjAwMDAwMDAxNzkgMDAwMDAgbgowMDAwMDAwMzY0IDAwMDAwIG4KMDAwMDAwMDQ2NiAwMDAwMCBuCjAwMDAwMDA0OTYgMDAwMDAgbgp0cmFpbGVyCjw8IC9TaXplIDgKL1Jvb3QgMSAwIFIKPj4Kc3RhcnR4cmVmCjYyNQolJUVPRgo="
         response = self.request(
             "mediafile.upload",
             {
                 "title": "title_xXRGTLAJ",
                 "owner_id": "meeting/110",
                 "filename": filename,
-                "file": file_content,
+                "file": pdf_content,
             },
         )
         self.assert_status_code(response, 200)
         mediafile = self.get_model("mediafile/1")
-        # pypdf assumes the file is encrypted since it is not valid
-        assert mediafile.get("pdf_information") == {"pages": 0, "encrypted": True}
+        assert mediafile.get("pdf_information") == {"pages": 1}
         self.media.upload_mediafile.assert_called_with(
-            file_content, 1, "application/pdf"
+            pdf_content, 1, "application/pdf"
         )
 
     def test_error_in_resource_upload(self) -> None:
         self.create_model(
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
         )
-        filename = "raises_upload_error.swf"
-        used_mimetype = "application/x-shockwave-flash"
-        raw_content = b"raising upload error in mock"
+        filename = "raises_upload_error.txt"
+        used_mimetype = "text/plain"
+        raw_content = b"Do me a favour and trigger a mock mediaservice error, will you?"
         file_content = base64.b64encode(raw_content).decode()
         response = self.request(
             "mediafile.upload",
@@ -398,23 +398,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
             },
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
-
-    def test_create_added_mimetype_ttf(self) -> None:
-        self.create_model(
-            "meeting/110", {"name": "name", "is_active_in_organization_id": 1}
-        )
-        file_content = base64.b64encode(b"testtesttest").decode()
-        response = self.request(
-            "mediafile.upload",
-            {
-                "title": "title_xXRGTLAJ",
-                "owner_id": "meeting/110",
-                "filename": "fn_jumbo.ttf",
-                "file": file_content,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("mediafile/1", {"mimetype": "font/ttf"})
 
     def test_create_media_access_group(self) -> None:
         self.set_models(

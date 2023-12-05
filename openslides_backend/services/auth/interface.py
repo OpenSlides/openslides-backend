@@ -34,7 +34,7 @@ class AuthenticationService(Protocol):
         Returns the hashed value. The hashed value is structured as follows: [salt + hash].
         """
 
-    def is_equals(self, toHash: str, toCompare: str) -> bool:
+    def is_equal(self, toHash: str, toCompare: str) -> bool:
         """
         Compares a given value with an given hash.
         toHash is the password in plaint text which should be compared with the hashed value

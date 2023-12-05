@@ -17,7 +17,7 @@ class UserForgetPasswordConfirm(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")
-        assert self.auth.is_equals(self.PW, model.get("password", ""))
+        assert self.auth.is_equal(self.PW, model.get("password", ""))
 
     def test_forget_password_confirm_invalid_token(self) -> None:
         self.update_model("user/1", {"password": "old_pw", "email": self.EMAIL})

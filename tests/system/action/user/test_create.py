@@ -26,7 +26,7 @@ class UserCreateActionTest(BaseActionTestCase):
         assert model.get("username") == "test Xcdfgee"
         assert (password := model.get("default_password")) is not None
         assert all(char in PASSWORD_CHARS for char in password)
-        assert self.auth.is_equals(password, model.get("password", ""))
+        assert self.auth.is_equal(password, model.get("password", ""))
         assert response.json["results"][0][0] == {"id": 2}
         self.assert_history_information("user/2", ["Account created"])
 
@@ -105,7 +105,7 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assertCountEqual(user2.get("committee_ids", []), [78, 79])
-        assert self.auth.is_equals(
+        assert self.auth.is_equal(
             user2.get("default_password", ""), user2.get("password", "")
         )
         result = response.json["results"][0][0]

@@ -9,9 +9,10 @@ requests==2.31.0
 roman==4.1
 simplejson==3.19.2
 Werkzeug==3.0.1
+python-magic==0.4.27
 
 # authlib
-git+https://github.com/OpenSlides/openslides-auth-service.git@da6d2a94c51e25f431d7ffe4841d7e73d8cdc229#egg=authlib&subdirectory=auth/libraries/pip-auth
+git+https://github.com/OpenSlides/openslides-auth-service.git@86b7892abd10b4588b110548d88b16da6be3dbe2#egg=authlib&subdirectory=auth/libraries/pip-auth
 argon2-cffi
 
 # opentelemetry

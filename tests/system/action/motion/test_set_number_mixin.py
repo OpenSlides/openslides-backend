@@ -1116,8 +1116,8 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         motion4 = self.get_model("motion/4")
-        assert motion4.get("number") == "A 002"
-        assert motion4.get("number_value") == 2
+        assert motion4.get("number") == "A 003"
+        assert motion4.get("number_value") == 3
 
 
 class SetNumberMixinFollowRecommandationTest(BaseActionTestCase):

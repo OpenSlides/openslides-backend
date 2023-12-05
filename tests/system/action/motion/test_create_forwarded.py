@@ -146,6 +146,34 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.assert_history_information("motion/12", ["Forwarded to {}", "meeting/2"])
         self.assert_history_information("motion/13", ["Motion created (forwarded)"])
 
+    def test_no_origin_id(self) -> None:
+        self.set_models(self.test_model)
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "origin_id": 12,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "data must contain ['meeting_id'] properties"
+
+    def test_no_meeting_id(self) -> None:
+        self.set_models(self.test_model)
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "data must contain ['origin_id'] properties"
+
     def test_correct_existing_registered_forward_user(self) -> None:
         self.set_models(self.test_model)
         self.set_models(
