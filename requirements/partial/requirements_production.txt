@@ -11,10 +11,6 @@ simplejson==3.19.2
 Werkzeug==3.0.1
 python-magic==0.4.27
 
-# authlib
-git+https://github.com/jsangmeister/openslides-auth-service.git@67f79bda17c34c3fc915756f493a05e336c4eeef#egg=authlib&subdirectory=auth/libraries/pip-auth
-argon2-cffi
-
 # opentelemetry
 opentelemetry-api==1.21.0
 opentelemetry-sdk==1.21.0

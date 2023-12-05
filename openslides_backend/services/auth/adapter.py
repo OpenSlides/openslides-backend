@@ -72,4 +72,6 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
         return user_id == found_user_id
 
     def clear_all_sessions(self) -> None:
-        self.auth_handler.clear_all_sessions(self.access_token, self.refresh_id)
+        self.auth_handler.clear_all_sessions(
+            self.access_token, parse.unquote(self.refresh_id)
+        )
