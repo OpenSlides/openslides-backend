@@ -451,3 +451,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         else:
             assert informations
             self.assertEqual(last_information[fqid], information)
+
+    def assert_logged_out(self) -> None:
+        self.auth.authenticate()
+        BaseSystemTestCase.auth_data = None

@@ -7,6 +7,7 @@ from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .password_mixins import PasswordChangeMixin
 from .set_password import UserSetPasswordMixin
 
 
@@ -15,6 +16,7 @@ class UserGenerateNewPassword(
     UserSetPasswordMixin,
     CheckForArchivedMeetingMixin,
     UserScopeMixin,
+    PasswordChangeMixin,
 ):
     model = User()
     schema = DefaultSchema(User()).get_update_schema()

@@ -12,7 +12,7 @@ Werkzeug==3.0.1
 python-magic==0.4.27
 
 # authlib
-git+https://github.com/OpenSlides/openslides-auth-service.git@86b7892abd10b4588b110548d88b16da6be3dbe2#egg=authlib&subdirectory=auth/libraries/pip-auth
+git+https://github.com/jsangmeister/openslides-auth-service.git@67f79bda17c34c3fc915756f493a05e336c4eeef#egg=authlib&subdirectory=auth/libraries/pip-auth
 argon2-cffi
 
 # opentelemetry

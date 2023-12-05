@@ -9,9 +9,12 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .password_mixins import PasswordChangeMixin
 
 
-class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin):
+class UserResetPasswordToDefaultMixin(
+    UpdateAction, CheckForArchivedMeetingMixin, PasswordChangeMixin
+):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Gets the default_password and reset password.

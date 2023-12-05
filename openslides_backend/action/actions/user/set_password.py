@@ -8,9 +8,12 @@ from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .password_mixins import PasswordChangeMixin
 
 
-class UserSetPasswordMixin(UpdateAction, CheckForArchivedMeetingMixin):
+class UserSetPasswordMixin(
+    UpdateAction, CheckForArchivedMeetingMixin, PasswordChangeMixin
+):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         set hashed password and set default password if set_as_default is True.

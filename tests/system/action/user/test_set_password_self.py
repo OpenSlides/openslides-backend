@@ -18,6 +18,7 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
         assert model.get("old_password") is None
         assert model.get("new_password") is None
         assert self.auth.is_equal("new", model.get("password", ""))
+        self.assert_logged_out()
 
     def test_set_password_wrong_password(self) -> None:
         old_hash = self.auth.hash("old")
