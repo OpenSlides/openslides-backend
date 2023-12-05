@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, cast
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.relations.relation_manager import RelationManager
-from openslides_backend.action.util.typing import ActionData, ActionResults
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -20,7 +19,6 @@ from openslides_backend.shared.exceptions import (
 from openslides_backend.shared.interfaces.env import Env
 from openslides_backend.shared.interfaces.logging import LoggingModule
 from openslides_backend.shared.interfaces.services import Services
-from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
@@ -192,12 +190,6 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         "G": ["is_demo_user"],
         "H": ["saml_id"],
     }
-
-    def perform(
-        self, action_data: ActionData, user_id: int, internal: bool = False
-    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
-        self.internal = internal
-        return super().perform(action_data, user_id, internal)
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         """
