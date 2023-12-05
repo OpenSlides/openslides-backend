@@ -270,7 +270,10 @@ class MotionJsonUpload(
                                 [],
                             ),
                         )
-                        message_map["duplicate"] = (err_message, [*err_users, user])
+                        message_map["duplicate"] = (
+                            err_message,
+                            list(set([*err_users, user])),
+                        )
                     else:
                         username_set.add(user)
                         found_users = self.username_lookup.get(user, [])
@@ -360,13 +363,21 @@ class MotionJsonUpload(
 
         if tags := entry.get("tags"):
             entry_list = []
-            message_set = set()
+            message_map = {}
             tags_set: Set[str] = set()
             for tag in tags:
                 if tag in tags_set:
                     entry_list.append({"value": tag, "info": ImportState.WARNING})
-                    message_set.add(
-                        "At least one tag has been referenced multiple times"
+                    err_message, err_tags = message_map.get(
+                        "duplicate",
+                        (
+                            "At least one tag has been referenced multiple times: ",
+                            [],
+                        ),
+                    )
+                    message_map["duplicate"] = (
+                        err_message,
+                        list(set([*err_tags, tag])),
                     )
                 else:
                     tags_set.add(tag)
@@ -387,7 +398,14 @@ class MotionJsonUpload(
                                 "info": ImportState.WARNING,
                             }
                         )
-                        message_set.add("Could not find at least one tag")
+                        err_message, err_tags = message_map.get(
+                            "not_found",
+                            (
+                                "Could not find at least one tag: ",
+                                [],
+                            ),
+                        )
+                        message_map["not_found"] = (err_message, [*err_tags, tag])
                     else:
                         entry_list.append(
                             {
@@ -395,9 +413,18 @@ class MotionJsonUpload(
                                 "info": ImportState.WARNING,
                             }
                         )
-                        message_set.add("Found multiple tags with the same name")
+                        err_message, err_tags = message_map.get(
+                            "multiple",
+                            (
+                                "Found multiple tags with the same name: ",
+                                [],
+                            ),
+                        )
+                        message_map["multiple"] = (err_message, [*err_tags, tag])
             entry["tags"] = entry_list
-            messages.extend([message for message in message_set])
+            messages.extend(
+                [message + ", ".join(tags) for message, tags in message_map.values()]
+            )
 
         if (block := entry.get("block")) and isinstance(block, str):
             found_blocks = self.block_lookup.get(block, [])

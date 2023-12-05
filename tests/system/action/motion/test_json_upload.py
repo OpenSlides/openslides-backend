@@ -2961,7 +2961,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.setup_assert_with_tags(meeting_id)
         use_tags: List[str] = []
         number_of_common_tags = 0
-        expected_not_found = 0
+        expected_not_found: List[str] = []
         expect_duplicates = False
         messages: List[str] = []
         if common_tags:
@@ -2973,13 +2973,13 @@ class MotionJsonUpload(MotionImportTestMixin):
             use_tags.append("Got tag go")
         if add_unidentifiable_tag:
             use_tags.append("Tag-ether")
-            messages.append("Found multiple tags with the same name")
+            messages.append("Found multiple tags with the same name: Tag-ether")
         if add_foreign_tag:
             use_tags.append("rag-tag")
-            expected_not_found = 1
+            expected_not_found.append("rag-tag")
         if add_unknown_tag:
             use_tags.append("Not a tag")
-            expected_not_found += 1
+            expected_not_found.append("Not a tag")
         if duplicates_in_row:
             if number_of_common_tags:
                 use_tags.append("Tag-liatelle")
@@ -2987,10 +2987,16 @@ class MotionJsonUpload(MotionImportTestMixin):
                 number_of_common_tags = 1
                 use_tags = ["Tag-liatelle", *use_tags, "Tag-liatelle"]
             expect_duplicates = True
-            messages.append("At least one tag has been referenced multiple times")
-        if expected_not_found:
-            messages.append("Could not find at least one tag")
-        has_warnings = add_unidentifiable_tag or expected_not_found or expect_duplicates
+            messages.append(
+                "At least one tag has been referenced multiple times: Tag-liatelle"
+            )
+        if len(expected_not_found):
+            messages.append(
+                "Could not find at least one tag: " + ", ".join(expected_not_found)
+            )
+        has_warnings = (
+            add_unidentifiable_tag or len(expected_not_found) or expect_duplicates
+        )
         expected_data: List[Dict[str, Any]] = []
         for i in range(len(use_tags)):
             tag = use_tags[i]
