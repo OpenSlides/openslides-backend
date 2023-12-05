@@ -66,7 +66,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             if (
                 speaker.get("end_time") is None
                 and speaker["meeting_user_id"] == last_speaker["meeting_user_id"]
-                and not speaker.get("point_of_order")
+                and speaker.get("point_of_order") == last_speaker.get("point_of_order")
             ):
                 meeting_user = self.datastore.get(
                     fqid_from_collection_and_id(
