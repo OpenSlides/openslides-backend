@@ -475,7 +475,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "meeting2",
                 "committee_id": 1,
-                "language": "pt",
+                "language": "en",
                 "external_id": external_id,
             },
         )

@@ -152,6 +152,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "committee/1": {"organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -285,6 +286,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "committee/1": {"organization_id": 1, "default_meeting_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -545,6 +547,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "committee/1": {"organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -630,6 +633,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "meeting/2": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 3,
