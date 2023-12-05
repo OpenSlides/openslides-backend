@@ -172,6 +172,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -326,6 +327,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -619,6 +621,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -705,6 +708,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "meeting/2": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 3,
