@@ -1,6 +1,6 @@
 from collections import defaultdict
 from re import search, sub
-from typing import Any, Dict, Iterable, List, Optional, Set, cast
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, cast
 
 from openslides_backend.shared.filters import And, Filter, FilterOperator, Or
 
@@ -118,8 +118,7 @@ class MotionJsonUpload(
     permission = Permissions.Motion.CAN_MANAGE
     row_state: ImportState
     number_lookup: Lookup
-    submitter_lookup: Dict[str, List[Dict[str, Any]]] = {}
-    supporter_lookup: Dict[str, List[Dict[str, Any]]] = {}
+    username_lookup: Dict[str, List[Dict[str, Any]]] = {}
     category_lookup: Dict[str, List[Dict[str, Any]]] = {}
     tags_lookup: Dict[str, List[Dict[str, Any]]] = {}
     block_lookup: Dict[str, List[Dict[str, Any]]] = {}
@@ -176,19 +175,17 @@ class MotionJsonUpload(
         meeting_id: int = entry["meeting_id"]
         set_entry_id = False
 
-        if (is_amendment := entry.get("motion_amendment")) and isinstance(
-            is_amendment, bool
-        ):
+        if (is_amendment := entry.get("motion_amendment")) is not None:
             entry["motion_amendment"] = {
                 "value": is_amendment,
-                "info": ImportState.WARNING,
+                "info": ImportState.DONE,
             }
-            messages.append("Amendments cannot be correctly imported")
+            if is_amendment:
+                entry["motion_amendment"]["info"] = ImportState.WARNING
+                messages.append("Amendments cannot be correctly imported")
 
-        if (category_name := entry.get("category_name")) and isinstance(
-            category_name, str
-        ):
-            category_prefix = entry.get("category_prefix") or None
+        if category_name := entry.get("category_name"):
+            category_prefix = entry.get("category_prefix")
             categories = self.category_lookup.get(category_name, [])
             categories = [
                 category
@@ -207,13 +204,11 @@ class MotionJsonUpload(
                     "info": ImportState.WARNING,
                 }
                 messages.append("Category could not be found")
-        elif (category_prefix := entry.get("category_prefix") or None) and isinstance(
-            category_prefix, str
-        ):
+        elif category_prefix := entry.get("category_prefix"):
             entry["category_name"] = {"value": "", "info": ImportState.WARNING}
             messages.append("Category could not be found")
 
-        if (number := entry.get("number")) and isinstance(number, str):
+        if number := entry.get("number"):
             check_result = self.number_lookup.check_duplicate(number)
             id_ = cast(int, self.number_lookup.get_field_by_name(number, "id"))
             if check_result == ResultType.FOUND_ID and id_ != 0:
@@ -258,86 +253,87 @@ class MotionJsonUpload(
         has_submitter_error: bool = False
         for fieldname in ["submitter", "supporter"]:
             if users := entry.get(f"{fieldname}s_username"):
-                if not isinstance(users, list):
-                    users = [users]
                 verbose = entry.get(f"{fieldname}s_verbose", [])
-                if not isinstance(verbose, list):
-                    verbose = [verbose]
                 verbose_user_mismatch = len(verbose) > len(users)
                 username_set: Set[str] = set([])
                 entry_list: list[Dict[str, Any]] = []
-                message_set = set()
-                lookup = (
-                    self.submitter_lookup
-                    if fieldname == "submitter"
-                    else self.supporter_lookup
-                )
+                message_map: Dict[str, Tuple[str, List[str]]] = {}
                 for user in users:
-                    if isinstance(user, str):
-                        if verbose_user_mismatch:
-                            entry_list.append(
-                                {"value": user, "info": ImportState.ERROR}
-                            )
-                        elif user in username_set:
-                            entry_list.append(
-                                {"value": user, "info": ImportState.WARNING}
-                            )
-                            message_set.add(
-                                f"At least one {fieldname} has been referenced multiple times"
-                            )
-                        else:
-                            username_set.add(user)
-                            found_users = lookup.get(user, [])
-                            if len(found_users) == 1 and found_users[0].get("id") != 0:
-                                user_id = cast(int, found_users[0].get("id"))
-                                if len(
-                                    self._user_ids_to_meeting_user.get(user_id, {}).get(
-                                        "group_ids", []
-                                    )
-                                ):
-                                    entry_list.append(
-                                        {
-                                            "value": user,
-                                            "info": ImportState.DONE,
-                                            "id": user_id,
-                                        }
-                                    )
-                                else:
-                                    entry_list.append(
-                                        {"value": user, "info": ImportState.WARNING}
-                                    )
-                                    message_set.add(
-                                        f"At least one {fieldname} is not part of this meeting"
-                                    )
-                            elif len(found_users) <= 1:
+                    if verbose_user_mismatch:
+                        entry_list.append({"value": user, "info": ImportState.ERROR})
+                    elif user in username_set:
+                        entry_list.append({"value": user, "info": ImportState.WARNING})
+                        err_message, err_users = message_map.get(
+                            "duplicate",
+                            (
+                                f"At least one {fieldname} has been referenced multiple times: ",
+                                [],
+                            ),
+                        )
+                        message_map["duplicate"] = (err_message, [*err_users, user])
+                    else:
+                        username_set.add(user)
+                        found_users = self.username_lookup.get(user, [])
+                        if len(found_users) == 1 and found_users[0].get("id") != 0:
+                            user_id = cast(int, found_users[0].get("id"))
+                            if len(
+                                self._user_ids_to_meeting_user.get(user_id, {}).get(
+                                    "group_ids", []
+                                )
+                            ):
                                 entry_list.append(
                                     {
                                         "value": user,
-                                        "info": ImportState.WARNING,
+                                        "info": ImportState.DONE,
+                                        "id": user_id,
                                     }
-                                )
-                                message_set.add(
-                                    f"Could not find at least one {fieldname}"
                                 )
                             else:
                                 entry_list.append(
-                                    {
-                                        "value": user,
-                                        "info": ImportState.WARNING,
-                                    }
+                                    {"value": user, "info": ImportState.WARNING}
                                 )
-                                message_set.add(
-                                    f"Found multiple users for at least one {fieldname}"
+                                err_message, err_users = message_map.get(
+                                    "foreign",
+                                    (
+                                        f"At least one {fieldname} is not part of this meeting: ",
+                                        [],
+                                    ),
                                 )
+                                message_map["foreign"] = (
+                                    err_message,
+                                    [*err_users, user],
+                                )
+                        elif len(found_users) <= 1:
+                            entry_list.append(
+                                {
+                                    "value": user,
+                                    "info": ImportState.WARNING,
+                                }
+                            )
+                            err_message, err_users = message_map.get(
+                                "not_found",
+                                (f"Could not find at least one {fieldname}: ", []),
+                            )
+                            message_map["not_found"] = (err_message, [*err_users, user])
+                        else:
+                            raise ActionException(
+                                f"Database corrupt: Found multiple users with the username {user}"
+                            )
                 entry[f"{fieldname}s_username"] = entry_list
                 if verbose_user_mismatch:
                     self.row_state = ImportState.ERROR
-                    message_set.add(
-                        f"Error: Verbose field is set and has more entries than the username field for {fieldname}s"
+                    message_map["mismatch"] = (
+                        f"Error: Verbose field is set and has more entries than the username field for {fieldname}s",
+                        [],
                     )
                     if fieldname == "submitter":
                         has_submitter_error = True
-                messages.extend([message for message in message_set])
+                messages.extend(
+                    [
+                        message + ", ".join(users)
+                        for message, users in message_map.values()
+                    ]
+                )
 
         if not has_submitter_error:
             if (
@@ -363,46 +359,43 @@ class MotionJsonUpload(
                 entry["submitters_username"].append(self._get_self_username_object())
 
         if tags := entry.get("tags"):
-            if not isinstance(tags, list):
-                tags = [tags]
             entry_list = []
             message_set = set()
             tags_set: Set[str] = set()
             for tag in tags:
-                if isinstance(tag, str):
-                    if tag in tags_set:
-                        entry_list.append({"value": tag, "info": ImportState.WARNING})
-                        message_set.add(
-                            "At least one tag has been referenced multiple times"
+                if tag in tags_set:
+                    entry_list.append({"value": tag, "info": ImportState.WARNING})
+                    message_set.add(
+                        "At least one tag has been referenced multiple times"
+                    )
+                else:
+                    tags_set.add(tag)
+                    found_tags = self.tags_lookup.get(tag, [])
+                    if len(found_tags) == 1 and found_tags[0].get("id") != 0:
+                        tag_id = cast(int, found_tags[0].get("id"))
+                        entry_list.append(
+                            {
+                                "value": tag,
+                                "info": ImportState.DONE,
+                                "id": tag_id,
+                            }
                         )
+                    elif len(found_tags) <= 1:
+                        entry_list.append(
+                            {
+                                "value": tag,
+                                "info": ImportState.WARNING,
+                            }
+                        )
+                        message_set.add("Could not find at least one tag")
                     else:
-                        tags_set.add(tag)
-                        found_tags = self.tags_lookup.get(tag, [])
-                        if len(found_tags) == 1 and found_tags[0].get("id") != 0:
-                            tag_id = cast(int, found_tags[0].get("id"))
-                            entry_list.append(
-                                {
-                                    "value": tag,
-                                    "info": ImportState.DONE,
-                                    "id": tag_id,
-                                }
-                            )
-                        elif len(found_tags) <= 1:
-                            entry_list.append(
-                                {
-                                    "value": tag,
-                                    "info": ImportState.WARNING,
-                                }
-                            )
-                            message_set.add("Could not find at least one tag")
-                        else:
-                            entry_list.append(
-                                {
-                                    "value": tag,
-                                    "info": ImportState.WARNING,
-                                }
-                            )
-                            message_set.add("Found multiple tags with the same name")
+                        entry_list.append(
+                            {
+                                "value": tag,
+                                "info": ImportState.WARNING,
+                            }
+                        )
+                        message_set.add("Found multiple tags with the same name")
             entry["tags"] = entry_list
             messages.extend([message for message in message_set])
 
@@ -431,10 +424,8 @@ class MotionJsonUpload(
         if id_ and set_entry_id:
             entry["id"] = id_
 
-        if (
-            (text := entry.get("text"))
-            and isinstance(text, str)
-            and not search(r"^<\w+[^>]*>[\w\W]*?<\/\w>$", text)
+        if (text := entry.get("text")) and not search(
+            r"^<\w+[^>]*>[\w\W]*?<\/\w>$", text
         ):
             entry["text"] = (
                 "<p>"
@@ -533,46 +524,32 @@ class MotionJsonUpload(
             ["prefix"],
             and_filters=[FilterOperator("meeting_id", "=", meeting_id)],
         )
-        self.submitter_lookup = self.get_lookup_dict(
+        self.username_lookup = self.get_lookup_dict(
             "user",
-            [
-                username
-                for entry in data
-                if (usernames := entry.get("submitters_username"))
-                for username in usernames
-                if username
-            ],
-            "username",
-            ["meeting_user_ids"],
-        )
-        self.supporter_lookup = self.get_lookup_dict(
-            "user",
-            [
-                username
-                for entry in data
-                if (usernames := entry.get("supporters_username"))
-                for username in usernames
-                if username
-            ],
-            "username",
-            ["meeting_user_ids"],
-        )
-        all_user_ids = set(
             list(
-                [
-                    submitter["id"]
-                    for submitters in self.submitter_lookup.values()
-                    for submitter in submitters
-                ]
-            )
-            + list(
-                [
-                    supporter["id"]
-                    for supporters in self.supporter_lookup.values()
-                    for supporter in supporters
-                ]
-            )
+                set(
+                    [
+                        username
+                        for entry in data
+                        if (
+                            usernames := [
+                                *entry.get("submitters_username", []),
+                                *entry.get("supporters_username", []),
+                            ]
+                        )
+                        for username in usernames
+                        if username
+                    ]
+                )
+            ),
+            "username",
+            ["meeting_user_ids"],
         )
+        all_user_ids = [
+            submitter["id"]
+            for submitters in self.username_lookup.values()
+            for submitter in submitters
+        ]
         all_meeting_users: Dict[int, Dict[str, Any]] = {}
         if len(all_user_ids):
             all_meeting_users = self.datastore.filter(

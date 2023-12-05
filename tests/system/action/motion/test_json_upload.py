@@ -2170,16 +2170,20 @@ class MotionJsonUpload(MotionImportTestMixin):
                 )
 
                 if user_date["unknown_user_present"]:
-                    expected_messages.append(f"Could not find at least one {usertype}")
+                    expected_messages.append(
+                        f"Could not find at least one {usertype}: "
+                    )
                 if has_foreign_users:
                     expected_messages.append(
-                        f"At least one {usertype} is not part of this meeting"
+                        f"At least one {usertype} is not part of this meeting: "
                     )
                 for key in expected_data:
                     assert row["data"].get(key) == expected_data[key]
             assert len(row["messages"]) == len(expected_messages)
             for message in expected_messages:
-                assert message in row["messages"]
+                assert any(
+                    [message in actual_message for actual_message in row["messages"]]
+                )
         assert response.json["results"][0][0]["state"] == (
             ImportState.WARNING if has_warning else ImportState.DONE
         )
@@ -2848,6 +2852,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         usernames: List[str],
         username_fields: List[str] = ["submitter"],
         is_update: bool = False,
+        duplicated_users: List[str] = ["firstMeeting"],
     ) -> None:
         meeting_id = 42
         self.set_up_models(*self.get_base_user_and_meeting_settings())
@@ -2885,7 +2890,8 @@ class MotionJsonUpload(MotionImportTestMixin):
         assert row["state"] == (ImportState.DONE if is_update else ImportState.NEW)
         for fieldname in username_fields:
             assert (
-                f"At least one {fieldname} has been referenced multiple times"
+                f"At least one {fieldname} has been referenced multiple times: "
+                + ", ".join(duplicated_users)
                 in row["messages"]
             ) == has_warnings
 
@@ -2896,8 +2902,14 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def test_json_upload_update_with_duplicate_submitters(self) -> None:
         self.assert_and_check_for_duplicate_users_in_row(
-            [*self.legal_first_meeting_usernames, "firstMeeting", "multiMeeting"],
+            [
+                *self.legal_first_meeting_usernames,
+                "firstMeeting",
+                "firstMeetingSubmitter",
+                "multiMeeting",
+            ],
             is_update=True,
+            duplicated_users=["firstMeeting", "firstMeetingSubmitter"],
         )
 
     def test_json_upload_create_with_duplicate_supporters(self) -> None:
