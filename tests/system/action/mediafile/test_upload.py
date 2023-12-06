@@ -220,8 +220,6 @@ l,m,n,"""
             },
         )
         self.assert_status_code(response, 200)
-        # mediafile = self.get_model("mediafile/1")
-        # assert mediafile.get("pdf_information") == {"pages": 1}
         self.media.upload_mediafile.assert_called_with(csv_content, 1, "text/csv")
 
     def test_error_in_resource_upload(self) -> None:
