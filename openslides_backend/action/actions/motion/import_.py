@@ -31,7 +31,7 @@ from .update import MotionUpdate
 
 
 @register_action("motion.import")
-class AccountImport(
+class MotionImport(
     ImportMixin, MotionCreatePayloadValidationMixin, MotionUpdatePayloadValidationMixin
 ):
     """
