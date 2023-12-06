@@ -19,13 +19,13 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
-                "username": " test Xcdfgee ",
+                "username": "test_Xcdfgee",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/2")
-        assert model.get("username") == "test Xcdfgee"
+        assert model.get("username") == "test_Xcdfgee"
         assert (password := model.get("default_password")) is not None
         assert all(char in PASSWORD_CHARS for char in password)
         assert self.auth.is_equal(password, model.get("password", ""))
@@ -133,14 +133,14 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
-                "username": "test Xcdfgee",
+                "username": "test_Xcdfgee",
                 "comment": "blablabla",
                 "meeting_id": 1,
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/2", {"username": "test Xcdfgee", "meeting_user_ids": [1]}
+            "user/2", {"username": "test_Xcdfgee", "meeting_user_ids": [1]}
         )
         result = response.json["results"][0][0]
         assert result == {"id": 2, "meeting_user_id": 1}
@@ -163,7 +163,7 @@ class UserCreateActionTest(BaseActionTestCase):
 
         response = self.request(
             "user.create",
-            {"username": "test Xcdfgee", "group_ids": [111]},
+            {"username": "test_Xcdfgee", "group_ids": [111]},
         )
         self.assert_status_code(response, 400)
         assert (
@@ -291,7 +291,7 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
-                "username": " test Xcdfgee ",
+                "username": "test_Xcdfgee",
                 "email": "broken@@",
             },
         )
@@ -397,7 +397,6 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
-                "username": " username test ",
                 "first_name": " first name test ",
                 "last_name": " last name test ",
             },
@@ -406,7 +405,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "username": "username test",
+                "username": "firstnametestlastnametest",
                 "first_name": "first name test",
                 "last_name": "last name test",
             },
@@ -513,7 +512,7 @@ class UserCreateActionTest(BaseActionTestCase):
                     "action": "user.create",
                     "data": [
                         {
-                            "username": "new username",
+                            "username": "new_username",
                             "title": "new title",
                             "first_name": "new first_name",
                             "last_name": "new last_name",
@@ -548,7 +547,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/3",
             {
-                "username": "new username",
+                "username": "new_username",
                 "title": "new title",
                 "first_name": "new first_name",
                 "last_name": "new last_name",
@@ -662,7 +661,7 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
-                "username": "new username",
+                "username": "new_username",
                 "committee_management_ids": [60],
                 "meeting_id": 4,
                 "group_ids": [4],
@@ -1119,6 +1118,16 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Need username or first_name or last_name" in response.json["message"]
 
+    def test_create_username_with_spaces(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "username": "test name",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Username may not contain spaces" in response.json["message"]
+
     def test_create_gender(self) -> None:
         self.set_models({"organization/1": {"genders": ["male", "female"]}})
         response = self.request(
@@ -1317,7 +1326,7 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
         response = self.internal_request(
             "user.create",
             {
-                "username": " username test ",
+                "username": "username_test",
                 "saml_id": "123saml",
                 "default_password": "test",
             },

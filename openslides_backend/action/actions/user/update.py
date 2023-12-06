@@ -83,6 +83,9 @@ class UserUpdate(
             instance["default_password"] = ""
             instance["password"] = ""
 
+        if instance.get("username") and " " in instance["username"]:
+            raise ActionException("Username may not contain spaces")
+
         if (
             instance["id"] == self.user_id
             and user.get("organization_management_level")
