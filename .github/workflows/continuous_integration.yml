@@ -24,7 +24,7 @@ jobs:
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
 
     - name: Run docker production image
-      run: docker-compose -f docker-compose.prod.yml up -d
+      run: docker-compose -f docker-compose.prod.yml up --build -d
 
     - name: Wait for action service
       # we have to execute this inside the container since the port to the outside is opened directly after the

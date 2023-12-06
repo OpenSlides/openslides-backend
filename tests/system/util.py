@@ -87,7 +87,11 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
 def side_effect_for_upload_method(
     file: str, id: int, mimetype: str, **kwargs: Any
 ) -> None:
-    if mimetype == "application/x-shockwave-flash":
+    # Check against encoded version of "Do me a favour and trigger a mock mediaservice error, will you?"
+    if (
+        file
+        == "RG8gbWUgYSBmYXZvdXIgYW5kIHRyaWdnZXIgYSBtb2NrIG1lZGlhc2VydmljZSBlcnJvciwgd2lsbCB5b3U/"
+    ):
         raise MediaServiceException("Mocked error on media service upload")
 
 

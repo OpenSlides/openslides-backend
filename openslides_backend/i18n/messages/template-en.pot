@@ -10,6 +10,19 @@ msgstr ""
 msgid "Complex Workflow"
 msgstr ""
 
+msgid ""
+"Dear {name},\n"
+"\n"
+"this is your personal OpenSlides login:\n"
+"\n"
+"{url}\n"
+"Username: {username}\n"
+"Password: {password}\n"
+"\n"
+"\n"
+"This email was generated automatically."
+msgstr ""
+
 msgid "Default"
 msgstr ""
 
@@ -19,13 +32,25 @@ msgstr ""
 msgid "Delegates"
 msgstr ""
 
+msgid "Elections"
+msgstr ""
+
+msgid "Motions"
+msgstr ""
+
 msgid "No concernment"
 msgstr ""
 
 msgid "No decision"
 msgstr ""
 
+msgid "OpenSlides access data"
+msgstr ""
+
 msgid "Permission"
+msgstr ""
+
+msgid "Presentation and assembly system"
 msgstr ""
 
 msgid "Referral to committee"
@@ -43,13 +68,22 @@ msgstr ""
 msgid "Simple Workflow"
 msgstr ""
 
+msgid "Space for your welcome text."
+msgstr ""
+
 msgid "Speaking time"
 msgstr ""
 
 msgid "Staff"
 msgstr ""
 
+msgid "The assembly may decide:"
+msgstr ""
+
 msgid "Voting"
+msgstr ""
+
+msgid "Welcome to OpenSlides"
 msgstr ""
 
 msgid ""
@@ -60,6 +94,9 @@ msgid ""
 "{url}/login/forget-password-confirm?user_id={user_id}&token={token}\n"
 "\n"
 "For completeness your username: {username}"
+msgstr ""
+
+msgid "[Place for your welcome and help text.]"
 msgstr ""
 
 msgid "accepted"

@@ -60,8 +60,8 @@ class AuthenticationHTTPAdapter(AuthenticationService):
     def hash(self, toHash: str) -> str:
         return self.auth_handler.hash(toHash)
 
-    def is_equals(self, toHash: str, toCompare: str) -> bool:
-        return self.auth_handler.is_equals(toHash, toCompare)
+    def is_equal(self, toHash: str, toCompare: str) -> bool:
+        return self.auth_handler.is_equal(toHash, toCompare)
 
     def is_anonymous(self, user_id: int) -> bool:
         return user_id == ANONYMOUS_USER
