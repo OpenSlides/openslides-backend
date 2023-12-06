@@ -76,7 +76,7 @@ class UserCreate(
                 if not (instance.get("first_name") or instance.get("last_name")):
                     raise ActionException("Need username or first_name or last_name")
                 instance["username"] = self.generate_username(instance)
-        elif re.search(r"\w", instance["username"]):
+        elif re.search(r"\s", instance["username"]):
             raise ActionException("Username may not contain spaces")
         instance = super().update_instance(instance)
         if saml_id:

@@ -84,7 +84,7 @@ class UserUpdate(
             instance["default_password"] = ""
             instance["password"] = ""
 
-        if instance.get("username") and re.search(r"\w", instance["username"]):
+        if instance.get("username") and re.search(r"\s", instance["username"]):
             raise ActionException("Username may not contain spaces")
 
         if (
