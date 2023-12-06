@@ -142,10 +142,10 @@ class AccountJsonUpload(BaseActionTestCase):
                 {"property": "username", "type": "string", "is_object": True},
                 {"property": "gender", "type": "string"},
                 {"property": "pronoun", "type": "string"},
+                {"property": "saml_id", "type": "string", "is_object": True},
                 {"property": "default_number", "type": "string"},
                 {"property": "default_structure_level", "type": "string"},
                 {"property": "default_vote_weight", "type": "decimal"},
-                {"property": "saml_id", "type": "string", "is_object": True},
             ],
             "rows": [
                 {
@@ -202,11 +202,10 @@ class AccountJsonUpload(BaseActionTestCase):
             {
                 "state": ImportState.ERROR,
                 "messages": [
-                    "The account with id 3 was found multiple times by different search criteria."
+                    "Found more users with the same username",
                 ],
                 "data": {
-                    "username": {"value": "test", "info": "done", "id": 3},
-                    "id": 3,
+                    "username": {"value": "test", "info": ImportState.ERROR},
                 },
             },
             {
@@ -271,10 +270,11 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": ["Found more users with name and email"],
                 "data": {
+                    "id": 4,
                     "first_name": "Max",
                     "last_name": "Mustermann",
                     "email": "max@mustermann.org",
-                    "username": {"value": "MaxMustermann", "info": "generated"},
+                    "username": {"id": 4, "value": "test2", "info": ImportState.DONE},
                 },
             }
         ]
@@ -389,7 +389,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": [
                     "saml_id 12345 must be unique.",
-                    "Will remove password and default_password and forbid changing your OpenSlides password.",
+                    "Will remove default_password and forbid changing your OpenSlides password.",
                 ],
                 "data": {
                     "username": {"value": "test2", "info": ImportState.DONE},
@@ -440,7 +440,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": [
                     "saml_id 12345 must be unique.",
-                    "Will remove password and default_password and forbid changing your OpenSlides password.",
+                    "Will remove default_password and forbid changing your OpenSlides password.",
                 ],
                 "data": {
                     "username": {"value": "test2", "info": ImportState.DONE},
@@ -488,7 +488,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": [
                     "saml_id 12345 must be unique.",
-                    "Will remove password and default_password and forbid changing your OpenSlides password.",
+                    "Will remove default_password and forbid changing your OpenSlides password.",
                 ],
                 "data": {
                     "username": {"value": "123451", "info": ImportState.GENERATED},
@@ -566,6 +566,61 @@ class AccountJsonUpload(BaseActionTestCase):
         ]
         assert result["state"] == ImportState.ERROR
 
+    def test_json_upload_duplicate_existing_name_email(self) -> None:
+        self.set_models(
+            {
+                "user/3": {
+                    "username": "test",
+                    "saml_id": "12345",
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "max@mustermann.org",
+                },
+            },
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "max@mustermann.org",
+                        "default_vote_weight": "1.0",
+                    },
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "max@mustermann.org",
+                        "default_vote_weight": "2.0",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
+        assert result["rows"][0]["messages"] == ["Found more users with name and email"]
+        assert result["rows"][0]["state"] == ImportState.ERROR
+        assert result["rows"][0]["data"] == {
+            "id": 3,
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "email": "max@mustermann.org",
+            "default_vote_weight": "1.000000",
+            "username": {"value": "test", "info": ImportState.DONE, "id": 3},
+        }
+        assert result["rows"][1]["messages"] == ["Found more users with name and email"]
+        assert result["rows"][1]["state"] == ImportState.ERROR
+        assert result["rows"][1]["data"] == {
+            "id": 3,
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "email": "max@mustermann.org",
+            "default_vote_weight": "2.000000",
+            "username": {"value": "test", "info": ImportState.DONE, "id": 3},
+        }
+
     def test_json_upload_no_permission(self) -> None:
         self.base_permission_test(
             {}, "account.json_upload", {"data": [{"username": "test"}]}
@@ -615,7 +670,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
         data0 = import_preview["result"]["rows"][0]["data"]
@@ -665,7 +720,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
@@ -931,7 +986,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         assert import_preview["result"]["rows"][0]["data"] == {
             "id": 2,
@@ -943,7 +998,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][1]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         assert import_preview["result"]["rows"][1]["data"] == {
             "id": 3,
@@ -966,7 +1021,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][3]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         assert import_preview["result"]["rows"][3]["data"] == {
             "saml_id": {"info": "new", "value": "saml5"},
@@ -977,7 +1032,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][4]["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password."
+            "Will remove default_password and forbid changing your OpenSlides password."
         ]
         assert import_preview["result"]["rows"][4]["data"] == {
             "saml_id": {"info": "new", "value": "new_saml6"},
@@ -998,98 +1053,4 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "last_name": "Baez7",
             "first_name": "Joan",
             "default_vote_weight": "7.345678",
-        }
-
-    def test_json_upload_duplicate_existing_username(self) -> None:
-        self.set_models(
-            {
-                "user/3": {
-                    "username": "test",
-                    "saml_id": "12345",
-                    "first_name": "Max",
-                    "last_name": "Mustermann",
-                    "email": "max@mustermann.org",
-                },
-            },
-        )
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [
-                    {"username": "test", "first_name": "Uli"},
-                    {"username": "test", "last_name": "Hoenes"},
-                ]
-            },
-        )
-        self.assert_status_code(response, 200)
-        result = response.json["results"][0][0]
-        assert result["state"] == ImportState.ERROR
-        assert result["rows"][0]["messages"] == [
-            "Found more users with the same username"
-        ]
-        assert result["rows"][0]["state"] == ImportState.ERROR
-        assert result["rows"][0]["data"]["username"] == {
-            "value": "test",
-            "info": "error",
-        }
-        assert result["rows"][1]["messages"] == [
-            "Found more users with the same username"
-        ]
-        assert result["rows"][1]["state"] == ImportState.ERROR
-        assert result["rows"][1]["data"]["username"] == {
-            "value": "test",
-            "info": "error",
-        }
-
-    def test_json_upload_duplicate_existing_name_email(self) -> None:
-        self.set_models(
-            {
-                "user/3": {
-                    "username": "test",
-                    "saml_id": "12345",
-                    "first_name": "Max",
-                    "last_name": "Mustermann",
-                    "email": "max@mustermann.org",
-                },
-            },
-        )
-        response = self.request(
-            "account.json_upload",
-            {
-                "data": [
-                    {
-                        "first_name": "Max",
-                        "last_name": "Mustermann",
-                        "email": "max@mustermann.org",
-                        "default_vote_weight": "1.0",
-                    },
-                    {
-                        "first_name": "Max",
-                        "last_name": "Mustermann",
-                        "email": "max@mustermann.org",
-                        "default_vote_weight": "2.0",
-                    },
-                ]
-            },
-        )
-        self.assert_status_code(response, 200)
-        result = response.json["results"][0][0]
-        assert result["state"] == ImportState.ERROR
-        assert result["rows"][0]["messages"] == ["Found more users with name and email"]
-        assert result["rows"][0]["state"] == ImportState.ERROR
-        assert result["rows"][0]["data"] == {
-            "first_name": "Max",
-            "last_name": "Mustermann",
-            "email": "max@mustermann.org",
-            "default_vote_weight": "1.000000",
-            "username": {"value": "MaxMustermann", "info": ImportState.GENERATED},
-        }
-        assert result["rows"][1]["messages"] == ["Found more users with name and email"]
-        assert result["rows"][1]["state"] == ImportState.ERROR
-        assert result["rows"][1]["data"] == {
-            "first_name": "Max",
-            "last_name": "Mustermann",
-            "email": "max@mustermann.org",
-            "default_vote_weight": "2.000000",
-            "username": {"value": "MaxMustermann1", "info": ImportState.GENERATED},
         }

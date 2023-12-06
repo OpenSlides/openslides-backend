@@ -8,6 +8,8 @@ from . import (  # noqa
     forget_password_confirm,
     generate_new_password,
     merge_together,
+    participant_import,
+    participant_json_upload,
     reset_password_to_default,
     save_saml_account,
     send_invitation_email,
