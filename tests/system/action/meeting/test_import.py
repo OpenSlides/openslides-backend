@@ -53,6 +53,7 @@ class MeetingImport(BaseActionTestCase):
                 "meeting": {
                     "1": {
                         "id": 1,
+                        "language": "en",
                         "name": "Test",
                         "description": "blablabla",
                         "admin_group_id": 1,

@@ -752,7 +752,7 @@ meeting:
       - es
       - ru
       - cs
-    read_only: true
+    required: true
 
   # Configuration (only for the server owner)
   jitsi_domain:

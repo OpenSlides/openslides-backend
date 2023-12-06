@@ -146,6 +146,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         self.user_id = user_id
         self.index = 0
+        self.internal = internal
 
         # prefetch as much data as possible
         self.prefetch(action_data)

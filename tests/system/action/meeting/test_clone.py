@@ -25,6 +25,7 @@ class MeetingClone(BaseActionTestCase):
             "committee/1": {"organization_id": 1},
             "meeting/1": {
                 "committee_id": 1,
+                "language": "en",
                 "name": "Test",
                 "default_group_id": 1,
                 "admin_group_id": 2,
