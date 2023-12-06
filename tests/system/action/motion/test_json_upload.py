@@ -2890,9 +2890,16 @@ class MotionJsonUpload(MotionImportTestMixin):
         assert row["state"] == (ImportState.DONE if is_update else ImportState.NEW)
         for fieldname in username_fields:
             assert (
-                f"At least one {fieldname} has been referenced multiple times: "
-                + ", ".join(duplicated_users)
-                in row["messages"]
+                (
+                    f"At least one {fieldname} has been referenced multiple times: "
+                    in row["messages"][0]
+                )
+                and all(
+                    [
+                        duplicated_user in row["messages"][0]
+                        for duplicated_user in duplicated_users
+                    ]
+                )
             ) == has_warnings
 
     def test_json_upload_create_with_duplicate_submitters(self) -> None:

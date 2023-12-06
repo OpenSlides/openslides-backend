@@ -73,15 +73,17 @@ class MotionImport(
             submitter_create_action_payload: List[Dict[str, Any]] = []
             submitter_delete_action_payload: List[Dict[str, Any]] = []
 
-            self.flatten_object_fields(["text", "reason", "title", "number"])
-
             motion_to_submitter_user_ids: Dict[int, List[int]] = {}
             old_submitters: Dict[
                 int, Dict[int, int]
             ] = {}  # {motion_id: {user_id:submitter_id}}
-            for d in range(len(self.rows)):
-                row = self.rows[d]
+            for row in self.rows:
                 payload: Dict[str, Any] = row["data"].copy()
+                used_list = ["text", "reason", "title", "number"]
+                for field in used_list:
+                    if field in payload:
+                        if type(dvalue := payload[field]) is dict:
+                            payload[field] = dvalue["value"]
                 self.remove_fields_from_data(
                     payload,
                     ["submitters_verbose", "supporters_verbose", "motion_amendment"],
@@ -214,7 +216,7 @@ class MotionImport(
                         row["data"][fieldname]["info"] = ImportState.ERROR
                         row["data"][fieldname].pop("id", 0)
                     row["messages"].append("Error: " + err["message"])
-                    self.result["rows"][d]["state"] = ImportState.ERROR
+                    row["state"] = ImportState.ERROR
                     self.import_state = ImportState.ERROR
             if self.import_state != ImportState.ERROR:
                 created_submitters: List[Dict[str, int]] = []

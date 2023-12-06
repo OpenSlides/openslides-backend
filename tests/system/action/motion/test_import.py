@@ -300,13 +300,17 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.set_up_models_with_import_previews_and_get_next_motion_id()
         response = self.request("motion.import", {"id": 3, "import": True})
         self.assert_status_code(response, 400)
-        assert "Import data cannot be found." in response.json["message"]
+        assert (
+            "Wrong id doesn't point on motion import data." in response.json["message"]
+        )
 
     def test_import_wrong_meeting_model_import_preview(self) -> None:
         self.set_up_models_with_import_previews_and_get_next_motion_id()
         response = self.request("motion.import", {"id": 4, "import": True})
         self.assert_status_code(response, 400)
-        assert "Import data cannot be found." in response.json["message"]
+        assert (
+            "Wrong id doesn't point on motion import data." in response.json["message"]
+        )
 
     def prepare_complex_test(
         self,
