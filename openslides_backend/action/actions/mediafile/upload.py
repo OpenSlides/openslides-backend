@@ -90,9 +90,9 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         file_ = instance.pop("file")
         decoded_file = base64.b64decode(file_)
         mimetype_ = python_magic.from_buffer(decoded_file, mime=True)
-        use_mimetype: Optional[str] = mimetype_
         if mimetype_ is None:
             raise ActionException(f"Cannot guess mimetype for {filename_}.")
+        use_mimetype: Optional[str] = mimetype_
         if mimetype_ == "text/plain":
             use_mimetype, _ = mimetypes.guess_type(filename_)
             mismatched = (use_mimetype is None) or not use_mimetype.startswith("text/")
