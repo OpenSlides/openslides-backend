@@ -1,6 +1,6 @@
 from collections import defaultdict
 from re import search, sub
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional, Set, cast
 
 from openslides_backend.shared.filters import And, Filter, FilterOperator, Or
 
@@ -255,23 +255,14 @@ class MotionJsonUpload(
                 verbose_user_mismatch = len(verbose) > len(users)
                 username_set: Set[str] = set([])
                 entry_list: list[Dict[str, Any]] = []
-                message_map: Dict[str, Tuple[str, List[str]]] = {}
+                duplicates: Set[str] = set()
+                not_found: Set[str] = set()
                 for user in users:
                     if verbose_user_mismatch:
                         entry_list.append({"value": user, "info": ImportState.ERROR})
                     elif user in username_set:
                         entry_list.append({"value": user, "info": ImportState.WARNING})
-                        err_message, err_users = message_map.get(
-                            "duplicate",
-                            (
-                                f"At least one {fieldname} has been referenced multiple times: ",
-                                [],
-                            ),
-                        )
-                        message_map["duplicate"] = (
-                            err_message,
-                            list(set([*err_users, user])),
-                        )
+                        duplicates.add(user)
                     else:
                         username_set.add(user)
                         found_users = self.username_lookup.get(user, [])
@@ -291,11 +282,7 @@ class MotionJsonUpload(
                                     "info": ImportState.WARNING,
                                 }
                             )
-                            err_message, err_users = message_map.get(
-                                "not_found",
-                                (f"Could not find at least one {fieldname}: ", []),
-                            )
-                            message_map["not_found"] = (err_message, [*err_users, user])
+                            not_found.add(user)
                         else:
                             raise ActionException(
                                 f"Database corrupt: Found multiple users with the username {user}"
@@ -303,18 +290,21 @@ class MotionJsonUpload(
                 entry[f"{fieldname}s_username"] = entry_list
                 if verbose_user_mismatch:
                     self.row_state = ImportState.ERROR
-                    message_map["mismatch"] = (
-                        f"Error: Verbose field is set and has more entries than the username field for {fieldname}s",
-                        [],
+                    messages.append(
+                        f"Error: Verbose field is set and has more entries than the username field for {fieldname}s"
                     )
                     if fieldname == "submitter":
                         has_submitter_error = True
-                messages.extend(
-                    [
-                        message + ", ".join(users)
-                        for message, users in message_map.values()
-                    ]
-                )
+                if len(duplicates):
+                    messages.append(
+                        f"At least one {fieldname} has been referenced multiple times: "
+                        + ", ".join(duplicates)
+                    )
+                if len(not_found):
+                    messages.append(
+                        f"Could not find at least one {fieldname}: "
+                        + ", ".join(not_found)
+                    )
 
         if not has_submitter_error:
             if (
@@ -341,22 +331,14 @@ class MotionJsonUpload(
 
         if tags := entry.get("tags"):
             entry_list = []
-            message_map = {}
+            duplicates = set()
+            not_found = set()
+            multiple: Set[str] = set()
             tags_set: Set[str] = set()
             for tag in tags:
                 if tag in tags_set:
                     entry_list.append({"value": tag, "info": ImportState.WARNING})
-                    err_message, err_tags = message_map.get(
-                        "duplicate",
-                        (
-                            "At least one tag has been referenced multiple times: ",
-                            [],
-                        ),
-                    )
-                    message_map["duplicate"] = (
-                        err_message,
-                        list(set([*err_tags, tag])),
-                    )
+                    duplicates.add(tag)
                 else:
                     tags_set.add(tag)
                     found_tags = self.tags_lookup.get(tag, [])
@@ -376,14 +358,7 @@ class MotionJsonUpload(
                                 "info": ImportState.WARNING,
                             }
                         )
-                        err_message, err_tags = message_map.get(
-                            "not_found",
-                            (
-                                "Could not find at least one tag: ",
-                                [],
-                            ),
-                        )
-                        message_map["not_found"] = (err_message, [*err_tags, tag])
+                        not_found.add(tag)
                     else:
                         entry_list.append(
                             {
@@ -391,18 +366,21 @@ class MotionJsonUpload(
                                 "info": ImportState.WARNING,
                             }
                         )
-                        err_message, err_tags = message_map.get(
-                            "multiple",
-                            (
-                                "Found multiple tags with the same name: ",
-                                [],
-                            ),
-                        )
-                        message_map["multiple"] = (err_message, [*err_tags, tag])
+                        multiple.add(tag)
             entry["tags"] = entry_list
-            messages.extend(
-                [message + ", ".join(tags) for message, tags in message_map.values()]
-            )
+            if len(duplicates):
+                messages.append(
+                    "At least one tag has been referenced multiple times: "
+                    + ", ".join(duplicates)
+                )
+            if len(not_found):
+                messages.append(
+                    "Could not find at least one tag: " + ", ".join(not_found)
+                )
+            if len(multiple):
+                messages.append(
+                    "Found multiple tags with the same name: " + ", ".join(multiple)
+                )
 
         if (block := entry.get("block")) and isinstance(block, str):
             found_blocks = self.block_lookup.get(block, [])

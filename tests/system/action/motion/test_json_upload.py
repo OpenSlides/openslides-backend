@@ -2995,10 +2995,6 @@ class MotionJsonUpload(MotionImportTestMixin):
             messages.append(
                 "At least one tag has been referenced multiple times: Tag-liatelle"
             )
-        if len(expected_not_found):
-            messages.append(
-                "Could not find at least one tag: " + ", ".join(expected_not_found)
-            )
         has_warnings = (
             add_unidentifiable_tag or len(expected_not_found) or expect_duplicates
         )
@@ -3045,9 +3041,25 @@ class MotionJsonUpload(MotionImportTestMixin):
             assert row["state"] == (ImportState.DONE if is_update else ImportState.NEW)
             row_data = row.get("data", {})
             assert row_data.get("tags") == expected_data
-            assert len(row.get("messages", [])) == len(messages)
+            assert (
+                len(row.get("messages", [])) == len(messages)
+                if not len(expected_not_found)
+                else len(messages) + 1
+            )
             for message in messages:
                 assert message in row["messages"]
+            if len(expected_not_found):
+                assert (
+                    len(
+                        [
+                            message
+                            for message in row["messages"]
+                            if message.startswith("Could not find at least one tag: ")
+                            and all([name in message for name in expected_not_found])
+                        ]
+                    )
+                    == 1
+                )
 
     def test_json_upload_create_with_tags(self) -> None:
         self.assert_with_tags(3)
