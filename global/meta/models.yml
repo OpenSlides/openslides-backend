@@ -18,6 +18,9 @@
 #     - Non-generic relations: The simple syntax for such a field
 #       `to: <collection>/<field>`. This is a reference to a collection. The reverse
 #       relation field in this collection is <field>. E. g. in a motion the field
+#       `reference: <collection(field1, ...)` This replaces the `to` and is used for 
+#       the foreign key reference. If the content or the brackets are missed, the `id`
+#       will be used
 #       `category_id` links to one category where the field `motion_ids` contains the
 #       motion id. The simple notation for the field is `motion_category/motion_ids`.
 #       The reverse field has type `relation-list` and is related back to
@@ -173,6 +176,7 @@ organization:
     required: true
     restriction_mode: A
     to: theme/theme_for_organization_id
+    reference: theme
   theme_ids:
     type: relation-list
     restriction_mode: A
@@ -1694,7 +1698,7 @@ meeting:
     required: true
   default_projector_current_list_of_speakers_ids:
     type: relation-list
-    to: projector/used_as_default_projector_for_current_list_of_speakers_in_meeting_id
+    to: projector/used_as_default_projector_for_current_los_in_meeting_id
     restriction_mode: B
     required: true
   default_projector_motion_ids:
@@ -3599,7 +3603,7 @@ projector:
     type: relation
     to: meeting/default_projector_list_of_speakers_ids
     restriction_mode: A
-  used_as_default_projector_for_current_list_of_speakers_in_meeting_id:
+  used_as_default_projector_for_current_los_in_meeting_id:
     type: relation
     to: meeting/default_projector_current_list_of_speakers_ids
     restriction_mode: A

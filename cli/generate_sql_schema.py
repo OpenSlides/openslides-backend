@@ -1,5 +1,6 @@
 import hashlib
 import os
+import re
 import string
 import sys
 from collections import defaultdict
@@ -7,7 +8,7 @@ from decimal import Decimal
 from enum import Enum
 from string import Formatter
 from textwrap import dedent
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Any, Callable, Dict, List, Tuple, TypedDict, Union, cast
 
 import requests
 import yaml
@@ -23,7 +24,16 @@ class SchemaZoneTexts(TypedDict, total=False):
     table: str
     view: str
     alter_table: str
+    alter_table_final: str
     undecided: str
+
+
+class SQL_Delete_Update_Options(str, Enum):
+    RESTRICT = "RESTRICT"
+    CASCADE = "CASCADE"
+    SET_NULL = "SET NULL"
+    SET_DEFAULT = "SET DEFAULT"
+    NO_ACTION = "NO ACTION"
 
 
 class SubstDict(TypedDict, total=False):
@@ -40,15 +50,16 @@ class SubstDict(TypedDict, total=False):
 
 
 class GenerateCodeBlocks:
-    """Main work is done here by recursing the models and their fields and determine the method to use
-    """
+    """Main work is done here by recursing the models and their fields and determine the method to use"""
+
     @classmethod
-    def generate_the_code(cls) -> (str, str, List[str]):
-        """ Development purposes: used for output at the end of the schema.sql
+    def generate_the_code(cls) -> Tuple[str, str, str, List[str]]:
+        """Development purposes: used for output at the end of the schema.sql
         to see which yml-attributes are still not handled
         Return values:
           pre_code: Type definitions etc., which should all appear before first table definitions
           table_name_code: All table and view definitions
+          alter_table_final_code: Changes on tables defining relations after, which should appear after all table/views definition to be sequence independant
           missing_handled_atributes: List of unhandled attributes. handled one's are to be set manually.
         """
         handled_attributes = set(
@@ -67,18 +78,19 @@ class GenerateCodeBlocks:
                 "items",
                 # "to",  # will be removed, meanwhile replacement for reference
                 # "on_delete", # must have other name then the key-value-store one
-                # "equal_fields", # do we want or need?
+                # "equal_fields", # Seems we need, see example_transactional.sql between meeting and groups?
                 # "unique",  # still to design
             )
         )
         missing_handled_attributes = []
         pre_code: str = ""
         table_name_code: str = ""
+        alter_table_final_code: str = ""
 
         for table_name, fields in MODELS.items():
             if table_name == "_migration_index":
                 continue
-            schema_zone_texts: SchemaZoneTexts = defaultdict(str)
+            schema_zone_texts: SchemaZoneTexts = defaultdict(str)  # type: ignore
 
             for fname, fdata in fields.items():
                 for attr in fdata:
@@ -91,28 +103,39 @@ class GenerateCodeBlocks:
                 if isinstance(method_or_str, str):
                     schema_zone_texts["undecided"] += method_or_str
                 else:
-                    if (enum_ := fdata.get("enum")) or (enum_ := fdata.get("items", {}).get("enum")):
-                        pre_code += Helper.get_enum_type_definition(table_name, fname, enum_)
+                    if (enum_ := fdata.get("enum")) or (
+                        enum_ := fdata.get("items", {}).get("enum")
+                    ):
+                        pre_code += Helper.get_enum_type_definition(
+                            table_name, fname, enum_
+                        )
                     result = method_or_str(table_name, fname, fdata, type_)
                     for k, v in result.items():
-                        schema_zone_texts[k] += v
+                        schema_zone_texts[k] += v or ""  # type: ignore
 
             if code := schema_zone_texts["table"]:
                 table_name_code += Helper.get_table_head(table_name)
-                table_name_code += Helper.get_table_body_end(code)
-            if code := schema_zone_texts["alter_table"]:
-                table_name_code += code + "\n\n"
+                table_name_code += Helper.get_table_body_end(code) + "\n\n"
             if code := schema_zone_texts["view"]:
                 table_name_code += Helper.get_view_head(table_name)
-                table_name_code += Helper.get_view_body_end(code)
+                table_name_code += Helper.get_view_body_end(table_name, code)
+            if code := schema_zone_texts["alter_table"]:
+                table_name_code += code + "\n"
             if code := schema_zone_texts["undecided"]:
                 table_name_code += Helper.get_undecided_all(table_name, code)
-        return pre_code, table_name_code, missing_handled_attributes
+            if code := schema_zone_texts["alter_table_final"]:
+                alter_table_final_code += code + "\n"
+        return (
+            pre_code,
+            table_name_code,
+            alter_table_final_code,
+            missing_handled_attributes,
+        )
 
     @classmethod
     def get_method(
         cls, fname: str, fdata: Dict[str, Any]
-    ) -> Tuple[Union[str, Callable[Dict[str, Any], str]], str]:
+    ) -> Tuple[Union[str, Callable[..., SchemaZoneTexts]], str]:
         if fdata.get("calculated"):
             return (
                 f"    {fname} type:{fdata.get('type')} is marked as a calculated field\n",
@@ -120,9 +143,9 @@ class GenerateCodeBlocks:
             )
         if fname == "id":
             type_ = "primary_key"
-            return (FIELD_TYPES[type_].get("method").__get__(cls), type_)
+            return (FIELD_TYPES[type_].get("method", "").__get__(cls), type_)
         if (
-            (type_ := fdata.get("type"))
+            (type_ := fdata.get("type", ""))
             and type_ in FIELD_TYPES
             and (method := FIELD_TYPES[type_].get("method"))
         ):
@@ -153,7 +176,7 @@ class GenerateCodeBlocks:
     ) -> SchemaZoneTexts:
         text: SchemaZoneTexts
         subst, text = Helper.get_initials(table_name, fname, type_, fdata)
-        tmpl: str = FIELD_TYPES[type_]["pg_type"]
+        tmpl = FIELD_TYPES[type_]["pg_type"]
         subst["type"] = tmpl.substitute(subst)
         if default := fdata.get("default"):
             subst["default"] = f" DEFAULT {int(default[1:], 16)}"
@@ -170,13 +193,47 @@ class GenerateCodeBlocks:
         text["table"] = Helper.FIELD_TEMPLATE.substitute(subst)
         return text
 
+    @classmethod
+    def get_relation_type(
+        cls, table_name: str, fname: str, fdata: Dict[str, Any], type_: str
+    ) -> SchemaZoneTexts:
+        """
+        Infos to get:
+          - 1:1 special case
+          - 1:n FOREIGN KEY (b, c) REFERENCES other_table (c1, c2)
+          - n:1 this is always a view, tried to be self generated
+          - n:m generate an intermediate table with id
+          - required own key, required one of the referenced table to the own
+          - reference
+        """
+        text: SchemaZoneTexts = cls.get_schema_simple_types(
+            table_name, fname, fdata, "number"
+        )
+        foreign_table, fk_columns = Helper.get_foreign_key_table_column(fdata)
+        initially_deferred = ModelsHelper.is_fk_initially_deferred(
+            table_name, foreign_table
+        )
+        text["alter_table_final"] = Helper.get_foreign_key_table_constraint(
+            table_name, foreign_table, fname, fk_columns, initially_deferred
+        )
+        return text
+
 
 class Helper:
+    ref_compiled = compiled = re.compile(r"(^\w+\b).*?\((.*?)\)")
+    FILE_TEMPLATE = dedent(
+        """
+        -- schema.sql for initial database setup OpenSlides
+        -- Code generated. DO NOT EDIT.
+
+        """
+    )
     FIELD_TEMPLATE = string.Template(
         "    ${field_name} ${type}${primary_key}${required}${minimum}${minLength}${default},\n"
     )
-    ENUM_DEFINITION_TEMPLATE = string.Template(dedent(
-        """
+    ENUM_DEFINITION_TEMPLATE = string.Template(
+        dedent(
+            """
         DO $$$$
         BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '${enum_type}') THEN
@@ -186,13 +243,7 @@ class Helper:
             END IF;
         END$$$$;
         """
-    ))
-    FILE_TEMPLATE = dedent(
-        """
-        -- schema.sql for initial database setup OpenSlides
-        -- Code generated. DO NOT EDIT.
-
-        """
+        )
     )
 
     @staticmethod
@@ -220,51 +271,125 @@ class Helper:
         return code
 
     @staticmethod
-    def get_view_head(table_name) -> str:
+    def get_view_head(table_name: str) -> str:
         return f"\nCREATE OR REPLACE VIEW {Helper.get_view_name(table_name)} AS SELECT *,\n"
 
     @staticmethod
-    def get_view_body_end(table_name, code: str) -> str:
+    def get_view_body_end(table_name: str, code: str) -> str:
         code = code[:-2] + "\n"  # last attribute line without ",", but with "\n"
         code += f"FROM {Helper.get_table_name(table_name)} {Helper.get_table_letter(table_name)};\n\n"
         return code
 
     @staticmethod
-    def get_undecided_all(table_name, code) -> str:
+    def get_alter_table_final_code(code: str) -> str:
+        return f"-- Alter table final relation commands\n{code}\n\n"
+
+    @staticmethod
+    def get_undecided_all(table_name: str, code: str) -> str:
         return (
             f"/*\n Fields without SQL definition for table {table_name}\n\n{code}\n*/\n"
         )
 
     @staticmethod
-    def get_enum_type_name(table_name, fname, ) -> str:
+    def get_enum_type_name(
+        table_name: str,
+        fname: str,
+    ) -> str:
         return f"enum_{table_name}_{fname}"
 
     @staticmethod
-    def get_enum_type_definition(table_name: str, fname:str, enum_: List[Any]) -> str:
+    def get_enum_type_definition(table_name: str, fname: str, enum_: List[Any]) -> str:
         # enums per type are always strings in postgres
         enumeration = ", ".join([f"'{str(item)}'" for item in enum_])
-        subst = {"enum_type": Helper.get_enum_type_name(table_name, fname), "enumeration": enumeration}
+        subst = {
+            "enum_type": Helper.get_enum_type_name(table_name, fname),
+            "enumeration": enumeration,
+        }
         return Helper.ENUM_DEFINITION_TEMPLATE.substitute(subst)
+
+    @staticmethod
+    def get_foreign_key_table_constraint(
+        table_name: str,
+        foreign_table: str,
+        own_columns: Union[List[str], str],
+        fk_columns: Union[List[str], str],
+        initially_deferred: bool = False,
+        delete_action: str = "",
+        update_action: str = "",
+        special_field_name: str = "",
+    ) -> str:
+        FOREIGN_KEY_TABLE_CONSTRAINT_TEMPLATE = string.Template(
+            "ALTER TABLE ${own_table} ADD FOREIGN KEY(${own_columns}) REFERENCES ${foreign_table}(${fk_columns})${initially_deferred}"
+        )
+
+        if initially_deferred:
+            text_initially_deferred = " INITIALLY DEFERRED"
+        else:
+            text_initially_deferred = ""
+        if isinstance(own_columns, list):
+            own_columns = "(" + ", ".join(own_columns) + ")"
+        if isinstance(fk_columns, list):
+            own_columns = "(" + ", ".join(fk_columns) + ")"
+        own_table = Helper.get_table_name(table_name)
+        foreign_table = Helper.get_table_name(foreign_table)
+        result = FOREIGN_KEY_TABLE_CONSTRAINT_TEMPLATE.substitute(
+            {
+                "own_table": own_table,
+                "foreign_table": foreign_table,
+                "own_columns": own_columns,
+                "fk_columns": fk_columns,
+                "initially_deferred": text_initially_deferred,
+            }
+        )
+        result += Helper.get_on_action_mode(delete_action, True)
+        result += Helper.get_on_action_mode(update_action, False)
+        result += ";\n"
+        return result
+
+    @staticmethod
+    def get_on_action_mode(action: str, delete: bool) -> str:
+        if action:
+            if (actionUpper := action.upper()) in SQL_Delete_Update_Options:
+                return f" ON {'DELETE' if delete else 'UPDATE'} {SQL_Delete_Update_Options(actionUpper)}"
+            else:
+                raise Exception(f"{action} is not a valid action mode")
+        return ""
+
+    @staticmethod
+    def get_foreign_key_table_column(field: Dict[str, Any]) -> Tuple[str, str]:
+        if reference := field.get("reference"):
+            result = Helper.ref_compiled.search(reference)
+            if result is None:
+                return reference.strip(), "id"
+            re_groups = result.groups()
+            cols = re_groups[1]
+            if cols:
+                cols = ",".join([col.strip() for col in cols.split(",")])
+            else:
+                cols = "id"
+            return re_groups[0], cols
+        elif to := field.get("to"):
+            return to.split("/")[0], "id"
+        else:
+            raise Exception("Relation field without reference and to")
 
     @staticmethod
     def get_initials(
         table_name: str, fname: str, type_: str, fdata: Dict[str, Any]
-    ) -> (SubstDict, SchemaZoneTexts):
+    ) -> Tuple[SubstDict, SchemaZoneTexts]:
         text: SchemaZoneTexts = {}
-        flist = [form[1] for form in Formatter().parse(Helper.FIELD_TEMPLATE.template)]
-        subst: SubstDict = {k: "" for k in flist}
+        flist: List[str] = [
+            cast(str, form[1])
+            for form in Formatter().parse(Helper.FIELD_TEMPLATE.template)
+        ]
+        subst: SubstDict = cast(SubstDict, {k: "" for k in flist})
         if (enum_ := fdata.get("enum")) or fdata.get("items"):
             subst_type = Helper.get_enum_type_name(table_name, fname)
             if not enum_:
                 subst_type += "[]"
         else:
             subst_type = FIELD_TYPES[type_]["pg_type"]
-        subst.update(
-            {
-                "field_name": fname,
-                "type": subst_type
-            }
-        )
+        subst.update({"field_name": fname, "type": subst_type})
         if fdata.get("required"):
             subst["required"] = " NOT NULL"
         if (default := fdata.get("default")) is not None:
@@ -294,15 +419,45 @@ class Helper:
         return subst, text
 
 
-FIELD_TYPES = {
+class ModelsHelper:
+    @staticmethod
+    def is_fk_initially_deferred(own_table: str, foreign_table: str) -> bool:
+        """
+        Necessary, if 2 related tables require both the relation to the other table
+        This will be set here and used in definition of foreign key
+        """
+
+        def _first_to_second(t1: str, t2: str) -> bool:
+            for field in MODELS[t1].values():
+                if field.get("required") and field["type"].startswith("relation"):
+                    ftable, _ = Helper.get_foreign_key_table_column(field)
+                    if ftable == t2:
+                        return True
+            return False
+
+        if _first_to_second(own_table, foreign_table):
+            return _first_to_second(foreign_table, own_table)
+        return False
+
+
+FIELD_TYPES: Dict[str, Dict[str, Any]] = {
     "string": {
         "pg_type": string.Template("varchar(${maxLength})"),
         "method": GenerateCodeBlocks.get_schema_simple_types,
     },
-    "number": {"pg_type": "integer", "method": GenerateCodeBlocks.get_schema_simple_types},
-    "boolean": {"pg_type": "boolean", "method": GenerateCodeBlocks.get_schema_simple_types},
+    "number": {
+        "pg_type": "integer",
+        "method": GenerateCodeBlocks.get_schema_simple_types,
+    },
+    "boolean": {
+        "pg_type": "boolean",
+        "method": GenerateCodeBlocks.get_schema_simple_types,
+    },
     "JSON": {"pg_type": "jsonb", "method": GenerateCodeBlocks.get_schema_simple_types},
-    "HTMLStrict": {"pg_type": "text", "method": GenerateCodeBlocks.get_schema_simple_types},
+    "HTMLStrict": {
+        "pg_type": "text",
+        "method": GenerateCodeBlocks.get_schema_simple_types,
+    },
     "HTMLPermissive": {
         "pg_type": "text",
         "method": GenerateCodeBlocks.get_schema_simple_types,
@@ -335,7 +490,7 @@ FIELD_TYPES = {
         "method": GenerateCodeBlocks.get_schema_simple_types,
     },
     "text": {"pg_type": "text", "method": GenerateCodeBlocks.get_schema_simple_types},
-    "relation": {"pg_type": "integer", "method": ""},
+    "relation": {"pg_type": "integer", "method": GenerateCodeBlocks.get_relation_type},
     "relation-list": {"pg_type": "integer[]", "method": ""},
     "generic-relation": {"pg_type": "varchar(100)", "method": ""},
     "generic-relation-list": {"pg_type": "varchar(100)[]", "method": ""},
@@ -383,7 +538,12 @@ def main() -> None:
     # Load and parse models.yml
     MODELS = yaml.safe_load(models_yml)
 
-    pre_code, table_name_code, missing_handled_attributes =GenerateCodeBlocks.generate_the_code()
+    (
+        pre_code,
+        table_name_code,
+        alter_table_code,
+        missing_handled_attributes,
+    ) = GenerateCodeBlocks.generate_the_code()
     with open(DESTINATION, "w") as dest:
         dest.write(Helper.FILE_TEMPLATE)
         dest.write("-- MODELS_YML_CHECKSUM = " + repr(checksum) + "\n")
@@ -391,111 +551,12 @@ def main() -> None:
         dest.write(pre_code)
         dest.write("\n\n-- Table and view definitions")
         dest.write(table_name_code)
+        dest.write("-- Alter table relations\n")
+        dest.write(alter_table_code)
         dest.write(
             f"\n/*   Missing attribute handling for {', '.join(missing_handled_attributes)} */"
         )
     print(f"Models file {DESTINATION} successfully created.")
-
-class OnDelete(str, Enum):
-    PROTECT = "PROTECT"
-    CASCADE = "CASCADE"
-    SET_NULL = "SET_NULL"
-
-
-class Attribute:
-    type: str
-    maxLength: int
-    replacement_collection: Optional[str] = None
-    replacement_enum: Optional[List[str]] = None
-    fields: Optional["Attribute"] = None
-    references: Optional[str] = None
-    required: bool = False
-    read_only: bool = False
-    deferred_foreign_key: bool = False
-    default: Any = None
-    on_delete: Optional[OnDelete] = None
-    equal_fields: Optional[Union[str, List[str]]] = None
-    contraints: Dict[str, Any]
-    select: Optional[str] = None
-
-    FIELD_TEMPLATE = string.Template(
-        "    ${field_name} ${type}${primary_key}${required}${default},\n"
-    )
-    REFERENCES_TEMPLATE = " REFERENCES %s"
-
-    def __init__(self, value: Union[str, Dict]) -> None:
-        self.FIELD_CLASSES = {
-            **COMMON_FIELD_CLASSES,
-            **RELATION_FIELD_CLASSES,
-        }
-        self.contraints = {}
-        self.in_array_constraints = {}
-        if isinstance(value, str):
-            self.type = value
-        else:
-            self.type = value.get("type", "")
-            if self.type in RELATION_FIELD_CLASSES.keys():
-                self.on_delete = value.get("on_delete")
-            else:
-                assert self.type in COMMON_FIELD_CLASSES.keys(), (
-                    "Invalid type: " + self.type
-                )
-            self.maxLength = value.get("maxLength")
-            self.references = value.get("references")
-            self.required = value.get("required", False)
-            self.read_only = value.get("read_only", False)
-            self.deferred_foreign_key = value.get("deferred_foreign_key", False)
-            self.default = value.get("default")
-            self.select = value.get("select")
-            self.equal_fields = value.get("equal_fields")
-            for k, v in value.items():
-                if k not in (
-                    "type",
-                    "required",
-                    "read_only",
-                    "default",
-                    "on_delete",
-                    "equal_fields",
-                    "items",
-                    "restriction_mode",
-                ):
-                    self.contraints[k] = v
-                elif self.type in ("string[]", "number[]") and k == "items":
-                    self.in_array_constraints.update(v)
-
-    def get_create_table_code(self, field_name: str) -> str:
-        type_: str = POSTGRES_FROM_YML[self.type]
-        if isinstance(type_, string.Template):
-            if self.maxLength:
-                type_ = type_.substitute({"maxLength": self.maxLength})
-            elif self.type == "decimal":
-                type_ = type_.substitute({"maxLength": 6})
-            else:  # string
-                type_ = type_.substitute({"maxLength": 256})
-        subst_dict = {
-            "field_name": field_name,
-            "type": type_,
-            "primary_key": "",
-            "required": "",
-            "default": "",
-        }
-        if self.required:
-            subst_dict["required"] = " NOT NULL"
-        if self.default is not None:
-            subst_dict["default"] = f" DEFAULT '{self.default}'"
-
-        return self.FIELD_TEMPLATE.substitute(subst_dict)
-
-    def get_alter_table_code(self, table_name: str, field_name: str) -> Optional[str]:
-        if self.references:
-            if self.deferred_foreign_key:
-                return f"ALTER TABLE {table_name} ADD FOREIGN KEY ({field_name}) REFERENCES {self.references} INITIALLY DEFERRED;\n"
-            else:
-                return f"ALTER TABLE {table_name} ADD FOREIGN KEY ({field_name}) REFERENCES {self.references};\n"
-        return
-
-    def get_create_view_code(self, field_name: str) -> str:
-        return f"({self.select}) as {field_name},\n"
 
 
 if __name__ == "__main__":
