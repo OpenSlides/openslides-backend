@@ -165,6 +165,8 @@ class MotionImportTestMixin(BaseActionTestCase):
         model_data: Dict[str, Dict[str, Any]],
     ) -> None:
         user_data: Dict[str, Any] = {"username": setting["username"]}
+        if setting.get("meeting_ids") and not setting.get("no_group"):
+            user_data["meeting_ids"] = setting.get("meeting_ids")
         next_meeting_user_id = user_id * 100
         meeting_ids = setting.get("meeting_ids", [])
         for meeting_id in meeting_ids:
@@ -2156,26 +2158,22 @@ class MotionJsonUpload(MotionImportTestMixin):
             expected_messages: List[str] = []
             for usertype in user_data:
                 user_date = user_data[usertype]
-                has_foreign_users = (
-                    len(user_date["own_meeting_usernames"])
-                    != len(user_date["usernames"])
-                ) or len(user_date["own_meeting_groupless_usernames"]) != 0
-                has_warning = (
-                    has_warning
+                has_unknown_users = (
+                    (
+                        len(user_date["own_meeting_usernames"])
+                        != len(user_date["usernames"])
+                    )
                     or user_date["unknown_user_present"]
-                    or has_foreign_users
+                    or len(user_date["own_meeting_groupless_usernames"]) != 0
                 )
+                has_warning = has_warning or has_unknown_users
                 assert row["state"] == (
                     ImportState.DONE if is_update else ImportState.NEW
                 )
 
-                if user_date["unknown_user_present"]:
+                if has_unknown_users:
                     expected_messages.append(
                         f"Could not find at least one {usertype}: "
-                    )
-                if has_foreign_users:
-                    expected_messages.append(
-                        f"At least one {usertype} is not part of this meeting: "
                     )
                 for key in expected_data:
                     assert row["data"].get(key) == expected_data[key]

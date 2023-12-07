@@ -126,8 +126,6 @@ class MotionJsonUpload(
     _operator_username: Optional[str] = None
     _previous_numbers: List[str]
 
-    _user_ids_to_meeting_user: Dict[int, Any]
-
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # transform instance into a correct create/update payload
         # try to find a pre-existing motion with the same number
@@ -279,33 +277,13 @@ class MotionJsonUpload(
                         found_users = self.username_lookup.get(user, [])
                         if len(found_users) == 1 and found_users[0].get("id") != 0:
                             user_id = cast(int, found_users[0].get("id"))
-                            if len(
-                                self._user_ids_to_meeting_user.get(user_id, {}).get(
-                                    "group_ids", []
-                                )
-                            ):
-                                entry_list.append(
-                                    {
-                                        "value": user,
-                                        "info": ImportState.DONE,
-                                        "id": user_id,
-                                    }
-                                )
-                            else:
-                                entry_list.append(
-                                    {"value": user, "info": ImportState.WARNING}
-                                )
-                                err_message, err_users = message_map.get(
-                                    "foreign",
-                                    (
-                                        f"At least one {fieldname} is not part of this meeting: ",
-                                        [],
-                                    ),
-                                )
-                                message_map["foreign"] = (
-                                    err_message,
-                                    [*err_users, user],
-                                )
+                            entry_list.append(
+                                {
+                                    "value": user,
+                                    "info": ImportState.DONE,
+                                    "id": user_id,
+                                }
+                            )
                         elif len(found_users) <= 1:
                             entry_list.append(
                                 {
@@ -570,42 +548,15 @@ class MotionJsonUpload(
                 )
             ),
             "username",
-            ["meeting_user_ids"],
+            ["meeting_ids"],
         )
-        all_user_ids = [
-            submitter["id"]
-            for submitters in self.username_lookup.values()
-            for submitter in submitters
-        ]
-        all_meeting_users: Dict[int, Dict[str, Any]] = {}
-        if len(all_user_ids):
-            all_meeting_users = self.datastore.filter(
-                "meeting_user",
-                And(
-                    FilterOperator("meeting_id", "=", meeting_id),
-                    FilterOperator("group_ids", "!=", []),
-                    FilterOperator("group_ids", "!=", None),
-                    Or(
-                        *[
-                            FilterOperator("user_id", "=", user_id)
-                            for user_id in all_user_ids
-                        ]
-                    ),
-                ),
-                [
-                    "user_id",
-                    "motion_submitter_ids",
-                    "supported_motion_ids",
-                    "group_ids",
-                ],
-                lock_result=False,
-            )
-        self._user_ids_to_meeting_user = {
-            all_meeting_users[meeting_user_id]["user_id"]: all_meeting_users[
-                meeting_user_id
+        self.username_lookup = {
+            username: [
+                date
+                for date in self.username_lookup[username]
+                if date.get("meeting_ids") and (meeting_id in date["meeting_ids"])
             ]
-            for meeting_user_id in all_meeting_users
-            if all_meeting_users[meeting_user_id].get("user_id")
+            for username in self.username_lookup
         }
         self.tags_lookup = self.get_lookup_dict(
             "tag",
