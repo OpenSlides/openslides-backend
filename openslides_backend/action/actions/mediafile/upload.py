@@ -2,7 +2,7 @@ import base64
 import mimetypes
 from io import BytesIO
 from time import time
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict, cast
 
 import magic as python_magic
 from pypdf import PdfReader
@@ -92,16 +92,22 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         mimetype_ = python_magic.from_buffer(decoded_file, mime=True)
         if mimetype_ is None:
             raise ActionException(f"Cannot guess mimetype for {filename_}.")
-        possible_extensions = mimetypes.guess_all_extensions(mimetype_)
-        if not any(
-            [filename_.endswith(extension) for extension in possible_extensions]
-        ):
+        use_mimetype: Optional[str] = mimetype_
+        if mimetype_ == "text/plain":
+            use_mimetype, _ = mimetypes.guess_type(filename_)
+            mismatched = (use_mimetype is None) or not use_mimetype.startswith("text/")
+        else:
+            possible_extensions = mimetypes.guess_all_extensions(mimetype_)
+            mismatched = not any(
+                [filename_.endswith(extension) for extension in possible_extensions]
+            )
+        if mismatched:
             raise ActionException(
                 f"{filename_} does not have a file extension that matches the determined mimetype {mimetype_}."
             )
         instance["filesize"] = len(decoded_file)
         id_ = instance["id"]
-        instance["mimetype"] = mimetype_
+        instance["mimetype"] = use_mimetype
         if instance["mimetype"] == "application/pdf":
             instance["pdf_information"] = self.get_pdf_information(decoded_file)
         collection, _ = self.get_owner_data(instance)
@@ -116,7 +122,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             )
         else:
             instance["is_public"] = True
-        self.media.upload_mediafile(file_, id_, mimetype_)
+        self.media.upload_mediafile(file_, id_, cast(str, use_mimetype))
         return instance
 
     def get_pdf_information(self, file_bytes: bytes) -> PDFInformation:
