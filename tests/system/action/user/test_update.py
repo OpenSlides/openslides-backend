@@ -11,7 +11,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_models(
             {
-                "user/111": {"username": "User 111"},
+                "user/111": {"username": "User111"},
             }
         )
 
@@ -21,11 +21,11 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"username": "username_srtgb123"},
         )
         response = self.request(
-            "user.update", {"id": 111, "username": " username Xcdfgee "}
+            "user.update", {"id": 111, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert model.get("username") == "username Xcdfgee"
+        assert model.get("username") == "username_Xcdfgee"
         self.assert_history_information("user/111", ["Personal data changed"])
 
     def test_update_some_more_fields(self) -> None:
@@ -599,7 +599,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.SUPERADMIN, self.user_id
         )
         self.set_models(
-            {"user/111": {"username": "User 111"}},
+            {"user/111": {"username": "User111"}},
         )
 
         response = self.request(
@@ -693,7 +693,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
                 "title": "new title",
                 "first_name": "new first_name",
                 "last_name": "new last_name",
@@ -712,7 +712,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "title": "new title",
                 "first_name": "new first_name",
                 "last_name": "new last_name",
@@ -739,14 +739,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "meeting_ids": [1],
                 "committee_ids": [60],
             },
@@ -774,14 +774,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "committee_ids": [60],
             },
         )
@@ -798,7 +798,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
                 "pronoun": "pronoun",
             },
         )
@@ -806,7 +806,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "pronoun": "pronoun",
                 "meeting_ids": [1],
                 "committee_ids": None,
@@ -832,14 +832,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "committee_ids": None,
             },
         )
@@ -856,7 +856,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 403)
@@ -932,7 +932,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "username": "User 111",
+                "username": "User111",
                 "meeting_ids": [1, 4],
             },
         )
@@ -1412,6 +1412,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         model = self.get_model("user/111")
         assert model.get("username") == "username_srtgb123"
 
+    def test_update_username_with_spaces(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request("user.update", {"id": 111, "username": "test name"})
+        self.assert_status_code(response, 400)
+        assert "Username may not contain spaces" in response.json["message"]
+        model = self.get_model("user/111")
+        assert model.get("username") == "username_srtgb123"
+
     def test_update_gender(self) -> None:
         self.create_model(
             "user/111",
@@ -1740,7 +1751,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 1,
-                "username": " username test ",
                 "first_name": " first name test ",
                 "last_name": " last name test ",
             },
@@ -1749,7 +1759,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/1",
             {
-                "username": "username test",
                 "first_name": "first name test",
                 "last_name": "last name test",
             },
