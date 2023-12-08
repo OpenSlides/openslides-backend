@@ -11,7 +11,7 @@ from ...mixins.import_mixins import (
 )
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
-from .user_mixin import UsernameMixin
+from .user_mixin import UsernameMixin, check_gender_helper
 
 
 class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
@@ -259,6 +259,15 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
                 )
         else:
             self.handle_default_password(entry)
+
+        if gender := entry.get("gender"):
+            try:
+                check_gender_helper(self.datastore, entry)
+                entry["gender"] = {"info": ImportState.DONE, "value": gender}
+            except:
+                entry["gender"] = {"info": ImportState.WARNING, "value": gender}
+                messages.append(f"Gender '{gender}' is not in the allowed gender list.")
+
         return {"state": self.row_state, "messages": messages, "data": entry}
 
     def create_usernames(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

@@ -3,6 +3,7 @@ from time import time
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -22,6 +23,7 @@ class AccountJsonUpload(BaseActionTestCase):
                         "default_structure_level": "CEO",
                         "default_vote_weight": "1.12",
                         "wrong": 15,
+                        "gender": "female",
                     }
                 ],
             },
@@ -39,6 +41,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "default_number": "strange number",
                 "default_structure_level": "CEO",
                 "default_vote_weight": "1.120000",
+                "gender": {"value": "female", "info": ImportState.DONE},
             },
         }
         import_preview_id = response.json["results"][0][0].get("id")
@@ -389,7 +392,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": [
                     "saml_id 12345 must be unique.",
-                    "Will remove default_password and forbid changing your OpenSlides password.",
+                    "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
                 ],
                 "data": {
                     "username": {"value": "test2", "info": ImportState.DONE},
@@ -440,7 +443,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": [
                     "saml_id 12345 must be unique.",
-                    "Will remove default_password and forbid changing your OpenSlides password.",
+                    "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
                 ],
                 "data": {
                     "username": {"value": "test2", "info": ImportState.DONE},
@@ -488,7 +491,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "state": ImportState.ERROR,
                 "messages": [
                     "saml_id 12345 must be unique.",
-                    "Will remove default_password and forbid changing your OpenSlides password.",
+                    "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
                 ],
                 "data": {
                     "username": {"value": "123451", "info": ImportState.GENERATED},
@@ -670,7 +673,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password."
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
         ]
         assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
         data0 = import_preview["result"]["rows"][0]["data"]
@@ -720,7 +723,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password."
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
         ]
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
@@ -851,6 +854,47 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert (
             import_preview["result"]["rows"][0]["data"]["default_password"]["info"]
             == ImportState.GENERATED
+        )
+
+    def json_upload_wrong_gender(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [{"username": "test", "gender": "veryveryveryverybad"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["data"]["gender"] == {
+            "value": "veryveryverybad",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "Gender 'veryveryverybad' is not in the allowed gender list."
+            in import_preview["result"]["rows"][0]["messages"]
+        )
+
+    def json_upload_wrong_gender_2(self) -> None:
+        self.set_models(
+            {ONE_ORGANIZATION_FQID: {"genders": ["dragon", "lobster", "snake"]}}
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [{"username": "test", "gender": "male"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["data"]["gender"] == {
+            "value": "male",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "Gender 'male' is not in the allowed gender list."
+            in import_preview["result"]["rows"][0]["messages"]
         )
 
     def json_upload_username_10_saml_id_11(self) -> None:
@@ -986,7 +1030,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][0]["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password."
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
         ]
         assert import_preview["result"]["rows"][0]["data"] == {
             "id": 2,
@@ -998,7 +1042,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
         assert import_preview["result"]["rows"][1]["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password."
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
         ]
         assert import_preview["result"]["rows"][1]["data"] == {
             "id": 3,
@@ -1021,7 +1065,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][3]["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password."
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
         ]
         assert import_preview["result"]["rows"][3]["data"] == {
             "saml_id": {"info": "new", "value": "saml5"},
@@ -1032,7 +1076,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW
         assert import_preview["result"]["rows"][4]["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password."
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
         ]
         assert import_preview["result"]["rows"][4]["data"] == {
             "saml_id": {"info": "new", "value": "new_saml6"},
