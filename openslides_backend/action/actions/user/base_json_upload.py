@@ -255,7 +255,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
             ):
                 entry["default_password"] = {"value": "", "info": ImportState.WARNING}
                 messages.append(
-                    "Will remove default_password and forbid changing your OpenSlides password."
+                    "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
                 )
         else:
             self.handle_default_password(entry)
