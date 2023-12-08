@@ -11,7 +11,7 @@ from ...mixins.import_mixins import (
 )
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
-from .user_mixin import UsernameMixin
+from .user_mixins import UsernameMixin
 
 
 class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
