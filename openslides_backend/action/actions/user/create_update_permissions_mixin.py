@@ -13,7 +13,7 @@ from ....shared.exceptions import MissingPermission, PermissionDenied
 from ....shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
-from .user_mixin import UserMixin
+from .user_mixins import UserMixin
 
 
 class PermissionVarStore:

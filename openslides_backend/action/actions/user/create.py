@@ -13,7 +13,7 @@ from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixins import PasswordMixin
-from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
+from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
 
 
 @register_action("user.create")

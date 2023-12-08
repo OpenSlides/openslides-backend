@@ -7,8 +7,7 @@ from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .password_mixins import PasswordChangeMixin
-from .set_password import UserSetPasswordMixin
+from .password_mixins import PasswordChangeMixin, UserSetPasswordMixin
 
 
 @register_action("user.generate_new_password")

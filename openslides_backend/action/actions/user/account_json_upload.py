@@ -13,7 +13,7 @@ from ...mixins.import_mixins import (
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_mixin import UsernameMixin
+from .user_mixins import UsernameMixin
 
 
 @register_action("account.json_upload")
