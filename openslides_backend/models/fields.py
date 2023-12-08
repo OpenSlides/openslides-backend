@@ -39,6 +39,11 @@ class Field:
     own_collection: Collection
     own_field_name: str
 
+    required: bool
+    read_only: bool
+    default: Optional[str]
+    constraints: Dict[str, Any]
+
     def __init__(
         self,
         required: bool = False,

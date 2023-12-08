@@ -32,6 +32,7 @@ class UserScopeMixin(BaseServiceProvider):
         self, id_or_instance: int | Dict[str, Any]
     ) -> Tuple[UserScope, int, str]:
         """
+        Parameter id_or_instance: id for existing user or instance for user to create
         Returns the scope of the given user id together with the relevant scope id (either meeting,
         committee or organization) and the OML level of the user as string (empty string if the user
         has none).

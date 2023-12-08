@@ -200,6 +200,28 @@ class MediafileUploadActionTest(BaseActionTestCase):
             pdf_content, 1, "application/pdf"
         )
 
+    def test_upload_csv(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "test.csv"
+        raw_csv_content = b"""A,B,C,D
+e,f,,g
+h,i,j,k
+l,m,n,"""
+        csv_content = base64.b64encode(raw_csv_content).decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": csv_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.media.upload_mediafile.assert_called_with(csv_content, 1, "text/csv")
+
     def test_error_in_resource_upload(self) -> None:
         self.create_model(
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
