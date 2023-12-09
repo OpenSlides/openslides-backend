@@ -36,12 +36,12 @@ class UserForgetPassword(UpdateAction):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         self.PW_FORGET_EMAIL_TEMPLATE = _(
-            """You are receiving this email because you have requested a new password for your OpenSlides-account.
+            """You are receiving this email because you have requested a new password for your OpenSlides account.
 
 Please open the following link and choose a new password:
 {url}/login/forget-password-confirm?user_id={user_id}&token={token}
 
-The link will only be valid for 10 minutes."""
+The link will be valid for 10 minutes."""
         )
         self.PW_FORGET_EMAIL_SUBJECT = _("Reset your OpenSlides password")
         for instance in action_data:
