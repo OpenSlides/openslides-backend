@@ -13,6 +13,7 @@ from .set_present import UserSetPresentAction
 @register_action("participant.import")
 class ParticipantImport(BaseUserImport, ParticipantCommon):
     import_name = "participant"
+    lookups: Dict[str, Dict[int, str]] = {}
 
     def prefetch(self, action_data: ActionData) -> None:
         super().prefetch(action_data)
@@ -27,9 +28,17 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 f"There is no group in the data of user '{self.get_value_from_union_str_object(entry.get('username'))}'. Is there a default group for the meeting?"
             )
         groups = entry.pop("groups", None)
+        structure_levels = entry.pop("structure_level", None)
         entry["group_ids"] = [
             group_id for group in groups if (group_id := group.get("id"))
         ]
+        if structure_levels:
+            entry["structure_level_ids"] = [
+                structure_level_id
+                for structure_level in structure_levels
+                if (structure_level_id := structure_level.get("id"))
+            ]
+
         failing_fields = self.permission_check.get_failing_fields(entry)
         failing_fields_jsonupload = {
             field
@@ -53,31 +62,37 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
             for field in more_ff:
                 entry[field]["info"] = ImportState.ERROR
         entry.pop("group_ids")
+        entry.pop("structure_level_ids", None)
         entry["groups"] = groups
+        if structure_levels:
+            entry["structure_level"] = structure_levels
 
-        valid = False
-        for group in (groups := entry["groups"]):
-            if not (group_id := group.get("id")):
-                continue
-            if group_id in self.group_names_lookup:
-                if self.group_names_lookup[group_id] == group["value"]:
-                    valid = True
-                else:
-                    group["info"] = ImportState.WARNING
-                    row["messages"].append(
-                        f"Expected group '{group_id} {group['value']}' changed it's name to '{self.group_names_lookup[group_id]}'."
-                    )
-            else:
-                group["info"] = ImportState.WARNING
+        for field in ("groups", "structure_level"):
+            valid = False
+            if field in entry:
+                singular_field = field.rstrip("s")
+                for instance in (instances := entry[field]):
+                    if not (instance_id := instance.get("id")):
+                        continue
+                    if instance_id in self.lookups[field]:
+                        if self.lookups[field][instance_id] == instance["value"]:
+                            valid = True
+                        else:
+                            instance["info"] = ImportState.WARNING
+                            row["messages"].append(
+                                f"The {singular_field} '{instance_id} {instance['value']}' changed its name to '{self.lookups[field][instance_id]}'."
+                            )
+                    else:
+                        instance["info"] = ImportState.WARNING
+                        row["messages"].append(
+                            f"The {singular_field} '{instance_id} {instance['value']}' doesn't exist anymore."
+                        )
+            if field == "groups" and not valid:
                 row["messages"].append(
-                    f"Group '{group_id} {group['value']}' don't exist anymore"
+                    "Error in groups: No valid group found inside the pre-checked groups from import, see warnings."
                 )
-        if not valid:
-            row["messages"].append(
-                "Error in groups: No valid group found inside the pre checked groups from import, see warnings."
-            )
-            row["state"] = ImportState.ERROR
-            groups[0]["info"] = ImportState.ERROR
+                row["state"] = ImportState.ERROR
+                instances[0]["info"] = ImportState.ERROR
 
         entry.pop("meeting_id")
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
@@ -104,24 +119,26 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
 
     def setup_lookups(self) -> None:
         super().setup_lookups()
-        result = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "group",
-                    list(
-                        set(
-                            group_id
-                            for row in self.rows
-                            for group in row["data"].get("groups", [])
-                            if (group_id := group.get("id"))
-                        )
-                    ),
-                    ["name"],
-                )
-            ],
-            lock_result=False,
-            use_changed_models=False,
-        )
-        self.group_names_lookup = {
-            k: v["name"] for k, v in result.get("group", {}).items()
-        }
+        for field in ("groups", "structure_level"):
+            singular_field = field.rstrip("s")
+            result = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        singular_field,
+                        list(
+                            set(
+                                id
+                                for row in self.rows
+                                for instance in row["data"].get(field, [])
+                                if (id := instance.get("id"))
+                            )
+                        ),
+                        ["name"],
+                    )
+                ],
+                lock_result=False,
+                use_changed_models=False,
+            )
+            self.lookups[field] = {
+                k: v["name"] for k, v in result.get(singular_field, {}).items()
+            }
