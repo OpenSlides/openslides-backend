@@ -650,6 +650,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "username": {"info": ImportState.GENERATED, "value": "new_saml6"},
             "saml_id": {"info": ImportState.ERROR, "value": "new_saml6"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
+            "is_present": {"info": "done", "value": True},
             "groups": [
                 {"info": "warning", "value": "group4"},
                 {"id": 1, "info": "generated", "value": "group1"},

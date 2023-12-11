@@ -703,10 +703,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                         "username": "new_user5",
                         "saml_id": "saml5",
                     },
-                    {
-                        "saml_id": "new_saml6",
-                        "groups": ["group4"],
-                    },
+                    {"saml_id": "new_saml6", "groups": ["group4"], "is_present": "1"},
                     {
                         "first_name": "Joan",
                         "last_name": "Baez7",
@@ -784,6 +781,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "saml_id": {"info": "new", "value": "new_saml6"},
             "username": {"info": "generated", "value": "new_saml6"},
             "default_password": {"info": "warning", "value": ""},
+            "is_present": {"info": "done", "value": True},
             "groups": [
                 {"info": "warning", "value": "group4"},
                 {"id": 1, "info": "generated", "value": "group1"},

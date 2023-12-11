@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Optional, cast
 
 from ....shared.exceptions import ActionException
 from ...mixins.import_mixins import (
@@ -8,7 +8,7 @@ from ...mixins.import_mixins import (
     Lookup,
     ResultType,
 )
-from ...util.typing import ActionData
+from ...util.typing import ActionData, ActionResults
 from .create import UserCreate
 from .update import UserUpdate
 
@@ -74,18 +74,35 @@ class BaseUserImport(ImportMixin):
             entry.pop(k)
         return entry
 
-    def create_other_actions(self, rows: List[ImportRow]) -> None:
+    def create_other_actions(self, rows: List[ImportRow]) -> List[Optional[int]]:
         create_action_payload: List[Dict[str, Any]] = []
         update_action_payload: List[Dict[str, Any]] = []
+        index_to_is_create: List[bool] = []
         for row in rows:
             if row["state"] == ImportState.NEW:
                 create_action_payload.append(row["data"])
+                index_to_is_create.append(True)
             else:
                 update_action_payload.append(row["data"])
+                index_to_is_create.append(False)
+        create_results: Optional[ActionResults] = []
+        update_results: Optional[ActionResults] = []
         if create_action_payload:
-            self.execute_other_action(UserCreate, create_action_payload)
+            create_results = self.execute_other_action(
+                UserCreate, create_action_payload
+            )
         if update_action_payload:
-            self.execute_other_action(UserUpdate, update_action_payload)
+            update_results = self.execute_other_action(
+                UserUpdate, update_action_payload
+            )
+        ids: List[Optional[int]] = []
+        for is_create in index_to_is_create:
+            if is_create:
+                result = create_results.pop(0) if create_results else None
+            else:
+                result = update_results.pop(0) if update_results else None
+            ids.append(result.get("id") if isinstance(result, dict) else None)
+        return ids
 
     def validate_entry(self, row: ImportRow) -> ImportRow:
         entry = row["data"]
