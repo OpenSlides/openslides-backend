@@ -42,8 +42,12 @@ class BaseUserImport(ImportMixin):
         return {}
 
     def handle_remove_and_group_fields(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        if (groups := entry.pop("groups", None)) is not None:
-            entry["group_ids"] = [id_ for group in groups if (id_ := group.get("id"))]
+        for field in ("groups", "structure_level"):
+            if field in entry and (instances := entry.pop(field)):
+                relation_field = field.rstrip("s") + "_ids"
+                entry[relation_field] = [
+                    id_ for instance in instances if (id_ := instance.get("id"))
+                ]
 
         # set fields empty/False if saml_id will be set
         field_values = (

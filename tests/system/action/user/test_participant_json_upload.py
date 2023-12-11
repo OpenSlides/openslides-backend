@@ -12,8 +12,13 @@ class ParticipantJsonUpload(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {"name": "test", "group_ids": [1]},
+                "meeting/1": {
+                    "name": "test",
+                    "group_ids": [1],
+                    "structure_level_ids": [1],
+                },
                 "group/1": {"name": "testgroup", "meeting_id": 1},
+                "structure_level/1": {"name": "testlevel", "meeting_id": 1},
             }
         )
 
@@ -30,7 +35,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                         "is_active": "1",
                         "is_physical_person": "F",
                         "number": "strange number",
-                        "structure_level": "CEO",
+                        "structure_level": ["testlevel", "notfound"],
                         "vote_weight": "1.12",
                         "comment": "my comment",
                         "is_present": "0",
@@ -45,7 +50,8 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.NEW,
             "messages": [
-                "Following groups were not found: 'notfound_group1, notfound_group2'"
+                "Following groups were not found: 'notfound_group1, notfound_group2'",
+                "Following structure levels were not found: 'notfound'",
             ],
             "data": {
                 "username": {"value": "test", "info": ImportState.DONE},
@@ -53,12 +59,15 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 "is_active": {"value": True, "info": ImportState.DONE},
                 "is_physical_person": {"value": False, "info": ImportState.DONE},
                 "number": {"value": "strange number", "info": ImportState.DONE},
-                "structure_level": {"value": "CEO", "info": ImportState.DONE},
+                "structure_level": [
+                    {"value": "testlevel", "info": ImportState.DONE, "id": 1},
+                    {"value": "notfound", "info": ImportState.WARNING},
+                ],
                 "vote_weight": {"value": "1.120000", "info": ImportState.DONE},
                 "comment": {"value": "my comment", "info": ImportState.DONE},
                 "is_present": {"value": False, "info": ImportState.DONE},
                 "groups": [
-                    {"value": "testgroup", "info": "done", "id": 1},
+                    {"value": "testgroup", "info": ImportState.DONE, "id": 1},
                     {"value": "notfound_group1", "info": ImportState.WARNING},
                     {"value": "notfound_group2", "info": ImportState.WARNING},
                 ],
@@ -96,8 +105,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Participant import tries to use non-existent meeting 111"
-            in response.json["message"]
+            "Import tries to use non-existent meeting 111" in response.json["message"]
         )
 
     def test_json_upload_without_names_error(self) -> None:
@@ -199,7 +207,12 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 {"property": "gender", "type": "string", "is_object": True},
                 {"property": "pronoun", "type": "string", "is_object": True},
                 {"property": "saml_id", "type": "string", "is_object": True},
-                {"property": "structure_level", "type": "string", "is_object": True},
+                {
+                    "property": "structure_level",
+                    "type": "string",
+                    "is_object": True,
+                    "is_list": True,
+                },
                 {"property": "number", "type": "string", "is_object": True},
                 {"property": "vote_weight", "type": "decimal", "is_object": True},
                 {"property": "comment", "type": "string", "is_object": True},
@@ -272,7 +285,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "first_name": "Max",
             "last_name": "Mustermann",
             "email": "test@ntvtn.de",
-            "structure_level": "meeting1 structure level",
             "number": "meeting1 number",
             "comment": "meeting1 comment",
         }
@@ -285,6 +297,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                         "default_password": "new default password",
                         "vote_weight": "1.456",
                         "is_present": "f",
+                        "structure_level": "testlevel",
                         **fix_fields,
                     }
                 ],
@@ -304,6 +317,9 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert row["data"]["groups"] == [
             {"value": "testgroup", "info": "generated", "id": 1}
         ]
+        assert row["data"]["structure_level"] == [
+            {"value": "testlevel", "info": "done", "id": 1}
+        ]
         for key in fix_fields.keys():
             assert row["data"][key]["value"] == fix_fields[key]
 
@@ -322,13 +338,19 @@ class ParticipantJsonUpload(BaseActionTestCase):
         fix_fields = {
             "first_name": "Max",
             "last_name": "Mustermann",
-            "structure_level": "meeting1 structure level",
         }
         response = self.request(
             "participant.json_upload",
             {
                 "meeting_id": 1,
-                "data": [{"vote_weight": "1.456", "is_present": "0", **fix_fields}],
+                "data": [
+                    {
+                        "vote_weight": "1.456",
+                        "is_present": "0",
+                        "structure_level": "testlevel",
+                        **fix_fields,
+                    }
+                ],
             },
         )
         self.assert_status_code(response, 200)
@@ -345,10 +367,13 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "value": "1.456000",
             "info": ImportState.DONE,
         }
-        assert entry["data"]["structure_level"] == {
-            "value": "meeting1 structure level",
-            "info": ImportState.DONE,
-        }
+        assert entry["data"]["structure_level"] == [
+            {
+                "value": "testlevel",
+                "info": ImportState.DONE,
+                "id": 1,
+            }
+        ]
         assert entry["data"]["is_present"] == {"value": False, "info": ImportState.DONE}
         assert entry["data"]["groups"] == [
             {"value": "testgroup", "info": "generated", "id": 1}
@@ -527,18 +552,26 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 },
                 "meeting/1": {
                     "present_user_ids": [10],
+                    "structure_level_ids": [1, 2],
+                },
+                "structure_level/1": {
+                    "meeting_id": 1,
+                    "name": "old sl",
+                },
+                "structure_level/2": {
+                    "meeting_id": 1,
+                    "name": "new sl",
                 },
                 "meeting_user/110": {
                     "meeting_id": 1,
                     "user_id": 10,
-                    "structure_level": "old sl",
+                    "structure_level_ids": [1],
                     "number": "old number",
                     "comment": "old comment",
                 },
             }
         )
         fix_fields = {
-            "structure_level": "new sl",
             "number": "new number",
             "comment": "new comment",
         }
@@ -552,6 +585,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                         "saml_id": "saml_id10",
                         "is_present": "0",
                         "vote_weight": "2.8",
+                        "structure_level": "new sl",
                         **fix_fields,
                     }
                 ],
@@ -568,6 +602,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "is_present": {"value": False, "info": "done"},
             "vote_weight": {"value": "2.800000", "info": "done"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+            "structure_level": [{"id": 2, "info": "done", "value": "new sl"}],
             **{
                 k: {"value": v, "info": ImportState.DONE} for k, v in fix_fields.items()
             },

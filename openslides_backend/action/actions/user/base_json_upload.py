@@ -35,7 +35,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
     saml_id_lookup: Lookup
     names_email_lookup: Lookup
     all_saml_id_lookup: Lookup
-    import_name: str = ""
+    import_name: str
 
     @classmethod
     def get_schema(
@@ -76,7 +76,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance.pop("data")
         data = self.add_payload_index_to_action_data(data)
-        self.setup_lookups(data, instance.get("meeting_id"))
+        self.setup_lookups(data)
         self.distribute_found_value_to_data(data)
         self.create_usernames(data)
 
@@ -311,9 +311,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
             entry.get("email", ""),
         )
 
-    def setup_lookups(
-        self, data: List[Dict[str, Any]], meeting_id: Optional[int] = None
-    ) -> None:
+    def setup_lookups(self, data: List[Dict[str, Any]]) -> None:
         self.username_lookup = Lookup(
             self.datastore,
             "user",
