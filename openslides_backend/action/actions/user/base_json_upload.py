@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ....models.models import User
+from ....shared.exceptions import ActionException
 from ...mixins.import_mixins import (
     ImportState,
     JsonUploadMixin,
@@ -255,7 +256,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
             ):
                 entry["default_password"] = {"value": "", "info": ImportState.WARNING}
                 messages.append(
-                    "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
+                    f"Because this {self.import_name} is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
                 )
         else:
             self.handle_default_password(entry)
@@ -264,7 +265,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
             try:
                 check_gender_helper(self.datastore, entry)
                 entry["gender"] = {"info": ImportState.DONE, "value": gender}
-            except:
+            except ActionException:
                 entry["gender"] = {"info": ImportState.WARNING, "value": gender}
                 messages.append(f"Gender '{gender}' is not in the allowed gender list.")
 

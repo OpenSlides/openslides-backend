@@ -48,7 +48,7 @@ class BaseUserImport(ImportMixin):
         # set fields empty/False if saml_id will be set
         field_values = (
             ("can_change_own_password", False),
-            ("default_passwort", ""),
+            ("default_password", ""),
         )
         username = cast(str, self.get_value_from_union_str_object(entry["username"]))
         if (
@@ -62,11 +62,13 @@ class BaseUserImport(ImportMixin):
                 ):
                     entry[field] = value
 
-        # remove all fields fields marked with "remove"-state
+        # remove all fields fields marked with "remove" or "warning"-state
         to_remove = []
         for k, v in entry.items():
             if isinstance(v, dict):
-                if v.get("info") == ImportState.REMOVE:
+                if (v.get("info") == ImportState.REMOVE) or (
+                    v.get("info") == ImportState.WARNING
+                ):
                     to_remove.append(k)
         for k in to_remove:
             entry.pop(k)

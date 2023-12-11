@@ -15,6 +15,9 @@ class AccountJsonUpload(BaseActionTestCase):
             {
                 "data": [
                     {
+                        "organization/1": {
+                            "genders": ["male", "female", "diverse", "non-binary"]
+                        },
                         "username": "test",
                         "default_password": "secret",
                         "is_active": "1",

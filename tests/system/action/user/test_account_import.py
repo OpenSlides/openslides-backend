@@ -12,6 +12,9 @@ class AccountJsonImport(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
+                "organization/1": {
+                    "genders": ["male", "female", "diverse", "non-binary"]
+                },
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "account",
@@ -47,7 +50,10 @@ class AccountJsonImport(BaseActionTestCase):
                                     "first_name": "Testy",
                                     "last_name": "Tester",
                                     "email": "email@test.com",
-                                    "gender": "male",
+                                    "gender": {
+                                        "value": "male",
+                                        "info": ImportState.DONE,
+                                    },
                                 },
                             },
                         ],
@@ -61,7 +67,12 @@ class AccountJsonImport(BaseActionTestCase):
                             {
                                 "state": ImportState.ERROR,
                                 "messages": ["test"],
-                                "data": {"gender": "male"},
+                                "data": {
+                                    "gender": {
+                                        "value": "male",
+                                        "info": ImportState.DONE,
+                                    }
+                                },
                             },
                         ],
                     },
@@ -165,6 +176,45 @@ class AccountJsonImport(BaseActionTestCase):
         self.assert_model_exists(
             "user/1", {"first_name": "Testy", "gender": "non-binary"}
         )
+
+    def test_ignore_unknown_gender(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "username": "user1",
+                },
+                "import_preview/7": {
+                    "state": ImportState.DONE,
+                    "name": "account",
+                    "result": {
+                        "rows": [
+                            {
+                                "state": ImportState.NEW,
+                                "messages": [
+                                    "Gender 'notAGender' is not in the allowed gender list."
+                                ],
+                                "data": {
+                                    "id": 1,
+                                    "username": {
+                                        "value": "user1",
+                                        "info": ImportState.DONE,
+                                        "id": 1,
+                                    },
+                                    "gender": {
+                                        "value": "notAGender",
+                                        "info": ImportState.WARNING,
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            }
+        )
+        response = self.request("account.import", {"id": 7, "import": True})
+        self.assert_status_code(response, 200)
+        user = self.assert_model_exists("user/1")
+        assert user.get("gender") is None
 
     def test_import_names_and_email_and_create(self) -> None:
         response = self.request("account.import", {"id": 3, "import": True})
