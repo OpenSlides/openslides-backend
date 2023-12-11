@@ -125,6 +125,28 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.create_model(
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
         )
+        filename = "fn_jumbo.unknown"
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": file_content,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert f"Cannot guess mimetype for {filename}." in response.json.get(
+            "message", ""
+        )
+        self.assert_model_not_exists("mediafile/1")
+        self.media.upload_mediafile.assert_not_called()
+
+    def test_mimetype_and_extension_no_match(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
         filename = "fn_jumbo.pdf"
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
@@ -132,7 +154,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             {
                 "title": "title_xXRGTLAJ",
                 "owner_id": "meeting/110",
-                "filename": "fn_jumbo.pdf",
+                "filename": filename,
                 "file": file_content,
             },
         )
