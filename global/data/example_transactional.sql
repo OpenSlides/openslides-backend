@@ -10,8 +10,19 @@ INSERT INTO committeeT (name, organization_id) VALUES ('c1', 1), ('c2', 1), ('c3
 INSERT INTO meetingT (default_group_id, admin_group_id,
     motions_default_workflow_id, motions_default_amendment_workflow_id,
     motions_default_statute_amendment_workflow_id,
-    committee_id, reference_projector_id, name)
-    VALUES (1, 2, 1, 1, 1, 1, 1, 'meeting1');
+    committee_id, reference_projector_id, name, language)
+    VALUES (1, 2, 1, 1, 1, 1, 1, 'meeting1', 'en');
+INSERT INTO groupT (name, meeting_id, permissions)
+    VALUES
+    ('Default', 1, '{
+        "agenda_item.can_see",
+        "assignment.can_see",
+        "meeting.can_see_autopilot",
+        "meeting.can_see_frontpage",
+        "motion.can_see",
+        "projector.can_see"
+    }'), ('Admin', 1, DEFAULT);
+
 INSERT INTO motion_workflowT (name, sequential_number, first_state_id, meeting_id)
     VALUES ('Simple Workflow', 1, 1, 1);
 INSERT INTO motion_stateT (name, weight, workflow_id, meeting_id, allow_create_poll, allow_support, set_workflow_timestamp)
@@ -29,8 +40,8 @@ INSERT INTO projectorT (name, sequential_number, meeting_id) VALUES ('Projektor 
 INSERT INTO meetingT (default_group_id, admin_group_id,
     motions_default_workflow_id, motions_default_amendment_workflow_id,
     motions_default_statute_amendment_workflow_id,
-    committee_id, reference_projector_id, name)
-    VALUES (3, 4, 2, 2, 2, 2, 2, 'meeting2');
+    committee_id, reference_projector_id, name, language)
+    VALUES (3, 4, 2, 2, 2, 2, 2, 'meeting2', 'en');
 INSERT INTO groupT (name, meeting_id, permissions)
     VALUES
     ('Default', 2, '{

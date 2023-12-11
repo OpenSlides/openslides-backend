@@ -17,10 +17,9 @@
 #       and `generic-relation-list`.
 #     - Non-generic relations: The simple syntax for such a field
 #       `to: <collection>/<field>`. This is a reference to a collection. The reverse
-#       relation field in this collection is <field>. E. g. in a motion the field
-#       `reference: <collection(field1, ...)` This replaces the `to` and is used for 
-#       the foreign key reference. If the content or the brackets are missed, the `id`
-#       will be used
+#       relation field in this collection is <field>. E. g. in a motion the field `meeting_id`
+#       `reference: <collection(field1, ...)` This can be used, if the foreign key reference
+#        is not the <collection/"id">, where the collection is the same as that from the `to`.
 #       `category_id` links to one category where the field `motion_ids` contains the
 #       motion id. The simple notation for the field is `motion_category/motion_ids`.
 #       The reverse field has type `relation-list` and is related back to

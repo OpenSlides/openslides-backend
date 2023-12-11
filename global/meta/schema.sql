@@ -2,7 +2,7 @@
 -- schema.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
--- MODELS_YML_CHECKSUM = 'd4dd230eacf1f050e07e9b8cb1b08797'
+-- MODELS_YML_CHECKSUM = '2117dc6643bb235c645c1f21ff5cd1ee'
 -- Type definitions
 DO $$
 BEGIN
@@ -394,14 +394,6 @@ comment on column organizationT.limit_of_users is 'Maximum of active users for t
  Fields without SQL definition for table organization
 
     vote_decrypt_public_main_key type:string is marked as a calculated field
-    committee_ids type:relation-list no method defined
-    active_meeting_ids type:relation-list no method defined
-    archived_meeting_ids type:relation-list no method defined
-    template_meeting_ids type:relation-list no method defined
-    organization_tag_ids type:relation-list no method defined
-    theme_ids type:relation-list no method defined
-    mediafile_ids type:relation-list no method defined
-    user_ids type:relation-list no method defined
 
 */
 
@@ -437,21 +429,6 @@ comment on column userT.saml_id is 'unique-key from IdP for SAML login';
 comment on column userT.organization_management_level is 'Hierarchical permission level for the whole organization.';
 comment on column userT.meeting_ids is 'Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.';
 
-/*
- Fields without SQL definition for table user
-
-    is_present_in_meeting_ids type:relation-list no method defined
-    committee_ids type:relation-list no method defined
-    committee_management_ids type:relation-list no method defined
-    forwarding_committee_ids type:relation-list no method defined
-    meeting_user_ids type:relation-list no method defined
-    poll_voted_ids type:relation-list no method defined
-    option_ids type:relation-list no method defined
-    vote_ids type:relation-list no method defined
-    delegated_vote_ids type:relation-list no method defined
-    poll_candidate_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS meeting_userT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -467,19 +444,6 @@ CREATE TABLE IF NOT EXISTS meeting_userT (
 
 
 
-/*
- Fields without SQL definition for table meeting_user
-
-    personal_note_ids type:relation-list no method defined
-    speaker_ids type:relation-list no method defined
-    supported_motion_ids type:relation-list no method defined
-    motion_submitter_ids type:relation-list no method defined
-    assignment_candidate_ids type:relation-list no method defined
-    vote_delegations_from_ids type:relation-list no method defined
-    chat_message_ids type:relation-list no method defined
-    group_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS organization_tagT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -567,17 +531,6 @@ CREATE TABLE IF NOT EXISTS committeeT (
 
 comment on column committeeT.external_id is 'unique';
 
-/*
- Fields without SQL definition for table committee
-
-    meeting_ids type:relation-list no method defined
-    user_ids type:relation-list no method defined
-    manager_ids type:relation-list no method defined
-    forward_to_committee_ids type:relation-list no method defined
-    receive_forwardings_from_committee_ids type:relation-list no method defined
-    organization_tag_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS meetingT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -759,66 +712,6 @@ comment on column meetingT.is_active_in_organization_id is 'Backrelation and boo
 comment on column meetingT.is_archived_in_organization_id is 'Backrelation and boolean flag at once';
 comment on column meetingT.user_ids is 'Calculated. All user ids from all users assigned to groups of this meeting.';
 
-/*
- Fields without SQL definition for table meeting
-
-    motion_poll_default_group_ids type:relation-list no method defined
-    poll_candidate_list_ids type:relation-list no method defined
-    poll_candidate_ids type:relation-list no method defined
-    meeting_user_ids type:relation-list no method defined
-    assignment_poll_default_group_ids type:relation-list no method defined
-    poll_default_group_ids type:relation-list no method defined
-    topic_poll_default_group_ids type:relation-list no method defined
-    projector_ids type:relation-list no method defined
-    all_projection_ids type:relation-list no method defined
-    projector_message_ids type:relation-list no method defined
-    projector_countdown_ids type:relation-list no method defined
-    tag_ids type:relation-list no method defined
-    agenda_item_ids type:relation-list no method defined
-    list_of_speakers_ids type:relation-list no method defined
-    point_of_order_category_ids type:relation-list no method defined
-    speaker_ids type:relation-list no method defined
-    topic_ids type:relation-list no method defined
-    group_ids type:relation-list no method defined
-    mediafile_ids type:relation-list no method defined
-    motion_ids type:relation-list no method defined
-    forwarded_motion_ids type:relation-list no method defined
-    motion_comment_section_ids type:relation-list no method defined
-    motion_category_ids type:relation-list no method defined
-    motion_block_ids type:relation-list no method defined
-    motion_workflow_ids type:relation-list no method defined
-    motion_statute_paragraph_ids type:relation-list no method defined
-    motion_comment_ids type:relation-list no method defined
-    motion_submitter_ids type:relation-list no method defined
-    motion_change_recommendation_ids type:relation-list no method defined
-    motion_state_ids type:relation-list no method defined
-    poll_ids type:relation-list no method defined
-    option_ids type:relation-list no method defined
-    vote_ids type:relation-list no method defined
-    assignment_ids type:relation-list no method defined
-    assignment_candidate_ids type:relation-list no method defined
-    personal_note_ids type:relation-list no method defined
-    chat_group_ids type:relation-list no method defined
-    chat_message_ids type:relation-list no method defined
-    organization_tag_ids type:relation-list no method defined
-    present_user_ids type:relation-list no method defined
-    projection_ids type:relation-list no method defined
-    default_projector_agenda_item_list_ids type:relation-list no method defined
-    default_projector_topic_ids type:relation-list no method defined
-    default_projector_list_of_speakers_ids type:relation-list no method defined
-    default_projector_current_list_of_speakers_ids type:relation-list no method defined
-    default_projector_motion_ids type:relation-list no method defined
-    default_projector_amendment_ids type:relation-list no method defined
-    default_projector_motion_block_ids type:relation-list no method defined
-    default_projector_assignment_ids type:relation-list no method defined
-    default_projector_mediafile_ids type:relation-list no method defined
-    default_projector_message_ids type:relation-list no method defined
-    default_projector_countdown_ids type:relation-list no method defined
-    default_projector_assignment_poll_ids type:relation-list no method defined
-    default_projector_motion_poll_ids type:relation-list no method defined
-    default_projector_poll_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS groupT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -839,19 +732,6 @@ CREATE TABLE IF NOT EXISTS groupT (
 
 comment on column groupT.external_id is 'unique in meeting';
 
-/*
- Fields without SQL definition for table group
-
-    meeting_user_ids type:relation-list no method defined
-    mediafile_access_group_ids type:relation-list no method defined
-    mediafile_inherited_access_group_ids type:relation-list no method defined
-    read_comment_section_ids type:relation-list no method defined
-    write_comment_section_ids type:relation-list no method defined
-    read_chat_group_ids type:relation-list no method defined
-    write_chat_group_ids type:relation-list no method defined
-    poll_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS personal_noteT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -911,9 +791,6 @@ comment on column agenda_itemT.level is 'Calculated by the server';
  Fields without SQL definition for table agenda_item
 
     content_object_id type:generic-relation no method defined
-    child_ids type:relation-list no method defined
-    tag_ids type:relation-list no method defined
-    projection_ids type:relation-list no method defined
 
 */
 
@@ -932,8 +809,6 @@ comment on column list_of_speakersT.sequential_number is 'The (positive) serial 
  Fields without SQL definition for table list_of_speakers
 
     content_object_id type:generic-relation no method defined
-    speaker_ids type:relation-list no method defined
-    projection_ids type:relation-list no method defined
 
 */
 
@@ -946,12 +821,6 @@ CREATE TABLE IF NOT EXISTS point_of_order_categoryT (
 
 
 
-/*
- Fields without SQL definition for table point_of_order_category
-
-    speaker_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS speakerT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -984,14 +853,6 @@ CREATE TABLE IF NOT EXISTS topicT (
 
 comment on column topicT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-/*
- Fields without SQL definition for table topic
-
-    attachment_ids type:relation-list no method defined
-    poll_ids type:relation-list no method defined
-    projection_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS motionT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1034,25 +895,8 @@ comment on column motionT.sequential_number is 'The (positive) serial number of 
 /*
  Fields without SQL definition for table motion
 
-    amendment_ids type:relation-list no method defined
-    sort_child_ids type:relation-list no method defined
-    derived_motion_ids type:relation-list no method defined
-    all_origin_ids type:relation-list no method defined
-    all_derived_motion_ids type:relation-list no method defined
     state_extension_reference_ids type:generic-relation-list no method defined
-    referenced_in_motion_state_extension_ids type:relation-list no method defined
     recommendation_extension_reference_ids type:generic-relation-list no method defined
-    referenced_in_motion_recommendation_extension_ids type:relation-list no method defined
-    submitter_ids type:relation-list no method defined
-    supporter_meeting_user_ids type:relation-list no method defined
-    poll_ids type:relation-list no method defined
-    option_ids type:relation-list no method defined
-    change_recommendation_ids type:relation-list no method defined
-    comment_ids type:relation-list no method defined
-    tag_ids type:relation-list no method defined
-    attachment_ids type:relation-list no method defined
-    projection_ids type:relation-list no method defined
-    personal_note_ids type:relation-list no method defined
 
 */
 
@@ -1091,14 +935,6 @@ CREATE TABLE IF NOT EXISTS motion_comment_sectionT (
 
 comment on column motion_comment_sectionT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-/*
- Fields without SQL definition for table motion_comment_section
-
-    comment_ids type:relation-list no method defined
-    read_group_ids type:relation-list no method defined
-    write_group_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS motion_categoryT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1116,13 +952,6 @@ CREATE TABLE IF NOT EXISTS motion_categoryT (
 comment on column motion_categoryT.level is 'Calculated field.';
 comment on column motion_categoryT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-/*
- Fields without SQL definition for table motion_category
-
-    child_ids type:relation-list no method defined
-    motion_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS motion_blockT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1138,13 +967,6 @@ CREATE TABLE IF NOT EXISTS motion_blockT (
 
 comment on column motion_blockT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-/*
- Fields without SQL definition for table motion_block
-
-    motion_ids type:relation-list no method defined
-    projection_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS motion_change_recommendationT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1187,16 +1009,6 @@ CREATE TABLE IF NOT EXISTS motion_stateT (
 
 
 
-/*
- Fields without SQL definition for table motion_state
-
-    submitter_withdraw_back_ids type:relation-list no method defined
-    next_state_ids type:relation-list no method defined
-    previous_state_ids type:relation-list no method defined
-    motion_ids type:relation-list no method defined
-    motion_recommendation_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS motion_workflowT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1213,12 +1025,6 @@ CREATE TABLE IF NOT EXISTS motion_workflowT (
 
 comment on column motion_workflowT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-/*
- Fields without SQL definition for table motion_workflow
-
-    state_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS motion_statute_paragraphT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1233,12 +1039,6 @@ CREATE TABLE IF NOT EXISTS motion_statute_paragraphT (
 
 comment on column motion_statute_paragraphT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-/*
- Fields without SQL definition for table motion_statute_paragraph
-
-    motion_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS pollT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1282,10 +1082,6 @@ comment on column pollT.votes_signature is 'base64 signature of votes_raw field.
 
     vote_count type:number is marked as a calculated field
     content_object_id type:generic-relation no method defined
-    option_ids type:relation-list no method defined
-    voted_ids type:relation-list no method defined
-    entitled_group_ids type:relation-list no method defined
-    projection_ids type:relation-list no method defined
 
 */
 
@@ -1306,7 +1102,6 @@ CREATE TABLE IF NOT EXISTS optionT (
 /*
  Fields without SQL definition for table option
 
-    vote_ids type:relation-list no method defined
     content_object_id type:generic-relation no method defined
 
 */
@@ -1343,16 +1138,6 @@ CREATE TABLE IF NOT EXISTS assignmentT (
 
 comment on column assignmentT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-/*
- Fields without SQL definition for table assignment
-
-    candidate_ids type:relation-list no method defined
-    poll_ids type:relation-list no method defined
-    tag_ids type:relation-list no method defined
-    attachment_ids type:relation-list no method defined
-    projection_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS assignment_candidateT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1373,12 +1158,6 @@ CREATE TABLE IF NOT EXISTS poll_candidate_listT (
 
 
 
-/*
- Fields without SQL definition for table poll_candidate_list
-
-    poll_candidate_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS poll_candidateT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1432,10 +1211,6 @@ comment on column mediafileT.is_public is 'Calculated field. inherited_access_gr
 /*
  Fields without SQL definition for table mediafile
 
-    inherited_access_group_ids type:relation-list no method defined
-    access_group_ids type:relation-list no method defined
-    child_ids type:relation-list no method defined
-    projection_ids type:relation-list no method defined
     attachment_ids type:generic-relation-list no method defined
     owner_id type:generic-relation no method defined
 
@@ -1484,14 +1259,6 @@ CREATE TABLE IF NOT EXISTS projectorT (
 
 comment on column projectorT.sequential_number is 'The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.';
 
-/*
- Fields without SQL definition for table projector
-
-    current_projection_ids type:relation-list no method defined
-    preview_projection_ids type:relation-list no method defined
-    history_projection_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS projectionT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1523,12 +1290,6 @@ CREATE TABLE IF NOT EXISTS projector_messageT (
 
 
 
-/*
- Fields without SQL definition for table projector_message
-
-    projection_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS projector_countdownT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1544,12 +1305,6 @@ CREATE TABLE IF NOT EXISTS projector_countdownT (
 
 
 
-/*
- Fields without SQL definition for table projector_countdown
-
-    projection_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS chat_groupT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1560,14 +1315,6 @@ CREATE TABLE IF NOT EXISTS chat_groupT (
 
 
 
-/*
- Fields without SQL definition for table chat_group
-
-    chat_message_ids type:relation-list no method defined
-    read_group_ids type:relation-list no method defined
-    write_group_ids type:relation-list no method defined
-
-*/
 
 CREATE TABLE IF NOT EXISTS chat_messageT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -1604,6 +1351,191 @@ CREATE TABLE IF NOT EXISTS import_previewT (
 
 
 -- View definitions
+
+CREATE OR REPLACE VIEW organization AS SELECT *,
+(select array_agg(c.id) from committeeT c where c.organization_id = o.id) as committee_ids,
+(select array_agg(m.id) from meetingT m where m.is_active_in_organization_id = o.id) as active_meeting_ids,
+(select array_agg(m.id) from meetingT m where m.is_archived_in_organization_id = o.id) as archived_meeting_ids,
+(select array_agg(m.id) from meetingT m where m.template_for_organization_id = o.id) as template_meeting_ids,
+(select array_agg(ot.id) from organization_tagT ot where ot.organization_id = o.id) as organization_tag_ids,
+(select array_agg(t.id) from themeT t where t.organization_id = o.id) as theme_ids,
+(select array_agg(u.id) from userT u where u.organization_id = o.id) as user_ids
+FROM organizationT o;
+
+
+CREATE OR REPLACE VIEW user_ AS SELECT *,
+(select array_agg(c.id) from committeeT c where c.forwarding_user_id = u.id) as forwarding_committee_ids,
+(select array_agg(m.id) from meeting_userT m where m.user_id = u.id) as meeting_user_ids,
+(select array_agg(v.id) from voteT v where v.user_id = u.id) as vote_ids,
+(select array_agg(v.id) from voteT v where v.delegated_user_id = u.id) as delegated_vote_ids,
+(select array_agg(p.id) from poll_candidateT p where p.user_id = u.id) as poll_candidate_ids
+FROM userT u;
+
+
+CREATE OR REPLACE VIEW meeting_user AS SELECT *,
+(select array_agg(p.id) from personal_noteT p where p.meeting_user_id = m.id) as personal_note_ids,
+(select array_agg(s.id) from speakerT s where s.meeting_user_id = m.id) as speaker_ids,
+(select array_agg(ms.id) from motion_submitterT ms where ms.meeting_user_id = m.id) as motion_submitter_ids,
+(select array_agg(a.id) from assignment_candidateT a where a.meeting_user_id = m.id) as assignment_candidate_ids,
+(select array_agg(mu.id) from meeting_userT mu where mu.vote_delegated_to_id = m.id) as vote_delegations_from_ids,
+(select array_agg(c.id) from chat_messageT c where c.meeting_user_id = m.id) as chat_message_ids
+FROM meeting_userT m;
+
+
+CREATE OR REPLACE VIEW committee AS SELECT *,
+(select array_agg(m.id) from meetingT m where m.committee_id = c.id) as meeting_ids
+FROM committeeT c;
+
+
+CREATE OR REPLACE VIEW meeting AS SELECT *,
+(select array_agg(g.id) from groupT g where g.used_as_motion_poll_default_id = m.id) as motion_poll_default_group_ids,
+(select array_agg(p.id) from poll_candidate_listT p where p.meeting_id = m.id) as poll_candidate_list_ids,
+(select array_agg(p.id) from poll_candidateT p where p.meeting_id = m.id) as poll_candidate_ids,
+(select array_agg(mu.id) from meeting_userT mu where mu.meeting_id = m.id) as meeting_user_ids,
+(select array_agg(g.id) from groupT g where g.used_as_assignment_poll_default_id = m.id) as assignment_poll_default_group_ids,
+(select array_agg(g.id) from groupT g where g.used_as_poll_default_id = m.id) as poll_default_group_ids,
+(select array_agg(g.id) from groupT g where g.used_as_topic_poll_default_id = m.id) as topic_poll_default_group_ids,
+(select array_agg(p.id) from projectorT p where p.meeting_id = m.id) as projector_ids,
+(select array_agg(p.id) from projectionT p where p.meeting_id = m.id) as all_projection_ids,
+(select array_agg(p.id) from projector_messageT p where p.meeting_id = m.id) as projector_message_ids,
+(select array_agg(p.id) from projector_countdownT p where p.meeting_id = m.id) as projector_countdown_ids,
+(select array_agg(t.id) from tagT t where t.meeting_id = m.id) as tag_ids,
+(select array_agg(a.id) from agenda_itemT a where a.meeting_id = m.id) as agenda_item_ids,
+(select array_agg(l.id) from list_of_speakersT l where l.meeting_id = m.id) as list_of_speakers_ids,
+(select array_agg(p.id) from point_of_order_categoryT p where p.meeting_id = m.id) as point_of_order_category_ids,
+(select array_agg(s.id) from speakerT s where s.meeting_id = m.id) as speaker_ids,
+(select array_agg(t.id) from topicT t where t.meeting_id = m.id) as topic_ids,
+(select array_agg(g.id) from groupT g where g.meeting_id = m.id) as group_ids,
+(select array_agg(m1.id) from motionT m1 where m1.meeting_id = m.id) as motion_ids,
+(select array_agg(m1.id) from motionT m1 where m1.origin_meeting_id = m.id) as forwarded_motion_ids,
+(select array_agg(mc.id) from motion_comment_sectionT mc where mc.meeting_id = m.id) as motion_comment_section_ids,
+(select array_agg(mc.id) from motion_categoryT mc where mc.meeting_id = m.id) as motion_category_ids,
+(select array_agg(mb.id) from motion_blockT mb where mb.meeting_id = m.id) as motion_block_ids,
+(select array_agg(mw.id) from motion_workflowT mw where mw.meeting_id = m.id) as motion_workflow_ids,
+(select array_agg(ms.id) from motion_statute_paragraphT ms where ms.meeting_id = m.id) as motion_statute_paragraph_ids,
+(select array_agg(mc.id) from motion_commentT mc where mc.meeting_id = m.id) as motion_comment_ids,
+(select array_agg(ms.id) from motion_submitterT ms where ms.meeting_id = m.id) as motion_submitter_ids,
+(select array_agg(mc.id) from motion_change_recommendationT mc where mc.meeting_id = m.id) as motion_change_recommendation_ids,
+(select array_agg(ms.id) from motion_stateT ms where ms.meeting_id = m.id) as motion_state_ids,
+(select array_agg(p.id) from pollT p where p.meeting_id = m.id) as poll_ids,
+(select array_agg(o.id) from optionT o where o.meeting_id = m.id) as option_ids,
+(select array_agg(v.id) from voteT v where v.meeting_id = m.id) as vote_ids,
+(select array_agg(a.id) from assignmentT a where a.meeting_id = m.id) as assignment_ids,
+(select array_agg(a.id) from assignment_candidateT a where a.meeting_id = m.id) as assignment_candidate_ids,
+(select array_agg(p.id) from personal_noteT p where p.meeting_id = m.id) as personal_note_ids,
+(select array_agg(c.id) from chat_groupT c where c.meeting_id = m.id) as chat_group_ids,
+(select array_agg(c.id) from chat_messageT c where c.meeting_id = m.id) as chat_message_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_agenda_item_list_in_meeting_id = m.id) as default_projector_agenda_item_list_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_topic_in_meeting_id = m.id) as default_projector_topic_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_list_of_speakers_in_meeting_id = m.id) as default_projector_list_of_speakers_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_current_los_in_meeting_id = m.id) as default_projector_current_list_of_speakers_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_motion_in_meeting_id = m.id) as default_projector_motion_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_amendment_in_meeting_id = m.id) as default_projector_amendment_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_motion_block_in_meeting_id = m.id) as default_projector_motion_block_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_assignment_in_meeting_id = m.id) as default_projector_assignment_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_mediafile_in_meeting_id = m.id) as default_projector_mediafile_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_message_in_meeting_id = m.id) as default_projector_message_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_countdown_in_meeting_id = m.id) as default_projector_countdown_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_assignment_poll_in_meeting_id = m.id) as default_projector_assignment_poll_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_motion_poll_in_meeting_id = m.id) as default_projector_motion_poll_ids,
+(select array_agg(p.id) from projectorT p where p.used_as_default_projector_for_poll_in_meeting_id = m.id) as default_projector_poll_ids
+FROM meetingT m;
+
+
+CREATE OR REPLACE VIEW agenda_item AS SELECT *,
+(select array_agg(ai.id) from agenda_itemT ai where ai.parent_id = a.id) as child_ids
+FROM agenda_itemT a;
+
+
+CREATE OR REPLACE VIEW list_of_speakers AS SELECT *,
+(select array_agg(s.id) from speakerT s where s.list_of_speakers_id = l.id) as speaker_ids
+FROM list_of_speakersT l;
+
+
+CREATE OR REPLACE VIEW point_of_order_category AS SELECT *,
+(select array_agg(s.id) from speakerT s where s.point_of_order_category_id = p.id) as speaker_ids
+FROM point_of_order_categoryT p;
+
+
+CREATE OR REPLACE VIEW motion AS SELECT *,
+(select array_agg(m1.id) from motionT m1 where m1.lead_motion_id = m.id) as amendment_ids,
+(select array_agg(m1.id) from motionT m1 where m1.sort_parent_id = m.id) as sort_child_ids,
+(select array_agg(m1.id) from motionT m1 where m1.origin_id = m.id) as derived_motion_ids,
+(select array_agg(ms.id) from motion_submitterT ms where ms.motion_id = m.id) as submitter_ids,
+(select array_agg(mc.id) from motion_change_recommendationT mc where mc.motion_id = m.id) as change_recommendation_ids,
+(select array_agg(mc.id) from motion_commentT mc where mc.motion_id = m.id) as comment_ids
+FROM motionT m;
+
+
+CREATE OR REPLACE VIEW motion_comment_section AS SELECT *,
+(select array_agg(mc.id) from motion_commentT mc where mc.section_id = m.id) as comment_ids
+FROM motion_comment_sectionT m;
+
+
+CREATE OR REPLACE VIEW motion_category AS SELECT *,
+(select array_agg(mc.id) from motion_categoryT mc where mc.parent_id = m.id) as child_ids,
+(select array_agg(m1.id) from motionT m1 where m1.category_id = m.id) as motion_ids
+FROM motion_categoryT m;
+
+
+CREATE OR REPLACE VIEW motion_block AS SELECT *,
+(select array_agg(m1.id) from motionT m1 where m1.block_id = m.id) as motion_ids
+FROM motion_blockT m;
+
+
+CREATE OR REPLACE VIEW motion_state AS SELECT *,
+(select array_agg(ms.id) from motion_stateT ms where ms.submitter_withdraw_state_id = m.id) as submitter_withdraw_back_ids,
+(select array_agg(m1.id) from motionT m1 where m1.state_id = m.id) as motion_ids,
+(select array_agg(m1.id) from motionT m1 where m1.recommendation_id = m.id) as motion_recommendation_ids
+FROM motion_stateT m;
+
+
+CREATE OR REPLACE VIEW motion_workflow AS SELECT *,
+(select array_agg(ms.id) from motion_stateT ms where ms.workflow_id = m.id) as state_ids
+FROM motion_workflowT m;
+
+
+CREATE OR REPLACE VIEW motion_statute_paragraph AS SELECT *,
+(select array_agg(m1.id) from motionT m1 where m1.statute_paragraph_id = m.id) as motion_ids
+FROM motion_statute_paragraphT m;
+
+
+CREATE OR REPLACE VIEW poll AS SELECT *,
+(select array_agg(o.id) from optionT o where o.poll_id = p.id) as option_ids
+FROM pollT p;
+
+
+CREATE OR REPLACE VIEW option AS SELECT *,
+(select array_agg(v.id) from voteT v where v.option_id = o.id) as vote_ids
+FROM optionT o;
+
+
+CREATE OR REPLACE VIEW assignment AS SELECT *,
+(select array_agg(ac.id) from assignment_candidateT ac where ac.assignment_id = a.id) as candidate_ids
+FROM assignmentT a;
+
+
+CREATE OR REPLACE VIEW poll_candidate_list AS SELECT *,
+(select array_agg(pc.id) from poll_candidateT pc where pc.poll_candidate_list_id = p.id) as poll_candidate_ids
+FROM poll_candidate_listT p;
+
+
+CREATE OR REPLACE VIEW mediafile AS SELECT *,
+(select array_agg(m1.id) from mediafileT m1 where m1.parent_id = m.id) as child_ids
+FROM mediafileT m;
+
+
+CREATE OR REPLACE VIEW projector AS SELECT *,
+(select array_agg(p1.id) from projectionT p1 where p1.current_projector_id = p.id) as current_projection_ids,
+(select array_agg(p1.id) from projectionT p1 where p1.preview_projector_id = p.id) as preview_projection_ids,
+(select array_agg(p1.id) from projectionT p1 where p1.history_projector_id = p.id) as history_projection_ids
+FROM projectorT p;
+
+
+CREATE OR REPLACE VIEW chat_group AS SELECT *,
+(select array_agg(cm.id) from chat_messageT cm where cm.chat_group_id = c.id) as chat_message_ids
+FROM chat_groupT c;
+
 -- Alter table relations
 ALTER TABLE organizationT ADD FOREIGN KEY(theme_id) REFERENCES themeT(id) INITIALLY DEFERRED;
 
@@ -1808,4 +1740,191 @@ ALTER TABLE chat_messageT ADD FOREIGN KEY(chat_group_id) REFERENCES chat_groupT(
 ALTER TABLE chat_messageT ADD FOREIGN KEY(meeting_id) REFERENCES meetingT(id);
 
 
+/*   Relation-list infos 
+organization.committee_ids: committee.organization_id: Type: relation, Required:True SQL: False
+organization.active_meeting_ids: meeting.is_active_in_organization_id: Type: relation, Required:- SQL: False
+organization.archived_meeting_ids: meeting.is_archived_in_organization_id: Type: relation, Required:- SQL: False
+organization.template_meeting_ids: meeting.template_for_organization_id: Type: relation, Required:- SQL: False
+organization.organization_tag_ids: organization_tag.organization_id: Type: relation, Required:True SQL: False
+organization.theme_ids: theme.organization_id: Type: relation, Required:True SQL: False
+organization.mediafile_ids: mediafile.owner_id: Type: generic-relation, Required:True SQL: False
+organization.user_ids: user.organization_id: Type: relation, Required:True SQL: False
+
+user.is_present_in_meeting_ids: meeting.present_user_ids: Type: relation-list, Required:- SQL: False
+user.committee_ids: committee.user_ids: Type: relation-list, Required:- SQL: False
+user.committee_management_ids: committee.manager_ids: Type: relation-list, Required:- SQL: False
+user.forwarding_committee_ids: committee.forwarding_user_id: Type: relation, Required:- SQL: False
+user.meeting_user_ids: meeting_user.user_id: Type: relation, Required:True SQL: False
+user.poll_voted_ids: poll.voted_ids: Type: relation-list, Required:- SQL: False
+user.option_ids: option.content_object_id: Type: generic-relation, Required:- SQL: False
+user.vote_ids: vote.user_id: Type: relation, Required:- SQL: False
+user.delegated_vote_ids: vote.delegated_user_id: Type: relation, Required:- SQL: False
+user.poll_candidate_ids: poll_candidate.user_id: Type: relation, Required:- SQL: False
+
+meeting_user.personal_note_ids: personal_note.meeting_user_id: Type: relation, Required:True SQL: False
+meeting_user.speaker_ids: speaker.meeting_user_id: Type: relation, Required:- SQL: False
+meeting_user.supported_motion_ids: motion.supporter_meeting_user_ids: Type: relation-list, Required:- SQL: False
+meeting_user.motion_submitter_ids: motion_submitter.meeting_user_id: Type: relation, Required:True SQL: False
+meeting_user.assignment_candidate_ids: assignment_candidate.meeting_user_id: Type: relation, Required:- SQL: False
+meeting_user.vote_delegations_from_ids: meeting_user.vote_delegated_to_id: Type: relation, Required:- SQL: False
+meeting_user.chat_message_ids: chat_message.meeting_user_id: Type: relation, Required:True SQL: False
+meeting_user.group_ids: group.meeting_user_ids: Type: relation-list, Required:- SQL: False
+
+committee.meeting_ids: meeting.committee_id: Type: relation, Required:True SQL: False
+committee.user_ids: user.committee_ids: Type: relation-list, Required:- SQL: False
+committee.manager_ids: user.committee_management_ids: Type: relation-list, Required:- SQL: False
+committee.forward_to_committee_ids: committee.receive_forwardings_from_committee_ids: Type: relation-list, Required:- SQL: False
+committee.receive_forwardings_from_committee_ids: committee.forward_to_committee_ids: Type: relation-list, Required:- SQL: False
+committee.organization_tag_ids: organization_tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+
+meeting.motion_poll_default_group_ids: group.used_as_motion_poll_default_id: Type: relation, Required:- SQL: False
+meeting.poll_candidate_list_ids: poll_candidate_list.meeting_id: Type: relation, Required:True SQL: False
+meeting.poll_candidate_ids: poll_candidate.meeting_id: Type: relation, Required:True SQL: False
+meeting.meeting_user_ids: meeting_user.meeting_id: Type: relation, Required:True SQL: False
+meeting.assignment_poll_default_group_ids: group.used_as_assignment_poll_default_id: Type: relation, Required:- SQL: False
+meeting.poll_default_group_ids: group.used_as_poll_default_id: Type: relation, Required:- SQL: False
+meeting.topic_poll_default_group_ids: group.used_as_topic_poll_default_id: Type: relation, Required:- SQL: False
+meeting.projector_ids: projector.meeting_id: Type: relation, Required:True SQL: False
+meeting.all_projection_ids: projection.meeting_id: Type: relation, Required:True SQL: False
+meeting.projector_message_ids: projector_message.meeting_id: Type: relation, Required:True SQL: False
+meeting.projector_countdown_ids: projector_countdown.meeting_id: Type: relation, Required:True SQL: False
+meeting.tag_ids: tag.meeting_id: Type: relation, Required:True SQL: False
+meeting.agenda_item_ids: agenda_item.meeting_id: Type: relation, Required:True SQL: False
+meeting.list_of_speakers_ids: list_of_speakers.meeting_id: Type: relation, Required:True SQL: False
+meeting.point_of_order_category_ids: point_of_order_category.meeting_id: Type: relation, Required:True SQL: False
+meeting.speaker_ids: speaker.meeting_id: Type: relation, Required:True SQL: False
+meeting.topic_ids: topic.meeting_id: Type: relation, Required:True SQL: False
+meeting.group_ids: group.meeting_id: Type: relation, Required:True SQL: False
+meeting.mediafile_ids: mediafile.owner_id: Type: generic-relation, Required:True SQL: False
+meeting.motion_ids: motion.meeting_id: Type: relation, Required:True SQL: False
+meeting.forwarded_motion_ids: motion.origin_meeting_id: Type: relation, Required:- SQL: False
+meeting.motion_comment_section_ids: motion_comment_section.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_category_ids: motion_category.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_block_ids: motion_block.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_workflow_ids: motion_workflow.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_statute_paragraph_ids: motion_statute_paragraph.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_comment_ids: motion_comment.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_submitter_ids: motion_submitter.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_change_recommendation_ids: motion_change_recommendation.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_state_ids: motion_state.meeting_id: Type: relation, Required:True SQL: False
+meeting.poll_ids: poll.meeting_id: Type: relation, Required:True SQL: False
+meeting.option_ids: option.meeting_id: Type: relation, Required:True SQL: False
+meeting.vote_ids: vote.meeting_id: Type: relation, Required:True SQL: False
+meeting.assignment_ids: assignment.meeting_id: Type: relation, Required:True SQL: False
+meeting.assignment_candidate_ids: assignment_candidate.meeting_id: Type: relation, Required:True SQL: False
+meeting.personal_note_ids: personal_note.meeting_id: Type: relation, Required:True SQL: False
+meeting.chat_group_ids: chat_group.meeting_id: Type: relation, Required:True SQL: False
+meeting.chat_message_ids: chat_message.meeting_id: Type: relation, Required:True SQL: False
+meeting.organization_tag_ids: organization_tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+meeting.present_user_ids: user.is_present_in_meeting_ids: Type: relation-list, Required:- SQL: False
+meeting.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+meeting.default_projector_agenda_item_list_ids: projector.used_as_default_projector_for_agenda_item_list_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_topic_ids: projector.used_as_default_projector_for_topic_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_list_of_speakers_ids: projector.used_as_default_projector_for_list_of_speakers_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_current_list_of_speakers_ids: projector.used_as_default_projector_for_current_los_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_motion_ids: projector.used_as_default_projector_for_motion_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_amendment_ids: projector.used_as_default_projector_for_amendment_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_motion_block_ids: projector.used_as_default_projector_for_motion_block_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_assignment_ids: projector.used_as_default_projector_for_assignment_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_mediafile_ids: projector.used_as_default_projector_for_mediafile_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_message_ids: projector.used_as_default_projector_for_message_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_countdown_ids: projector.used_as_default_projector_for_countdown_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_assignment_poll_ids: projector.used_as_default_projector_for_assignment_poll_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_motion_poll_ids: projector.used_as_default_projector_for_motion_poll_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_poll_ids: projector.used_as_default_projector_for_poll_in_meeting_id: Type: relation, Required:- SQL: False
+
+group.meeting_user_ids: meeting_user.group_ids: Type: relation-list, Required:- SQL: False
+group.mediafile_access_group_ids: mediafile.access_group_ids: Type: relation-list, Required:- SQL: False
+group.mediafile_inherited_access_group_ids: mediafile.inherited_access_group_ids: Type: relation-list, Required:- SQL: False
+group.read_comment_section_ids: motion_comment_section.read_group_ids: Type: relation-list, Required:- SQL: False
+group.write_comment_section_ids: motion_comment_section.write_group_ids: Type: relation-list, Required:- SQL: False
+group.read_chat_group_ids: chat_group.read_group_ids: Type: relation-list, Required:- SQL: False
+group.write_chat_group_ids: chat_group.write_group_ids: Type: relation-list, Required:- SQL: False
+group.poll_ids: poll.entitled_group_ids: Type: relation-list, Required:- SQL: False
+
+agenda_item.child_ids: agenda_item.parent_id: Type: relation, Required:- SQL: False
+agenda_item.tag_ids: tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+agenda_item.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+
+list_of_speakers.speaker_ids: speaker.list_of_speakers_id: Type: relation, Required:True SQL: False
+list_of_speakers.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+
+point_of_order_category.speaker_ids: speaker.point_of_order_category_id: Type: relation, Required:- SQL: False
+
+topic.attachment_ids: mediafile.attachment_ids: Type: generic-relation-list, Required:- SQL: False
+topic.poll_ids: poll.content_object_id: Type: generic-relation, Required:True SQL: False
+topic.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+
+motion.amendment_ids: motion.lead_motion_id: Type: relation, Required:- SQL: False
+motion.sort_child_ids: motion.sort_parent_id: Type: relation, Required:- SQL: False
+motion.derived_motion_ids: motion.origin_id: Type: relation, Required:- SQL: False
+motion.all_origin_ids: motion.all_derived_motion_ids: Type: relation-list, Required:- SQL: False
+motion.all_derived_motion_ids: motion.all_origin_ids: Type: relation-list, Required:- SQL: False
+motion.referenced_in_motion_state_extension_ids: motion.state_extension_reference_ids: Type: generic-relation-list, Required:- SQL: False
+motion.referenced_in_motion_recommendation_extension_ids: motion.recommendation_extension_reference_ids: Type: generic-relation-list, Required:- SQL: False
+motion.submitter_ids: motion_submitter.motion_id: Type: relation, Required:True SQL: False
+motion.supporter_meeting_user_ids: meeting_user.supported_motion_ids: Type: relation-list, Required:- SQL: False
+motion.poll_ids: poll.content_object_id: Type: generic-relation, Required:True SQL: False
+motion.option_ids: option.content_object_id: Type: generic-relation, Required:- SQL: False
+motion.change_recommendation_ids: motion_change_recommendation.motion_id: Type: relation, Required:True SQL: False
+motion.comment_ids: motion_comment.motion_id: Type: relation, Required:True SQL: False
+motion.tag_ids: tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+motion.attachment_ids: mediafile.attachment_ids: Type: generic-relation-list, Required:- SQL: False
+motion.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+motion.personal_note_ids: personal_note.content_object_id: Type: generic-relation, Required:- SQL: False
+
+motion_comment_section.comment_ids: motion_comment.section_id: Type: relation, Required:True SQL: False
+motion_comment_section.read_group_ids: group.read_comment_section_ids: Type: relation-list, Required:- SQL: False
+motion_comment_section.write_group_ids: group.write_comment_section_ids: Type: relation-list, Required:- SQL: False
+
+motion_category.child_ids: motion_category.parent_id: Type: relation, Required:- SQL: False
+motion_category.motion_ids: motion.category_id: Type: relation, Required:- SQL: False
+
+motion_block.motion_ids: motion.block_id: Type: relation, Required:- SQL: False
+motion_block.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+
+motion_state.submitter_withdraw_back_ids: motion_state.submitter_withdraw_state_id: Type: relation, Required:- SQL: False
+motion_state.next_state_ids: motion_state.previous_state_ids: Type: relation-list, Required:- SQL: False
+motion_state.previous_state_ids: motion_state.next_state_ids: Type: relation-list, Required:- SQL: False
+motion_state.motion_ids: motion.state_id: Type: relation, Required:True SQL: False
+motion_state.motion_recommendation_ids: motion.recommendation_id: Type: relation, Required:- SQL: False
+
+motion_workflow.state_ids: motion_state.workflow_id: Type: relation, Required:True SQL: False
+
+motion_statute_paragraph.motion_ids: motion.statute_paragraph_id: Type: relation, Required:- SQL: False
+
+poll.option_ids: option.poll_id: Type: relation, Required:- SQL: False
+poll.voted_ids: user.poll_voted_ids: Type: relation-list, Required:- SQL: False
+poll.entitled_group_ids: group.poll_ids: Type: relation-list, Required:- SQL: False
+poll.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+
+option.vote_ids: vote.option_id: Type: relation, Required:True SQL: False
+
+assignment.candidate_ids: assignment_candidate.assignment_id: Type: relation, Required:True SQL: False
+assignment.poll_ids: poll.content_object_id: Type: generic-relation, Required:True SQL: False
+assignment.tag_ids: tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+assignment.attachment_ids: mediafile.attachment_ids: Type: generic-relation-list, Required:- SQL: False
+assignment.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+
+poll_candidate_list.poll_candidate_ids: poll_candidate.poll_candidate_list_id: Type: relation, Required:True SQL: False
+
+mediafile.inherited_access_group_ids: group.mediafile_inherited_access_group_ids: Type: relation-list, Required:- SQL: False
+mediafile.access_group_ids: group.mediafile_access_group_ids: Type: relation-list, Required:- SQL: False
+mediafile.child_ids: mediafile.parent_id: Type: relation, Required:- SQL: False
+mediafile.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+
+projector.current_projection_ids: projection.current_projector_id: Type: relation, Required:- SQL: False
+projector.preview_projection_ids: projection.preview_projector_id: Type: relation, Required:- SQL: False
+projector.history_projection_ids: projection.history_projector_id: Type: relation, Required:- SQL: False
+
+projector_message.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+
+projector_countdown.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+
+chat_group.chat_message_ids: chat_message.chat_group_id: Type: relation, Required:True SQL: False
+chat_group.read_group_ids: group.read_chat_group_ids: Type: relation-list, Required:- SQL: False
+chat_group.write_group_ids: group.write_chat_group_ids: Type: relation-list, Required:- SQL: False
+
+
+*/
 /*   Missing attribute handling for to, reference, on_delete, equal_fields */

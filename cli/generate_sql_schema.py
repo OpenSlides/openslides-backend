@@ -4,6 +4,7 @@ import re
 import string
 import sys
 from collections import defaultdict
+from copy import deepcopy
 from decimal import Decimal
 from enum import Enum
 from string import Formatter
@@ -26,7 +27,7 @@ class SchemaZoneTexts(TypedDict, total=False):
     alter_table: str
     alter_table_final: str
     undecided: str
-
+    final_info: str
 
 class SQL_Delete_Update_Options(str, Enum):
     RESTRICT = "RESTRICT"
@@ -88,6 +89,7 @@ class GenerateCodeBlocks:
         table_name_code: str = ""
         view_name_code: str = ""
         alter_table_final_code: str = ""
+        final_info_code: str = ""
 
         for table_name, fields in MODELS.items():
             if table_name == "_migration_index":
@@ -127,11 +129,15 @@ class GenerateCodeBlocks:
                 view_name_code += Helper.get_view_body_end(table_name, code)
             if code := schema_zone_texts["alter_table_final"]:
                 alter_table_final_code += code + "\n"
+            if code := schema_zone_texts["final_info"]:
+                final_info_code += code + "\n"
+
         return (
             pre_code,
             table_name_code,
             view_name_code,
             alter_table_final_code,
+            final_info_code,
             missing_handled_attributes,
         )
 
@@ -200,15 +206,6 @@ class GenerateCodeBlocks:
     def get_relation_type(
         cls, table_name: str, fname: str, fdata: Dict[str, Any], type_: str
     ) -> SchemaZoneTexts:
-        """
-        Infos to get:
-          - 1:1 special case
-          - 1:n FOREIGN KEY (b, c) REFERENCES other_table (c1, c2)
-          - n:1 this is always a view, tried to be self generated
-          - n:m generate an intermediate table with id
-          - required own key, required one of the referenced table to the own
-          - reference
-        """
         text: SchemaZoneTexts = cls.get_schema_simple_types(
             table_name, fname, fdata, "number"
         )
@@ -219,6 +216,38 @@ class GenerateCodeBlocks:
         text["alter_table_final"] = Helper.get_foreign_key_table_constraint(
             table_name, foreign_table, fname, fk_columns, initially_deferred
         )
+        return text
+
+    @classmethod
+    def get_relation_list_n_1_type(
+        cls, table_name: str, fname: str, ref_column: str, foreign_table: str, foreign_column: str, foreign_field: Dict[str, Any]
+    ) -> SchemaZoneTexts:
+        """
+        Fields in view, values builded by SQL
+        """
+        table_letter = Helper.get_table_letter(table_name)
+        letters = [table_letter]
+        foreign_letter = Helper.get_table_letter(foreign_table, letters)
+        foreign_table = Helper.get_table_name(foreign_table)
+        return f"(select array_agg({foreign_letter}.{ref_column}) from {foreign_table} {foreign_letter} where {foreign_letter}.{foreign_column} = {table_letter}.{ref_column}) as {fname},\n"
+
+    @classmethod
+    def get_relation_list_type(
+        cls, table_name: str, fname: str, fdata: Dict[str, Any], type_: str
+    ) -> SchemaZoneTexts:
+        """
+        Infos to get:
+          - n:1 this is always a view, tried to be self generated
+          - n:m generate an intermediate table with id
+          - required own key, required one of the referenced table to the own
+          - reference
+        """
+        text: SchemaZoneTexts = {}
+        foreign_table, foreign_column, foreign_field = ModelsHelper.get_field_definition_from_to(fdata.get("to"))
+        if foreign_field["type"] == "relation" and not foreign_field.get("sql"):
+            _, ref_column = Helper.get_foreign_key_table_column(fdata)
+            text["view"] = cls.get_relation_list_n_1_type(table_name, fname, ref_column, foreign_table, foreign_column, foreign_field)
+        text["final_info"] = f"{table_name}.{fname}: {foreign_table}.{foreign_column}: Type: {foreign_field['type']}, Required:{foreign_field.get('required', '-')} SQL: {bool(foreign_field.get('sql'))}\n"
         return text
 
 
@@ -260,8 +289,20 @@ class Helper:
         return table_name
 
     @staticmethod
-    def get_table_letter(table_name: str) -> str:
-        return Helper.get_table_name(table_name)[0]
+    def get_table_letter(table_name: str, letters: List[str] = []) -> str:
+        letter = Helper.get_table_name(table_name)[0]
+        count = -1
+        l = letter
+        while True:
+            if letter in letters:
+                count += 1
+                if count == 0:
+                    l = "".join([part[0] for part in table_name.split("_")])[:2]
+                    letter = l
+                else:
+                    letter = l + str(count)
+            else:
+                return letter
 
     @staticmethod
     def get_table_head(table_name: str) -> str:
@@ -426,8 +467,8 @@ class ModelsHelper:
     @staticmethod
     def is_fk_initially_deferred(own_table: str, foreign_table: str) -> bool:
         """
-        Necessary, if 2 related tables require both the relation to the other table
-        This will be set here and used in definition of foreign key
+        The "Initially deferred" in fk-definition is necessary,
+        if 2 related tables require both the relation to the other table
         """
 
         def _first_to_second(t1: str, t2: str) -> bool:
@@ -441,6 +482,12 @@ class ModelsHelper:
         if _first_to_second(own_table, foreign_table):
             return _first_to_second(foreign_table, own_table)
         return False
+
+    @staticmethod
+    def get_field_definition_from_to(to: str) -> Tuple[str, str, Dict[str, Any]]:
+        tname, fname = to.split("/")
+        field = MODELS[tname][fname]
+        return tname, fname, field
 
 
 FIELD_TYPES: Dict[str, Dict[str, Any]] = {
@@ -494,7 +541,7 @@ FIELD_TYPES: Dict[str, Dict[str, Any]] = {
     },
     "text": {"pg_type": "text", "method": GenerateCodeBlocks.get_schema_simple_types},
     "relation": {"pg_type": "integer", "method": GenerateCodeBlocks.get_relation_type},
-    "relation-list": {"pg_type": "integer[]", "method": ""},
+    "relation-list": {"pg_type": "integer[]", "method": GenerateCodeBlocks.get_relation_list_type},
     "generic-relation": {"pg_type": "varchar(100)", "method": ""},
     "generic-relation-list": {"pg_type": "varchar(100)[]", "method": ""},
     # special defined
@@ -546,6 +593,7 @@ def main() -> None:
         table_name_code,
         view_name_code,
         alter_table_code,
+        final_info_code,
         missing_handled_attributes,
     ) = GenerateCodeBlocks.generate_the_code()
     with open(DESTINATION, "w") as dest:
@@ -559,6 +607,9 @@ def main() -> None:
         dest.write(view_name_code)
         dest.write("-- Alter table relations\n")
         dest.write(alter_table_code)
+        dest.write(
+            f"\n/*   Relation-list infos \n{final_info_code}\n*/"
+        )
         dest.write(
             f"\n/*   Missing attribute handling for {', '.join(missing_handled_attributes)} */"
         )
