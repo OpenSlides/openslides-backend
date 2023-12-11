@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "362989a4295b3520e030e6a16e5d2430"
+MODELS_YML_CHECKSUM = "18597ff91b29bab3c95fe3b7e0a80750"
 
 
 class Organization(Model):

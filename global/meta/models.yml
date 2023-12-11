@@ -1781,12 +1781,12 @@ structure_level:
   meeting_user_ids:
     type: relation-list
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
     to: meeting_user/structure_level_ids
   structure_level_list_of_speakers_ids:
     type: relation-list
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
     to: structure_level_list_of_speakers/structure_level_id
   meeting_id:
     type: relation
