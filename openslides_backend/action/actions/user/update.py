@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, Optional
 
 from ....models.models import User
@@ -81,6 +82,9 @@ class UserUpdate(
             instance["can_change_own_password"] = False
             instance["default_password"] = ""
             instance["password"] = ""
+
+        if instance.get("username") and re.search(r"\s", instance["username"]):
+            raise ActionException("Username may not contain spaces")
 
         if (
             instance["id"] == self.user_id

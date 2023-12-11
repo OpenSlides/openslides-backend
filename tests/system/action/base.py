@@ -160,13 +160,16 @@ class BaseActionTestCase(BaseSystemTestCase):
                 f"group/{base}": {
                     "meeting_id": base,
                     "default_group_for_meeting_id": base,
+                    "name": f"group{base}",
                 },
                 f"group/{base+1}": {
                     "meeting_id": base,
                     "admin_group_for_meeting_id": base,
+                    "name": f"group{base+1}",
                 },
                 f"group/{base+2}": {
                     "meeting_id": base,
+                    "name": f"group{base+2}",
                 },
                 f"motion_workflow/{base}": {
                     "meeting_id": base,

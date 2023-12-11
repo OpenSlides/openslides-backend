@@ -11,7 +11,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_models(
             {
-                "user/111": {"username": "User 111"},
+                "user/111": {"username": "User111"},
             }
         )
 
@@ -21,11 +21,11 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"username": "username_srtgb123"},
         )
         response = self.request(
-            "user.update", {"id": 111, "username": " username Xcdfgee "}
+            "user.update", {"id": 111, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert model.get("username") == "username Xcdfgee"
+        assert model.get("username") == "username_Xcdfgee"
         self.assert_history_information("user/111", ["Personal data changed"])
 
     def test_update_some_more_fields(self) -> None:
@@ -601,7 +601,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.SUPERADMIN, self.user_id
         )
         self.set_models(
-            {"user/111": {"username": "User 111"}},
+            {"user/111": {"username": "User111"}},
         )
 
         response = self.request(
@@ -695,7 +695,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
                 "title": "new title",
                 "first_name": "new first_name",
                 "last_name": "new last_name",
@@ -713,7 +713,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "title": "new title",
                 "first_name": "new first_name",
                 "last_name": "new last_name",
@@ -739,14 +739,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "meeting_ids": [1],
                 "committee_ids": [60],
             },
@@ -774,14 +774,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "committee_ids": [60],
             },
         )
@@ -798,7 +798,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
                 "pronoun": "pronoun",
             },
         )
@@ -806,7 +806,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "pronoun": "pronoun",
                 "meeting_ids": [1],
                 "committee_ids": None,
@@ -832,14 +832,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "committee_ids": None,
             },
         )
@@ -856,7 +856,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 403)
@@ -936,7 +936,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "username": "User 111",
+                "username": "User111",
                 "meeting_ids": [1, 4],
             },
         )
@@ -1331,7 +1331,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of can_manage_organization or the saml_id!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization.",
             response.json["message"],
         )
 
@@ -1358,7 +1358,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_perm_group_E_saml_id_high_enough(self) -> None:
+    def test_no_perm_group_H_internal_saml_id(self) -> None:
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -1371,27 +1371,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "saml_id": "test saml id",
             },
         )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/111",
-            {
-                "saml_id": "test saml id",
-            },
-        )
-
-    def test_no_perm_group_E_saml_id(self) -> None:
-        self.permission_setup()
-
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "saml_id": "test saml id",
-            },
-        )
-        self.assert_status_code(response, 403)
+        self.assert_status_code(response, 400)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of OrganizationManagementLevel or the saml_id!",
+            "The field 'saml_id' can only be used in internal action calls",
             response.json["message"],
         )
 
@@ -1431,6 +1413,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request("user.update", {"id": 111, "username": "   "})
         self.assert_status_code(response, 400)
         assert "This username is forbidden." in response.json["message"]
+        model = self.get_model("user/111")
+        assert model.get("username") == "username_srtgb123"
+
+    def test_update_username_with_spaces(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request("user.update", {"id": 111, "username": "test name"})
+        self.assert_status_code(response, 400)
+        assert "Username may not contain spaces" in response.json["message"]
         model = self.get_model("user/111")
         assert model.get("username") == "username_srtgb123"
 
@@ -1762,7 +1755,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 1,
-                "username": " username test ",
                 "first_name": " first name test ",
                 "last_name": " last name test ",
             },
@@ -1771,7 +1763,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/1",
             {
-                "username": "username test",
                 "first_name": "first name test",
                 "last_name": "last name test",
             },
