@@ -2,7 +2,7 @@
 -- schema.sql for initial database setup OpenSlides
 -- Code generated. DO NOT EDIT.
 
--- MODELS_YML_CHECKSUM = '840fe543c6b7b90bb5e3343d7cc9a05f'
+-- MODELS_YML_CHECKSUM = 'd4dd230eacf1f050e07e9b8cb1b08797'
 -- Type definitions
 DO $$
 BEGIN
@@ -347,7 +347,7 @@ BEGIN
 END$$;
 
 
--- Table and view definitions
+-- Table definitions
 CREATE TABLE IF NOT EXISTS organizationT (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(256),
@@ -592,7 +592,7 @@ CREATE TABLE IF NOT EXISTS meetingT (
     start_time timestamptz,
     end_time timestamptz,
     imported_at timestamptz,
-    language enum_meeting_language,
+    language enum_meeting_language NOT NULL,
     jitsi_domain varchar(256),
     jitsi_room_name varchar(256),
     jitsi_room_password varchar(256),
@@ -1603,6 +1603,7 @@ CREATE TABLE IF NOT EXISTS import_previewT (
 
 
 
+-- View definitions
 -- Alter table relations
 ALTER TABLE organizationT ADD FOREIGN KEY(theme_id) REFERENCES themeT(id) INITIALLY DEFERRED;
 

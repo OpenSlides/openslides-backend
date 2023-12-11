@@ -53,12 +53,13 @@ class GenerateCodeBlocks:
     """Main work is done here by recursing the models and their fields and determine the method to use"""
 
     @classmethod
-    def generate_the_code(cls) -> Tuple[str, str, str, List[str]]:
+    def generate_the_code(cls) -> Tuple[str, str, str, str, List[str]]:
         """Development purposes: used for output at the end of the schema.sql
         to see which yml-attributes are still not handled
         Return values:
           pre_code: Type definitions etc., which should all appear before first table definitions
-          table_name_code: All table and view definitions
+          table_name_code: All table definitions
+          view_name_code: All view definitions, after all views, because of view field definition by sql
           alter_table_final_code: Changes on tables defining relations after, which should appear after all table/views definition to be sequence independant
           missing_handled_atributes: List of unhandled attributes. handled one's are to be set manually.
         """
@@ -76,7 +77,7 @@ class GenerateCodeBlocks:
                 "read_only",
                 "enum",
                 "items",
-                # "to",  # will be removed, meanwhile replacement for reference
+                # "to",  # will be used for creating view-fields, but also replacement for fk-reference to id
                 # "on_delete", # must have other name then the key-value-store one
                 # "equal_fields", # Seems we need, see example_transactional.sql between meeting and groups?
                 # "unique",  # still to design
@@ -85,6 +86,7 @@ class GenerateCodeBlocks:
         missing_handled_attributes = []
         pre_code: str = ""
         table_name_code: str = ""
+        view_name_code: str = ""
         alter_table_final_code: str = ""
 
         for table_name, fields in MODELS.items():
@@ -116,18 +118,19 @@ class GenerateCodeBlocks:
             if code := schema_zone_texts["table"]:
                 table_name_code += Helper.get_table_head(table_name)
                 table_name_code += Helper.get_table_body_end(code) + "\n\n"
-            if code := schema_zone_texts["view"]:
-                table_name_code += Helper.get_view_head(table_name)
-                table_name_code += Helper.get_view_body_end(table_name, code)
             if code := schema_zone_texts["alter_table"]:
                 table_name_code += code + "\n"
             if code := schema_zone_texts["undecided"]:
                 table_name_code += Helper.get_undecided_all(table_name, code)
+            if code := schema_zone_texts["view"]:
+                view_name_code += Helper.get_view_head(table_name)
+                view_name_code += Helper.get_view_body_end(table_name, code)
             if code := schema_zone_texts["alter_table_final"]:
                 alter_table_final_code += code + "\n"
         return (
             pre_code,
             table_name_code,
+            view_name_code,
             alter_table_final_code,
             missing_handled_attributes,
         )
@@ -541,6 +544,7 @@ def main() -> None:
     (
         pre_code,
         table_name_code,
+        view_name_code,
         alter_table_code,
         missing_handled_attributes,
     ) = GenerateCodeBlocks.generate_the_code()
@@ -549,8 +553,10 @@ def main() -> None:
         dest.write("-- MODELS_YML_CHECKSUM = " + repr(checksum) + "\n")
         dest.write("-- Type definitions")
         dest.write(pre_code)
-        dest.write("\n\n-- Table and view definitions")
+        dest.write("\n\n-- Table definitions")
         dest.write(table_name_code)
+        dest.write("-- View definitions\n")
+        dest.write(view_name_code)
         dest.write("-- Alter table relations\n")
         dest.write(alter_table_code)
         dest.write(
