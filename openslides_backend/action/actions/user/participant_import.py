@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
@@ -84,23 +84,31 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
             self.import_state = ImportState.ERROR
         return row
 
-    def create_other_actions(self, rows: List[ImportRow]) -> None:
+    def create_other_actions(self, rows: List[ImportRow]) -> List[Optional[int]]:
         set_present_payload: List[Dict[str, Any]] = []
+        indices_to_set_presence_and_id: List[Optional[Tuple[bool, Optional[int]]]] = []
         for row in rows:
             if (present := row["data"].get("is_present")) is not None:
+                indices_to_set_presence_and_id.append((present, row["data"].get("id")))
+                row["data"].pop("is_present")
+            else:
+                indices_to_set_presence_and_id.append(None)
+            row["data"]["meeting_id"] = self.meeting_id
+
+        ids = super().create_other_actions(rows)
+        for i in range(len(indices_to_set_presence_and_id)):
+            if (tup := indices_to_set_presence_and_id[i]) is not None:
+                present, id_ = tup
                 set_present_payload.append(
                     {
-                        "id": row["data"]["id"],
+                        "id": id_ or ids[i],
                         "meeting_id": self.meeting_id,
                         "present": present,
                     }
                 )
-                row["data"].pop("is_present")
-            row["data"]["meeting_id"] = self.meeting_id
-
-        super().create_other_actions(rows)
         if set_present_payload:
             self.execute_other_action(UserSetPresentAction, set_present_payload)
+        return ids
 
     def setup_lookups(self) -> None:
         super().setup_lookups()
