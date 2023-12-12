@@ -3,7 +3,7 @@ from typing import Any, Iterable, Union
 import simplejson as json
 from werkzeug.wrappers import Response
 
-from ..services.auth.adapter import AUTHENTICATION_HEADER
+from ..services.auth.interface import AUTHENTICATION_HEADER
 from ..shared.env import is_truthy
 from ..shared.exceptions import ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment

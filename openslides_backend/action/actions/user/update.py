@@ -12,7 +12,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .user_mixin import (
+from .user_mixins import (
     LimitOfUserMixin,
     UpdateHistoryMixin,
     UserMixin,

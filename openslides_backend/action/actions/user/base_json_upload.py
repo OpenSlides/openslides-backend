@@ -12,7 +12,7 @@ from ...mixins.import_mixins import (
 )
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
-from .user_mixin import UsernameMixin, check_gender_helper
+from .user_mixins import UsernameMixin, check_gender_helper
 
 
 class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
