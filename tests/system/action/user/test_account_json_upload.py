@@ -146,7 +146,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 {"property": "default_password", "type": "string", "is_object": True},
                 {"property": "email", "type": "string"},
                 {"property": "username", "type": "string", "is_object": True},
-                {"property": "gender", "type": "string"},
+                {"property": "gender", "type": "string", "is_object": True},
                 {"property": "pronoun", "type": "string"},
                 {"property": "saml_id", "type": "string", "is_object": True},
                 {"property": "default_number", "type": "string"},
