@@ -11,6 +11,8 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileUploadActionTest(BaseActionTestCase):
+    png_content = "iVBORw0KGgoAAAANSUhEUgAAAAMAAAADAQMAAABs5if8AAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AYht+milIqDmYQcchQnSyIijhqFYpQIdQKrTqYXPoHTRqSFBdHwbXg4M9i1cHFWVcHV0EQ/AFxdXFSdJESv0sKLWK847iH97735e47QGhUmG53jQO64VjpZELK5lalnldEaUYgQlCYbc7JcgqB4+seIb7fxXlWcN2fo0/L2wwIScSzzLQc4g3i6U3H5LxPLLKSohGfE49ZdEHiR66rPr9xLnos8EzRyqTniUViqdjBagezkqUTTxHHNN2gfCHrs8Z5i7NeqbHWPfkLo3ljZZnrtIaRxCKWIEOCihrKqMBBnHaDFBtpOk8E+Ic8v0wulVxlMHIsoAodiucH/4PfvbULkxN+UjQBdL+47scI0LMLNOuu+33sus0TIPwMXBltf7UBzHySXm9rsSOgfxu4uG5r6h5wuQMMPpmKpXhSmJZQKADvZ/RNOWDgFois+X1rneP0AchQr1I3wMEhMFqk7PWAd/d29u3fmlb/fgD99XJ4ewrt8wAAAAZQTFRFyzQ0////9R4AGgAAAAlwSFlzAAAuIwAALiMBeKU/dgAAAAd0SU1FB+cMDAomKl1BHAcAAAALSURBVAjXY2AAAQAABgABZvTJbAAAAABJRU5ErkJggg=="
+
     def test_create(self) -> None:
         self.create_model(
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
@@ -339,6 +341,42 @@ l,m,n,"""
             },
         )
         self.assert_status_code(response, 200)
+
+    def test_upload_png(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "red.png"
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": self.png_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_upload_png_as_json(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "red.json"
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": self.png_content,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            f"{filename} does not have a file extension that matches the determined mimetype image/png.",
+            response.json["message"],
+        )
 
     def test_error_in_resource_upload(self) -> None:
         self.create_model(

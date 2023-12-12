@@ -110,17 +110,16 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             if use_mimetype in pyg_mimetypes:
                 mismatched = False
             else:
-                if mismatched := use_mimetype not in pyg_mimetypes:
-                    use_mimetype = mc_mimetype  # Better error message
+                mismatched = use_mimetype not in pyg_mimetypes
         else:
-            possible_extensions = mimetypes.guess_all_extensions(use_mimetype)
+            possible_extensions = mimetypes.guess_all_extensions(mc_mimetype)
             mismatched = not any(
                 [filename_.endswith(extension) for extension in possible_extensions]
             )
 
         if mismatched:
             raise ActionException(
-                f"{filename_} does not have a file extension that matches the determined mimetype {use_mimetype}."
+                f"{filename_} does not have a file extension that matches the determined mimetype {mc_mimetype}."
             )
         instance["filesize"] = len(decoded_file)
         id_ = instance["id"]
