@@ -7,7 +7,7 @@ from ...action.action_worker import handle_action_in_worker_thread
 from ...i18n.translator import Translator
 from ...migrations import assert_migration_index
 from ...migrations.migration_handler import MigrationHandler
-from ...services.auth.adapter import AUTHENTICATION_HEADER, COOKIE_NAME
+from ...services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import AuthenticationException, ServerError
 from ...shared.interfaces.wsgi import ResponseBody
@@ -36,8 +36,8 @@ class ActionView(BaseView):
         )
         # Set Headers and Cookies in services.
         self.services.vote().set_authentication(
-            request.headers.get(AUTHENTICATION_HEADER),
-            request.cookies.get(COOKIE_NAME),
+            request.headers.get(AUTHENTICATION_HEADER, ""),
+            request.cookies.get(COOKIE_NAME, ""),
         )
 
         # Handle request.

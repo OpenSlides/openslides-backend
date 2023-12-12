@@ -16,6 +16,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         model = self.get_model("user/2")
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
         self.assert_history_information("user/2", ["Password changed"])
+        self.assert_logged_in()
 
     def test_update_correct_default_case(self) -> None:
         self.update_model("user/1", {"password": "old_pw"})
@@ -27,6 +28,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         model = self.get_model("user/1")
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
         assert self.PASSWORD == model.get("default_password", "")
+        self.assert_logged_out()
 
     def test_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
@@ -49,6 +51,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_logged_in()
 
     def test_scope_meeting_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -59,6 +62,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_logged_in()
 
     def test_scope_meeting_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
@@ -69,6 +73,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_logged_in()
 
     def test_scope_committee_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
@@ -91,6 +96,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_logged_in()
 
     def test_scope_committee_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -101,6 +107,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_logged_in()
 
     def test_scope_committee_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
@@ -135,6 +142,7 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert self.auth.is_equal(self.PASSWORD, model.get("password", ""))
+        self.assert_logged_in()
 
     def test_scope_organization_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -186,6 +194,6 @@ class UserSetPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            "user 111 is a Single Sign On user and has no local OpenSlides password.",
             response.json["message"],
         )
