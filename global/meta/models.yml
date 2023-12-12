@@ -3846,6 +3846,10 @@ import_preview:
   name:
     type: string
     required: true
+    enum:
+      - account
+      - participant
+      - topic
     restriction_mode: A
   state:
     type: string

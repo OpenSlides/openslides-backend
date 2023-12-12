@@ -261,7 +261,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "timestamp": round(time()),
                 },
                 "import_preview/1": {
-                    "name": "testcase",
+                    "name": "topic",
                     "state": "done",
                     "created": round(time() - 3),
                 },
