@@ -9,11 +9,11 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .password_mixins import PasswordChangeMixin
+from .password_mixins import ClearSessionsMixin
 
 
 class UserResetPasswordToDefaultMixin(
-    UpdateAction, CheckForArchivedMeetingMixin, PasswordChangeMixin
+    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin
 ):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

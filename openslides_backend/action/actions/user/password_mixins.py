@@ -1,47 +1,43 @@
 from typing import Any, Callable, Dict
 
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
+
 from ....shared.exceptions import ActionException
 from ...action import Action
-from ...generics.update import UpdateAction
 from ...util.typing import ActionData
 
 
-class UserSetPasswordMixin(UpdateAction):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+class SetPasswordMixin(Action):
+    def reset_password(self, instance: Dict[str, Any]) -> None:
+        instance["password"] = instance["default_password"]
+        self.set_password(instance)
+
+    def set_password(self, instance: Dict[str, Any]) -> None:
         """
-        set hashed password and set default password if set_as_default is True.
+        Hashes the password given in the instance (which is assumed to be plain text) and sets it as
+        the default password if `set_as_default` is True in the instance.
         """
-        user = self.datastore.get(
-            f"user/{instance['id']}", ["saml_id"], lock_result=False
-        )
-        if user.get("saml_id"):
-            raise ActionException(
-                f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+        if "meta_new" not in instance:
+            user = self.datastore.get(
+                fqid_from_collection_and_id("user", instance["id"]),
+                ["saml_id"],
+                lock_result=False,
             )
+            if user.get("saml_id"):
+                raise ActionException(
+                    f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+                )
 
         password = instance.pop("password")
-        set_as_default = False
-        if "set_as_default" in instance:
-            set_as_default = instance.pop("set_as_default")
-        hashed_password = self.auth.hash(password)
-        instance["password"] = hashed_password
-        if set_as_default:
+        instance["password"] = self.auth.hash(password)
+        if instance.pop("set_as_default", False):
             instance["default_password"] = password
-        return instance
 
 
-class PasswordMixin(Action):
-    def set_password(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        password = instance["default_password"]
-        hashed_password = self.auth.hash(password)
-        instance["password"] = hashed_password
-        return instance
-
-
-class PasswordChangeMixin(Action):
+class ClearSessionsMixin(Action):
     """Adds an on_success method to the action that clears all sessions."""
 
-    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
+    def get_on_success(self, _: ActionData) -> Callable[[], None] | None:
         def on_success() -> None:
             self.auth.clear_all_sessions()
 
