@@ -49,8 +49,7 @@ class MotionImport(
     skip_archived_meeting_check = True
     import_name = "motion"
     number_lookup: Lookup
-    submitter_lookup: Dict[str, List[Dict[str, Any]]]
-    supporter_lookup: Dict[str, List[Dict[str, Any]]]
+    username_lookup: Dict[str, List[Dict[str, Any]]]
     category_lookup: Dict[str, List[Dict[str, Any]]]
     tags_lookup: Dict[str, List[Dict[str, Any]]]
     block_lookup: Dict[str, List[Dict[str, Any]]]
@@ -427,7 +426,7 @@ class MotionImport(
                         raise ActionException(
                             f"Invalid JsonUpload data: A submitter entry with state '{ImportState.DONE}' or '{ImportState.GENERATED}' must have an 'id'"
                         )
-                    found_submitters = self.submitter_lookup.get(submitter, [])
+                    found_submitters = self.username_lookup.get(submitter, [])
                     if len(found_submitters) == 1:
                         if found_submitters[0].get("id") != submitter_entry["id"]:
                             submitter_entry["info"] = ImportState.ERROR
@@ -450,7 +449,7 @@ class MotionImport(
                         raise ActionException(
                             f"Invalid JsonUpload data: A supporter entry with state '{ImportState.DONE}' must have an 'id'"
                         )
-                    found_supporters = self.supporter_lookup.get(supporter, [])
+                    found_supporters = self.username_lookup.get(supporter, [])
                     if len(found_supporters) == 1:
                         if found_supporters[0].get("id") != supporter_entry["id"]:
                             supporter_entry["info"] = ImportState.ERROR
@@ -514,45 +513,45 @@ class MotionImport(
             and_filters=[FilterOperator("meeting_id", "=", meeting_id)],
         )
 
-        self.submitter_lookup = self.get_lookup_dict(
+        self.username_lookup = self.get_lookup_dict(
             "user",
-            [
-                user["value"]
-                for row in rows
-                if "submitters_username" in (entry := row["data"])
-                for user in entry["submitters_username"]
-                if user.get("info") != ImportState.WARNING
-            ],
-            "username",
-            ["meeting_user_ids"],
-        )
-        self.supporter_lookup = self.get_lookup_dict(
-            "user",
-            [
-                user["value"]
-                for row in rows
-                if "supporters_username" in (entry := row["data"])
-                for user in entry["supporters_username"]
-                if user.get("info") != ImportState.WARNING
-            ],
-            "username",
-            ["meeting_user_ids"],
-        )
-        all_user_ids = set(
             list(
-                [
-                    submitter["id"]
-                    for submitters in self.submitter_lookup.values()
-                    for submitter in submitters
-                ]
-            )
-            + list(
-                [
-                    supporter["id"]
-                    for supporters in self.supporter_lookup.values()
-                    for supporter in supporters
-                ]
-            )
+                set(
+                    [
+                        user["value"]
+                        for row in rows
+                        if (
+                            users := [
+                                *row["data"].get("submitters_username", []),
+                                *row["data"].get("supporters_username", []),
+                            ]
+                        )
+                        for user in users
+                        if user and user.get("info") != ImportState.WARNING
+                    ]
+                )
+            ),
+            "username",
+            ["meeting_ids", "meeting_user_ids"],
+        )
+        self.username_lookup = {
+            username: [
+                date
+                for date in self.username_lookup[username]
+                if (
+                    date.get("meeting_ids")
+                    and (meeting_id in date["meeting_ids"])
+                    or date.get("id") == self.user_id
+                )
+            ]
+            for username in self.username_lookup
+        }
+        all_user_ids = list(
+            [
+                submitter["id"]
+                for submitters in self.username_lookup.values()
+                for submitter in submitters
+            ]
         )
         all_meeting_users: Dict[int, Dict[str, Any]] = {}
         if len(all_user_ids):
@@ -560,8 +559,6 @@ class MotionImport(
                 "meeting_user",
                 And(
                     FilterOperator("meeting_id", "=", meeting_id),
-                    FilterOperator("group_ids", "!=", []),
-                    FilterOperator("group_ids", "!=", None),
                     Or(
                         *[
                             FilterOperator("user_id", "=", user_id)
@@ -574,7 +571,6 @@ class MotionImport(
                     "user_id",
                     "motion_submitter_ids",
                     "supported_motion_ids",
-                    "group_ids",
                 ],
                 lock_result=False,
             )
