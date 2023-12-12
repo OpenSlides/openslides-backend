@@ -62,13 +62,17 @@ class BaseUserImport(ImportMixin):
                 ):
                     entry[field] = value
 
-        # remove all fields fields marked with "remove" or "warning"-state
+        if (
+            isinstance(entry.get("gender"), dict)
+            and entry["gender"].get("info") == ImportState.WARNING
+        ):
+            entry.pop("gender")
+
+        # remove all fields fields marked with "remove"-state
         to_remove = []
         for k, v in entry.items():
             if isinstance(v, dict):
-                if (v.get("info") == ImportState.REMOVE) or (
-                    v.get("info") == ImportState.WARNING
-                ):
+                if v.get("info") == ImportState.REMOVE:
                     to_remove.append(k)
         for k in to_remove:
             entry.pop(k)
