@@ -1,13 +1,18 @@
 import base64
+from textwrap import dedent
 from time import time
+
+import simplejson as json
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileUploadActionTest(BaseActionTestCase):
+    png_content = "iVBORw0KGgoAAAANSUhEUgAAAAMAAAADAQMAAABs5if8AAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AYht+milIqDmYQcchQnSyIijhqFYpQIdQKrTqYXPoHTRqSFBdHwbXg4M9i1cHFWVcHV0EQ/AFxdXFSdJESv0sKLWK847iH97735e47QGhUmG53jQO64VjpZELK5lalnldEaUYgQlCYbc7JcgqB4+seIb7fxXlWcN2fo0/L2wwIScSzzLQc4g3i6U3H5LxPLLKSohGfE49ZdEHiR66rPr9xLnos8EzRyqTniUViqdjBagezkqUTTxHHNN2gfCHrs8Z5i7NeqbHWPfkLo3ljZZnrtIaRxCKWIEOCihrKqMBBnHaDFBtpOk8E+Ic8v0wulVxlMHIsoAodiucH/4PfvbULkxN+UjQBdL+47scI0LMLNOuu+33sus0TIPwMXBltf7UBzHySXm9rsSOgfxu4uG5r6h5wuQMMPpmKpXhSmJZQKADvZ/RNOWDgFois+X1rneP0AchQr1I3wMEhMFqk7PWAd/d29u3fmlb/fgD99XJ4ewrt8wAAAAZQTFRFyzQ0////9R4AGgAAAAlwSFlzAAAuIwAALiMBeKU/dgAAAAd0SU1FB+cMDAomKl1BHAcAAAALSURBVAjXY2AAAQAABgABZvTJbAAAAABJRU5ErkJggg=="
+
     def test_create(self) -> None:
         self.create_model(
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
@@ -122,19 +127,42 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.create_model(
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
         )
+        filename = "fn_jumbo.unknown"
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
             "mediafile.upload",
             {
                 "title": "title_xXRGTLAJ",
                 "owner_id": "meeting/110",
-                "filename": "fn_jumbo.tasdde",
+                "filename": filename,
+                "file": file_content,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert f"Cannot guess mimetype for {filename}." in response.json.get(
+            "message", ""
+        )
+        self.assert_model_not_exists("mediafile/1")
+        self.media.upload_mediafile.assert_not_called()
+
+    def test_mimetype_and_extension_no_match(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "fn_jumbo.pdf"
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
                 "file": file_content,
             },
         )
         self.assert_status_code(response, 400)
         assert (
-            "fn_jumbo.tasdde does not have a file extension that matches the determined mimetype text/plain."
+            f"{filename} does not have a file extension that matches the determined mimetype text/plain."
             in response.json.get("message", "")
         )
         self.assert_model_not_exists("mediafile/1")
@@ -221,6 +249,134 @@ l,m,n,"""
         )
         self.assert_status_code(response, 200)
         self.media.upload_mediafile.assert_called_with(csv_content, 1, "text/csv")
+
+    def test_upload_json_detect_json(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "test.json"
+        raw_json_content = dedent(
+            """
+                {
+                    "bruh": ["this", "is"],
+                    "like": "like",
+                    "totally": 1,
+                    "actual": true,
+                    "json": {"file": "maaaann"}
+                }
+                """
+        ).encode()
+        json_content = base64.b64encode(raw_json_content).decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": json_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.media.upload_mediafile.assert_called_with(
+            json_content, 1, "application/json"
+        )
+
+    def test_upload_json_detect_plain_text(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "test.json"
+        raw_content = "plain text, but file with json extension. We got with big json files".encode()
+        json_content = base64.b64encode(raw_content).decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": json_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.media.upload_mediafile.assert_called_with(
+            json_content, 1, "application/json"
+        )
+
+    def test_upload_json_detect_html(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "test.json"
+        data = json.dumps(
+            get_initial_data_file("global/data/initial-data.json")
+        ).encode()
+        json_content = base64.b64encode(data).decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": json_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.media.upload_mediafile.assert_called_with(
+            json_content, 1, "application/json"
+        )
+
+    def test_upload_svg(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "line.svg"
+        svg_content = "Cjw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJubyI/Pgo8IS0tIENyZWF0ZWQgd2l0aCBJbmtzY2FwZSAoaHR0cDovL3d3dy5pbmtzY2FwZS5vcmcvKSAtLT4KCjxzdmcKd2lkdGg9IjIxMG1tIgpoZWlnaHQ9IjI5N21tIgp2aWV3Qm94PSIwIDAgMjEwIDI5NyIKdmVyc2lvbj0iMS4xIgppZD0ic3ZnNSIKaW5rc2NhcGU6dmVyc2lvbj0iMS4xLjIgKDBhMDBjZjUzMzksIDIwMjItMDItMDQpIgpzb2RpcG9kaTpkb2NuYW1lPSJsaW5lLnN2ZyIKeG1sbnM6aW5rc2NhcGU9Imh0dHA6Ly93d3cuaW5rc2NhcGUub3JnL25hbWVzcGFjZXMvaW5rc2NhcGUiCnhtbG5zOnNvZGlwb2RpPSJodHRwOi8vc29kaXBvZGkuc291cmNlZm9yZ2UubmV0L0RURC9zb2RpcG9kaS0wLmR0ZCIKeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgp4bWxuczpzdmc9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHNvZGlwb2RpOm5hbWVkdmlldwogICAgaWQ9Im5hbWVkdmlldzciCiAgICBwYWdlY29sb3I9IiNmZmZmZmYiCiAgICBib3JkZXJjb2xvcj0iIzY2NjY2NiIKICAgIGJvcmRlcm9wYWNpdHk9IjEuMCIKICAgIGlua3NjYXBlOnBhZ2VzaGFkb3c9IjIiCiAgICBpbmtzY2FwZTpwYWdlb3BhY2l0eT0iMC4wIgogICAgaW5rc2NhcGU6cGFnZWNoZWNrZXJib2FyZD0iMCIKICAgIGlua3NjYXBlOmRvY3VtZW50LXVuaXRzPSJtbSIKICAgIHNob3dncmlkPSJmYWxzZSIKICAgIGlua3NjYXBlOnpvb209IjAuNjA3NTYxNzMiCiAgICBpbmtzY2FwZTpjeD0iMzk3LjQ5MDQ3IgogICAgaW5rc2NhcGU6Y3k9IjU2Mi4wODI4IgogICAgaW5rc2NhcGU6d2luZG93LXdpZHRoPSIxOTIwIgogICAgaW5rc2NhcGU6d2luZG93LWhlaWdodD0iMTAzMSIKICAgIGlua3NjYXBlOndpbmRvdy14PSIwIgogICAgaW5rc2NhcGU6d2luZG93LXk9IjI1IgogICAgaW5rc2NhcGU6d2luZG93LW1heGltaXplZD0iMSIKICAgIGlua3NjYXBlOmN1cnJlbnQtbGF5ZXI9ImxheWVyMSIgLz4KPGRlZnMKICAgIGlkPSJkZWZzMiI+CiAgICA8aW5rc2NhcGU6cGF0aC1lZmZlY3QKICAgIGVmZmVjdD0ic3Bpcm8iCiAgICBpZD0icGF0aC1lZmZlY3QxMDciCiAgICBpc192aXNpYmxlPSJ0cnVlIgogICAgbHBldmVyc2lvbj0iMSIgLz4KPC9kZWZzPgo8ZwogICAgaW5rc2NhcGU6bGFiZWw9IkViZW5lIDEiCiAgICBpbmtzY2FwZTpncm91cG1vZGU9ImxheWVyIgogICAgaWQ9ImxheWVyMSI+CiAgICA8cGF0aAogICAgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6IzAwMDAwMDtzdHJva2Utd2lkdGg6MC4yNjQ1ODNweDtzdHJva2UtbGluZWNhcDpidXR0O3N0cm9rZS1saW5lam9pbjptaXRlcjtzdHJva2Utb3BhY2l0eToxIgogICAgZD0iTSA4LjkxMzcwNDIsMTEuNDU0ODAyIDExMS4wNjg4OCwzMi4wODQxMSIKICAgIGlkPSJwYXRoMTA1IgogICAgaW5rc2NhcGU6cGF0aC1lZmZlY3Q9IiNwYXRoLWVmZmVjdDEwNyIKICAgIGlua3NjYXBlOm9yaWdpbmFsLWQ9Ik0gOC45MTM3MDQyLDExLjQ1NDgwMiBDIDQyLjk2NTY5MiwxOC4zMzE1MDIgNzcuMDE3NDE5LDI1LjIwNzkzOCAxMTEuMDY4ODgsMzIuMDg0MTEiIC8+CjwvZz4KPC9zdmc+Cg=="
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": svg_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_upload_png(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "red.png"
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": self.png_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_upload_png_as_json(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "red.json"
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": self.png_content,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            f"{filename} does not have a file extension that matches the determined mimetype image/png.",
+            response.json["message"],
+        )
 
     def test_error_in_resource_upload(self) -> None:
         self.create_model(
