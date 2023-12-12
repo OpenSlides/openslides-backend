@@ -27,7 +27,7 @@ class UserResetPasswordToDefaultMixin(
         )
         if user.get("saml_id"):
             raise ActionException(
-                f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+                f"user {user['saml_id']} is a Single Sign On user and has no local OpenSlides password."
             )
         default_password = self.auth.hash(str(user.get("default_password")))
         instance["password"] = default_password

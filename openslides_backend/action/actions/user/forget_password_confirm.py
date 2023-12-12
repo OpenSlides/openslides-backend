@@ -37,7 +37,7 @@ class UserForgetPasswordConfirm(UpdateAction, ClearSessionsMixin):
         new_password = instance.pop("new_password")
         if user.get("saml_id"):
             raise ActionException(
-                f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+                f"user {user['saml_id']} is a Single Sign On user and has no local OpenSlides password."
             )
         token = instance.pop("authorization_token")
         self.check_token(user_id, token)

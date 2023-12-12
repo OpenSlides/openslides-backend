@@ -23,10 +23,12 @@ class SetPasswordMixin(Action):
                 ["saml_id"],
                 lock_result=False,
             )
-            if user.get("saml_id"):
-                raise ActionException(
-                    f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
-                )
+        else:
+            user = instance
+        if user.get("saml_id"):
+            raise ActionException(
+                f"user {user['saml_id']} is a Single Sign On user and has no local OpenSlides password."
+            )
 
         password = instance.pop("password")
         instance["password"] = self.auth.hash(password)
