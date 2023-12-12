@@ -305,7 +305,7 @@ class SendInvitationMail(BaseActionTestCase):
             response.json["results"][0][0]["type"], EmailErrorType.CONFIGURATION_ERROR
         )
         self.assertIn(
-            "SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate",
+            "SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate",
             response.json["results"][0][0]["message"],
         )
 
