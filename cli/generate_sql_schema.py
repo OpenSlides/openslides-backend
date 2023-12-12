@@ -216,6 +216,14 @@ class GenerateCodeBlocks:
         text["alter_table_final"] = Helper.get_foreign_key_table_constraint(
             table_name, foreign_table, fname, fk_columns, initially_deferred
         )
+        # info
+        foreign_table, foreign_column, foreign_field = ModelsHelper.get_field_definition_from_to(fdata.get("to"))
+        if fdata['type'] == "relation" and not fdata.get('sql') and foreign_field['type'] == "relation" and not foreign_field.get('sql'):
+             text["final_info"] = "******* 1:1 without sql:"
+        else:
+            text["final_info"] = ""
+        text["final_info"] += f"{table_name}.{fname}: Type: {fdata['type']} -> {foreign_table}.{foreign_column}: Type: {foreign_field['type']}, Required:{foreign_field.get('required', '-')} SQL: {bool(foreign_field.get('sql'))}\n"
+
         return text
 
     @classmethod
@@ -247,7 +255,7 @@ class GenerateCodeBlocks:
         if foreign_field["type"] == "relation" and not foreign_field.get("sql"):
             _, ref_column = Helper.get_foreign_key_table_column(fdata)
             text["view"] = cls.get_relation_list_n_1_type(table_name, fname, ref_column, foreign_table, foreign_column, foreign_field)
-        text["final_info"] = f"{table_name}.{fname}: {foreign_table}.{foreign_column}: Type: {foreign_field['type']}, Required:{foreign_field.get('required', '-')} SQL: {bool(foreign_field.get('sql'))}\n"
+        text["final_info"] = f"{table_name}.{fname}: Type: {fdata['type']} -> {foreign_table}.{foreign_column}: Type: {foreign_field['type']}, Required:{foreign_field.get('required', '-')} SQL: {bool(foreign_field.get('sql'))}\n"
         return text
 
 

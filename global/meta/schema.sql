@@ -1741,189 +1741,365 @@ ALTER TABLE chat_messageT ADD FOREIGN KEY(meeting_id) REFERENCES meetingT(id);
 
 
 /*   Relation-list infos 
-organization.committee_ids: committee.organization_id: Type: relation, Required:True SQL: False
-organization.active_meeting_ids: meeting.is_active_in_organization_id: Type: relation, Required:- SQL: False
-organization.archived_meeting_ids: meeting.is_archived_in_organization_id: Type: relation, Required:- SQL: False
-organization.template_meeting_ids: meeting.template_for_organization_id: Type: relation, Required:- SQL: False
-organization.organization_tag_ids: organization_tag.organization_id: Type: relation, Required:True SQL: False
-organization.theme_ids: theme.organization_id: Type: relation, Required:True SQL: False
-organization.mediafile_ids: mediafile.owner_id: Type: generic-relation, Required:True SQL: False
-organization.user_ids: user.organization_id: Type: relation, Required:True SQL: False
+organization.committee_ids: Type: relation-list -> committee.organization_id: Type: relation, Required:True SQL: False
+organization.active_meeting_ids: Type: relation-list -> meeting.is_active_in_organization_id: Type: relation, Required:- SQL: False
+organization.archived_meeting_ids: Type: relation-list -> meeting.is_archived_in_organization_id: Type: relation, Required:- SQL: False
+organization.template_meeting_ids: Type: relation-list -> meeting.template_for_organization_id: Type: relation, Required:- SQL: False
+organization.organization_tag_ids: Type: relation-list -> organization_tag.organization_id: Type: relation, Required:True SQL: False
+******* 1:1 without sql:organization.theme_id: Type: relation -> theme.theme_for_organization_id: Type: relation, Required:- SQL: False
+organization.theme_ids: Type: relation-list -> theme.organization_id: Type: relation, Required:True SQL: False
+organization.mediafile_ids: Type: relation-list -> mediafile.owner_id: Type: generic-relation, Required:True SQL: False
+organization.user_ids: Type: relation-list -> user.organization_id: Type: relation, Required:True SQL: False
 
-user.is_present_in_meeting_ids: meeting.present_user_ids: Type: relation-list, Required:- SQL: False
-user.committee_ids: committee.user_ids: Type: relation-list, Required:- SQL: False
-user.committee_management_ids: committee.manager_ids: Type: relation-list, Required:- SQL: False
-user.forwarding_committee_ids: committee.forwarding_user_id: Type: relation, Required:- SQL: False
-user.meeting_user_ids: meeting_user.user_id: Type: relation, Required:True SQL: False
-user.poll_voted_ids: poll.voted_ids: Type: relation-list, Required:- SQL: False
-user.option_ids: option.content_object_id: Type: generic-relation, Required:- SQL: False
-user.vote_ids: vote.user_id: Type: relation, Required:- SQL: False
-user.delegated_vote_ids: vote.delegated_user_id: Type: relation, Required:- SQL: False
-user.poll_candidate_ids: poll_candidate.user_id: Type: relation, Required:- SQL: False
+user.is_present_in_meeting_ids: Type: relation-list -> meeting.present_user_ids: Type: relation-list, Required:- SQL: False
+user.committee_ids: Type: relation-list -> committee.user_ids: Type: relation-list, Required:- SQL: False
+user.committee_management_ids: Type: relation-list -> committee.manager_ids: Type: relation-list, Required:- SQL: False
+user.forwarding_committee_ids: Type: relation-list -> committee.forwarding_user_id: Type: relation, Required:- SQL: False
+user.meeting_user_ids: Type: relation-list -> meeting_user.user_id: Type: relation, Required:True SQL: False
+user.poll_voted_ids: Type: relation-list -> poll.voted_ids: Type: relation-list, Required:- SQL: False
+user.option_ids: Type: relation-list -> option.content_object_id: Type: generic-relation, Required:- SQL: False
+user.vote_ids: Type: relation-list -> vote.user_id: Type: relation, Required:- SQL: False
+user.delegated_vote_ids: Type: relation-list -> vote.delegated_user_id: Type: relation, Required:- SQL: False
+user.poll_candidate_ids: Type: relation-list -> poll_candidate.user_id: Type: relation, Required:- SQL: False
+user.organization_id: Type: relation -> organization.user_ids: Type: relation-list, Required:- SQL: False
 
-meeting_user.personal_note_ids: personal_note.meeting_user_id: Type: relation, Required:True SQL: False
-meeting_user.speaker_ids: speaker.meeting_user_id: Type: relation, Required:- SQL: False
-meeting_user.supported_motion_ids: motion.supporter_meeting_user_ids: Type: relation-list, Required:- SQL: False
-meeting_user.motion_submitter_ids: motion_submitter.meeting_user_id: Type: relation, Required:True SQL: False
-meeting_user.assignment_candidate_ids: assignment_candidate.meeting_user_id: Type: relation, Required:- SQL: False
-meeting_user.vote_delegations_from_ids: meeting_user.vote_delegated_to_id: Type: relation, Required:- SQL: False
-meeting_user.chat_message_ids: chat_message.meeting_user_id: Type: relation, Required:True SQL: False
-meeting_user.group_ids: group.meeting_user_ids: Type: relation-list, Required:- SQL: False
+meeting_user.user_id: Type: relation -> user.meeting_user_ids: Type: relation-list, Required:- SQL: False
+meeting_user.meeting_id: Type: relation -> meeting.meeting_user_ids: Type: relation-list, Required:- SQL: False
+meeting_user.personal_note_ids: Type: relation-list -> personal_note.meeting_user_id: Type: relation, Required:True SQL: False
+meeting_user.speaker_ids: Type: relation-list -> speaker.meeting_user_id: Type: relation, Required:- SQL: False
+meeting_user.supported_motion_ids: Type: relation-list -> motion.supporter_meeting_user_ids: Type: relation-list, Required:- SQL: False
+meeting_user.motion_submitter_ids: Type: relation-list -> motion_submitter.meeting_user_id: Type: relation, Required:True SQL: False
+meeting_user.assignment_candidate_ids: Type: relation-list -> assignment_candidate.meeting_user_id: Type: relation, Required:- SQL: False
+meeting_user.vote_delegated_to_id: Type: relation -> meeting_user.vote_delegations_from_ids: Type: relation-list, Required:- SQL: False
+meeting_user.vote_delegations_from_ids: Type: relation-list -> meeting_user.vote_delegated_to_id: Type: relation, Required:- SQL: False
+meeting_user.chat_message_ids: Type: relation-list -> chat_message.meeting_user_id: Type: relation, Required:True SQL: False
+meeting_user.group_ids: Type: relation-list -> group.meeting_user_ids: Type: relation-list, Required:- SQL: False
 
-committee.meeting_ids: meeting.committee_id: Type: relation, Required:True SQL: False
-committee.user_ids: user.committee_ids: Type: relation-list, Required:- SQL: False
-committee.manager_ids: user.committee_management_ids: Type: relation-list, Required:- SQL: False
-committee.forward_to_committee_ids: committee.receive_forwardings_from_committee_ids: Type: relation-list, Required:- SQL: False
-committee.receive_forwardings_from_committee_ids: committee.forward_to_committee_ids: Type: relation-list, Required:- SQL: False
-committee.organization_tag_ids: organization_tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+organization_tag.organization_id: Type: relation -> organization.organization_tag_ids: Type: relation-list, Required:- SQL: False
 
-meeting.motion_poll_default_group_ids: group.used_as_motion_poll_default_id: Type: relation, Required:- SQL: False
-meeting.poll_candidate_list_ids: poll_candidate_list.meeting_id: Type: relation, Required:True SQL: False
-meeting.poll_candidate_ids: poll_candidate.meeting_id: Type: relation, Required:True SQL: False
-meeting.meeting_user_ids: meeting_user.meeting_id: Type: relation, Required:True SQL: False
-meeting.assignment_poll_default_group_ids: group.used_as_assignment_poll_default_id: Type: relation, Required:- SQL: False
-meeting.poll_default_group_ids: group.used_as_poll_default_id: Type: relation, Required:- SQL: False
-meeting.topic_poll_default_group_ids: group.used_as_topic_poll_default_id: Type: relation, Required:- SQL: False
-meeting.projector_ids: projector.meeting_id: Type: relation, Required:True SQL: False
-meeting.all_projection_ids: projection.meeting_id: Type: relation, Required:True SQL: False
-meeting.projector_message_ids: projector_message.meeting_id: Type: relation, Required:True SQL: False
-meeting.projector_countdown_ids: projector_countdown.meeting_id: Type: relation, Required:True SQL: False
-meeting.tag_ids: tag.meeting_id: Type: relation, Required:True SQL: False
-meeting.agenda_item_ids: agenda_item.meeting_id: Type: relation, Required:True SQL: False
-meeting.list_of_speakers_ids: list_of_speakers.meeting_id: Type: relation, Required:True SQL: False
-meeting.point_of_order_category_ids: point_of_order_category.meeting_id: Type: relation, Required:True SQL: False
-meeting.speaker_ids: speaker.meeting_id: Type: relation, Required:True SQL: False
-meeting.topic_ids: topic.meeting_id: Type: relation, Required:True SQL: False
-meeting.group_ids: group.meeting_id: Type: relation, Required:True SQL: False
-meeting.mediafile_ids: mediafile.owner_id: Type: generic-relation, Required:True SQL: False
-meeting.motion_ids: motion.meeting_id: Type: relation, Required:True SQL: False
-meeting.forwarded_motion_ids: motion.origin_meeting_id: Type: relation, Required:- SQL: False
-meeting.motion_comment_section_ids: motion_comment_section.meeting_id: Type: relation, Required:True SQL: False
-meeting.motion_category_ids: motion_category.meeting_id: Type: relation, Required:True SQL: False
-meeting.motion_block_ids: motion_block.meeting_id: Type: relation, Required:True SQL: False
-meeting.motion_workflow_ids: motion_workflow.meeting_id: Type: relation, Required:True SQL: False
-meeting.motion_statute_paragraph_ids: motion_statute_paragraph.meeting_id: Type: relation, Required:True SQL: False
-meeting.motion_comment_ids: motion_comment.meeting_id: Type: relation, Required:True SQL: False
-meeting.motion_submitter_ids: motion_submitter.meeting_id: Type: relation, Required:True SQL: False
-meeting.motion_change_recommendation_ids: motion_change_recommendation.meeting_id: Type: relation, Required:True SQL: False
-meeting.motion_state_ids: motion_state.meeting_id: Type: relation, Required:True SQL: False
-meeting.poll_ids: poll.meeting_id: Type: relation, Required:True SQL: False
-meeting.option_ids: option.meeting_id: Type: relation, Required:True SQL: False
-meeting.vote_ids: vote.meeting_id: Type: relation, Required:True SQL: False
-meeting.assignment_ids: assignment.meeting_id: Type: relation, Required:True SQL: False
-meeting.assignment_candidate_ids: assignment_candidate.meeting_id: Type: relation, Required:True SQL: False
-meeting.personal_note_ids: personal_note.meeting_id: Type: relation, Required:True SQL: False
-meeting.chat_group_ids: chat_group.meeting_id: Type: relation, Required:True SQL: False
-meeting.chat_message_ids: chat_message.meeting_id: Type: relation, Required:True SQL: False
-meeting.organization_tag_ids: organization_tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
-meeting.present_user_ids: user.is_present_in_meeting_ids: Type: relation-list, Required:- SQL: False
-meeting.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
-meeting.default_projector_agenda_item_list_ids: projector.used_as_default_projector_for_agenda_item_list_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_topic_ids: projector.used_as_default_projector_for_topic_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_list_of_speakers_ids: projector.used_as_default_projector_for_list_of_speakers_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_current_list_of_speakers_ids: projector.used_as_default_projector_for_current_los_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_motion_ids: projector.used_as_default_projector_for_motion_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_amendment_ids: projector.used_as_default_projector_for_amendment_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_motion_block_ids: projector.used_as_default_projector_for_motion_block_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_assignment_ids: projector.used_as_default_projector_for_assignment_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_mediafile_ids: projector.used_as_default_projector_for_mediafile_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_message_ids: projector.used_as_default_projector_for_message_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_countdown_ids: projector.used_as_default_projector_for_countdown_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_assignment_poll_ids: projector.used_as_default_projector_for_assignment_poll_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_motion_poll_ids: projector.used_as_default_projector_for_motion_poll_in_meeting_id: Type: relation, Required:- SQL: False
-meeting.default_projector_poll_ids: projector.used_as_default_projector_for_poll_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:theme.theme_for_organization_id: Type: relation -> organization.theme_id: Type: relation, Required:True SQL: False
+theme.organization_id: Type: relation -> organization.theme_ids: Type: relation-list, Required:- SQL: False
 
-group.meeting_user_ids: meeting_user.group_ids: Type: relation-list, Required:- SQL: False
-group.mediafile_access_group_ids: mediafile.access_group_ids: Type: relation-list, Required:- SQL: False
-group.mediafile_inherited_access_group_ids: mediafile.inherited_access_group_ids: Type: relation-list, Required:- SQL: False
-group.read_comment_section_ids: motion_comment_section.read_group_ids: Type: relation-list, Required:- SQL: False
-group.write_comment_section_ids: motion_comment_section.write_group_ids: Type: relation-list, Required:- SQL: False
-group.read_chat_group_ids: chat_group.read_group_ids: Type: relation-list, Required:- SQL: False
-group.write_chat_group_ids: chat_group.write_group_ids: Type: relation-list, Required:- SQL: False
-group.poll_ids: poll.entitled_group_ids: Type: relation-list, Required:- SQL: False
+committee.meeting_ids: Type: relation-list -> meeting.committee_id: Type: relation, Required:True SQL: False
+******* 1:1 without sql:committee.default_meeting_id: Type: relation -> meeting.default_meeting_for_committee_id: Type: relation, Required:- SQL: False
+committee.user_ids: Type: relation-list -> user.committee_ids: Type: relation-list, Required:- SQL: False
+committee.manager_ids: Type: relation-list -> user.committee_management_ids: Type: relation-list, Required:- SQL: False
+committee.forward_to_committee_ids: Type: relation-list -> committee.receive_forwardings_from_committee_ids: Type: relation-list, Required:- SQL: False
+committee.receive_forwardings_from_committee_ids: Type: relation-list -> committee.forward_to_committee_ids: Type: relation-list, Required:- SQL: False
+committee.forwarding_user_id: Type: relation -> user.forwarding_committee_ids: Type: relation-list, Required:- SQL: False
+committee.organization_tag_ids: Type: relation-list -> organization_tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+committee.organization_id: Type: relation -> organization.committee_ids: Type: relation-list, Required:- SQL: False
 
-agenda_item.child_ids: agenda_item.parent_id: Type: relation, Required:- SQL: False
-agenda_item.tag_ids: tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
-agenda_item.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+meeting.is_active_in_organization_id: Type: relation -> organization.active_meeting_ids: Type: relation-list, Required:- SQL: False
+meeting.is_archived_in_organization_id: Type: relation -> organization.archived_meeting_ids: Type: relation-list, Required:- SQL: False
+meeting.template_for_organization_id: Type: relation -> organization.template_meeting_ids: Type: relation-list, Required:- SQL: False
+******* 1:1 without sql:meeting.motions_default_workflow_id: Type: relation -> motion_workflow.default_workflow_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.motions_default_amendment_workflow_id: Type: relation -> motion_workflow.default_amendment_workflow_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.motions_default_statute_amendment_workflow_id: Type: relation -> motion_workflow.default_statute_amendment_workflow_meeting_id: Type: relation, Required:- SQL: False
+meeting.motion_poll_default_group_ids: Type: relation-list -> group.used_as_motion_poll_default_id: Type: relation, Required:- SQL: False
+meeting.poll_candidate_list_ids: Type: relation-list -> poll_candidate_list.meeting_id: Type: relation, Required:True SQL: False
+meeting.poll_candidate_ids: Type: relation-list -> poll_candidate.meeting_id: Type: relation, Required:True SQL: False
+meeting.meeting_user_ids: Type: relation-list -> meeting_user.meeting_id: Type: relation, Required:True SQL: False
+meeting.assignment_poll_default_group_ids: Type: relation-list -> group.used_as_assignment_poll_default_id: Type: relation, Required:- SQL: False
+meeting.poll_default_group_ids: Type: relation-list -> group.used_as_poll_default_id: Type: relation, Required:- SQL: False
+meeting.topic_poll_default_group_ids: Type: relation-list -> group.used_as_topic_poll_default_id: Type: relation, Required:- SQL: False
+meeting.projector_ids: Type: relation-list -> projector.meeting_id: Type: relation, Required:True SQL: False
+meeting.all_projection_ids: Type: relation-list -> projection.meeting_id: Type: relation, Required:True SQL: False
+meeting.projector_message_ids: Type: relation-list -> projector_message.meeting_id: Type: relation, Required:True SQL: False
+meeting.projector_countdown_ids: Type: relation-list -> projector_countdown.meeting_id: Type: relation, Required:True SQL: False
+meeting.tag_ids: Type: relation-list -> tag.meeting_id: Type: relation, Required:True SQL: False
+meeting.agenda_item_ids: Type: relation-list -> agenda_item.meeting_id: Type: relation, Required:True SQL: False
+meeting.list_of_speakers_ids: Type: relation-list -> list_of_speakers.meeting_id: Type: relation, Required:True SQL: False
+meeting.point_of_order_category_ids: Type: relation-list -> point_of_order_category.meeting_id: Type: relation, Required:True SQL: False
+meeting.speaker_ids: Type: relation-list -> speaker.meeting_id: Type: relation, Required:True SQL: False
+meeting.topic_ids: Type: relation-list -> topic.meeting_id: Type: relation, Required:True SQL: False
+meeting.group_ids: Type: relation-list -> group.meeting_id: Type: relation, Required:True SQL: False
+meeting.mediafile_ids: Type: relation-list -> mediafile.owner_id: Type: generic-relation, Required:True SQL: False
+meeting.motion_ids: Type: relation-list -> motion.meeting_id: Type: relation, Required:True SQL: False
+meeting.forwarded_motion_ids: Type: relation-list -> motion.origin_meeting_id: Type: relation, Required:- SQL: False
+meeting.motion_comment_section_ids: Type: relation-list -> motion_comment_section.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_category_ids: Type: relation-list -> motion_category.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_block_ids: Type: relation-list -> motion_block.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_workflow_ids: Type: relation-list -> motion_workflow.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_statute_paragraph_ids: Type: relation-list -> motion_statute_paragraph.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_comment_ids: Type: relation-list -> motion_comment.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_submitter_ids: Type: relation-list -> motion_submitter.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_change_recommendation_ids: Type: relation-list -> motion_change_recommendation.meeting_id: Type: relation, Required:True SQL: False
+meeting.motion_state_ids: Type: relation-list -> motion_state.meeting_id: Type: relation, Required:True SQL: False
+meeting.poll_ids: Type: relation-list -> poll.meeting_id: Type: relation, Required:True SQL: False
+meeting.option_ids: Type: relation-list -> option.meeting_id: Type: relation, Required:True SQL: False
+meeting.vote_ids: Type: relation-list -> vote.meeting_id: Type: relation, Required:True SQL: False
+meeting.assignment_ids: Type: relation-list -> assignment.meeting_id: Type: relation, Required:True SQL: False
+meeting.assignment_candidate_ids: Type: relation-list -> assignment_candidate.meeting_id: Type: relation, Required:True SQL: False
+meeting.personal_note_ids: Type: relation-list -> personal_note.meeting_id: Type: relation, Required:True SQL: False
+meeting.chat_group_ids: Type: relation-list -> chat_group.meeting_id: Type: relation, Required:True SQL: False
+meeting.chat_message_ids: Type: relation-list -> chat_message.meeting_id: Type: relation, Required:True SQL: False
+******* 1:1 without sql:meeting.logo_projector_main_id: Type: relation -> mediafile.used_as_logo_projector_main_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.logo_projector_header_id: Type: relation -> mediafile.used_as_logo_projector_header_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.logo_web_header_id: Type: relation -> mediafile.used_as_logo_web_header_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.logo_pdf_header_l_id: Type: relation -> mediafile.used_as_logo_pdf_header_l_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.logo_pdf_header_r_id: Type: relation -> mediafile.used_as_logo_pdf_header_r_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.logo_pdf_footer_l_id: Type: relation -> mediafile.used_as_logo_pdf_footer_l_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.logo_pdf_footer_r_id: Type: relation -> mediafile.used_as_logo_pdf_footer_r_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.logo_pdf_ballot_paper_id: Type: relation -> mediafile.used_as_logo_pdf_ballot_paper_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.font_regular_id: Type: relation -> mediafile.used_as_font_regular_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.font_italic_id: Type: relation -> mediafile.used_as_font_italic_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.font_bold_id: Type: relation -> mediafile.used_as_font_bold_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.font_bold_italic_id: Type: relation -> mediafile.used_as_font_bold_italic_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.font_monospace_id: Type: relation -> mediafile.used_as_font_monospace_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.font_chyron_speaker_name_id: Type: relation -> mediafile.used_as_font_chyron_speaker_name_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.font_projector_h1_id: Type: relation -> mediafile.used_as_font_projector_h1_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.font_projector_h2_id: Type: relation -> mediafile.used_as_font_projector_h2_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.committee_id: Type: relation -> committee.meeting_ids: Type: relation-list, Required:- SQL: False
+******* 1:1 without sql:meeting.default_meeting_for_committee_id: Type: relation -> committee.default_meeting_id: Type: relation, Required:- SQL: False
+meeting.organization_tag_ids: Type: relation-list -> organization_tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+meeting.present_user_ids: Type: relation-list -> user.is_present_in_meeting_ids: Type: relation-list, Required:- SQL: False
+******* 1:1 without sql:meeting.reference_projector_id: Type: relation -> projector.used_as_reference_projector_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.list_of_speakers_countdown_id: Type: relation -> projector_countdown.used_as_list_of_speakers_countdown_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.poll_countdown_id: Type: relation -> projector_countdown.used_as_poll_countdown_meeting_id: Type: relation, Required:- SQL: False
+meeting.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+meeting.default_projector_agenda_item_list_ids: Type: relation-list -> projector.used_as_default_projector_for_agenda_item_list_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_topic_ids: Type: relation-list -> projector.used_as_default_projector_for_topic_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_list_of_speakers_ids: Type: relation-list -> projector.used_as_default_projector_for_list_of_speakers_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_current_list_of_speakers_ids: Type: relation-list -> projector.used_as_default_projector_for_current_los_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_motion_ids: Type: relation-list -> projector.used_as_default_projector_for_motion_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_amendment_ids: Type: relation-list -> projector.used_as_default_projector_for_amendment_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_motion_block_ids: Type: relation-list -> projector.used_as_default_projector_for_motion_block_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_assignment_ids: Type: relation-list -> projector.used_as_default_projector_for_assignment_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_mediafile_ids: Type: relation-list -> projector.used_as_default_projector_for_mediafile_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_message_ids: Type: relation-list -> projector.used_as_default_projector_for_message_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_countdown_ids: Type: relation-list -> projector.used_as_default_projector_for_countdown_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_assignment_poll_ids: Type: relation-list -> projector.used_as_default_projector_for_assignment_poll_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_motion_poll_ids: Type: relation-list -> projector.used_as_default_projector_for_motion_poll_in_meeting_id: Type: relation, Required:- SQL: False
+meeting.default_projector_poll_ids: Type: relation-list -> projector.used_as_default_projector_for_poll_in_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.default_group_id: Type: relation -> group.default_group_for_meeting_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:meeting.admin_group_id: Type: relation -> group.admin_group_for_meeting_id: Type: relation, Required:- SQL: False
 
-list_of_speakers.speaker_ids: speaker.list_of_speakers_id: Type: relation, Required:True SQL: False
-list_of_speakers.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+group.meeting_user_ids: Type: relation-list -> meeting_user.group_ids: Type: relation-list, Required:- SQL: False
+******* 1:1 without sql:group.default_group_for_meeting_id: Type: relation -> meeting.default_group_id: Type: relation, Required:True SQL: False
+******* 1:1 without sql:group.admin_group_for_meeting_id: Type: relation -> meeting.admin_group_id: Type: relation, Required:- SQL: False
+group.mediafile_access_group_ids: Type: relation-list -> mediafile.access_group_ids: Type: relation-list, Required:- SQL: False
+group.mediafile_inherited_access_group_ids: Type: relation-list -> mediafile.inherited_access_group_ids: Type: relation-list, Required:- SQL: False
+group.read_comment_section_ids: Type: relation-list -> motion_comment_section.read_group_ids: Type: relation-list, Required:- SQL: False
+group.write_comment_section_ids: Type: relation-list -> motion_comment_section.write_group_ids: Type: relation-list, Required:- SQL: False
+group.read_chat_group_ids: Type: relation-list -> chat_group.read_group_ids: Type: relation-list, Required:- SQL: False
+group.write_chat_group_ids: Type: relation-list -> chat_group.write_group_ids: Type: relation-list, Required:- SQL: False
+group.poll_ids: Type: relation-list -> poll.entitled_group_ids: Type: relation-list, Required:- SQL: False
+group.used_as_motion_poll_default_id: Type: relation -> meeting.motion_poll_default_group_ids: Type: relation-list, Required:- SQL: False
+group.used_as_assignment_poll_default_id: Type: relation -> meeting.assignment_poll_default_group_ids: Type: relation-list, Required:- SQL: False
+group.used_as_topic_poll_default_id: Type: relation -> meeting.topic_poll_default_group_ids: Type: relation-list, Required:- SQL: False
+group.used_as_poll_default_id: Type: relation -> meeting.poll_default_group_ids: Type: relation-list, Required:- SQL: False
+group.meeting_id: Type: relation -> meeting.group_ids: Type: relation-list, Required:- SQL: False
 
-point_of_order_category.speaker_ids: speaker.point_of_order_category_id: Type: relation, Required:- SQL: False
+personal_note.meeting_user_id: Type: relation -> meeting_user.personal_note_ids: Type: relation-list, Required:- SQL: False
+personal_note.meeting_id: Type: relation -> meeting.personal_note_ids: Type: relation-list, Required:- SQL: False
 
-topic.attachment_ids: mediafile.attachment_ids: Type: generic-relation-list, Required:- SQL: False
-topic.poll_ids: poll.content_object_id: Type: generic-relation, Required:True SQL: False
-topic.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+tag.meeting_id: Type: relation -> meeting.tag_ids: Type: relation-list, Required:- SQL: False
 
-motion.amendment_ids: motion.lead_motion_id: Type: relation, Required:- SQL: False
-motion.sort_child_ids: motion.sort_parent_id: Type: relation, Required:- SQL: False
-motion.derived_motion_ids: motion.origin_id: Type: relation, Required:- SQL: False
-motion.all_origin_ids: motion.all_derived_motion_ids: Type: relation-list, Required:- SQL: False
-motion.all_derived_motion_ids: motion.all_origin_ids: Type: relation-list, Required:- SQL: False
-motion.referenced_in_motion_state_extension_ids: motion.state_extension_reference_ids: Type: generic-relation-list, Required:- SQL: False
-motion.referenced_in_motion_recommendation_extension_ids: motion.recommendation_extension_reference_ids: Type: generic-relation-list, Required:- SQL: False
-motion.submitter_ids: motion_submitter.motion_id: Type: relation, Required:True SQL: False
-motion.supporter_meeting_user_ids: meeting_user.supported_motion_ids: Type: relation-list, Required:- SQL: False
-motion.poll_ids: poll.content_object_id: Type: generic-relation, Required:True SQL: False
-motion.option_ids: option.content_object_id: Type: generic-relation, Required:- SQL: False
-motion.change_recommendation_ids: motion_change_recommendation.motion_id: Type: relation, Required:True SQL: False
-motion.comment_ids: motion_comment.motion_id: Type: relation, Required:True SQL: False
-motion.tag_ids: tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
-motion.attachment_ids: mediafile.attachment_ids: Type: generic-relation-list, Required:- SQL: False
-motion.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
-motion.personal_note_ids: personal_note.content_object_id: Type: generic-relation, Required:- SQL: False
+agenda_item.parent_id: Type: relation -> agenda_item.child_ids: Type: relation-list, Required:- SQL: False
+agenda_item.child_ids: Type: relation-list -> agenda_item.parent_id: Type: relation, Required:- SQL: False
+agenda_item.tag_ids: Type: relation-list -> tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+agenda_item.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+agenda_item.meeting_id: Type: relation -> meeting.agenda_item_ids: Type: relation-list, Required:- SQL: False
 
-motion_comment_section.comment_ids: motion_comment.section_id: Type: relation, Required:True SQL: False
-motion_comment_section.read_group_ids: group.read_comment_section_ids: Type: relation-list, Required:- SQL: False
-motion_comment_section.write_group_ids: group.write_comment_section_ids: Type: relation-list, Required:- SQL: False
+list_of_speakers.speaker_ids: Type: relation-list -> speaker.list_of_speakers_id: Type: relation, Required:True SQL: False
+list_of_speakers.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+list_of_speakers.meeting_id: Type: relation -> meeting.list_of_speakers_ids: Type: relation-list, Required:- SQL: False
 
-motion_category.child_ids: motion_category.parent_id: Type: relation, Required:- SQL: False
-motion_category.motion_ids: motion.category_id: Type: relation, Required:- SQL: False
+point_of_order_category.meeting_id: Type: relation -> meeting.point_of_order_category_ids: Type: relation-list, Required:- SQL: False
+point_of_order_category.speaker_ids: Type: relation-list -> speaker.point_of_order_category_id: Type: relation, Required:- SQL: False
 
-motion_block.motion_ids: motion.block_id: Type: relation, Required:- SQL: False
-motion_block.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+speaker.list_of_speakers_id: Type: relation -> list_of_speakers.speaker_ids: Type: relation-list, Required:- SQL: False
+speaker.meeting_user_id: Type: relation -> meeting_user.speaker_ids: Type: relation-list, Required:- SQL: False
+speaker.point_of_order_category_id: Type: relation -> point_of_order_category.speaker_ids: Type: relation-list, Required:- SQL: False
+speaker.meeting_id: Type: relation -> meeting.speaker_ids: Type: relation-list, Required:- SQL: False
 
-motion_state.submitter_withdraw_back_ids: motion_state.submitter_withdraw_state_id: Type: relation, Required:- SQL: False
-motion_state.next_state_ids: motion_state.previous_state_ids: Type: relation-list, Required:- SQL: False
-motion_state.previous_state_ids: motion_state.next_state_ids: Type: relation-list, Required:- SQL: False
-motion_state.motion_ids: motion.state_id: Type: relation, Required:True SQL: False
-motion_state.motion_recommendation_ids: motion.recommendation_id: Type: relation, Required:- SQL: False
+topic.attachment_ids: Type: relation-list -> mediafile.attachment_ids: Type: generic-relation-list, Required:- SQL: False
+topic.agenda_item_id: Type: relation -> agenda_item.content_object_id: Type: generic-relation, Required:True SQL: False
+topic.list_of_speakers_id: Type: relation -> list_of_speakers.content_object_id: Type: generic-relation, Required:True SQL: False
+topic.poll_ids: Type: relation-list -> poll.content_object_id: Type: generic-relation, Required:True SQL: False
+topic.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+topic.meeting_id: Type: relation -> meeting.topic_ids: Type: relation-list, Required:- SQL: False
 
-motion_workflow.state_ids: motion_state.workflow_id: Type: relation, Required:True SQL: False
+motion.lead_motion_id: Type: relation -> motion.amendment_ids: Type: relation-list, Required:- SQL: False
+motion.amendment_ids: Type: relation-list -> motion.lead_motion_id: Type: relation, Required:- SQL: False
+motion.sort_parent_id: Type: relation -> motion.sort_child_ids: Type: relation-list, Required:- SQL: False
+motion.sort_child_ids: Type: relation-list -> motion.sort_parent_id: Type: relation, Required:- SQL: False
+motion.origin_id: Type: relation -> motion.derived_motion_ids: Type: relation-list, Required:- SQL: False
+motion.origin_meeting_id: Type: relation -> meeting.forwarded_motion_ids: Type: relation-list, Required:- SQL: False
+motion.derived_motion_ids: Type: relation-list -> motion.origin_id: Type: relation, Required:- SQL: False
+motion.all_origin_ids: Type: relation-list -> motion.all_derived_motion_ids: Type: relation-list, Required:- SQL: False
+motion.all_derived_motion_ids: Type: relation-list -> motion.all_origin_ids: Type: relation-list, Required:- SQL: False
+motion.state_id: Type: relation -> motion_state.motion_ids: Type: relation-list, Required:- SQL: False
+motion.recommendation_id: Type: relation -> motion_state.motion_recommendation_ids: Type: relation-list, Required:- SQL: False
+motion.referenced_in_motion_state_extension_ids: Type: relation-list -> motion.state_extension_reference_ids: Type: generic-relation-list, Required:- SQL: False
+motion.referenced_in_motion_recommendation_extension_ids: Type: relation-list -> motion.recommendation_extension_reference_ids: Type: generic-relation-list, Required:- SQL: False
+motion.category_id: Type: relation -> motion_category.motion_ids: Type: relation-list, Required:- SQL: False
+motion.block_id: Type: relation -> motion_block.motion_ids: Type: relation-list, Required:- SQL: False
+motion.submitter_ids: Type: relation-list -> motion_submitter.motion_id: Type: relation, Required:True SQL: False
+motion.supporter_meeting_user_ids: Type: relation-list -> meeting_user.supported_motion_ids: Type: relation-list, Required:- SQL: False
+motion.poll_ids: Type: relation-list -> poll.content_object_id: Type: generic-relation, Required:True SQL: False
+motion.option_ids: Type: relation-list -> option.content_object_id: Type: generic-relation, Required:- SQL: False
+motion.change_recommendation_ids: Type: relation-list -> motion_change_recommendation.motion_id: Type: relation, Required:True SQL: False
+motion.statute_paragraph_id: Type: relation -> motion_statute_paragraph.motion_ids: Type: relation-list, Required:- SQL: False
+motion.comment_ids: Type: relation-list -> motion_comment.motion_id: Type: relation, Required:True SQL: False
+motion.agenda_item_id: Type: relation -> agenda_item.content_object_id: Type: generic-relation, Required:True SQL: False
+motion.list_of_speakers_id: Type: relation -> list_of_speakers.content_object_id: Type: generic-relation, Required:True SQL: False
+motion.tag_ids: Type: relation-list -> tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+motion.attachment_ids: Type: relation-list -> mediafile.attachment_ids: Type: generic-relation-list, Required:- SQL: False
+motion.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+motion.personal_note_ids: Type: relation-list -> personal_note.content_object_id: Type: generic-relation, Required:- SQL: False
+motion.meeting_id: Type: relation -> meeting.motion_ids: Type: relation-list, Required:- SQL: False
 
-motion_statute_paragraph.motion_ids: motion.statute_paragraph_id: Type: relation, Required:- SQL: False
+motion_submitter.meeting_user_id: Type: relation -> meeting_user.motion_submitter_ids: Type: relation-list, Required:- SQL: False
+motion_submitter.motion_id: Type: relation -> motion.submitter_ids: Type: relation-list, Required:- SQL: False
+motion_submitter.meeting_id: Type: relation -> meeting.motion_submitter_ids: Type: relation-list, Required:- SQL: False
 
-poll.option_ids: option.poll_id: Type: relation, Required:- SQL: False
-poll.voted_ids: user.poll_voted_ids: Type: relation-list, Required:- SQL: False
-poll.entitled_group_ids: group.poll_ids: Type: relation-list, Required:- SQL: False
-poll.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+motion_comment.motion_id: Type: relation -> motion.comment_ids: Type: relation-list, Required:- SQL: False
+motion_comment.section_id: Type: relation -> motion_comment_section.comment_ids: Type: relation-list, Required:- SQL: False
+motion_comment.meeting_id: Type: relation -> meeting.motion_comment_ids: Type: relation-list, Required:- SQL: False
 
-option.vote_ids: vote.option_id: Type: relation, Required:True SQL: False
+motion_comment_section.comment_ids: Type: relation-list -> motion_comment.section_id: Type: relation, Required:True SQL: False
+motion_comment_section.read_group_ids: Type: relation-list -> group.read_comment_section_ids: Type: relation-list, Required:- SQL: False
+motion_comment_section.write_group_ids: Type: relation-list -> group.write_comment_section_ids: Type: relation-list, Required:- SQL: False
+motion_comment_section.meeting_id: Type: relation -> meeting.motion_comment_section_ids: Type: relation-list, Required:- SQL: False
 
-assignment.candidate_ids: assignment_candidate.assignment_id: Type: relation, Required:True SQL: False
-assignment.poll_ids: poll.content_object_id: Type: generic-relation, Required:True SQL: False
-assignment.tag_ids: tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
-assignment.attachment_ids: mediafile.attachment_ids: Type: generic-relation-list, Required:- SQL: False
-assignment.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+motion_category.parent_id: Type: relation -> motion_category.child_ids: Type: relation-list, Required:- SQL: False
+motion_category.child_ids: Type: relation-list -> motion_category.parent_id: Type: relation, Required:- SQL: False
+motion_category.motion_ids: Type: relation-list -> motion.category_id: Type: relation, Required:- SQL: False
+motion_category.meeting_id: Type: relation -> meeting.motion_category_ids: Type: relation-list, Required:- SQL: False
 
-poll_candidate_list.poll_candidate_ids: poll_candidate.poll_candidate_list_id: Type: relation, Required:True SQL: False
+motion_block.motion_ids: Type: relation-list -> motion.block_id: Type: relation, Required:- SQL: False
+motion_block.agenda_item_id: Type: relation -> agenda_item.content_object_id: Type: generic-relation, Required:True SQL: False
+motion_block.list_of_speakers_id: Type: relation -> list_of_speakers.content_object_id: Type: generic-relation, Required:True SQL: False
+motion_block.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+motion_block.meeting_id: Type: relation -> meeting.motion_block_ids: Type: relation-list, Required:- SQL: False
 
-mediafile.inherited_access_group_ids: group.mediafile_inherited_access_group_ids: Type: relation-list, Required:- SQL: False
-mediafile.access_group_ids: group.mediafile_access_group_ids: Type: relation-list, Required:- SQL: False
-mediafile.child_ids: mediafile.parent_id: Type: relation, Required:- SQL: False
-mediafile.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+motion_change_recommendation.motion_id: Type: relation -> motion.change_recommendation_ids: Type: relation-list, Required:- SQL: False
+motion_change_recommendation.meeting_id: Type: relation -> meeting.motion_change_recommendation_ids: Type: relation-list, Required:- SQL: False
 
-projector.current_projection_ids: projection.current_projector_id: Type: relation, Required:- SQL: False
-projector.preview_projection_ids: projection.preview_projector_id: Type: relation, Required:- SQL: False
-projector.history_projection_ids: projection.history_projector_id: Type: relation, Required:- SQL: False
+motion_state.submitter_withdraw_state_id: Type: relation -> motion_state.submitter_withdraw_back_ids: Type: relation-list, Required:- SQL: False
+motion_state.submitter_withdraw_back_ids: Type: relation-list -> motion_state.submitter_withdraw_state_id: Type: relation, Required:- SQL: False
+motion_state.next_state_ids: Type: relation-list -> motion_state.previous_state_ids: Type: relation-list, Required:- SQL: False
+motion_state.previous_state_ids: Type: relation-list -> motion_state.next_state_ids: Type: relation-list, Required:- SQL: False
+motion_state.motion_ids: Type: relation-list -> motion.state_id: Type: relation, Required:True SQL: False
+motion_state.motion_recommendation_ids: Type: relation-list -> motion.recommendation_id: Type: relation, Required:- SQL: False
+motion_state.workflow_id: Type: relation -> motion_workflow.state_ids: Type: relation-list, Required:- SQL: False
+******* 1:1 without sql:motion_state.first_state_of_workflow_id: Type: relation -> motion_workflow.first_state_id: Type: relation, Required:True SQL: False
+motion_state.meeting_id: Type: relation -> meeting.motion_state_ids: Type: relation-list, Required:- SQL: False
 
-projector_message.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+motion_workflow.state_ids: Type: relation-list -> motion_state.workflow_id: Type: relation, Required:True SQL: False
+******* 1:1 without sql:motion_workflow.first_state_id: Type: relation -> motion_state.first_state_of_workflow_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:motion_workflow.default_workflow_meeting_id: Type: relation -> meeting.motions_default_workflow_id: Type: relation, Required:True SQL: False
+******* 1:1 without sql:motion_workflow.default_amendment_workflow_meeting_id: Type: relation -> meeting.motions_default_amendment_workflow_id: Type: relation, Required:True SQL: False
+******* 1:1 without sql:motion_workflow.default_statute_amendment_workflow_meeting_id: Type: relation -> meeting.motions_default_statute_amendment_workflow_id: Type: relation, Required:True SQL: False
+motion_workflow.meeting_id: Type: relation -> meeting.motion_workflow_ids: Type: relation-list, Required:- SQL: False
 
-projector_countdown.projection_ids: projection.content_object_id: Type: generic-relation, Required:True SQL: False
+motion_statute_paragraph.motion_ids: Type: relation-list -> motion.statute_paragraph_id: Type: relation, Required:- SQL: False
+motion_statute_paragraph.meeting_id: Type: relation -> meeting.motion_statute_paragraph_ids: Type: relation-list, Required:- SQL: False
 
-chat_group.chat_message_ids: chat_message.chat_group_id: Type: relation, Required:True SQL: False
-chat_group.read_group_ids: group.read_chat_group_ids: Type: relation-list, Required:- SQL: False
-chat_group.write_group_ids: group.write_chat_group_ids: Type: relation-list, Required:- SQL: False
+poll.option_ids: Type: relation-list -> option.poll_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:poll.global_option_id: Type: relation -> option.used_as_global_option_in_poll_id: Type: relation, Required:- SQL: False
+poll.voted_ids: Type: relation-list -> user.poll_voted_ids: Type: relation-list, Required:- SQL: False
+poll.entitled_group_ids: Type: relation-list -> group.poll_ids: Type: relation-list, Required:- SQL: False
+poll.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+poll.meeting_id: Type: relation -> meeting.poll_ids: Type: relation-list, Required:- SQL: False
+
+option.poll_id: Type: relation -> poll.option_ids: Type: relation-list, Required:- SQL: False
+******* 1:1 without sql:option.used_as_global_option_in_poll_id: Type: relation -> poll.global_option_id: Type: relation, Required:- SQL: False
+option.vote_ids: Type: relation-list -> vote.option_id: Type: relation, Required:True SQL: False
+option.meeting_id: Type: relation -> meeting.option_ids: Type: relation-list, Required:- SQL: False
+
+vote.option_id: Type: relation -> option.vote_ids: Type: relation-list, Required:- SQL: False
+vote.user_id: Type: relation -> user.vote_ids: Type: relation-list, Required:- SQL: False
+vote.delegated_user_id: Type: relation -> user.delegated_vote_ids: Type: relation-list, Required:- SQL: False
+vote.meeting_id: Type: relation -> meeting.vote_ids: Type: relation-list, Required:- SQL: False
+
+assignment.candidate_ids: Type: relation-list -> assignment_candidate.assignment_id: Type: relation, Required:True SQL: False
+assignment.poll_ids: Type: relation-list -> poll.content_object_id: Type: generic-relation, Required:True SQL: False
+assignment.agenda_item_id: Type: relation -> agenda_item.content_object_id: Type: generic-relation, Required:True SQL: False
+assignment.list_of_speakers_id: Type: relation -> list_of_speakers.content_object_id: Type: generic-relation, Required:True SQL: False
+assignment.tag_ids: Type: relation-list -> tag.tagged_ids: Type: generic-relation-list, Required:- SQL: False
+assignment.attachment_ids: Type: relation-list -> mediafile.attachment_ids: Type: generic-relation-list, Required:- SQL: False
+assignment.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+assignment.meeting_id: Type: relation -> meeting.assignment_ids: Type: relation-list, Required:- SQL: False
+
+assignment_candidate.assignment_id: Type: relation -> assignment.candidate_ids: Type: relation-list, Required:- SQL: False
+assignment_candidate.meeting_user_id: Type: relation -> meeting_user.assignment_candidate_ids: Type: relation-list, Required:- SQL: False
+assignment_candidate.meeting_id: Type: relation -> meeting.assignment_candidate_ids: Type: relation-list, Required:- SQL: False
+
+poll_candidate_list.poll_candidate_ids: Type: relation-list -> poll_candidate.poll_candidate_list_id: Type: relation, Required:True SQL: False
+poll_candidate_list.meeting_id: Type: relation -> meeting.poll_candidate_list_ids: Type: relation-list, Required:- SQL: False
+poll_candidate_list.option_id: Type: relation -> option.content_object_id: Type: generic-relation, Required:- SQL: False
+
+poll_candidate.poll_candidate_list_id: Type: relation -> poll_candidate_list.poll_candidate_ids: Type: relation-list, Required:- SQL: False
+poll_candidate.user_id: Type: relation -> user.poll_candidate_ids: Type: relation-list, Required:- SQL: False
+poll_candidate.meeting_id: Type: relation -> meeting.poll_candidate_ids: Type: relation-list, Required:- SQL: False
+
+mediafile.inherited_access_group_ids: Type: relation-list -> group.mediafile_inherited_access_group_ids: Type: relation-list, Required:- SQL: False
+mediafile.access_group_ids: Type: relation-list -> group.mediafile_access_group_ids: Type: relation-list, Required:- SQL: False
+mediafile.parent_id: Type: relation -> mediafile.child_ids: Type: relation-list, Required:- SQL: False
+mediafile.child_ids: Type: relation-list -> mediafile.parent_id: Type: relation, Required:- SQL: False
+mediafile.list_of_speakers_id: Type: relation -> list_of_speakers.content_object_id: Type: generic-relation, Required:True SQL: False
+mediafile.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+******* 1:1 without sql:mediafile.used_as_logo_projector_main_in_meeting_id: Type: relation -> meeting.logo_projector_main_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_logo_projector_header_in_meeting_id: Type: relation -> meeting.logo_projector_header_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_logo_web_header_in_meeting_id: Type: relation -> meeting.logo_web_header_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_logo_pdf_header_l_in_meeting_id: Type: relation -> meeting.logo_pdf_header_l_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_logo_pdf_header_r_in_meeting_id: Type: relation -> meeting.logo_pdf_header_r_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_logo_pdf_footer_l_in_meeting_id: Type: relation -> meeting.logo_pdf_footer_l_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_logo_pdf_footer_r_in_meeting_id: Type: relation -> meeting.logo_pdf_footer_r_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_logo_pdf_ballot_paper_in_meeting_id: Type: relation -> meeting.logo_pdf_ballot_paper_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_font_regular_in_meeting_id: Type: relation -> meeting.font_regular_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_font_italic_in_meeting_id: Type: relation -> meeting.font_italic_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_font_bold_in_meeting_id: Type: relation -> meeting.font_bold_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_font_bold_italic_in_meeting_id: Type: relation -> meeting.font_bold_italic_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_font_monospace_in_meeting_id: Type: relation -> meeting.font_monospace_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_font_chyron_speaker_name_in_meeting_id: Type: relation -> meeting.font_chyron_speaker_name_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_font_projector_h1_in_meeting_id: Type: relation -> meeting.font_projector_h1_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:mediafile.used_as_font_projector_h2_in_meeting_id: Type: relation -> meeting.font_projector_h2_id: Type: relation, Required:- SQL: False
+
+projector.current_projection_ids: Type: relation-list -> projection.current_projector_id: Type: relation, Required:- SQL: False
+projector.preview_projection_ids: Type: relation-list -> projection.preview_projector_id: Type: relation, Required:- SQL: False
+projector.history_projection_ids: Type: relation-list -> projection.history_projector_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:projector.used_as_reference_projector_meeting_id: Type: relation -> meeting.reference_projector_id: Type: relation, Required:True SQL: False
+projector.used_as_default_projector_for_agenda_item_list_in_meeting_id: Type: relation -> meeting.default_projector_agenda_item_list_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_topic_in_meeting_id: Type: relation -> meeting.default_projector_topic_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_list_of_speakers_in_meeting_id: Type: relation -> meeting.default_projector_list_of_speakers_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_current_los_in_meeting_id: Type: relation -> meeting.default_projector_current_list_of_speakers_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_motion_in_meeting_id: Type: relation -> meeting.default_projector_motion_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_amendment_in_meeting_id: Type: relation -> meeting.default_projector_amendment_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_motion_block_in_meeting_id: Type: relation -> meeting.default_projector_motion_block_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_assignment_in_meeting_id: Type: relation -> meeting.default_projector_assignment_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_mediafile_in_meeting_id: Type: relation -> meeting.default_projector_mediafile_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_message_in_meeting_id: Type: relation -> meeting.default_projector_message_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_countdown_in_meeting_id: Type: relation -> meeting.default_projector_countdown_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_assignment_poll_in_meeting_id: Type: relation -> meeting.default_projector_assignment_poll_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_motion_poll_in_meeting_id: Type: relation -> meeting.default_projector_motion_poll_ids: Type: relation-list, Required:True SQL: False
+projector.used_as_default_projector_for_poll_in_meeting_id: Type: relation -> meeting.default_projector_poll_ids: Type: relation-list, Required:True SQL: False
+projector.meeting_id: Type: relation -> meeting.projector_ids: Type: relation-list, Required:- SQL: False
+
+projection.current_projector_id: Type: relation -> projector.current_projection_ids: Type: relation-list, Required:- SQL: False
+projection.preview_projector_id: Type: relation -> projector.preview_projection_ids: Type: relation-list, Required:- SQL: False
+projection.history_projector_id: Type: relation -> projector.history_projection_ids: Type: relation-list, Required:- SQL: False
+projection.meeting_id: Type: relation -> meeting.all_projection_ids: Type: relation-list, Required:- SQL: False
+
+projector_message.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+projector_message.meeting_id: Type: relation -> meeting.projector_message_ids: Type: relation-list, Required:- SQL: False
+
+projector_countdown.projection_ids: Type: relation-list -> projection.content_object_id: Type: generic-relation, Required:True SQL: False
+******* 1:1 without sql:projector_countdown.used_as_list_of_speakers_countdown_meeting_id: Type: relation -> meeting.list_of_speakers_countdown_id: Type: relation, Required:- SQL: False
+******* 1:1 without sql:projector_countdown.used_as_poll_countdown_meeting_id: Type: relation -> meeting.poll_countdown_id: Type: relation, Required:- SQL: False
+projector_countdown.meeting_id: Type: relation -> meeting.projector_countdown_ids: Type: relation-list, Required:- SQL: False
+
+chat_group.chat_message_ids: Type: relation-list -> chat_message.chat_group_id: Type: relation, Required:True SQL: False
+chat_group.read_group_ids: Type: relation-list -> group.read_chat_group_ids: Type: relation-list, Required:- SQL: False
+chat_group.write_group_ids: Type: relation-list -> group.write_chat_group_ids: Type: relation-list, Required:- SQL: False
+chat_group.meeting_id: Type: relation -> meeting.chat_group_ids: Type: relation-list, Required:- SQL: False
+
+chat_message.meeting_user_id: Type: relation -> meeting_user.chat_message_ids: Type: relation-list, Required:- SQL: False
+chat_message.chat_group_id: Type: relation -> chat_group.chat_message_ids: Type: relation-list, Required:- SQL: False
+chat_message.meeting_id: Type: relation -> meeting.chat_message_ids: Type: relation-list, Required:- SQL: False
 
 
 */
