@@ -304,7 +304,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         with AiosmtpdServerManager(AIOHandler()):
             with pytest.raises(
                 ssl.SSLCertVerificationError,
-                match="certificate verify failed: self signed certificate",
+                match="certificate verify failed: self-signed certificate",
             ):
                 EmailUtils.get_mail_connection().__enter__()
 
