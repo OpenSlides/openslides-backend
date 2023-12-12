@@ -34,7 +34,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
-        self.assert_logged_out()
+        self.assert_logged_in()
 
     def test_scope_meeting_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -43,7 +43,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
-        self.assert_logged_out()
+        self.assert_logged_in()
 
     def test_scope_meeting_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
@@ -52,7 +52,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
-        self.assert_logged_out()
+        self.assert_logged_in()
 
     def test_scope_committee_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
@@ -71,7 +71,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
-        self.assert_logged_out()
+        self.assert_logged_in()
 
     def test_scope_committee_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -80,7 +80,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
-        self.assert_logged_out()
+        self.assert_logged_in()
 
     def test_scope_committee_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
@@ -109,7 +109,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
-        self.assert_logged_out()
+        self.assert_logged_in()
 
     def test_scope_organization_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)

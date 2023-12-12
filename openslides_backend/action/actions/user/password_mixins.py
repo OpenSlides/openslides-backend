@@ -39,11 +39,12 @@ class SetPasswordMixin(Action):
 class ClearSessionsMixin(Action):
     """Adds an on_success method to the action that clears all sessions."""
 
-    def get_on_success(self, _: ActionData) -> Callable[[], None] | None:
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
         def on_success() -> None:
             self.auth.clear_all_sessions()
 
-        if self.user_id > 0:
+        # only clear session if the user changed his own password
+        if any(instance["id"] == self.user_id for instance in action_data):
             return on_success
         else:
             return None

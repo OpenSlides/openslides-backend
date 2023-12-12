@@ -458,6 +458,9 @@ class BaseActionTestCase(BaseSystemTestCase):
             assert informations
             self.assertEqual(last_information[fqid], information)
 
+    def assert_logged_in(self) -> None:
+        self.auth.authenticate()  # assert that no exception is thrown
+
     def assert_logged_out(self) -> None:
         with pytest.raises(AuthenticationException):
             self.auth.authenticate()
