@@ -103,7 +103,7 @@ The action component listens to port 9002. The presenter component listens to po
 
 * `OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT`
 
-  Seconds after which an action is delegated to an action worker. `-1` deactivates action workers all together. Default: `1.0`
+  Seconds after which an action is delegated to an action worker. `-1` represents an infinite timeout. `-2` deactivates action workers and local threading alltogether. Default: `1`
 
 ### Development
 
