@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "18597ff91b29bab3c95fe3b7e0a80750"
+MODELS_YML_CHECKSUM = "014215b01e83da8545bb1a197735c1aa"
 
 
 class Organization(Model):
@@ -2230,7 +2230,9 @@ class ImportPreview(Model):
     verbose_name = "import preview"
 
     id = fields.IntegerField()
-    name = fields.CharField(required=True)
+    name = fields.CharField(
+        required=True, constraints={"enum": ["account", "participant", "topic"]}
+    )
     state = fields.CharField(
         required=True, constraints={"enum": ["warning", "error", "done"]}
     )

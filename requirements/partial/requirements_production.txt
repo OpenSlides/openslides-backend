@@ -4,12 +4,13 @@ dependency_injector==4.41.0
 fastjsonschema==2.19.0
 gunicorn==21.2.0
 lxml==4.9.3
-pypdf[crypto]==3.17.1
+pypdf[crypto]==3.17.2
 requests==2.31.0
 roman==4.1
 simplejson==3.19.2
 Werkzeug==3.0.1
 python-magic==0.4.27
+pygments==2.17.2
 
 # authlib
 git+https://github.com/OpenSlides/openslides-auth-service.git@86b7892abd10b4588b110548d88b16da6be3dbe2#egg=authlib&subdirectory=auth/libraries/pip-auth
