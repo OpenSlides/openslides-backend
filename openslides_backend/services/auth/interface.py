@@ -1,18 +1,18 @@
-from typing import Any, Dict, Optional, Protocol, Tuple
+from typing import Any, Optional, Protocol, Tuple
 
-from ...shared.interfaces import Headers
+from authlib import AUTHENTICATION_HEADER, COOKIE_NAME  # noqa
+
+from ..shared.authenticated_service import AuthenticatedServiceInterface
 
 
-class AuthenticationService(Protocol):
+class AuthenticationService(AuthenticatedServiceInterface, Protocol):
     """
     Interface of the Auth Service.
     """
 
     auth_handler: Any
 
-    def authenticate(
-        self, headers: Headers, cookies: Dict[str, str]
-    ) -> Tuple[int, Optional[str]]:
+    def authenticate(self) -> Tuple[int, Optional[str]]:
         """
         A request to get knowledge about themselves. This information is contained in the payload of
         a Token. So, this function handles the refreshing of a Token.
@@ -20,12 +20,16 @@ class AuthenticationService(Protocol):
         Sends back a new Token.
 
         Throws an exception, if the cookie is empty or the transmitted sessionId is wrong.
+
+        Authentication data must be set beforehand via set_authentication.
         """
 
-    def authenticate_only_refresh_id(self, cookies: Dict[str, str]) -> int:
+    def authenticate_only_refresh_id(self) -> int:
         """
         Analogous to authenticate, but works without the token.
         Therefore returns only the user id.
+
+        Authentication data must be set beforehand via set_authentication.
         """
 
     def hash(self, toHash: str) -> str:
@@ -55,4 +59,11 @@ class AuthenticationService(Protocol):
     def verify_authorization_token(self, user_id: int, token: str) -> bool:
         """
         Checks the user_id with the token, returns true if okay else false.
+        """
+
+    def clear_all_sessions(self) -> None:
+        """
+        Clears all sessions of the user.
+
+        Authentication data must be set beforehand via set_authentication.
         """

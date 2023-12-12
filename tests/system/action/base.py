@@ -3,6 +3,8 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Union, cast
 from unittest.mock import MagicMock
 
+import pytest
+
 from openslides_backend.action.action_worker import gunicorn_post_request
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.action_type import ActionType
@@ -16,6 +18,7 @@ from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
+from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import FullQualifiedId
@@ -454,3 +457,11 @@ class BaseActionTestCase(BaseSystemTestCase):
         else:
             assert informations
             self.assertEqual(last_information[fqid], information)
+
+    def assert_logged_in(self) -> None:
+        self.auth.authenticate()  # assert that no exception is thrown
+
+    def assert_logged_out(self) -> None:
+        with pytest.raises(AuthenticationException):
+            self.auth.authenticate()
+        BaseSystemTestCase.auth_data = None

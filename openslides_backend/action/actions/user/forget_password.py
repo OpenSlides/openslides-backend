@@ -72,7 +72,7 @@ The link will be valid for 10 minutes."""
                     for user in results.values():
                         if user.get("saml_id"):
                             raise ActionException(
-                                f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+                                f"user {user['saml_id']} is a Single Sign On user and has no local OpenSlides password."
                             )
                         username = user["username"]
                         ok, errors = EmailUtils.send_email_safe(
