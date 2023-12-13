@@ -1,4 +1,4 @@
-Babel==2.13.1
+Babel==2.14.0
 bleach[css]==6.1.0
 dependency_injector==4.41.0
 fastjsonschema==2.19.0
