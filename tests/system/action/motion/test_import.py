@@ -484,7 +484,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.assert_error_for_changed_property(
             response,
             ["submitters_username"],
-            ["Error: Couldn't find submitter anymore"],
+            ["Error: Couldn't find submitter anymore: updatedUser"],
         )
 
     def test_import_create_changed_submitter_name(self) -> None:
@@ -510,7 +510,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.assert_error_for_changed_property(
             response,
             ["supporters_username"],
-            ["Error: Couldn't find supporter anymore"],
+            ["Error: Couldn't find supporter anymore: updatedUser"],
         )
 
     def test_import_create_changed_supporter_name(self) -> None:
@@ -533,7 +533,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.assert_error_for_changed_property(
             response,
             ["tags"],
-            ["Error: Couldn't find tag anymore"],
+            ["Error: Couldn't find tag anymore: Tag auch"],
         )
 
     def test_import_create_changed_tag_name(self) -> None:
@@ -728,9 +728,9 @@ class MotionJsonUpload(MotionImportTestMixin):
         messages = [
             "Error: Category search didn't deliver the same result as in the preview",
             "Error: Motion block search didn't deliver the same result as in the preview",
-            "Error: Tag search didn't deliver the same result as in the preview",
-            "Error: Submitter search didn't deliver the same result as in the preview",
-            "Error: Supporter search didn't deliver the same result as in the preview",
+            "Error: Tag search didn't deliver the same result as in the preview: Got tag go, Price tag",
+            "Error: Submitter search didn't deliver the same result as in the preview: firstMeeting, multiMeeting, firstMeetingBoth, firstMeetingSubmitter",
+            "Error: Supporter search didn't deliver the same result as in the preview: multiMeetingSubmitter, firstMeetingSupporter",
         ]
         if is_update:
             single_fields.append("number")

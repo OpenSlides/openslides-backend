@@ -363,9 +363,6 @@ class MotionImport(
                 }
                 row["state"] = ImportState.ERROR
                 row["messages"].append("Error: Category could not be found anymore")
-        elif entry["category_name"].get("info") == ImportState.ERROR:
-            row["messages"].append("Error: Category could not be found anymore")
-            row["state"] = ImportState.ERROR
 
         block = self.get_value_from_union_str_object(entry.get("block"))
         if block and entry["block"].get("info") == ImportState.DONE:
@@ -388,11 +385,10 @@ class MotionImport(
                 }
                 row["messages"].append("Error: Couldn't find motion block anymore")
                 row["state"] = ImportState.ERROR
-        elif entry["block"].get("info") == ImportState.ERROR:
-            row["messages"].append("Error: Couldn't find motion block anymore")
-            row["state"] = ImportState.ERROR
 
         if isinstance(entry.get("tags"), List):
+            different: List[str] = []
+            not_found: List[str] = []
             for tag_entry in entry.get("tags", []):
                 tag = self.get_value_from_union_str_object(tag_entry)
                 if tag and tag_entry.get("info") == ImportState.DONE:
@@ -405,64 +401,59 @@ class MotionImport(
                         if found_tags[0].get("id") != tag_entry["id"]:
                             tag_entry["info"] = ImportState.ERROR
                             tag_entry.pop("id")
-                            row["messages"].append(
-                                "Error: Tag search didn't deliver the same result as in the preview"
-                            )
-                            row["state"] = ImportState.ERROR
+                            different.append(tag)
                     else:
                         tag_entry["info"] = ImportState.ERROR
                         tag_entry.pop("id")
-                        row["messages"].append("Error: Couldn't find tag anymore")
-                        row["state"] = ImportState.ERROR
+                        not_found.append(tag)
+            if len(different):
+                row["messages"].append(
+                    "Error: Tag search didn't deliver the same result as in the preview: "
+                    + ", ".join(different)
+                )
+                row["state"] = ImportState.ERROR
+            if len(not_found):
+                row["messages"].append(
+                    "Error: Couldn't find tag anymore: " + ", ".join(not_found)
+                )
+                row["state"] = ImportState.ERROR
 
-        if isinstance(entry.get("submitters_username"), List):
-            for submitter_entry in entry.get("submitters_username", []):
-                submitter = self.get_value_from_union_str_object(submitter_entry)
-                if submitter and (
-                    submitter_entry.get("info") == ImportState.DONE
-                    or submitter_entry.get("info") == ImportState.GENERATED
-                ):
-                    if "id" not in submitter_entry:
-                        raise ActionException(
-                            f"Invalid JsonUpload data: A submitter entry with state '{ImportState.DONE}' or '{ImportState.GENERATED}' must have an 'id'"
-                        )
-                    found_submitters = self.username_lookup.get(submitter, [])
-                    if len(found_submitters) == 1:
-                        if found_submitters[0].get("id") != submitter_entry["id"]:
-                            submitter_entry["info"] = ImportState.ERROR
-                            submitter_entry.pop("id")
-                            row["messages"].append(
-                                "Error: Submitter search didn't deliver the same result as in the preview"
+        for fieldname in ["submitter", "supporter"]:
+            if isinstance(entry.get(f"{fieldname}s_username"), List):
+                different = []
+                not_found = []
+                for user_entry in entry.get(f"{fieldname}s_username", []):
+                    user = self.get_value_from_union_str_object(user_entry)
+                    if user and (
+                        user_entry.get("info") == ImportState.DONE
+                        or user_entry.get("info") == ImportState.GENERATED
+                    ):
+                        if "id" not in user_entry:
+                            raise ActionException(
+                                f"Invalid JsonUpload data: A {fieldname} entry with state '{ImportState.DONE}' or '{ImportState.GENERATED}' must have an 'id'"
                             )
-                            row["state"] = ImportState.ERROR
-                    else:
-                        submitter_entry["info"] = ImportState.ERROR
-                        submitter_entry.pop("id")
-                        row["messages"].append("Error: Couldn't find submitter anymore")
-                        row["state"] = ImportState.ERROR
-
-        if isinstance(entry.get("supporters_username"), List):
-            for supporter_entry in entry.get("supporters_username", []):
-                supporter = self.get_value_from_union_str_object(supporter_entry)
-                if supporter and supporter_entry.get("info") == ImportState.DONE:
-                    if "id" not in supporter_entry:
-                        raise ActionException(
-                            f"Invalid JsonUpload data: A supporter entry with state '{ImportState.DONE}' must have an 'id'"
-                        )
-                    found_supporters = self.username_lookup.get(supporter, [])
-                    if len(found_supporters) == 1:
-                        if found_supporters[0].get("id") != supporter_entry["id"]:
-                            supporter_entry["info"] = ImportState.ERROR
-                            supporter_entry.pop("id")
-                            row["messages"].append(
-                                "Error: Supporter search didn't deliver the same result as in the preview"
-                            )
-                            row["state"] = ImportState.ERROR
-                    else:
-                        supporter_entry["info"] = ImportState.ERROR
-                        supporter_entry.pop("id")
-                        row["messages"].append("Error: Couldn't find supporter anymore")
-                        row["state"] = ImportState.ERROR
+                        found_users = self.username_lookup.get(user, [])
+                        if len(found_users) == 1:
+                            if found_users[0].get("id") != user_entry["id"]:
+                                user_entry["info"] = ImportState.ERROR
+                                user_entry.pop("id")
+                                different.append(user)
+                        else:
+                            user_entry["info"] = ImportState.ERROR
+                            user_entry.pop("id")
+                            not_found.append(user)
+                if len(different):
+                    row["messages"].append(
+                        f"Error: {fieldname[0].capitalize() + fieldname[1:]} search didn't deliver the same result as in the preview: "
+                        + ", ".join(different)
+                    )
+                    row["state"] = ImportState.ERROR
+                if len(not_found):
+                    row["messages"].append(
+                        f"Error: Couldn't find {fieldname} anymore: "
+                        + ", ".join(not_found)
+                    )
+                    row["state"] = ImportState.ERROR
 
         row["messages"] = list(set(row["messages"]))
 
