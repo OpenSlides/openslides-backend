@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - 'feature/**'
+  merge_group:
+    types: [checks_requested]
 
 env:
   PYTHON_VERSION: 3.10.x
