@@ -59,7 +59,7 @@ class UserForgetPassword(BaseActionTestCase):
             )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            "user 111 is a Single Sign On user and has no local OpenSlides password.",
             response.json["message"],
         )
 

@@ -49,6 +49,9 @@ class ParticipantImport(BaseActionTestCase):
 
         self.set_models(
             {
+                "organization/1": {
+                    "genders": ["male", "female", "diverse", "non-binary"]
+                },
                 "import_preview/1": self.import_preview1_data,
                 "meeting/1": {
                     "is_active_in_organization_id": 1,
@@ -149,6 +152,32 @@ class ParticipantImport(BaseActionTestCase):
         assert entry["messages"] == [
             "Error: saml_id 'testsaml' found in different id (1 instead of None)"
         ]
+
+    def test_import_gender_warning(self) -> None:
+        """Set saml_id 'testsaml' to user 1, add the import user 1 will be
+        found and the import should result in an error."""
+        self.import_preview1_data["result"]["rows"][0]["data"]["gender"] = {
+            "value": "notAGender",
+            "info": ImportState.WARNING,
+        }
+        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
+            {"info": ImportState.DONE, "value": "group1", "id": 1}
+        ]
+        self.import_preview1_data["result"]["rows"][0]["messages"] = [
+            "Gender 'notAGender' is not in the allowed gender list."
+        ]
+        self.set_models({"import_preview/1": self.import_preview1_data})
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.NEW
+        assert entry["messages"] == [
+            "Gender 'notAGender' is not in the allowed gender list."
+        ]
+        user = self.assert_model_exists(
+            "user/2", {"username": "jonny", "first_name": "Testy"}
+        )
+        assert user.get("gender") is None
 
     def test_import_error_state_done_missing_username(self) -> None:
         self.import_preview1_data["result"]["rows"][0]["data"].pop("username")
@@ -310,7 +339,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
         ]
         assert row["data"] == {
             "id": 10,
@@ -353,7 +382,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Error: saml_id 'saml_id10' found in different id (11 instead of 10)",
         ]
         assert row["data"] == {
@@ -548,7 +577,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = result["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
             "Error: user 2 not found anymore for updating user 'user2'.",
             "The group '3 group3' doesn't exist anymore.",
@@ -568,7 +597,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = result["rows"][1]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "The group '3 group3' doesn't exist anymore.",
             "Error in groups: No valid group found inside the pre-checked groups from import, see warnings.",
         ]
@@ -602,7 +631,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = result["rows"][3]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
         ]
         assert row["data"] == {
@@ -615,7 +644,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = result["rows"][4]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
             "Error: saml_id 'new_saml6' found in different id (12 instead of None)",
         ]
@@ -623,6 +652,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "username": {"info": ImportState.GENERATED, "value": "new_saml6"},
             "saml_id": {"info": ImportState.ERROR, "value": "new_saml6"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
+            "is_present": {"info": "done", "value": True},
             "groups": [
                 {"info": "warning", "value": "group4"},
                 {"id": 1, "info": "generated", "value": "group1"},
@@ -660,7 +690,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
             "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
             "In contrast to preview you may import field(s) 'first_name, saml_id, username'",
@@ -719,7 +749,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
             "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
         ]
@@ -775,7 +805,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove default_password and forbid changing your OpenSlides password.",
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
             "Error: In contrast to preview you may not import field(s) 'vote_weight'",
         ]

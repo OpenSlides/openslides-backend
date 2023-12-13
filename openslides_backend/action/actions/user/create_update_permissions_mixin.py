@@ -22,7 +22,7 @@ from openslides_backend.shared.interfaces.services import Services
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
-from .user_mixin import UserMixin
+from .user_mixins import UserMixin
 
 
 class PermissionVarStore:
