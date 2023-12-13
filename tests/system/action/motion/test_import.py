@@ -289,6 +289,41 @@ class MotionJsonUpload(MotionImportTestMixin):
             == ImportState.ERROR
         )
 
+    def test_import_database_corrupt(self) -> None:
+        self.set_up_models_with_import_previews_and_get_next_motion_id(
+            [
+                {
+                    "number": {"info": ImportState.DONE, "id": 101, "value": "NUM01"},
+                    "submitters_username": [
+                        {"info": ImportState.DONE, "id": 12345678, "value": "bob"}
+                    ],
+                    "id": 101,
+                }
+            ]
+        )
+        self.set_models(
+            {
+                "user/12345678": {
+                    "username": "bob",
+                    "meeting_ids": [42],
+                    "meeting_user_ids": [12345678],
+                },
+                "meeting_user/12345678": {},
+                "user/123456789": {
+                    "username": "bob",
+                    "meeting_ids": [42],
+                    "meeting_user_ids": [123456789],
+                },
+                "meeting_user/123456789": {},
+            }
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_status_code(response, 400)
+        assert (
+            "Database corrupt: Found multiple users with the username bob."
+            in response.json["message"]
+        )
+
     def test_import_abort(self) -> None:
         next_id = self.set_up_models_with_import_previews_and_get_next_motion_id()
         response = self.request("motion.import", {"id": 2, "import": False})

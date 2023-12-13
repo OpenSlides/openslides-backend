@@ -438,6 +438,10 @@ class MotionImport(
                                 user_entry["info"] = ImportState.ERROR
                                 user_entry.pop("id")
                                 different.append(user)
+                        elif len(found_users) > 1:
+                            raise ActionException(
+                                f"Database corrupt: Found multiple users with the username {user}."
+                            )
                         else:
                             user_entry["info"] = ImportState.ERROR
                             user_entry.pop("id")
