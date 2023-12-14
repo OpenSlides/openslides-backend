@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ....models.models import User
+from ....shared.exceptions import ActionException
 from ...mixins.import_mixins import (
     ImportState,
     JsonUploadMixin,
@@ -11,7 +12,7 @@ from ...mixins.import_mixins import (
 )
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
-from .user_mixin import UsernameMixin
+from .user_mixins import UsernameMixin, check_gender_helper
 
 
 class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
@@ -25,7 +26,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
         {"property": "default_password", "type": "string", "is_object": True},
         {"property": "email", "type": "string"},
         {"property": "username", "type": "string", "is_object": True},
-        {"property": "gender", "type": "string"},
+        {"property": "gender", "type": "string", "is_object": True},
         {"property": "pronoun", "type": "string"},
         {"property": "saml_id", "type": "string", "is_object": True},
     ]
@@ -255,10 +256,19 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
             ):
                 entry["default_password"] = {"value": "", "info": ImportState.WARNING}
                 messages.append(
-                    "Will remove default_password and forbid changing your OpenSlides password."
+                    f"Because this {self.import_name} is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
                 )
         else:
             self.handle_default_password(entry)
+
+        if gender := entry.get("gender"):
+            try:
+                check_gender_helper(self.datastore, entry)
+                entry["gender"] = {"info": ImportState.DONE, "value": gender}
+            except ActionException:
+                entry["gender"] = {"info": ImportState.WARNING, "value": gender}
+                messages.append(f"Gender '{gender}' is not in the allowed gender list.")
+
         return {"state": self.row_state, "messages": messages, "data": entry}
 
     def create_usernames(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

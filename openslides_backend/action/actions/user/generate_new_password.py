@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from ....action.generics.update import UpdateAction
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -7,14 +8,16 @@ from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .set_password import UserSetPasswordMixin
+from .password_mixins import ClearSessionsMixin, SetPasswordMixin
 
 
 @register_action("user.generate_new_password")
 class UserGenerateNewPassword(
-    UserSetPasswordMixin,
+    SetPasswordMixin,
     CheckForArchivedMeetingMixin,
     UserScopeMixin,
+    ClearSessionsMixin,
+    UpdateAction,
 ):
     model = User()
     schema = DefaultSchema(User()).get_update_schema()
@@ -29,4 +32,5 @@ class UserGenerateNewPassword(
         """
         instance["password"] = get_random_password()
         instance["set_as_default"] = True
-        return super().update_instance(instance)
+        self.set_password(instance)
+        return instance

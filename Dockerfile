@@ -1,4 +1,4 @@
-FROM python:3.10.12-slim-buster
+FROM python:3.10.13-slim-bookworm
 
 RUN apt-get -y update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y curl ncat git mime-support gcc libc-dev libpq-dev libmagic1
@@ -6,7 +6,7 @@ RUN apt-get -y update && apt-get -y upgrade && \
 WORKDIR /app
 
 COPY requirements/ requirements/
-RUN . requirements/export_datastore_commit.sh && pip install --no-cache-dir --requirement requirements/requirements_production.txt
+RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/requirements_production.txt
 
 RUN adduser --system --no-create-home appuser
 USER appuser

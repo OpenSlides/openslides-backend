@@ -5,7 +5,7 @@ from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_mixin import UpdateHistoryMixin, UserMixin, check_gender_helper
+from .user_mixins import UpdateHistoryMixin, UserMixin, check_gender_helper
 
 
 @register_action("user.update_self")

@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, Optional
 
 from ....models.models import User
@@ -12,8 +13,8 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionResultElement
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .password_mixin import PasswordMixin
-from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
+from .password_mixins import SetPasswordMixin
+from .user_mixins import LimitOfUserMixin, UserMixin, UsernameMixin, check_gender_helper
 
 
 @register_action("user.create")
@@ -21,7 +22,7 @@ class UserCreate(
     EmailCheckMixin,
     CreateAction,
     CreateUpdatePermissionsMixin,
-    PasswordMixin,
+    SetPasswordMixin,
     LimitOfUserMixin,
     UsernameMixin,
 ):
@@ -75,6 +76,8 @@ class UserCreate(
                 if not (instance.get("first_name") or instance.get("last_name")):
                     raise ActionException("Need username or first_name or last_name")
                 instance["username"] = self.generate_username(instance)
+        elif re.search(r"\s", instance["username"]):
+            raise ActionException("Username may not contain spaces")
         instance = super().update_instance(instance)
         if saml_id:
             instance["can_change_own_password"] = False
@@ -86,7 +89,7 @@ class UserCreate(
         else:
             if not instance.get("default_password"):
                 instance["default_password"] = get_random_password()
-            instance = self.set_password(instance)
+            self.reset_password(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
         check_gender_helper(self.datastore, instance)
         return instance

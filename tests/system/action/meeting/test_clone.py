@@ -1693,16 +1693,15 @@ class MeetingClone(BaseActionTestCase):
 
     def test_with_import_preview(self) -> None:
         """import_preview shouldn't be cloned"""
-        aw_name = "test import_preview"
         self.test_models["import_preview/1"] = {
-            "name": aw_name,
+            "name": "topic",
             "state": "done",
             "created": round(time() - 3),
         }
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("import_preview/1", {"name": aw_name})
+        self.assert_model_exists("import_preview/1", {"name": "topic"})
         self.assert_model_not_exists("import_preview/2")
 
     def test_clone_with_2_existing_meetings(self) -> None:

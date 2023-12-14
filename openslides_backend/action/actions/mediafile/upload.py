@@ -2,9 +2,11 @@ import base64
 import mimetypes
 from io import BytesIO
 from time import time
-from typing import Any, Dict, List, Optional, TypedDict, cast
+from typing import Any, Dict, List, TypedDict, cast
 
 import magic as python_magic
+from pygments.lexers import guess_lexer, guess_lexer_for_filename
+from pygments.util import ClassNotFound
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
@@ -89,21 +91,35 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         filename_ = instance.get("filename", "")
         file_ = instance.pop("file")
         decoded_file = base64.b64decode(file_)
-        mimetype_ = python_magic.from_buffer(decoded_file, mime=True)
-        if mimetype_ is None:
+        use_mimetype, _ = mimetypes.guess_type(filename_)
+        if use_mimetype is None:
             raise ActionException(f"Cannot guess mimetype for {filename_}.")
-        use_mimetype: Optional[str] = mimetype_
-        if mimetype_ == "text/plain":
-            use_mimetype, _ = mimetypes.guess_type(filename_)
-            mismatched = (use_mimetype is None) or not use_mimetype.startswith("text/")
+        mc_mimetype = python_magic.from_buffer(decoded_file, mime=True)
+        mismatched = True
+        if use_mimetype == mc_mimetype:
+            mismatched = False
+        elif (
+            use_mimetype.startswith("text") or use_mimetype == "application.json"
+        ) and mc_mimetype.startswith("text"):
+            mismatched = False
+        elif mc_mimetype.startswith("text"):
+            try:
+                pyg_mimetypes = guess_lexer_for_filename(filename_, file_).mimetypes
+            except ClassNotFound:
+                pyg_mimetypes = guess_lexer(decoded_file).mimetypes  # type: ignore
+            if use_mimetype in pyg_mimetypes:
+                mismatched = False
+            else:
+                mismatched = use_mimetype not in pyg_mimetypes
         else:
-            possible_extensions = mimetypes.guess_all_extensions(mimetype_)
+            possible_extensions = mimetypes.guess_all_extensions(mc_mimetype)
             mismatched = not any(
                 [filename_.endswith(extension) for extension in possible_extensions]
             )
+
         if mismatched:
             raise ActionException(
-                f"{filename_} does not have a file extension that matches the determined mimetype {mimetype_}."
+                f"{filename_} does not have a file extension that matches the determined mimetype {mc_mimetype}."
             )
         instance["filesize"] = len(decoded_file)
         id_ = instance["id"]

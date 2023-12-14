@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, Optional
 
 from ....models.models import User
@@ -11,7 +12,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .user_mixin import (
+from .user_mixins import (
     LimitOfUserMixin,
     UpdateHistoryMixin,
     UserMixin,
@@ -82,6 +83,9 @@ class UserUpdate(
             instance["can_change_own_password"] = False
             instance["default_password"] = ""
             instance["password"] = ""
+
+        if instance.get("username") and re.search(r"\s", instance["username"]):
+            raise ActionException("Username may not contain spaces")
 
         if (
             instance["id"] == self.user_id

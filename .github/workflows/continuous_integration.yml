@@ -68,7 +68,7 @@ jobs:
     
     - name: Checkout datastore commit
       working-directory: openslides-datastore-service
-      run: . ../openslides-backend/requirements/export_datastore_commit.sh git checkout $DATASTORE_COMMIT_HASH
+      run: . ../openslides-backend/requirements/export_service_commits.sh git checkout $DATASTORE_COMMIT_HASH
 
     - name: Clone vote service
       uses: actions/checkout@v4
@@ -95,12 +95,12 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install requirements
-      run: . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
+      run: . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
 
     - name: Check black
       if: always()
@@ -128,12 +128,12 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install requirements
-      run: . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
+      run: . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
 
     - name: Validate models.yml
       if: always()

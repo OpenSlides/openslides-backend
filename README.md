@@ -58,7 +58,7 @@ To setup and local development version run
 
     $ python -m venv .virtualenv
     $ source .virtualenv/bin/activate
-    $ . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
+    $ . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
 
 To start it run
 
@@ -103,7 +103,7 @@ The action component listens to port 9002. The presenter component listens to po
 
 * `OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT`
 
-  Seconds after which an action is delegated to an action worker. `-1` deactivates action workers all together. Default: `1.0`
+  Seconds after which an action is delegated to an action worker. `-1` represents an infinite timeout. `-2` deactivates action workers and local threading alltogether. Default: `1`
 
 ### Development
 
