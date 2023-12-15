@@ -153,7 +153,7 @@ organization:
   committee_ids:
     type: relation-list
     restriction_mode: B
-    to: committee/organization_id
+    sql: (select array_agg(c.id) from committeeT c) as committee_ids
   active_meeting_ids:
     type: relation-list
     restriction_mode: B
@@ -175,11 +175,10 @@ organization:
     required: true
     restriction_mode: A
     to: theme/theme_for_organization_id
-    reference: theme
   theme_ids:
     type: relation-list
     restriction_mode: A
-    to: theme/organization_id
+    sql: (select array_agg(t.id) from themeT t) as theme_ids
   mediafile_ids:
     type: relation-list
     to: mediafile/owner_id
@@ -641,11 +640,6 @@ theme:
     restriction_mode: A
     to: organization/theme_id
     type: relation
-  organization_id:
-    required: true
-    restriction_mode: A
-    to: organization/theme_ids
-    type: relation
 
 committee:
   id:
@@ -697,11 +691,6 @@ committee:
   organization_tag_ids:
     type: relation-list
     to: organization_tag/tagged_ids
-    restriction_mode: A
-  organization_id:
-    type: relation
-    to: organization/committee_ids
-    required: true
     restriction_mode: A
 
 meeting:

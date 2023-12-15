@@ -4,12 +4,11 @@ import re
 import string
 import sys
 from collections import defaultdict
-from copy import deepcopy
 from decimal import Decimal
 from enum import Enum
 from string import Formatter
 from textwrap import dedent
-from typing import Any, Callable, Dict, List, Tuple, TypedDict, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
 import requests
 import yaml
@@ -28,6 +27,7 @@ class SchemaZoneTexts(TypedDict, total=False):
     alter_table_final: str
     undecided: str
     final_info: str
+
 
 class SQL_Delete_Update_Options(str, Enum):
     RESTRICT = "RESTRICT"
@@ -54,7 +54,7 @@ class GenerateCodeBlocks:
     """Main work is done here by recursing the models and their fields and determine the method to use"""
 
     @classmethod
-    def generate_the_code(cls) -> Tuple[str, str, str, str, List[str]]:
+    def generate_the_code(cls) -> Tuple[str, str, str, str, str, List[str]]:
         """Development purposes: used for output at the end of the schema.sql
         to see which yml-attributes are still not handled
         Return values:
@@ -78,18 +78,18 @@ class GenerateCodeBlocks:
                 "read_only",
                 "enum",
                 "items",
-                # "to",  # will be used for creating view-fields, but also replacement for fk-reference to id
+                "to",  # will be used for creating view-fields, but also replacement for fk-reference to id
                 # "on_delete", # must have other name then the key-value-store one
                 # "equal_fields", # Seems we need, see example_transactional.sql between meeting and groups?
                 # "unique",  # still to design
             )
         )
-        missing_handled_attributes = []
         pre_code: str = ""
         table_name_code: str = ""
         view_name_code: str = ""
         alter_table_final_code: str = ""
         final_info_code: str = ""
+        missing_handled_attributes = []
 
         for table_name, fields in MODELS.items():
             if table_name == "_migration_index":
@@ -206,57 +206,108 @@ class GenerateCodeBlocks:
     def get_relation_type(
         cls, table_name: str, fname: str, fdata: Dict[str, Any], type_: str
     ) -> SchemaZoneTexts:
-        text: SchemaZoneTexts = cls.get_schema_simple_types(
-            table_name, fname, fdata, "number"
+        text: SchemaZoneTexts = {}
+        (
+            foreign_table,
+            foreign_column,
+            foreign_field,
+            ref_column,
+        ) = ModelsHelper.get_definitions_from_foreign(
+            fdata.get("to"), fdata.get("reference")
         )
-        foreign_table, fk_columns = Helper.get_foreign_key_table_column(fdata)
-        initially_deferred = ModelsHelper.is_fk_initially_deferred(
-            table_name, foreign_table
+        final_info, error = Helper.check_relation_definitions(
+            table_name, fname, fdata, foreign_table, foreign_column, foreign_field
         )
-        text["alter_table_final"] = Helper.get_foreign_key_table_constraint(
-            table_name, foreign_table, fname, fk_columns, initially_deferred
-        )
-        # info
-        foreign_table, foreign_column, foreign_field = ModelsHelper.get_field_definition_from_to(fdata.get("to"))
-        if fdata['type'] == "relation" and not fdata.get('sql') and foreign_field['type'] == "relation" and not foreign_field.get('sql'):
-             text["final_info"] = "******* 1:1 without sql:"
-        else:
-            text["final_info"] = ""
-        text["final_info"] += f"{table_name}.{fname}: Type: {fdata['type']} -> {foreign_table}.{foreign_column}: Type: {foreign_field['type']}, Required:{foreign_field.get('required', '-')} SQL: {bool(foreign_field.get('sql'))}\n"
 
+        if not error:
+            if result := Helper.generate_field_view_or_nothing(fdata, foreign_field):
+                text.update(
+                    cls.get_schema_simple_types(table_name, fname, fdata, "number")
+                )
+                initially_deferred = ModelsHelper.is_fk_initially_deferred(
+                    table_name, foreign_table
+                )
+                text["alter_table_final"] = Helper.get_foreign_key_table_constraint(
+                    table_name, foreign_table, fname, ref_column, initially_deferred
+                )
+                final_info = "FIELD " + final_info
+            elif result is False:
+                if sql := fdata.get("sql", ""):
+                    text["view"] = sql + ",\n"
+                else:
+                    text["view"] = cls.get_sql_for_relation_1_1(
+                        table_name, fname, ref_column, foreign_table, foreign_column
+                    )
+                final_info = "SQL " + final_info
+            else:
+                final_info = "NOTHING " + final_info
+        text["final_info"] = final_info
         return text
 
     @classmethod
-    def get_relation_list_n_1_type(
-        cls, table_name: str, fname: str, ref_column: str, foreign_table: str, foreign_column: str, foreign_field: Dict[str, Any]
-    ) -> SchemaZoneTexts:
-        """
-        Fields in view, values builded by SQL
-        """
+    def get_sql_for_relation_1_1(
+        cls,
+        table_name: str,
+        fname: str,
+        ref_column: str,
+        foreign_table: str,
+        foreign_column: str,
+    ) -> str:
         table_letter = Helper.get_table_letter(table_name)
         letters = [table_letter]
         foreign_letter = Helper.get_table_letter(foreign_table, letters)
         foreign_table = Helper.get_table_name(foreign_table)
-        return f"(select array_agg({foreign_letter}.{ref_column}) from {foreign_table} {foreign_letter} where {foreign_letter}.{foreign_column} = {table_letter}.{ref_column}) as {fname},\n"
+        return f"(select {foreign_letter}.{ref_column} from {foreign_table} {foreign_letter} where {foreign_letter}.{foreign_column} = {table_letter}.{ref_column}) as {fname},\n"
 
     @classmethod
     def get_relation_list_type(
         cls, table_name: str, fname: str, fdata: Dict[str, Any], type_: str
     ) -> SchemaZoneTexts:
-        """
-        Infos to get:
-          - n:1 this is always a view, tried to be self generated
-          - n:m generate an intermediate table with id
-          - required own key, required one of the referenced table to the own
-          - reference
-        """
         text: SchemaZoneTexts = {}
-        foreign_table, foreign_column, foreign_field = ModelsHelper.get_field_definition_from_to(fdata.get("to"))
-        if foreign_field["type"] == "relation" and not foreign_field.get("sql"):
-            _, ref_column = Helper.get_foreign_key_table_column(fdata)
-            text["view"] = cls.get_relation_list_n_1_type(table_name, fname, ref_column, foreign_table, foreign_column, foreign_field)
-        text["final_info"] = f"{table_name}.{fname}: Type: {fdata['type']} -> {foreign_table}.{foreign_column}: Type: {foreign_field['type']}, Required:{foreign_field.get('required', '-')} SQL: {bool(foreign_field.get('sql'))}\n"
+        (
+            foreign_table,
+            foreign_column,
+            foreign_field,
+            ref_column,
+        ) = ModelsHelper.get_definitions_from_foreign(
+            fdata.get("to"), fdata.get("reference")
+        )
+        final_info, error = Helper.check_relation_definitions(
+            table_name, fname, fdata, foreign_table, foreign_column, foreign_field
+        )
+
+        if not error:
+            if result := Helper.generate_field_view_or_nothing(fdata, foreign_field):
+                raise Exception(
+                    f"{table_name}.{fname} is a relation-list, which can't be generated as relation field"
+                )
+            elif result is False:
+                if sql := fdata.get("sql", ""):
+                    text["view"] = sql + ",\n"
+                else:
+                    text["view"] = cls.get_sql_for_relation_n_1(
+                        table_name, fname, ref_column, foreign_table, foreign_column
+                    )
+                final_info = "SQL " + final_info
+            else:
+                final_info = "NOTHING " + final_info
+        text["final_info"] = final_info
         return text
+
+    @classmethod
+    def get_sql_for_relation_n_1(
+        cls,
+        table_name: str,
+        fname: str,
+        ref_column: str,
+        foreign_table: str,
+        foreign_column: str,
+    ) -> str:
+        table_letter = Helper.get_table_letter(table_name)
+        letters = [table_letter]
+        foreign_letter = Helper.get_table_letter(foreign_table, letters)
+        foreign_table = Helper.get_table_name(foreign_table)
+        return f"(select array_agg({foreign_letter}.{ref_column}) from {foreign_table} {foreign_letter} where {foreign_letter}.{foreign_column} = {table_letter}.{ref_column}) as {fname},\n"
 
 
 class Helper:
@@ -300,15 +351,17 @@ class Helper:
     def get_table_letter(table_name: str, letters: List[str] = []) -> str:
         letter = Helper.get_table_name(table_name)[0]
         count = -1
-        l = letter
+        start_letter = letter
         while True:
             if letter in letters:
                 count += 1
                 if count == 0:
-                    l = "".join([part[0] for part in table_name.split("_")])[:2]
-                    letter = l
+                    start_letter = "".join([part[0] for part in table_name.split("_")])[
+                        :2
+                    ]
+                    letter = start_letter
                 else:
-                    letter = l + str(count)
+                    letter = start_letter + str(count)
             else:
                 return letter
 
@@ -408,8 +461,10 @@ class Helper:
         return ""
 
     @staticmethod
-    def get_foreign_key_table_column(field: Dict[str, Any]) -> Tuple[str, str]:
-        if reference := field.get("reference"):
+    def get_foreign_key_table_column(
+        to: Optional[str], reference: Optional[str]
+    ) -> Tuple[str, str]:
+        if reference:
             result = Helper.ref_compiled.search(reference)
             if result is None:
                 return reference.strip(), "id"
@@ -420,10 +475,10 @@ class Helper:
             else:
                 cols = "id"
             return re_groups[0], cols
-        elif to := field.get("to"):
+        elif to:
             return to.split("/")[0], "id"
         else:
-            raise Exception("Relation field without reference and to")
+            raise Exception("Relation field without reference or to")
 
     @staticmethod
     def get_initials(
@@ -470,6 +525,123 @@ class Helper:
             ] = f"comment on column {Helper.get_table_name(table_name)}.{fname} is '{comment}';\n"
         return subst, text
 
+    @staticmethod
+    def get_cardinality(field: Dict[str, Any]) -> Tuple[str, bool]:
+        """
+        Returns string with cardinality string (1, 1G, n or nG= Cardinality, G=Generatic-relation, r=reference, t=to, s=sql, R=required
+        """
+        if field:
+            required = bool(field.get("required"))
+            sql = "sql" in field
+            sql_empty = field.get("sql") == ""
+            to = bool(field.get("to"))
+            reference = bool(field.get("reference"))
+
+            # general rules of inconsistent field descriptions on field level
+            error = (
+                (required and sql)
+                or (required and not (to or reference))
+                or (not required and sql_empty and not to)
+                or not (required or sql or to or reference)
+            )
+            if field["type"] == "relation":
+                result = "1"
+            elif field["type"] == "relation-list":
+                if field.get("required"):
+                    error = True
+                result = "n"
+            elif field["type"] == "generic-relation":
+                result = "1G"
+            elif field["type"] == "generic-relation-list":
+                if field.get("required"):
+                    error = True
+                result = "nG"
+            else:
+                raise Exception(
+                    f"Not implemented type {field['type']} in method get_cardinality found!"
+                )
+            if field.get("reference"):
+                result += "r"
+            if field.get("to"):
+                result += "t"
+            if "sql" in field:
+                result += "s"
+                if field["sql"]:
+                    result += "+"
+                else:
+                    result += "-"
+            if field.get("required"):
+                result += "R"
+        else:
+            result = ""
+            error = False
+        return result, error
+
+    @staticmethod
+    def check_relation_definitions(
+        table_name: str,
+        fname: str,
+        table_field: Dict[str, Any],
+        foreign_table: str,
+        foreign_column: str,
+        foreign_field: Dict[str, Any],
+    ) -> Tuple[str, bool]:
+        error = False
+        text = ""
+        own_c, tmp_error = Helper.get_cardinality(table_field)
+        error = error or tmp_error
+        foreign_c, tmp_error = Helper.get_cardinality(foreign_field)
+        error = error or tmp_error
+
+        if table_field["type"] == "relation":
+            if foreign_field.get("type") == "relation":
+                if (("sql" in table_field) == ("sql" in foreign_field)) and (
+                    ("required" in table_field) == ("required" in foreign_field)
+                ):
+                    error = True
+        elif table_field["type"] == "relation_list":
+            if foreign_field.get("type") == "relation":
+                if (
+                    not (table_field.get("sql")) or (foreign_field.get("to"))
+                ) or table_field["required"]:
+                    error = True
+        elif table_field["type"] == "generic_relation":
+            error = True
+        elif table_field["type"] == "generic_relation_list":
+            error = True
+        if error:
+            text = "***"
+        text += f"{own_c}:{foreign_c} => {table_name}.{fname}:-> {foreign_table}.{foreign_column}\n"
+        return text, error
+
+    @staticmethod
+    def generate_field_view_or_nothing(
+        own_field: Dict[str, Any], foreign_field: Dict[str, Any]
+    ) -> Optional[bool]:
+        """Decides, whether a relation field will be physical, view field or nothing
+        Returns True for a field, False for an sql-field in view and None for no field at all
+        """
+        list_relations = ("relation-list", "generic-relation-list")
+        if (
+            own_field.get("required")
+            or "sql" in foreign_field
+            or (
+                foreign_field.get("type") in list_relations
+                and own_field.get("type") not in list_relations
+            )
+        ):
+            return True
+        if (
+            foreign_field.get("required")
+            or "sql" in own_field
+            or (
+                foreign_field.get("type") not in list_relations
+                and own_field.get("type") in list_relations
+            )
+        ):
+            return False
+        return None
+
 
 class ModelsHelper:
     @staticmethod
@@ -482,7 +654,9 @@ class ModelsHelper:
         def _first_to_second(t1: str, t2: str) -> bool:
             for field in MODELS[t1].values():
                 if field.get("required") and field["type"].startswith("relation"):
-                    ftable, _ = Helper.get_foreign_key_table_column(field)
+                    ftable, _ = Helper.get_foreign_key_table_column(
+                        field.get("to"), field.get("reference")
+                    )
                     if ftable == t2:
                         return True
             return False
@@ -490,6 +664,21 @@ class ModelsHelper:
         if _first_to_second(own_table, foreign_table):
             return _first_to_second(foreign_table, own_table)
         return False
+
+    @staticmethod
+    def get_definitions_from_foreign(
+        to: Optional[str], reference: Optional[str]
+    ) -> Tuple[str, str, Dict[str, Any], str]:
+        tname = ""
+        fname = ""
+        tfield: Dict[str, Any] = {}
+        ref_column = ""
+        if to:
+            tname, fname, tfield = ModelsHelper.get_field_definition_from_to(to)
+            ref_column = "id"
+        if reference:
+            tname, ref_column = Helper.get_foreign_key_table_column(to, reference)
+        return tname, fname, tfield, ref_column
 
     @staticmethod
     def get_field_definition_from_to(to: str) -> Tuple[str, str, Dict[str, Any]]:
@@ -549,7 +738,10 @@ FIELD_TYPES: Dict[str, Dict[str, Any]] = {
     },
     "text": {"pg_type": "text", "method": GenerateCodeBlocks.get_schema_simple_types},
     "relation": {"pg_type": "integer", "method": GenerateCodeBlocks.get_relation_type},
-    "relation-list": {"pg_type": "integer[]", "method": GenerateCodeBlocks.get_relation_list_type},
+    "relation-list": {
+        "pg_type": "integer[]",
+        "method": GenerateCodeBlocks.get_relation_list_type,
+    },
     "generic-relation": {"pg_type": "varchar(100)", "method": ""},
     "generic-relation-list": {"pg_type": "varchar(100)[]", "method": ""},
     # special defined
@@ -615,9 +807,7 @@ def main() -> None:
         dest.write(view_name_code)
         dest.write("-- Alter table relations\n")
         dest.write(alter_table_code)
-        dest.write(
-            f"\n/*   Relation-list infos \n{final_info_code}\n*/"
-        )
+        dest.write(f"\n/*   Relation-list infos \n{final_info_code}\n*/")
         dest.write(
             f"\n/*   Missing attribute handling for {', '.join(missing_handled_attributes)} */"
         )
