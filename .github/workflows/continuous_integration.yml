@@ -70,7 +70,7 @@ jobs:
     
     - name: Checkout datastore commit
       working-directory: openslides-datastore-service
-      run: . ../openslides-backend/requirements/export_service_commits.sh git checkout $DATASTORE_COMMIT_HASH
+      run: . ../openslides-backend/requirements/export_service_commits.sh && git checkout $DATASTORE_COMMIT_HASH
 
     - name: Clone auth service
       uses: actions/checkout@v4
@@ -81,7 +81,7 @@ jobs:
     
     - name: Checkout auth commit
       working-directory: openslides-auth-service
-      run: . ../openslides-backend/requirements/export_service_commits.sh git checkout $AUTH_COMMIT_HASH
+      run: . ../openslides-backend/requirements/export_service_commits.sh && git checkout $AUTH_COMMIT_HASH
 
     - name: Clone vote service
       uses: actions/checkout@v4
