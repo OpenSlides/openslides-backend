@@ -2,6 +2,7 @@ from time import time
 from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock
 
+from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import AgendaItem, Meeting
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
@@ -1681,7 +1682,7 @@ class MeetingClone(BaseActionTestCase):
         aw_name = "test action_worker"
         self.test_models["action_worker/1"] = {
             "name": aw_name,
-            "state": "end",
+            "state": ActionWorkerState.END,
             "created": round(time() - 3),
             "timestamp": round(time()),
         }

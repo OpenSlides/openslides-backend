@@ -1,6 +1,7 @@
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
@@ -256,7 +257,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "action_worker/1": {
                     "name": "testcase",
-                    "state": "end",
+                    "state": ActionWorkerState.END,
                     "created": round(time() - 3),
                     "timestamp": round(time()),
                 },
