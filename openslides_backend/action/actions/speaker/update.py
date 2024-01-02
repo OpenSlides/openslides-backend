@@ -6,7 +6,7 @@ from ....models.models import Speaker
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.schema import required_id_schema
+from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -18,7 +18,7 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_update_schema(
         optional_properties=["speech_state", "meeting_user_id"],
-        additional_optional_fields={"structure_level_id": required_id_schema},
+        additional_optional_fields={"structure_level_id": optional_id_schema},
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
