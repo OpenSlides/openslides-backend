@@ -1,11 +1,9 @@
 from typing import Any, Dict, List, cast
 
-from ....models.models import ImportPreview
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.schema import required_id_schema
 from ...mixins.import_mixins import (
     ImportMixin,
     ImportRow,
@@ -13,7 +11,6 @@ from ...mixins.import_mixins import (
     Lookup,
     ResultType,
 )
-from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..agenda_item.agenda_creation import CreateActionWithAgendaItemMixin
 from ..agenda_item.update import AgendaItemUpdate
@@ -27,22 +24,14 @@ class TopicImport(ImportMixin):
     Action to import a result from the import_preview.
     """
 
-    model = ImportPreview()
-    schema = DefaultSchema(ImportPreview()).get_default_schema(
-        additional_required_fields={
-            "id": required_id_schema,
-            "import": {"type": "boolean"},
-        }
-    )
     permission = Permissions.AgendaItem.CAN_MANAGE
     import_name = "topic"
     agenda_item_fields = ["agenda_comment", "agenda_duration", "agenda_type"]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
         if not instance["import"]:
             return {}
-
-        instance = super().update_instance(instance)
 
         meeting_id = self.get_meeting_id(instance)
         self.setup_lookups(self.result.get("rows", []), meeting_id)
@@ -53,8 +42,8 @@ class TopicImport(ImportMixin):
             create_action_payload: List[Dict[str, Any]] = []
             update_action_payload: List[Dict[str, Any]] = []
             update_agenda_item_payload: List[Dict[str, Any]] = []
-            self.flatten_object_fields(["title"])
-            for row in self.rows:
+            rows = self.flatten_copied_object_fields()
+            for row in rows:
                 entry = row["data"]
                 if row["state"] == ImportState.NEW:
                     create_action_payload.append(entry)

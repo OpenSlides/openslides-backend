@@ -53,6 +53,7 @@ class MeetingImport(BaseActionTestCase):
                 "meeting": {
                     "1": {
                         "id": 1,
+                        "language": "en",
                         "name": "Test",
                         "description": "blablabla",
                         "admin_group_id": 1,
@@ -1864,7 +1865,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
         assert user["default_password"] != "admin"
-        assert self.auth.is_equals(user["default_password"], user["password"])
+        assert self.auth.is_equal(user["default_password"], user["password"])
 
     def test_without_default_password(self) -> None:
         request_data = self.create_request_data()
@@ -1875,7 +1876,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
         assert len(user["default_password"]) == 10
-        assert self.auth.is_equals(user["default_password"], user["password"])
+        assert self.auth.is_equal(user["default_password"], user["password"])
         assert "last_email_sent" not in user
         assert "last_login" not in user
 
@@ -2116,7 +2117,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.meeting must contain ['_migration_index', 'meeting'] properties",
+            "data.meeting must contain ['_migration_index'] properties",
             response.json["message"],
         )
 

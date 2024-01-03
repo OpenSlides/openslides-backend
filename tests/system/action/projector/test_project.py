@@ -411,7 +411,7 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['content_object_id', 'meeting_id', 'ids'] properties",
+            "data must contain ['meeting_id'] properties",
             response.json["message"],
         )
 

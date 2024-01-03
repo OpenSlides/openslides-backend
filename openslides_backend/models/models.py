@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "566944b1e2fa1b4b216537f3acbb3e5f"
+MODELS_YML_CHECKSUM = "d72f341534e83d6f62b306f9c7de7dc8"
 
 
 class Organization(Model):
@@ -100,7 +100,7 @@ class User(Model):
     default_number = fields.CharField()
     default_structure_level = fields.CharField()
     default_vote_weight = fields.DecimalField(
-        default="1.000000", constraints={"minimum": 0}
+        default="1.000000", constraints={"minimum": "0.000001"}
     )
     last_email_sent = fields.TimestampField()
     is_demo_user = fields.BooleanField()
@@ -151,31 +151,37 @@ class MeetingUser(Model):
     number = fields.CharField()
     structure_level = fields.CharField()
     about_me = fields.HTMLStrictField()
-    vote_weight = fields.DecimalField(constraints={"minimum": 0})
+    vote_weight = fields.DecimalField(constraints={"minimum": "0.000001"})
     user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
     meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
     personal_note_ids = fields.RelationListField(
-        to={"personal_note": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"personal_note": "meeting_user_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     speaker_ids = fields.RelationListField(
-        to={"speaker": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"speaker": "meeting_user_id"}, equal_fields="meeting_id"
     )
     supported_motion_ids = fields.RelationListField(
-        to={"motion": "supporter_meeting_user_ids"}
+        to={"motion": "supporter_meeting_user_ids"}, equal_fields="meeting_id"
     )
     motion_submitter_ids = fields.RelationListField(
-        to={"motion_submitter": "meeting_user_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"motion_submitter": "meeting_user_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     assignment_candidate_ids = fields.RelationListField(
-        to={"assignment_candidate": "meeting_user_id"}
+        to={"assignment_candidate": "meeting_user_id"}, equal_fields="meeting_id"
     )
     vote_delegated_to_id = fields.RelationField(
-        to={"meeting_user": "vote_delegations_from_ids"}
+        to={"meeting_user": "vote_delegations_from_ids"}, equal_fields="meeting_id"
     )
     vote_delegations_from_ids = fields.RelationListField(
-        to={"meeting_user": "vote_delegated_to_id"}
+        to={"meeting_user": "vote_delegated_to_id"}, equal_fields="meeting_id"
     )
-    chat_message_ids = fields.RelationListField(to={"chat_message": "meeting_user_id"})
+    chat_message_ids = fields.RelationListField(
+        to={"chat_message": "meeting_user_id"}, equal_fields="meeting_id"
+    )
     group_ids = fields.RelationListField(
         to={"group": "meeting_user_ids"}, equal_fields="meeting_id"
     )
@@ -316,7 +322,7 @@ class Meeting(Model, MeetingModelMixin):
     end_time = fields.TimestampField()
     imported_at = fields.TimestampField()
     language = fields.CharField(
-        read_only=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
+        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
     )
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
@@ -906,7 +912,9 @@ class PersonalNote(Model):
     note = fields.HTMLStrictField()
     star = fields.BooleanField()
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "personal_note_ids"}, required=True
+        to={"meeting_user": "personal_note_ids"},
+        required=True,
+        equal_fields="meeting_id",
     )
     content_object_id = fields.GenericRelationField(
         to={"motion": "personal_note_ids"}, equal_fields="meeting_id"
@@ -990,7 +998,7 @@ class ListOfSpeakers(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     content_object_id = fields.GenericRelationField(
@@ -1051,7 +1059,7 @@ class Speaker(Model):
         to={"list_of_speakers": "speaker_ids"}, required=True, equal_fields="meeting_id"
     )
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "speaker_ids"}, required=True, equal_fields="meeting_id"
+        to={"meeting_user": "speaker_ids"}, equal_fields="meeting_id"
     )
     point_of_order_category_id = fields.RelationField(
         to={"point_of_order_category": "speaker_ids"}, equal_fields="meeting_id"
@@ -1070,7 +1078,7 @@ class Topic(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     attachment_ids = fields.RelationListField(
@@ -1117,7 +1125,7 @@ class Motion(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     title = fields.CharField(required=True)
@@ -1286,7 +1294,7 @@ class MotionCommentSection(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     submitter_can_write = fields.BooleanField()
@@ -1321,7 +1329,7 @@ class MotionCategory(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     parent_id = fields.RelationField(
@@ -1349,7 +1357,7 @@ class MotionBlock(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     motion_ids = fields.RelationListField(
@@ -1481,7 +1489,7 @@ class MotionWorkflow(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     state_ids = fields.RelationListField(
@@ -1520,7 +1528,7 @@ class MotionStatuteParagraph(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     motion_ids = fields.RelationListField(
@@ -1574,7 +1582,7 @@ class Poll(Model, PollModelMixin):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     crypt_key = fields.CharField(
@@ -1682,7 +1690,7 @@ class Assignment(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     candidate_ids = fields.RelationListField(
@@ -1910,7 +1918,7 @@ class Projector(Model):
         required=True,
         read_only=True,
         constraints={
-            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     current_projection_ids = fields.RelationListField(
@@ -2116,7 +2124,9 @@ class ImportPreview(Model):
     verbose_name = "import preview"
 
     id = fields.IntegerField()
-    name = fields.CharField(required=True)
+    name = fields.CharField(
+        required=True, constraints={"enum": ["account", "participant", "topic"]}
+    )
     state = fields.CharField(
         required=True, constraints={"enum": ["warning", "error", "done"]}
     )

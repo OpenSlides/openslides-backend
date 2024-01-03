@@ -86,7 +86,7 @@ class TestExportMeeting(BasePresenterTestCase):
                 },
                 "import_preview/1": {
                     "id": 1,
-                    "name": "testcase",
+                    "name": "topic",
                     "state": "done",
                     "created": round(time()),
                 },

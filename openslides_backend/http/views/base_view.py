@@ -2,6 +2,7 @@ import inspect
 import re
 from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
 
+from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 
 from ...shared.exceptions import View400Exception
@@ -78,9 +79,10 @@ class BaseView(View):
         """
         Returns user id from authentication service using HTTP headers.
         """
-        user_id, access_token = self.services.authentication().authenticate(
-            headers, cookies
+        self.services.authentication().set_authentication(
+            headers.get(AUTHENTICATION_HEADER, ""), cookies.get(COOKIE_NAME, "")
         )
+        user_id, access_token = self.services.authentication().authenticate()
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
 

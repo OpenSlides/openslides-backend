@@ -147,4 +147,4 @@ def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool
         ["admin_group_id"],
     )
     group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
-    return meeting["admin_group_id"] in group_ids
+    return bool(group_ids) and meeting["admin_group_id"] in group_ids

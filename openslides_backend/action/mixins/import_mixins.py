@@ -1,3 +1,4 @@
+import copy
 import csv
 from collections import defaultdict
 from decimal import Decimal
@@ -7,12 +8,15 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 from typing_extensions import NotRequired, TypedDict
 
+from ...models.models import ImportPreview
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
 from ...shared.interfaces.event import Event, EventType
 from ...shared.interfaces.services import DatastoreService
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import fqid_from_collection_and_id
+from ...shared.schema import required_id_schema
+from ..util.default_schema import DefaultSchema
 from ..util.typing import ActionData, ActionResultElement
 from .singular_action_mixin import SingularActionMixin
 
@@ -66,13 +70,16 @@ class Lookup:
         self.name_to_ids: Dict[SearchFieldType, List[Dict[str, Any]]] = defaultdict(
             list
         )
-        for name, _ in name_entries:
-            self.name_to_ids[name] = []
+        for name, name_entry in name_entries:
+            if name in self.name_to_ids:
+                self.name_to_ids[name].append(name_entry)
+            else:
+                self.name_to_ids[name] = []
         self.id_to_name: Dict[int, List[SearchFieldType]] = defaultdict(list)
         or_filters: List[Filter] = []
         if "id" not in mapped_fields:
             mapped_fields.append("id")
-        if type(field) == str:
+        if type(field) is str:
             if field not in mapped_fields:
                 mapped_fields.append(field)
             if name_entries:
@@ -106,9 +113,9 @@ class Lookup:
                 if not values[0].get("id"):
                     values.append(entry)
             else:
-                if type(self.field) == str:
+                if type(self.field) is str:
                     obj = entry[self.field]
-                    if type(obj) == dict and obj.get("id"):
+                    if type(obj) is dict and obj.get("id"):
                         obj["info"] = ImportState.ERROR
                 values.append(entry)
 
@@ -116,8 +123,8 @@ class Lookup:
         if len(values := self.name_to_ids.get(name, [])) == 1:
             if (entry := values[0]).get("id"):
                 if (
-                    type(self.field) == str
-                    and type(obj := entry[self.field]) == dict
+                    type(self.field) is str
+                    and type(obj := entry[self.field]) is dict
                     and obj["info"] == ImportState.ERROR
                 ):
                     return ResultType.NOT_FOUND_ANYMORE
@@ -137,17 +144,16 @@ class Lookup:
         return None
 
     def add_item(self, entry: Dict[str, Any]) -> None:
-        if type(self.field) == str:
-            if type(key := entry[self.field]) == dict:
+        if type(self.field) is str:
+            if type(key := entry[self.field]) is dict:
                 key = key["value"]
-            self.name_to_ids[key].append(entry)
-            if entry.get("id"):
-                self.id_to_name[entry["id"]].append(entry[self.field])
         else:
             key = tuple(entry.get(f, "") for f in self.field)
+        if id_ := entry.get("id"):
+            self.id_to_name[id_].append(key)
+            self.name_to_ids[key].insert(0, entry)
+        else:
             self.name_to_ids[key].append(entry)
-            if entry.get("id"):
-                self.id_to_name[entry["id"]].append(key)
 
 
 class BaseImportJsonUpload(SingularActionMixin):
@@ -157,10 +163,10 @@ class BaseImportJsonUpload(SingularActionMixin):
     ) -> int:
         count = 0
         for col in data:
-            if type(col) == dict:
+            if type(col) is dict:
                 if col.get("info") == ImportState.WARNING:
                     count += 1
-            elif type(col) == list:
+            elif type(col) is list:
                 count += BaseImportJsonUpload.count_warnings_in_payload(col)
         return count
 
@@ -168,9 +174,9 @@ class BaseImportJsonUpload(SingularActionMixin):
     def get_value_from_union_str_object(
         field: Optional[Union[str, Dict[str, Any]]]
     ) -> Optional[str]:
-        if type(field) == dict:
+        if type(field) is dict:
             return field.get("value", "")
-        elif type(field) == str:
+        elif type(field) is str:
             return field
         else:
             return None
@@ -181,13 +187,21 @@ class ImportMixin(BaseImportJsonUpload):
     Mixin for import actions. It works together with the json_upload.
     """
 
+    model = ImportPreview()
+    schema = DefaultSchema(model).get_default_schema(
+        additional_required_fields={
+            "id": required_id_schema,
+            "import": {"type": "boolean"},
+        }
+    )
+
     import_name: str
     rows: List[ImportRow] = []
     result: Dict[str, List] = {}
     import_state = ImportState.DONE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        store_id = instance["id"]
+    def prefetch(self, action_data: ActionData) -> None:
+        store_id = cast(List[Dict[str, Any]], action_data)[0]["id"]
         import_preview = self.datastore.get(
             fqid_from_collection_and_id("import_preview", store_id),
             ["result", "state", "name"],
@@ -204,7 +218,6 @@ class ImportMixin(BaseImportJsonUpload):
         if import_preview.get("state") == ImportState.ERROR:
             raise ActionException("Error in import. Data will not be imported.")
         self.result = import_preview.get("result", {})
-        return instance
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
         return {}
@@ -215,17 +228,41 @@ class ImportMixin(BaseImportJsonUpload):
     def create_action_result_element(
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
-        return {"rows": self.result.get("rows", []), "state": self.import_state}
+        return {"rows": self.rows, "state": self.import_state}
 
-    def flatten_object_fields(self, fields: Optional[List[str]] = None) -> None:
-        """replace objects from self.rows["data"] with their values. Uses the fields, if given, otherwise all"""
-        for row in self.rows:
+    def flatten_copied_object_fields(
+        self,
+        hook_method: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None,
+    ) -> List[ImportRow]:
+        """The self.rows will be deepcopied, flattened and returned, without
+        changes on the self.rows.
+        This is necessary for using the data in the executution of actions.
+        The requests response should be given with the unchanged self.rows.
+        Parameter:
+        hook_method:
+           Method to get an entry Dict[str,Any] and return it modified
+        """
+        rows = copy.deepcopy(self.rows)
+        for row in rows:
             entry = row["data"]
-            used_list = fields if fields else entry.keys()
-            for field in used_list:
-                if field in entry:
-                    if type(dvalue := entry[field]) == dict:
-                        entry[field] = dvalue["value"]
+            if hook_method:
+                entry = hook_method(entry)
+                row["data"] = entry
+            for key, value in entry.items():
+                if isinstance(value, list):
+                    result_list = []
+                    for obj in value:
+                        if isinstance(obj, dict):
+                            if "id" in obj:
+                                result_list.append(obj["id"])
+                            else:
+                                result_list.append(obj["value"])
+                        else:
+                            result_list.append(obj)
+                    entry[key] = result_list
+                elif isinstance(dvalue := entry[key], dict):
+                    entry[key] = dvalue["value"]
+        return rows
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:
@@ -268,6 +305,7 @@ class JsonUploadMixin(BaseImportJsonUpload):
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
     import_state: ImportState
+    meeting_id: int
 
     def set_state(self, number_errors: int, number_warnings: int) -> None:
         if number_errors > 0:
@@ -281,6 +319,9 @@ class JsonUploadMixin(BaseImportJsonUpload):
         self.new_store_id = self.datastore.reserve_id(collection="import_preview")
         fqid = fqid_from_collection_and_id("import_preview", self.new_store_id)
         time_created = int(time())
+        result: Dict[str, Union[List[Dict[str, Any]], int]] = {"rows": self.rows}
+        if hasattr(self, "meeting_id"):
+            result["meeting_id"] = self.meeting_id
         self.datastore.write_without_events(
             WriteRequest(
                 events=[
@@ -290,7 +331,7 @@ class JsonUploadMixin(BaseImportJsonUpload):
                         fields={
                             "id": self.new_store_id,
                             "name": import_name,
-                            "result": {"rows": self.rows},
+                            "result": result,
                             "created": time_created,
                             "state": self.import_state,
                         },
@@ -379,93 +420,15 @@ class JsonUploadMixin(BaseImportJsonUpload):
                             f"Unknown type in conversion: type:{type_} is_object:{str(is_object)} is_list:{str(is_list)}"
                         )
         super().validate_instance(instance)
-
-
-    # The part below comes from old committee-json_upload. Look if it makes sense
-    def check_list_field(
-        self,
-        field: str,
-        entry: Dict[str, Any],
-        lookup: Lookup,
-        messages: List[str],
-        not_found_state: ImportState = ImportState.ERROR,
-    ) -> None:
-        if field in entry:
-            # check for parse error
-            if isinstance(entry[field], str):
-                entry[field] = [entry[field]]
-
-            # found_list and remove_duplicate_list are used to cut duplicates
-            found_for_duplicate_list: List[str] = []
-            remove_duplicate_list: List[str] = []
-            remove_list: List[str] = []
-            not_unique_list: List[str] = []
-            missing_list: List[str] = []
-            db_set_names: Set[str] = set()
-
-            # removed objects
-            if db_field := self.payload_db_field.get(field):
-                db_list_ids = (
-                    self.import_object_lookup.name_to_ids[self.import_object_name][
-                        0
-                    ].get(db_field, [])
-                    or []
+        if "meeting_id" in instance:
+            id_ = instance["meeting_id"]
+            meeting = self.datastore.get(
+                fqid_from_collection_and_id("meeting", id_),
+                ["id"],
+                lock_result=False,
+                raise_exception=False,
+            )
+            if not meeting:
+                raise ActionException(
+                    f"Participant import tries to use non-existent meeting {id_}"
                 )
-                db_set_names = set([lookup.id_to_name[id_] for id_ in db_list_ids])
-                new_list_names = set(entry[field])
-                remove_list = list(db_set_names - new_list_names)
-                remove_list.sort()  # necessary for test
-
-            for i, name in enumerate(entry[field]):
-                if name in found_for_duplicate_list:
-                    remove_duplicate_list.append(name)
-                    entry[field][i] = {"value": name, "info": ImportState.WARNING}
-                    continue
-
-                found_for_duplicate_list.append(name)
-                check_duplicate = lookup.check_duplicate(name)
-                if check_duplicate == ResultType.FOUND_ID:
-                    id_ = lookup.get_id_by_name(name)
-                    entry[field][i] = {
-                        "value": name,
-                        # import states signalize a new relation, not the creation of an element
-                        "info": ImportState.DONE
-                        if name in db_set_names
-                        else ImportState.NEW,
-                    }
-                    if id_:
-                        entry[field][i]["id"] = id_
-                elif check_duplicate == ResultType.FOUND_MORE_IDS:
-                    entry[field][i] = {"value": name, "info": ImportState.WARNING}
-                    not_unique_list.append(name)
-                else:
-                    entry[field][i] = {"value": name, "info": not_found_state}
-                    if not_found_state != ImportState.NEW:
-                        missing_list.append(name)
-
-            self.append_message_for_list_fields(
-                not_unique_list,
-                "Not identifiable {field}, because name not unique: [{incorrects}]",
-                field,
-                messages,
-            )
-            self.append_message_for_list_fields(
-                missing_list, "Missing {field}: [{incorrects}]", field, messages
-            )
-            self.append_message_for_list_fields(
-                remove_list, "Removed {field}: [{incorrects}]", field, messages
-            )
-            self.append_message_for_list_fields(
-                remove_duplicate_list,
-                "Removed duplicated {field}: [{incorrects}]",
-                field,
-                messages,
-            )
-
-    def append_message_for_list_fields(
-        self, list_names: List[str], template: str, field: str, messages: List[str]
-    ) -> None:
-        if list_names:
-            list_str = ", ".join(list_names)
-            object = field.replace("_", " ")[:-1] + "(s)"
-            messages.append(template.format(field=object, incorrects=list_str))

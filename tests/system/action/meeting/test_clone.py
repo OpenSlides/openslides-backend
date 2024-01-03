@@ -25,6 +25,7 @@ class MeetingClone(BaseActionTestCase):
             "committee/1": {"organization_id": 1},
             "meeting/1": {
                 "committee_id": 1,
+                "language": "en",
                 "name": "Test",
                 "default_group_id": 1,
                 "admin_group_id": 2,
@@ -119,7 +120,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("group/2", {"weight": 1})
 
-    def test_clone_with_users(self) -> None:
+    def test_clone_with_users_inc_vote_weight(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["meeting_user_ids"] = [1]
@@ -133,6 +134,7 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_id": 1,
                     "user_id": 1,
                     "group_ids": [1],
+                    "vote_weight": "1.000000",
                 },
             }
         )
@@ -158,10 +160,197 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "meeting_user/1", {"meeting_id": 1, "user_id": 1, "group_ids": [1]}
+            "meeting_user/1",
+            {
+                "meeting_id": 1,
+                "user_id": 1,
+                "group_ids": [1],
+                "vote_weight": "1.000000",
+            },
         )
         self.assert_model_exists(
-            "meeting_user/2", {"meeting_id": 2, "user_id": 1, "group_ids": [3]}
+            "meeting_user/2",
+            {
+                "meeting_id": 2,
+                "user_id": 1,
+                "group_ids": [3],
+                "vote_weight": "1.000000",
+            },
+        )
+
+    def test_clone_with_users_min_vote_weight_NN_N(self) -> None:
+        """if vote_weight and default vote weight are None, both could remain None, because
+        they are not required"""
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.set_models(
+            {
+                "user/1": {
+                    "meeting_user_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
+                },
+            }
+        )
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"user_ids": [1]})
+        self.assert_model_exists("meeting/2", {"user_ids": [1]})
+        self.assert_model_exists(
+            "user/1",
+            {
+                "meeting_user_ids": [1, 2],
+                "meeting_ids": [1, 2],
+                "committee_ids": [1],
+                "organization_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "meeting_id": 2,
+                "user_id": 1,
+                "group_ids": [3],
+                "vote_weight": None,
+            },
+        )
+
+    def test_clone_with_users_min_vote_weight_N1_N(self) -> None:
+        """vote_weight can remain None, because default_vote_weight is set greater than minimum"""
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.set_models(
+            {
+                "user/1": {
+                    "meeting_user_ids": [1],
+                    "meeting_ids": [1],
+                    "default_vote_weight": "1.000000",
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
+                },
+            }
+        )
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"user_ids": [1]})
+        self.assert_model_exists("meeting/2", {"user_ids": [1]})
+        self.assert_model_exists(
+            "user/1",
+            {
+                "meeting_user_ids": [1, 2],
+                "meeting_ids": [1, 2],
+                "committee_ids": [1],
+                "organization_id": 1,
+                "default_vote_weight": "1.000000",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "meeting_id": 2,
+                "user_id": 1,
+                "group_ids": [3],
+                "vote_weight": None,
+            },
+        )
+
+    def test_clone_with_users_min_vote_weight_0X_1(self) -> None:
+        """vote_weight set to 0: must be set to 0.000001 any way"""
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.set_models(
+            {
+                "user/1": {
+                    "meeting_user_ids": [1],
+                    "meeting_ids": [1],
+                    "default_vote_weight": "1.000000",
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
+                    "vote_weight": "0.000000",
+                },
+            }
+        )
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"user_ids": [1]})
+        self.assert_model_exists("meeting/2", {"user_ids": [1]})
+        self.assert_model_exists(
+            "user/1",
+            {
+                "meeting_user_ids": [1, 2],
+                "meeting_ids": [1, 2],
+                "committee_ids": [1],
+                "organization_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "meeting_id": 2,
+                "user_id": 1,
+                "group_ids": [3],
+                "vote_weight": "0.000001",
+            },
+        )
+
+    def test_clone_with_users_min_vote_weight_N0_1(self) -> None:
+        """vote_weight None, default_vote_weight 0, must be set to 0.000001"""
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["meeting_user_ids"] = [1]
+        self.test_models["group/1"]["meeting_user_ids"] = [1]
+        self.set_models(
+            {
+                "user/1": {
+                    "meeting_user_ids": [1],
+                    "meeting_ids": [1],
+                    "default_vote_weight": "0.000000",
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
+                },
+            }
+        )
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"user_ids": [1]})
+        self.assert_model_exists("meeting/2", {"user_ids": [1]})
+        self.assert_model_exists(
+            "user/1",
+            {
+                "meeting_user_ids": [1, 2],
+                "meeting_ids": [1, 2],
+                "committee_ids": [1],
+                "organization_id": 1,
+                "default_vote_weight": "0.000000",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {
+                "meeting_id": 2,
+                "user_id": 1,
+                "group_ids": [3],
+                "vote_weight": "0.000001",
+            },
         )
 
     def test_clone_with_ex_users(self) -> None:
@@ -1504,16 +1693,15 @@ class MeetingClone(BaseActionTestCase):
 
     def test_with_import_preview(self) -> None:
         """import_preview shouldn't be cloned"""
-        aw_name = "test import_preview"
         self.test_models["import_preview/1"] = {
-            "name": aw_name,
+            "name": "topic",
             "state": "done",
             "created": round(time() - 3),
         }
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("import_preview/1", {"name": aw_name})
+        self.assert_model_exists("import_preview/1", {"name": "topic"})
         self.assert_model_not_exists("import_preview/2")
 
     def test_clone_with_2_existing_meetings(self) -> None:

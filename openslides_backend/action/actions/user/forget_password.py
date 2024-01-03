@@ -36,12 +36,12 @@ class UserForgetPassword(UpdateAction):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         self.PW_FORGET_EMAIL_TEMPLATE = _(
-            """You are receiving this email because you have requested a new password for your OpenSlides-account.
+            """You are receiving this email because you have requested a new password for your OpenSlides account.
 
 Please open the following link and choose a new password:
 {url}/login/forget-password-confirm?user_id={user_id}&token={token}
 
-For completeness your username: {username}"""
+The link will be valid for 10 minutes."""
         )
         self.PW_FORGET_EMAIL_SUBJECT = _("Reset your OpenSlides password")
         for instance in action_data:
@@ -72,14 +72,15 @@ For completeness your username: {username}"""
                     for user in results.values():
                         if user.get("saml_id"):
                             raise ActionException(
-                                f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+                                f"user {user['saml_id']} is a Single Sign On user and has no local OpenSlides password."
                             )
+                        username = user["username"]
                         ok, errors = EmailUtils.send_email_safe(
                             mail_client,
                             self.logger,
                             EmailSettings.default_from_email,
                             email,
-                            self.PW_FORGET_EMAIL_SUBJECT,
+                            self.PW_FORGET_EMAIL_SUBJECT + f": {username}",
                             self.get_email_body(
                                 user["id"],
                                 self.get_token(user["id"], email),

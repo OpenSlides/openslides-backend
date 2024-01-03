@@ -11,7 +11,6 @@ class MeetingUserCreate(BaseActionTestCase):
                     "committee_id": 1,
                     "group_ids": [21],
                 },
-                "personal_note/11": {"star": True, "meeting_id": 10},
                 "group/21": {"meeting_id": 10},
             }
         )
@@ -23,7 +22,6 @@ class MeetingUserCreate(BaseActionTestCase):
             "structure_level": "A",
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
-            "personal_note_ids": [11],
             "group_ids": [21],
         }
         response = self.request("meeting_user.create", test_dict)

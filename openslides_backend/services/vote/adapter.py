@@ -2,14 +2,14 @@ from typing import Any, Dict, Optional
 
 import requests
 import simplejson as json
-from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 
 from ...shared.exceptions import VoteServiceException
 from ...shared.interfaces.logging import LoggingModule
+from ..shared.authenticated_service import AuthenticatedService
 from .interface import VoteService
 
 
-class VoteAdapter(VoteService):
+class VoteAdapter(VoteService, AuthenticatedService):
     """
     Adapter to connect to the vote service.
     """
@@ -46,21 +46,15 @@ class VoteAdapter(VoteService):
                 data=payload_json,
                 headers={
                     "Content-Type": "application/json",
-                    AUTHENTICATION_HEADER: self.access_token,
+                    **self.get_auth_header(),
                 },
-                cookies={COOKIE_NAME: self.refresh_id},
+                cookies=self.get_auth_cookie(),
             )
         except requests.exceptions.ConnectionError as e:
             self.logger.error(
                 f"Cannot reach the vote service on {endpoint}. Error: {e}"
             )
             raise VoteServiceException(f"Cannot reach the vote service on {endpoint}.")
-
-    def set_authentication(
-        self, access_token: Optional[str], refresh_id: Optional[str]
-    ) -> None:
-        self.access_token = access_token
-        self.refresh_id = refresh_id
 
     def start(self, id: int) -> None:
         endpoint = self.get_endpoint("start", id)

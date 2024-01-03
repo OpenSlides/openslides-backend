@@ -27,7 +27,7 @@ class UserForgetPassword(BaseActionTestCase):
         user = self.get_model("user/1")
         assert user.get("last_email_sent", 0) >= start_time
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
-        assert "Reset your OpenSlides password" in handler.emails[0]["data"]
+        assert "Reset your OpenSlides password: admin" in handler.emails[0]["data"]
 
     def test_forget_password_send_mail_correct_translated(self) -> None:
         self.set_models(
@@ -43,7 +43,7 @@ class UserForgetPassword(BaseActionTestCase):
         user = self.get_model("user/1")
         assert user.get("last_email_sent", 0) >= start_time
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
-        assert "Ihres Openslides-Passworts" in handler.emails[0]["data"]
+        assert "Ihres OpenSlides-Passworts" in handler.emails[0]["data"]
 
     def test_forget_password_saml_sso_user_error(self) -> None:
         self.set_models(
@@ -59,7 +59,7 @@ class UserForgetPassword(BaseActionTestCase):
             )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            "user 111 is a Single Sign On user and has no local OpenSlides password.",
             response.json["message"],
         )
 
@@ -73,7 +73,7 @@ class UserForgetPassword(BaseActionTestCase):
                 "user.forget_password", {"email": "test@ntvtn.de"}, lang="de"
             )
         self.assert_status_code(response, 200)
-        assert "Ihres Openslides-Passworts" in handler.emails[0]["data"]
+        assert "Ihres OpenSlides-Passworts" in handler.emails[0]["data"]
 
     def test_forget_password_send_mail_unknown_language(self) -> None:
         self.set_models(
@@ -110,16 +110,16 @@ class UserForgetPassword(BaseActionTestCase):
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
         assert handler.emails[0]["to"][0] == "test@ntvtn.de"
         assert (
-            "For completeness your username: admin" in handler.emails[0]["data"]
-            or "For completeness your username: test2" in handler.emails[0]["data"]
+            "Reset your OpenSlides password: admin" in handler.emails[0]["data"]
+            or "Reset your OpenSlides password: test2" in handler.emails[0]["data"]
         )
         assert "https://openslides.example.com" in handler.emails[0]["data"]
 
         assert handler.emails[1]["from"] == EmailSettings.default_from_email
         assert handler.emails[1]["to"][0] == "test@ntvtn.de"
         assert (
-            "For completeness your username: test2" in handler.emails[1]["data"]
-            or "For completeness your username: admin" in handler.emails[1]["data"]
+            "Reset your OpenSlides password: test2" in handler.emails[1]["data"]
+            or "Reset your OpenSlides password: admin" in handler.emails[1]["data"]
         )
         assert ("test2" in handler.emails[0]["data"]) != (
             "test2" in handler.emails[1]["data"]

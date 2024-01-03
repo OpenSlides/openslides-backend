@@ -1,4 +1,5 @@
-from typing import Any, Dict
+import re
+from typing import Any, Dict, Optional
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -9,8 +10,9 @@ from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .user_mixin import (
+from .user_mixins import (
     LimitOfUserMixin,
     UpdateHistoryMixin,
     UserMixin,
@@ -25,6 +27,7 @@ class UserUpdate(
     UpdateAction,
     LimitOfUserMixin,
     UpdateHistoryMixin,
+    ConditionalSpeakerCascadeMixin,
 ):
     """
     Action to update a user.
@@ -81,6 +84,9 @@ class UserUpdate(
             instance["default_password"] = ""
             instance["password"] = ""
 
+        if instance.get("username") and re.search(r"\s", instance["username"]):
+            raise ActionException("Username may not contain spaces")
+
         if (
             instance["id"] == self.user_id
             and user.get("organization_management_level")
@@ -103,3 +109,8 @@ class UserUpdate(
 
         check_gender_helper(self.datastore, instance)
         return instance
+
+    def get_removed_meeting_id(self, instance: Dict[str, Any]) -> Optional[int]:
+        if instance.get("group_ids") == []:
+            return instance.get("meeting_id")
+        return None

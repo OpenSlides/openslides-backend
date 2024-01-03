@@ -10,6 +10,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from .interfaces.env import Env
 
+otel_initialized = False
+
 
 def init(env: Env, service_name: str) -> None:
     """
@@ -17,7 +19,6 @@ def init(env: Env, service_name: str) -> None:
     """
     if not env.is_otel_enabled():
         return
-
     span_exporter = OTLPSpanExporter(
         endpoint="http://collector:4317",
         insecure=True
@@ -31,6 +32,8 @@ def init(env: Env, service_name: str) -> None:
     trace.set_tracer_provider(tracer_provider)
     span_processor = BatchSpanProcessor(span_exporter)
     tracer_provider.add_span_processor(span_processor)
+    global otel_initialized
+    otel_initialized = True
 
 
 def instrument_requests() -> None:
@@ -54,6 +57,11 @@ def make_span(env: Env, name: str, attributes: Optional[Dict[str, str]] = None) 
     """
     if not env.is_otel_enabled():
         return nullcontext()
+
+    # global otel_initialized
+    # assert (
+    #     otel_initialized
+    # ), "backend:Opentelemetry span to be set before having set a TRACER_PROVIDER"
 
     tracer = trace.get_tracer_provider().get_tracer(__name__)
     span = tracer.start_as_current_span(name, attributes=attributes)

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Set, Union, cast
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 from openslides_backend.shared.exceptions import ActionException
 
@@ -104,11 +104,7 @@ class GroupDeleteAction(DeleteAction):
                 EventType.Update,
                 fqid_from_collection_and_id("group", group_id),
                 list_fields={
-                    "add": {
-                        "mediafile_inherited_access_group_ids": cast(
-                            List[Union[int, str]], mediafile_ids
-                        )
-                    },
+                    "add": {"mediafile_inherited_access_group_ids": mediafile_ids},
                     "remove": {},
                 },
             )

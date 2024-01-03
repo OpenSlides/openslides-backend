@@ -1,6 +1,7 @@
 from typing import Callable, Dict, Optional, Tuple, Type
 
 import fastjsonschema
+from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from fastjsonschema import JsonSchemaException
 
 from ..http.request import Request
@@ -110,15 +111,15 @@ class PresenterHandler(BaseHandler):
                 "You cannot call presenters with different login mechanisms"
             )
 
+        self.services.authentication().set_authentication(
+            request.headers.get(AUTHENTICATION_HEADER, ""),
+            request.cookies.get(COOKIE_NAME, ""),
+        )
         access_token: Optional[str] = None
         if presenters[0].csrf_exempt:
-            user_id = self.services.authentication().authenticate_only_refresh_id(
-                request.cookies
-            )
+            user_id = self.services.authentication().authenticate_only_refresh_id()
         else:
-            user_id, access_token = self.services.authentication().authenticate(
-                request.headers, request.cookies
-            )
+            user_id, access_token = self.services.authentication().authenticate()
 
         response = []
         for PresenterClass in presenters:

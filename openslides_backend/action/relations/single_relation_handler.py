@@ -51,7 +51,7 @@ class SingleRelationHandler:
         self.field = field
         self.field_name = field_name
         self.instance = instance
-        self.chained_fields: List[Dict[str, Any]] = []
+        self.chained_fqids: List[FullQualifiedId] = []
 
     def get_reverse_field(self, collection: Collection) -> BaseRelationField:
         """
@@ -147,11 +147,11 @@ class SingleRelationHandler:
                 rels,
                 related_name,
             )
-            for fqfield, rel_update in result.items():
+            for rel_update in result.values():
                 # transform fqids back to ids
                 if not isinstance(related_field, BaseGenericRelationField):
                     modified_element = rel_update["modified_element"]
-                    assert type(modified_element) != int
+                    assert not isinstance(modified_element, int)
                     rel_update["modified_element"] = id_from_fqid(
                         cast(FullQualifiedId, modified_element)
                     )
@@ -171,22 +171,19 @@ class SingleRelationHandler:
 
             final.update(result)
 
-        for chained_field in self.chained_fields:
-            handler = self.build_handler_from_chained_field(chained_field)
+        for fqid in self.chained_fqids:
+            handler = self.build_handler_from_chained_fqid(fqid)
             result = handler.perform()
             final.update(result)
         return final
 
-    def build_handler_from_chained_field(self, chained_field: Dict[str, Any]):  # type: ignore
-        """
-        "field": self.field.to,
-        "fqid": fqid,
-        "origin_modified_fqid": own_fqid,
-        """
-        collection = collection_from_fqid(chained_field["fqid"])
+    def build_handler_from_chained_fqid(
+        self, fqid: FullQualifiedId
+    ) -> "SingleRelationHandler":
+        collection = collection_from_fqid(fqid)
         field_name = self.get_related_name(collection)
         field = self.get_reverse_field(collection)
-        instance = self.datastore.get(chained_field["fqid"], ["id", field_name])
+        instance = self.datastore.get(fqid, ["id", field_name])
         instance[field_name] = None
         return SingleRelationHandler(
             self.datastore,
@@ -265,12 +262,7 @@ class SingleRelationHandler:
                     continue
                 if rel[related_name] and self.get_field_type() in ("1:1", "m:1"):
                     assert len(rel[related_name]) == 1
-                    self.chained_fields.append(
-                        {
-                            "field": self.field.to,
-                            "fqid": fqid,
-                        }
-                    )
+                    self.chained_fqids.append(fqid)
                     new_value = [own_fqid]
                 else:
                     new_value = rel[related_name] + [own_fqid]

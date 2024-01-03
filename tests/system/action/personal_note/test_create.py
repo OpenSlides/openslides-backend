@@ -10,6 +10,11 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
             "meeting/110": {
                 "name": "name_meeting_110",
                 "is_active_in_organization_id": 1,
+                "meeting_user_ids": [1],
+            },
+            "meeting_user/1": {
+                "meeting_id": 110,
+                "user_id": 1,
             },
             "motion/23": {"meeting_id": 110},
             "user/1": {"meeting_ids": [110]},

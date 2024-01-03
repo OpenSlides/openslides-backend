@@ -12,12 +12,10 @@ class MeetingUserUpdate(BaseActionTestCase):
                 "meeting/10": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [5],
-                    "personal_note_ids": [11],
                     "committee_id": 1,
                     "default_group_id": 22,
                 },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
-                "personal_note/11": {"star": True, "meeting_id": 10},
                 "group/21": {"meeting_id": 10},
                 "group/22": {"meeting_id": 10, "default_group_for_meeting_id": 10},
             }
@@ -29,7 +27,6 @@ class MeetingUserUpdate(BaseActionTestCase):
             "structure_level": "A",
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
-            "personal_note_ids": [11],
             "group_ids": [21],
         }
         response = self.request("meeting_user.update", test_dict)

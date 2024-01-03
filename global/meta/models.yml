@@ -279,7 +279,7 @@ user:
   default_vote_weight:
     type: decimal(6)
     default: "1.000000"
-    minimum: 0
+    minimum: "0.000001"
     restriction_mode: A
   last_email_sent:
     type: timestamp
@@ -385,7 +385,7 @@ meeting_user:
     restriction_mode: A
   vote_weight:
     type: decimal(6)
-    minimum: 0
+    minimum: "0.000001"
     restriction_mode: A
 
   user_id:
@@ -402,44 +402,45 @@ meeting_user:
   personal_note_ids:
     type: relation-list
     to: personal_note/meeting_user_id
+    equal_fields: meeting_id
     on_delete: CASCADE
     restriction_mode: B
   speaker_ids:
     type: relation-list
     to: speaker/meeting_user_id
-    on_delete: CASCADE
+    equal_fields: meeting_id
     restriction_mode: A
   supported_motion_ids:
     type: relation-list
     to: motion/supporter_meeting_user_ids
+    equal_fields: meeting_id
     restriction_mode: A
   motion_submitter_ids:
     type: relation-list
     to: motion_submitter/meeting_user_id
+    equal_fields: meeting_id
     on_delete: CASCADE
     restriction_mode: A
   assignment_candidate_ids:
     type: relation-list
     to: assignment_candidate/meeting_user_id
+    equal_fields: meeting_id
     restriction_mode: A
   vote_delegated_to_id:
     type: relation
     to: meeting_user/vote_delegations_from_ids
+    equal_fields: meeting_id
     restriction_mode: A
   vote_delegations_from_ids:
     type: relation-list
     to: meeting_user/vote_delegated_to_id
+    equal_fields: meeting_id
     restriction_mode: A
   chat_message_ids:
     type: relation-list
     to: chat_message/meeting_user_id
+    equal_fields: meeting_id
     restriction_mode: A
-  # All foreign keys are meeting-specific:
-  # - Keys are smaller (Space is in O(n^2) for n keys
-  #   in the relation), so this saves storagespace
-  # - This makes quering things like this possible:
-  #   "Give me all groups for User X in Meeting Y" without
-  #   the need to get all groups and filter them for the meeting
   group_ids:
     type: relation-list
     to: group/meeting_user_ids
@@ -751,7 +752,7 @@ meeting:
       - es
       - ru
       - cs
-    read_only: true
+    required: true
 
   # Configuration (only for the server owner)
   jitsi_domain:
@@ -1883,6 +1884,7 @@ personal_note:
   meeting_user_id:
     type: relation
     to: meeting_user/personal_note_ids
+    equal_fields: meeting_id
     restriction_mode: A
     required: true
   content_object_id:
@@ -2019,7 +2021,7 @@ list_of_speakers:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2118,7 +2120,6 @@ speaker:
   meeting_user_id:
     type: relation
     to: meeting_user/speaker_ids
-    required: true
     equal_fields: meeting_id
     restriction_mode: A
   point_of_order_category_id:
@@ -2145,7 +2146,7 @@ topic:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2201,7 +2202,7 @@ motion:
     restriction_mode: D
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: C
@@ -2487,7 +2488,7 @@ motion_comment_section:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2539,7 +2540,7 @@ motion_category:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2578,7 +2579,7 @@ motion_block:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2807,7 +2808,7 @@ motion_workflow:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2859,7 +2860,7 @@ motion_statute_paragraph:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -2984,7 +2985,7 @@ poll:
     restriction_mode: C
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -3170,7 +3171,7 @@ assignment:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -3528,7 +3529,7 @@ projector:
     restriction_mode: A
   sequential_number:
     type: number
-    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    description: The (positive) serial number of this model in its meeting. This number is auto-generated and read-only.
     read_only: true
     required: true
     restriction_mode: A
@@ -3845,6 +3846,10 @@ import_preview:
   name:
     type: string
     required: true
+    enum:
+      - account
+      - participant
+      - topic
     restriction_mode: A
   state:
     type: string

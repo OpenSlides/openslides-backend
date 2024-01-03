@@ -140,19 +140,23 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "set_number": False,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
-                "set_workflow_timestamp": True,
+                "set_workflow_timestamp": False,
+                "merge_amendment_into_final": "do_not_merge",
+                "restrictions": ["is_submitter", "motion.can_manage_metadata"],
+                "css_class": "yellow",
             },
             {
                 "name": _("submitted"),
-                "allow_support": True,
+                "allow_support": False,
                 "workflow_id": instance["id"],
                 "set_number": False,
+                "merge_amendment_into_final": "do_not_merge",
             },
             {
                 "name": _("permitted"),
                 "allow_create_poll": True,
                 "workflow_id": instance["id"],
-                "recommendation_label": _("Permission"),
+                "merge_amendment_into_final": "do_not_merge",
             },
             {
                 "name": _("accepted"),
@@ -189,21 +193,16 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "workflow_id": instance["id"],
             },
             {
-                "name": _("referred to committee"),
-                "recommendation_label": _("Referral to committee"),
+                "name": _("referred to"),
+                "recommendation_label": _("Referral to"),
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
+                "show_state_extension_field": "true",
+                "show_recommendation_extension_field": "true",
                 "workflow_id": instance["id"],
             },
             {
-                "name": _("needs review"),
-                "css_class": "grey",
-                "merge_amendment_into_final": "do_not_merge",
-                "workflow_id": instance["id"],
-            },
-            {
-                "name": _("rejected (not authorized)"),
-                "recommendation_label": _("Rejection (not authorized)"),
+                "name": _("not permitted"),
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
@@ -220,8 +219,8 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
         )
         from_to: Tuple[Tuple[int, Tuple[int]]] = (  # type: ignore
             (0, (1, 5)),
-            (1, (2, 5, 10)),
-            (2, (3, 4, 5, 6, 7, 8, 9)),
+            (1, (2, 5, 9)),
+            (2, (3, 4, 5, 6, 7, 8)),
         )
         action_data = [
             {

@@ -36,7 +36,13 @@ class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
             [
                 GetManyRequest(
                     "meeting",
-                    list({instance["meeting_id"] for instance in action_data}),
+                    list(
+                        {
+                            meeting_id
+                            for instance in action_data
+                            if (meeting_id := instance.get("meeting_id"))
+                        }
+                    ),
                     [
                         "id",
                         "is_active_in_organization_id",
@@ -55,7 +61,13 @@ class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
                 ),
                 GetManyRequest(
                     "motion",
-                    list({instance["origin_id"] for instance in action_data}),
+                    list(
+                        {
+                            origin_id
+                            for instance in action_data
+                            if (origin_id := instance.get("origin_id"))
+                        }
+                    ),
                     [
                         "meeting_id",
                         "lead_motion_id",

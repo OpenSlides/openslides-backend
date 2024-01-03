@@ -43,6 +43,7 @@ class Environment:
         "OPENSLIDES_BACKEND_NUM_THREADS": "3",
         "OPENSLIDES_BACKEND_RAISE_4XX": "false",
         "OPENSLIDES_BACKEND_WORKER_TIMEOUT": "30",
+        "OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT": "1",
         "OPENSLIDES_DEVELOPMENT": "false",
         "OPENSLIDES_LOGLEVEL": Loglevel.NOTSET.name,
         "OPENTELEMETRY_ENABLED": "false",
@@ -54,10 +55,10 @@ class Environment:
     }
 
     def __init__(self, os_env: Any, *args: Any, **kwargs: Any) -> None:
-        for k, v in list(self.vars.items()):
-            env = os_env.get(k)
+        for key in self.vars.keys():
+            env = os_env.get(key)
             if env is not None:
-                self.vars[k] = env
+                self.vars[key] = env
 
     def __getattr__(self, attr: str) -> str:
         value = self.vars.get(attr)

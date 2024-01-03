@@ -32,7 +32,7 @@ class MeetingCreate(
 ):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_create_schema(
-        required_properties=["committee_id", "name"],
+        required_properties=["committee_id", "name", "language"],
         optional_properties=[
             "description",
             "location",
@@ -46,9 +46,6 @@ class MeetingCreate(
             "admin_ids": id_list_schema,
             "set_as_template": {"type": "boolean"},
         },
-        additional_required_fields={
-            "language": {"type": "string"},
-        },
     )
     dependencies = [
         MotionWorkflowCreateSimpleWorkflowAction,
@@ -57,11 +54,10 @@ class MeetingCreate(
     ]
     skip_archived_meeting_check = True
     translation_of_defaults = [
-        "name",
         "description",
         "welcome_title",
         "welcome_text",
-        "motion_preamble",
+        "motions_preamble",
         "motions_export_title",
         "assignments_export_title",
         "users_pdf_welcometitle",
@@ -71,8 +67,11 @@ class MeetingCreate(
         "users_email_body",
     ]
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         Translator.set_translation_language(instance["language"])
+        return super().base_update_instance(instance)
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         # handle set_as_template
         if instance.pop("set_as_template", None):
@@ -98,14 +97,12 @@ class MeetingCreate(
                 "external_id": "Default",
                 "meeting_id": instance["id"],
                 "permissions": [
-                    Permissions.AgendaItem.CAN_SEE_INTERNAL,
+                    Permissions.AgendaItem.CAN_SEE,
                     Permissions.Assignment.CAN_SEE,
-                    Permissions.ListOfSpeakers.CAN_SEE,
-                    Permissions.Mediafile.CAN_SEE,
+                    Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
                     Permissions.Motion.CAN_SEE,
                     Permissions.Projector.CAN_SEE,
-                    Permissions.User.CAN_SEE,
                 ],
             },
             {
@@ -118,18 +115,15 @@ class MeetingCreate(
                 "external_id": "Delegates",
                 "meeting_id": instance["id"],
                 "permissions": [
-                    Permissions.AgendaItem.CAN_SEE_INTERNAL,
-                    Permissions.Assignment.CAN_NOMINATE_OTHER,
-                    Permissions.Assignment.CAN_NOMINATE_SELF,
+                    Permissions.AgendaItem.CAN_SEE,
+                    Permissions.Assignment.CAN_SEE,
+                    Permissions.ListOfSpeakers.CAN_SEE,
                     Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
                     Permissions.Mediafile.CAN_SEE,
                     Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
-                    Permissions.Motion.CAN_CREATE,
-                    Permissions.Motion.CAN_CREATE_AMENDMENTS,
-                    Permissions.Motion.CAN_SUPPORT,
+                    Permissions.Motion.CAN_SEE,
                     Permissions.Projector.CAN_SEE,
-                    Permissions.User.CAN_SEE,
                 ],
             },
             {
@@ -139,33 +133,14 @@ class MeetingCreate(
                 "permissions": [
                     Permissions.AgendaItem.CAN_MANAGE,
                     Permissions.Assignment.CAN_MANAGE,
-                    Permissions.Assignment.CAN_NOMINATE_SELF,
-                    Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
                     Permissions.ListOfSpeakers.CAN_MANAGE,
                     Permissions.Mediafile.CAN_MANAGE,
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
-                    Permissions.Meeting.CAN_SEE_HISTORY,
+                    Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Motion.CAN_MANAGE,
                     Permissions.Projector.CAN_MANAGE,
                     Permissions.Tag.CAN_MANAGE,
                     Permissions.User.CAN_MANAGE,
-                ],
-            },
-            {
-                "name": _("Committees"),
-                "external_id": "Committees",
-                "meeting_id": instance["id"],
-                "permissions": [
-                    Permissions.AgendaItem.CAN_SEE_INTERNAL,
-                    Permissions.Assignment.CAN_SEE,
-                    Permissions.ListOfSpeakers.CAN_SEE,
-                    Permissions.Mediafile.CAN_SEE,
-                    Permissions.Meeting.CAN_SEE_FRONTPAGE,
-                    Permissions.Motion.CAN_CREATE,
-                    Permissions.Motion.CAN_CREATE_AMENDMENTS,
-                    Permissions.Motion.CAN_SUPPORT,
-                    Permissions.Projector.CAN_SEE,
-                    Permissions.User.CAN_SEE,
                 ],
             },
         ]

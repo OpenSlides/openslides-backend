@@ -18,7 +18,7 @@ from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.action_type import ActionType
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement
-from .user_mixin import UsernameMixin
+from .user_mixins import UsernameMixin
 
 allowed_user_fields = [
     "saml_id",

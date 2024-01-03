@@ -9,9 +9,12 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .password_mixins import ClearSessionsMixin
 
 
-class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin):
+class UserResetPasswordToDefaultMixin(
+    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin
+):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Gets the default_password and reset password.
@@ -24,7 +27,7 @@ class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin
         )
         if user.get("saml_id"):
             raise ActionException(
-                f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+                f"user {user['saml_id']} is a Single Sign On user and has no local OpenSlides password."
             )
         default_password = self.auth.hash(str(user.get("default_password")))
         instance["password"] = default_password

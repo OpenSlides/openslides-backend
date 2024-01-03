@@ -7,10 +7,20 @@ msgstr ""
 msgid "Admin"
 msgstr ""
 
-msgid "Committees"
+msgid "Complex Workflow"
 msgstr ""
 
-msgid "Complex Workflow"
+msgid ""
+"Dear {name},\n"
+"\n"
+"this is your personal OpenSlides login:\n"
+"\n"
+"{url}\n"
+"Username: {username}\n"
+"Password: {password}\n"
+"\n"
+"\n"
+"This email was generated automatically."
 msgstr ""
 
 msgid "Default"
@@ -22,22 +32,28 @@ msgstr ""
 msgid "Delegates"
 msgstr ""
 
+msgid "Elections"
+msgstr ""
+
+msgid "Motions"
+msgstr ""
+
 msgid "No concernment"
 msgstr ""
 
 msgid "No decision"
 msgstr ""
 
-msgid "Permission"
+msgid "OpenSlides access data"
 msgstr ""
 
-msgid "Referral to committee"
+msgid "Presentation and assembly system"
+msgstr ""
+
+msgid "Referral to"
 msgstr ""
 
 msgid "Rejection"
-msgstr ""
-
-msgid "Rejection (not authorized)"
 msgstr ""
 
 msgid "Reset your OpenSlides password"
@@ -46,23 +62,35 @@ msgstr ""
 msgid "Simple Workflow"
 msgstr ""
 
+msgid "Space for your welcome text."
+msgstr ""
+
 msgid "Speaking time"
 msgstr ""
 
 msgid "Staff"
 msgstr ""
 
+msgid "The assembly may decide:"
+msgstr ""
+
 msgid "Voting"
+msgstr ""
+
+msgid "Welcome to OpenSlides"
 msgstr ""
 
 msgid ""
 "You are receiving this email because you have requested a new password "
-"for your OpenSlides-account.\n"
+"for your OpenSlides account.\n"
 "\n"
 "Please open the following link and choose a new password:\n"
 "{url}/login/forget-password-confirm?user_id={user_id}&token={token}\n"
 "\n"
-"For completeness your username: {username}"
+"The link will be valid for 10 minutes."
+msgstr ""
+
+msgid "[Place for your welcome and help text.]"
 msgstr ""
 
 msgid "accepted"
@@ -77,25 +105,22 @@ msgstr ""
 msgid "name"
 msgstr ""
 
-msgid "needs review"
-msgstr ""
-
 msgid "not concerned"
 msgstr ""
 
 msgid "not decided"
 msgstr ""
 
+msgid "not permitted"
+msgstr ""
+
 msgid "permitted"
 msgstr ""
 
-msgid "referred to committee"
+msgid "referred to"
 msgstr ""
 
 msgid "rejected"
-msgstr ""
-
-msgid "rejected (not authorized)"
 msgstr ""
 
 msgid "submitted"

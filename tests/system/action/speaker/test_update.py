@@ -259,3 +259,51 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
         self.assert_status_code(response, 200)
         self.assert_model_exists("speaker/890", {"speech_state": "pro"})
+
+    def test_update_with_removed_user(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "speaker_ids": [890],
+                    "list_of_speakers_enable_pro_contra_speech": True,
+                    "is_active_in_organization_id": 1,
+                },
+                "user/7": {"username": "test_username1"},
+                "meeting_user/7": {
+                    "meeting_id": 1,
+                    "user_id": 7,
+                    "speaker_ids": [890],
+                    "group_ids": [],
+                },
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+                "speaker/890": {
+                    "meeting_user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        self.assert_status_code(response, 200)
+        model = self.get_model("speaker/890")
+        assert model.get("speech_state") == "pro"
+
+    def test_update_with_deleted_user(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "speaker_ids": [890],
+                    "list_of_speakers_enable_pro_contra_speech": True,
+                    "is_active_in_organization_id": 1,
+                },
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+                "speaker/890": {
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        self.assert_status_code(response, 200)
+        model = self.get_model("speaker/890")
+        assert model.get("speech_state") == "pro"

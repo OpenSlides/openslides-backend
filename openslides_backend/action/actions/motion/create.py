@@ -111,21 +111,14 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
                 )
         if instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
-        # if lead_motion and not has perm motion.can_manage
-        # use category_id and block_id from the lead_motion
-        if instance.get("lead_motion_id") and not has_perm(
-            self.datastore,
-            self.user_id,
-            Permissions.Motion.CAN_MANAGE,
-            instance["meeting_id"],
-        ):
+        # if amendment and no category set, use category from the lead motion
+        if instance.get("lead_motion_id") and "category_id" not in instance:
             lead_motion = self.datastore.get(
                 fqid_from_collection_and_id(
                     self.model.collection, instance["lead_motion_id"]
                 ),
-                ["block_id", "category_id"],
+                ["category_id"],
             )
-            instance["block_id"] = lead_motion.get("block_id")
             instance["category_id"] = lead_motion.get("category_id")
 
         # fetch all needed settings and check reason

@@ -3,6 +3,9 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Union, cast
 from unittest.mock import MagicMock
 
+import pytest
+
+from openslides_backend.action.action_handler import ActionHandler
 from openslides_backend.action.action_worker import gunicorn_post_request
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.action_type import ActionType
@@ -16,6 +19,7 @@ from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
+from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import FullQualifiedId
@@ -35,6 +39,21 @@ ACTION_URL_SEPARATELY = get_route_path(ActionView.action_route, "handle_separate
 
 
 class BaseActionTestCase(BaseSystemTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        ActionHandler.MAX_RETRY = 1
+        # access auth database directly to reset it
+        redis = self.auth.auth_handler.database.redis
+        prefix = ":".join(
+            (
+                self.auth.auth_handler.database.AUTH_PREFIX,
+                self.auth.auth_handler.TOKEN_DB_KEY,
+            )
+        )
+        for key in redis.keys():
+            if key.decode().startswith(prefix):
+                redis.delete(key)
+
     def get_application(self) -> WSGIApplication:
         return create_action_test_application()
 
@@ -160,13 +179,16 @@ class BaseActionTestCase(BaseSystemTestCase):
                 f"group/{base}": {
                     "meeting_id": base,
                     "default_group_for_meeting_id": base,
+                    "name": f"group{base}",
                 },
                 f"group/{base+1}": {
                     "meeting_id": base,
                     "admin_group_for_meeting_id": base,
+                    "name": f"group{base+1}",
                 },
                 f"group/{base+2}": {
                     "meeting_id": base,
+                    "name": f"group{base+2}",
                 },
                 f"motion_workflow/{base}": {
                     "meeting_id": base,
@@ -417,7 +439,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             self.set_models(models)
         self.set_user_groups(self.user_id, [3])
         if permission:
-            if type(permission) == OrganizationManagementLevel:
+            if isinstance(permission, OrganizationManagementLevel):
                 self.set_organization_management_level(
                     cast(OrganizationManagementLevel, permission), self.user_id
                 )
@@ -451,3 +473,11 @@ class BaseActionTestCase(BaseSystemTestCase):
         else:
             assert informations
             self.assertEqual(last_information[fqid], information)
+
+    def assert_logged_in(self) -> None:
+        self.auth.authenticate()  # assert that no exception is thrown
+
+    def assert_logged_out(self) -> None:
+        with pytest.raises(AuthenticationException):
+            self.auth.authenticate()
+        BaseSystemTestCase.auth_data = None

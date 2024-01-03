@@ -39,6 +39,11 @@ class Field:
     own_collection: Collection
     own_field_name: str
 
+    required: bool
+    read_only: bool
+    default: Optional[str]
+    constraints: Dict[str, Any]
+
     def __init__(
         self,
         required: bool = False,
@@ -216,12 +221,14 @@ class DecimalField(Field):
         schema = self.extend_schema(super().get_schema(), **decimal_schema)
         if not self.required:
             schema["type"] = ["string", "null"]
+        # remove minimum since it is checked in the validate method
+        schema.pop("minimum", None)
         return schema
 
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
             if (min := self.constraints.get("minimum")) is not None:
-                if type(value) == str:
+                if isinstance(value, str):
                     assert Decimal(value) >= Decimal(
                         min
                     ), f"{self.own_field_name} must be bigger than or equal to {min}."

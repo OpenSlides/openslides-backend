@@ -9,7 +9,6 @@ meeting_user_standard_fields = [
     "number",
     "structure_level",
     "vote_weight",
-    "personal_note_ids",
 ]
 
 

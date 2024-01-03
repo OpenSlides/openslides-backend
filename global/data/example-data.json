@@ -230,6 +230,7 @@
         "1": {
             "id": 1,
             "is_active_in_organization_id": 1,
+            "language": "en",
             "name": "OpenSlides Demo",
             "description": "Presentation and assembly system",
             "welcome_title": "Welcome to OpenSlides",

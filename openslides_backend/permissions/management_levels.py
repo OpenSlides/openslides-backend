@@ -6,28 +6,26 @@ from .base_classes import VerbosePermission
 
 class CompareRightLevel(str, VerbosePermission, Enum):
     @classmethod
-    def _missing_(cls, value: object) -> "CompareRightLevel":
+    def _missing_(cls, _: object) -> "CompareRightLevel":
         """
         Always return the first enum item if no matching one was found. -> NO_RIGHT must always be listed first.
         """
-        return list(cls)[0]  # type: ignore
+        return cls(list(cls)[0])
 
     def check_instance(self, other: str) -> "CompareRightLevel":
         """
         Check that only objects of the same class are compared with each other and cast it
         accordingly. (Supertype `str` enforces that the initial argument type is also `str`)
         """
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, type(self)):
             raise TypeError(
-                f"The comparison expect an {self.__class__}-type and no string!"
+                f"The comparison expect an {type(self)}-type and no string!"
             )
         return cast("CompareRightLevel", other)
 
     @property
     def weight(self) -> int:
-        # mypy can't infer the correct list type here
-        # may be related to https://github.com/python/mypy/issues/11784
-        return list(self.__class__).index(self)  # type: ignore
+        return list(type(self)).index(self)
 
     def __lt__(self, other: str) -> bool:
         other = self.check_instance(other)
@@ -38,12 +36,10 @@ class CompareRightLevel(str, VerbosePermission, Enum):
         return self.weight <= other.weight
 
     def __gt__(self, other: str) -> bool:
-        other = self.check_instance(other)
-        return self.weight > other.weight
+        return not self <= other
 
     def __ge__(self, other: str) -> bool:
-        other = self.check_instance(other)
-        return self.weight >= other.weight
+        return not self < other
 
 
 class OrganizationManagementLevel(CompareRightLevel):

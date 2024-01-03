@@ -38,34 +38,45 @@ class CreatePoll(BaseActionTestCase):
                 "max_votes_amount": 10,
                 "max_votes_per_option": 1,
                 "backend": "long",
+                "amount_global_yes": "2.000000",
             },
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("title") == "test"
-        assert poll.get("type") == "analog"
-        assert poll.get("content_object_id") == "assignment/1"
-        assert poll.get("pollmethod") == "Y"
-        assert poll.get("meeting_id") == 1
-        assert poll.get("option_ids") == [1]
-        assert poll.get("global_option_id") == 2
-        assert poll.get("state") == "finished"
-        assert poll.get("onehundred_percent_base") == "Y"
-        assert poll.get("is_pseudoanonymized") is False
-        assert poll.get("min_votes_amount") == 5
-        assert poll.get("max_votes_amount") == 10
-        assert poll.get("max_votes_per_option") == 1
-        assert poll.get("backend") == "long"
-        assert poll.get("sequential_number") == 1
+        poll = self.assert_model_exists(
+            "poll/1",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "pollmethod": "Y",
+                "meeting_id": 1,
+                "option_ids": [1],
+                "global_option_id": 2,
+                "state": "finished",
+                "onehundred_percent_base": "Y",
+                "is_pseudoanonymized": False,
+                "min_votes_amount": 5,
+                "max_votes_amount": 10,
+                "max_votes_per_option": 1,
+                "backend": "long",
+                "sequential_number": 1,
+            },
+        )
         assert "options" not in poll
-        option = self.get_model("option/1")
-        assert option.get("text") == "test2"
-        assert option.get("poll_id") == 1
-        assert option.get("meeting_id") == 1
-        global_option = self.get_model("option/2")
-        assert global_option.get("text") == "global option"
-        assert global_option.get("used_as_global_option_in_poll_id") == 1
-        assert global_option.get("meeting_id") == 1
+        self.assert_model_exists(
+            "option/1",
+            {"text": "test2", "poll_id": 1, "meeting_id": 1, "yes": "10.000000"},
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "text": "global option",
+                "used_as_global_option_in_poll_id": 1,
+                "meeting_id": 1,
+                "yes": "2.000000",
+                "no": "-2.000000",
+            },
+        )
         self.assert_history_information("assignment/1", ["Ballot created"])
 
     def test_create_correct_publish_immediately(self) -> None:
@@ -89,8 +100,7 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("state") == "published"
+        poll = self.assert_model_exists("poll/1", {"state": "published"})
         assert "publish_immediately" not in poll
 
     def test_create_correct_default_values(self) -> None:
@@ -108,15 +118,11 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("votesvalid") == "3.000000"
-        assert poll.get("votesinvalid") == "-2.000000"
-        vote = self.get_model("vote/1")
-        assert vote.get("value") == "Y"
-        assert vote.get("weight") == "10.000000"
-        vote = self.get_model("vote/2")
-        assert vote.get("value") == "N"
-        assert vote.get("weight") == "-2.000000"
+        self.assert_model_exists(
+            "poll/1", {"votesvalid": "3.000000", "votesinvalid": "-2.000000"}
+        )
+        self.assert_model_exists("vote/1", {"value": "Y", "weight": "10.000000"})
+        self.assert_model_exists("vote/2", {"value": "N", "weight": "-2.000000"})
 
     def test_create_correct_with_topic(self) -> None:
         self.set_models(
@@ -175,40 +181,62 @@ class CreatePoll(BaseActionTestCase):
                 "meeting_id": 1,
                 "onehundred_percent_base": "YNA",
                 "content_object_id": "assignment/1",
+                "amount_global_yes": "5.000000",
             },
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("title") == "test"
-        assert poll.get("type") == "analog"
-        assert poll.get("pollmethod") == "YNA"
-        assert poll.get("meeting_id") == 1
-        assert poll.get("option_ids") == [1, 2, 3]
-        assert poll.get("global_option_id") == 4
-        assert poll.get("onehundred_percent_base") == "YNA"
-        option = self.get_model("option/1")
-        assert option.get("text") == "test2"
-        assert option.get("poll_id") == 1
-        assert option.get("meeting_id") == 1
-        assert option.get("yes") == "10.000000"
-        assert option.get("weight") == 1
-        option_2 = self.get_model("option/2")
-        assert option_2.get("text") == "test3"
-        assert option_2.get("poll_id") == 1
-        assert option_2.get("meeting_id") == 1
-        assert option_2.get("no") == "0.999900"
-        assert option_2.get("weight") == 2
-        option_3 = self.get_model("option/3")
-        assert option_3.get("text") == "test4"
-        assert option_3.get("poll_id") == 1
-        assert option_3.get("meeting_id") == 1
-        assert option_3.get("no") == "11.000000"
-        assert option_3.get("weight") == 3
-        option_4 = self.get_model("option/4")
-        assert option_4.get("text") == "global option"
-        assert option_4.get("used_as_global_option_in_poll_id") == 1
-        assert option_4.get("meeting_id") == 1
-        assert option_4.get("weight") == 1
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "YNA",
+                "meeting_id": 1,
+                "option_ids": [1, 2, 3],
+                "global_option_id": 4,
+                "onehundred_percent_base": "YNA",
+            },
+        )
+        self.assert_model_exists(
+            "option/1",
+            {
+                "text": "test2",
+                "poll_id": 1,
+                "meeting_id": 1,
+                "yes": "10.000000",
+                "weight": 1,
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "text": "test3",
+                "poll_id": 1,
+                "meeting_id": 1,
+                "no": "0.999900",
+                "weight": 2,
+            },
+        )
+        self.assert_model_exists(
+            "option/3",
+            {
+                "text": "test4",
+                "poll_id": 1,
+                "meeting_id": 1,
+                "no": "11.000000",
+                "weight": 3,
+            },
+        )
+        option_4 = self.assert_model_exists(
+            "option/4",
+            {
+                "text": "global option",
+                "used_as_global_option_in_poll_id": 1,
+                "meeting_id": 1,
+                "weight": 1,
+            },
+        )
+        assert option_4.get("yes") is None
 
     def test_all_fields(self) -> None:
         response = self.request(
@@ -228,18 +256,20 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("title"), "test_title_ahThai4pae1pi4xoogoo")
-        self.assertEqual(poll.get("pollmethod"), "YN")
-        self.assertEqual(poll.get("type"), "pseudoanonymous")
-        self.assertTrue(poll.get("is_pseudoanonymized"))
-        self.assertFalse(poll.get("global_yes"))
-        self.assertFalse(poll.get("global_no"))
-        self.assertFalse(poll.get("global_abstain"))
-        self.assertEqual(
-            poll.get("description"), "test_description_ieM8ThuasoSh8aecai8p"
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "title": "test_title_ahThai4pae1pi4xoogoo",
+                "pollmethod": "YN",
+                "type": "pseudoanonymous",
+                "is_pseudoanonymized": True,
+                "global_yes": False,
+                "global_no": False,
+                "global_abstain": False,
+                "description": "test_description_ieM8ThuasoSh8aecai8p",
+                "onehundred_percent_base": "YN",
+            },
         )
-        self.assertEqual(poll.get("onehundred_percent_base"), "YN")
 
     def test_create_wrong_publish_immediately(self) -> None:
         response = self.request(
@@ -332,8 +362,7 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("entitled_group_ids") == [1, 2]
+        self.assert_model_exists("poll/1", {"entitled_group_ids": [1, 2]})
 
     def test_with_empty_groups(self) -> None:
         response = self.request(
@@ -350,8 +379,7 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("entitled_group_ids"), [])
+        self.assert_model_exists("poll/1", {"entitled_group_ids": []})
 
     def test_with_groups_and_analog(self) -> None:
         self.set_models({"group/1": {"meeting_id": 1}, "group/2": {"meeting_id": 1}})
@@ -669,8 +697,7 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        assert poll.get("state") == "created"
+        self.assert_model_exists("poll/1", {"state": "created"})
 
     def test_create_user_option_valid(self) -> None:
         self.set_models(

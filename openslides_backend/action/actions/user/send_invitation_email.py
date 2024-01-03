@@ -33,7 +33,6 @@ from ...mixins.send_email_mixin import EmailSettings, EmailUtils
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
-from .helper import get_user_name
 
 
 class EmailErrorType(str, Enum):
@@ -214,7 +213,7 @@ class UserSendInvitationMail(UpdateAction):
             None,
             {
                 "event_name": mail_data.get("name", ""),
-                "name": get_user_name(user),
+                "name": self.get_verbose_username(user),
                 "username": user.get("username", ""),
             },
         )
@@ -270,6 +269,19 @@ class UserSendInvitationMail(UpdateAction):
             )
             res["url"] = organization.get("url", "")
         return res
+
+    def get_verbose_username(self, instance: Dict[str, Any]) -> str:
+        first_name = instance.get("first_name", "").strip()
+        last_name = instance.get("last_name", "").strip()
+
+        if first_name and last_name:
+            name = " ".join((first_name, last_name))
+        else:
+            name = first_name or last_name or instance.get("username", "")
+
+        if title := instance.get("title", "").strip():
+            name = " ".join([title, name])
+        return name
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         type(self).schema_validator(instance)

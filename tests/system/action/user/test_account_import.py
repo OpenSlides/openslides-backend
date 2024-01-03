@@ -12,6 +12,9 @@ class AccountJsonImport(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
+                "organization/1": {
+                    "genders": ["male", "female", "diverse", "non-binary"]
+                },
                 "import_preview/2": {
                     "state": ImportState.DONE,
                     "name": "account",
@@ -47,7 +50,10 @@ class AccountJsonImport(BaseActionTestCase):
                                     "first_name": "Testy",
                                     "last_name": "Tester",
                                     "email": "email@test.com",
-                                    "gender": "male",
+                                    "gender": {
+                                        "value": "male",
+                                        "info": ImportState.DONE,
+                                    },
                                 },
                             },
                         ],
@@ -61,7 +67,12 @@ class AccountJsonImport(BaseActionTestCase):
                             {
                                 "state": ImportState.ERROR,
                                 "messages": ["test"],
-                                "data": {"gender": "male"},
+                                "data": {
+                                    "gender": {
+                                        "value": "male",
+                                        "info": ImportState.DONE,
+                                    }
+                                },
                             },
                         ],
                     },
@@ -149,6 +160,10 @@ class AccountJsonImport(BaseActionTestCase):
                                         "id": 1,
                                     },
                                     "first_name": "Testy",
+                                    "gender": {
+                                        "value": "non-binary",
+                                        "info": ImportState.DONE,
+                                    },
                                 },
                             },
                         ],
@@ -158,7 +173,48 @@ class AccountJsonImport(BaseActionTestCase):
         )
         response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/1", {"first_name": "Testy"})
+        self.assert_model_exists(
+            "user/1", {"first_name": "Testy", "gender": "non-binary"}
+        )
+
+    def test_ignore_unknown_gender(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "username": "user1",
+                },
+                "import_preview/7": {
+                    "state": ImportState.DONE,
+                    "name": "account",
+                    "result": {
+                        "rows": [
+                            {
+                                "state": ImportState.NEW,
+                                "messages": [
+                                    "Gender 'notAGender' is not in the allowed gender list."
+                                ],
+                                "data": {
+                                    "id": 1,
+                                    "username": {
+                                        "value": "user1",
+                                        "info": ImportState.DONE,
+                                        "id": 1,
+                                    },
+                                    "gender": {
+                                        "value": "notAGender",
+                                        "info": ImportState.WARNING,
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            }
+        )
+        response = self.request("account.import", {"id": 7, "import": True})
+        self.assert_status_code(response, 200)
+        user = self.assert_model_exists("user/1")
+        assert user.get("gender") is None
 
     def test_import_names_and_email_and_create(self) -> None:
         response = self.request("account.import", {"id": 3, "import": True})
@@ -509,6 +565,22 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "default_password": {"info": "done", "value": "new default password"},
         }
 
+    def test_json_upload_names_and_email_find_username_ok(self) -> None:
+        self.json_upload_names_and_email_find_username()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        row = response_import.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == []
+        assert row["data"] == {
+            "id": 34,
+            "email": "test@ntvtn.de",
+            "username": {"id": 34, "info": "done", "value": "test"},
+            "last_name": "Mustermann",
+            "first_name": "Max",
+            "default_password": {"info": "done", "value": "new default password"},
+        }
+
     def test_json_upload_names_and_email_generate_username(self) -> None:
         self.json_upload_names_and_email_generate_username()
         response_import = self.request("account.import", {"id": 1, "import": True})
@@ -559,7 +631,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Error: saml_id 'saml_id10' found in different id (11 instead of 10)",
         ]
         assert row["data"] == {
@@ -683,7 +755,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = result["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Error: user 2 not found anymore for updating user 'user2'.",
         ]
         assert row["data"] == {
@@ -697,7 +769,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = result["rows"][1]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Error: saml_id 'saml3' is duplicated in import.",
         ]
         assert row["data"] == {
@@ -706,7 +778,6 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
             "default_vote_weight": "3.345678",
-            "can_change_own_password": False,
         }
 
         row = result["rows"][2]
@@ -726,7 +797,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = result["rows"][3]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
         ]
         assert row["data"] == {
@@ -739,7 +810,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = result["rows"][4]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Will remove password and default_password and forbid changing your OpenSlides password.",
+            "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Error: saml_id 'new_saml6' found in different id (12 instead of None)",
         ]
         assert row["data"] == {

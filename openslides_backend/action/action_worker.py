@@ -18,8 +18,6 @@ from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
 from .util.typing import ActionsResponse, Payload
 
-THREAD_WATCH_TIMEOUT = 1.0
-
 
 def handle_action_in_worker_thread(
     payload: Payload,
@@ -45,13 +43,20 @@ def handle_action_in_worker_thread(
         lock,
         internal,
     )
+    timeout = float(handler.env.OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT)
+    if timeout == -2:
+        # do not use action workers at all
+        action_worker_thread.run()
+        return action_worker_thread.response
+
     curr_thread = cast(OSGunicornThread, threading.current_thread())
     curr_thread.action_worker_writing = action_worker_writing
     curr_thread.action_worker_thread = action_worker_thread
     action_worker_thread.start()
     while not action_worker_thread.started:
         sleep(0.001)  # The action_worker_thread should gain the lock and NOT this one
-    if lock.acquire(timeout=THREAD_WATCH_TIMEOUT):
+
+    if lock.acquire(timeout=timeout):
         lock.release()
         if hasattr(action_worker_thread, "exception"):
             raise action_worker_thread.exception

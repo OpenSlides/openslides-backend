@@ -16,7 +16,9 @@ ALLOWED_HTML_TAGS_STRICT = {
     "span",
     "blockquote",
     # text formating
+    "mark",
     "strike",
+    "s",
     "del",
     "ins",
     "strong",
