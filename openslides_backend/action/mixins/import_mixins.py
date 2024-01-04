@@ -4,9 +4,9 @@ from collections import defaultdict
 from decimal import Decimal
 from enum import Enum
 from time import mktime, strptime, time
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import NotRequired
 
 from ...models.models import ImportPreview
 from ...shared.exceptions import ActionException
@@ -109,12 +109,12 @@ class Lookup:
 
         # Add action data items not found in database to lookup dict
         for name, entry in name_entries:
-            if values := cast(list, self.name_to_ids[name]):
+            if values := self.name_to_ids[name]:
                 if not values[0].get("id"):
                     values.append(entry)
             else:
                 if type(self.field) is str:
-                    obj = entry[self.field]
+                    obj = entry.get(self.field)
                     if type(obj) is dict and obj.get("id"):
                         obj["info"] = ImportState.ERROR
                 values.append(entry)
@@ -414,7 +414,9 @@ class JsonUploadMixin(BaseImportJsonUpload):
                                 mktime(strptime(entry[field], "%Y-%m-%d"))
                             )
                         except Exception:
-                            pass
+                            raise ActionException(
+                                f"Invalid date format: {entry[field]} (expected YYYY-MM-DD)"
+                            )
                     else:
                         raise ActionException(
                             f"Unknown type in conversion: type:{type_} is_object:{str(is_object)} is_list:{str(is_list)}"

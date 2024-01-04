@@ -1,11 +1,8 @@
 from typing import Any, Dict, List, Set, cast
 
-from ....models.models import ActionWorker
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.schema import required_id_schema
 from ....shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from ...mixins.import_mixins import ImportMixin, ImportState, Lookup, ResultType
-from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting.create import MeetingCreate
 from ..organization_tag.create import OrganizationTagCreate
@@ -20,13 +17,6 @@ class CommitteeImport(ImportMixin):
     Second action of committee import feature. (See json_upload for the first.)
     """
 
-    model = ActionWorker()
-    schema = DefaultSchema(ActionWorker()).get_default_schema(
-        additional_required_fields={
-            "id": required_id_schema,
-            "import": {"type": "boolean"},
-        }
-    )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
     import_name = "committee"
@@ -116,7 +106,8 @@ class CommitteeImport(ImportMixin):
                     }
                 )
         else:
-            self.error_store_ids.append(instance["id"])
+            # self.error_store_ids.append(instance["id"])
+            pass
 
         # create meetings
         if any(entry["data"].get("meeting_name") for entry in data):
