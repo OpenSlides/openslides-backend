@@ -1,10 +1,11 @@
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
-from tests.system.action.base import BaseActionTestCase
+
+from .base_poll_test import BasePollTestCase
 
 
-class UpdatePollTestCase(BaseActionTestCase):
+class UpdatePollTestCase(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.set_models(
