@@ -5,12 +5,13 @@ import simplejson as json
 
 from openslides_backend.models.models import Poll
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
-from tests.system.action.base import BaseActionTestCase
 from tests.system.util import convert_to_test_response
 from tests.util import Response
 
+from .base_poll_test import BasePollTestCase
 
-class BaseVoteTestCase(BaseActionTestCase):
+
+class BaseVoteTestCase(BasePollTestCase):
     def request(
         self,
         action: str,

@@ -1,7 +1,7 @@
-from tests.system.action.base import BaseActionTestCase
+from .base_poll_test import BasePollTestCase
 
 
-class PollSetState(BaseActionTestCase):
+class PollSetState(BasePollTestCase):
     def test_set_state(self) -> None:
         self.set_models(
             {

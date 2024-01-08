@@ -5,10 +5,11 @@ from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
+from .base_poll_test import BasePollTestCase
 from .poll_test_mixin import PollTestMixin
 
 
-class PollStopActionTest(PollTestMixin):
+class PollStopActionTest(PollTestMixin, BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
