@@ -112,10 +112,21 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             else:
                 mismatched = use_mimetype not in pyg_mimetypes
         else:
+
+            def check_extension(filename: str, extensions: List[str]) -> bool:
+                return not any(
+                    [filename_.endswith(extension) for extension in possible_extensions]
+                )
+
             possible_extensions = mimetypes.guess_all_extensions(mc_mimetype)
-            mismatched = not any(
-                [filename_.endswith(extension) for extension in possible_extensions]
-            )
+            mismatched = check_extension(filename_, possible_extensions)
+            if mismatched:
+                possible_extensions = (
+                    python_magic.Magic(extension=True)  # type: ignore
+                    .from_buffer(decoded_file)
+                    .split("/")
+                )
+                mismatched = check_extension(filename_, possible_extensions)
 
         if mismatched:
             raise ActionException(
