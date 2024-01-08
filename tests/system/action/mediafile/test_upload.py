@@ -3,11 +3,10 @@ from textwrap import dedent
 from time import time
 
 import simplejson as json
-from openslides_backend.permissions.management_levels import \
-    OrganizationManagementLevel
+
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.util import (ONE_ORGANIZATION_FQID,
-                                            get_initial_data_file)
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 
 
