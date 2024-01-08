@@ -21,7 +21,7 @@ jobs:
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v26.1
+        uses: tj-actions/changed-files@v41
 
       - name: Create Issue if models.yml was changed
         if: contains(steps.changed-files.outputs.modified_files, 'global/meta/models.yml')
