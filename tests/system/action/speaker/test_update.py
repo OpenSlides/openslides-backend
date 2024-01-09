@@ -1,3 +1,4 @@
+from time import time
 from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
@@ -317,3 +318,119 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         response = self.request("speaker.update", {"id": 890, "meeting_user_id": None})
         self.assert_status_code(response, 400)
         self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
+
+    def test_update_structure_level_existing(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "structure_level_ids": [1],
+                    "structure_level_list_of_speakers_ids": [42],
+                },
+                "list_of_speakers/23": {
+                    "structure_level_list_of_speakers_ids": [42],
+                },
+                "structure_level/1": {
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_ids": [42],
+                },
+                "structure_level_list_of_speakers/42": {
+                    "meeting_id": 1,
+                    "structure_level_id": 1,
+                    "list_of_speakers_id": 23,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "structure_level_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/890", {"structure_level_list_of_speakers_id": 42}
+        )
+
+    def test_update_structure_level_new(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_default_structure_level_time": 60,
+                    "structure_level_ids": [2],
+                },
+                "structure_level/2": {
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "structure_level_id": 2})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/890", {"structure_level_list_of_speakers_id": 1}
+        )
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/1",
+            {"speaker_ids": [890], "structure_level_id": 2},
+        )
+
+    def test_update_structure_level_already_speaking(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "structure_level_ids": [1],
+                    "structure_level_list_of_speakers_ids": [42],
+                },
+                "list_of_speakers/23": {
+                    "structure_level_list_of_speakers_ids": [42],
+                },
+                "structure_level/1": {
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_ids": [42],
+                },
+                "structure_level_list_of_speakers/42": {
+                    "meeting_id": 1,
+                    "structure_level_id": 1,
+                    "list_of_speakers_id": 23,
+                },
+                "speaker/890": {
+                    "begin_time": round(time()),
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "structure_level_id": 1})
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json["message"],
+            "You can only update the structure level on a waiting speaker.",
+        )
+
+    def test_update_structure_level_none(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "structure_level_ids": [1],
+                    "structure_level_list_of_speakers_ids": [42],
+                },
+                "list_of_speakers/23": {
+                    "structure_level_list_of_speakers_ids": [42],
+                },
+                "structure_level/1": {
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_ids": [42],
+                },
+                "structure_level_list_of_speakers/42": {
+                    "meeting_id": 1,
+                    "structure_level_id": 1,
+                    "list_of_speakers_id": 23,
+                    "speaker_ids": [890],
+                },
+                "speaker/890": {
+                    "structure_level_list_of_speakers_id": 42,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "structure_level_id": None}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/890", {"structure_level_list_of_speakers_id": None}
+        )
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/42", {"speaker_ids": []}
+        )

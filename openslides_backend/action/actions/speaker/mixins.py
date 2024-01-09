@@ -1,5 +1,10 @@
 from typing import Any, Dict, Optional
 
+from openslides_backend.action.actions.structure_level_list_of_speakers.create import (
+    StructureLevelListOfSpeakersCreateAction,
+)
+from openslides_backend.services.datastore.commands import GetManyRequest
+
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
@@ -73,3 +78,54 @@ class CheckSpeechState(Action):
                 "list_of_speakers_enable_interposed_question"
             ):
                 raise ActionException("Interposed questions are not enabled.")
+
+
+class StructureLevelMixin(Action):
+    def handle_structure_level(
+        self, instance: Dict[str, Any], list_of_speakers_id: Optional[int] = None
+    ) -> None:
+        if list_of_speakers_id is None:
+            list_of_speakers_id = instance["list_of_speakers_id"]
+        if "structure_level_id" in instance:
+            if structure_level_id := instance.pop("structure_level_id"):
+                # find the structure_level_list_of_speakers_id for this list_of_speakers and
+                # structure_level by checking the intersection of the two relations
+                result = self.datastore.get_many(
+                    [
+                        GetManyRequest(
+                            "list_of_speakers",
+                            [list_of_speakers_id],
+                            ["structure_level_list_of_speakers_ids"],
+                        ),
+                        GetManyRequest(
+                            "structure_level",
+                            [structure_level_id],
+                            ["structure_level_list_of_speakers_ids"],
+                        ),
+                    ]
+                )
+                los_model = result["list_of_speakers"][list_of_speakers_id]
+                structure_level = result["structure_level"][structure_level_id]
+                los_set = set(los_model.get("structure_level_list_of_speakers_ids", []))
+                structure_level_set = set(
+                    structure_level.get("structure_level_list_of_speakers_ids", [])
+                )
+                intersection = los_set.intersection(structure_level_set)
+                if len(intersection) == 0:
+                    # structure_level_list_of_speakers does not exist yet
+                    action_results = self.execute_other_action(
+                        StructureLevelListOfSpeakersCreateAction,
+                        [
+                            {
+                                "list_of_speakers_id": list_of_speakers_id,
+                                "structure_level_id": structure_level_id,
+                            }
+                        ],
+                    )
+                    assert action_results and action_results[0]
+                    sllos_id = action_results[0]["id"]
+                else:
+                    sllos_id = intersection.pop()
+            else:
+                sllos_id = None
+            instance["structure_level_list_of_speakers_id"] = sllos_id

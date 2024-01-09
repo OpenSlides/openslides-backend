@@ -1,8 +1,5 @@
 from typing import Any, Dict, List, Optional
 
-from openslides_backend.action.actions.structure_level_list_of_speakers.create import (
-    StructureLevelListOfSpeakersCreateAction,
-)
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 from openslides_backend.services.datastore.commands import GetManyRequest
 
@@ -18,13 +15,16 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import CheckSpeechState
+from .mixins import CheckSpeechState, StructureLevelMixin
 from .sort import SpeakerSort
 
 
 @register_action("speaker.create")
 class SpeakerCreateAction(
-    SingularActionMixin, CheckSpeechState, CreateActionWithInferredMeeting
+    SingularActionMixin,
+    CheckSpeechState,
+    CreateActionWithInferredMeeting,
+    StructureLevelMixin,
 ):
     model = Speaker()
     relation_field_for_meeting = "list_of_speakers_id"
@@ -220,49 +220,6 @@ class SpeakerCreateAction(
             ),
             field="weight",
         )
-
-    def handle_structure_level(self, instance: Dict[str, Any]) -> None:
-        if "structure_level_id" in instance:
-            # find the structure_level_list_of_speakers_id for this list_of_speakers and
-            # structure_level by checking the intersection of the two relations
-            result = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "list_of_speakers",
-                        [instance["list_of_speakers_id"]],
-                        ["structure_level_list_of_speakers_ids"],
-                    ),
-                    GetManyRequest(
-                        "structure_level",
-                        [instance["structure_level_id"]],
-                        ["structure_level_list_of_speakers_ids"],
-                    ),
-                ]
-            )
-            los_model = result["list_of_speakers"][instance["list_of_speakers_id"]]
-            structure_level = result["structure_level"][instance["structure_level_id"]]
-            los_set = set(los_model.get("structure_level_list_of_speakers_ids", []))
-            structure_level_set = set(
-                structure_level.get("structure_level_list_of_speakers_ids", [])
-            )
-            intersection = los_set.intersection(structure_level_set)
-            if len(intersection) == 0:
-                # structure_level_list_of_speakers does not exist yet
-                action_results = self.execute_other_action(
-                    StructureLevelListOfSpeakersCreateAction,
-                    [
-                        {
-                            "list_of_speakers_id": instance["list_of_speakers_id"],
-                            "structure_level_id": instance["structure_level_id"],
-                        }
-                    ],
-                )
-                assert action_results and action_results[0]
-                sllos_id = action_results[0]["id"]
-            else:
-                sllos_id = intersection.pop()
-            instance["structure_level_list_of_speakers_id"] = sllos_id
-            del instance["structure_level_id"]
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

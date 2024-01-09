@@ -6,17 +6,19 @@ from ....models.models import Speaker
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import CheckSpeechState
+from .mixins import CheckSpeechState, StructureLevelMixin
 
 
 @register_action("speaker.update")
-class SpeakerUpdate(UpdateAction, CheckSpeechState):
+class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_update_schema(
-        optional_properties=["speech_state", "meeting_user_id"]
+        optional_properties=["speech_state", "meeting_user_id"],
+        additional_optional_fields={"structure_level_id": optional_id_schema},
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
@@ -27,7 +29,13 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState):
             )
         speaker = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["speech_state", "meeting_id", "meeting_user_id"],
+            [
+                "speech_state",
+                "meeting_id",
+                "meeting_user_id",
+                "begin_time",
+                "list_of_speakers_id",
+            ],
         )
         if speaker.get("speech_state") in (
             "intervention",
@@ -42,6 +50,11 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState):
             or speaker.get("speech_state") != "interposed_question"
         ):
             raise ActionException("You cannot set the meeting_user_id.")
+        if "structure_level_id" in instance and speaker.get("begin_time"):
+            raise ActionException(
+                "You can only update the structure level on a waiting speaker."
+            )
+        self.handle_structure_level(instance, speaker["list_of_speakers_id"])
         self.check_speech_state(speaker, instance, meeting_id=speaker["meeting_id"])
         return instance
 
