@@ -86,10 +86,13 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         return action_data
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Looks for the mimetype of the file by name and content
+        """
         instance = super().update_instance(instance)
         instance["create_timestamp"] = round(time())
         filename_ = instance.get("filename", "")
-        file_ = instance.pop("file")
+        file_ = instance.pop("file")  # get content of file
         decoded_file = base64.b64decode(file_)
         use_mimetype, _ = mimetypes.guess_type(filename_)
         if use_mimetype is None:
@@ -101,8 +104,17 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         elif (
             use_mimetype.startswith("text") or use_mimetype == "application/json"
         ) and mc_mimetype.startswith("text"):
+            """
+            media types text are assumed identical without checking media subtypes.
+            Special: sometimes python_magic classifies json-content as text/plain
+            """
             mismatched = False
         elif mc_mimetype.startswith("text"):
+            """
+            The pygment library, specialized on syntax highlighting,
+            helps on getting a wide range of text-mimetypes based on filename and content (try)
+            or only content (except).
+            """
             try:
                 pyg_mimetypes = guess_lexer_for_filename(filename_, file_).mimetypes
             except ClassNotFound:
@@ -112,6 +124,14 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             else:
                 mismatched = use_mimetype not in pyg_mimetypes
         else:
+            """
+            Getting possible extensions by python-magic given mimetypes by 2 ways:
+            1. Get extensions from pythons integrated mimetypes-modul.
+               Problem with font/sfnt: mimetypes has no extension for this mimetype
+            2. Using python-magic to get the extensions from same code, which detected
+               the mimetype. Get extensions, ttf and otf, for mimetype font/sfnt following
+               the Iana-specification
+            """
 
             def check_extension(filename: str, extensions: List[str]) -> bool:
                 return not any(
