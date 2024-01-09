@@ -105,8 +105,8 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             use_mimetype.startswith("text") or use_mimetype == "application/json"
         ) and mc_mimetype.startswith("text"):
             """
-            media types text are assumed identical without checking media subtypes.
-            Special: sometimes python_magic classifies json-content as text/plain
+            media types 'text' are assumed identical without checking media subtypes.
+            Special: sometimes python_magic classifies json-content as 'text/plain'
             """
             mismatched = False
         elif mc_mimetype.startswith("text"):
@@ -114,9 +114,12 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             The pygment library, specialized on syntax highlighting,
             helps on getting a wide range of text-mimetypes based on filename and content (try)
             or only content (except).
+            Get text/plain as possible mimetype for file line.svg with guess_lexer, but has no svg-lexer
             """
             try:
-                pyg_mimetypes = guess_lexer_for_filename(filename_, file_).mimetypes
+                pyg_mimetypes = guess_lexer_for_filename(
+                    filename_, decoded_file.decode()
+                ).mimetypes
             except ClassNotFound:
                 pyg_mimetypes = guess_lexer(decoded_file).mimetypes  # type: ignore
             if use_mimetype in pyg_mimetypes:
@@ -129,7 +132,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             1. Get extensions from pythons integrated mimetypes-modul.
                Problem with font/sfnt: mimetypes has no extension for this mimetype
             2. Using python-magic to get the extensions from same code, which detected
-               the mimetype. Get extensions, ttf and otf, for mimetype font/sfnt following
+               the mimetype. Get extensions, 'ttf' and 'otf', for mimetype font/sfnt following
                the Iana-specification
             """
 
