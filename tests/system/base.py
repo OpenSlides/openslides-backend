@@ -89,7 +89,6 @@ class BaseSystemTestCase(TestCase):
             # Login and save copy of auth data for all following tests
             self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
             BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
-        self.vote_service.clear_all()
         self.anon_client = self.create_client()
 
     def set_thread_watch_timeout(self, timeout: float) -> None:
