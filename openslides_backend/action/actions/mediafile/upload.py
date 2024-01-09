@@ -99,7 +99,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         if use_mimetype == mc_mimetype:
             mismatched = False
         elif (
-            use_mimetype.startswith("text") or use_mimetype == "application.json"
+            use_mimetype.startswith("text") or use_mimetype == "application/json"
         ) and mc_mimetype.startswith("text"):
             mismatched = False
         elif mc_mimetype.startswith("text"):
