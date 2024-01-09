@@ -1,9 +1,7 @@
-from collections import defaultdict
 from typing import Any, Dict, List, Set, Tuple
 
 from openslides_backend.action.actions.meeting.mixins import MeetingCheckTimesMixin
 from openslides_backend.shared.exceptions import ActionException
-from openslides_backend.shared.filters import FilterOperator, Or
 from openslides_backend.shared.schema import str_list_schema
 
 from ....models.models import Committee, Meeting
@@ -144,21 +142,27 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
             row_state = ImportState.ERROR
 
         self.validate_with_lookup(
-            entry, "committee_managers", self.username_map, messages
+            entry, "committee_managers", self.username_lookup, messages
         )
         self.validate_with_lookup(
             entry, "forward_to_committees", self.committee_lookup, messages
         )
         self.validate_with_lookup(
-            entry, "organization_tags", self.organization_tag_map, messages
+            entry,
+            "organization_tags",
+            self.organization_tag_lookup,
+            messages,
+            create=True,
         )
         return {"state": row_state, "messages": messages, "data": entry}
 
     def meeting_checks(self, entry: Dict[str, Any], messages: List[str]) -> bool:
         self.validate_with_lookup(
-            entry, "meeting_template", self.meeting_map, messages, is_list=False
+            entry, "meeting_template", self.meeting_lookup, messages, is_list=False
         )
-        self.validate_with_lookup(entry, "meeting_admins", self.username_map, messages)
+        self.validate_with_lookup(
+            entry, "meeting_admins", self.username_lookup, messages
+        )
         try:
             self.check_start_and_end_time(entry, {})
         except ActionException as e:
@@ -173,6 +177,7 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
         lookup: Lookup,
         messages: List[str],
         is_list: bool = True,
+        create: bool = False,
     ) -> None:
         value = entry.get(field)
         names = [] if not value else value if is_list else [value]
@@ -180,24 +185,22 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
         missing: List[str] = []
         duplicates: List[str] = []
         for name in names:
+            obj = {"value": name, "info": ImportState.DONE}
             if (result := lookup.check_duplicate(name)) == ResultType.FOUND_ID:
-                objects.append(
-                    {
-                        "value": name,
-                        "info": ImportState.DONE,
-                        "id": lookup.get_field_by_name(name, "id"),
-                    }
-                )
+                obj["id"] = lookup.get_field_by_name(name, "id")
             else:
-                if result == ResultType.NOT_FOUND and lookup.name_to_ids[name][0]:
-                    # the matched committee is currently being imported and therefore has no id
-                    objects.append({"value": name, "info": ImportState.DONE})
-                else:
-                    objects.append({"value": name, "info": ImportState.WARNING})
-                    if result == ResultType.NOT_FOUND:
+                if result == ResultType.NOT_FOUND:
+                    if lookup.name_to_ids[name][0]:
+                        # the matched committee is currently being imported and therefore has no id
+                        pass
+                    elif create:
+                        obj["info"] = ImportState.GENERATED
+                    else:
+                        obj["info"] = ImportState.WARNING
                         missing.append(name)
-                    elif result == ResultType.FOUND_MORE_IDS:
-                        duplicates.append(name)
+                elif result == ResultType.FOUND_MORE_IDS:
+                    duplicates.append(name)
+            objects.append(obj)
         if missing:
             messages.append(
                 f"Following values of {field} were not found: '{', '.join(missing)}'"
@@ -239,32 +242,14 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
                 (name, {}) for name in forward_committees if name not in committee_names
             ],
         )
-        self.username_map = Lookup(
+        self.username_lookup = Lookup(
             self.datastore, "user", [(name, {}) for name in usernames], field="username"
         )
-        self.organization_tag_map = Lookup(
+        self.organization_tag_lookup = Lookup(
             self.datastore,
             "organization_tag",
             [(name, {}) for name in organization_tags],
         )
-        self.meeting_map = Lookup(
+        self.meeting_lookup = Lookup(
             self.datastore, "meeting", [(name, {}) for name in meeting_template_names]
         )
-
-    def get_name_map(
-        self,
-        collection: str,
-        entries: List[str],
-        fieldname: str = "name",
-    ) -> Dict[str, List[int]]:
-        lookup: Dict[str, List[int]] = defaultdict(list)
-        if len(entries):
-            data = self.datastore.filter(
-                collection,
-                Or([FilterOperator(fieldname, "=", name) for name in set(entries)]),
-                ["id", fieldname],
-                lock_result=False,
-            )
-            for date in data.values():
-                lookup[date[fieldname]].append(date["id"])
-        return lookup

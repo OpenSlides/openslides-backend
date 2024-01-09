@@ -1,173 +1,160 @@
-from typing import Any, Dict, List, Set, cast
+from collections import defaultdict
+from typing import Any, Dict, List
+
+from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.shared.exceptions import ActionException
 
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
-from ...mixins.import_mixins import ImportMixin, ImportState, Lookup, ResultType
+from ...mixins.import_mixins import ImportMixin, ImportRow, ImportState, Lookup
 from ...util.register import register_action
-from ..meeting.create import MeetingCreate
-from ..organization_tag.create import OrganizationTagCreate
 from .create import CommitteeCreate
 from .update import CommitteeUpdateAction
 
 
 @register_action("committee.import")
 class CommitteeImport(ImportMixin):
-    """
-    Action to import committee from action worker.
-    Second action of committee import feature. (See json_upload for the first.)
-    """
-
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
     import_name = "committee"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-
-        # handle abort in on_success
         if not instance["import"]:
             return {}
 
-        data = self.result.get("rows", [])
+        self.setup_lookups()
+        for row in self.rows:
+            self.validate_entry(row)
 
-        # initialize the lookups
-        committee_lookup = Lookup(
-            self.datastore, "committee", [entry["data"]["name"] for entry in data]
-        )
+        if self.import_state != ImportState.ERROR:
+            rows = self.flatten_copied_object_fields()
+            self.create_committees(rows)
 
-        # collect the payloads
-        create_committee_payload: List[Dict[str, Any]] = []
-        update_committee_payload: List[Dict[str, Any]] = []
-        self.error = False
-        if any(entry["data"].get("organization_tags") for entry in data):
-            self.handle_organization_tags(data)
-        for entry in data:
-            if entry["state"] == ImportState.NEW:
-                new_committee = self.get_committee_data_from_entry(entry)
-                new_committee["organization_id"] = ONE_ORGANIZATION_ID
-                if (
-                    committee_lookup.check_duplicate(new_committee["name"])
-                    != ResultType.NOT_FOUND
-                ):
-                    entry["state"] = ImportState.ERROR
-                    entry["messages"].append(
-                        "Want to create new committee, but name exists."
-                    )
-                    self.error = True
-                else:
-                    create_committee_payload.append(new_committee)
-            elif entry["state"] == ImportState.DONE:
-                edit_committee = self.get_committee_data_from_entry(entry)
-                result_type = committee_lookup.check_duplicate(edit_committee["name"])
-                if result_type == ResultType.NOT_FOUND:
-                    entry["state"] = ImportState.ERROR
-                    entry["messages"].append(
-                        "Want to update committee, but could not find it."
-                    )
-                    self.error = True
-                elif edit_committee["id"] != committee_lookup.get_field_by_name(
-                    edit_committee["name"], "id"
-                ):
-                    entry["state"] = ImportState.ERROR
-                    entry["messages"].append(
-                        "Want to update committee, but id mismatches."
-                    )
-                    self.error = True
-                else:
-                    del edit_committee["name"]
-                    update_committee_payload.append(edit_committee)
-            elif entry["state"] == ImportState.ERROR:
-                self.error = True
-
-        # execute the actions
-        if not self.error:
-            change_committees: Dict[str, int] = {}
-            if create_committee_payload:
-                results = self.execute_other_action(
-                    CommitteeCreate, create_committee_payload
-                )
-                change_committees.update(
-                    {
-                        cr["name"]: re["id"]
-                        for cr, re in zip(create_committee_payload, results or [])
-                        if re
-                    }
-                )
-
-            if update_committee_payload:
-                self.execute_other_action(
-                    CommitteeUpdateAction, update_committee_payload
-                )
-                change_committees.update(
-                    {
-                        e["data"]["name"]: e["data"]["id"]
-                        for e in data
-                        if e["state"] == ImportState.DONE
-                    }
-                )
-        else:
-            # self.error_store_ids.append(instance["id"])
-            pass
-
-        # create meetings
-        if any(entry["data"].get("meeting_name") for entry in data):
-            meeting_payload: List[Dict[str, Any]] = []
-            organization = self.datastore.get(
-                ONE_ORGANIZATION_FQID, ["default_language"]
-            )
-            for entry in data:
-                if entry["data"].get("meeting_name"):
-                    pl: Dict[str, Any] = {"name": entry["data"]["meeting_name"]}
-                    for field in ("start_time", "end_time"):
-                        if entry["data"].get(field):
-                            pl[field] = entry["data"][field]
-                    pl["language"] = organization.get("default_language", "en")
-                    pl["committee_id"] = change_committees[entry["data"]["name"]]
-                    if entry["data"].get("meeting_admins"):
-                        pl["admin_ids"] = [
-                            inner["id"]
-                            for inner in entry["data"]["meeting_admins"]
-                            if inner["info"] == ImportState.DONE
-                        ]
-
-                    meeting_payload.append(pl)
-            self.execute_other_action(MeetingCreate, meeting_payload)
         return {}
 
-    def get_committee_data_from_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            field: entry["data"][field]
-            for field in ("name", "description", "id", "organization_tag_ids")
-            if field in entry["data"]
-        }
+    def validate_entry(self, row: ImportRow) -> None:
+        self.validate_with_lookup(row, self.committee_lookup)
+        self.validate_with_lookup(row, self.committee_lookup, "meeting_template", False)
+        self.validate_list_field(row, self.committee_map, "forward_to_committees")
+        self.validate_list_field(row, self.user_map, "committee_managers")
+        self.validate_list_field(row, self.user_map, "meeting_admins")
+        self.validate_list_field(row, self.organization_tag_map, "organization_tags")
 
-    def handle_organization_tags(self, data: List[Dict[str, Any]]) -> None:
-        create_otnames: Set[str] = set()
-        otname_to_id: Dict[str, int] = {}
-        for entry in data:
-            for otentry in entry["data"].get("organization_tag_ids", []):
-                if otentry["info"] == ImportState.NEW:
-                    create_otnames.add(cast(str, otentry["value"]))
-                elif entry["info"] == ImportState.DONE:
-                    otname_to_id[otentry["value"]] = otentry["id"]
-        # create payload and execute create action
-        created_names: List[str] = list(create_otnames)
-        create_ots_payload = [
-            {"name": otname, "organization_id": ONE_ORGANIZATION_ID}
-            for otname in created_names
-        ]
-        ot_create_results = self.execute_other_action(
-            OrganizationTagCreate, create_ots_payload
+    def create_committees(self, rows: List[ImportRow]) -> None:
+        create_action_data: List[Dict[str, Any]] = []
+        update_action_data_map: Dict[int, Dict[str, Any]] = defaultdict(dict)
+        for row in rows:
+            entry = row["data"]
+            action_data = {
+                field: entry[field]
+                for field in (
+                    "id",
+                    "name",
+                    "description",
+                    "organization_tags",
+                    "committee_managers",
+                )
+                if field in entry
+            }
+            if "organization_tags" in action_data:
+                action_data["organization_tag_ids"] = action_data.pop(
+                    "organization_tags"
+                )
+            if "committee_managers" in action_data:
+                action_data["manager_ids"] = action_data.pop("committee_managers")
+            if id := entry.get("id"):
+                update_action_data_map[id] = action_data
+            else:
+                create_action_data.append(action_data)
+        results = self.execute_other_action(CommitteeCreate, create_action_data) or []
+        committee_map = {
+            entry["name"]: result["id"]
+            for entry, result in zip(create_action_data, results)
+            if result
+        }
+        for row in rows:
+            entry = row["data"]
+            if "id" not in entry:
+                entry["id"] = committee_map[entry["name"]]
+            if forwards := entry.get("forward_to_committees"):
+                for i in range(len(forwards)):
+                    if isinstance(forwards[i], str):
+                        if forwards[i] not in committee_map:
+                            raise ActionException(
+                                f"Unknown name in forward_to_committees: {forwards[i]}"
+                            )
+                        forwards[i] = committee_map[forwards[i]]
+            update_action_data_map[entry["id"]]["forward_to_committee_ids"] = forwards
+        self.execute_other_action(
+            CommitteeUpdateAction,
+            [
+                {"id": id, **action_data}
+                for id, action_data in update_action_data_map.items()
+            ],
         )
-        created_ids = [(r or {})["id"] for r in (ot_create_results or [])]
-        for name, id_ in zip(created_names, created_ids):
-            otname_to_id[name] = id_
-        # set the organization_tag_ids
-        for entry in data:
-            if entry["data"].get("organization_tag_ids"):
-                collect_ot_ids: List[int] = []
-                for otentry in entry["data"]["organization_tags"]:
-                    id_ = otname_to_id[otentry["value"]]
-                    if id_ not in collect_ot_ids:
-                        collect_ot_ids.append(id_)
-                entry["data"]["organization_tag_ids"] = collect_ot_ids
+
+    def setup_lookups(self) -> None:
+        self.committee_lookup = Lookup(
+            self.datastore,
+            "committee",
+            [
+                (entry["name"]["value"], entry)
+                for row in self.rows
+                if (entry := row["data"])
+            ],
+            field="name",
+        )
+        result = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "committee",
+                    [
+                        id
+                        for row in self.rows
+                        for committee in row["data"].get("forward_to_committees", [])
+                        if (id := committee.get("id"))
+                    ],
+                    ["name"],
+                ),
+                GetManyRequest(
+                    "user",
+                    [
+                        id
+                        for row in self.rows
+                        for user in row["data"].get("committee_managers", [])
+                        + row["data"].get("meeting_admins", [])
+                        if (id := user.get("id"))
+                    ],
+                    ["username"],
+                ),
+                GetManyRequest(
+                    "organization_tag",
+                    [
+                        id
+                        for row in self.rows
+                        for tag in row["data"].get("organisation_tags", [])
+                        if (id := tag.get("id"))
+                    ],
+                    ["name"],
+                ),
+                GetManyRequest(
+                    "meeting",
+                    [
+                        id
+                        for row in self.rows
+                        if (id := row["data"].get("meeting_template", {}).get("id"))
+                    ],
+                    ["name"],
+                ),
+            ],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        self.committee_map = {
+            k: v["name"] for k, v in result.get("committee", {}).items()
+        }
+        self.user_map = {k: v["username"] for k, v in result.get("user", {}).items()}
+        self.organization_tag_map = {
+            k: v["name"] for k, v in result.get("organization_tag", {}).items()
+        }
+        self.meeting_map = {k: v["name"] for k, v in result.get("meeting", {}).items()}

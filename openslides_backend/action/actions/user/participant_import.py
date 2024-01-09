@@ -56,7 +56,7 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         entry["groups"] = groups
 
         valid = False
-        for group in (groups := entry["groups"]):
+        for group in groups:
             if not (group_id := group.get("id")):
                 continue
             if group_id in self.group_names_lookup:

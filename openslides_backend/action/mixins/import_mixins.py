@@ -230,6 +230,72 @@ class ImportMixin(BaseImportJsonUpload):
     ) -> Optional[ActionResultElement]:
         return {"rows": self.rows, "state": self.import_state}
 
+    def validate_with_lookup(
+        self, row: ImportRow, lookup: Lookup, field: str = "name", required: bool = True
+    ) -> None:
+        entry = row["data"]
+        name = self.get_value_from_union_str_object(entry.get(field))
+        if not name:
+            if not required:
+                return
+            else:
+                raise ActionException(
+                    f"Invalid JsonUpload data: The data from json upload must contain a valid {field} object"
+                )
+
+        result = lookup.check_duplicate(name)
+        id_ = lookup.get_field_by_name(name, "id")
+        if result == ResultType.FOUND_ID and id_ != 0:
+            if row["state"] != ImportState.DONE:
+                row["messages"].append(
+                    f"Error: row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
+                )
+                row["state"] = ImportState.ERROR
+                entry[field]["info"] = ImportState.ERROR
+            elif "id" not in entry:
+                raise ActionException(
+                    f"Invalid JsonUpload data: A data row with state '{ImportState.DONE}' must have an 'id'"
+                )
+            elif entry["id"] != id_:
+                row["state"] = ImportState.ERROR
+                entry[field]["info"] = ImportState.ERROR
+                row["messages"].append(
+                    f"Error: {field} '{name}' found in different id ({id_} instead of {entry['id']})"
+                )
+        elif result == ResultType.FOUND_MORE_IDS:
+            row["state"] = ImportState.ERROR
+            entry[field]["info"] = ImportState.ERROR
+            row["messages"].append(f"Error: {field} '{name}' is duplicated in import.")
+        elif result == ResultType.NOT_FOUND_ANYMORE:
+            row["messages"].append(
+                f"Error: {self.import_name} {entry[field]['id']} not found anymore for updating {self.import_name} '{name}'."
+            )
+            row["state"] = ImportState.ERROR
+        elif result == ResultType.NOT_FOUND:
+            pass  # cannot create an error!
+
+    def validate_list_field(
+        self, row: ImportRow, name_map: Dict[int, str], field: str
+    ) -> bool:
+        valid = False
+        for obj in row["data"].get(field, []):
+            if not (id := obj.get("id")):
+                continue
+            if id in name_map:
+                if name_map[id] == obj["value"]:
+                    valid = True
+                else:
+                    obj["info"] = ImportState.WARNING
+                    row["messages"].append(
+                        f"Expected model '{id} {obj['value']}' changed it's name to '{name_map[id]}'."
+                    )
+            else:
+                obj["info"] = ImportState.WARNING
+                row["messages"].append(
+                    f"Model '{id} {obj['value']}' doesn't exist anymore"
+                )
+        return valid
+
     def flatten_copied_object_fields(
         self,
         hook_method: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None,
