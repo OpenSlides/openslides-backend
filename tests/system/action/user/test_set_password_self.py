@@ -2,6 +2,10 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class UserSetPasswordSelfActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.reset_redis()
+
     def test_set_password_correct_permission(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])

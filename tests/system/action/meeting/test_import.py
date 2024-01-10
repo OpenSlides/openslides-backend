@@ -2,6 +2,7 @@ import base64
 import time
 from typing import Any, Dict, Optional
 
+from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
 from openslides_backend.shared.util import (
@@ -1482,7 +1483,7 @@ class MeetingImport(BaseActionTestCase):
                     "1": {
                         "id": 1,
                         "name": "testcase",
-                        "state": "end",
+                        "state": ActionWorkerState.END,
                         "created": round(time.time() - 3),
                         "timestamp": round(time.time()),
                     }

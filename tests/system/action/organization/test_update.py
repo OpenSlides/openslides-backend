@@ -273,7 +273,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"default_language": "it"})
 
-    def test_update_genders_with_rm_a_gender(self) -> None:
+    def test_update_genders_remove(self) -> None:
         self.set_models(
             {
                 "organization/1": {"genders": ["male", "female", "test"]},
@@ -292,6 +292,20 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/7", {"username": "not_changed", "gender": "male"}
         )
+
+    def test_update_genders_empty(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"genders": ["male", "female", "test"]},
+                "user/6": {"gender": "test"},
+                "user/7": {"gender": "male"},
+            }
+        )
+        response = self.request("organization.update", {"id": 1, "genders": []})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"genders": []})
+        self.assert_model_exists("user/6", {"gender": None})
+        self.assert_model_exists("user/7", {"gender": None})
 
     def test_update_group_a_no_permissions(self) -> None:
         self.set_organization_management_level(
@@ -362,7 +376,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Organization 1 has 3 active meetings. You cannot set the limit lower.",
+            "Your organization has 3 active meetings. You cannot set the limit lower.",
             response.json["message"],
         )
 

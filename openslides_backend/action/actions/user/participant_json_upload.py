@@ -107,6 +107,18 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             entry["groups"] = group_objects
         if structure_level_objects:
             entry["structure_level"] = structure_level_objects
+        if vote_weight := entry.get("vote_weight"):
+            if (
+                vote_weight["value"] == "0.000000"
+                and vote_weight["info"] != ImportState.REMOVE
+            ):
+                entry["vote_weight"] = {
+                    "value": vote_weight["value"],
+                    "info": ImportState.ERROR,
+                }
+                messages.append("vote_weight must be bigger than or equal to 0.000001.")
+                results["state"] = ImportState.ERROR
+
         if payload_index:
             entry["payload_index"] = payload_index
 

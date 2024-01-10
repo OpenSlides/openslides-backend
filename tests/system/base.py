@@ -89,10 +89,16 @@ class BaseSystemTestCase(TestCase):
             # Login and save copy of auth data for all following tests
             self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
             BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
-        self.vote_service.clear_all()
         self.anon_client = self.create_client()
 
     def set_thread_watch_timeout(self, timeout: float) -> None:
+        """
+        Set the timeout for the thread watch.
+        timeout > 0: Waits `timeout` seconds before continuing the action in the action worker.
+        timeout = 0: Continues the action in the action worker immediately.
+        timeout = -1: Waits indefinetly for the action to finish, does not start an action worker
+        timeout = -2: Deacticates threading alltogether. The action is executed in the main thread.
+        """
         self.app.env.vars["OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT"] = str(timeout)
 
     def tearDown(self) -> None:

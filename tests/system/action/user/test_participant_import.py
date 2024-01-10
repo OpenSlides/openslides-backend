@@ -232,6 +232,46 @@ class ParticipantImport(BaseActionTestCase):
 
 
 class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInImport):
+    def test_upload_import_invalid_vote_weight_with_remove(self) -> None:
+        self.json_upload_invalid_vote_weight_with_remove()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.DONE
+        assert (
+            "vote_weight must be bigger than or equal to 0.000001."
+            not in result["rows"][0]["messages"]
+        )
+        assert result["rows"][0]["state"] == ImportState.DONE
+        assert result["rows"][0]["data"] == {
+            "id": 2,
+            "first_name": {"value": "Wilhelm", "info": ImportState.DONE},
+            "last_name": {"value": "Aberhatnurhut", "info": ImportState.DONE},
+            "email": {"value": "will@helm.hut", "info": ImportState.DONE},
+            "vote_weight": {"value": "0.000000", "info": ImportState.REMOVE},
+            "username": {"id": 2, "value": "wilhelm", "info": ImportState.DONE},
+            "default_password": {"value": "123", "info": ImportState.DONE},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "wilhelm",
+                "first_name": "Wilhelm",
+                "last_name": "Aberhatnurhut",
+                "email": "will@helm.hut",
+                "default_password": "123",
+                "meeting_user_ids": [12],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/12",
+            {
+                "vote_weight": None,
+                "group_ids": [1],
+            },
+        )
+
     def test_upload_import_with_generated_usernames_okay(self) -> None:
         self.json_upload_saml_id_new()
         response = self.request("participant.import", {"id": 1, "import": True})

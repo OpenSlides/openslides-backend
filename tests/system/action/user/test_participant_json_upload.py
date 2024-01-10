@@ -393,12 +393,93 @@ class ParticipantJsonUpload(BaseActionTestCase):
             in entry["messages"]
         )
 
+    def test_json_upload_invalid_vote_weight(self) -> None:
+        self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "max@mustermann.org",
+                        "vote_weight": "0",
+                        "default_password": "halloIchBinMax",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
+        assert result["rows"][0]["messages"] == [
+            "vote_weight must be bigger than or equal to 0.000001."
+        ]
+        assert result["rows"][0]["state"] == ImportState.ERROR
+        assert result["rows"][0]["data"] == {
+            "first_name": {"value": "Max", "info": ImportState.DONE},
+            "last_name": {"value": "Mustermann", "info": ImportState.DONE},
+            "email": {"value": "max@mustermann.org", "info": ImportState.DONE},
+            "vote_weight": {"value": "0.000000", "info": ImportState.ERROR},
+            "username": {"value": "MaxMustermann", "info": ImportState.GENERATED},
+            "default_password": {"value": "halloIchBinMax", "info": ImportState.DONE},
+            "groups": [{"id": 1, "info": "generated", "value": "testgroup"}],
+        }
+
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(1)
         self.create_meeting(4)
+
+    def json_upload_invalid_vote_weight_with_remove(self) -> None:
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": "can_manage_users"},
+                "user/2": {
+                    "meeting_user_ids": [12],
+                    "username": "wilhelm",
+                    "meeting_ids": [1],
+                },
+                "meeting_user/12": {"meeting_id": 1, "group_ids": [1], "user_id": 2},
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "wilhelm",
+                        "first_name": "Wilhelm",
+                        "last_name": "Aberhatnurhut",
+                        "email": "will@helm.hut",
+                        "vote_weight": "0",
+                        "default_password": "123",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.DONE
+        assert (
+            "vote_weight must be bigger than or equal to 0.000001."
+            not in result["rows"][0]["messages"]
+        )
+        assert result["rows"][0]["state"] == ImportState.DONE
+        assert result["rows"][0]["data"] == {
+            "id": 2,
+            "first_name": {"value": "Wilhelm", "info": ImportState.DONE},
+            "last_name": {"value": "Aberhatnurhut", "info": ImportState.DONE},
+            "email": {"value": "will@helm.hut", "info": ImportState.DONE},
+            "vote_weight": {"value": "0.000000", "info": ImportState.REMOVE},
+            "username": {"id": 2, "value": "wilhelm", "info": ImportState.DONE},
+            "default_password": {"value": "123", "info": ImportState.DONE},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
 
     def json_upload_saml_id_new(self) -> None:
         self.set_models(

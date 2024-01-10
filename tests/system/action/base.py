@@ -42,6 +42,8 @@ class BaseActionTestCase(BaseSystemTestCase):
     def setUp(self) -> None:
         super().setUp()
         ActionHandler.MAX_RETRY = 1
+
+    def reset_redis(self) -> None:
         # access auth database directly to reset it
         redis = self.auth.auth_handler.database.redis
         prefix = ":".join(
