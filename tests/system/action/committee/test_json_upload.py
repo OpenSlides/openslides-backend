@@ -50,14 +50,14 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                     "is_list": True,
                 },
                 {
-                    "property": "committee_managers",
+                    "property": "managers",
                     "type": "string",
                     "is_object": True,
                     "is_list": True,
                 },
                 {"property": "meeting_name", "type": "string"},
-                {"property": "start_time", "type": "date"},
-                {"property": "end_time", "type": "date"},
+                {"property": "meeting_start_time", "type": "date"},
+                {"property": "meeting_end_time", "type": "date"},
                 {
                     "property": "meeting_admins",
                     "type": "string",
@@ -173,7 +173,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                 "name": {"info": ImportState.NEW, "value": "committee A"},
                 "organization_tags": [
                     {"value": "test", "info": ImportState.DONE, "id": 37},
-                    {"value": "new", "info": ImportState.GENERATED},
+                    {"value": "new", "info": ImportState.NEW},
                 ],
             },
         }
@@ -190,20 +190,18 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "organization_tags must contain unique items" in response.json["message"]
 
-    def test_json_upload_committee_managers(self) -> None:
+    def test_json_upload_managers(self) -> None:
         response = self.request(
             "committee.json_upload",
-            {"data": [{"name": "test", "committee_managers": ["admin", "missing"]}]},
+            {"data": [{"name": "test", "managers": ["admin", "missing"]}]},
         )
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
             "state": ImportState.NEW,
-            "messages": [
-                "Following values of committee_managers were not found: 'missing'"
-            ],
+            "messages": ["Following values of managers were not found: 'missing'"],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
-                "committee_managers": [
+                "managers": [
                     {"value": "admin", "info": ImportState.DONE, "id": 1},
                     {"value": "missing", "info": ImportState.WARNING},
                 ],
@@ -338,8 +336,8 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                     {
                         "name": "test",
                         "meeting_name": "test meeting",
-                        "start_time": "2023-08-09",
-                        "end_time": "2023-08-10",
+                        "meeting_start_time": "2023-08-09",
+                        "meeting_end_time": "2023-08-10",
                     }
                 ]
             },
@@ -351,8 +349,45 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
-                "start_time": 1691539200,
-                "end_time": 1691625600,
+                "meeting_start_time": 1691539200,
+                "meeting_end_time": 1691625600,
+            },
+        }
+
+    def test_json_upload_duplicate_meeting(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"name": "committee", "meeting_ids": [2]},
+                "meeting/2": {
+                    "name": "meeting",
+                    "committee_id": 1,
+                    "start_time": 1691582400,
+                    "end_time": 1691668800,
+                },
+            }
+        )
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "committee",
+                        "meeting_name": "meeting",
+                        "meeting_start_time": "2023-08-09",
+                        "meeting_end_time": "2023-08-10",
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.ERROR,
+            "messages": ["A meeting with this name and dates already exists."],
+            "data": {
+                "name": {"value": "committee", "info": ImportState.DONE, "id": 1},
+                "meeting_name": "meeting",
+                "meeting_start_time": 1691539200,
+                "meeting_end_time": 1691625600,
             },
         }
 
@@ -364,12 +399,12 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                     {
                         "name": "test",
                         "meeting_name": "test meeting",
-                        "start_time": "2023-08-09",
+                        "meeting_start_time": "2023-08-09",
                     },
                     {
                         "name": "test2",
                         "meeting_name": "test meeting 2",
-                        "end_time": "2023-08-10",
+                        "meeting_end_time": "2023-08-10",
                     },
                 ]
             },
@@ -383,7 +418,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
-                "start_time": 1691539200,
+                "meeting_start_time": 1691539200,
             },
         }
         assert self.get_row(response, 1) == {
@@ -394,7 +429,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
             "data": {
                 "name": {"value": "test2", "info": ImportState.NEW},
                 "meeting_name": "test meeting 2",
-                "end_time": 1691625600,
+                "meeting_end_time": 1691625600,
             },
         }
 
@@ -407,8 +442,8 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                         "name": "test",
                         "meeting_name": "test meeting",
                         "meeting_template": "",
-                        "start_time": "2023-08-09",
-                        "end_time": "12XX-broken",
+                        "meeting_start_time": "2023-08-09",
+                        "meeting_end_time": "12XX-broken",
                     }
                 ]
             },
@@ -424,8 +459,8 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                     {
                         "name": "test",
                         "meeting_name": "test meeting",
-                        "start_time": "2023-08-10",
-                        "end_time": "2023-08-09",
+                        "meeting_start_time": "2023-08-10",
+                        "meeting_end_time": "2023-08-09",
                     }
                 ]
             },
@@ -439,8 +474,8 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
-                "start_time": 1691625600,
-                "end_time": 1691539200,
+                "meeting_start_time": 1691625600,
+                "meeting_end_time": 1691539200,
             },
         }
 
@@ -459,10 +494,16 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
             "state": ImportState.NEW,
-            "messages": ["No meeting will be created without meeting_name"],
+            "messages": [
+                "No meeting will be created without meeting_name",
+                "Template meetings can only be used for existing committees.",
+            ],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
-                "meeting_template": "testtemplate",
+                "meeting_template": {
+                    "value": "testtemplate",
+                    "info": ImportState.WARNING,
+                },
             },
         }
 
@@ -482,7 +523,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
             "state": ImportState.NEW,
-            "messages": ["Following values of meeting_template were not found: 'test'"],
+            "messages": ["Template meetings can only be used for existing committees."],
             "data": {
                 "name": {"value": "test", "info": ImportState.NEW},
                 "meeting_name": "test meeting",
@@ -491,30 +532,71 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
         }
 
     def test_json_upload_meeting_template_found(self) -> None:
-        self.set_models({"meeting/23": {"name": "test"}})
+        self.set_models(
+            {
+                "committee/1": {"name": "committee", "meeting_ids": [2]},
+                "meeting/2": {"name": "template", "committee_id": 1},
+            }
+        )
         response = self.request(
             "committee.json_upload",
             {
                 "data": [
                     {
-                        "name": "test",
-                        "meeting_name": "test meeting",
-                        "meeting_template": "test",
+                        "name": "committee",
+                        "meeting_name": "test",
+                        "meeting_template": "template",
                     }
                 ]
             },
         )
         self.assert_status_code(response, 200)
         assert self.get_row(response) == {
-            "state": ImportState.NEW,
+            "state": ImportState.DONE,
             "messages": [],
             "data": {
-                "name": {"value": "test", "info": ImportState.NEW},
-                "meeting_name": "test meeting",
+                "name": {"value": "committee", "info": ImportState.DONE, "id": 1},
+                "meeting_name": "test",
                 "meeting_template": {
-                    "value": "test",
+                    "value": "template",
                     "info": ImportState.DONE,
-                    "id": 23,
+                    "id": 2,
+                },
+            },
+        }
+
+    def test_json_upload_meeting_template_in_another_committee(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"name": "committee1", "meeting_ids": [2]},
+                "committee/2": {"name": "committee2"},
+                "meeting/2": {"name": "template", "committee_id": 1},
+            }
+        )
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "committee2",
+                        "meeting_name": "test",
+                        "meeting_template": "template",
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.DONE,
+            "messages": [
+                "The meeting template template was not found, the meeting will be created without a template."
+            ],
+            "data": {
+                "name": {"value": "committee2", "info": ImportState.DONE, "id": 2},
+                "meeting_name": "test",
+                "meeting_template": {
+                    "value": "template",
+                    "info": ImportState.WARNING,
                 },
             },
         }

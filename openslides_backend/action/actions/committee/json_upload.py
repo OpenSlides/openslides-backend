@@ -1,7 +1,10 @@
-from typing import Any, Dict, List, Set, Tuple
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from openslides_backend.action.actions.meeting.mixins import MeetingCheckTimesMixin
 from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.filters import And, Filter, FilterOperator, Or
 from openslides_backend.shared.schema import str_list_schema
 
 from ....models.models import Committee, Meeting
@@ -24,9 +27,13 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
                         **model.get_properties("name", "description"),
                         "forward_to_committees": str_list_schema,
                         "organization_tags": str_list_schema,
-                        "committee_managers": str_list_schema,
-                        "meeting_name": {"type": "string"},
-                        **Meeting().get_properties("start_time", "end_time"),
+                        "managers": str_list_schema,
+                        **{
+                            f"meeting_{field}": prop
+                            for field, prop in Meeting()
+                            .get_properties("name", "start_time", "end_time")
+                            .items()
+                        },
                         "meeting_admins": str_list_schema,
                         "meeting_template": {"type": "string"},
                     },
@@ -54,14 +61,14 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
             "is_list": True,
         },
         {
-            "property": "committee_managers",
+            "property": "managers",
             "type": "string",
             "is_object": True,
             "is_list": True,
         },
         {"property": "meeting_name", "type": "string"},
-        {"property": "start_time", "type": "date"},
-        {"property": "end_time", "type": "date"},
+        {"property": "meeting_start_time", "type": "date"},
+        {"property": "meeting_end_time", "type": "date"},
         {
             "property": "meeting_admins",
             "type": "string",
@@ -79,6 +86,9 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
         data = instance.pop("data")
         self.setup_lookups(data)
         self.rows = [self.validate_entry(entry) for entry in data]
+
+        # check meeting_template afterwards to ensure each committee has an id
+        self.check_meetings()
 
         # generate statistics
         itemCount = len(self.rows)
@@ -131,19 +141,31 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
             if any(
                 entry.get(field)
                 for field in (
-                    "start_time",
-                    "end_time",
+                    "meeting_start_time",
+                    "meeting_end_time",
                     "meeting_admins",
                     "meeting_template",
                 )
             ):
                 messages.append("No meeting will be created without meeting_name")
-        elif not self.meeting_checks(entry, messages):
-            row_state = ImportState.ERROR
+        else:
+            self.validate_with_lookup(
+                entry, "meeting_admins", self.username_lookup, messages
+            )
+            try:
+                self.check_start_and_end_time(
+                    {
+                        field: entry[meeting_field]
+                        for field in ("start_time", "end_time")
+                        if (meeting_field := f"meeting_{field}") in entry
+                    },
+                    {},
+                )
+            except ActionException as e:
+                messages.append(e.message)
+                row_state = ImportState.ERROR
 
-        self.validate_with_lookup(
-            entry, "committee_managers", self.username_lookup, messages
-        )
+        self.validate_with_lookup(entry, "managers", self.username_lookup, messages)
         self.validate_with_lookup(
             entry, "forward_to_committees", self.committee_lookup, messages
         )
@@ -156,19 +178,112 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
         )
         return {"state": row_state, "messages": messages, "data": entry}
 
-    def meeting_checks(self, entry: Dict[str, Any], messages: List[str]) -> bool:
-        self.validate_with_lookup(
-            entry, "meeting_template", self.meeting_lookup, messages, is_list=False
+    def check_meetings(self) -> None:
+        # search for relevant meetings in datastore
+        filters: List[Filter] = []
+        for row in self.rows:
+            entry = row["data"]
+            if (committee_id := entry["name"].get("id")) and (
+                meeting_name := entry.get("meeting_name")
+            ):
+                # find meeting duplicates by name and time
+                parts = [
+                    FilterOperator("committee_id", "=", committee_id),
+                    FilterOperator("name", "=", meeting_name),
+                ]
+                for field in ("start_time", "end_time"):
+                    if time := entry.get(f"meeting_{field}"):
+                        start_of_day = datetime.fromtimestamp(time, timezone.utc)
+                        start_of_day.replace(hour=0, minute=0, second=0, microsecond=0)
+                        end_of_day = start_of_day + timedelta(days=1)
+                        parts.extend(
+                            (
+                                FilterOperator(field, ">=", start_of_day.timestamp()),
+                                FilterOperator(field, "<", end_of_day.timestamp()),
+                            )
+                        )
+                    else:
+                        parts.append(FilterOperator(field, "=", None))
+                filters.append(And(*parts))
+                # find template meetings
+                if template_name := entry.get("meeting_template"):
+                    filters.append(
+                        And(
+                            FilterOperator("name", "=", template_name),
+                            FilterOperator("committee_id", "=", committee_id),
+                        )
+                    )
+        results = (
+            self.datastore.filter(
+                "meeting",
+                Or(*filters),
+                ["id", "name", "committee_id", "start_time", "end_time"],
+                lock_result=False,
+                use_changed_models=False,
+            )
+            if len(filters)
+            else {}
         )
-        self.validate_with_lookup(
-            entry, "meeting_admins", self.username_lookup, messages
-        )
-        try:
-            self.check_start_and_end_time(entry, {})
-        except ActionException as e:
-            messages.append(e.message)
-            return False
-        return True
+        meeting_map = defaultdict(list)
+        for meeting in results.values():
+            meeting_map[(meeting["name"], meeting["committee_id"])].append(meeting)
+
+        for row in self.rows:
+            entry = row["data"]
+            # check for duplicate meeting
+            if (committee_id := entry["name"].get("id")) and (
+                meeting_name := entry.get("meeting_name")
+            ):
+                meetings = meeting_map[(meeting_name, committee_id)]
+                for meeting in meetings:
+                    if all(
+                        self.is_same_day(
+                            entry.get(f"meeting_{field}"), meeting.get(field)
+                        )
+                        for field in ("start_time", "end_time")
+                    ):
+                        row["messages"].append(
+                            "A meeting with this name and dates already exists."
+                        )
+                        row["state"] = ImportState.ERROR
+                        break
+
+            # check template meeting
+            if template := entry.pop("meeting_template", None):
+                entry["meeting_template"] = {
+                    "value": template,
+                    "info": ImportState.WARNING,
+                }
+                if not committee_id:
+                    row["messages"].append(
+                        "Template meetings can only be used for existing committees."
+                    )
+                elif not entry.get("meeting_name"):
+                    pass  # message was already created in meeting_checks
+                else:
+                    meetings = meeting_map[(template, committee_id)]
+                    if len(meetings) > 1:
+                        row["messages"].append(
+                            "Found multiple meetings with given template name, the meeting will be created without a template."
+                        )
+                    elif len(meetings) == 1:
+                        entry["meeting_template"].update(
+                            {
+                                "id": meetings[0]["id"],
+                                "info": ImportState.DONE,
+                            }
+                        )
+                    else:
+                        row["messages"].append(
+                            f"The meeting template {template} was not found, the meeting will be created without a template."
+                        )
+
+    def is_same_day(self, a: Optional[int], b: Optional[int]) -> bool:
+        if a is None or b is None:
+            return a == b
+        dt_a = datetime.fromtimestamp(a, timezone.utc)
+        dt_b = datetime.fromtimestamp(b, timezone.utc)
+        return dt_a.date() == dt_b.date()
 
     def validate_with_lookup(
         self,
@@ -176,11 +291,9 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
         field: str,
         lookup: Lookup,
         messages: List[str],
-        is_list: bool = True,
         create: bool = False,
     ) -> None:
-        value = entry.get(field)
-        names = [] if not value else value if is_list else [value]
+        names = entry.get(field, [])
         objects: List[Dict[str, Any]] = []
         missing: List[str] = []
         duplicates: List[str] = []
@@ -194,7 +307,7 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
                         # the matched committee is currently being imported and therefore has no id
                         pass
                     elif create:
-                        obj["info"] = ImportState.GENERATED
+                        obj["info"] = ImportState.NEW
                     else:
                         obj["info"] = ImportState.WARNING
                         missing.append(name)
@@ -209,8 +322,8 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
             messages.append(
                 f"Following values of {field} could not be uniquely matched: '{', '.join(duplicates)}'"
             )
-        if value is not None:
-            entry[field] = objects if is_list else objects[0] if objects else None
+        if names:
+            entry[field] = objects
 
     def setup_lookups(self, data: List[Dict[str, Any]]) -> None:
         committee_names: Set[str] = set()
@@ -218,21 +331,18 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
         usernames: Set[str] = set()
         organization_tags: Set[str] = set()
         forward_committees: Set[str] = set()
-        meeting_template_names: Set[str] = set()
 
         for entry in data:
             committee_names.add(entry["name"])
             committee_tuples.append((entry["name"], entry))
             if forwards := entry.get("forward_to_committees"):
                 forward_committees.update(forwards)
-            if managers := entry.get("committee_managers"):
+            if managers := entry.get("managers"):
                 usernames.update(managers)
             if admins := entry.get("meeting_admins"):
                 usernames.update(admins)
             if tags := entry.get("organization_tags"):
                 organization_tags.update(tags)
-            if meeting_template := entry.get("meeting_template"):
-                meeting_template_names.add(meeting_template)
 
         self.committee_lookup = Lookup(
             self.datastore,
@@ -249,7 +359,4 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
             self.datastore,
             "organization_tag",
             [(name, {}) for name in organization_tags],
-        )
-        self.meeting_lookup = Lookup(
-            self.datastore, "meeting", [(name, {}) for name in meeting_template_names]
         )

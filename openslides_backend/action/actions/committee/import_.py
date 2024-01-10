@@ -1,8 +1,13 @@
-from collections import defaultdict
 from typing import Any, Dict, List
 
+from openslides_backend.action.actions.meeting.create import MeetingCreate
+from openslides_backend.action.actions.organization_tag.create import (
+    OrganizationTagCreate,
+)
+from openslides_backend.action.util.typing import ActionData, ActionResults
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...mixins.import_mixins import ImportMixin, ImportRow, ImportState, Lookup
@@ -17,6 +22,16 @@ class CommitteeImport(ImportMixin):
     skip_archived_meeting_check = True
     import_name = "committee"
 
+    field_map = {
+        field: field[:-1] + "_ids"
+        for field in (
+            "forward_to_committees",
+            "managers",
+            "meeting_admins",
+            "organization_tags",
+        )
+    }
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         if not instance["import"]:
@@ -27,7 +42,7 @@ class CommitteeImport(ImportMixin):
             self.validate_entry(row)
 
         if self.import_state != ImportState.ERROR:
-            rows = self.flatten_copied_object_fields()
+            rows = self.flatten_copied_object_fields(self.handle_relation_fields)
             self.create_committees(rows)
 
         return {}
@@ -36,62 +51,130 @@ class CommitteeImport(ImportMixin):
         self.validate_with_lookup(row, self.committee_lookup)
         self.validate_with_lookup(row, self.committee_lookup, "meeting_template", False)
         self.validate_list_field(row, self.committee_map, "forward_to_committees")
-        self.validate_list_field(row, self.user_map, "committee_managers")
+        self.validate_list_field(row, self.user_map, "managers")
         self.validate_list_field(row, self.user_map, "meeting_admins")
         self.validate_list_field(row, self.organization_tag_map, "organization_tags")
 
+    def handle_relation_fields(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+        for field in ("managers", "meeting_admins"):
+            if field in entry:
+                entry[field] = [id for user in entry[field] if (id := user.get("id"))]
+        return entry
+
     def create_committees(self, rows: List[ImportRow]) -> None:
-        create_action_data: List[Dict[str, Any]] = []
-        update_action_data_map: Dict[int, Dict[str, Any]] = defaultdict(dict)
+        # create tags & update row data
+        create_tag_data: List[Dict[str, Any]] = []
+        for row in rows:
+            for tag in row["data"].get("organization_tags", []):
+                if isinstance(tag, str):
+                    create_tag_data.append(
+                        {"name": tag, "color": "#2196f3", "organization_id": 1}
+                    )
+        if create_tag_data:
+            results = self.execute_other_action(OrganizationTagCreate, create_tag_data)
+            self.update_rows_from_results(
+                rows, create_tag_data, results, "organization_tags"
+            )
+
+        # create missing committees & update row data
+        create_committee_data: List[Dict[str, Any]] = []
+        for row in rows:
+            entry = row["data"]
+            if "id" not in entry:
+                create_committee_data.append(
+                    {"name": entry["name"], "organization_id": 1}
+                )
+        if create_committee_data:
+            results = self.execute_other_action(CommitteeCreate, create_committee_data)
+            self.update_rows_from_results(
+                rows, create_committee_data, results, "forward_to_committees", True
+            )
+
+        # rename relation fields
+        for row in rows:
+            entry = row["data"]
+            for old, new in self.field_map.items():
+                if old in entry:
+                    entry[new] = entry.pop(old)
+
+        # execute committee updates
+        update_committee_data: List[Dict[str, Any]] = []
         for row in rows:
             entry = row["data"]
             action_data = {
                 field: entry[field]
                 for field in (
                     "id",
-                    "name",
                     "description",
-                    "organization_tags",
-                    "committee_managers",
+                    "forward_to_committee_ids",
+                    "manager_ids",
+                    "organization_tag_ids",
                 )
                 if field in entry
             }
-            if "organization_tags" in action_data:
-                action_data["organization_tag_ids"] = action_data.pop(
-                    "organization_tags"
-                )
-            if "committee_managers" in action_data:
-                action_data["manager_ids"] = action_data.pop("committee_managers")
-            if id := entry.get("id"):
-                update_action_data_map[id] = action_data
-            else:
-                create_action_data.append(action_data)
-        results = self.execute_other_action(CommitteeCreate, create_action_data) or []
-        committee_map = {
-            entry["name"]: result["id"]
-            for entry, result in zip(create_action_data, results)
+            update_committee_data.append(action_data)
+        if update_committee_data:
+            self.execute_other_action(CommitteeUpdateAction, update_committee_data)
+
+        # create meetings
+        lang = self.get_organization_language()
+        create_meeting_data: List[Dict[str, Any]] = []
+        for row in rows:
+            entry = row["data"]
+            if "meeting_name" in entry:
+                action_data = {
+                    field: entry[f"meeting_{field}"]
+                    for field in (
+                        "name",
+                        "start_time",
+                        "end_time",
+                        "admin_ids",
+                    )
+                    if field in entry
+                } | {
+                    "committee_id": entry["id"],
+                    "language": lang,
+                }
+                create_meeting_data.append(action_data)
+        if create_meeting_data:
+            self.execute_other_action(MeetingCreate, create_meeting_data)
+
+    def update_rows_from_results(
+        self,
+        rows: List[ImportRow],
+        action_data: ActionData,
+        results: ActionResults | None,
+        field: str,
+        update_ids: bool = False,
+    ) -> None:
+        name_map = {
+            action_data["name"]: result["id"]
+            for action_data, result in zip(action_data, results or [])
             if result
         }
         for row in rows:
             entry = row["data"]
-            if "id" not in entry:
-                entry["id"] = committee_map[entry["name"]]
-            if forwards := entry.get("forward_to_committees"):
-                for i in range(len(forwards)):
-                    if isinstance(forwards[i], str):
-                        if forwards[i] not in committee_map:
+            if update_ids and "id" not in entry:
+                entry["id"] = name_map[entry["name"]]
+            if values := entry.pop(field, None):  # pop field to rename it
+                # replace names with ids
+                for i in range(len(values)):
+                    if isinstance(values[i], str):
+                        if values[i] not in name_map:
                             raise ActionException(
-                                f"Unknown name in forward_to_committees: {forwards[i]}"
+                                f"Unknown name in {field}: {values[i]}"
                             )
-                        forwards[i] = committee_map[forwards[i]]
-            update_action_data_map[entry["id"]]["forward_to_committee_ids"] = forwards
-        self.execute_other_action(
-            CommitteeUpdateAction,
-            [
-                {"id": id, **action_data}
-                for id, action_data in update_action_data_map.items()
-            ],
+                        values[i] = name_map[values[i]]
+                entry[self.field_map.get(field, field)] = values
+
+    def get_organization_language(self) -> str:
+        organization = self.datastore.get(
+            ONE_ORGANIZATION_FQID,
+            ["default_language"],
+            lock_result=False,
+            use_changed_models=False,
         )
+        return organization["default_language"]
 
     def setup_lookups(self) -> None:
         self.committee_lookup = Lookup(
@@ -102,7 +185,6 @@ class CommitteeImport(ImportMixin):
                 for row in self.rows
                 if (entry := row["data"])
             ],
-            field="name",
         )
         result = self.datastore.get_many(
             [
@@ -121,7 +203,7 @@ class CommitteeImport(ImportMixin):
                     [
                         id
                         for row in self.rows
-                        for user in row["data"].get("committee_managers", [])
+                        for user in row["data"].get("managers", [])
                         + row["data"].get("meeting_admins", [])
                         if (id := user.get("id"))
                     ],
@@ -132,7 +214,7 @@ class CommitteeImport(ImportMixin):
                     [
                         id
                         for row in self.rows
-                        for tag in row["data"].get("organisation_tags", [])
+                        for tag in row["data"].get("organization_tags", [])
                         if (id := tag.get("id"))
                     ],
                     ["name"],
