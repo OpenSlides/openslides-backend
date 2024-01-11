@@ -51,9 +51,8 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
 
         total_pause = speaker.get("total_pause", 0)
         if speaker.get("pause_time"):
-            instance["total_pause"] = total_pause = (
-                speaker["total_pause"] + instance["end_time"] - speaker["pause_time"]
-            )
+            total_pause += instance["end_time"] - speaker["pause_time"]
+            instance["total_pause"] = total_pause
             instance["pause_time"] = None
 
         # update countdowns

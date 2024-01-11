@@ -187,6 +187,30 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         )
         self.assertIsNone(model.get("current_start_time"))
 
+    def test_paused_speaker_without_total_pause(self) -> None:
+        start = floor(time())
+        self.set_models(
+            {
+                "speaker/890": {
+                    "begin_time": start - 100,
+                    "pause_time": start - 50,
+                },
+            }
+        )
+        response = self.request("speaker.end_speech", {"id": 890})
+        end = ceil(time())
+        delta = end - start
+        self.assert_status_code(response, 200)
+        speaker = self.assert_model_exists(
+            "speaker/890",
+            {
+                "begin_time": start - 100,
+                "pause_time": None,
+            },
+        )
+        self.assertAlmostEqual(speaker["total_pause"], 50, delta=delta)
+        self.assertAlmostEqual(speaker["end_time"], end, delta=delta)
+
     def test_end_speech_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.end_speech", {"id": 890})
 
