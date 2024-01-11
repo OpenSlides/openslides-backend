@@ -78,6 +78,7 @@ class BaseSystemTestCase(TestCase):
             ONE_ORGANIZATION_FQID,
             {
                 "name": "OpenSlides Organization",
+                "default_language": "en",
                 "user_ids": [1],
             },
         )

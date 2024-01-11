@@ -36,7 +36,6 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
     saml_id_lookup: Lookup
     names_email_lookup: Lookup
     all_saml_id_lookup: Lookup
-    import_name: str = ""
 
     @classmethod
     def get_schema(
@@ -82,29 +81,7 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
         self.create_usernames(data)
 
         self.rows = [self.validate_entry(entry) for entry in data]
-
-        # generate statistics
-        itemCount = len(self.rows)
-        state_to_count = {state: 0 for state in ImportState}
-        for row in self.rows:
-            state_to_count[row["state"]] += 1
-            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
-                row.get("data", {}).values()
-            )
-            row["data"].pop("payload_index", None)
-
-        self.statistics = [
-            {"name": "total", "value": itemCount},
-            {"name": "created", "value": state_to_count[ImportState.NEW]},
-            {"name": "updated", "value": state_to_count[ImportState.DONE]},
-            {"name": "error", "value": state_to_count[ImportState.ERROR]},
-            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
-        ]
-
-        self.set_state(
-            state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
-        )
-        self.store_rows_in_the_import_preview(self.import_name)
+        self.generate_statistics()
         return {}
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:

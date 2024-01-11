@@ -90,28 +90,7 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
         # check meeting_template afterwards to ensure each committee has an id
         self.check_meetings()
 
-        # generate statistics
-        itemCount = len(self.rows)
-        state_to_count = {state: 0 for state in ImportState}
-        for row in self.rows:
-            state_to_count[row["state"]] += 1
-            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
-                row.get("data", {}).values()
-            )
-            row["data"].pop("payload_index", None)
-
-        self.statistics = [
-            {"name": "total", "value": itemCount},
-            {"name": "created", "value": state_to_count[ImportState.NEW]},
-            {"name": "updated", "value": state_to_count[ImportState.DONE]},
-            {"name": "error", "value": state_to_count[ImportState.ERROR]},
-            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
-        ]
-
-        self.set_state(
-            state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
-        )
-        self.store_rows_in_the_import_preview(self.import_name)
+        self.generate_statistics()
         return {}
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
@@ -121,11 +100,13 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
         # committee state handling
         result = self.committee_lookup.check_duplicate(entry["name"])
         if result == ResultType.FOUND_ID:
+            id = self.committee_lookup.get_field_by_name(entry["name"], "id")
             entry["name"] = {
                 "value": entry["name"],
                 "info": ImportState.DONE,
-                "id": self.committee_lookup.get_field_by_name(entry["name"], "id"),
+                "id": id,
             }
+            entry["id"] = id
         elif result == ResultType.NOT_FOUND:
             row_state = ImportState.NEW
             entry["name"] = {"value": entry["name"], "info": ImportState.NEW}
@@ -324,6 +305,30 @@ class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
             )
         if names:
             entry[field] = objects
+
+    def generate_statistics(self) -> None:
+        super().generate_statistics()
+        statistics_data = {
+            "meetings_created": 0,
+            "meetings_cloned": 0,
+            "organization_tags_created": 0,
+        }
+        for row in self.rows:
+            entry = row["data"]
+            if entry.get("meeting_name"):
+                if (
+                    entry.get("meeting_template")
+                    and entry["meeting_template"]["info"] == ImportState.DONE
+                ):
+                    statistics_data["meetings_cloned"] += 1
+                else:
+                    statistics_data["meetings_created"] += 1
+            for tag in entry.get("organization_tags", []):
+                if tag["info"] == ImportState.NEW:
+                    statistics_data["organization_tags_created"] += 1
+        self.statistics.extend(
+            {"name": key, "value": value} for key, value in statistics_data.items()
+        )
 
     def setup_lookups(self, data: List[Dict[str, Any]]) -> None:
         committee_names: Set[str] = set()

@@ -28,7 +28,6 @@ SearchFieldType = Union[str, Tuple[str, ...]]
 
 
 class ImportState(str, Enum):
-    NONE = "none"
     WARNING = "warning"
     NEW = "new"
     DONE = "done"
@@ -157,6 +156,8 @@ class Lookup:
 
 
 class BaseImportJsonUpload(SingularActionMixin):
+    import_name: str
+
     @staticmethod
     def count_warnings_in_payload(
         data: Union[List[Union[Dict[str, str], List[Any]]], Dict[str, Any]]
@@ -195,9 +196,8 @@ class ImportMixin(BaseImportJsonUpload):
         }
     )
 
-    import_name: str
-    rows: List[ImportRow] = []
-    result: Dict[str, List] = {}
+    rows: List[ImportRow]
+    result: Dict[str, List]
     import_state = ImportState.DONE
 
     def prefetch(self, action_data: ActionData) -> None:
@@ -218,6 +218,12 @@ class ImportMixin(BaseImportJsonUpload):
         if import_preview.get("state") == ImportState.ERROR:
             raise ActionException("Error in import. Data will not be imported.")
         self.result = import_preview.get("result", {})
+        self.rows = self.result.get("rows", [])
+
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if not instance["import"]:
+            return {}
+        return super().base_update_instance(instance)
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
         return {}
@@ -231,69 +237,75 @@ class ImportMixin(BaseImportJsonUpload):
         return {"rows": self.rows, "state": self.import_state}
 
     def validate_with_lookup(
-        self, row: ImportRow, lookup: Lookup, field: str = "name", required: bool = True
-    ) -> None:
+        self,
+        row: ImportRow,
+        lookup: Lookup,
+        field: str = "name",
+        required: bool = True,
+        expected_id: Optional[int] = None,
+    ) -> Optional[int]:
         entry = row["data"]
-        name = self.get_value_from_union_str_object(entry.get(field))
-        if not name:
-            if not required:
-                return
-            else:
+        value = self.get_value_from_union_str_object(entry.get(field))
+        if not value:
+            if required:
                 raise ActionException(
                     f"Invalid JsonUpload data: The data from json upload must contain a valid {field} object"
                 )
+            else:
+                return None
+        check_result = lookup.check_duplicate(value)
+        id_ = cast(int, lookup.get_field_by_name(value, "id"))
 
-        result = lookup.check_duplicate(name)
-        id_ = lookup.get_field_by_name(name, "id")
-        if result == ResultType.FOUND_ID and id_ != 0:
-            if row["state"] != ImportState.DONE:
-                row["messages"].append(
-                    f"Error: row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
-                )
-                row["state"] = ImportState.ERROR
-                entry[field]["info"] = ImportState.ERROR
-            elif "id" not in entry:
-                raise ActionException(
-                    f"Invalid JsonUpload data: A data row with state '{ImportState.DONE}' must have an 'id'"
-                )
-            elif entry["id"] != id_:
-                row["state"] = ImportState.ERROR
-                entry[field]["info"] = ImportState.ERROR
-                row["messages"].append(
-                    f"Error: {field} '{name}' found in different id ({id_} instead of {entry['id']})"
-                )
-        elif result == ResultType.FOUND_MORE_IDS:
-            row["state"] = ImportState.ERROR
+        error: Optional[str] = None
+        if check_result == ResultType.FOUND_ID and id_ != 0:
+            if required:
+                if row["state"] != ImportState.DONE:
+                    error = f"Error: row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
+                elif "id" not in entry:
+                    raise ActionException(
+                        f"Invalid JsonUpload data: A data row with state '{ImportState.DONE}' must have an 'id'"
+                    )
+            if not error:
+                expected_id = entry["id"] if required else expected_id
+                if id_ != expected_id:
+                    error = f"Error: {field} '{value}' found in different id ({id_} instead of {expected_id})"
+        elif check_result == ResultType.FOUND_MORE_IDS:
+            error = f"Error: {field} '{value}' is duplicated in import."
+        elif check_result == ResultType.NOT_FOUND_ANYMORE:
+            if required:
+                error = f"Error: {self.import_name} {entry[field]['id']} not found anymore for updating {self.import_name} '{value}'."
+            else:
+                error = f"Error: {field} '{value}' not found anymore in {self.import_name} with id '{id_}'"
+
+        if error:
+            row["messages"].append(error)
             entry[field]["info"] = ImportState.ERROR
-            row["messages"].append(f"Error: {field} '{name}' is duplicated in import.")
-        elif result == ResultType.NOT_FOUND_ANYMORE:
-            row["messages"].append(
-                f"Error: {self.import_name} {entry[field]['id']} not found anymore for updating {self.import_name} '{name}'."
-            )
             row["state"] = ImportState.ERROR
-        elif result == ResultType.NOT_FOUND:
-            pass  # cannot create an error!
+        return id_
 
-    def validate_list_field(
-        self, row: ImportRow, name_map: Dict[int, str], field: str
+    def validate_field(
+        self, row: ImportRow, name_map: Dict[int, str], field: str, is_list: bool = True
     ) -> bool:
         valid = False
-        for obj in row["data"].get(field, []):
-            if not (id := obj.get("id")):
-                continue
-            if id in name_map:
-                if name_map[id] == obj["value"]:
-                    valid = True
+        value = row["data"].get(field)
+        if value:
+            arr = value if is_list else [value]
+            for obj in arr:
+                if not (id := obj.get("id")):
+                    continue
+                if id in name_map:
+                    if name_map[id] == obj["value"]:
+                        valid = True
+                    else:
+                        obj["info"] = ImportState.WARNING
+                        row["messages"].append(
+                            f"Expected model '{id} {obj['value']}' changed its name to '{name_map[id]}'."
+                        )
                 else:
                     obj["info"] = ImportState.WARNING
                     row["messages"].append(
-                        f"Expected model '{id} {obj['value']}' changed it's name to '{name_map[id]}'."
+                        f"Model '{id} {obj['value']}' doesn't exist anymore"
                     )
-            else:
-                obj["info"] = ImportState.WARNING
-                row["messages"].append(
-                    f"Model '{id} {obj['value']}' doesn't exist anymore"
-                )
         return valid
 
     def flatten_copied_object_fields(
@@ -372,6 +384,11 @@ class JsonUploadMixin(BaseImportJsonUpload):
     statistics: List[StatisticEntry]
     import_state: ImportState
     meeting_id: int
+
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().base_update_instance(instance)
+        self.store_rows_in_the_import_preview(self.import_name)
+        return instance
 
     def set_state(self, number_errors: int, number_warnings: int) -> None:
         if number_errors > 0:
@@ -500,3 +517,27 @@ class JsonUploadMixin(BaseImportJsonUpload):
                 raise ActionException(
                     f"Participant import tries to use non-existent meeting {id_}"
                 )
+
+    def generate_statistics(self) -> None:
+        """
+        Generates the default statistics for the import preview.
+        Also sets the global state accordingly.
+        """
+        state_to_count: Dict[ImportState, int] = defaultdict(int)
+        for row in self.rows:
+            state_to_count[row["state"]] += 1
+            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
+                row.get("data", {}).values()
+            )
+            row["data"].pop("payload_index", None)
+
+        self.statistics = [
+            {"name": "total", "value": len(self.rows)},
+            {"name": "created", "value": state_to_count[ImportState.NEW]},
+            {"name": "updated", "value": state_to_count[ImportState.DONE]},
+            {"name": "error", "value": state_to_count[ImportState.ERROR]},
+            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
+        ]
+        self.set_state(
+            state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
+        )

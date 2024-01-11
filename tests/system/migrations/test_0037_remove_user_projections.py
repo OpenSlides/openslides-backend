@@ -313,7 +313,7 @@ def test_migration(write, finalize, assert_model):
 
     finalize("0037_remove_user_projections")
 
-    # assert that the user projections don't exist anymore
+    # assert that the user projections doesn't exist anymore
     for projection_id in [5, 7, 9]:
         assert_model(f"projection/{projection_id}", DoesNotExist())
 

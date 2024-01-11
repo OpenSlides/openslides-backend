@@ -321,7 +321,7 @@ class AccountJsonImport(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == [
-            "Error: user 78 not found anymore for updating user 'XYZ'."
+            "Error: account 78 not found anymore for updating account 'XYZ'."
         ]
 
     def test_import_error_state_done_missing_username(self) -> None:
@@ -362,7 +362,7 @@ class AccountJsonImport(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == [
-            "Error: user 111 not found anymore for updating user 'fred'."
+            "Error: account 111 not found anymore for updating account 'fred'."
         ]
 
     def test_import_error_state_done_search_data_error(self) -> None:
@@ -554,7 +554,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Error: user 34 not found anymore for updating user 'test'."
+            "Error: account 34 not found anymore for updating account 'test'."
         ]
         assert row["data"] == {
             "id": 34,
@@ -652,7 +652,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Error: user 11 not found anymore for updating user 'user11'."
+            "Error: account 11 not found anymore for updating account 'user11'."
         ]
         assert row["data"] == {
             "id": 11,
@@ -756,7 +756,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Error: user 2 not found anymore for updating user 'user2'.",
+            "Error: account 2 not found anymore for updating account 'user2'.",
         ]
         assert row["data"] == {
             "id": 2,
@@ -783,7 +783,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = result["rows"][2]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Error: user 4 not found anymore for updating user 'user4'."
+            "Error: account 4 not found anymore for updating account 'user4'."
         ]
         assert row["data"] == {
             "id": 4,

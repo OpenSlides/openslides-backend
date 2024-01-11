@@ -1,8 +1,8 @@
 from math import ceil, floor
 from time import time
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-from openslides_backend.action.mixins.import_mixins import ImportState
+from openslides_backend.action.mixins.import_mixins import ImportState, StatisticEntry
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
@@ -11,6 +11,13 @@ from tests.util import Response
 class CommitteeJsonUploadCommittee(BaseActionTestCase):
     def get_row(self, response: Response, index: int = 0) -> Dict[str, Any]:
         return response.json["results"][0][0]["rows"][index]
+
+    def get_statistics(self, response: Response) -> List[StatisticEntry]:
+        return response.json["results"][0][0]["statistics"]
+
+    def assert_statistics(self, response: Response, expected: Dict[str, int]) -> None:
+        for key, value in expected.items():
+            self.assertIn({"name": key, "value": value}, self.get_statistics(response))
 
     def test_json_upload_minimal_fields(self) -> None:
         start = floor(time())
@@ -72,6 +79,9 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                 {"name": "updated", "value": 0},
                 {"name": "error", "value": 0},
                 {"name": "warning", "value": 0},
+                {"name": "meetings_created", "value": 0},
+                {"name": "meetings_cloned", "value": 0},
+                {"name": "organization_tags_created", "value": 0},
             ],
         }
         import_preview = self.assert_model_exists(
@@ -86,8 +96,18 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
         assert self.get_row(response) == {
             "state": ImportState.DONE,
             "messages": [],
-            "data": {"name": {"info": "done", "value": "test", "id": 7}},
+            "data": {"id": 7, "name": {"info": "done", "value": "test", "id": 7}},
         }
+        assert self.get_statistics(response) == [
+            {"name": "total", "value": 1},
+            {"name": "created", "value": 0},
+            {"name": "updated", "value": 1},
+            {"name": "error", "value": 0},
+            {"name": "warning", "value": 0},
+            {"name": "meetings_created", "value": 0},
+            {"name": "meetings_cloned", "value": 0},
+            {"name": "organization_tags_created", "value": 0},
+        ]
 
     def test_json_upload_duplicate_in_rows(self) -> None:
         response = self.request(
@@ -177,6 +197,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                 ],
             },
         }
+        self.assert_statistics(response, {"organization_tags_created": 1})
 
     def test_json_upload_organization_tags_update_duplicates(self) -> None:
         response = self.request(
@@ -288,6 +309,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
             "state": ImportState.DONE,
             "messages": [],
             "data": {
+                "id": 4,
                 "name": {"value": "committee B", "info": ImportState.DONE, "id": 4},
                 "forward_to_committees": [
                     {"value": "committee C", "info": ImportState.DONE},
@@ -327,6 +349,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                 "meeting_name": "test meeting",
             },
         }
+        self.assert_statistics(response, {"meetings_created": 1})
 
     def test_json_upload_with_dates(self) -> None:
         response = self.request(
@@ -384,6 +407,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
             "state": ImportState.ERROR,
             "messages": ["A meeting with this name and dates already exists."],
             "data": {
+                "id": 1,
                 "name": {"value": "committee", "info": ImportState.DONE, "id": 1},
                 "meeting_name": "meeting",
                 "meeting_start_time": 1691539200,
@@ -506,6 +530,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                 },
             },
         }
+        self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 0})
 
     def test_json_upload_meeting_template_not_found(self) -> None:
         response = self.request(
@@ -530,6 +555,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                 "meeting_template": {"value": "test", "info": ImportState.WARNING},
             },
         }
+        self.assert_statistics(response, {"meetings_created": 1})
 
     def test_json_upload_meeting_template_found(self) -> None:
         self.set_models(
@@ -555,6 +581,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
             "state": ImportState.DONE,
             "messages": [],
             "data": {
+                "id": 1,
                 "name": {"value": "committee", "info": ImportState.DONE, "id": 1},
                 "meeting_name": "test",
                 "meeting_template": {
@@ -564,6 +591,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                 },
             },
         }
+        self.assert_statistics(response, {"meetings_created": 0, "meetings_cloned": 1})
 
     def test_json_upload_meeting_template_in_another_committee(self) -> None:
         self.set_models(
@@ -592,6 +620,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                 "The meeting template template was not found, the meeting will be created without a template."
             ],
             "data": {
+                "id": 2,
                 "name": {"value": "committee2", "info": ImportState.DONE, "id": 2},
                 "meeting_name": "test",
                 "meeting_template": {

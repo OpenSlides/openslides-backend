@@ -14,14 +14,10 @@ class BaseUserImport(ImportMixin):
     skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        self.rows = self.result["rows"]
-        instance = super().update_instance(instance)
-        if not instance["import"]:
-            return {}
-
+        super().update_instance(instance)
         self.setup_lookups()
-
-        self.rows = [self.validate_entry(row) for row in self.rows]
+        for row in self.rows:
+            self.validate_entry(row)
 
         if self.import_state != ImportState.ERROR:
             rows = self.flatten_copied_object_fields(
@@ -98,12 +94,11 @@ class BaseUserImport(ImportMixin):
             ids.append(result.get("id") if isinstance(result, dict) else None)
         return ids
 
-    def validate_entry(self, row: ImportRow) -> ImportRow:
-        self.validate_with_lookup(row, self.username_lookup, "username")
-        self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False)
+    def validate_entry(self, row: ImportRow) -> None:
+        id = self.validate_with_lookup(row, self.username_lookup, "username")
+        self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
-        return row
 
     def setup_lookups(self) -> None:
         self.username_lookup = Lookup(
