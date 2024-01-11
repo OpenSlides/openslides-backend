@@ -1063,6 +1063,28 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_permission_group_H_oml_can_manage_user_saml_id(self) -> None:
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
+        )
+
+        response = self.request(
+            "user.create",
+            {
+                "saml_id": "11111",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "11111",
+                "saml_id": "11111",
+                "can_change_own_password": False,
+                "default_password": None,
+            },
+        )
+
     def test_create_permission_group_F_demo_user_permission(self) -> None:
         """demo_user only editable by Superadmin"""
         self.permission_setup()
