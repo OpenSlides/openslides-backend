@@ -1,7 +1,9 @@
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
+from openslides_backend.action.action import Action
 from openslides_backend.action.actions.speaker.end_speech import SpeakerEndSpeach
+from openslides_backend.action.actions.speaker.pause import SpeakerPause
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
     StructureLevelListOfSpeakersUpdateAction,
 )
@@ -59,9 +61,11 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
             mapped_fields=["id"],
         )
         if result:
-            self.execute_other_action(
-                SpeakerEndSpeach, [{"id": next(iter(result.keys()))}]
-            )
+            if db_instance.get("speech_state") == "interposed_question":
+                action: Type[Action] = SpeakerPause
+            else:
+                action = SpeakerEndSpeach
+            self.execute_other_action(action, [{"id": next(iter(result.keys()))}])
 
         now = round(time.time())
         if db_instance.get("begin_time") is not None:
