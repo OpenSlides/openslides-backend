@@ -119,7 +119,7 @@ class TestSpeakerPause(BaseActionTestCase):
                     "list_of_speakers_id": 23,
                     "structure_level_id": 1,
                     "speaker_ids": [890],
-                    "remaining_time": 100,
+                    "remaining_time": 200,
                 },
                 "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
                 "speaker/890": {
@@ -137,7 +137,7 @@ class TestSpeakerPause(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("structure_level_list_of_speakers/2")
         self.assertEqual(model.get("current_start_time"), None)
-        self.assertAlmostEqual(model["remaining_time"], 20, delta=end - start)
+        self.assertAlmostEqual(model["remaining_time"], 100, delta=end - start)
 
     def test_pause_with_structure_level_and_unpause_time(self) -> None:
         self.setup_structure_level()
@@ -153,7 +153,7 @@ class TestSpeakerPause(BaseActionTestCase):
         end = ceil(time())
         self.assert_status_code(response, 200)
         model = self.get_model("structure_level_list_of_speakers/2")
-        self.assertAlmostEqual(model["remaining_time"], 90, delta=end - start)
+        self.assertAlmostEqual(model["remaining_time"], 190, delta=end - start)
 
     def test_pause_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.pause", {"id": 890})

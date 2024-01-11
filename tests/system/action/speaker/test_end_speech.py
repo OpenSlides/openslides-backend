@@ -182,8 +182,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         model = self.get_model("structure_level_list_of_speakers/2")
         self.assertEqual(
             model["remaining_time"],
-            500
-            - (speaker["end_time"] - speaker["begin_time"] - speaker["total_pause"]),
+            500 - (speaker["end_time"] - speaker["begin_time"]),
         )
         self.assertIsNone(model.get("current_start_time"))
 
