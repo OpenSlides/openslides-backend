@@ -103,7 +103,7 @@ class TestSpeakerPause(BaseActionTestCase):
             countdown["countdown_time"], 100, delta=ceil(time()) - now
         )
 
-    def test_pause_with_structure_level(self) -> None:
+    def setup_structure_level(self) -> None:
         self.set_models(
             {
                 "meeting/1": {
@@ -128,6 +128,9 @@ class TestSpeakerPause(BaseActionTestCase):
                 },
             }
         )
+
+    def test_pause_with_structure_level(self) -> None:
+        self.setup_structure_level()
         start = floor(time())
         response = self.request("speaker.pause", {"id": 890})
         end = ceil(time())
@@ -135,6 +138,22 @@ class TestSpeakerPause(BaseActionTestCase):
         model = self.get_model("structure_level_list_of_speakers/2")
         self.assertEqual(model.get("current_start_time"), None)
         self.assertAlmostEqual(model["remaining_time"], 20, delta=end - start)
+
+    def test_pause_with_structure_level_and_unpause_time(self) -> None:
+        self.setup_structure_level()
+        self.set_models(
+            {
+                "speaker/890": {
+                    "unpause_time": floor(time()) - 10,
+                },
+            }
+        )
+        start = floor(time())
+        response = self.request("speaker.pause", {"id": 890})
+        end = ceil(time())
+        self.assert_status_code(response, 200)
+        model = self.get_model("structure_level_list_of_speakers/2")
+        self.assertAlmostEqual(model["remaining_time"], 90, delta=end - start)
 
     def test_pause_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.pause", {"id": 890})

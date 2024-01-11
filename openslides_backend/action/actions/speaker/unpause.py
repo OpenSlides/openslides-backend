@@ -44,7 +44,7 @@ class SpeakerUnpause(SingularActionMixin, CountdownControl, UpdateAction):
         ):
             raise ActionException("Speaker is not paused.")
 
-        now = round(time())
+        instance["unpause_time"] = now = round(time())
         instance["total_pause"] = (
             db_instance.get("total_pause", 0) + now - db_instance["pause_time"]
         )

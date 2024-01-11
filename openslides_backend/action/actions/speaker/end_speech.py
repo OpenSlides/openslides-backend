@@ -1,4 +1,4 @@
-import time
+from time import time
 from typing import Any, Dict
 
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
@@ -38,6 +38,7 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
                 "begin_time",
                 "end_time",
                 "pause_time",
+                "unpause_time",
                 "total_pause",
                 "meeting_id",
                 "structure_level_list_of_speakers_id",
@@ -47,26 +48,27 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
             raise ActionException(
                 f"Speaker {instance['id']} is not speaking at the moment."
             )
-        instance["end_time"] = round(time.time())
+        instance["end_time"] = now = round(time())
 
-        total_pause = speaker.get("total_pause", 0)
         if speaker.get("pause_time"):
-            total_pause += instance["end_time"] - speaker["pause_time"]
-            instance["total_pause"] = total_pause
+            instance["total_pause"] = (
+                speaker.get("total_pause", 0)
+                + instance["end_time"]
+                - speaker["pause_time"]
+            )
             instance["pause_time"] = None
 
         # update countdowns
         self.control_los_countdown(speaker["meeting_id"], CountdownCommand.RESET)
         if level_id := speaker.get("structure_level_list_of_speakers_id"):
+            start_time = speaker.get("unpause_time", speaker["begin_time"])
             self.execute_other_action(
                 StructureLevelListOfSpeakersUpdateAction,
                 [
                     {
                         "id": level_id,
                         "current_start_time": None,
-                        "spoken_time": instance["end_time"]
-                        - speaker["begin_time"]
-                        - total_pause,
+                        "spoken_time": now - start_time,
                     }
                 ],
             )

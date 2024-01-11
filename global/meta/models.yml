@@ -2207,6 +2207,10 @@ speaker:
     type: timestamp
     read_only: true
     restriction_mode: A
+  unpause_time:
+    type: timestamp
+    read_only: true
+    restriction_mode: A
   total_pause:
     type: number
     read_only: true

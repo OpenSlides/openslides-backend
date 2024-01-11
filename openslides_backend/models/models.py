@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "014215b01e83da8545bb1a197735c1aa"
+MODELS_YML_CHECKSUM = "5c7265db205049bbd2481c6b958be369"
 
 
 class Organization(Model):
@@ -1142,6 +1142,7 @@ class Speaker(Model):
     begin_time = fields.TimestampField(read_only=True)
     end_time = fields.TimestampField(read_only=True)
     pause_time = fields.TimestampField(read_only=True)
+    unpause_time = fields.TimestampField(read_only=True)
     total_pause = fields.IntegerField(read_only=True)
     weight = fields.IntegerField(default=10000)
     speech_state = fields.CharField(
