@@ -1,6 +1,7 @@
 import threading
 from typing import Optional
 
+from openslides_backend.action.action_handler import ActionHandler
 from tests.system.action.base import ACTION_URL, BaseActionTestCase
 from tests.system.action.lock import (
     monkeypatch_datastore_adapter_write,
@@ -157,6 +158,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         The lock-object will be shared in threading.local(), instance created in lock.py.
         If possible you should pass as an argument to the thread function(s).
         """
+        ActionHandler.MAX_RETRY = 3
         self.set_thread_watch_timeout(-2)
         pytest_thread_local.name = "MainThread_RC"
         self.set_models(

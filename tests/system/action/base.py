@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from openslides_backend.action.action_handler import ActionHandler
 from openslides_backend.action.action_worker import gunicorn_post_request
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.action_type import ActionType
@@ -38,6 +39,23 @@ ACTION_URL_SEPARATELY = get_route_path(ActionView.action_route, "handle_separate
 
 
 class BaseActionTestCase(BaseSystemTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        ActionHandler.MAX_RETRY = 1
+
+    def reset_redis(self) -> None:
+        # access auth database directly to reset it
+        redis = self.auth.auth_handler.database.redis
+        prefix = ":".join(
+            (
+                self.auth.auth_handler.database.AUTH_PREFIX,
+                self.auth.auth_handler.TOKEN_DB_KEY,
+            )
+        )
+        for key in redis.keys():
+            if key.decode().startswith(prefix):
+                redis.delete(key)
+
     def get_application(self) -> WSGIApplication:
         return create_action_test_application()
 

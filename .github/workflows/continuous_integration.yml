@@ -5,9 +5,13 @@ on:
     branches:
       - main
       - 'feature/**'
+  merge_group:
+    types: [checks_requested]
 
 env:
   PYTHON_VERSION: 3.10.x
+  DATASTORE_COMMIT_HASH: main  # will be set during job
+  AUTH_COMMIT_HASH: main  # will be set during job
 
 jobs:
   build-production-image:
@@ -58,17 +62,27 @@ jobs:
     - uses: actions/checkout@v4
       with:
         path: openslides-backend
+    
+    - name: Set env vars
+      working-directory: openslides-backend/requirements
+      run: |
+        . export_service_commits.sh
+        echo "DATASTORE_COMMIT_HASH=$(echo $DATASTORE_COMMIT_HASH)" >> $GITHUB_ENV
+        echo "AUTH_COMMIT_HASH=$(echo $AUTH_COMMIT_HASH)" >> $GITHUB_ENV
 
     - name: Clone datastore
       uses: actions/checkout@v4
       with:
         repository: OpenSlides/openslides-datastore-service
-        ref: main
+        ref: ${{ env.DATASTORE_COMMIT_HASH }}
         path: openslides-datastore-service
-    
-    - name: Checkout datastore commit
-      working-directory: openslides-datastore-service
-      run: . ../openslides-backend/requirements/export_service_commits.sh git checkout $DATASTORE_COMMIT_HASH
+
+    - name: Clone auth service
+      uses: actions/checkout@v4
+      with:
+        repository: OpenSlides/openslides-auth-service
+        ref: ${{ env.AUTH_COMMIT_HASH }}
+        path: openslides-auth-service
 
     - name: Clone vote service
       uses: actions/checkout@v4
@@ -76,13 +90,6 @@ jobs:
         repository: OpenSlides/openslides-vote-service
         ref: main
         path: openslides-vote-service
-
-    - name: Clone auth service
-      uses: actions/checkout@v4
-      with:
-        repository: OpenSlides/openslides-auth-service
-        ref: main
-        path: openslides-auth-service
 
     - name: Run local setup
       working-directory: openslides-backend

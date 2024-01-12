@@ -7,6 +7,7 @@ from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
 class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.reset_redis()
         self.password = "pw_quSEYapV"
         self.create_model(
             "user/111",

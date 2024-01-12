@@ -121,6 +121,18 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 if not isinstance(entry[field], dict):
                     entry[field] = {"value": entry[field], "info": ImportState.DONE}
 
+        if vote_weight := entry.get("vote_weight"):
+            if (
+                vote_weight["value"] == "0.000000"
+                and vote_weight["info"] != ImportState.REMOVE
+            ):
+                entry["vote_weight"] = {
+                    "value": vote_weight["value"],
+                    "info": ImportState.ERROR,
+                }
+                messages.append("vote_weight must be bigger than or equal to 0.000001.")
+                results["state"] = ImportState.ERROR
+
         if groups:
             entry["groups"] = groups
         if payload_index:

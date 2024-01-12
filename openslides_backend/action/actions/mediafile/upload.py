@@ -86,10 +86,13 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         return action_data
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Looks for the mimetype of the file by name and content
+        """
         instance = super().update_instance(instance)
         instance["create_timestamp"] = round(time())
         filename_ = instance.get("filename", "")
-        file_ = instance.pop("file")
+        file_ = instance.pop("file")  # get content of file
         decoded_file = base64.b64decode(file_)
         use_mimetype, _ = mimetypes.guess_type(filename_)
         if use_mimetype is None:
@@ -99,12 +102,24 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         if use_mimetype == mc_mimetype:
             mismatched = False
         elif (
-            use_mimetype.startswith("text") or use_mimetype == "application.json"
+            use_mimetype.startswith("text") or use_mimetype == "application/json"
         ) and mc_mimetype.startswith("text"):
+            """
+            media types 'text' are assumed identical without checking media subtypes.
+            Special: sometimes python_magic classifies json-content as 'text/plain'
+            """
             mismatched = False
         elif mc_mimetype.startswith("text"):
+            """
+            The pygment library, specialized on syntax highlighting,
+            helps on getting a wide range of text-mimetypes based on filename and content (try)
+            or only content (except).
+            Get text/plain as possible mimetype for file line.svg with guess_lexer, but has no svg-lexer
+            """
             try:
-                pyg_mimetypes = guess_lexer_for_filename(filename_, file_).mimetypes
+                pyg_mimetypes = guess_lexer_for_filename(
+                    filename_, decoded_file.decode()
+                ).mimetypes
             except ClassNotFound:
                 pyg_mimetypes = guess_lexer(decoded_file).mimetypes  # type: ignore
             if use_mimetype in pyg_mimetypes:
@@ -112,10 +127,29 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             else:
                 mismatched = use_mimetype not in pyg_mimetypes
         else:
+            """
+            Getting possible extensions by python-magic given mimetypes by 2 ways:
+            1. Get extensions from pythons integrated mimetypes-modul.
+               Problem with font/sfnt: mimetypes has no extension for this mimetype
+            2. Using python-magic to get the extensions from same code, which detected
+               the mimetype. Get extensions, 'ttf' and 'otf', for mimetype font/sfnt following
+               the Iana-specification
+            """
+
+            def check_extension(filename: str, extensions: List[str]) -> bool:
+                return not any(
+                    [filename_.endswith(extension) for extension in possible_extensions]
+                )
+
             possible_extensions = mimetypes.guess_all_extensions(mc_mimetype)
-            mismatched = not any(
-                [filename_.endswith(extension) for extension in possible_extensions]
-            )
+            mismatched = check_extension(filename_, possible_extensions)
+            if mismatched:
+                possible_extensions = (
+                    python_magic.Magic(extension=True)  # type: ignore
+                    .from_buffer(decoded_file)
+                    .split("/")
+                )
+                mismatched = check_extension(filename_, possible_extensions)
 
         if mismatched:
             raise ActionException(

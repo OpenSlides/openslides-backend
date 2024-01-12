@@ -349,14 +349,14 @@ class DatastoreAdapter(BaseDatastoreService):
     ) -> None:
         if position is None:
             raise DatastoreException("Invalid response from datastore.")
-        fields = []
-        filter_visitor(filter, lambda fo: fields.append(fo.field))
+        fields = set()
+        filter_visitor(filter, lambda fo: fields.add(fo.field))
         if "meeting_id" not in fields:
             self.logger.debug(
                 "Locking a collection field with a filter which does not contain meeting_id!"
             )
         if additional_field:
-            fields.append(additional_field)
+            fields.add(additional_field)
         for field in fields:
             cf = collectionfield_from_collection_and_field(collection, field)
             self.update_locked_fields(cf, {"position": position, "filter": filter})
