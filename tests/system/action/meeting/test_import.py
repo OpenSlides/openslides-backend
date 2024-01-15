@@ -2369,3 +2369,22 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("user/2")
+
+    def test_without_users(self) -> None:
+        data = self.create_request_data()
+        meeting_data = data["meeting"]
+        del meeting_data["meeting"]["1"]["meeting_user_ids"]
+        del meeting_data["group"]["1"]["meeting_user_ids"]
+        del meeting_data["user"]
+        del meeting_data["meeting_user"]
+        self.assert_model_not_exists("meeting_user/1")
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "username": "admin",
+                "meeting_user_ids": [1],
+            },
+        )
+        self.assert_model_not_exists("user/2")

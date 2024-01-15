@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "1030ab5fa68d5c53ba77b866bc498da4"
+MODELS_YML_CHECKSUM = "ac6a45db653747591ad0c1850c693fa1"
 
 
 class Organization(Model):
@@ -1549,8 +1549,8 @@ class MotionState(Model):
         default="undefined",
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
-    allow_motion_forwarding = fields.BooleanField()
-    set_workflow_timestamp = fields.BooleanField()
+    allow_motion_forwarding = fields.BooleanField(default=False)
+    set_workflow_timestamp = fields.BooleanField(default=False)
     submitter_withdraw_state_id = fields.RelationField(
         to={"motion_state": "submitter_withdraw_back_ids"},
         equal_fields=["meeting_id", "workflow_id"],

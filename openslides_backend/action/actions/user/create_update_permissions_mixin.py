@@ -204,8 +204,6 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         if not hasattr(self, "permstore"):
             self.permstore = PermissionVarStore(self.datastore, self.user_id)
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
-        if not self.internal:
-            self.check_group_H(actual_group_fields["H"])
         if self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
             return None
 
@@ -219,6 +217,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         self._check_for_higher_OML(actual_group_fields, instance)
 
         # Ordered by supposed velocity advantages. Changing order only can effect the sequence of detected errors for tests
+        self.check_group_H(actual_group_fields["H"])
         self.check_group_E(actual_group_fields["E"], instance)
         self.check_group_D(actual_group_fields["D"], instance)
         self.check_group_C(actual_group_fields["C"], instance)
@@ -378,11 +377,22 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         self,
         fields: List[str],
     ) -> None:
-        """Check Group H: Like group A, but only on internal calls, which will never call the check_permissions automatically"""
-        if fields and not self.internal:
-            raise ActionException(
-                "The field 'saml_id' can only be used in internal action calls"
+        """
+        Check Group H: Like group A, but only on internal calls, which will never call
+        the check_permissions automatically or oml.can_manage_user permission in user.create
+        """
+        if fields and not (
+            self.internal
+            or (
+                self.name == "user.create"
+                and self.permstore.user_oml
+                >= OrganizationManagementLevel.CAN_MANAGE_USERS
             )
+        ):
+            msg = "The field 'saml_id' can only be used in internal action calls"
+            if self.name == "user.create":
+                msg += f" or with {OrganizationManagementLevel.CAN_MANAGE_USERS} permission"
+            raise ActionException(msg)
 
     def _check_for_higher_OML(
         self,
