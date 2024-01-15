@@ -4,14 +4,19 @@ from ....models.models import Topic
 from ....permissions.permissions import Permissions
 from ....shared.filters import FilterOperator
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, ResultType
+from ...mixins.import_mixins import (
+    BaseJsonUploadAction,
+    ImportState,
+    Lookup,
+    ResultType,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..agenda_item.agenda_creation import agenda_creation_properties
 
 
 @register_action("topic.json_upload")
-class TopicJsonUpload(JsonUploadMixin):
+class TopicJsonUpload(BaseJsonUploadAction):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """

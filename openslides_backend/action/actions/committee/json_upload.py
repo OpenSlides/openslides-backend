@@ -9,13 +9,18 @@ from openslides_backend.shared.schema import str_list_schema
 
 from ....models.models import Committee, Meeting
 from ....permissions.management_levels import OrganizationManagementLevel
-from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, ResultType
+from ...mixins.import_mixins import (
+    BaseJsonUploadAction,
+    ImportState,
+    Lookup,
+    ResultType,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("committee.json_upload")
-class CommitteeJsonUpload(JsonUploadMixin, MeetingCheckTimesMixin):
+class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
     model = Committee()
     schema = DefaultSchema(Committee()).get_default_schema(
         additional_required_fields={

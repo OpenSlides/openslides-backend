@@ -10,7 +10,7 @@ from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ....permissions.management_levels import OrganizationManagementLevel
-from ...mixins.import_mixins import ImportMixin, ImportRow, ImportState, Lookup
+from ...mixins.import_mixins import BaseImportAction, ImportRow, ImportState, Lookup
 from ...util.register import register_action
 from .create import CommitteeCreate
 from .update import CommitteeUpdateAction
@@ -19,7 +19,7 @@ DEFAULT_TAG_COLOR = "#2196f3"
 
 
 @register_action("committee.import")
-class CommitteeImport(ImportMixin):
+class CommitteeImport(BaseImportAction):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
     import_name = "committee"

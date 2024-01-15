@@ -1,12 +1,12 @@
 from typing import Any, Dict, List, Optional, cast
 
-from ...mixins.import_mixins import ImportMixin, ImportRow, ImportState, Lookup
+from ...mixins.import_mixins import BaseImportAction, ImportRow, ImportState, Lookup
 from ...util.typing import ActionResults
 from .create import UserCreate
 from .update import UserUpdate
 
 
-class BaseUserImport(ImportMixin):
+class BaseUserImport(BaseImportAction):
     """
     Action to import a result from the action_worker.
     """

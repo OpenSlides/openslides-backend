@@ -8,6 +8,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union,
 
 from typing_extensions import NotRequired
 
+from openslides_backend.action.action import Action
+
 from ...models.models import ImportPreview
 from ...shared.exceptions import ActionException
 from ...shared.filters import And, Filter, FilterOperator, Or
@@ -155,7 +157,7 @@ class Lookup:
             self.name_to_ids[key].append(entry)
 
 
-class BaseImportJsonUpload(SingularActionMixin):
+class BaseImportJsonUploadAction(SingularActionMixin, Action):
     import_name: str
 
     @staticmethod
@@ -168,7 +170,7 @@ class BaseImportJsonUpload(SingularActionMixin):
                 if col.get("info") == ImportState.WARNING:
                     count += 1
             elif type(col) is list:
-                count += BaseImportJsonUpload.count_warnings_in_payload(col)
+                count += BaseImportJsonUploadAction.count_warnings_in_payload(col)
         return count
 
     @staticmethod
@@ -183,7 +185,7 @@ class BaseImportJsonUpload(SingularActionMixin):
             return None
 
 
-class ImportMixin(BaseImportJsonUpload):
+class BaseImportAction(BaseImportJsonUploadAction):
     """
     Mixin for import actions. It works together with the json_upload.
     """
@@ -378,7 +380,7 @@ class StatisticEntry(TypedDict):
     value: int
 
 
-class JsonUploadMixin(BaseImportJsonUpload):
+class BaseJsonUploadAction(BaseImportJsonUploadAction):
     headers: List[HeaderEntry]
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]

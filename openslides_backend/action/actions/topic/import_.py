@@ -5,7 +5,7 @@ from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
-    ImportMixin,
+    BaseImportAction,
     ImportRow,
     ImportState,
     Lookup,
@@ -19,7 +19,7 @@ from .update import TopicUpdate
 
 
 @register_action("topic.import")
-class TopicImport(ImportMixin):
+class TopicImport(BaseImportAction):
     """
     Action to import a result from the import_preview.
     """

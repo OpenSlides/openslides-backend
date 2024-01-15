@@ -4,8 +4,8 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ...mixins.import_mixins import (
+    BaseJsonUploadAction,
     ImportState,
-    JsonUploadMixin,
     Lookup,
     ResultType,
     SearchFieldType,
@@ -15,7 +15,7 @@ from ...util.default_schema import DefaultSchema
 from .user_mixins import UsernameMixin, check_gender_helper
 
 
-class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
+class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
     model = User()
     headers = [
         {"property": "title", "type": "string"},

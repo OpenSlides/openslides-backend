@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from openslides_backend.action.mixins.import_mixins import ImportMixin, ImportState
+from openslides_backend.action.mixins.import_mixins import BaseImportAction, ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -237,7 +237,7 @@ class AccountJsonImport(BaseActionTestCase):
             """Precondition: There is only 1 row(_state)"""
             if row_state == ImportState.ERROR:
                 return row_state
-            if ImportMixin.count_warnings_in_payload(data):
+            if BaseImportAction.count_warnings_in_payload(data):
                 return ImportState.WARNING
             else:
                 return ImportState.DONE
