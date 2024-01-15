@@ -2,10 +2,11 @@ from typing import Any, Dict
 
 from openslides_backend.models.models import Poll
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
-from tests.system.action.base import BaseActionTestCase
+
+from .base_poll_test import BasePollTestCase
 
 
-class VotePollBaseTestClass(BaseActionTestCase):
+class VotePollBaseTestClass(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.set_models(

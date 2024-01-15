@@ -658,7 +658,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "id": 11,
             "saml_id": {"info": "done", "value": "saml_id11"},
             "username": {"id": 11, "info": ImportState.ERROR, "value": "user11"},
-            "default_vote_weight": "11.000000",
+            "default_vote_weight": {"value": "11.000000", "info": ImportState.DONE},
         }
 
     def test_json_upload_update_multiple_users_okay(self) -> None:
@@ -763,7 +763,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "saml_id": {"info": ImportState.NEW, "value": "test_saml_id2"},
             "username": {"id": 2, "info": ImportState.ERROR, "value": "user2"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": "2.345678",
+            "default_vote_weight": {"value": "2.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][1]
@@ -777,7 +777,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "saml_id": {"info": ImportState.ERROR, "value": "saml3"},
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": "3.345678",
+            "default_vote_weight": {"value": "3.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][2]
@@ -791,7 +791,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"},
             "last_name": "Luther King",
             "first_name": "Martin",
-            "default_vote_weight": "4.345678",
+            "default_vote_weight": {"value": "4.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][3]
@@ -804,7 +804,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "username": {"info": ImportState.DONE, "value": "new_user5"},
             "saml_id": {"info": ImportState.ERROR, "value": "saml5"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": "5.345678",
+            "default_vote_weight": {"value": "5.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][4]
@@ -817,7 +817,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "username": {"info": ImportState.GENERATED, "value": "new_saml6"},
             "saml_id": {"info": ImportState.ERROR, "value": "new_saml6"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": "6.345678",
+            "default_vote_weight": {"value": "6.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][5]

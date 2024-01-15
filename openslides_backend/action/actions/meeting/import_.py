@@ -244,32 +244,35 @@ class MeetingImport(
         )
 
     def generate_merge_user_map(self, json_data: Dict[str, Any]) -> None:
-        for entry in json_data.get("user", {}).values():
-            entry["username"] = entry["username"].strip()
-        filter_ = Or(
-            *[
-                FilterOperator("username", "=", entry["username"])
-                for entry in json_data.get("user", {}).values()
-            ]
-        )
+        if len(users := json_data.get("user", {})):
+            for entry in users.values():
+                entry["username"] = entry["username"].strip()
+            filter_ = Or(
+                *[
+                    FilterOperator("username", "=", entry["username"])
+                    for entry in users.values()
+                ]
+            )
 
-        filtered_users = self.datastore.filter(
-            "user",
-            filter_,
-            ["username", "first_name", "last_name", "email"],
-            lock_result=False,
-            use_changed_models=False,
-        )
-        filtered_users_dict = {
-            self.get_user_key(values): key for key, values in filtered_users.items()
-        }
+            filtered_users = self.datastore.filter(
+                "user",
+                filter_,
+                ["username", "first_name", "last_name", "email"],
+                lock_result=False,
+                use_changed_models=False,
+            )
+            filtered_users_dict = {
+                self.get_user_key(values): key for key, values in filtered_users.items()
+            }
 
-        self.merge_user_map = {
-            int(key): filtered_users_dict[self.get_user_key(values)]
-            for key, values in json_data.get("user", {}).items()
-            if filtered_users_dict.get(self.get_user_key(values)) is not None
-        }
-        self.number_of_imported_users = len(json_data.get("user", {}))
+            self.merge_user_map = {
+                int(key): filtered_users_dict[self.get_user_key(values)]
+                for key, values in users.items()
+                if filtered_users_dict.get(self.get_user_key(values)) is not None
+            }
+        else:
+            self.merge_user_map = {}
+        self.number_of_imported_users = len(users)
         self.number_of_merged_users = len(self.merge_user_map)
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
@@ -320,7 +323,7 @@ class MeetingImport(
         meeting["is_active_in_organization_id"] = ONE_ORGANIZATION_ID
 
         # generate passwords
-        for entry in json_data["user"].values():
+        for entry in json_data.get("user", {}).values():
             if entry["id"] not in self.merge_user_map:
                 entry["default_password"] = get_random_password()
                 entry["password"] = self.auth.hash(entry["default_password"])
@@ -462,7 +465,7 @@ class MeetingImport(
                 "Imported meeting has no AdminGroup to assign to request user"
             )
         new_meeting_user_id: Optional[int] = None
-        for meeting_user_id, meeting_user in data_json["meeting_user"].items():
+        for meeting_user_id, meeting_user in data_json.get("meeting_user", {}).items():
             if meeting_user.get("user_id") == self.user_id:
                 new_meeting_user_id = int(meeting_user_id)
                 if new_meeting_user_id not in (group.get("meeting_user_ids", {}) or {}):
@@ -473,6 +476,7 @@ class MeetingImport(
                 break
         if not new_meeting_user_id:
             new_meeting_user_id = self.datastore.reserve_id("meeting_user")
+            data_json["meeting_user"] = data_json.get("meeting_user", {})
             data_json["meeting_user"][str(new_meeting_user_id)] = {
                 "id": new_meeting_user_id,
                 "meeting_id": meeting["id"],
@@ -480,6 +484,8 @@ class MeetingImport(
                 "group_ids": [admin_group_id],
                 "meta_new": True,
             }
+            if not meeting.get("meeting_user_ids"):
+                meeting["meeting_user_ids"] = list()
             meeting["meeting_user_ids"].append(new_meeting_user_id)
             request_user = self.datastore.get(
                 fqid_user := fqid_from_collection_and_id("user", self.user_id),
@@ -489,6 +495,7 @@ class MeetingImport(
             request_user["meeting_user_ids"] = (
                 request_user.get("meeting_user_ids") or []
             ) + [new_meeting_user_id]
+            data_json["user"] = data_json.get("user", {})
             data_json["user"][str(self.user_id)] = request_user
             self.replace_map["user"].update(
                 {0: self.user_id}

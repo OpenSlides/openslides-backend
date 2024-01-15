@@ -1,9 +1,10 @@
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
-from tests.system.action.base import BaseActionTestCase
+
+from .base_poll_test import BasePollTestCase
 
 
-class PollAnonymize(BaseActionTestCase):
+class PollAnonymize(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.set_models(

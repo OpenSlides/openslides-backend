@@ -43,7 +43,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "is_physical_person": False,
                 "default_number": "strange number",
                 "default_structure_level": "CEO",
-                "default_vote_weight": "1.120000",
+                "default_vote_weight": {"value": "1.120000", "info": ImportState.DONE},
                 "gender": {"value": "female", "info": ImportState.DONE},
             },
         }
@@ -151,7 +151,11 @@ class AccountJsonUpload(BaseActionTestCase):
                 {"property": "saml_id", "type": "string", "is_object": True},
                 {"property": "default_number", "type": "string"},
                 {"property": "default_structure_level", "type": "string"},
-                {"property": "default_vote_weight", "type": "decimal"},
+                {
+                    "property": "default_vote_weight",
+                    "type": "decimal",
+                    "is_object": True,
+                },
             ],
             "rows": [
                 {
@@ -613,7 +617,7 @@ class AccountJsonUpload(BaseActionTestCase):
             "first_name": "Max",
             "last_name": "Mustermann",
             "email": "max@mustermann.org",
-            "default_vote_weight": "1.000000",
+            "default_vote_weight": {"value": "1.000000", "info": ImportState.DONE},
             "username": {"value": "test", "info": ImportState.DONE, "id": 3},
         }
         assert result["rows"][1]["messages"] == ["Found more users with name and email"]
@@ -623,8 +627,39 @@ class AccountJsonUpload(BaseActionTestCase):
             "first_name": "Max",
             "last_name": "Mustermann",
             "email": "max@mustermann.org",
-            "default_vote_weight": "2.000000",
+            "default_vote_weight": {"value": "2.000000", "info": ImportState.DONE},
             "username": {"value": "test", "info": ImportState.DONE, "id": 3},
+        }
+
+    def test_json_upload_invalid_vote_weight(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "max@mustermann.org",
+                        "default_vote_weight": "0",
+                        "default_password": "halloIchBinMax",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
+        assert result["rows"][0]["messages"] == [
+            "default_vote_weight must be bigger than or equal to 0.000001."
+        ]
+        assert result["rows"][0]["state"] == ImportState.ERROR
+        assert result["rows"][0]["data"] == {
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "email": "max@mustermann.org",
+            "default_vote_weight": {"value": "0.000000", "info": ImportState.ERROR},
+            "username": {"value": "MaxMustermann", "info": ImportState.GENERATED},
+            "default_password": {"value": "halloIchBinMax", "info": ImportState.DONE},
         }
 
     def test_json_upload_no_permission(self) -> None:
@@ -961,7 +996,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "id": 11,
             "username": {"value": "user11", "info": ImportState.DONE, "id": 11},
             "saml_id": {"value": "saml_id11", "info": ImportState.DONE},
-            "default_vote_weight": "11.000000",
+            "default_vote_weight": {"value": "11.000000", "info": ImportState.DONE},
         }
 
     def json_upload_multiple_users(self) -> None:
@@ -1040,7 +1075,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "saml_id": {"info": "new", "value": "test_saml_id2"},
             "username": {"id": 2, "info": "done", "value": "user2"},
             "default_password": {"info": "warning", "value": ""},
-            "default_vote_weight": "2.345678",
+            "default_vote_weight": {"value": "2.345678", "info": ImportState.DONE},
         }
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
@@ -1052,7 +1087,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "saml_id": {"info": ImportState.DONE, "value": "saml3"},
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": "3.345678",
+            "default_vote_weight": {"value": "3.345678", "info": ImportState.DONE},
         }
 
         assert import_preview["result"]["rows"][2]["state"] == ImportState.DONE
@@ -1063,7 +1098,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "username": {"id": 4, "info": "done", "value": "user4"},
             "last_name": "Luther King",
             "first_name": "Martin",
-            "default_vote_weight": "4.345678",
+            "default_vote_weight": {"value": "4.345678", "info": ImportState.DONE},
         }
 
         assert import_preview["result"]["rows"][3]["state"] == ImportState.NEW
@@ -1074,7 +1109,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "saml_id": {"info": "new", "value": "saml5"},
             "username": {"info": "done", "value": "new_user5"},
             "default_password": {"info": "warning", "value": ""},
-            "default_vote_weight": "5.345678",
+            "default_vote_weight": {"value": "5.345678", "info": ImportState.DONE},
         }
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW
@@ -1085,7 +1120,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "saml_id": {"info": "new", "value": "new_saml6"},
             "username": {"info": "generated", "value": "new_saml6"},
             "default_password": {"info": "warning", "value": ""},
-            "default_vote_weight": "6.345678",
+            "default_vote_weight": {"value": "6.345678", "info": ImportState.DONE},
         }
 
         assert import_preview["result"]["rows"][5]["state"] == ImportState.NEW
@@ -1099,5 +1134,5 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "username": {"info": "generated", "value": "JoanBaez7"},
             "last_name": "Baez7",
             "first_name": "Joan",
-            "default_vote_weight": "7.345678",
+            "default_vote_weight": {"value": "7.345678", "info": ImportState.DONE},
         }
