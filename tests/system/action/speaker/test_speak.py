@@ -2,6 +2,7 @@ from math import ceil, floor
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -117,7 +118,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "list_of_speakers_intervention_time": 100,
                 },
                 "speaker/890": {
-                    "speech_state": "intervention",
+                    "speech_state": SpeechState.INTERVENTION,
                 },
             }
         )
@@ -138,7 +139,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
         self.set_models(
             {
                 "speaker/890": {
-                    "speech_state": "interposed_question",
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
                 },
             }
         )
@@ -168,7 +169,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
-                    "speech_state": "interposed_question",
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
                 },
             }
         )

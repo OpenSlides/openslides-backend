@@ -1,6 +1,7 @@
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -27,29 +28,33 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(self.models)
 
     def test_update_correct(self) -> None:
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
-        assert model.get("speech_state") == "pro"
+        assert model.get("speech_state") == SpeechState.PRO
 
     def test_update_same_speech_state(self) -> None:
-        self.models["speaker/890"]["speech_state"] = "pro"
+        self.models["speaker/890"]["speech_state"] = SpeechState.PRO
         self.set_models(self.models)
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
-        assert model.get("speech_state") == "pro"
+        assert model.get("speech_state") == SpeechState.PRO
 
     def test_update_contribution_ok(self) -> None:
         self.set_models(
             {"meeting/1": {"list_of_speakers_can_set_contribution_self": True}}
         )
         response = self.request(
-            "speaker.update", {"id": 890, "speech_state": "contribution"}
+            "speaker.update", {"id": 890, "speech_state": SpeechState.CONTRIBUTION}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
-        assert model.get("speech_state") == "contribution"
+        assert model.get("speech_state") == SpeechState.CONTRIBUTION
 
     def test_update_contribution_fail(self) -> None:
         self.create_meeting()
@@ -63,29 +68,33 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
 
         response = self.request(
-            "speaker.update", {"id": 890, "speech_state": "contribution"}
+            "speaker.update", {"id": 890, "speech_state": SpeechState.CONTRIBUTION}
         )
         self.assert_status_code(response, 400)
         assert "Self contribution is not allowed" in response.json["message"]
 
     def test_update_pro_contra_ok(self) -> None:
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
-        assert model.get("speech_state") == "pro"
+        assert model.get("speech_state") == SpeechState.PRO
 
     def test_update_pro_contra_fail(self) -> None:
         self.set_models(
             {"meeting/1": {"list_of_speakers_enable_pro_contra_speech": False}}
         )
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 400)
 
     def test_update_unset_contribution_ok(self) -> None:
         self.set_models(
             {
                 "meeting/1": {"list_of_speakers_can_set_contribution_self": True},
-                "speaker/890": {"speech_state": "contribution"},
+                "speaker/890": {"speech_state": SpeechState.CONTRIBUTION},
             }
         )
         response = self.request("speaker.update", {"id": 890, "speech_state": None})
@@ -99,7 +108,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             {
                 "user/1": {"organization_management_level": None},
                 "meeting_user/7": {"user_id": 1},
-                "speaker/890": {"speech_state": "contribution"},
+                "speaker/890": {"speech_state": SpeechState.CONTRIBUTION},
             }
         )
         self.set_user_groups(1, [3])
@@ -109,7 +118,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         assert "Self contribution is not allowed" in response.json["message"]
 
     def test_update_unset_pro_contra_ok(self) -> None:
-        self.set_models({"speaker/890": {"speech_state": "contra"}})
+        self.set_models({"speaker/890": {"speech_state": SpeechState.CONTRA}})
         response = self.request("speaker.update", {"id": 890, "speech_state": None})
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
@@ -119,7 +128,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"list_of_speakers_enable_pro_contra_speech": False},
-                "speaker/890": {"speech_state": "contra"},
+                "speaker/890": {"speech_state": SpeechState.CONTRA},
             }
         )
         response = self.request("speaker.update", {"id": 890, "speech_state": None})
@@ -129,26 +138,28 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "speaker/890": {"speech_state": "contra"},
+                "speaker/890": {"speech_state": SpeechState.CONTRA},
             }
         )
-        response = self.request("speaker.update", {"id": 889, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 889, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 400)
         model = self.get_model("speaker/890")
-        assert model.get("speech_state") == "contra"
+        assert model.get("speech_state") == SpeechState.CONTRA
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             self.models,
             "speaker.update",
-            {"id": 890, "speech_state": "pro"},
+            {"id": 890, "speech_state": SpeechState.PRO},
         )
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
             self.models,
             "speaker.update",
-            {"id": 890, "speech_state": "pro"},
+            {"id": 890, "speech_state": SpeechState.PRO},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
 
@@ -160,7 +171,9 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                 "meeting_user/7": {"user_id": 1},
             }
         )
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 403)
 
     def test_update_check_request_user_is_user_permission_can_see(self) -> None:
@@ -173,7 +186,9 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         )
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 200)
 
     def test_update_check_request_user_is_user_permission_can_be_speaker(self) -> None:
@@ -186,7 +201,9 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         )
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 200)
 
     def test_update_can_see_but_not_request_user_eq_user(self) -> None:
@@ -198,7 +215,9 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         )
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 403)
 
     def test_update_correct_on_closed_los(self) -> None:
@@ -209,15 +228,19 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                 },
             }
         )
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("speaker/890", {"speech_state": "pro"})
+        self.assert_model_exists("speaker/890", {"speech_state": SpeechState.PRO})
 
     def test_update_with_removed_user(self) -> None:
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
-        assert model.get("speech_state") == "pro"
+        assert model.get("speech_state") == SpeechState.PRO
 
     def test_update_with_deleted_user(self) -> None:
         self.set_models(
@@ -227,10 +250,12 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                 },
             }
         )
-        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
-        assert model.get("speech_state") == "pro"
+        assert model.get("speech_state") == SpeechState.PRO
 
     def test_update_change_state_forbidden(self) -> None:
         self.set_models(
@@ -241,7 +266,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                 }
             }
         )
-        for state in ("interposed_question", "intervention"):
+        for state in (SpeechState.INTERPOSED_QUESTION, SpeechState.INTERVENTION):
             self.set_models(
                 {
                     "speaker/890": {
@@ -250,7 +275,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                 }
             )
             response = self.request(
-                "speaker.update", {"id": 890, "speech_state": "pro"}
+                "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
             )
             self.assert_status_code(response, 400)
 
@@ -263,10 +288,12 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "speaker.update", {"id": 890, "speech_state": "intervention"}
+            "speaker.update", {"id": 890, "speech_state": SpeechState.INTERVENTION}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("speaker/890", {"speech_state": "intervention"})
+        self.assert_model_exists(
+            "speaker/890", {"speech_state": SpeechState.INTERVENTION}
+        )
 
     def test_update_set_interposed_question(self) -> None:
         self.set_models(
@@ -277,7 +304,8 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "speaker.update", {"id": 890, "speech_state": "interposed_question"}
+            "speaker.update",
+            {"id": 890, "speech_state": SpeechState.INTERPOSED_QUESTION},
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("speaker/890", {"speech_state": None})
@@ -286,7 +314,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "speaker/890": {
-                    "speech_state": "interposed_question",
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "meeting_user_id": None,
                 },
             }
@@ -299,7 +327,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "speaker/890": {
-                    "speech_state": "intervention",
+                    "speech_state": SpeechState.INTERVENTION,
                     "meeting_user_id": None,
                 },
             }
@@ -312,7 +340,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "speaker/890": {
-                    "speech_state": "interposed_question",
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
                 },
                 "meeting_user/8": {
                     "user_id": 1,
@@ -328,7 +356,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "speaker/890": {
-                    "speech_state": "interposed_question",
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
                 },
             }
         )

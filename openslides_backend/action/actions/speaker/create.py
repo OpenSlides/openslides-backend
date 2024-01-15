@@ -17,6 +17,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .mixins import CheckSpeechState, StructureLevelMixin
 from .sort import SpeakerSort
+from .speech_state import SpeechState
 
 
 @register_action("speaker.create")
@@ -46,7 +47,9 @@ class SpeakerCreateAction(
         self.handle_structure_level(instance)
         self.check_speech_state({}, instance)
 
-        is_interposed_question = instance.get("speech_state") == "interposed_question"
+        is_interposed_question = (
+            instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION
+        )
         list_of_speakers_id = instance["list_of_speakers_id"]
         max_weight = self._get_max_weight(list_of_speakers_id, instance["meeting_id"])
         if max_weight is None:
@@ -213,7 +216,9 @@ class SpeakerCreateAction(
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 Or(
                     FilterOperator("speech_state", "=", None),
-                    FilterOperator("speech_state", "!=", "interposed_question"),
+                    FilterOperator(
+                        "speech_state", "!=", SpeechState.INTERPOSED_QUESTION
+                    ),
                 ),
                 FilterOperator("begin_time", "=", None),
                 FilterOperator("meeting_id", "=", meeting_id),
@@ -239,7 +244,7 @@ class SpeakerCreateAction(
                 ["user_id"],
             )
         else:
-            if instance.get("speech_state") != "interposed_question":
+            if instance.get("speech_state") != SpeechState.INTERPOSED_QUESTION:
                 raise ActionException("meeting_user_id is required.")
             meeting_user = {"user_id": None}
 
