@@ -253,17 +253,34 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
                 "speaker.update", {"id": 890, "speech_state": "pro"}
             )
             self.assert_status_code(response, 400)
-            self.set_models(
-                {
-                    "speaker/890": {
-                        "speech_state": "pro",
-                    },
+
+    def test_update_set_intervention(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_intervention_time": 60,
                 }
-            )
-            response = self.request(
-                "speaker.update", {"id": 890, "speech_state": state}
-            )
-            self.assert_status_code(response, 400)
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": "intervention"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"speech_state": "intervention"})
+
+    def test_update_set_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_enable_interposed_question": True,
+                }
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": "interposed_question"}
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("speaker/890", {"speech_state": None})
 
     def test_update_meeting_user(self) -> None:
         self.set_models(

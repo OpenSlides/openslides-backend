@@ -23,9 +23,9 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        if instance.get("speech_state") in ("intervention", "interposed_question"):
+        if instance.get("speech_state") == "interposed_question":
             raise ActionException(
-                "You cannot set the speech state to intervention or interposed_question."
+                "You cannot set the speech state to interposed_question."
             )
         speaker = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
