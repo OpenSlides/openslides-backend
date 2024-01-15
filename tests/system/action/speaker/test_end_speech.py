@@ -137,7 +137,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         )
         self.assertIsNone(model.get("current_start_time"))
 
-    def test_paused_speaker(self) -> None:
+    def test_with_structure_level_and_unpause_time(self) -> None:
         start = floor(time())
         self.set_models(
             {
@@ -156,6 +156,43 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
                     "speaker_ids": [890],
                     "remaining_time": 500,
                     "current_start_time": start - 100,
+                },
+                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
+                "speaker/890": {
+                    "begin_time": start - 200,
+                    "unpause_time": start - 100,
+                    "structure_level_list_of_speakers_id": 2,
+                },
+            }
+        )
+        response = self.request("speaker.end_speech", {"id": 890})
+        self.assert_status_code(response, 200)
+        speaker = self.get_model("speaker/890")
+        model = self.get_model("structure_level_list_of_speakers/2")
+        self.assertEqual(
+            model["remaining_time"],
+            500 - (speaker["end_time"] - speaker["unpause_time"]),
+        )
+        self.assertIsNone(model.get("current_start_time"))
+
+    def test_paused_speaker(self) -> None:
+        start = floor(time())
+        self.set_models(
+            {
+                "meeting/1": {
+                    "structure_level_ids": [1],
+                    "structure_level_list_of_speakers_ids": [2],
+                },
+                "structure_level/1": {
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_ids": [2],
+                },
+                "structure_level_list_of_speakers/2": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "structure_level_id": 1,
+                    "speaker_ids": [890],
+                    "remaining_time": 500,
                 },
                 "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
                 "speaker/890": {
@@ -180,11 +217,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         self.assertAlmostEqual(speaker["total_pause"], 70, delta=delta)
         self.assertAlmostEqual(speaker["end_time"], end, delta=delta)
         model = self.get_model("structure_level_list_of_speakers/2")
-        self.assertEqual(
-            model["remaining_time"],
-            500 - (speaker["end_time"] - speaker["begin_time"]),
-        )
-        self.assertIsNone(model.get("current_start_time"))
+        self.assertEqual(model["remaining_time"], 500)
 
     def test_paused_speaker_without_total_pause(self) -> None:
         start = floor(time())

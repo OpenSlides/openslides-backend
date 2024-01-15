@@ -57,10 +57,8 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
                 - speaker["pause_time"]
             )
             instance["pause_time"] = None
-
-        # update countdowns
-        self.control_los_countdown(speaker["meeting_id"], CountdownCommand.RESET)
-        if level_id := speaker.get("structure_level_list_of_speakers_id"):
+        elif level_id := speaker.get("structure_level_list_of_speakers_id"):
+            # only update the level if the speaker was not paused
             start_time = speaker.get("unpause_time", speaker["begin_time"])
             self.execute_other_action(
                 StructureLevelListOfSpeakersUpdateAction,
@@ -73,4 +71,5 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
                 ],
             )
 
+        self.control_los_countdown(speaker["meeting_id"], CountdownCommand.RESET)
         return instance
