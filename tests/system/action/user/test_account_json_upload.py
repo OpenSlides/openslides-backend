@@ -904,14 +904,14 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         assert [
-            entry["data"]["username"]
+            entry["data"]["username"]["value"] + " " + entry["data"]["username"]["info"]
             for entry in response.json["results"][0][0]["rows"]
         ] == [
-            "OneTwoThree",
-            "OneTwoThree1",
-            "OneTwoThree2",
-            "OneTwoThree3",
-            "OneTwoThree4",
+            "OneTwoThree generated",
+            "OneTwoThree1 generated",
+            "OneTwoThree2 generated",
+            "OneTwoThree3 generated",
+            "OneTwoThree4 generated",
         ]
 
     def json_upload_generate_default_password(self) -> None:
