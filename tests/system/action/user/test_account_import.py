@@ -602,6 +602,12 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             },
         )
 
+    def test_json_upload_with_complicated_names(self) -> None:
+        self.json_upload_with_complicated_names()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        rows = response_import.json["results"][0][0]["rows"]
+
     def test_json_upload_generate_default_password(self) -> None:
         self.json_upload_generate_default_password()
         response_import = self.request("account.import", {"id": 1, "import": True})

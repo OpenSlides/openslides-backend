@@ -874,6 +874,46 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         }
         assert entry["data"]["default_password"]["info"] == ImportState.GENERATED
 
+    def json_upload_with_complicated_names(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "One Two",
+                        "last_name": "Three",
+                    },
+                    {
+                        "first_name": "One-Two",
+                        "last_name": "Three",
+                    },
+                    {
+                        "first_name": "One",
+                        "last_name": "Two Three",
+                    },
+                    {
+                        "first_name": "One",
+                        "last_name": "Two-Three",
+                    },
+                    {
+                        "first_name": "One Two Thre",
+                        "last_name": "e",
+                    },
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert [
+            entry["data"]["username"]
+            for entry in response.json["results"][0][0]["rows"]
+        ] == [
+            "OneTwoThree",
+            "OneTwoThree1",
+            "OneTwoThree2",
+            "OneTwoThree3",
+            "OneTwoThree4",
+        ]
+
     def json_upload_generate_default_password(self) -> None:
         response = self.request(
             "account.json_upload",
