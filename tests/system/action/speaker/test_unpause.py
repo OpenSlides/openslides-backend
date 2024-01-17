@@ -104,7 +104,7 @@ class TestSpeakerUnpause(BaseActionTestCase):
         assert countdown.get("running") is True
         assert now <= countdown["countdown_time"] - 100 <= ceil(time())
 
-    def test_unpause_with_structure_level(self) -> None:
+    def setup_structure_level(self) -> None:
         self.set_models(
             {
                 "meeting/1": {
@@ -129,6 +129,9 @@ class TestSpeakerUnpause(BaseActionTestCase):
                 },
             }
         )
+
+    def test_unpause_with_structure_level(self) -> None:
+        self.setup_structure_level()
         start = floor(time())
         response = self.request("speaker.unpause", {"id": 890})
         self.assert_status_code(response, 200)

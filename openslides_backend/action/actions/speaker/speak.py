@@ -1,7 +1,9 @@
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
+from openslides_backend.action.action import Action
 from openslides_backend.action.actions.speaker.end_speech import SpeakerEndSpeach
+from openslides_backend.action.actions.speaker.pause import SpeakerPause
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
     StructureLevelListOfSpeakersUpdateAction,
 )
@@ -16,6 +18,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
+from .speech_state import SpeechState
 
 
 @register_action("speaker.speak")
@@ -59,9 +62,11 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
             mapped_fields=["id"],
         )
         if result:
-            self.execute_other_action(
-                SpeakerEndSpeach, [{"id": next(iter(result.keys()))}]
-            )
+            if db_instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
+                action: Type[Action] = SpeakerPause
+            else:
+                action = SpeakerEndSpeach
+            self.execute_other_action(action, [{"id": next(iter(result.keys()))}])
 
         now = round(time.time())
         if db_instance.get("begin_time") is not None:
@@ -71,13 +76,13 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
 
         # update countdowns, differentiate by speaker type
         countdown_time: Optional[int] = None
-        if db_instance.get("speech_state") == "intervention":
+        if db_instance.get("speech_state") == SpeechState.INTERVENTION:
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", db_instance["meeting_id"]),
                 ["list_of_speakers_intervention_time"],
             )
             countdown_time = meeting["list_of_speakers_intervention_time"]
-        elif db_instance.get("speech_state") == "interposed_question":
+        elif db_instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
             countdown_time = 0
         self.control_los_countdown(
             db_instance["meeting_id"], CountdownCommand.RESTART, countdown_time

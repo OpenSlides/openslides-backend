@@ -17,7 +17,7 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
     schema = DefaultSchema(StructureLevelListOfSpeakers()).get_update_schema(
         optional_properties=["initial_time", "current_start_time"],
         additional_optional_fields={
-            "spoken_time": {"type": "integer", "minimum": 1},
+            "spoken_time": {"type": "integer", "minimum": 0},
         },
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE

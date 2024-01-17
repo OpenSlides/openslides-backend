@@ -1,6 +1,7 @@
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -528,17 +529,17 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         assert assert_message in response.json["message"]
 
     def test_create_pro_contra(self) -> None:
-        self.base_state_speech_test(200, "pro", False, True)
+        self.base_state_speech_test(200, SpeechState.PRO, False, True)
 
     def test_create_contradiction(self) -> None:
-        self.base_state_speech_test(200, "contribution")
+        self.base_state_speech_test(200, SpeechState.CONTRIBUTION)
 
     def test_create_contradiction_2(self) -> None:
-        self.base_state_speech_test(200, "contribution", False)
+        self.base_state_speech_test(200, SpeechState.CONTRIBUTION, False)
 
     def test_create_not_allowed_pro_contra(self) -> None:
         self.base_state_speech_test(
-            400, "pro", False, False, "Pro/Contra is not enabled."
+            400, SpeechState.PRO, False, False, "Pro/Contra is not enabled."
         )
 
     def test_create_not_allowed_contribution(self) -> None:
@@ -554,7 +555,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting_user_id": 1,
                 "list_of_speakers_id": 23,
-                "speech_state": "contribution",
+                "speech_state": SpeechState.CONTRIBUTION,
             },
         )
         self.assert_status_code(response, 400)
@@ -865,7 +866,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting_user_id": 17,
                 "list_of_speakers_id": 23,
-                "speech_state": "intervention",
+                "speech_state": SpeechState.INTERVENTION,
             },
         )
         self.assert_status_code(response, 200)
@@ -875,7 +876,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting_user_id": 17,
                 "list_of_speakers_id": 23,
                 "weight": 1,
-                "speech_state": "intervention",
+                "speech_state": SpeechState.INTERVENTION,
             },
         )
 
@@ -889,7 +890,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting_user_id": 17,
                 "list_of_speakers_id": 23,
-                "speech_state": "interposed_question",
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
             },
         )
         self.assert_status_code(response, 200)
@@ -899,7 +900,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting_user_id": 17,
                 "list_of_speakers_id": 23,
                 "weight": 1,
-                "speech_state": "interposed_question",
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
             },
         )
 
@@ -910,7 +911,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request(
             "speaker.create",
-            {"list_of_speakers_id": 23, "speech_state": "interposed_question"},
+            {
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -918,14 +922,19 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "list_of_speakers_id": 23,
                 "weight": 1,
-                "speech_state": "interposed_question",
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
             },
         )
 
     def test_create_other_state_without_meeting_user_id(self) -> None:
         self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
         self.set_models(self.test_models)
-        for state in ("pro", "contra", "contribution", "intervention"):
+        for state in (
+            SpeechState.PRO,
+            SpeechState.CONTRA,
+            SpeechState.CONTRIBUTION,
+            SpeechState.INTERVENTION,
+        ):
             response = self.request(
                 "speaker.create", {"list_of_speakers_id": 23, "speech_state": state}
             )
@@ -948,7 +957,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "list_of_speakers_id": 23,
                     "weight": 2,
-                    "speech_state": "interposed_question",
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
                 },
                 "speaker/3": {
                     "meeting_id": 1,
@@ -965,7 +974,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         response = self.request(
             "speaker.create",
-            {"list_of_speakers_id": 23, "speech_state": "interposed_question"},
+            {
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(

@@ -10,6 +10,7 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
+from .speech_state import SpeechState
 
 
 class CheckSpeechState(Action):
@@ -44,37 +45,40 @@ class CheckSpeechState(Action):
         allowed_pro_contra = meeting.get("list_of_speakers_enable_pro_contra_speech")
         if speaker.get("speech_state") == instance.get("speech_state"):
             pass
-        elif instance.get("speech_state") == "contribution":
+        elif instance.get("speech_state") == SpeechState.CONTRIBUTION:
             if not allowed_self_contribution:
                 raise ActionException("Self contribution is not allowed.")
-        elif instance.get("speech_state") in ["pro", "contra"]:
+        elif instance.get("speech_state") in [SpeechState.PRO, SpeechState.CONTRA]:
             if not allowed_pro_contra:
                 raise ActionException("Pro/Contra is not enabled.")
         elif (
-            speaker.get("speech_state") == "contribution"
+            speaker.get("speech_state") == SpeechState.CONTRIBUTION
             and instance.get("speech_state") is None
         ):
             if not allowed_self_contribution:
                 raise ActionException("Self contribution is not allowed.")
         elif (
-            speaker.get("speech_state") in ["pro", "contra"]
+            speaker.get("speech_state") in [SpeechState.PRO, SpeechState.CONTRA]
             and instance.get("speech_state") is None
         ):
             if not allowed_pro_contra:
                 raise ActionException("Pro/Contra is not enabled.")
-        elif instance.get("speech_state") in ("intervention", "interposed_question"):
+        elif instance.get("speech_state") in (
+            SpeechState.INTERVENTION,
+            SpeechState.INTERPOSED_QUESTION,
+        ):
             if instance.get("point_of_order"):
                 raise ActionException(
                     "Point of order is not allowed for this speech state."
                 )
             if (
-                instance.get("speech_state") == "intervention"
+                instance.get("speech_state") == SpeechState.INTERVENTION
                 and meeting.get("list_of_speakers_intervention_time", 0) <= 0
             ):
                 raise ActionException("Interventions are not enabled.")
             elif instance.get(
                 "speech_state"
-            ) == "interposed_question" and not meeting.get(
+            ) == SpeechState.INTERPOSED_QUESTION and not meeting.get(
                 "list_of_speakers_enable_interposed_question"
             ):
                 raise ActionException("Interposed questions are not enabled.")

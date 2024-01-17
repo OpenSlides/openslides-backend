@@ -4,7 +4,7 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "c64e6fc9058542820d559a99e2828c22"
+MODELS_YML_CHECKSUM = "ac6a45db653747591ad0c1850c693fa1"
 
 
 class Organization(Model):
@@ -1098,12 +1098,12 @@ class StructureLevelListOfSpeakers(Model):
             "description": "The initial time of this structure_level for this LoS",
         },
     )
-    additional_time = fields.IntegerField(
+    additional_time = fields.FloatField(
         constraints={
             "description": "The summed added time of this structure_level for this LoS"
         }
     )
-    remaining_time = fields.IntegerField(
+    remaining_time = fields.FloatField(
         required=True,
         constraints={
             "description": "The currently remaining time of this structure_level for this LoS"
@@ -1142,6 +1142,7 @@ class Speaker(Model):
     begin_time = fields.TimestampField(read_only=True)
     end_time = fields.TimestampField(read_only=True)
     pause_time = fields.TimestampField(read_only=True)
+    unpause_time = fields.TimestampField(read_only=True)
     total_pause = fields.IntegerField(read_only=True)
     weight = fields.IntegerField(default=10000)
     speech_state = fields.CharField(

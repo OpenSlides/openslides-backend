@@ -11,6 +11,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .mixins import CheckSpeechState, StructureLevelMixin
+from .speech_state import SpeechState
 
 
 @register_action("speaker.update")
@@ -23,9 +24,9 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        if instance.get("speech_state") in ("intervention", "interposed_question"):
+        if instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
             raise ActionException(
-                "You cannot set the speech state to intervention or interposed_question."
+                "You cannot set the speech state to interposed_question."
             )
         speaker = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
@@ -38,8 +39,8 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
             ],
         )
         if speaker.get("speech_state") in (
-            "intervention",
-            "interposed_question",
+            SpeechState.INTERVENTION,
+            SpeechState.INTERPOSED_QUESTION,
         ) and instance.get("speech_state") not in (speaker.get("speech_state"), None):
             raise ActionException(
                 "You cannot change the speech state of an intervention or interposed_question."
@@ -47,7 +48,7 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
         if "meeting_user_id" in instance and (
             instance["meeting_user_id"] is None
             or speaker.get("meeting_user_id")
-            or speaker.get("speech_state") != "interposed_question"
+            or speaker.get("speech_state") != SpeechState.INTERPOSED_QUESTION
         ):
             raise ActionException("You cannot set the meeting_user_id.")
         if "structure_level_id" in instance and speaker.get("begin_time"):

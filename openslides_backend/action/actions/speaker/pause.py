@@ -1,4 +1,4 @@
-import time
+from time import time
 from typing import Any, Dict
 
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
@@ -32,7 +32,7 @@ class SpeakerPause(SingularActionMixin, CountdownControl, UpdateAction):
                 "begin_time",
                 "end_time",
                 "pause_time",
-                "total_pause",
+                "unpause_time",
                 "meeting_id",
                 "structure_level_list_of_speakers_id",
             ],
@@ -44,20 +44,19 @@ class SpeakerPause(SingularActionMixin, CountdownControl, UpdateAction):
         ):
             raise ActionException("Speaker is not currently speaking.")
 
-        instance["pause_time"] = round(time.time())
+        instance["pause_time"] = now = round(time())
 
         # update countdowns
         self.control_los_countdown(db_instance["meeting_id"], CountdownCommand.STOP)
         if level_id := db_instance.get("structure_level_list_of_speakers_id"):
+            start_time = db_instance.get("unpause_time", db_instance["begin_time"])
             self.execute_other_action(
                 StructureLevelListOfSpeakersUpdateAction,
                 [
                     {
                         "id": level_id,
                         "current_start_time": None,
-                        "spoken_time": instance["pause_time"]
-                        - db_instance["begin_time"]
-                        - db_instance.get("total_pause", 0),
+                        "spoken_time": now - start_time,
                     }
                 ],
             )

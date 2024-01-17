@@ -2150,11 +2150,11 @@ structure_level_list_of_speakers:
     restriction_mode: A
     description: The initial time of this structure_level for this LoS
   additional_time:
-    type: number
+    type: float
     restriction_mode: A
     description: The summed added time of this structure_level for this LoS
   remaining_time:
-    type: number
+    type: float
     required: true
     restriction_mode: A
     description: The currently remaining time of this structure_level for this LoS
@@ -2204,6 +2204,10 @@ speaker:
     read_only: true
     restriction_mode: A
   pause_time:
+    type: timestamp
+    read_only: true
+    restriction_mode: A
+  unpause_time:
     type: timestamp
     read_only: true
     restriction_mode: A

@@ -2,6 +2,7 @@ from math import ceil, floor
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -117,7 +118,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "list_of_speakers_intervention_time": 100,
                 },
                 "speaker/890": {
-                    "speech_state": "intervention",
+                    "speech_state": SpeechState.INTERVENTION,
                 },
             }
         )
@@ -138,7 +139,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
         self.set_models(
             {
                 "speaker/890": {
-                    "speech_state": "interposed_question",
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
                 },
             }
         )
@@ -153,6 +154,32 @@ class SpeakerSpeakTester(BaseActionTestCase):
             },
         )
         assert now <= countdown["countdown_time"] <= ceil(time())
+
+    def test_speak_interposed_question_pause_current_speaker(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/7": {
+                    "speaker_ids": [890, 891],
+                },
+                "list_of_speakers/23": {"speaker_ids": [890, 891]},
+                "speaker/890": {
+                    "begin_time": 100000,
+                },
+                "speaker/891": {
+                    "meeting_user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                },
+            }
+        )
+        response = self.request("speaker.speak", {"id": 891})
+        self.assert_status_code(response, 200)
+        speaker = self.get_model("speaker/891")
+        self.assertIsNotNone(speaker.get("begin_time"))
+        speaker = self.get_model("speaker/890")
+        self.assertIsNone(speaker.get("end_time"))
+        self.assertIsNotNone(speaker.get("pause_time"))
 
     def test_speak_with_structure_level(self) -> None:
         self.set_models(
