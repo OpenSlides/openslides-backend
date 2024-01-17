@@ -1,5 +1,3 @@
-
-
 def test_migration(write, finalize, assert_model):
     write(
         {
