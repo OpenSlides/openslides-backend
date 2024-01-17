@@ -11,8 +11,8 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
                 "meeting/1": {
                     "is_active_in_organization_id": 1,
                     "structure_level_ids": [1],
-                    "list_of_speakers_ids": [2],
-                    "structure_level_list_of_speakers_ids": [3],
+                    "list_of_speakers_ids": [2, 4],
+                    "structure_level_list_of_speakers_ids": [3, 5],
                 },
                 "structure_level/1": {
                     "meeting_id": 1,
@@ -28,6 +28,17 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "initial_time": 600,
                     "remaining_time": 500,
+                },
+                "list_of_speakers/4": {
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_ids": [5],
+                },
+                "structure_level_list_of_speakers/5": {
+                    "structure_level_id": 1,
+                    "list_of_speakers_id": 4,
+                    "meeting_id": 1,
+                    "initial_time": 600,
+                    "remaining_time": 600,
                 },
             }
         )
@@ -75,14 +86,24 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
     def test_set_initial_time(self) -> None:
         response = self.request(
             "structure_level_list_of_speakers.update",
-            {"id": 3, "initial_time": 100},
+            {"id": 5, "initial_time": 100},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "structure_level_list_of_speakers/3",
-            {
-                "initial_time": 100,
-            },
+            "structure_level_list_of_speakers/5",
+            {"initial_time": 100, "remaining_time": 100},
+        )
+
+    def test_set_initial_time_error(self) -> None:
+        response = self.request(
+            "structure_level_list_of_speakers.update",
+            {"id": 3, "initial_time": 100},
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"]
+        self.assertIn(
+            "initial_time can only be changed if no speaker has spoken yet.",
+            response.json["message"],
         )
 
     def test_set_initial_time_with_speakers(self) -> None:
