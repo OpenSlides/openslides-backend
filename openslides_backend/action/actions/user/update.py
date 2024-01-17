@@ -18,6 +18,8 @@ from .user_mixins import (
     UserMixin,
     check_gender_helper,
 )
+from ....shared.filters import And, FilterOperator
+from ..meeting_user.delete import MeetingUserDelete
 
 
 @register_action("user.update")
@@ -63,14 +65,18 @@ class UserUpdate(
     check_email_field = "email"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        removed_meeting_id = self.get_removed_meeting_id(instance)
         instance = super().update_instance(instance)
+        if removed_meeting_id:
+            meeting_users = self.datastore.filter("meeting_user", And(FilterOperator("user_id", "=", instance["id"]), FilterOperator("meeting_id", "=", removed_meeting_id)), [])
+            self.execute_other_action(MeetingUserDelete, [{"id": id_} for id_ in meeting_users])
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[
                 "is_active",
                 "organization_management_level",
                 "saml_id",
-                "password",
+                "password"
             ],
         )
         if user.get("saml_id") and (

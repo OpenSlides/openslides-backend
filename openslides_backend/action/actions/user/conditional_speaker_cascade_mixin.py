@@ -5,6 +5,7 @@ from openslides_backend.shared.filters import And, FilterOperator
 from ....services.datastore.commands import GetManyRequest
 from ...action import Action
 from ..speaker.delete import SpeakerDeleteAction
+from ..meeting_user.delete import MeetingUserDelete
 
 
 class ConditionalSpeakerCascadeMixin(Action):
@@ -52,6 +53,12 @@ class ConditionalSpeakerCascadeMixin(Action):
                     SpeakerDeleteAction,
                     [{"id": speaker["id"]} for speaker in speakers_to_delete],
                 )
+            
+            # if len(meeting_users):
+            #     self.execute_other_action(
+            #         MeetingUserDelete,
+            #         [{"id": id_} for id_ in meeting_users]
+            #     )
 
         return super().update_instance(instance)
 

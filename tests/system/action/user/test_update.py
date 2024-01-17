@@ -356,13 +356,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {
                 "meeting_ids": [],
-                "meeting_user_ids": [1111],
+                "meeting_user_ids": [],
                 "committee_management_ids": [60, 61],
                 "committee_ids": [60, 61],
             },
         )
-        self.assert_model_exists(
-            "meeting_user/1111", {"group_ids": [], "meta_deleted": False}
+        self.assert_model_deleted(
+            "meeting_user/1111", {"group_ids": [600], "meta_deleted": False}
         )
         self.assert_history_information(
             "user/111",
