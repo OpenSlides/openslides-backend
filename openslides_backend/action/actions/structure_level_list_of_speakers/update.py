@@ -40,20 +40,19 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
                     raise ActionException(
                         f"Cannot set initial_time and {field} at the same time."
                     )
-            if (
-                self.datastore.exists(
-                    "speaker",
-                    And(
-                        FilterOperator("begin_time", "!=", None),
-                        FilterOperator("meeting_id", "=", db_instance["meeting_id"]),
-                        FilterOperator(
-                            "list_of_speakers_id",
-                            "=",
-                            db_instance["list_of_speakers_id"],
-                        ),
+            if db_instance["initial_time"] != db_instance[
+                "remaining_time"
+            ] or self.datastore.exists(
+                "speaker",
+                And(
+                    FilterOperator("begin_time", "!=", None),
+                    FilterOperator("meeting_id", "=", db_instance["meeting_id"]),
+                    FilterOperator(
+                        "list_of_speakers_id",
+                        "=",
+                        db_instance["list_of_speakers_id"],
                     ),
-                )
-                or db_instance["initial_time"] != db_instance["remaining_time"]
+                ),
             ):
                 raise ActionException(
                     "initial_time can only be changed if no speaker has spoken yet."
