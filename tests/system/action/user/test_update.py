@@ -362,13 +362,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_deleted(
-            "meeting_user/1111", {"group_ids": [600], "meta_deleted": False}
+            "meeting_user/1111", {"group_ids": [], "meta_deleted": False}
         )
         self.assert_history_information(
             "user/111",
             [
-                "Participant removed from group {} in meeting {}",
-                "group/600",
+                "Participant removed from meeting {}",
                 "meeting/60",
                 "Personal data changed",
                 "Committee management changed",
@@ -489,7 +488,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "committee_management_ids": [4],
                 "meeting_ids": [22, 33],
                 "committee_ids": [2, 3, 4],
-                "meeting_user_ids": [111, 112, 113],
+                "meeting_user_ids": [112, 113],
             },
         )
         self.assert_model_exists("committee/1", {"user_ids": []})
@@ -499,6 +498,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting/11", {"user_ids": []})
         self.assert_model_exists("meeting/22", {"user_ids": [123]})
         self.assert_model_exists("meeting/33", {"user_ids": [123]})
+        self.assert_model_deleted("meeting_user/111")
 
     def test_update_broken_email(self) -> None:
         self.create_model(
@@ -2130,24 +2130,43 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/1234",
             {
                 "username": "username_abcdefgh123",
-                "meeting_user_ids": [4444, 5555],
+                "meeting_user_ids": [5555],
             },
         )
-        self.assert_model_exists(
-            "meeting_user/4444",
-            {"group_ids": [], "speaker_ids": [24], "meta_deleted": False},
-        )
+        self.assert_model_deleted("meeting_user/4444")
         self.assert_model_exists(
             "meeting_user/5555",
             {"group_ids": [53], "speaker_ids": [25], "meta_deleted": False},
         )
         self.assert_model_exists(
-            "speaker/24", {"meeting_user_id": 4444, "meeting_id": 4}
+            "speaker/24", {"meeting_user_id": None, "meeting_id": 4}
         )
         self.assert_model_exists(
             "speaker/25", {"meeting_user_id": 5555, "meeting_id": 5}
         )
         self.assert_model_deleted("speaker/14")
+
+        response2 = self.request(
+            "user.update", {"id": 1234, "group_ids": [42], "meeting_id": 4}
+        )
+
+        self.assert_status_code(response2, 200)
+        self.assert_model_exists(
+            "user/1234",
+            {
+                "username": "username_abcdefgh123",
+                "meeting_user_ids": [5555, 5556],
+            },
+        )
+        self.assert_model_deleted("meeting_user/4444")
+        self.assert_model_exists(
+            "meeting_user/5556",
+            {
+                "user_id": 1234,
+                "meeting_id": 4,
+                "group_ids": [42],
+            },
+        )
 
     def test_partial_group_removal_with_speaker(self) -> None:
         self.set_models(

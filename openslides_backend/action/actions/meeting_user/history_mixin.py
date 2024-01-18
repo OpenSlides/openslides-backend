@@ -62,7 +62,7 @@ class MeetingUserHistoryMixin(Action):
                 group_information: List[str] = []
                 if added and removed:
                     group_information.append("Groups changed")
-                else:
+                elif len(instance_group_ids) != 0:
                     if added:
                         group_information.append("Participant added to")
                     else:
