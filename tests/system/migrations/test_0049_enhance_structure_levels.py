@@ -73,7 +73,7 @@ def test_migration(write, finalize, assert_model):
             "fields": {"id": 22, "user_id": 2, "meeting_id": 42},
         },
     )
-    finalize("0048_enhance_structure_levels")
+    finalize("0049_enhance_structure_levels")
 
     assert_model(
         "user/1",
@@ -149,4 +149,4 @@ def test_no_events(write, finalize):
             "fields": {"id": 11, "user_id": 1, "meeting_id": 42},
         },
     )
-    finalize("0048_enhance_structure_levels")
+    finalize("0049_enhance_structure_levels")

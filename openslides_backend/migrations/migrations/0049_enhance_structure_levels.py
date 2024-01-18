@@ -17,7 +17,7 @@ class StructureLevelEntry(TypedDict):
 
 
 class Migration(BaseModelMigration):
-    target_migration_index = 49
+    target_migration_index = 50
 
     def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
         events: List[BaseRequestEvent] = []
