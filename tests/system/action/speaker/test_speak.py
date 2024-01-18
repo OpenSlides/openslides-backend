@@ -259,6 +259,48 @@ class SpeakerSpeakTester(BaseActionTestCase):
         )
         assert now <= model["current_start_time"] <= ceil(time())
 
+    def speak_with_structure_level_and_speech_state(self, state: SpeechState) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "structure_level_ids": [1],
+                    "structure_level_list_of_speakers_ids": [2],
+                    "list_of_speakers_intervention_time": 100,
+                },
+                "structure_level/1": {
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_ids": [2],
+                },
+                "structure_level_list_of_speakers/2": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "structure_level_id": 1,
+                    "speaker_ids": [890],
+                    "remaining_time": 100,
+                },
+                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
+                "speaker/890": {
+                    "structure_level_list_of_speakers_id": 2,
+                    "speech_state": state,
+                },
+            }
+        )
+        response = self.request("speaker.speak", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/2", {"current_start_time": None}
+        )
+
+    def test_speak_with_structure_level_and_speech_state_intervention(self) -> None:
+        self.speak_with_structure_level_and_speech_state(SpeechState.INTERVENTION)
+
+    def test_speak_with_structure_level_and_speech_state_interposed_question(
+        self,
+    ) -> None:
+        self.speak_with_structure_level_and_speech_state(
+            SpeechState.INTERPOSED_QUESTION
+        )
+
     def test_speak_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.speak", {"id": 890})
 
