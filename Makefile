@@ -36,7 +36,7 @@ generate-models:
 	black openslides_backend/models/models.py
 
 check-models:
-	python cli/generate_models.py check
+	python cli/generate_models.py --check
 
 generate-permissions:
 	python cli/generate_permissions.py $(MODELS_PATH)
