@@ -31,9 +31,17 @@ class Migration(BaseModelMigration):
 
     target_migration_index = 50
     field_target_relation_list: List[FieldTargetRemoveType] = [
-        ("user_id", "user", "meeting_user_ids"),
+        ("assignment_candidate_ids", "assignment_candidate", "meeting_user_id"),
+        ("chat_message_ids", "chat_message", "meeting_user_id"),
         ("meeting_id", "meeting", "meeting_user_ids"),
-        ("supported_motion_ids", "motion", "supporter_meeting_user_ids"),
+        (
+            "motion_submitter_ids",
+            "motion_submitter",
+            [
+                ("meeting_id", "meeting", "motion_submitter_ids"),
+                ("motion_id", "motion", "submitter_ids"),
+            ],
+        ),  # CASCADE
         (
             "personal_note_ids",
             "personal_note",
@@ -43,19 +51,10 @@ class Migration(BaseModelMigration):
             ],
         ),  # CASCADE
         ("speaker_ids", "speaker", "meeting_user_id"),
-        (
-            "motion_submitter_ids",
-            "motion_submitter",
-            [
-                ("motion_id", "motion", "submitter_ids"),
-                ("meeting_id", "meeting", "motion_submitter_ids"),
-            ],
-        ),  # CASCADE
-        ("assignment_candidate_ids", "assignment_candidate", "meeting_user_id"),
+        ("supported_motion_ids", "motion", "supporter_meeting_user_ids"),
+        ("user_id", "user", "meeting_user_ids"),
         ("vote_delegated_to_id", "meeting_user", "vote_delegations_from_ids"),
         ("vote_delegations_from_ids", "meeting_user", "vote_delegated_to_id"),
-        ("chat_message_ids", "chat_message", "meeting_user_id"),
-        ("group_ids", "group", "meeting_user_ids"),
     ]
     remove_events: Dict[str, BaseRequestEvent]
     additional_events: Dict[str, Tuple[Dict[str, JSON], ListFieldsData]]
@@ -141,7 +140,9 @@ class Migration(BaseModelMigration):
                     if is_list:
                         if remove := prior_event[1].get("remove"):
                             if prior_empty_values := remove.get(to_empty):
-                                remove[to_empty] = [*prior_empty_values, remove_id]
+                                remove[to_empty] = list(
+                                    set([*prior_empty_values, remove_id])
+                                )
                             else:
                                 remove[to_empty] = [remove_id]
                         else:
