@@ -8,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
 
 
-class CommitteeJsonUploadCommittee(BaseActionTestCase):
+class BaseCommitteeJsonUploadTest(BaseActionTestCase):
     def get_row(self, response: Response, index: int = 0) -> Dict[str, Any]:
         return response.json["results"][0][0]["rows"][index]
 
@@ -19,6 +19,8 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
         for key, value in expected.items():
             self.assertIn({"name": key, "value": value}, self.get_statistics(response))
 
+
+class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
     def test_json_upload_minimal_fields(self) -> None:
         start = floor(time())
         response = self.request(
@@ -35,7 +37,7 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
                     "state": ImportState.NEW,
                     "messages": [],
                     "data": {
-                        "name": {"info": "new", "value": "test"},
+                        "name": {"info": ImportState.NEW, "value": "test"},
                     },
                 }
             ],
@@ -678,3 +680,51 @@ class CommitteeJsonUploadCommittee(BaseActionTestCase):
             {"data": [{"name": "test"}]},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
+
+
+class TestCommitteeJsonUploadForImport(BaseCommitteeJsonUploadTest):
+    def json_upload_all_fields(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"name": "forward"},
+                "user/2": {"username": "meeting_admin"},
+            }
+        )
+        response = self.request(
+            "committee.json_upload",
+            {
+                "data": [
+                    {
+                        "name": "test",
+                        "description": "desc",
+                        "forward_to_committees": ["forward"],
+                        "organization_tags": ["tag"],
+                        "managers": ["admin"],
+                        "meeting_name": "meeting",
+                        "meeting_start_time": "2023-08-09",
+                        "meeting_end_time": "2023-08-10",
+                        "meeting_admins": ["meeting_admin"],
+                    }
+                ]
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert self.get_row(response) == {
+            "state": ImportState.NEW,
+            "messages": [],
+            "data": {
+                "name": {"info": ImportState.NEW, "value": "test"},
+                "description": "desc",
+                "forward_to_committees": [
+                    {"value": "forward", "info": ImportState.DONE, "id": 1}
+                ],
+                "organization_tags": [{"value": "tag", "info": ImportState.NEW}],
+                "managers": [{"value": "admin", "info": ImportState.DONE, "id": 1}],
+                "meeting_name": "meeting",
+                "meeting_start_time": 1691539200,
+                "meeting_end_time": 1691625600,
+                "meeting_admins": [
+                    {"value": "meeting_admin", "info": ImportState.DONE, "id": 2}
+                ],
+            },
+        }

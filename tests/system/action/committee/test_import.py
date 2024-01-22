@@ -3,11 +3,12 @@ from typing import Any, Dict
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
-from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
 
+from .test_json_upload import TestCommitteeJsonUploadForImport
 
-class CommitteeImport(BaseActionTestCase):
+
+class TestCommitteeImport(TestCommitteeJsonUploadForImport):
     def get_row(self, response: Response, index: int = 0) -> Dict[str, Any]:
         return response.json["results"][0][0]["rows"][index]
 
@@ -23,31 +24,7 @@ class CommitteeImport(BaseActionTestCase):
         self.assert_model_not_exists("action_worker/1")
 
     def test_import_all_fields(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {"name": "forward"},
-                "user/2": {"username": "meeting_admin"},
-            }
-        )
-        response = self.request(
-            "committee.json_upload",
-            {
-                "data": [
-                    {
-                        "name": "test",
-                        "description": "desc",
-                        "forward_to_committees": ["forward"],
-                        "organization_tags": ["tag"],
-                        "managers": ["admin"],
-                        "meeting_name": "meeting",
-                        "meeting_start_time": "2023-08-09",
-                        "meeting_end_time": "2023-08-10",
-                        "meeting_admins": ["meeting_admin"],
-                    }
-                ]
-            },
-        )
-        self.assert_status_code(response, 200)
+        self.json_upload_all_fields()
         response = self.request("committee.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("action_worker/1")
