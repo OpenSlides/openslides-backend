@@ -1,10 +1,12 @@
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.actions.speaker.pause import SpeakerPause
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
     StructureLevelListOfSpeakersUpdateAction,
 )
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
+from openslides_backend.shared.filters import And, FilterOperator
 
 from ....models.models import Speaker
 from ....permissions.permissions import Permissions
@@ -34,6 +36,7 @@ class SpeakerUnpause(SingularActionMixin, CountdownControl, UpdateAction):
                 "pause_time",
                 "total_pause",
                 "meeting_id",
+                "list_of_speakers_id",
                 "structure_level_list_of_speakers_id",
             ],
         )
@@ -43,6 +46,23 @@ class SpeakerUnpause(SingularActionMixin, CountdownControl, UpdateAction):
             or db_instance.get("pause_time") is None
         ):
             raise ActionException("Speaker is not paused.")
+
+        # find current speaker, if exists, and pause it
+        result = self.datastore.filter(
+            self.model.collection,
+            And(
+                FilterOperator("meeting_id", "=", db_instance["meeting_id"]),
+                FilterOperator(
+                    "list_of_speakers_id", "=", db_instance["list_of_speakers_id"]
+                ),
+                FilterOperator("begin_time", "!=", None),
+                FilterOperator("pause_time", "=", None),
+                FilterOperator("end_time", "=", None),
+            ),
+            mapped_fields=["id"],
+        )
+        if result:
+            self.execute_other_action(SpeakerPause, [{"id": next(iter(result.keys()))}])
 
         instance["unpause_time"] = now = round(time())
         instance["total_pause"] = (
