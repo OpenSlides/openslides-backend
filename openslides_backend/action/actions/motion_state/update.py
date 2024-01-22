@@ -21,6 +21,7 @@ class MotionStateUpdateAction(UpdateAction):
             "name",
             "weight",
             "recommendation_label",
+            "is_internal_recommendation",
             "css_class",
             "restrictions",
             "allow_support",

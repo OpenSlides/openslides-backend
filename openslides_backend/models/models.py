@@ -1414,6 +1414,7 @@ class MotionState(Model):
     name = fields.CharField(required=True)
     weight = fields.IntegerField(required=True)
     recommendation_label = fields.CharField()
+    is_internal_recommendation = fields.BooleanField()
     css_class = fields.CharField(
         required=True,
         default="lightblue",
