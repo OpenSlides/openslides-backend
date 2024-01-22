@@ -57,6 +57,7 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
                     "list_of_speakers_id", "=", db_instance["list_of_speakers_id"]
                 ),
                 FilterOperator("begin_time", "!=", None),
+                FilterOperator("pause_time", "=", None),
                 FilterOperator("end_time", "=", None),
             ),
             mapped_fields=["id", "pause_time"],
