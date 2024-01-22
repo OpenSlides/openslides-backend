@@ -2,6 +2,7 @@ from math import ceil, floor
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -242,6 +243,46 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         )
         self.assertAlmostEqual(speaker["total_pause"], 50, delta=delta)
         self.assertAlmostEqual(speaker["end_time"], end, delta=delta)
+
+    def test_end_started_child_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/7": {"speaker_ids": [890, 891]},
+                "list_of_speakers/23": {"speaker_ids": [890, 891], "meeting_id": 1},
+                "speaker/890": {
+                    "pause_time": 11000,
+                },
+                "speaker/891": {
+                    "meeting_user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "begin_time": 10000,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("speaker.end_speech", {"id": 890})
+        self.assert_status_code(response, 200)
+        speaker = self.get_model("speaker/891")
+        self.assertIsNotNone(speaker.get("end_time"))
+        self.assert_model_exists("speaker/890", {"end_time": speaker["end_time"]})
+
+    def test_end_waiting_child_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/7": {"speaker_ids": [890, 891]},
+                "list_of_speakers/23": {"speaker_ids": [890, 891], "meeting_id": 1},
+                "speaker/891": {
+                    "meeting_user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("speaker.end_speech", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("speaker/891")
 
     def test_end_speech_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.end_speech", {"id": 890})
