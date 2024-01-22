@@ -2,6 +2,7 @@ from math import ceil, floor
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -154,6 +155,21 @@ class TestSpeakerPause(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("structure_level_list_of_speakers/2")
         self.assertAlmostEqual(model["remaining_time"], 190, delta=end - start)
+
+    def pause_with_speech_state(self, state: SpeechState) -> None:
+        self.setup_structure_level()
+        self.set_models({"speaker/890": {"speech_state": state}})
+        response = self.request("speaker.pause", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/2", {"remaining_time": 200}
+        )
+
+    def test_pause_with_interposed_question(self) -> None:
+        self.pause_with_speech_state(SpeechState.INTERPOSED_QUESTION)
+
+    def test_pause_with_intervention(self) -> None:
+        self.pause_with_speech_state(SpeechState.INTERVENTION)
 
     def test_pause_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.pause", {"id": 890})

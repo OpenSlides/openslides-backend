@@ -1,9 +1,6 @@
 from time import time
 from typing import Any, Dict
 
-from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
-    StructureLevelListOfSpeakersUpdateAction,
-)
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 
 from ....models.models import Speaker
@@ -40,6 +37,7 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
                 "pause_time",
                 "unpause_time",
                 "total_pause",
+                "speech_state",
                 "meeting_id",
                 "structure_level_list_of_speakers_id",
             ],
@@ -57,19 +55,8 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
                 - speaker["pause_time"]
             )
             instance["pause_time"] = None
-        elif level_id := speaker.get("structure_level_list_of_speakers_id"):
-            # only update the level if the speaker was not paused
-            start_time = speaker.get("unpause_time", speaker["begin_time"])
-            self.execute_other_action(
-                StructureLevelListOfSpeakersUpdateAction,
-                [
-                    {
-                        "id": level_id,
-                        "current_start_time": None,
-                        "spoken_time": now - start_time,
-                    }
-                ],
-            )
+        else:
+            self.decrease_structure_level_countdown(now, speaker)
 
         self.control_los_countdown(speaker["meeting_id"], CountdownCommand.RESET)
         return instance
