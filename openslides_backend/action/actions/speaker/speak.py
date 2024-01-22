@@ -59,14 +59,18 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
                 FilterOperator("begin_time", "!=", None),
                 FilterOperator("end_time", "=", None),
             ),
-            mapped_fields=["id"],
+            mapped_fields=["id", "pause_time"],
         )
         if result:
+            current_speaker = next(iter(result.values()))
+            action: Optional[Type[Action]] = None
             if db_instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
-                action: Type[Action] = SpeakerPause
+                if current_speaker.get("pause_time") is None:
+                    action = SpeakerPause
             else:
                 action = SpeakerEndSpeach
-            self.execute_other_action(action, [{"id": next(iter(result.keys()))}])
+            if action:
+                self.execute_other_action(action, [{"id": current_speaker["id"]}])
 
         now = round(time.time())
         if db_instance.get("begin_time") is not None:
