@@ -108,16 +108,7 @@ class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
                 "additional_time": None,
             },
         )
-        self.assert_model_exists(
-            "structure_level_list_of_speakers/5",
-            {
-                "structure_level_id": 4,
-                "list_of_speakers_id": 1,
-                "initial_time": 1000,
-                "remaining_time": 1100,
-                "additional_time": 100,
-            },
-        )
+        self.assert_model_not_exists("structure_level_list_of_speakers/5")
 
     def test_current_speaker(self) -> None:
         response = self.request(

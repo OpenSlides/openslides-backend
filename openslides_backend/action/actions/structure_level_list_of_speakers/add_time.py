@@ -1,13 +1,9 @@
-from openslides_backend.action.actions.structure_level_list_of_speakers.create import (
-    StructureLevelListOfSpeakersCreateAction,
-)
 from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 from openslides_backend.action.util.typing import ActionData
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ....models.models import StructureLevelListOfSpeakers
 from ...util.default_schema import DefaultSchema
@@ -35,7 +31,6 @@ class StructureLevelListOfSpeakersAddTimeAction(SingularActionMixin, UpdateActio
                     [meeting_id],
                     [
                         "list_of_speakers_default_structure_level_time",
-                        "structure_level_ids",
                     ],
                 ),
             ]
@@ -70,29 +65,8 @@ class StructureLevelListOfSpeakersAddTimeAction(SingularActionMixin, UpdateActio
                 ),
             ]
         )
-        sllos_map = {
-            sllos["structure_level_id"]: sllos
-            for sllos in result[self.model.collection].values()
-        }
-        for id in meeting["structure_level_ids"]:
-            if not (sllos := sllos_map.get(id)):
-                action_results = self.execute_other_action(
-                    StructureLevelListOfSpeakersCreateAction,
-                    [
-                        {
-                            "structure_level_id": id,
-                            "list_of_speakers_id": db_instance["list_of_speakers_id"],
-                        }
-                    ],
-                )
-                assert action_results and action_results[0]
-                sllos = self.datastore.get(
-                    fqid_from_collection_and_id(
-                        self.model.collection, action_results[0]["id"]
-                    ),
-                    ["id", "additional_time", "remaining_time"],
-                )
-            t = db_instance["remaining_time"]
+        t = db_instance["remaining_time"]
+        for sllos in result.get(self.model.collection, {}).values():
             yield {
                 "id": sllos["id"],
                 "additional_time": sllos.get("additional_time", 0) - t,
