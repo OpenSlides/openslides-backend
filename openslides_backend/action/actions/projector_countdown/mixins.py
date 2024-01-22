@@ -2,6 +2,12 @@ from enum import Enum, auto
 from time import time
 from typing import Optional
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
+from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
+    StructureLevelListOfSpeakersUpdateAction,
+)
+from openslides_backend.services.datastore.interface import PartialModel
+
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from .update import ProjectorCountdownUpdate
@@ -68,4 +74,26 @@ class CountdownControl(UpdateAction):
         ):
             self.control_countdown(
                 meeting["list_of_speakers_countdown_id"], command, default_time
+            )
+
+    def decrease_structure_level_countdown(
+        self, now: int, speaker: PartialModel
+    ) -> None:
+        if (
+            level_id := speaker.get("structure_level_list_of_speakers_id")
+        ) and speaker.get("speech_state") not in (
+            SpeechState.INTERVENTION,
+            SpeechState.INTERPOSED_QUESTION,
+        ):
+            # only update the level if the speaker was not paused and the speech state demands it
+            start_time = speaker.get("unpause_time", speaker["begin_time"])
+            self.execute_other_action(
+                StructureLevelListOfSpeakersUpdateAction,
+                [
+                    {
+                        "id": level_id,
+                        "current_start_time": None,
+                        "spoken_time": now - start_time,
+                    }
+                ],
             )
