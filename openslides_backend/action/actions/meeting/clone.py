@@ -151,6 +151,7 @@ class MeetingClone(MeetingImport):
 
         # set active
         meeting["is_active_in_organization_id"] = ONE_ORGANIZATION_ID
+        meeting.pop("is_archived_in_organization_id", 0)
         meeting["template_for_organization_id"] = (
             ONE_ORGANIZATION_ID if set_as_template else None
         )

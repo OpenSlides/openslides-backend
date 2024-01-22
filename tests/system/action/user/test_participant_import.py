@@ -716,6 +716,20 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             {"id": 7, "info": "warning", "value": "group7M1"},
         ]
 
+    def test_json_upload_with_complicated_names(self) -> None:
+        self.json_upload_with_complicated_names()
+        response_import = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        rows = response_import.json["results"][0][0]["rows"]
+        for i in range(5):
+            number = f"{i}" if i else ""
+            assert rows[i]["state"] == ImportState.NEW
+            assert rows[i]["messages"] == []
+            assert rows[i]["data"]["username"] == {
+                "info": ImportState.GENERATED,
+                "value": "OneTwoThree" + number,
+            }
+
     def test_json_upload_with_sufficient_field_permission_update(self) -> None:
         """fields in preview forbidden, in import allowed => okay"""
         self.json_upload_not_sufficient_field_permission_update()

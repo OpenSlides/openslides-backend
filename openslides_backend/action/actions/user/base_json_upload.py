@@ -258,7 +258,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 if saml_id := entry.get("saml_id"):
                     username = saml_id
                 else:
-                    username = entry.get("first_name", "") + entry.get("last_name", "")
+                    username = self.generate_username(entry)
                 usernames.append(username)
                 payload_indices.append(entry["payload_index"])
             else:

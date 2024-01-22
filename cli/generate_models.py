@@ -1,10 +1,11 @@
-import hashlib
+import argparse
 import os
 import string
-import sys
+import subprocess
 from collections import ChainMap
+from io import StringIO, TextIOBase
 from textwrap import dedent
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union, cast
 
 import requests
 import yaml
@@ -20,10 +21,14 @@ from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SOURCE = "./global/meta/models.yml"
 
+ROOT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+)
+
 DESTINATION = os.path.abspath(
     os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "..",
+        ROOT,
         "openslides_backend",
         "models",
         "models.py",
@@ -92,52 +97,59 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-
-    global MODELS
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filename", nargs="?", default=SOURCE)
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
 
     # Retrieve models.yml from call-parameter for testing purposes, local file or GitHub
-    if len(sys.argv) > 1 and sys.argv[1] != "check":
-        file = sys.argv[1]
-    else:
-        file = SOURCE
-
+    file = args.filename
     if os.path.isfile(file):
         with open(file, "rb") as x:
             models_yml = x.read()
     else:
         models_yml = requests.get(file).content
 
-    # calc checksum to assert the models.py is up-to-date
-    checksum = hashlib.md5(models_yml).hexdigest()
-
-    if len(sys.argv) > 1 and sys.argv[1] == "check":
-        from openslides_backend.models.models import MODELS_YML_CHECKSUM
-
-        assert checksum == MODELS_YML_CHECKSUM
-        print("models.py is up to date (checksum-comparison)")
-        sys.exit(0)
-
     # Fix broken keys
     models_yml = models_yml.replace(" yes:".encode(), ' "yes":'.encode())
     models_yml = models_yml.replace(" no:".encode(), ' "no":'.encode())
 
+    # open output stream
+    dest: TextIOBase
+    if args.check:
+        dest = StringIO()
+    else:
+        dest = open(DESTINATION, "w")
+
     # Load and parse models.yml
+    global MODELS
     MODELS = yaml.safe_load(models_yml)
-    with open(DESTINATION, "w") as dest:
+    with dest:
         dest.write(FILE_TEMPLATE)
         dest.write(
             "from .mixins import "
             + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
             + "\n"
         )
-        dest.write("\nMODELS_YML_CHECKSUM = " + repr(checksum) + "\n")
         for collection, fields in MODELS.items():
             if collection == "_migration_index":
                 continue
             model = Model(collection, fields)
             dest.write(model.get_code())
 
-    print(f"Models file {DESTINATION} successfully created.")
+        if args.check:
+            result = subprocess.run(
+                ["black", "-c", cast(StringIO, dest).getvalue()],
+                capture_output=True,
+                text=True,
+                cwd=ROOT,
+            )
+            result.check_returncode()
+            with open(DESTINATION, "r") as f:
+                assert f.read() == result.stdout
+            print("Models file up-to-date.")
+        else:
+            print(f"Models file {DESTINATION} successfully created.")
 
 
 def get_model_field(collection: str, field_name: str) -> Union[str, Dict]:

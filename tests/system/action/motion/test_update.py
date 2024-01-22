@@ -10,7 +10,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"meeting_user_ids": [1]},
+            "meeting/1": {"meeting_user_ids": [1], "is_active_in_organization_id": 1},
             "motion/111": {
                 "meeting_id": 1,
                 "title": "title_srtgb123",
@@ -452,6 +452,23 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion/2", {"referenced_in_motion_recommendation_extension_ids": []}
+        )
+
+    def test_set_supporter_other_meeting(self) -> None:
+        self.create_meeting(2)
+        self.permission_test_models["meeting_user/1"]["meeting_id"] = 2
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "supporter_meeting_user_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['meeting_user/1']",
+            response.json["message"],
         )
 
     def test_update_no_permissions(self) -> None:

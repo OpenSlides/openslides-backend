@@ -1210,12 +1210,20 @@ class MeetingClone(BaseActionTestCase):
         self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2
         self.test_models[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [3]
         self.test_models["meeting/1"]["is_active_in_organization_id"] = None
+        self.test_models["meeting/1"]["is_archived_in_organization_id"] = 1
+        self.test_models[ONE_ORGANIZATION_FQID]["archived_meeting_ids"] = [1]
         self.set_models(self.test_models)
 
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"is_active_in_organization_id": 1})
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [3, 2]})
+        self.assert_model_exists(
+            "meeting/2",
+            {"is_active_in_organization_id": 1, "is_archived_in_organization_id": None},
+        )
+        self.assert_model_exists(
+            ONE_ORGANIZATION_FQID,
+            {"active_meeting_ids": [3, 2], "archived_meeting_ids": [1]},
+        )
 
     def test_limit_of_meetings_ok(self) -> None:
         self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2

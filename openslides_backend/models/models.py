@@ -4,8 +4,6 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "aa88f16b1a19e1fa228d1b1856367c17"
-
 
 class Organization(Model):
     collection = "organization"
@@ -1192,7 +1190,7 @@ class Motion(Model):
         equal_fields="meeting_id",
     )
     supporter_meeting_user_ids = fields.RelationListField(
-        to={"meeting_user": "supported_motion_ids"}
+        to={"meeting_user": "supported_motion_ids"}, equal_fields="meeting_id"
     )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},
