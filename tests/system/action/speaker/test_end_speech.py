@@ -2,6 +2,7 @@ from math import ceil, floor
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -242,6 +243,45 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         )
         self.assertAlmostEqual(speaker["total_pause"], 50, delta=delta)
         self.assertAlmostEqual(speaker["end_time"], end, delta=delta)
+
+    def with_structure_level_and_speech_state(self, state: SpeechState) -> None:
+        start = floor(time())
+        self.set_models(
+            {
+                "meeting/1": {
+                    "structure_level_ids": [1],
+                    "structure_level_list_of_speakers_ids": [2],
+                },
+                "structure_level/1": {
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_ids": [2],
+                },
+                "structure_level_list_of_speakers/2": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "structure_level_id": 1,
+                    "speaker_ids": [890],
+                    "remaining_time": 500,
+                },
+                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
+                "speaker/890": {
+                    "begin_time": start - 100,
+                    "structure_level_list_of_speakers_id": 2,
+                    "speech_state": state,
+                },
+            }
+        )
+        response = self.request("speaker.end_speech", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/2", {"remaining_time": 500}
+        )
+
+    def test_interposed_question(self) -> None:
+        self.with_structure_level_and_speech_state(SpeechState.INTERPOSED_QUESTION)
+
+    def test_intervention(self) -> None:
+        self.with_structure_level_and_speech_state(SpeechState.INTERVENTION)
 
     def test_end_speech_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.end_speech", {"id": 890})
