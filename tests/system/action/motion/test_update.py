@@ -474,6 +474,23 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion/2", {"referenced_in_motion_recommendation_extension_ids": []}
         )
 
+    def test_set_supporter_other_meeting(self) -> None:
+        self.create_meeting(2)
+        self.permission_test_models["meeting_user/1"]["meeting_id"] = 2
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "supporter_meeting_user_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['meeting_user/1']",
+            response.json["message"],
+        )
+
     def test_update_no_permissions(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
