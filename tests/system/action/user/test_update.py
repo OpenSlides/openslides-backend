@@ -2092,6 +2092,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "user_id": 1234,
                     "speaker_ids": [14, 24],
                     "group_ids": [42],
+                    "personal_note_ids": [444],
                 },
                 "meeting_user/5555": {
                     "meeting_id": 5,
@@ -2102,12 +2103,23 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting/4": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [4444],
+                    "motion_ids": [44],
+                    "personal_note_ids": [444],
                     "committee_id": 1,
                 },
                 "meeting/5": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [5555],
                     "committee_id": 1,
+                },
+                "motion/44": {
+                    "meeting_id": 4,
+                    "personal_note_ids": [444],
+                },
+                "personal_note/444": {
+                    "content_object_id": "motion/44",
+                    "meeting_user_id": 4444,
+                    "meeting_id": 4,
                 },
                 "committee/1": {"meeting_ids": [4, 5]},
                 "speaker/14": {"meeting_user_id": 4444, "meeting_id": 4},
@@ -2159,6 +2171,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_deleted("meeting_user/4444")
+        self.assert_model_deleted("personal_note/444")
         self.assert_model_exists(
             "meeting_user/5556",
             {
