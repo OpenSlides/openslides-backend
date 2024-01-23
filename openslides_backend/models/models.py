@@ -163,6 +163,12 @@ class MeetingUser(Model):
     supported_motion_ids = fields.RelationListField(
         to={"motion": "supporter_meeting_user_ids"}, equal_fields="meeting_id"
     )
+    editor_for_motion_ids = fields.RelationListField(
+        to={"motion": "editor_id"}, equal_fields="meeting_id"
+    )
+    working_group_speaker_for_motion_ids = fields.RelationListField(
+        to={"motion": "working_group_speaker_id"}, equal_fields="meeting_id"
+    )
     motion_submitter_ids = fields.RelationListField(
         to={"motion_submitter": "meeting_user_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -468,6 +474,8 @@ class Meeting(Model, MeetingModelMixin):
     motions_supporters_min_amount = fields.IntegerField(
         default=0, constraints={"minimum": 0}
     )
+    motions_enable_editor = fields.BooleanField()
+    motions_enable_working_group_speaker = fields.BooleanField()
     motions_export_title = fields.CharField(default="Motions")
     motions_export_preamble = fields.TextField()
     motions_export_submitter_recommendation = fields.BooleanField(default=True)
@@ -1191,6 +1199,13 @@ class Motion(Model):
     )
     supporter_meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "supported_motion_ids"}, equal_fields="meeting_id"
+    )
+    editor_id = fields.RelationField(
+        to={"meeting_user": "editor_for_motion_ids"}, equal_fields="meeting_id"
+    )
+    working_group_speaker_id = fields.RelationField(
+        to={"meeting_user": "working_group_speaker_for_motion_ids"},
+        equal_fields="meeting_id",
     )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},

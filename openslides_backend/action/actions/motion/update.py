@@ -50,6 +50,8 @@ class MotionUpdate(
             "category_id",
             "block_id",
             "supporter_meeting_user_ids",
+            "editor_id",
+            "working_group_speaker_id",
             "tag_ids",
             "attachment_ids",
             "created",
@@ -197,8 +199,7 @@ class MotionUpdate(
             allowed_fields += [
                 "category_id",
                 "block_id",
-                "origin",
-                "supporters_id",
+                "supporter_meeting_user_ids",
                 "recommendation_extension",
                 "start_line_number",
                 "tag_ids",
