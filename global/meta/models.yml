@@ -2708,6 +2708,9 @@ motion_state:
   recommendation_label:
     type: string
     restriction_mode: A
+  is_internal_recommendation:
+    type: boolean
+    restriction_mode: A
   css_class:
     type: string
     enum:
