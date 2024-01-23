@@ -925,6 +925,47 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ],
         }
 
+    def json_upload_with_complicated_names(self) -> None:
+        response = self.request(
+            "participant.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "One Two",
+                        "last_name": "Three",
+                    },
+                    {
+                        "first_name": "One-Two",
+                        "last_name": "Three",
+                    },
+                    {
+                        "first_name": "One",
+                        "last_name": "Two Three",
+                    },
+                    {
+                        "first_name": "One",
+                        "last_name": "Two-Three",
+                    },
+                    {
+                        "first_name": "One Two Thre",
+                        "last_name": "e",
+                    },
+                ],
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert [
+            entry["data"]["username"]["value"] + " " + entry["data"]["username"]["info"]
+            for entry in response.json["results"][0][0]["rows"]
+        ] == [
+            "OneTwoThree generated",
+            "OneTwoThree1 generated",
+            "OneTwoThree2 generated",
+            "OneTwoThree3 generated",
+            "OneTwoThree4 generated",
+        ]
+
     def json_upload_not_sufficient_field_permission_update(self) -> None:
         """try to change users first_name, but missing rights for user_scope committee"""
         self.set_models(

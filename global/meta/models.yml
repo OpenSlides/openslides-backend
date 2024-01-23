@@ -2483,6 +2483,7 @@ motion:
   supporter_meeting_user_ids:
     type: relation-list
     to: meeting_user/supported_motion_ids
+    equal_fields: meeting_id
     restriction_mode: C
   poll_ids:
     type: relation-list
