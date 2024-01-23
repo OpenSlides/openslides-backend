@@ -1,4 +1,10 @@
+import re
+from hashlib import md5
 from typing import Any, Dict, List
+
+from bs4 import BeautifulSoup
+
+from openslides_backend.shared.filters import And, FilterOperator
 
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
@@ -52,3 +58,32 @@ def set_workflow_timestamp_helper(
     )
     if state.get("set_workflow_timestamp"):
         instance["workflow_timestamp"] = timestamp
+
+
+class TextHashMixin(Action):
+    def set_text_hash(self, instance: Dict[str, Any]) -> None:
+        if html := instance.get("text"):
+            text = self.get_text_from_html(html)
+            hash = md5(text.encode()).hexdigest()
+            instance["text_hash"] = hash
+
+            # find identical motions
+            filter = [
+                FilterOperator("text_hash", "=", hash),
+                FilterOperator("meeting_id", "=", instance["meeting_id"]),
+            ]
+            result = self.datastore.filter(
+                self.model.collection,
+                And(*filter),
+                ["id"],
+            )
+            instance["identical_motion_ids"] = [
+                id for id in result.keys() if id != instance.get("id")
+            ]
+
+    def get_text_from_html(self, html: str) -> str:
+        soup = BeautifulSoup(html, features="html.parser")
+        text = soup.get_text()
+        # remove all non-word characters
+        text = re.sub(r"\W|-?\n", "", text)
+        return text

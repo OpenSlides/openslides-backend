@@ -2229,6 +2229,9 @@ motion:
   text:
     type: HTMLStrict
     restriction_mode: C
+  text_hash:
+    type: string
+    restriction_mode: D
   amendment_paragraphs:
     type: JSON
     restriction_mode: C
@@ -2313,6 +2316,11 @@ motion:
     type: relation-list
     to: motion/all_origin_ids
     restriction_mode: A
+  identical_motion_ids:
+    type: relation-list
+    to: motion/identical_motion_ids
+    equal_fields: meeting_id
+    restriction_mode: C
   state_id:
     type: relation
     to: motion_state/motion_ids

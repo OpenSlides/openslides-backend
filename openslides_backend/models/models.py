@@ -1136,6 +1136,7 @@ class Motion(Model):
     )
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
+    text_hash = fields.CharField()
     amendment_paragraphs = fields.JSONField()
     modified_final_version = fields.HTMLStrictField()
     reason = fields.HTMLStrictField()
@@ -1165,6 +1166,9 @@ class Motion(Model):
     derived_motion_ids = fields.RelationListField(to={"motion": "origin_id"})
     all_origin_ids = fields.RelationListField(to={"motion": "all_derived_motion_ids"})
     all_derived_motion_ids = fields.RelationListField(to={"motion": "all_origin_ids"})
+    identical_motion_ids = fields.RelationListField(
+        to={"motion": "identical_motion_ids"}, equal_fields="meeting_id"
+    )
     state_id = fields.RelationField(
         to={"motion_state": "motion_ids"}, required=True, equal_fields="meeting_id"
     )
