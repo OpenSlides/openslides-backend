@@ -54,7 +54,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "state": ImportState.NEW,
             "messages": [
                 "Following groups were not found: 'notfound_group1, notfound_group2'",
-                "Following structure levels were not found: 'notfound'",
             ],
             "data": {
                 "username": {"value": "test", "info": ImportState.DONE},
@@ -64,7 +63,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 "number": {"value": "strange number", "info": ImportState.DONE},
                 "structure_level": [
                     {"value": "testlevel", "info": ImportState.DONE, "id": 1},
-                    {"value": "notfound", "info": ImportState.WARNING},
+                    {"value": "notfound", "info": ImportState.NEW},
                 ],
                 "vote_weight": {"value": "1.120000", "info": ImportState.DONE},
                 "comment": {"value": "my comment", "info": ImportState.DONE},
@@ -253,6 +252,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 {"name": "updated", "value": 0},
                 {"name": "error", "value": 0},
                 {"name": "warning", "value": 0},
+                {"name": "structure levels created", "value": 0},
             ],
             "state": ImportState.DONE,
         }
@@ -803,6 +803,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                         "username": "user2",
                         "saml_id": "test_saml_id2",
                         "groups": ["group3", "group4"],
+                        "structure_level": ["level up"],
                     },
                     {
                         "saml_id": "saml3",
@@ -818,6 +819,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     {
                         "username": "new_user5",
                         "saml_id": "saml5",
+                        "structure_level": ["level up", "no. 5"],
                     },
                     {"saml_id": "new_saml6", "groups": ["group4"], "is_present": "1"},
                     {
@@ -846,6 +848,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"id": 3, "info": "done", "value": "group3"},
                 {"info": "warning", "value": "group4"},
             ],
+            "structure_level": [{"value": "level up", "info": ImportState.NEW}],
         }
 
         assert import_preview["result"]["rows"][1]["state"] == ImportState.DONE
@@ -886,6 +889,10 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "username": {"info": "done", "value": "new_user5"},
             "default_password": {"info": "warning", "value": ""},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+            "structure_level": [
+                {"value": "level up", "info": ImportState.NEW},
+                {"value": "no. 5", "info": ImportState.NEW},
+            ],
         }
 
         assert import_preview["result"]["rows"][4]["state"] == ImportState.NEW

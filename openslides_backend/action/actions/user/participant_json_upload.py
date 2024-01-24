@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Set, Tuple
 
 from openslides_backend.models.models import MeetingUser
 from openslides_backend.services.datastore.commands import GetManyRequest
@@ -48,9 +48,21 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
     import_name = "participant"
     lookups: Dict[str, Dict[str, int]] = {}
     default_group: Dict[str, Any] = {}
+    missing_field_values: Dict[str, Set[str]]
 
     def prefetch(self, action_data: ActionData) -> None:
         self.meeting_id = next(iter(action_data)).get("meeting_id", 0)
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        self.missing_field_values = {}
+        data = super().update_instance(instance)
+        self.statistics.append(
+            {
+                "name": "structure levels created",
+                "value": len(self.missing_field_values.get("structure_level", [])),
+            }
+        )
+        return data
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         entry["meeting_id"] = self.meeting_id
@@ -75,7 +87,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
 
         # validate structure level
         _, structure_level_objects = self.validate_with_lookup(
-            entry, "structure_level", messages
+            entry, "structure_level", messages, True
         )
 
         payload_index = entry.pop("payload_index", None)
@@ -125,7 +137,11 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         return results
 
     def validate_with_lookup(
-        self, entry: Dict[str, Any], field: str, messages: List[str]
+        self,
+        entry: Dict[str, Any],
+        field: str,
+        messages: List[str],
+        create_when_not_found: bool = False,
     ) -> Tuple[bool, List[Dict[str, Any]]]:
         singular_field = field.rstrip("s")
         names = entry.pop(field, [])
@@ -136,10 +152,17 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             if id_ := self.lookups[singular_field].get(name):
                 objects.append({"value": name, "info": ImportState.DONE, "id": id_})
                 found = True
+            elif create_when_not_found:
+                objects.append({"value": name, "info": ImportState.NEW})
+                missing.append(name)
+                if self.missing_field_values.get(field) is None:
+                    self.missing_field_values[field] = set([name])
+                else:
+                    self.missing_field_values[field].add(name)
             else:
                 objects.append({"value": name, "info": ImportState.WARNING})
                 missing.append(name)
-        if missing:
+        if missing and not create_when_not_found:
             plural_field = singular_field.replace("_", " ") + "s"
             messages.append(
                 f"Following {plural_field} were not found: '{', '.join(missing)}'"
