@@ -99,6 +99,11 @@ class BaseUserImport(BaseImportAction):
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
+        
+        if (email := entry.get("email")) and email["info"] == ImportState.WARNING:
+            entry.pop(email)
+
+        return row
 
     def setup_lookups(self) -> None:
         self.username_lookup = Lookup(

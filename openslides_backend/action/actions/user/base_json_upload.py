@@ -13,6 +13,7 @@ from ...mixins.import_mixins import (
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from .user_mixins import UsernameMixin, check_gender_helper
+from ...mixins.send_email_mixin import EmailUtils
 
 
 class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
@@ -24,7 +25,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         {"property": "is_active", "type": "boolean"},
         {"property": "is_physical_person", "type": "boolean"},
         {"property": "default_password", "type": "string", "is_object": True},
-        {"property": "email", "type": "string"},
+        {"property": "email", "type": "string", "is_object": True},
         {"property": "username", "type": "string", "is_object": True},
         {"property": "gender", "type": "string", "is_object": True},
         {"property": "pronoun", "type": "string"},
@@ -245,6 +246,13 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             except ActionException:
                 entry["gender"] = {"info": ImportState.WARNING, "value": gender}
                 messages.append(f"Gender '{gender}' is not in the allowed gender list.")
+
+        if email := entry.get("email"):
+            if EmailUtils.check_email(email):
+                entry["email"] = {"info": ImportState.DONE, "value": email}
+            else:
+                entry["email"] = {"info": ImportState.WARNING, "value": email}
+                messages.append(f"'{email}' is not a valid email address and will be skipped. This may have caused problems with user recognition.")
 
         return {"state": self.row_state, "messages": messages, "data": entry}
 

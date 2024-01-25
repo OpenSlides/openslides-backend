@@ -966,6 +966,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     {
                         "username": "user2",  # group A, will be removed
                         "first_name": "Jim",  # group A, will be removed
+                        "email": "Jim.Knopf@Lummer.land",  # group A, will be removed
                         "vote_weight": "1.23456",  # group B
                         "groups": ["group1", "group2", "group3", "group4"],  # group C
                         "committee_management_ids": [1],  # group D, not in payload
@@ -984,12 +985,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
-            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, email, saml_id, default_password",
         ]
         assert row["data"] == {
             "id": 2,
             "username": {"value": "user2", "info": "remove", "id": 2},
             "first_name": {"value": "Jim", "info": "remove"},
+            "email": {"value": "Jim.Knopf@Lummer.land", "info": "remove"},
             "vote_weight": {"value": "1.234560", "info": "done"},
             "saml_id": {"value": "saml_id1", "info": "remove"},
             "default_password": {"value": "", "info": "remove"},

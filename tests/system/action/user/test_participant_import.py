@@ -744,14 +744,15 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
-            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
-            "In contrast to preview you may import field(s) 'first_name, saml_id, username'",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, email, saml_id, default_password",
+            "In contrast to preview you may import field(s) 'email, first_name, saml_id, username'",
         ]
         assert row["data"] == {
             "id": 2,
             "saml_id": {"info": "done", "value": "saml_id1"},
             "username": {"id": 2, "info": "done", "value": "user2"},
             "first_name": {"info": "done", "value": "Jim"},
+            'email': {"info": "done", "value": "Jim.Knopf@Lummer.land"},
             "vote_weight": {"info": "done", "value": "1.234560"},
             "default_password": {"info": "remove", "value": ""},
             "groups": [
@@ -803,13 +804,14 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
-            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, email, saml_id, default_password",
         ]
         assert row["data"] == {
             "id": 2,
             "saml_id": {"info": "remove", "value": "saml_id1"},
             "username": {"id": 2, "info": "remove", "value": "user2"},
             "first_name": {"info": "remove", "value": "Jim"},
+            "email": {"info": "remove", "value": "Jim.Knopf@Lummer.land"},
             "vote_weight": {"info": "done", "value": "1.234560"},
             "default_password": {"info": "remove", "value": ""},
             "groups": [

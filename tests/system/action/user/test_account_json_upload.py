@@ -144,7 +144,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 {"property": "is_active", "type": "boolean"},
                 {"property": "is_physical_person", "type": "boolean"},
                 {"property": "default_password", "type": "string", "is_object": True},
-                {"property": "email", "type": "string"},
+                {"property": "email", "type": "string", "is_object": True},
                 {"property": "username", "type": "string", "is_object": True},
                 {"property": "gender", "type": "string", "is_object": True},
                 {"property": "pronoun", "type": "string"},
@@ -237,7 +237,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "data": {
                     "first_name": "Max",
                     "last_name": "Mustermann",
-                    "email": "max@mustermann.org",
+                    "email": {"value": "max@mustermann.org", "info": ImportState.DONE},
                     "id": 3,
                     "username": {"value": "test", "info": "done", "id": 3},
                 },
@@ -283,7 +283,7 @@ class AccountJsonUpload(BaseActionTestCase):
                     "id": 4,
                     "first_name": "Max",
                     "last_name": "Mustermann",
-                    "email": "max@mustermann.org",
+                    "email": {"value": "max@mustermann.org", "info": ImportState.DONE},
                     "username": {"id": 4, "value": "test2", "info": ImportState.DONE},
                 },
             }
@@ -616,7 +616,7 @@ class AccountJsonUpload(BaseActionTestCase):
             "id": 3,
             "first_name": "Max",
             "last_name": "Mustermann",
-            "email": "max@mustermann.org",
+            "email": {"value": "max@mustermann.org", "info": ImportState.DONE},
             "default_vote_weight": {"value": "1.000000", "info": ImportState.DONE},
             "username": {"value": "test", "info": ImportState.DONE, "id": 3},
         }
@@ -626,7 +626,7 @@ class AccountJsonUpload(BaseActionTestCase):
             "id": 3,
             "first_name": "Max",
             "last_name": "Mustermann",
-            "email": "max@mustermann.org",
+            "email": {"value": "max@mustermann.org", "info": ImportState.DONE},
             "default_vote_weight": {"value": "2.000000", "info": ImportState.DONE},
             "username": {"value": "test", "info": ImportState.DONE, "id": 3},
         }
@@ -656,7 +656,7 @@ class AccountJsonUpload(BaseActionTestCase):
         assert result["rows"][0]["data"] == {
             "first_name": "Max",
             "last_name": "Mustermann",
-            "email": "max@mustermann.org",
+            "email": {"value": "max@mustermann.org", "info": ImportState.DONE},
             "default_vote_weight": {"value": "0.000000", "info": ImportState.ERROR},
             "username": {"value": "MaxMustermann", "info": ImportState.GENERATED},
             "default_password": {"value": "halloIchBinMax", "info": ImportState.DONE},
@@ -836,7 +836,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "id": 34,
             "first_name": "Max",
             "last_name": "Mustermann",
-            "email": "test@ntvtn.de",
+            "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "default_password": {"value": "new default password", "info": "done"},
             "username": {"value": "test", "info": "done", "id": 34},
         }
@@ -935,6 +935,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         )
 
     def json_upload_wrong_gender(self) -> None:
+        self.set_models({"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}})
         response = self.request(
             "account.json_upload",
             {
@@ -945,12 +946,38 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         import_preview = self.assert_model_exists("import_preview/1")
         assert import_preview["name"] == "account"
         assert import_preview["result"]["rows"][0]["data"]["gender"] == {
+            "value": "veryveryveryverybad",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "Gender 'veryveryveryverybad' is not in the allowed gender list."
+            in import_preview["result"]["rows"][0]["messages"]
+        )
+
+    def json_upload_wrong_email(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {"username": "test1", "email": "veryveryveryverybad"},
+                    {"username": "test2", "email": "slightly@bad"},
+                    {"username": "test3", "email": "somewhat@@worse"},
+                    {"username": "test4", "email": "this.is@wrong,too"},
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "account"
+        rows = import_preview["result"]["rows"]
+        row = rows[0]
+        assert row["data"]["email"] == {
             "value": "veryveryverybad",
             "info": ImportState.WARNING,
         }
         assert (
             "Gender 'veryveryverybad' is not in the allowed gender list."
-            in import_preview["result"]["rows"][0]["messages"]
+            in row["messages"]
         )
 
     def json_upload_wrong_gender_2(self) -> None:
@@ -1134,7 +1161,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert import_preview["result"]["rows"][2]["messages"] == []
         assert import_preview["result"]["rows"][2]["data"] == {
             "id": 4,
-            "email": "mlk@america.com",
+            "email": {"value": "mlk@america.com", "info": ImportState.DONE},
             "username": {"id": 4, "info": "done", "value": "user4"},
             "last_name": "Luther King",
             "first_name": "Martin",
