@@ -484,9 +484,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         if not instances:
             instances = self.instances
         # if any field is missing in any instance, we need to access the datastore
-        if any(
-            any(not instance.get(field) for field in fields) for instance in instances
-        ):
+        if any(not instance.get(field) for field in fields for instance in instances):
             result = self.datastore.get_many(
                 [
                     GetManyRequest(
@@ -503,8 +501,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             return instances
 
     def get_field_from_instance(self, field: str, instance: Dict[str, Any]) -> Any:
-        _instance = self.get_instances_with_fields([field], [instance])[0]
-        return _instance.get(field)
+        instances = self.get_instances_with_fields([field], [instance])
+        return instances[0].get(field) if instances else None
 
     def merge_update_events(self, update_events: List[Event]) -> List[Event]:
         """

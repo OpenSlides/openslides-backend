@@ -1,4 +1,3 @@
-import re
 from hashlib import md5
 from typing import Any, Dict, List
 
@@ -64,13 +63,15 @@ class TextHashMixin(Action):
     def set_text_hash(self, instance: Dict[str, Any]) -> None:
         if html := instance.get("text"):
             text = self.get_text_from_html(html)
-            hash = md5(text.encode()).hexdigest()
+            hash = self.get_hash(text)
             instance["text_hash"] = hash
 
             # find identical motions
+            lead_motion_id = self.get_field_from_instance("lead_motion_id", instance)
             filter = [
                 FilterOperator("text_hash", "=", hash),
-                FilterOperator("meeting_id", "=", instance["meeting_id"]),
+                FilterOperator("meeting_id", "=", self.get_meeting_id(instance)),
+                FilterOperator("lead_motion_id", "=", lead_motion_id),
             ]
             result = self.datastore.filter(
                 self.model.collection,
@@ -81,9 +82,10 @@ class TextHashMixin(Action):
                 id for id in result.keys() if id != instance.get("id")
             ]
 
-    def get_text_from_html(self, html: str) -> str:
-        soup = BeautifulSoup(html, features="html.parser")
-        text = soup.get_text()
-        # remove all non-word characters
-        text = re.sub(r"\W|-?\n", "", text)
-        return text
+    @staticmethod
+    def get_text_from_html(html: str) -> str:
+        return BeautifulSoup(html, features="html.parser").get_text()
+
+    @staticmethod
+    def get_hash(text: str) -> str:
+        return md5(text.encode()).hexdigest()

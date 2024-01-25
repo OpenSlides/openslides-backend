@@ -84,6 +84,8 @@ class MotionUpdate(
                         "is_active_in_organization_id",
                         "name",
                         "id",
+                        "lead_motion_id",
+                        "identical_motion_ids",
                         "category_id",
                         "block_id",
                         "supporter_meeting_user_ids",
