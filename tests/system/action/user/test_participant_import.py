@@ -601,12 +601,12 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             },
         )
 
-    def test_json_upload_one_structure_level_error(self) -> None:
+    def test_json_upload_one_structure_level_newly_created(self) -> None:
         self.json_upload_multiple_users()
         self.request("structure_level.create", {"meeting_id": 1, "name": "no. 5"})
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
-        assert (result := response.json["results"][0][0])["state"] == ImportState.ERROR
+        assert (result := response.json["results"][0][0])["state"] == ImportState.DONE
         row = result["rows"][0]
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
@@ -622,7 +622,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"id": 3, "info": "done", "value": "group3"},
                 {"info": "warning", "value": "group4"},
             ],
-            "structure_level": [{"info": "new", "value": "level up"}],
+            "structure_level": [{"info": "new", "value": "level up", "id": 2}],
         }
 
         row = result["rows"][1]
@@ -657,10 +657,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         }
 
         row = result["rows"][3]
-        assert row["state"] == ImportState.ERROR
+        assert row["state"] == ImportState.NEW
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Error: Failed to create the following structure levels as they were already created: no. 5",
         ]
         assert row["data"] == {
             "username": {"info": ImportState.DONE, "value": "new_user5"},
@@ -668,12 +667,12 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "default_password": {"info": ImportState.WARNING, "value": ""},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
             "structure_level": [
-                {"info": ImportState.NEW, "value": "level up"},
-                {"info": ImportState.ERROR, "value": "no. 5"},
+                {"info": ImportState.NEW, "value": "level up", "id": 2},
+                {"info": ImportState.DONE, "value": "no. 5", "id": 1},
             ],
         }
 
-        self.assert_model_not_exists("structure_level/2")
+        self.assert_model_exists("structure_level/2", {"name": "level up"})
 
         row = result["rows"][4]
         assert row["state"] == ImportState.NEW
@@ -716,6 +715,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         )
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
+
+        self.assert_model_not_exists("structure_level/2")
+
         assert (result := response.json["results"][0][0])["state"] == ImportState.ERROR
         row = result["rows"][0]
         assert row["state"] == ImportState.ERROR
@@ -777,7 +779,6 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
-            "Error: Failed to create the following structure levels as they were already created: no. 5",
         ]
         assert row["data"] == {
             "username": {"info": ImportState.DONE, "value": "new_user5"},
@@ -786,11 +787,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
             "structure_level": [
                 {"info": ImportState.NEW, "value": "level up"},
-                {"info": ImportState.ERROR, "value": "no. 5"},
+                {"info": ImportState.NEW, "value": "no. 5"},
             ],
         }
-
-        self.assert_model_not_exists("structure_level/2")
 
         row = result["rows"][4]
         assert row["state"] == ImportState.ERROR
