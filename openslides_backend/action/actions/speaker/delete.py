@@ -2,11 +2,13 @@ from typing import Any, Dict
 
 from ....models.models import Speaker
 from ....permissions.permissions import Permissions
+from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import ActionException
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from ..structure_level_list_of_speakers.delete import (
     StructureLevelListOfSpeakersDeleteAction,
 )
@@ -17,19 +19,24 @@ class SpeakerDeleteAction(DeleteAction):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_delete_schema()
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
-    speaker: Dict[str, Any]
+    speakers: Dict[int, Dict[str, Any]] = {}
+
+    def prefetch(self, action_data: ActionData) -> None:
+        self.speakers = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "speaker",
+                    [model["id"] for model in action_data],
+                    ["meeting_user_id", "structure_level_list_of_speakers_id"],
+                )
+            ]
+        )["speaker"]
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.speaker = self.datastore.get(
-            fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["meeting_user_id", "structure_level_list_of_speakers_id"],
-            lock_result=False,
-        )
-        if self.speaker.get("meeting_user_id"):
+        speaker = self.speakers[instance["id"]]
+        if speaker.get("meeting_user_id"):
             meeting_user = self.datastore.get(
-                fqid_from_collection_and_id(
-                    "meeting_user", self.speaker["meeting_user_id"]
-                ),
+                fqid_from_collection_and_id("meeting_user", speaker["meeting_user_id"]),
                 ["user_id"],
             )
 
@@ -38,11 +45,12 @@ class SpeakerDeleteAction(DeleteAction):
         super().check_permissions(instance)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        if self.speaker.get("structure_level_list_of_speakers_id"):
+        speaker = self.speakers[instance["id"]]
+        if speaker.get("structure_level_list_of_speakers_id"):
             sllos = self.datastore.get(
                 fqid_from_collection_and_id(
                     "structure_level_list_of_speakers",
-                    self.speaker["structure_level_list_of_speakers_id"],
+                    speaker["structure_level_list_of_speakers_id"],
                 ),
                 [
                     "speaker_ids",
@@ -66,6 +74,6 @@ class SpeakerDeleteAction(DeleteAction):
                     )
                 self.execute_other_action(
                     StructureLevelListOfSpeakersDeleteAction,
-                    [{"id": self.speaker["structure_level_list_of_speakers_id"]}],
+                    [{"id": speaker["structure_level_list_of_speakers_id"]}],
                 )
         return super().update_instance(instance)

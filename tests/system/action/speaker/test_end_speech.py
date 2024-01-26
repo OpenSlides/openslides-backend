@@ -309,19 +309,55 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
     def test_end_waiting_child_interposed_question(self) -> None:
         self.set_models(
             {
-                "meeting_user/7": {"speaker_ids": [890, 891]},
-                "list_of_speakers/23": {"speaker_ids": [890, 891], "meeting_id": 1},
+                "meeting/1": {"structure_level_ids": [1]},
+                "structure_level/1": {
+                    "meeting_id": 1,
+                    "meeting_user_ids": [7, 8],
+                    "structure_level_list_of_speakers_ids": [1],
+                },
+                "meeting_user/7": {
+                    "speaker_ids": [890, 891],
+                    "meeting_id": 1,
+                    "structure_level_ids": [1],
+                },
+                "meeting_user/8": {
+                    "speaker_ids": [892],
+                    "meeting_id": 1,
+                    "structure_level_ids": [1],
+                },
+                "list_of_speakers/23": {
+                    "speaker_ids": [890, 891, 892],
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_ids": [1],
+                },
                 "speaker/891": {
                     "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "speech_state": SpeechState.INTERPOSED_QUESTION,
                     "meeting_id": 1,
+                    "structure_level_list_of_speakers_id": 1,
+                },
+                "speaker/892": {
+                    "meeting_user_id": 8,
+                    "list_of_speakers_id": 23,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_id": 1,
+                },
+                "structure_level_list_of_speakers/1": {
+                    "speaker_ids": [891, 892],
+                    "meeting_id": 1,
+                    "structure_level_id": 1,
+                    "list_of_speakers_id": 23,
+                    "initial_time": 200,
+                    "remaining_time": 200,
                 },
             }
         )
         response = self.request("speaker.end_speech", {"id": 890})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("speaker/891")
+        self.assert_model_deleted("structure_level_list_of_speakers/1")
 
     def test_end_speech_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.end_speech", {"id": 890})
