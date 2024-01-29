@@ -206,9 +206,9 @@ class UpdateHistoryMixin(Action):
                     instance_information.append("Set inactive")
 
             if instance_information:
-                information[
-                    fqid_from_collection_and_id("user", instance["id"])
-                ] = instance_information
+                information[fqid_from_collection_and_id("user", instance["id"])] = (
+                    instance_information
+                )
         return information
 
 

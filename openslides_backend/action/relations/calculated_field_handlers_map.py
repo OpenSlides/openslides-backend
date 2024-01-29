@@ -18,9 +18,9 @@ handler_to_field_map: Dict[Type[CalculatedFieldHandler], List[Field]] = {
         User.committee_management_ids,
     ],  # calcs user.committee_ids and committee.user_ids
 }
-calculated_field_handlers_map: Dict[
-    Field, List[Type[CalculatedFieldHandler]]
-] = defaultdict(list)
+calculated_field_handlers_map: Dict[Field, List[Type[CalculatedFieldHandler]]] = (
+    defaultdict(list)
+)
 
 
 def prepare_calculated_field_handlers_map() -> None:

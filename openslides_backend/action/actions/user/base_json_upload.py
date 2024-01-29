@@ -225,9 +225,9 @@ class BaseUserJsonUpload(UsernameMixin, JsonUploadMixin):
                 ):
                     entry["saml_id"] = {
                         "value": saml_id,
-                        "info": ImportState.DONE
-                        if old_saml_id
-                        else ImportState.NEW,  # only if newly set
+                        "info": (
+                            ImportState.DONE if old_saml_id else ImportState.NEW
+                        ),  # only if newly set
                     }
                 else:
                     self.row_state = ImportState.ERROR

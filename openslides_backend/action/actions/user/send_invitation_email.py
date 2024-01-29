@@ -61,9 +61,9 @@ class UserSendInvitationMail(UpdateAction):
         global_result: Dict[str, Any] = {"sent": False}
 
         if not EmailUtils.check_email(EmailSettings.default_from_email):
-            global_result[
-                "message"
-            ] = f"email {EmailSettings.default_from_email} is not a valid sender email address."
+            global_result["message"] = (
+                f"email {EmailSettings.default_from_email} is not a valid sender email address."
+            )
             global_result["type"] = EmailErrorType.CONFIGURATION_ERROR
             self.results.append(global_result)
             return (None, self.results)
@@ -86,9 +86,9 @@ class UserSendInvitationMail(UpdateAction):
                         result["message"] = f"SMTPRecipientsRefused: {str(e)}"
                         result["type"] = EmailErrorType.CONFIGURATION_ERROR
                     except SMTPServerDisconnected as e:
-                        result[
-                            "message"
-                        ] = f"SMTPServerDisconnected: {str(e)} during transmission"
+                        result["message"] = (
+                            f"SMTPServerDisconnected: {str(e)} during transmission"
+                        )
                         result["type"] = EmailErrorType.CONFIGURATION_ERROR
                     except JsonSchemaException as e:
                         result["message"] = f"JsonSchema: {str(e)}"
@@ -132,9 +132,9 @@ class UserSendInvitationMail(UpdateAction):
             global_result["message"] = f"SSLCertVerificationError: {str(e)}"
             global_result["type"] = EmailErrorType.CONFIGURATION_ERROR
         except Exception as e:
-            global_result[
-                "message"
-            ] = f"Unspecified mail connection exception on sending invitation email to server {EmailSettings.host}, port {EmailSettings.port}: {str(e)}"
+            global_result["message"] = (
+                f"Unspecified mail connection exception on sending invitation email to server {EmailSettings.host}, port {EmailSettings.port}: {str(e)}"
+            )
             global_result["type"] = EmailErrorType.CONFIGURATION_ERROR
 
         if global_result:
@@ -173,9 +173,9 @@ class UserSendInvitationMail(UpdateAction):
         result["recipient"] = to_email
 
         if meeting_id and meeting_id not in user["meeting_ids"]:
-            result[
-                "message"
-            ] = f"'{user['username']}' does not belong to meeting/{meeting_id}."
+            result["message"] = (
+                f"'{user['username']}' does not belong to meeting/{meeting_id}."
+            )
             result["type"] = EmailErrorType.USER_ERROR
             return instance
 

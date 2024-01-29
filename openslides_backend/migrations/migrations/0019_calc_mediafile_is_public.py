@@ -164,14 +164,14 @@ class Migration(BaseEventMigration):
             else:
                 self.groups[group_id] = {
                     "add": {
-                        "mediafile_inherited_access_group_ids": [mediafile_id]
-                        if add
-                        else []
+                        "mediafile_inherited_access_group_ids": (
+                            [mediafile_id] if add else []
+                        )
                     },
                     "remove": {
-                        "mediafile_inherited_access_group_ids": []
-                        if add
-                        else [mediafile_id]
+                        "mediafile_inherited_access_group_ids": (
+                            [] if add else [mediafile_id]
+                        )
                     },
                 }
 

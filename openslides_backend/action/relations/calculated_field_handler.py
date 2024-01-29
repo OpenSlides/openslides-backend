@@ -22,5 +22,4 @@ class CalculatedFieldHandler(ABC):
     @abstractmethod
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
-    ) -> RelationUpdates:
-        ...
+    ) -> RelationUpdates: ...

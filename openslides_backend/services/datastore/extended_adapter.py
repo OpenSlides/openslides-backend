@@ -364,9 +364,9 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter, DatastoreService):
                         else:
                             missing_fields_per_fqid[fqid].append(field)
                 else:
-                    results[collection_from_fqid(fqid)][
-                        id_from_fqid(fqid)
-                    ] = self.changed_models[fqid]
+                    results[collection_from_fqid(fqid)][id_from_fqid(fqid)] = (
+                        self.changed_models[fqid]
+                    )
                     missing_fields_per_fqid[fqid] = []
             else:
                 missing_fields_per_fqid[fqid] = mapped_fields
