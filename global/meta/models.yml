@@ -3882,6 +3882,7 @@ import_preview:
       - account
       - participant
       - topic
+      - committee
     restriction_mode: A
   state:
     type: string

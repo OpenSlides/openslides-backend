@@ -2139,7 +2139,8 @@ class ImportPreview(Model):
 
     id = fields.IntegerField()
     name = fields.CharField(
-        required=True, constraints={"enum": ["account", "participant", "topic"]}
+        required=True,
+        constraints={"enum": ["account", "participant", "topic", "committee"]},
     )
     state = fields.CharField(
         required=True, constraints={"enum": ["warning", "error", "done"]}
