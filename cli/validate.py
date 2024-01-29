@@ -119,9 +119,9 @@ class Checker:
             field = cast(Dict[str, Any], {"type": field})
 
         if nested:
-            field[
-                "restriction_mode"
-            ] = "A"  # add restriction_mode to satisfy the checker below.
+            field["restriction_mode"] = (
+                "A"  # add restriction_mode to satisfy the checker below.
+            )
 
         type = field.get("type")
         if type not in VALID_TYPES:

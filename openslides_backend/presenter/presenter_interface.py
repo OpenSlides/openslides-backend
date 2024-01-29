@@ -16,5 +16,4 @@ class Presenter(Protocol):
     """
 
     @abstractmethod
-    def handle_request(self, payload: Payload, user_id: int) -> PresenterResponse:
-        ...
+    def handle_request(self, payload: Payload, user_id: int) -> PresenterResponse: ...

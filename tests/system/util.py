@@ -36,8 +36,7 @@ class TestVoteService(VoteService):
     url: str
 
     @abstractmethod
-    def vote(self, data: Dict[str, Any]) -> Response:
-        ...
+    def vote(self, data: Dict[str, Any]) -> Response: ...
 
 
 class TestVoteAdapter(VoteAdapter, TestVoteService):

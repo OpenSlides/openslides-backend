@@ -128,9 +128,9 @@ class RelationManager:
             relation_update_element = self.merge_relation_elements(
                 self.relation_field_updates[fqfield], relation_update_element
             )
-        relations[fqfield] = self.relation_field_updates[
-            fqfield
-        ] = relation_update_element
+        relations[fqfield] = self.relation_field_updates[fqfield] = (
+            relation_update_element
+        )
 
     def apply_relation_updates(self, relations: RelationUpdates) -> None:
         """

@@ -65,7 +65,7 @@ class MeetingUserCreate(MeetingUserHistoryMixin, CreateAction):
             instance_information.append(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             )
-            information[
-                fqid_from_collection_and_id("user", instance["user_id"])
-            ] = instance_information
+            information[fqid_from_collection_and_id("user", instance["user_id"])] = (
+                instance_information
+            )
         return information
