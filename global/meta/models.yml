@@ -269,7 +269,7 @@ user:
     restriction_mode: A
   email:
     type: string
-    restriction_mode: E
+    restriction_mode: B
   default_number:
     type: string
     restriction_mode: A
@@ -1807,7 +1807,9 @@ group:
         - tag.can_manage
         - user.can_manage
         - user.can_manage_presence
+        - user.can_see_personal_data
         - user.can_see
+        - user.can_update
     restriction_mode: A
   weight:
     type: number

@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, cast
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.relations.relation_manager import RelationManager
+from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -26,9 +27,17 @@ from .user_mixins import UserMixin
 
 
 class PermissionVarStore:
-    def __init__(self, datastore: DatastoreService, user_id: int) -> None:
+    permission: Permission
+
+    def __init__(
+        self,
+        datastore: DatastoreService,
+        user_id: int,
+        manage_permission: Permission = Permissions.User.CAN_MANAGE,
+    ) -> None:
         self.datastore = datastore
         self.user_id = user_id
+        self.permission = manage_permission
         self.user = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id),
             [
@@ -67,9 +76,9 @@ class PermissionVarStore:
 
     @property
     def user_meetings(self) -> Set[int]:
-        """Set of meetings where the request user has user.can_manage permissions"""
+        """Set of meetings where the request user has user.can_manage/can_update permissions"""
         if self._user_meetings is None:
-            self._user_meetings = self._get_user_meetings_with_user_can_manage(
+            self._user_meetings = self._get_user_meetings_with_permission(
                 self.user.get("meeting_user_ids", [])
             )
         return self._user_meetings
@@ -106,11 +115,11 @@ class PermissionVarStore:
             user_meetings = set()
         return user_committees, user_meetings
 
-    def _get_user_meetings_with_user_can_manage(
+    def _get_user_meetings_with_permission(
         self, meeting_user_ids: List[str] = []
     ) -> Set[int]:
         """
-        Returns a set of meetings, where the request user has user.can_manage permissions
+        Returns a set of meetings, where the request user has user.can_manage/can_update permissions
         """
         user_meetings = set()
         if meeting_user_ids:
@@ -144,9 +153,9 @@ class PermissionVarStore:
 
             # use permissions to add the meetings to user_meeting
             for group in groups:
-                if Permissions.User.CAN_MANAGE in group.get(
-                    "permissions", []
-                ) or group.get("admin_group_for_meeting_id"):
+                if self.permission in group.get("permissions", []) or group.get(
+                    "admin_group_for_meeting_id"
+                ):
                     if group.get("meeting_id"):
                         user_meetings.add(group["meeting_id"])
 
@@ -154,8 +163,9 @@ class PermissionVarStore:
 
 
 class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
-    internal: bool
     permstore: PermissionVarStore
+    permission: Permission
+
     field_rights: Dict[str, list] = {
         "A": [
             "title",
@@ -203,10 +213,12 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             raise PermissionDenied("forwarding_committee_ids is not allowed.")
 
         if not hasattr(self, "permstore"):
-            self.permstore = PermissionVarStore(self.datastore, self.user_id)
+            self.permstore = PermissionVarStore(
+                self.datastore, self.user_id, self.permission
+            )
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
         if self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
-            return None
+            return
 
         # store scope, id and OML-permission for requested user
         (
@@ -261,7 +273,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 {
                     OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                     CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                    Permissions.User.CAN_MANAGE: self.instance_user_scope_id,
+                    self.permission: self.instance_user_scope_id,
                 }
             )
 
@@ -271,7 +283,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             meeting_ids = self._meetings_from_group_B_fields_from_instance(instance)
             if diff := meeting_ids - self.permstore.user_meetings:
                 raise MissingPermission(
-                    {Permissions.User.CAN_MANAGE: meeting_id for meeting_id in diff}
+                    {self.permission: meeting_id for meeting_id in diff}
                 )
 
     def check_group_C(self, fields: List[str], instance: Dict[str, Any]) -> None:
@@ -286,7 +298,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 and touch_meeting_id not in self.permstore.user_meetings
             ):
                 raise PermissionDenied(
-                    f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting {touch_meeting_id}"
+                    f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission {self.permission} for meeting {touch_meeting_id}"
                 )
 
     def check_group_D(self, fields: List[str], instance: Dict[str, Any]) -> None:
@@ -365,7 +377,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 {
                     OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                     CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                    Permissions.User.CAN_MANAGE: self.instance_user_scope_id,
+                    self.permission: self.instance_user_scope_id,
                 }
             )
 
@@ -467,6 +479,8 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
 
 
 class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
+    permission = Permissions.User.CAN_MANAGE
+
     def __init__(
         self,
         permstore: PermissionVarStore,
@@ -497,7 +511,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
 
         This check here should be used in imports, where not permitted fields
         will be stripped by the import. They are caught here.
-        The group C can't fail, because one of user.can_manage, committee- or oml-rights
+        The group C can't fail, because one of user.can_manage/can_update, committee- or oml-rights
         is the minimum permission for this import action.
         group[H] fields are internal, but generally allowed in import.
         Therefore they have to be checked like group[A] fields
