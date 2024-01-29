@@ -58,23 +58,20 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 model["name"]: id_
                 for id_, model in self.newly_found_structure_levels.items()
             }
-            if (
-                created_levels := (
-                    self.execute_other_action(
-                        StructureLevelCreateAction,
-                        [
-                            {"name": name, "meeting_id": self.meeting_id}
-                            for name in self.structure_level_to_create_list
-                        ],
-                    )
-                    if len(self.structure_level_to_create_list)
-                    else []
+            created_levels = (
+                self.execute_other_action(
+                    StructureLevelCreateAction,
+                    [
+                        {"name": name, "meeting_id": self.meeting_id}
+                        for name in self.structure_level_to_create_list
+                    ],
                 )
-            ) is not None:
-                levels_dict = (
-                    dict(zip(self.structure_level_to_create_list, created_levels))
-                    if len(created_levels)
-                    else {}
+                if len(self.structure_level_to_create_list)
+                else None
+            )
+            if created_levels:
+                levels_dict = dict(
+                    zip(self.structure_level_to_create_list, created_levels)
                 )
                 for row in self.rows:
                     for level in row["data"].get("structure_level", []):
@@ -92,23 +89,6 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                                 )
             else:
                 raise ActionException("Couldn't correctly create new structure_levels")
-        # elif len(self.newly_found_structure_levels):
-        #     # levels_set = set(
-        #     #     [model["name"] for model in self.newly_found_structure_levels.values()]
-        #     # )
-        #     for row in self.rows:
-        #         error_levels: List[str] = []
-        #         for level in row["data"].get("structure_level", []):
-        #             if level.get("info") == ImportState.NEW:
-        #                 if level["value"] in newly_found_levels_dict:
-        #                     level["info"] = ImportState.ERROR
-        #                     error_levels.append(level["value"])
-        #                     row["state"] = ImportState.ERROR
-        #                     self.import_state = ImportState.ERROR
-        #         if len(error_levels):
-        #             row["messages"].append(
-        #                 f"Error: Failed to create the following structure levels as they were already created: {', '.join(error_levels)}"
-        #             )
 
     def validate_entry(self, row: ImportRow) -> ImportRow:
         row = super().validate_entry(row)
