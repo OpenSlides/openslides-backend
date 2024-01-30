@@ -257,27 +257,31 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         model = self.get_model("speaker/890")
         assert model.get("speech_state") == SpeechState.PRO
 
-    def test_update_change_state_forbidden(self) -> None:
+    def test_update_change_from_intervention(self) -> None:
         self.set_models(
             {
-                "meeting/1": {
-                    "list_of_speakers_intervention_time": 60,
-                    "list_of_speakers_enable_interposed_question": True,
-                }
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERVENTION,
+                },
             }
         )
-        for state in (SpeechState.INTERPOSED_QUESTION, SpeechState.INTERVENTION):
-            self.set_models(
-                {
-                    "speaker/890": {
-                        "speech_state": state,
-                    },
-                }
-            )
-            response = self.request(
-                "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
-            )
-            self.assert_status_code(response, 400)
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_change_from_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.PRO}
+        )
+        self.assert_status_code(response, 400)
 
     def test_update_set_intervention(self) -> None:
         self.set_models(

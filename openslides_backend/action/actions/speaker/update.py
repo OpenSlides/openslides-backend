@@ -38,12 +38,13 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
                 "list_of_speakers_id",
             ],
         )
-        if speaker.get("speech_state") in (
-            SpeechState.INTERVENTION,
-            SpeechState.INTERPOSED_QUESTION,
-        ) and instance.get("speech_state") not in (speaker.get("speech_state"), None):
+        if (
+            speaker.get("speech_state") == SpeechState.INTERPOSED_QUESTION
+            and "speech_state" in instance
+            and instance["speech_state"] != SpeechState.INTERPOSED_QUESTION
+        ):
             raise ActionException(
-                "You cannot change the speech state of an intervention or interposed_question."
+                "You cannot change the speech state of an interposed_question."
             )
         if "meeting_user_id" in instance and (
             instance["meeting_user_id"] is None
