@@ -33,6 +33,7 @@ class BaseUserImport(ImportMixin):
 
         self.rows = [self.validate_entry(row) for row in self.rows]
 
+        self.handle_create_relations(instance)
         if self.import_state != ImportState.ERROR:
             rows = self.flatten_copied_object_fields(
                 self.handle_remove_and_group_fields
@@ -40,6 +41,9 @@ class BaseUserImport(ImportMixin):
             self.create_other_actions(rows)
 
         return {}
+
+    def handle_create_relations(self, instance: Dict[str, Any]) -> None:
+        pass
 
     def handle_remove_and_group_fields(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         for field in ("groups", "structure_level"):

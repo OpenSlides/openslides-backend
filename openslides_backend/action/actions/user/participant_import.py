@@ -1,10 +1,12 @@
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
+from ....shared.filters import FilterOperator, Or
 from ...mixins.import_mixins import ImportRow, ImportState
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..structure_level.create import StructureLevelCreateAction
 from .base_import import BaseUserImport
 from .participant_common import ParticipantCommon
 from .set_present import UserSetPresentAction
@@ -14,10 +16,79 @@ from .set_present import UserSetPresentAction
 class ParticipantImport(BaseUserImport, ParticipantCommon):
     import_name = "participant"
     lookups: Dict[str, Dict[int, str]] = {}
+    structure_level_to_create_list: List[str] = []
+    newly_found_structure_levels: Dict[int, Dict[str, Any]] = {}
 
     def prefetch(self, action_data: ActionData) -> None:
         super().prefetch(action_data)
         self.meeting_id = cast(int, self.result["meeting_id"])
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        structure_levels_to_create: Set[str] = set(
+            [
+                level["value"]
+                for row in self.rows
+                for level in row["data"].get("structure_level", [])
+                if level.get("info") == ImportState.NEW
+            ]
+        )
+        if len(structure_levels_to_create):
+            self.newly_found_structure_levels = self.datastore.filter(
+                "structure_level",
+                Or(
+                    [
+                        FilterOperator("name", "=", level)
+                        for level in structure_levels_to_create
+                    ]
+                ),
+                ["name", "id"],
+            )
+            for level in self.newly_found_structure_levels.values():
+                structure_levels_to_create.discard(level["name"])
+            self.structure_level_to_create_list = list(structure_levels_to_create)
+        instance = super().update_instance(instance)
+        return instance
+
+    def handle_create_relations(self, instance: Dict[str, Any]) -> None:
+        if self.import_state != ImportState.ERROR and (
+            len(self.structure_level_to_create_list)
+            or len(self.newly_found_structure_levels)
+        ):
+            newly_found_levels_dict: Dict[str, int] = {
+                model["name"]: id_
+                for id_, model in self.newly_found_structure_levels.items()
+            }
+            created_levels = (
+                self.execute_other_action(
+                    StructureLevelCreateAction,
+                    [
+                        {"name": name, "meeting_id": self.meeting_id}
+                        for name in self.structure_level_to_create_list
+                    ],
+                )
+                if len(self.structure_level_to_create_list)
+                else None
+            )
+            if created_levels:
+                levels_dict = dict(
+                    zip(self.structure_level_to_create_list, created_levels)
+                )
+                for row in self.rows:
+                    for level in row["data"].get("structure_level", []):
+                        if level.get("info") == ImportState.NEW:
+                            if structure_level := levels_dict.get(level["value"]):
+                                level["id"] = structure_level["id"]
+                            elif structure_level_id := newly_found_levels_dict.get(
+                                level["value"]
+                            ):
+                                level["id"] = structure_level_id
+                                level["info"] = ImportState.DONE
+                            else:
+                                raise ActionException(
+                                    "Couldn't correctly create new structure_levels"
+                                )
+            else:
+                raise ActionException("Couldn't correctly create new structure_levels")
 
     def validate_entry(self, row: ImportRow) -> ImportRow:
         row = super().validate_entry(row)
@@ -82,6 +153,8 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                             row["messages"].append(
                                 f"The {singular_field} '{instance_id} {instance['value']}' changed its name to '{self.lookups[field][instance_id]}'."
                             )
+                    elif instance["info"] == ImportState.NEW and instance.get("id"):
+                        valid = True
                     else:
                         instance["info"] = ImportState.WARNING
                         row["messages"].append(
