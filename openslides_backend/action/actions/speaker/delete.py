@@ -46,7 +46,11 @@ class SpeakerDeleteAction(DeleteAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         speaker = self.speakers[instance["id"]]
-        if speaker.get("structure_level_list_of_speakers_id"):
+        if speaker.get(
+            "structure_level_list_of_speakers_id"
+        ) and not self.datastore.is_deleted(
+            f"structure_level_list_of_speakers_id/{speaker['structure_level_list_of_speakers_id']}"
+        ):
             sllos = self.datastore.get(
                 fqid_from_collection_and_id(
                     "structure_level_list_of_speakers",

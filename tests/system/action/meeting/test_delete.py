@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -310,3 +312,142 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("meeting/1")
+
+    def test_delete_with_poll_candidates_speakers_and_sllos(self) -> None:
+        data: Dict[str, Dict[str, Any]] = {
+            "meeting/100": {
+                "committee_id": 1,
+                "meeting_user_ids": [110, 111, 112],
+                "group_ids": [120],
+                "structure_level_ids": [130, 131],
+                "assignment_ids": [140],
+                "poll_ids": [150],
+                "option_ids": [160],
+                "poll_candidate_list_ids": [170],
+                "poll_candidate_ids": [180, 181],
+                "list_of_speakers_ids": [190],
+                "structure_level_list_of_speakers_ids": [200, 201],
+                "speaker_ids": [210, 211, 212],
+            },
+            "meeting_user/110": {
+                "meeting_id": 100,
+                "user_id": 220,
+                "group_ids": [120],
+                "structure_level_ids": [130],
+                "speaker_ids": [210],
+            },
+            "meeting_user/111": {
+                "meeting_id": 100,
+                "user_id": 221,
+                "group_ids": [120],
+                "structure_level_ids": [131],
+                "speaker_ids": [211],
+            },
+            "meeting_user/112": {
+                "meeting_id": 100,
+                "user_id": 222,
+                "group_ids": [120],
+                "structure_level_ids": [131],
+                "speaker_ids": [212],
+            },
+            "group/120": {"meeting_id": 100, "meeting_user_ids": [110, 111, 112]},
+            "structure_level/130": {
+                "meeting_id": 100,
+                "meeting_user_ids": [110],
+                "structure_level_list_of_speakers_ids": [200],
+            },
+            "structure_level/131": {
+                "meeting_id": 100,
+                "meeting_user_ids": [111, 112],
+                "structure_level_list_of_speakers_ids": [201],
+            },
+            "assignment/140": {"meeting_id": 100, "poll_ids": [150]},
+            "poll/150": {
+                "meeting_id": 100,
+                "content_object_id": "assignment/140",
+                "option_ids": [160],
+            },
+            "option/160": {
+                "meeting_id": 100,
+                "poll_id": 150,
+                "content_object_id": "poll_candidate_list/170",
+            },
+            "poll_candidate_list/170": {
+                "meeting_id": 100,
+                "option_id": 160,
+                "poll_candidate_ids": [180, 181],
+            },
+            "poll_candidate/180": {
+                "meeting_id": 100,
+                "poll_candidate_list_id": 170,
+                "user_id": 220,
+            },
+            "poll_candidate/181": {
+                "meeting_id": 100,
+                "poll_candidate_list_id": 170,
+                "user_id": 221,
+            },
+            "list_of_speakers/190": {
+                "meeting_id": 100,
+                "content_object_id": "assignment/140",
+                "speaker_ids": [210, 211, 212],
+                "structure_level_list_of_speakers_ids": [200, 201],
+            },
+            "structure_level_list_of_speakers/200": {
+                "meeting_id": 100,
+                "list_of_speakers_id": 190,
+                "structure_level_id": 130,
+                "speaker_ids": [210],
+                "initial_time": 300,
+                "remaining_time": 289,
+            },
+            "structure_level_list_of_speakers/201": {
+                "meeting_id": 100,
+                "list_of_speakers_id": 190,
+                "structure_level_id": 131,
+                "speaker_ids": [211, 212],
+                "initial_time": 300,
+                "remaining_time": 300,
+                "current_start_time": 1234589,
+            },
+            "speaker/210": {
+                "meeting_id": 100,
+                "list_of_speakers_id": 190,
+                "structure_level_list_of_speakers_id": 200,
+                "meeting_user_id": 110,
+                "begin_time": 1234567,
+                "end_time": 1234578,
+            },
+            "speaker/211": {
+                "meeting_id": 100,
+                "list_of_speakers_id": 190,
+                "structure_level_list_of_speakers_id": 201,
+                "meeting_user_id": 111,
+                "begin_time": 1234589,
+            },
+            "speaker/212": {
+                "meeting_id": 100,
+                "list_of_speakers_id": 190,
+                "structure_level_list_of_speakers_id": 201,
+                "meeting_user_id": 112,
+            },
+        }
+        self.set_models(
+            {
+                **data,
+                ONE_ORGANIZATION_FQID: {"active_meeting_ids": [101]},
+                "committee/1": {
+                    "user_ids": [1, 220, 221, 222],
+                    "manager_ids": [1],
+                },
+                "user/220": {"meeting_user_ids": [110], "poll_candidate_ids": [180]},
+                "user/221": {"meeting_user_ids": [111], "poll_candidate_ids": [181]},
+                "user/222": {"meeting_user_ids": [112]},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 100})
+        self.assert_status_code(response, 200)
+        for fqid in data:
+            self.assert_model_deleted(fqid)
+        for i in range(220, 222):
+            self.assert_model_exists(f"user/{i}", {})

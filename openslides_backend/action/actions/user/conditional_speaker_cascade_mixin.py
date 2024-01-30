@@ -3,17 +3,25 @@ from typing import Any, Dict, List, Optional
 from openslides_backend.shared.filters import And, FilterOperator
 
 from ....services.datastore.commands import GetManyRequest
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ..speaker.delete import SpeakerDeleteAction
 
 
 class ConditionalSpeakerCascadeMixinHelper(Action):
     def conditionally_delete_speakers(self, speaker_ids: List[int]) -> None:
+        speaker_to_read_ids = [
+            speaker_id
+            for speaker_id in speaker_ids
+            if not self.datastore.is_deleted(
+                fqid_from_collection_and_id("speaker", speaker_id)
+            )
+        ]
         speakers = self.datastore.get_many(
             [
                 GetManyRequest(
                     "speaker",
-                    speaker_ids,
+                    speaker_to_read_ids,
                     [
                         "begin_time",
                         "id",
