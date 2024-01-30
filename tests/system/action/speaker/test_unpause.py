@@ -2,6 +2,7 @@ from math import ceil, floor
 from time import time
 from typing import Any, Dict
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -138,6 +139,26 @@ class TestSpeakerUnpause(BaseActionTestCase):
         model = self.get_model("structure_level_list_of_speakers/2")
         self.assertGreaterEqual(model["current_start_time"], start)
         self.assertEqual(model["remaining_time"], 100)
+
+    def test_unpause_intervention_with_structure_level(self) -> None:
+        self.setup_structure_level()
+        self.set_models({"speaker/890": {"speech_state": SpeechState.INTERVENTION}})
+        response = self.request("speaker.unpause", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/2", {"current_start_time": None}
+        )
+
+    def test_unpause_interposed_question_with_structure_level(self) -> None:
+        self.setup_structure_level()
+        self.set_models(
+            {"speaker/890": {"speech_state": SpeechState.INTERPOSED_QUESTION}}
+        )
+        response = self.request("speaker.unpause", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/2", {"current_start_time": None}
+        )
 
     def test_unpause_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.unpause", {"id": 890})
