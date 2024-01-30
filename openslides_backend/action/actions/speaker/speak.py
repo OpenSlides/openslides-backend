@@ -4,9 +4,6 @@ from typing import Any, Dict, Optional, Type
 from openslides_backend.action.action import Action
 from openslides_backend.action.actions.speaker.end_speech import SpeakerEndSpeach
 from openslides_backend.action.actions.speaker.pause import SpeakerPause
-from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
-    StructureLevelListOfSpeakersUpdateAction,
-)
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 from openslides_backend.shared.filters import And, FilterOperator
 
@@ -92,13 +89,5 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
         self.control_los_countdown(
             db_instance["meeting_id"], CountdownCommand.RESTART, countdown_time
         )
-        if db_instance.get("speech_state") not in (
-            SpeechState.INTERPOSED_QUESTION,
-            SpeechState.INTERVENTION,
-        ) and (level_id := db_instance.get("structure_level_list_of_speakers_id")):
-            self.execute_other_action(
-                StructureLevelListOfSpeakersUpdateAction,
-                [{"id": level_id, "current_start_time": now}],
-            )
-
+        self.start_structure_level_countdown(now, db_instance)
         return instance

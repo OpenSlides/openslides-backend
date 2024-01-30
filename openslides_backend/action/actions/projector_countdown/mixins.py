@@ -76,14 +76,31 @@ class CountdownControl(UpdateAction):
                 meeting["list_of_speakers_countdown_id"], command, default_time
             )
 
+    def start_structure_level_countdown(self, now: int, speaker: PartialModel) -> None:
+        if (
+            level_id := speaker.get("structure_level_list_of_speakers_id")
+        ) and speaker.get("speech_state") not in (
+            SpeechState.INTERPOSED_QUESTION,
+            SpeechState.INTERVENTION,
+        ):
+            self.execute_other_action(
+                StructureLevelListOfSpeakersUpdateAction,
+                [
+                    {
+                        "id": level_id,
+                        "current_start_time": now,
+                    }
+                ],
+            )
+
     def decrease_structure_level_countdown(
         self, now: int, speaker: PartialModel
     ) -> None:
         if (
             level_id := speaker.get("structure_level_list_of_speakers_id")
         ) and speaker.get("speech_state") not in (
-            SpeechState.INTERVENTION,
             SpeechState.INTERPOSED_QUESTION,
+            SpeechState.INTERVENTION,
         ):
             # only update the level if the speaker was not paused and the speech state demands it
             start_time = speaker.get("unpause_time", speaker["begin_time"])
