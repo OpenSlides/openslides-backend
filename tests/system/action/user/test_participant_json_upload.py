@@ -448,9 +448,9 @@ class ParticipantJsonUpload(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         row = response.json["results"][0][0]["rows"][0]
-        assert row["state"] == ImportState.DONE
+        assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "'Jim.Knopf@@Lummer.land' is not a valid email address and will not be imported. This may have caused problems with user recognition.",
+            "Error: 'Jim.Knopf@@Lummer.land' is not a valid email address and will not be imported. This may have caused problems with user recognition.",
             "Following fields were removed from payload, because the user has no permissions to change them: username, email",
         ]
         assert row["data"] == {
@@ -460,6 +460,62 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "vote_weight": {"value": "1.234560", "info": "done"},
             "groups": [{"id": 1, "info": ImportState.GENERATED, "value": "group1"}],
         }
+
+    def test_json_upload_wrong_email(self) -> None:
+        self.create_meeting(1)
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {"username": "test1", "email": "veryveryverybad"},
+                    {"username": "test2", "email": "slightly@bad"},
+                    {"username": "test3", "email": "somewhat@@worse"},
+                    {"username": "test4", "email": "this.is@wrong,too"},
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "participant"
+        assert import_preview["state"] == ImportState.ERROR
+        rows = import_preview["result"]["rows"]
+        row = rows[0]
+        assert row["data"]["email"] == {
+            "value": "veryveryverybad",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: 'veryveryverybad' is not a valid email address and will not be imported. This may have caused problems with user recognition."
+            in row["messages"]
+        )
+        row = rows[1]
+        assert row["data"]["email"] == {
+            "value": "slightly@bad",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: 'slightly@bad' is not a valid email address and will not be imported. This may have caused problems with user recognition."
+            in row["messages"]
+        )
+        row = rows[2]
+        assert row["data"]["email"] == {
+            "value": "somewhat@@worse",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: 'somewhat@@worse' is not a valid email address and will not be imported. This may have caused problems with user recognition."
+            in row["messages"]
+        )
+        row = rows[3]
+        assert row["data"]["email"] == {
+            "value": "this.is@wrong,too",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: 'this.is@wrong,too' is not a valid email address and will not be imported. This may have caused problems with user recognition."
+            in row["messages"]
+        )
 
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
@@ -1107,57 +1163,3 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"value": "group4", "info": "warning"},
             ],
         }
-
-    def json_upload_wrong_email(self) -> None:
-        response = self.request(
-            "participant.json_upload",
-            {
-                "meeting_id": 1,
-                "data": [
-                    {"username": "test1", "email": "veryveryverybad"},
-                    {"username": "test2", "email": "slightly@bad"},
-                    {"username": "test3", "email": "somewhat@@worse"},
-                    {"username": "test4", "email": "this.is@wrong,too"},
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["name"] == "participant"
-        rows = import_preview["result"]["rows"]
-        row = rows[0]
-        assert row["data"]["email"] == {
-            "value": "veryveryverybad",
-            "info": ImportState.WARNING,
-        }
-        assert (
-            "'veryveryverybad' is not a valid email address and will not be imported. This may have caused problems with user recognition."
-            in row["messages"]
-        )
-        row = rows[1]
-        assert row["data"]["email"] == {
-            "value": "slightly@bad",
-            "info": ImportState.WARNING,
-        }
-        assert (
-            "'slightly@bad' is not a valid email address and will not be imported. This may have caused problems with user recognition."
-            in row["messages"]
-        )
-        row = rows[2]
-        assert row["data"]["email"] == {
-            "value": "somewhat@@worse",
-            "info": ImportState.WARNING,
-        }
-        assert (
-            "'somewhat@@worse' is not a valid email address and will not be imported. This may have caused problems with user recognition."
-            in row["messages"]
-        )
-        row = rows[3]
-        assert row["data"]["email"] == {
-            "value": "this.is@wrong,too",
-            "info": ImportState.WARNING,
-        }
-        assert (
-            "'this.is@wrong,too' is not a valid email address and will not be imported. This may have caused problems with user recognition."
-            in row["messages"]
-        )

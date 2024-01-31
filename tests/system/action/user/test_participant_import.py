@@ -876,16 +876,3 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": "warning", "value": "group4"},
             ],
         }
-
-    def test_json_upload_wrong_email(self) -> None:
-        self.json_upload_wrong_email()
-        response_import = self.request("participant.import", {"id": 1, "import": True})
-        self.assert_status_code(response_import, 200)
-        user = self.assert_model_exists("user/2", {"username": "test1"})
-        assert "email" not in user.keys()
-        user = self.assert_model_exists("user/3", {"username": "test2"})
-        assert "email" not in user.keys()
-        user = self.assert_model_exists("user/4", {"username": "test3"})
-        assert "email" not in user.keys()
-        user = self.assert_model_exists("user/5", {"username": "test4"})
-        assert "email" not in user.keys()
