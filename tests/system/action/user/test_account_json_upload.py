@@ -935,7 +935,9 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         )
 
     def json_upload_wrong_gender(self) -> None:
-        self.set_models({"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}})
+        self.set_models(
+            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+        )
         response = self.request(
             "account.json_upload",
             {
@@ -959,7 +961,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "account.json_upload",
             {
                 "data": [
-                    {"username": "test1", "email": "veryveryveryverybad"},
+                    {"username": "test1", "email": "veryveryverybad"},
                     {"username": "test2", "email": "slightly@bad"},
                     {"username": "test3", "email": "somewhat@@worse"},
                     {"username": "test4", "email": "this.is@wrong,too"},
@@ -976,7 +978,34 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.WARNING,
         }
         assert (
-            "Gender 'veryveryverybad' is not in the allowed gender list."
+            "'veryveryverybad' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            in row["messages"]
+        )
+        row = rows[1]
+        assert row["data"]["email"] == {
+            "value": "slightly@bad",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "'slightly@bad' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            in row["messages"]
+        )
+        row = rows[2]
+        assert row["data"]["email"] == {
+            "value": "somewhat@@worse",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "'somewhat@@worse' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            in row["messages"]
+        )
+        row = rows[3]
+        assert row["data"]["email"] == {
+            "value": "this.is@wrong,too",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "'this.is@wrong,too' is not a valid email address and will be skipped. This may have caused problems with user recognition."
             in row["messages"]
         )
 

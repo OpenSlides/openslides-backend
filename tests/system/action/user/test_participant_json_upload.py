@@ -402,6 +402,65 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "groups": [{"id": 1, "info": "generated", "value": "testgroup"}],
         }
 
+    def test_json_upload_not_sufficient_field_permission_update_with_wrong_email(
+        self,
+    ) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None},
+                "user/2": {
+                    "username": "user2",
+                    "first_name": "John",
+                    "meeting_user_ids": [11, 44],
+                    "meeting_ids": [1, 4],
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                    "default_password": "secret",
+                    "can_change_own_password": True,
+                    "password": "secretcrypted",
+                },
+                "committee/60": {"meeting_ids": [1, 4]},
+                "meeting/1": {"meeting_user_ids": [11]},
+                "meeting/4": {"meeting_user_ids": [44], "committee_id": 60},
+                "meeting_user/11": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
+                "meeting_user/44": {"meeting_id": 4, "user_id": 2, "group_ids": [5]},
+                "group/1": {"meeting_user_ids": [11]},
+                "group/5": {"meeting_user_ids": [44]},
+            }
+        )
+        self.set_user_groups(1, [3])
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "user2",
+                        "email": "Jim.Knopf@@Lummer.land",
+                        "vote_weight": "1.23456",
+                    }
+                ],
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == [
+            "'Jim.Knopf@@Lummer.land' is not a valid email address and will be skipped. This may have caused problems with user recognition.",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, email",
+        ]
+        assert row["data"] == {
+            "id": 2,
+            "username": {"value": "user2", "info": "remove", "id": 2},
+            "email": {"value": "Jim.Knopf@@Lummer.land", "info": "remove"},
+            "vote_weight": {"value": "1.234560", "info": "done"},
+            "groups": [{"id": 1, "info": ImportState.GENERATED, "value": "group1"}],
+        }
+
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
     def setUp(self) -> None:
@@ -1048,3 +1107,57 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"value": "group4", "info": "warning"},
             ],
         }
+
+    def json_upload_wrong_email(self) -> None:
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {"username": "test1", "email": "veryveryverybad"},
+                    {"username": "test2", "email": "slightly@bad"},
+                    {"username": "test3", "email": "somewhat@@worse"},
+                    {"username": "test4", "email": "this.is@wrong,too"},
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "participant"
+        rows = import_preview["result"]["rows"]
+        row = rows[0]
+        assert row["data"]["email"] == {
+            "value": "veryveryverybad",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "'veryveryverybad' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            in row["messages"]
+        )
+        row = rows[1]
+        assert row["data"]["email"] == {
+            "value": "slightly@bad",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "'slightly@bad' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            in row["messages"]
+        )
+        row = rows[2]
+        assert row["data"]["email"] == {
+            "value": "somewhat@@worse",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "'somewhat@@worse' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            in row["messages"]
+        )
+        row = rows[3]
+        assert row["data"]["email"] == {
+            "value": "this.is@wrong,too",
+            "info": ImportState.WARNING,
+        }
+        assert (
+            "'this.is@wrong,too' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            in row["messages"]
+        )

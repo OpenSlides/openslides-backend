@@ -21,13 +21,15 @@ class BaseUserImport(BaseImportAction):
 
         if self.import_state != ImportState.ERROR:
             rows = self.flatten_copied_object_fields(
-                self.handle_remove_and_group_fields
+                self.handle_remove_email_and_group_fields
             )
             self.create_other_actions(rows)
 
         return {}
 
-    def handle_remove_and_group_fields(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_remove_email_and_group_fields(
+        self, entry: Dict[str, Any]
+    ) -> Dict[str, Any]:
         if (groups := entry.pop("groups", None)) is not None:
             entry["group_ids"] = [id_ for group in groups if (id_ := group.get("id"))]
 
@@ -53,6 +55,9 @@ class BaseUserImport(BaseImportAction):
             and entry["gender"].get("info") == ImportState.WARNING
         ):
             entry.pop("gender")
+
+        if (email := entry.get("email")) and email["info"] == ImportState.WARNING:
+            entry.pop("email")
 
         # remove all fields fields marked with "remove"-state
         to_remove = []
@@ -99,9 +104,6 @@ class BaseUserImport(BaseImportAction):
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
-        
-        if (email := entry.get("email")) and email["info"] == ImportState.WARNING:
-            entry.pop(email)
 
         return row
 

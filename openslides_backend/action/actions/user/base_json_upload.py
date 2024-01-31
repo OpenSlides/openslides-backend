@@ -10,10 +10,10 @@ from ...mixins.import_mixins import (
     ResultType,
     SearchFieldType,
 )
+from ...mixins.send_email_mixin import EmailUtils
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from .user_mixins import UsernameMixin, check_gender_helper
-from ...mixins.send_email_mixin import EmailUtils
 
 
 class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
@@ -252,7 +252,9 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 entry["email"] = {"info": ImportState.DONE, "value": email}
             else:
                 entry["email"] = {"info": ImportState.WARNING, "value": email}
-                messages.append(f"'{email}' is not a valid email address and will be skipped. This may have caused problems with user recognition.")
+                messages.append(
+                    f"'{email}' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+                )
 
         return {"state": self.row_state, "messages": messages, "data": entry}
 

@@ -49,7 +49,10 @@ class AccountJsonImport(BaseActionTestCase):
                                     },
                                     "first_name": "Testy",
                                     "last_name": "Tester",
-                                    "email": {"value": "email@test.com", "info": ImportState.DONE},
+                                    "email": {
+                                        "value": "email@test.com",
+                                        "info": ImportState.DONE,
+                                    },
                                     "gender": {
                                         "value": "male",
                                         "info": ImportState.DONE,
@@ -849,5 +852,26 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
     def test_json_upload_wrong_gender(self) -> None:
         self.json_upload_wrong_gender()
         response_import = self.request("account.import", {"id": 1, "import": True})
-        assert response_import == 1 #TODO: Finish this test, add one for json_upload_wrong_gender_2 and json_upload_wrong_email
+        self.assert_status_code(response_import, 200)
+        user = self.assert_model_exists("user/2", {"username": "test"})
+        assert "gender" not in user.keys()
 
+    def test_json_upload_wrong_gender_2(self) -> None:
+        self.json_upload_wrong_gender_2()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        user = self.assert_model_exists("user/2", {"username": "test"})
+        assert "gender" not in user.keys()
+
+    def test_json_upload_wrong_email(self) -> None:
+        self.json_upload_wrong_email()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        user = self.assert_model_exists("user/2", {"username": "test1"})
+        assert "email" not in user.keys()
+        user = self.assert_model_exists("user/3", {"username": "test2"})
+        assert "email" not in user.keys()
+        user = self.assert_model_exists("user/4", {"username": "test3"})
+        assert "email" not in user.keys()
+        user = self.assert_model_exists("user/5", {"username": "test4"})
+        assert "email" not in user.keys()
