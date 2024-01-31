@@ -450,7 +450,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.DONE
         assert row["messages"] == [
-            "'Jim.Knopf@@Lummer.land' is not a valid email address and will be skipped. This may have caused problems with user recognition.",
+            "'Jim.Knopf@@Lummer.land' is not a valid email address and will not be imported. This may have caused problems with user recognition.",
             "Following fields were removed from payload, because the user has no permissions to change them: username, email",
         ]
         assert row["data"] == {
@@ -1131,7 +1131,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.WARNING,
         }
         assert (
-            "'veryveryverybad' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            "'veryveryverybad' is not a valid email address and will not be imported. This may have caused problems with user recognition."
             in row["messages"]
         )
         row = rows[1]
@@ -1140,7 +1140,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.WARNING,
         }
         assert (
-            "'slightly@bad' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            "'slightly@bad' is not a valid email address and will not be imported. This may have caused problems with user recognition."
             in row["messages"]
         )
         row = rows[2]
@@ -1149,7 +1149,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.WARNING,
         }
         assert (
-            "'somewhat@@worse' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            "'somewhat@@worse' is not a valid email address and will not be imported. This may have caused problems with user recognition."
             in row["messages"]
         )
         row = rows[3]
@@ -1158,6 +1158,6 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.WARNING,
         }
         assert (
-            "'this.is@wrong,too' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            "'this.is@wrong,too' is not a valid email address and will not be imported. This may have caused problems with user recognition."
             in row["messages"]
         )

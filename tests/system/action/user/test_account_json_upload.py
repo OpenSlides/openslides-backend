@@ -978,7 +978,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.WARNING,
         }
         assert (
-            "'veryveryverybad' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            "'veryveryverybad' is not a valid email address and will not be imported. This may have caused problems with user recognition."
             in row["messages"]
         )
         row = rows[1]
@@ -987,7 +987,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.WARNING,
         }
         assert (
-            "'slightly@bad' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            "'slightly@bad' is not a valid email address and will not be imported. This may have caused problems with user recognition."
             in row["messages"]
         )
         row = rows[2]
@@ -996,7 +996,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.WARNING,
         }
         assert (
-            "'somewhat@@worse' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            "'somewhat@@worse' is not a valid email address and will not be imported. This may have caused problems with user recognition."
             in row["messages"]
         )
         row = rows[3]
@@ -1005,7 +1005,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "info": ImportState.WARNING,
         }
         assert (
-            "'this.is@wrong,too' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+            "'this.is@wrong,too' is not a valid email address and will not be imported. This may have caused problems with user recognition."
             in row["messages"]
         )
 

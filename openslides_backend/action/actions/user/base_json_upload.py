@@ -253,7 +253,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             else:
                 entry["email"] = {"info": ImportState.WARNING, "value": email}
                 messages.append(
-                    f"'{email}' is not a valid email address and will be skipped. This may have caused problems with user recognition."
+                    f"'{email}' is not a valid email address and will not be imported. This may have caused problems with user recognition."
                 )
 
         return {"state": self.row_state, "messages": messages, "data": entry}
