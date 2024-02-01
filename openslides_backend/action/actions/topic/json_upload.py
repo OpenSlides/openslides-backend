@@ -4,14 +4,19 @@ from ....models.models import Topic
 from ....permissions.permissions import Permissions
 from ....shared.filters import FilterOperator
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, ResultType
+from ...mixins.import_mixins import (
+    BaseJsonUploadAction,
+    ImportState,
+    Lookup,
+    ResultType,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..agenda_item.agenda_creation import agenda_creation_properties
 
 
 @register_action("topic.json_upload")
-class TopicJsonUpload(JsonUploadMixin):
+class TopicJsonUpload(BaseJsonUploadAction):
     """
     Action to allow to upload a json. It is used as first step of an import.
     """
@@ -51,6 +56,7 @@ class TopicJsonUpload(JsonUploadMixin):
         {"property": "agenda_duration", "type": "integer"},
     ]
     permission = Permissions.AgendaItem.CAN_MANAGE
+    import_name = "topic"
     row_state: ImportState
     topic_lookup: Lookup
 
@@ -65,28 +71,7 @@ class TopicJsonUpload(JsonUploadMixin):
         self.setup_lookups(data, instance["meeting_id"])
         self.rows = [self.validate_entry(entry) for entry in data]
 
-        # generate statistics
-        itemCount = len(self.rows)
-        state_to_count = {state: 0 for state in ImportState}
-        for row in self.rows:
-            state_to_count[row["state"]] += 1
-            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
-                row.get("data", {}).values()
-            )
-
-        self.statistics = [
-            {"name": "total", "value": itemCount},
-            {"name": "created", "value": state_to_count[ImportState.NEW]},
-            {"name": "updated", "value": state_to_count[ImportState.DONE]},
-            {"name": "error", "value": state_to_count[ImportState.ERROR]},
-            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
-        ]
-
-        # finalize
-        self.set_state(
-            state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
-        )
-        self.store_rows_in_the_import_preview("topic")
+        self.generate_statistics()
         return {}
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:

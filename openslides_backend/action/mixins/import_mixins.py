@@ -4,9 +4,11 @@ from collections import defaultdict
 from decimal import Decimal
 from enum import Enum
 from time import mktime, strptime, time
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import NotRequired
+
+from openslides_backend.action.action import Action
 
 from ...models.models import ImportPreview
 from ...shared.exceptions import ActionException
@@ -28,7 +30,6 @@ SearchFieldType = Union[str, Tuple[str, ...]]
 
 
 class ImportState(str, Enum):
-    NONE = "none"
     WARNING = "warning"
     NEW = "new"
     DONE = "done"
@@ -109,12 +110,12 @@ class Lookup:
 
         # Add action data items not found in database to lookup dict
         for name, entry in name_entries:
-            if values := cast(list, self.name_to_ids[name]):
+            if values := self.name_to_ids[name]:
                 if not values[0].get("id"):
                     values.append(entry)
             else:
                 if type(self.field) is str:
-                    obj = entry[self.field]
+                    obj = entry.get(self.field)
                     if type(obj) is dict and obj.get("id"):
                         obj["info"] = ImportState.ERROR
                 values.append(entry)
@@ -156,7 +157,9 @@ class Lookup:
             self.name_to_ids[key].append(entry)
 
 
-class BaseImportJsonUpload(SingularActionMixin):
+class BaseImportJsonUploadAction(SingularActionMixin, Action):
+    import_name: str
+
     @staticmethod
     def count_warnings_in_payload(
         data: Union[List[Union[Dict[str, str], List[Any]]], Dict[str, Any]]
@@ -167,7 +170,7 @@ class BaseImportJsonUpload(SingularActionMixin):
                 if col.get("info") == ImportState.WARNING:
                     count += 1
             elif type(col) is list:
-                count += BaseImportJsonUpload.count_warnings_in_payload(col)
+                count += BaseImportJsonUploadAction.count_warnings_in_payload(col)
         return count
 
     @staticmethod
@@ -182,7 +185,7 @@ class BaseImportJsonUpload(SingularActionMixin):
             return None
 
 
-class ImportMixin(BaseImportJsonUpload):
+class BaseImportAction(BaseImportJsonUploadAction):
     """
     Mixin for import actions. It works together with the json_upload.
     """
@@ -195,9 +198,8 @@ class ImportMixin(BaseImportJsonUpload):
         }
     )
 
-    import_name: str
-    rows: List[ImportRow] = []
-    result: Dict[str, List] = {}
+    rows: List[ImportRow]
+    result: Dict[str, List]
     import_state = ImportState.DONE
 
     def prefetch(self, action_data: ActionData) -> None:
@@ -218,6 +220,12 @@ class ImportMixin(BaseImportJsonUpload):
         if import_preview.get("state") == ImportState.ERROR:
             raise ActionException("Error in import. Data will not be imported.")
         self.result = import_preview.get("result", {})
+        self.rows = self.result.get("rows", [])
+
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if not instance["import"]:
+            return {}
+        return super().base_update_instance(instance)
 
     def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
         return {}
@@ -229,6 +237,78 @@ class ImportMixin(BaseImportJsonUpload):
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
         return {"rows": self.rows, "state": self.import_state}
+
+    def validate_with_lookup(
+        self,
+        row: ImportRow,
+        lookup: Lookup,
+        field: str = "name",
+        required: bool = True,
+        expected_id: Optional[int] = None,
+    ) -> Optional[int]:
+        entry = row["data"]
+        value = self.get_value_from_union_str_object(entry.get(field))
+        if not value:
+            if required:
+                raise ActionException(
+                    f"Invalid JsonUpload data: The data from json upload must contain a valid {field} object"
+                )
+            else:
+                return None
+        check_result = lookup.check_duplicate(value)
+        id_ = cast(int, lookup.get_field_by_name(value, "id"))
+
+        error: Optional[str] = None
+        if check_result == ResultType.FOUND_ID and id_ != 0:
+            if required:
+                if row["state"] != ImportState.DONE:
+                    error = f"Error: row state expected to be '{ImportState.DONE}', but it is '{row['state']}'."
+                elif "id" not in entry:
+                    raise ActionException(
+                        f"Invalid JsonUpload data: A data row with state '{ImportState.DONE}' must have an 'id'"
+                    )
+            if not error:
+                expected_id = entry["id"] if required else expected_id
+                if id_ != expected_id:
+                    error = f"Error: {field} '{value}' found in different id ({id_} instead of {expected_id})"
+        elif check_result == ResultType.FOUND_MORE_IDS:
+            error = f"Error: {field} '{value}' is duplicated in import."
+        elif check_result == ResultType.NOT_FOUND_ANYMORE:
+            if required:
+                error = f"Error: {self.import_name} {entry[field]['id']} not found anymore for updating {self.import_name} '{value}'."
+            else:
+                error = f"Error: {field} '{value}' not found anymore in {self.import_name} with id '{id_}'"
+
+        if error:
+            row["messages"].append(error)
+            entry[field]["info"] = ImportState.ERROR
+            row["state"] = ImportState.ERROR
+        return id_
+
+    def validate_field(
+        self, row: ImportRow, name_map: Dict[int, str], field: str, is_list: bool = True
+    ) -> bool:
+        valid = False
+        value = row["data"].get(field)
+        if value:
+            arr = value if is_list else [value]
+            for obj in arr:
+                if not (id := obj.get("id")):
+                    continue
+                if id in name_map:
+                    if name_map[id] == obj["value"]:
+                        valid = True
+                    else:
+                        obj["info"] = ImportState.WARNING
+                        row["messages"].append(
+                            f"Expected model '{id} {obj['value']}' changed its name to '{name_map[id]}'."
+                        )
+                else:
+                    obj["info"] = ImportState.WARNING
+                    row["messages"].append(
+                        f"Model '{id} {obj['value']}' doesn't exist anymore"
+                    )
+        return valid
 
     def flatten_copied_object_fields(
         self,
@@ -300,17 +380,19 @@ class StatisticEntry(TypedDict):
     value: int
 
 
-class JsonUploadMixin(BaseImportJsonUpload):
+class BaseJsonUploadAction(BaseImportJsonUploadAction):
     headers: List[HeaderEntry]
     rows: List[Dict[str, Any]]
     statistics: List[StatisticEntry]
     import_state: ImportState
     meeting_id: int
 
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().base_update_instance(instance)
+        self.store_rows_in_the_import_preview(self.import_name)
+        return instance
+
     def set_state(self, number_errors: int, number_warnings: int) -> None:
-        """
-        To remove, but is used in some backend imports
-        """
         if number_errors > 0:
             self.import_state = ImportState.ERROR
         elif number_warnings > 0:
@@ -417,7 +499,9 @@ class JsonUploadMixin(BaseImportJsonUpload):
                                 mktime(strptime(entry[field], "%Y-%m-%d"))
                             )
                         except Exception:
-                            pass
+                            raise ActionException(
+                                f"Invalid date format: {entry[field]} (expected YYYY-MM-DD)"
+                            )
                     else:
                         raise ActionException(
                             f"Unknown type in conversion: type:{type_} is_object:{str(is_object)} is_list:{str(is_list)}"
@@ -433,3 +517,27 @@ class JsonUploadMixin(BaseImportJsonUpload):
             )
             if not meeting:
                 raise ActionException(f"Import tries to use non-existent meeting {id_}")
+
+    def generate_statistics(self) -> None:
+        """
+        Generates the default statistics for the import preview.
+        Also sets the global state accordingly.
+        """
+        state_to_count: Dict[ImportState, int] = defaultdict(int)
+        for row in self.rows:
+            state_to_count[row["state"]] += 1
+            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
+                row.get("data", {}).values()
+            )
+            row["data"].pop("payload_index", None)
+
+        self.statistics = [
+            {"name": "total", "value": len(self.rows)},
+            {"name": "created", "value": state_to_count[ImportState.NEW]},
+            {"name": "updated", "value": state_to_count[ImportState.DONE]},
+            {"name": "error", "value": state_to_count[ImportState.ERROR]},
+            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
+        ]
+        self.set_state(
+            state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
+        )

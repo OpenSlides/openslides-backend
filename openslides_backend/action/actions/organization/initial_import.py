@@ -144,8 +144,8 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             result["message"] = "Data imported, but must be migrated!"
             result["migration_needed"] = True
         else:
-            result[
-                "message"
-            ] = f"Data imported, Migration Index set to {backend_migration_index}"
+            result["message"] = (
+                f"Data imported, Migration Index set to {backend_migration_index}"
+            )
             result["migration_needed"] = False
         return result

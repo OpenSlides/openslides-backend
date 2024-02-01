@@ -205,7 +205,7 @@ class ParticipantImport(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == [
-            "Error: user 111 not found anymore for updating user 'fred'."
+            "Error: participant 111 not found anymore for updating participant 'fred'."
         ]
 
     def test_import_error_state_import_preview(self) -> None:
@@ -449,7 +449,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Error: user 11 not found anymore for updating user 'user11'."
+            "Error: participant 11 not found anymore for updating participant 'user11'."
         ]
         assert row["data"] == {
             "id": 11,
@@ -724,7 +724,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
-            "Error: user 2 not found anymore for updating user 'user2'.",
+            "Error: participant 2 not found anymore for updating participant 'user2'.",
             "The group '3 group3' doesn't exist anymore.",
             "Error in groups: No valid group found inside the pre-checked groups from import, see warnings.",
         ]
@@ -760,7 +760,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Following groups were not found: 'group4'",
-            "Error: user 4 not found anymore for updating user 'user4'.",
+            "Error: participant 4 not found anymore for updating participant 'user4'.",
         ]
         assert row["data"] == {
             "id": 4,

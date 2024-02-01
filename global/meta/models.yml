@@ -409,6 +409,16 @@ meeting_user:
     to: motion/supporter_meeting_user_ids
     equal_fields: meeting_id
     restriction_mode: A
+  editor_for_motion_ids:
+    type: relation-list
+    to: motion/editor_id
+    equal_fields: meeting_id
+    restriction_mode: A
+  working_group_speaker_for_motion_ids:
+    type: relation-list
+    to: motion/working_group_speaker_id
+    equal_fields: meeting_id
+    restriction_mode: A
   motion_submitter_ids:
     type: relation-list
     to: motion_submitter/meeting_user_id
@@ -1169,6 +1179,12 @@ meeting:
     type: number
     minimum: 0
     default: 0
+    restriction_mode: B
+  motions_enable_editor:
+    type: boolean
+    restriction_mode: B
+  motions_enable_working_group_speaker:
+    type: boolean
     restriction_mode: B
   motions_export_title:
     type: string
@@ -2485,6 +2501,16 @@ motion:
     to: meeting_user/supported_motion_ids
     equal_fields: meeting_id
     restriction_mode: C
+  editor_id:
+    type: relation
+    to: meeting_user/editor_for_motion_ids
+    equal_fields: meeting_id
+    restriction_mode: B
+  working_group_speaker_id:
+    type: relation
+    to: meeting_user/working_group_speaker_for_motion_ids
+    equal_fields: meeting_id
+    restriction_mode: B
   poll_ids:
     type: relation-list
     to: poll/content_object_id
@@ -2811,6 +2837,9 @@ motion_state:
     restriction_mode: A
   recommendation_label:
     type: string
+    restriction_mode: A
+  is_internal_recommendation:
+    type: boolean
     restriction_mode: A
   css_class:
     type: string
@@ -3983,6 +4012,7 @@ import_preview:
       - account
       - participant
       - topic
+      - committee
     restriction_mode: A
   state:
     type: string

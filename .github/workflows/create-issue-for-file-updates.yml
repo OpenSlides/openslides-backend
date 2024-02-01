@@ -54,7 +54,7 @@ jobs:
         if: |
           contains(steps.changed-files.outputs.modified_files, 'global/meta/models.yml') ||
           contains(steps.changed-files.outputs.modified_files, 'global/meta/permission.yml')
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           event-type: models-update
           repository: ${{ github.repository_owner }}/openslides-autoupdate-service

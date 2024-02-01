@@ -1,4 +1,4 @@
-from typing import Any, Dict, cast
+from typing import Any, Dict, Optional, cast
 
 from ....permissions.management_levels import CommitteeManagementLevel
 from ....permissions.permission_helper import has_committee_management_level
@@ -36,25 +36,31 @@ class MeetingPermissionMixin(CheckUniqueInContextMixin):
 
 
 class MeetingCheckTimesMixin(Action):
-    def check_start_and_end_time(self, instance: Dict[str, Any]) -> None:
+    def check_start_and_end_time(
+        self, instance: Dict[str, Any], db_instance: Optional[Dict[str, Any]] = None
+    ) -> None:
         if not ("start_time" in instance or "end_time" in instance):
             return
-        meeting = self.datastore.get(
-            fqid_from_collection_and_id("meeting", instance["id"]),
-            ["start_time", "end_time"],
-            raise_exception=False,
-        )
+        if db_instance is None:
+            db_instance = self.datastore.get(
+                fqid_from_collection_and_id("meeting", instance["id"]),
+                ["start_time", "end_time"],
+                raise_exception=False,
+            )
         start_time = (
             instance["start_time"]
             if "start_time" in instance
-            else meeting.get("start_time")
+            else db_instance.get("start_time")
         )
         end_time = (
-            instance["end_time"] if "end_time" in instance else meeting.get("end_time")
+            instance["end_time"]
+            if "end_time" in instance
+            else db_instance.get("end_time")
         )
-
         if start_time and not end_time or not start_time and end_time:
             raise ActionException("Only one of start_time and end_time is not allowed.")
+        if start_time > end_time:
+            raise ActionException("start_time must be before end_time.")
 
 
 class GetMeetingIdFromIdMixin(Action):

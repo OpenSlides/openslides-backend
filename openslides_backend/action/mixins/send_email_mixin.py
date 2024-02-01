@@ -149,8 +149,10 @@ class EmailUtils:
                 message.set_content(contentplain)
             message.add_alternative(content, subtype="html")
         else:
-            message.set_content(content) if content else message.set_content(
-                contentplain
+            (
+                message.set_content(content)
+                if content
+                else message.set_content(contentplain)
             )
 
         message["From"] = from_

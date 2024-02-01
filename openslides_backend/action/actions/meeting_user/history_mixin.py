@@ -82,7 +82,7 @@ class MeetingUserHistoryMixin(Action):
                 instance_information.extend(group_information)
 
             if instance_information:
-                information[
-                    fqid_from_collection_and_id("user", user_id)
-                ] = instance_information
+                information[fqid_from_collection_and_id("user", user_id)] = (
+                    instance_information
+                )
         return information

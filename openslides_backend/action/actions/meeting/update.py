@@ -113,6 +113,8 @@ meeting_settings_keys = [
     "motions_amendments_text_mode",
     "motions_amendments_multiple_paragraphs",
     "motions_supporters_min_amount",
+    "motions_enable_editor",
+    "motions_enable_working_group_speaker",
     "motions_export_title",
     "motions_export_preamble",
     "motions_export_submitter_recommendation",

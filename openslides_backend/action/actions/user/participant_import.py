@@ -90,8 +90,8 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
             else:
                 raise ActionException("Couldn't correctly create new structure_levels")
 
-    def validate_entry(self, row: ImportRow) -> ImportRow:
-        row = super().validate_entry(row)
+    def validate_entry(self, row: ImportRow) -> None:
+        super().validate_entry(row)
         entry = row["data"]
         entry["meeting_id"] = self.meeting_id
         if "groups" not in entry:
@@ -170,7 +170,6 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         entry.pop("meeting_id")
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
-        return row
 
     def create_other_actions(self, rows: List[ImportRow]) -> List[Optional[int]]:
         set_present_payload: List[Dict[str, Any]] = []
