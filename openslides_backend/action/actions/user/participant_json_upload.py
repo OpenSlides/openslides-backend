@@ -121,6 +121,9 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 if not isinstance(entry[field], dict):
                     entry[field] = {"value": entry[field], "info": ImportState.DONE}
 
+        if len(self.base_class_error_fields):
+            results["state"] = ImportState.ERROR
+
         if vote_weight := entry.get("vote_weight"):
             if (
                 vote_weight["value"] == "0.000000"

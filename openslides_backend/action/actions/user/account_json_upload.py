@@ -30,6 +30,8 @@ class AccountJsonUpload(BaseUserJsonUpload):
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         results = super().validate_entry(entry)
+        if len(self.base_class_error_fields):
+            results["state"] = ImportState.ERROR
 
         messages = results["messages"]
 
