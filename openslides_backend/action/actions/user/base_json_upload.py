@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -37,7 +37,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
     saml_id_lookup: Lookup
     names_email_lookup: Lookup
     all_saml_id_lookup: Lookup
-    base_class_error_fields: Set[str] = set()
 
     @classmethod
     def get_schema(
@@ -88,7 +87,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
 
     def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         messages: List[str] = []
-        self.base_class_error_fields.clear()
         id_: Optional[int] = None
         old_saml_id: Optional[str] = None
         old_default_password: Optional[str] = None
@@ -253,11 +251,9 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             if EmailUtils.check_email(email):
                 entry["email"] = {"info": ImportState.DONE, "value": email}
             else:
-                self.base_class_error_fields.add("email")
                 entry["email"] = {"info": ImportState.ERROR, "value": email}
-                messages.append(
-                    f"Error: '{email}' is not a valid email address and will not be imported. This may have caused problems with user recognition."
-                )
+                self.row_state = ImportState.ERROR
+                messages.append(f"Error: '{email}' is not a valid email address.")
 
         return {"state": self.row_state, "messages": messages, "data": entry}
 

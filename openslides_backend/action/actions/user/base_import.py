@@ -54,9 +54,6 @@ class BaseUserImport(BaseImportAction):
         ):
             entry.pop("gender")
 
-        if (email := entry.get("email")) and email["info"] == ImportState.WARNING:
-            entry.pop("email")
-
         # remove all fields fields marked with "remove"-state
         to_remove = []
         for k, v in entry.items():
