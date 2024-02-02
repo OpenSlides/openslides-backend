@@ -305,6 +305,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
             set_400_str="Only one of start_time and end_time is not allowed.",
         )
 
+    def test_create_empty_times(self) -> None:
+        self.basic_test({"start_time": None, "end_time": None})
+
     def test_create_name_too_long(self) -> None:
         self.basic_test(
             {"name": "A" * 101},

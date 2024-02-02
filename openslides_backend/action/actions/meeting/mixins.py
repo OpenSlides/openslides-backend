@@ -47,19 +47,11 @@ class MeetingCheckTimesMixin(Action):
                 ["start_time", "end_time"],
                 raise_exception=False,
             )
-        start_time = (
-            instance["start_time"]
-            if "start_time" in instance
-            else db_instance.get("start_time")
-        )
-        end_time = (
-            instance["end_time"]
-            if "end_time" in instance
-            else db_instance.get("end_time")
-        )
+        start_time = instance.get("start_time", db_instance.get("start_time"))
+        end_time = instance.get("end_time", db_instance.get("end_time"))
         if start_time and not end_time or not start_time and end_time:
             raise ActionException("Only one of start_time and end_time is not allowed.")
-        if start_time > end_time:
+        if start_time and end_time and start_time > end_time:
             raise ActionException("start_time must be before end_time.")
 
 
