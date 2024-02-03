@@ -76,8 +76,6 @@ class MotionUpdate(
                     ),
                     [
                         "meeting_id",
-                        "is_active_in_organization_id",
-                        "name",
                         "id",
                         "category_id",
                         "block_id",
