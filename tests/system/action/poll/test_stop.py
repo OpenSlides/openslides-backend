@@ -117,9 +117,24 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         assert poll.get("votesinvalid") == "0.000000"
         assert poll.get("votesvalid") == "7.200000"
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": True, "user_id": user1, "vote_delegated_to_user_id": None},
-            {"voted": False, "user_id": user2, "vote_delegated_to_user_id": None},
-            {"voted": True, "user_id": user3, "vote_delegated_to_user_id": user1},
+            {
+                "voted": True,
+                "present": True,
+                "user_id": user1,
+                "vote_delegated_to_user_id": None,
+            },
+            {
+                "voted": False,
+                "present": True,
+                "user_id": user2,
+                "vote_delegated_to_user_id": None,
+            },
+            {
+                "voted": True,
+                "present": False,
+                "user_id": user3,
+                "vote_delegated_to_user_id": user1,
+            },
         ]
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
@@ -184,7 +199,12 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": False, "user_id": 2, "vote_delegated_to_user_id": None},
+            {
+                "voted": False,
+                "present": True,
+                "user_id": 2,
+                "vote_delegated_to_user_id": None,
+            },
         ]
 
     def test_stop_entitled_users_not_present(self) -> None:
@@ -227,7 +247,12 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": False, "user_id": 2, "vote_delegated_to_user_id": None},
+            {
+                "voted": False,
+                "present": False,
+                "user_id": 2,
+                "vote_delegated_to_user_id": None,
+            },
         ]
 
     def test_stop_published(self) -> None:
@@ -300,8 +325,8 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
-        # always 9 plus len(user_ids) calls, dependent of user count
-        assert counter.calls == 9 + len(user_ids)
+        # always 10 plus len(user_ids) calls, dependent of user count
+        assert counter.calls == 10 + len(user_ids)
 
     @performance
     def test_stop_performance(self) -> None:
