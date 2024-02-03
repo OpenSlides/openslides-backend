@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Vote
 from ...generics.update import UpdateAction
@@ -16,7 +16,7 @@ class VoteAnonymize(UpdateAction):
     model = Vote()
     schema = DefaultSchema(Vote()).get_update_schema()
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance["user_id"] = None
         instance["delegated_user_id"] = None
         return instance

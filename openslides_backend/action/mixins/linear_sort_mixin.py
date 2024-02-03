@@ -1,5 +1,3 @@
-from typing import List
-
 from ...shared.exceptions import ActionException
 from ...shared.filters import Filter
 from ..action import Action
@@ -13,7 +11,7 @@ class LinearSortMixin(Action):
 
     def sort_linear(
         self,
-        nodes: List,
+        nodes: list,
         filter: Filter,
         weight_key: str = "weight",
     ) -> ActionData:

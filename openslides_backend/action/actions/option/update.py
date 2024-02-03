@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ....models.models import Option, Poll
 from ....services.datastore.commands import GetManyRequest
@@ -34,7 +34,7 @@ class OptionUpdateAction(UpdateAction):
         }
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """Update votes and auto calculate yes, no, abstain."""
 
         option, poll = self._get_option_and_poll(instance["id"])
@@ -95,7 +95,7 @@ class OptionUpdateAction(UpdateAction):
 
     def _get_option_and_poll(
         self, option_id: int
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         option = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, option_id),
             ["poll_id", "used_as_global_option_in_poll_id", "vote_ids", "meeting_id"],
@@ -120,7 +120,7 @@ class OptionUpdateAction(UpdateAction):
         )
 
     def _handle_poll_option_data(
-        self, instance: Dict[str, Any], poll: Dict[str, Any]
+        self, instance: dict[str, Any], poll: dict[str, Any]
     ) -> None:
         if poll.get("type") == "analog":
             data = self._get_data(instance)
@@ -134,7 +134,7 @@ class OptionUpdateAction(UpdateAction):
                     )
 
     def _handle_global_option_data(
-        self, instance: Dict[str, Any], poll: Dict[str, Any]
+        self, instance: dict[str, Any], poll: dict[str, Any]
     ) -> None:
         if poll.get("type") == "analog":
             data = self._get_data(instance)
@@ -146,29 +146,29 @@ class OptionUpdateAction(UpdateAction):
                         f"Global {key} votes are not allowed for this poll"
                     )
 
-    def _get_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_data(self, instance: dict[str, Any]) -> dict[str, Any]:
         return {
             key: instance.pop(letter)
             for letter, key in option_keys_map.items()
             if letter in instance
         }
 
-    def _fetch_votes(self, vote_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+    def _fetch_votes(self, vote_ids: list[int]) -> dict[int, dict[str, Any]]:
         get_many_request = GetManyRequest("vote", vote_ids, ["value"])
         gm_result = self.datastore.get_many([get_many_request])
         votes = gm_result.get("vote", {})
         return votes
 
     def _get_vote_id(
-        self, search_value: str, id_to_vote: Dict[int, Dict[str, Any]]
-    ) -> Optional[int]:
+        self, search_value: str, id_to_vote: dict[int, dict[str, Any]]
+    ) -> int | None:
         for key, item in id_to_vote.items():
             if item["value"] == search_value:
                 return key
         return None
 
     def check_state_change(
-        self, instance: Dict[str, Any], poll: Dict[str, Any]
+        self, instance: dict[str, Any], poll: dict[str, Any]
     ) -> bool:
         return (
             poll.get("type") == Poll.TYPE_ANALOG
@@ -176,7 +176,7 @@ class OptionUpdateAction(UpdateAction):
             and any(letter in instance for letter in option_keys_map.keys())
         )
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         _, poll = self._get_option_and_poll(instance["id"])
         content_object_id = poll.get("content_object_id", "")
         meeting_id = poll["meeting_id"]

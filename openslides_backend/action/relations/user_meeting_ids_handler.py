@@ -1,4 +1,4 @@
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 from ...models.fields import Field
 from ...shared.patterns import (
@@ -15,7 +15,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
     """
 
     def process_field(
-        self, field: Field, field_name: str, instance: Dict[str, Any], action: str
+        self, field: Field, field_name: str, instance: dict[str, Any], action: str
     ) -> RelationUpdates:
         if field_name != "group_ids":
             return {}
@@ -31,7 +31,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         if not (meeting_id := instance.get("meeting_id")):
             if not (
                 meeting_id := cast(
-                    Dict[str, Any], self.datastore.changed_models.get(fqid)
+                    dict[str, Any], self.datastore.changed_models.get(fqid)
                 ).get("meeting_id")
             ):
                 meeting_id = db_instance.get("meeting_id")
@@ -40,7 +40,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         if not (user_id := instance.get("user_id")):
             if not (
                 user_id := cast(
-                    Dict[str, Any], self.datastore.changed_models.get(fqid)
+                    dict[str, Any], self.datastore.changed_models.get(fqid)
                 ).get("user_id")
             ):
                 user_id = db_instance.get("user_id")

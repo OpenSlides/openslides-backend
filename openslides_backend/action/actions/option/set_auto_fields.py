@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Option
 from ...generics.update import UpdateAction
@@ -18,7 +18,7 @@ class OptionSetAutoFields(UpdateAction):
         optional_properties=["yes", "no", "abstain"]
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         set_without_calc = (
             instance.get("yes") or instance.get("no") or instance.get("abstain")
         )

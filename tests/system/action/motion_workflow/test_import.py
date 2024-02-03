@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from tests.system.action.base import BaseActionTestCase
 
@@ -7,10 +7,10 @@ class MotionWorkflowImport(BaseActionTestCase):
     def get_state(
         self,
         name: str,
-        next_state_names: List[str],
-        previous_state_names: List[str],
+        next_state_names: list[str],
+        previous_state_names: list[str],
         weight: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return {
             "name": name,
             "recommendation_label": "",

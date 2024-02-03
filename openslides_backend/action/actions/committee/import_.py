@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from openslides_backend.action.actions.meeting.clone import MeetingClone
 from openslides_backend.action.actions.meeting.create import MeetingCreate
@@ -34,7 +34,7 @@ class CommitteeImport(BaseImportAction):
         )
     }
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         super().update_instance(instance)
         self.setup_lookups()
         for row in self.rows:
@@ -54,7 +54,7 @@ class CommitteeImport(BaseImportAction):
         self.validate_field(row, self.user_map, "meeting_admins")
         self.validate_field(row, self.organization_tag_map, "organization_tags")
 
-    def handle_relation_fields(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_relation_fields(self, entry: dict[str, Any]) -> dict[str, Any]:
         # filter out invalid entries & replace valid ones with ids
         for field in ("managers", "meeting_admins"):
             if field in entry:
@@ -78,9 +78,9 @@ class CommitteeImport(BaseImportAction):
                 entry["meeting_template"] = template["id"]
         return entry
 
-    def create_models(self, rows: List[ImportRow]) -> None:
+    def create_models(self, rows: list[ImportRow]) -> None:
         # create tags & update row data
-        create_tag_data: List[Dict[str, Any]] = []
+        create_tag_data: list[dict[str, Any]] = []
         for row in rows:
             for tag in row["data"].get("organization_tags", []):
                 if isinstance(tag, str):
@@ -98,7 +98,7 @@ class CommitteeImport(BaseImportAction):
             )
 
         # create missing committees & update row data
-        create_committee_data: List[Dict[str, Any]] = []
+        create_committee_data: list[dict[str, Any]] = []
         for row in rows:
             entry = row["data"]
             if "id" not in entry:
@@ -119,7 +119,7 @@ class CommitteeImport(BaseImportAction):
                     entry[new] = entry.pop(old)
 
         # execute committee updates
-        update_committee_data: List[Dict[str, Any]] = []
+        update_committee_data: list[dict[str, Any]] = []
         for row in rows:
             entry = row["data"]
             action_data = {
@@ -139,8 +139,8 @@ class CommitteeImport(BaseImportAction):
 
         # create meetings
         lang = self.get_organization_language()
-        create_meeting_data: List[Dict[str, Any]] = []
-        clone_meeting_data: List[Dict[str, Any]] = []
+        create_meeting_data: list[dict[str, Any]] = []
+        clone_meeting_data: list[dict[str, Any]] = []
         for row in rows:
             entry = row["data"]
             if "meeting_name" in entry:
@@ -169,7 +169,7 @@ class CommitteeImport(BaseImportAction):
 
     def update_rows_from_results(
         self,
-        rows: List[ImportRow],
+        rows: list[ImportRow],
         action_data: ActionData,
         results: ActionResults | None,
         field: str,

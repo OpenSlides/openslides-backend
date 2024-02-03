@@ -1,6 +1,6 @@
 import base64
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.migrations import get_backend_migration_index
@@ -45,9 +45,9 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def create_request_data(
-        self, datapart: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        data: Dict[str, Any] = {
+        self, datapart: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "committee_id": 1,
             "meeting": {
                 "_migration_index": current_migration_index,
@@ -338,7 +338,7 @@ class MeetingImport(BaseActionTestCase):
 
         return data
 
-    def get_user_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+    def get_user_data(self, obj_id: int, data: dict[str, Any] = {}) -> dict[str, Any]:
         return {
             "id": obj_id,
             "password": "",
@@ -367,7 +367,7 @@ class MeetingImport(BaseActionTestCase):
             **data,
         }
 
-    def get_group_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+    def get_group_data(self, obj_id: int, data: dict[str, Any] = {}) -> dict[str, Any]:
         return {
             "id": obj_id,
             "meeting_id": 1,
@@ -389,7 +389,7 @@ class MeetingImport(BaseActionTestCase):
             **data,
         }
 
-    def get_motion_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+    def get_motion_data(self, obj_id: int, data: dict[str, Any] = {}) -> dict[str, Any]:
         return {
             "id": obj_id,
             "meeting_id": 1,
@@ -414,8 +414,8 @@ class MeetingImport(BaseActionTestCase):
         }
 
     def get_mediafile_data(
-        self, obj_id: int, data: Dict[str, Any] = {}
-    ) -> Dict[str, Any]:
+        self, obj_id: int, data: dict[str, Any] = {}
+    ) -> dict[str, Any]:
         file_content = base64.b64encode(b"testtesttest").decode()
         return {
             "id": obj_id,

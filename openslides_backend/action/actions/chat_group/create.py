@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import ChatGroup
 from ....permissions.permissions import Permissions
@@ -24,7 +24,7 @@ class ChatGroupCreate(
     )
     permission = Permissions.Chat.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         self.check_name_unique(instance)
         instance["weight"] = self.get_weight(instance["meeting_id"])

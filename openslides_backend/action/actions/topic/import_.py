@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
@@ -28,7 +28,7 @@ class TopicImport(BaseImportAction):
     import_name = "topic"
     agenda_item_fields = ["agenda_comment", "agenda_duration", "agenda_type"]
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         meeting_id = self.get_meeting_id(instance)
         self.setup_lookups(meeting_id)
@@ -36,9 +36,9 @@ class TopicImport(BaseImportAction):
             self.validate_entry(row)
 
         if self.import_state != ImportState.ERROR:
-            create_action_payload: List[Dict[str, Any]] = []
-            update_action_payload: List[Dict[str, Any]] = []
-            update_agenda_item_payload: List[Dict[str, Any]] = []
+            create_action_payload: list[dict[str, Any]] = []
+            update_action_payload: list[dict[str, Any]] = []
+            update_agenda_item_payload: list[dict[str, Any]] = []
             rows = self.flatten_copied_object_fields()
             for row in rows:
                 entry = row["data"]
@@ -96,7 +96,7 @@ class TopicImport(BaseImportAction):
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
 
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+    def get_meeting_id(self, instance: dict[str, Any]) -> int:
         store_id = instance["id"]
         worker = self.datastore.get(
             fqid_from_collection_and_id("import_preview", store_id),

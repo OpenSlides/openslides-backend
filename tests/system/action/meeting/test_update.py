@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -11,7 +11,7 @@ from tests.util import Response
 class MeetingUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "committee/1": {"name": "test_committee"},
             "meeting/1": {
                 "name": "test_name",
@@ -32,8 +32,8 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         }
 
     def basic_test(
-        self, datapart: Dict[str, Any], check_200: bool = True
-    ) -> Tuple[Dict[str, Any], Response]:
+        self, datapart: dict[str, Any], check_200: bool = True
+    ) -> tuple[dict[str, Any], Response]:
         self.set_models(
             {
                 "committee/1": {"name": "test_committee"},

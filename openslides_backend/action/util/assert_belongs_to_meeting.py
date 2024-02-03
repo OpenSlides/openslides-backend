@@ -1,5 +1,3 @@
-from typing import List, Set, Union
-
 from openslides_backend.action.mixins.meeting_user_helper import get_meeting_user
 
 from ...services.datastore.interface import DatastoreService
@@ -14,13 +12,13 @@ from ...shared.patterns import (
 
 def assert_belongs_to_meeting(
     datastore: DatastoreService,
-    fqids: Union[FullQualifiedId, List[FullQualifiedId]],
+    fqids: FullQualifiedId | list[FullQualifiedId],
     meeting_id: int,
 ) -> None:
     if not isinstance(fqids, list):
         fqids = [fqids]
 
-    errors: Set[str] = set()
+    errors: set[str] = set()
     for fqid in fqids:
         if collection_from_fqid(fqid) == "meeting":
             if id_from_fqid(fqid) != meeting_id:

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Meeting
 from ....permissions.management_levels import (
@@ -22,12 +22,12 @@ class MeetingArchive(UpdateAction, GetMeetingIdFromIdMixin):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema()
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance["is_active_in_organization_id"] = None
         instance["is_archived_in_organization_id"] = 1
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         meeting = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["committee_id"],

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -10,10 +10,10 @@ class UserScopeTest(TestCase):
         self.mock_datastore = MagicMock()
         self.mixin = UserScopeMixin(MagicMock(), self.mock_datastore, MagicMock())
 
-    def set_user_data(self, data: Dict[str, Any]) -> None:
+    def set_user_data(self, data: dict[str, Any]) -> None:
         self.mock_datastore.get = MagicMock(return_value=data)
 
-    def set_meeting_committees(self, ids: List[int]) -> None:
+    def set_meeting_committees(self, ids: list[int]) -> None:
         return_val = {
             "meeting": {
                 i + 1: {"committee_id": id, "is_active_in_organization_id": 1}

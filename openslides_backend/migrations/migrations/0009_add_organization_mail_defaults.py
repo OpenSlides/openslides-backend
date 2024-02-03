@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
 from datastore.shared.util import collection_from_fqid
 
@@ -15,7 +13,7 @@ class Migration(BaseEventMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection = collection_from_fqid(event.fqid)
         if collection == self.collection and isinstance(event, CreateEvent):
             event.data["users_email_sender"] = "OpenSlides"

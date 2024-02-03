@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 from ...mixins.import_mixins import BaseImportAction, ImportRow, ImportState, Lookup
 from ...util.typing import ActionResults
@@ -13,7 +13,7 @@ class BaseUserImport(BaseImportAction):
 
     skip_archived_meeting_check = True
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         super().update_instance(instance)
         self.setup_lookups()
         for row in self.rows:
@@ -27,7 +27,7 @@ class BaseUserImport(BaseImportAction):
 
         return {}
 
-    def handle_remove_and_group_fields(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_remove_and_group_fields(self, entry: dict[str, Any]) -> dict[str, Any]:
         if (groups := entry.pop("groups", None)) is not None:
             entry["group_ids"] = [id_ for group in groups if (id_ := group.get("id"))]
 
@@ -64,10 +64,10 @@ class BaseUserImport(BaseImportAction):
             entry.pop(k)
         return entry
 
-    def create_other_actions(self, rows: List[ImportRow]) -> List[Optional[int]]:
-        create_action_payload: List[Dict[str, Any]] = []
-        update_action_payload: List[Dict[str, Any]] = []
-        index_to_is_create: List[bool] = []
+    def create_other_actions(self, rows: list[ImportRow]) -> list[int | None]:
+        create_action_payload: list[dict[str, Any]] = []
+        update_action_payload: list[dict[str, Any]] = []
+        index_to_is_create: list[bool] = []
         for row in rows:
             if row["state"] == ImportState.NEW:
                 create_action_payload.append(row["data"])
@@ -75,8 +75,8 @@ class BaseUserImport(BaseImportAction):
             else:
                 update_action_payload.append(row["data"])
                 index_to_is_create.append(False)
-        create_results: Optional[ActionResults] = []
-        update_results: Optional[ActionResults] = []
+        create_results: ActionResults | None = []
+        update_results: ActionResults | None = []
         if create_action_payload:
             create_results = self.execute_other_action(
                 UserCreate, create_action_payload
@@ -85,7 +85,7 @@ class BaseUserImport(BaseImportAction):
             update_results = self.execute_other_action(
                 UserUpdate, update_action_payload
             )
-        ids: List[Optional[int]] = []
+        ids: list[int | None] = []
         for is_create in index_to_is_create:
             if is_create:
                 result = create_results.pop(0) if create_results else None

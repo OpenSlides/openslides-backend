@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -20,13 +20,13 @@ class UserDelete(UserScopeMixin, ConditionalSpeakerCascadeMixin, DeleteAction):
     skip_archived_meeting_check = True
     history_information = "Account deleted"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if instance["id"] == self.user_id:
             raise ActionException("You cannot delete yourself.")
         return super().update_instance(instance)
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance["id"])
 
-    def get_removed_meeting_id(self, instance: Dict[str, Any]) -> Optional[int]:
+    def get_removed_meeting_id(self, instance: dict[str, Any]) -> int | None:
         return 0

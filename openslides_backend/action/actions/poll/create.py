@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -72,7 +72,7 @@ class PollCreateAction(
     )
     poll_history_information = "created"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         action_data = []
 
@@ -125,7 +125,7 @@ class PollCreateAction(
         for weight, option in enumerate(instance.get("options", []), start=1):
             # check the keys with staticmethod from option.create, where they belong
             key = OptionCreateAction.check_one_of_three_keywords(option)
-            data: Dict[str, Any] = {
+            data: dict[str, Any] = {
                 "poll_id": instance["id"],
                 "meeting_id": instance["meeting_id"],
                 "weight": weight,
@@ -201,15 +201,15 @@ class PollCreateAction(
         instance.pop("publish_immediately", None)
         return instance
 
-    def parse_vote_value(self, data: Dict[str, Any], field: str) -> Any:
+    def parse_vote_value(self, data: dict[str, Any], field: str) -> Any:
         return data.get(field, "-2.000000")
 
-    def check_onehundred_percent_base(self, instance: Dict[str, Any]) -> None:
+    def check_onehundred_percent_base(self, instance: dict[str, Any]) -> None:
         pollmethod = instance["pollmethod"]
         onehundred_percent_base = instance.get("onehundred_percent_base")
         base_check_onehundred_percent_base(pollmethod, onehundred_percent_base)
 
-    def check_state_change(self, instance: Dict[str, Any]) -> bool:
+    def check_state_change(self, instance: dict[str, Any]) -> bool:
         if instance["type"] != Poll.TYPE_ANALOG:
             return False
         check_fields = (

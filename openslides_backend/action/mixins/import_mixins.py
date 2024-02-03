@@ -1,10 +1,11 @@
 import copy
 import csv
 from collections import defaultdict
+from collections.abc import Callable
 from decimal import Decimal
 from enum import Enum
 from time import mktime, strptime, time
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, Union, cast
+from typing import Any, TypedDict, Union, cast
 
 from typing_extensions import NotRequired
 
@@ -26,7 +27,7 @@ TRUE_VALUES = ("1", "true", "yes", "y", "t")
 FALSE_VALUES = ("0", "false", "no", "n", "f")
 
 # A searchfield can be a string or a tuple of strings
-SearchFieldType = Union[str, Tuple[str, ...]]
+SearchFieldType = Union[str, tuple[str, ...]]
 
 
 class ImportState(str, Enum):
@@ -40,8 +41,8 @@ class ImportState(str, Enum):
 
 class ImportRow(TypedDict):
     state: ImportState
-    data: Dict[str, Any]
-    messages: List[str]
+    data: dict[str, Any]
+    messages: list[str]
 
 
 class ResultType(Enum):
@@ -58,17 +59,17 @@ class Lookup:
         self,
         datastore: DatastoreService,
         collection: str,
-        name_entries: List[Tuple[SearchFieldType, Dict[str, Any]]],
+        name_entries: list[tuple[SearchFieldType, dict[str, Any]]],
         field: SearchFieldType = "name",
-        mapped_fields: Optional[List[str]] = None,
-        global_and_filter: Optional[Filter] = None,
+        mapped_fields: list[str] | None = None,
+        global_and_filter: Filter | None = None,
     ) -> None:
         if mapped_fields is None:
             mapped_fields = []
         self.datastore = datastore
         self.collection = collection
         self.field = field
-        self.name_to_ids: Dict[SearchFieldType, List[Dict[str, Any]]] = defaultdict(
+        self.name_to_ids: dict[SearchFieldType, list[dict[str, Any]]] = defaultdict(
             list
         )
         for name, name_entry in name_entries:
@@ -76,8 +77,8 @@ class Lookup:
                 self.name_to_ids[name].append(name_entry)
             else:
                 self.name_to_ids[name] = []
-        self.id_to_name: Dict[int, List[SearchFieldType]] = defaultdict(list)
-        or_filters: List[Filter] = []
+        self.id_to_name: dict[int, list[SearchFieldType]] = defaultdict(list)
+        or_filters: list[Filter] = []
         if "id" not in mapped_fields:
             mapped_fields.append("id")
         if type(field) is str:
@@ -88,7 +89,7 @@ class Lookup:
                     FilterOperator(field, "=", name) for name, _ in name_entries
                 ]
         else:
-            mapped_fields.extend((f for f in field if f not in mapped_fields))
+            mapped_fields.extend(f for f in field if f not in mapped_fields)
             if name_entries:
                 or_filters = [
                     And(*[FilterOperator(field[i], "=", name_tpl[i]) for i in range(3)])
@@ -138,13 +139,13 @@ class Lookup:
 
     def get_field_by_name(
         self, name: SearchFieldType, fieldname: str
-    ) -> Optional[Union[int, str, bool]]:
+    ) -> int | str | bool | None:
         """Gets 'fieldname' from value of name_to_ids-dict"""
         if len(self.name_to_ids.get(name, [])) == 1:
             return self.name_to_ids[name][0].get(fieldname)
         return None
 
-    def add_item(self, entry: Dict[str, Any]) -> None:
+    def add_item(self, entry: dict[str, Any]) -> None:
         if type(self.field) is str:
             if type(key := entry[self.field]) is dict:
                 key = key["value"]
@@ -162,7 +163,7 @@ class BaseImportJsonUploadAction(SingularActionMixin, Action):
 
     @staticmethod
     def count_warnings_in_payload(
-        data: Union[List[Union[Dict[str, str], List[Any]]], Dict[str, Any]]
+        data: list[dict[str, str] | list[Any]] | dict[str, Any]
     ) -> int:
         count = 0
         for col in data:
@@ -175,8 +176,8 @@ class BaseImportJsonUploadAction(SingularActionMixin, Action):
 
     @staticmethod
     def get_value_from_union_str_object(
-        field: Optional[Union[str, Dict[str, Any]]]
-    ) -> Optional[str]:
+        field: str | dict[str, Any] | None
+    ) -> str | None:
         if type(field) is dict:
             return field.get("value", "")
         elif type(field) is str:
@@ -198,12 +199,12 @@ class BaseImportAction(BaseImportJsonUploadAction):
         }
     )
 
-    rows: List[ImportRow]
-    result: Dict[str, List]
+    rows: list[ImportRow]
+    result: dict[str, list]
     import_state = ImportState.DONE
 
     def prefetch(self, action_data: ActionData) -> None:
-        store_id = cast(List[Dict[str, Any]], action_data)[0]["id"]
+        store_id = cast(list[dict[str, Any]], action_data)[0]["id"]
         import_preview = self.datastore.get(
             fqid_from_collection_and_id("import_preview", store_id),
             ["result", "state", "name"],
@@ -222,20 +223,20 @@ class BaseImportAction(BaseImportJsonUploadAction):
         self.result = import_preview.get("result", {})
         self.rows = self.result.get("rows", [])
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if not instance["import"]:
             return {}
         return super().base_update_instance(instance)
 
-    def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
+    def handle_relation_updates(self, instance: dict[str, Any]) -> Any:
         return {}
 
-    def create_events(self, instance: Dict[str, Any]) -> Any:
+    def create_events(self, instance: dict[str, Any]) -> Any:
         return []
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         return {"rows": self.rows, "state": self.import_state}
 
     def validate_with_lookup(
@@ -244,8 +245,8 @@ class BaseImportAction(BaseImportJsonUploadAction):
         lookup: Lookup,
         field: str = "name",
         required: bool = True,
-        expected_id: Optional[int] = None,
-    ) -> Optional[int]:
+        expected_id: int | None = None,
+    ) -> int | None:
         entry = row["data"]
         value = self.get_value_from_union_str_object(entry.get(field))
         if not value:
@@ -258,7 +259,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
         check_result = lookup.check_duplicate(value)
         id_ = cast(int, lookup.get_field_by_name(value, "id"))
 
-        error: Optional[str] = None
+        error: str | None = None
         if check_result == ResultType.FOUND_ID and id_ != 0:
             if required:
                 if row["state"] != ImportState.DONE:
@@ -286,7 +287,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
         return id_
 
     def validate_field(
-        self, row: ImportRow, name_map: Dict[int, str], field: str, is_list: bool = True
+        self, row: ImportRow, name_map: dict[int, str], field: str, is_list: bool = True
     ) -> bool:
         valid = False
         value = row["data"].get(field)
@@ -312,8 +313,8 @@ class BaseImportAction(BaseImportJsonUploadAction):
 
     def flatten_copied_object_fields(
         self,
-        hook_method: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None,
-    ) -> List[ImportRow]:
+        hook_method: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+    ) -> list[ImportRow]:
         """The self.rows will be deepcopied, flattened and returned, without
         changes on the self.rows.
         This is necessary for using the data in the executution of actions.
@@ -381,13 +382,13 @@ class StatisticEntry(TypedDict):
 
 
 class BaseJsonUploadAction(BaseImportJsonUploadAction):
-    headers: List[HeaderEntry]
-    rows: List[Dict[str, Any]]
-    statistics: List[StatisticEntry]
+    headers: list[HeaderEntry]
+    rows: list[dict[str, Any]]
+    statistics: list[StatisticEntry]
     import_state: ImportState
     meeting_id: int
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().base_update_instance(instance)
         self.store_rows_in_the_import_preview(self.import_name)
         return instance
@@ -404,7 +405,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
         self.new_store_id = self.datastore.reserve_id(collection="import_preview")
         fqid = fqid_from_collection_and_id("import_preview", self.new_store_id)
         time_created = int(time())
-        result: Dict[str, Union[List[Dict[str, Any]], int]] = {"rows": self.rows}
+        result: dict[str, list[dict[str, Any]] | int] = {"rows": self.rows}
         if hasattr(self, "meeting_id"):
             result["meeting_id"] = self.meeting_id
         self.datastore.write_without_events(
@@ -427,15 +428,15 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
             )
         )
 
-    def handle_relation_updates(self, instance: Dict[str, Any]) -> Any:
+    def handle_relation_updates(self, instance: dict[str, Any]) -> Any:
         return {}
 
-    def create_events(self, instance: Dict[str, Any]) -> Any:
+    def create_events(self, instance: dict[str, Any]) -> Any:
         return []
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         return {
             "id": self.new_store_id,
             "headers": self.headers,
@@ -449,7 +450,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
             entry["payload_index"] = payload_index
         return action_data
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         # filter extra, not needed fields before validate and parse some fields
         property_to_type = {
             header["property"]: (
@@ -525,7 +526,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
         Generates the default statistics for the import preview.
         Also sets the global state accordingly.
         """
-        state_to_count: Dict[ImportState, int] = defaultdict(int)
+        state_to_count: dict[ImportState, int] = defaultdict(int)
         for row in self.rows:
             state_to_count[row["state"]] += 1
             state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(

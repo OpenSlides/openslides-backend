@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any
 
 from ....models.models import Topic
 from ....permissions.permissions import Permissions
@@ -39,7 +39,7 @@ class TopicCreate(
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     def check_dependant_action_execution_agenda_item(
-        self, element: Dict[str, Any], CreateActionClass: Type[Action]
+        self, element: dict[str, Any], CreateActionClass: type[Action]
     ) -> bool:
         """
         We always create an agenda item for each topic regardless of

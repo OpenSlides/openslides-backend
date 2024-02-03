@@ -1,5 +1,3 @@
-from typing import Optional, Tuple
-
 from ...migrations import assert_migration_index
 from ...presenter.presenter import PresenterHandler
 from ...shared.interfaces.wsgi import ResponseBody
@@ -16,7 +14,7 @@ class PresenterView(BaseView):
     method = "POST"
 
     @route("handle_request")
-    def presenter_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
+    def presenter_route(self, request: Request) -> tuple[ResponseBody, str | None]:
         self.logger.debug("Start dispatching presenter request.")
 
         assert_migration_index()
@@ -34,5 +32,5 @@ class PresenterView(BaseView):
         return presenter_response, access_token
 
     @route("health", method="GET", json=False)
-    def health_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
+    def health_route(self, request: Request) -> tuple[ResponseBody, str | None]:
         return {"status": "running"}, None
