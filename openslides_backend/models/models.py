@@ -492,7 +492,12 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_poll_ballot_paper_number = fields.IntegerField(default=8)
     motion_poll_default_type = fields.CharField(default="pseudoanonymous")
-    motion_poll_default_onehundred_percent_base = fields.CharField(default="YNA")
+    motion_poll_default_onehundred_percent_base = fields.CharField(
+        default="YNA",
+        constraints={
+            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+        },
+    )
     motion_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_motion_poll_default_id"}
     )
@@ -545,7 +550,12 @@ class Meeting(Model, MeetingModelMixin):
     assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
     assignment_poll_default_type = fields.CharField(default="pseudoanonymous")
     assignment_poll_default_method = fields.CharField(default="Y")
-    assignment_poll_default_onehundred_percent_base = fields.CharField(default="valid")
+    assignment_poll_default_onehundred_percent_base = fields.CharField(
+        default="valid",
+        constraints={
+            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+        },
+    )
     assignment_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_assignment_poll_default_id"}
     )
@@ -565,7 +575,12 @@ class Meeting(Model, MeetingModelMixin):
     poll_sort_poll_result_by_votes = fields.BooleanField()
     poll_default_type = fields.CharField(default="analog")
     poll_default_method = fields.CharField()
-    poll_default_onehundred_percent_base = fields.CharField(default="YNA")
+    poll_default_onehundred_percent_base = fields.CharField(
+        default="YNA",
+        constraints={
+            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+        },
+    )
     poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_poll_default_id"}
     )
