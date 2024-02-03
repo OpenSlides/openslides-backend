@@ -46,13 +46,14 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
             raise ActionException(
                 "You cannot change the speech state of an interposed_question."
             )
-        if "meeting_user_id" in instance and (
-            instance["meeting_user_id"] is None
-            or speaker.get("meeting_user_id")
-            or speaker.get("speech_state") != SpeechState.INTERPOSED_QUESTION
-        ):
-            raise ActionException("You cannot set the meeting_user_id.")
-        if "structure_level_id" in instance and speaker.get("begin_time"):
+        if "meeting_user_id" in instance:
+            if (
+                instance["meeting_user_id"] is None
+                or speaker.get("meeting_user_id")
+                or speaker.get("speech_state") != SpeechState.INTERPOSED_QUESTION
+            ):
+                raise ActionException("You cannot set the meeting_user_id.")
+        elif "structure_level_id" in instance and speaker.get("begin_time"):
             raise ActionException(
                 "You can only update the structure level on a waiting speaker."
             )
