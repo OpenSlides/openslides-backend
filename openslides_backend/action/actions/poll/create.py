@@ -91,12 +91,14 @@ class PollCreateAction(
         if instance["type"] == Poll.TYPE_ANALOG and "entitled_group_ids" in instance:
             raise ActionException("entitled_group_ids is not allowed for analog.")
         # check analog and onehundredpercentbase entitled
-        if (
-            instance["type"] == Poll.TYPE_ANALOG
-            and instance.get("onehundred_percent_base") == "entitled"
+        if instance["type"] == Poll.TYPE_ANALOG and (
+            base := instance.get("onehundred_percent_base")
+        ) in (
+            Poll.ONEHUNDRED_PERCENT_BASE_ENTITLED,
+            Poll.ONEHUNDRED_PERCENT_BASE_ENTITLED_PRESENT,
         ):
             raise ActionException(
-                "onehundred_percent_base: value entitled is not allowed for analog."
+                f"onehundred_percent_base: value {base} is not allowed for analog."
             )
         self.check_onehundred_percent_base(instance)
 

@@ -1585,7 +1585,17 @@ class Poll(Model, PollModelMixin):
         required=True,
         default="disabled",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     votesvalid = fields.DecimalField()

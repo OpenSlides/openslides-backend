@@ -2995,6 +2995,7 @@ poll:
       - "valid"
       - "cast"
       - "entitled"
+      - "entitled_present"
       - "disabled"
     default: disabled
     restriction_mode: A

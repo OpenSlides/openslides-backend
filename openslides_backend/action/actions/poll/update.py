@@ -92,12 +92,14 @@ class PollUpdateAction(
                 "Following options are not allowed in this state and type: "
                 + ", ".join(not_allowed)
             )
-        if (
-            poll.get("type") == Poll.TYPE_ANALOG
-            and instance.get("onehundred_percent_base") == "entitled"
+        if poll["type"] == Poll.TYPE_ANALOG and (
+            base := instance.get("onehundred_percent_base")
+        ) in (
+            Poll.ONEHUNDRED_PERCENT_BASE_ENTITLED,
+            Poll.ONEHUNDRED_PERCENT_BASE_ENTITLED_PRESENT,
         ):
             raise ActionException(
-                "onehundred_percent_base: value entitled is not allowed for analog."
+                f"onehundred_percent_base: value {base} is not allowed for analog."
             )
         if state_change:
             instance["state"] = Poll.STATE_FINISHED
