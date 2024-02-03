@@ -327,6 +327,34 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("speaker/890", {"meeting_user_id": 7})
 
+    def test_update_meeting_user_and_structure_level_on_past_speaker(self) -> None:
+        now = round(time())
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_default_structure_level_time": 60,
+                    "structure_level_ids": [2],
+                },
+                "structure_level/2": {
+                    "meeting_id": 1,
+                },
+                "speaker/890": {
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "meeting_user_id": None,
+                    "begin_time": now - 100,
+                    "end_time": now - 50,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "meeting_user_id": 7, "structure_level_id": 2}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/890",
+            {"meeting_user_id": 7, "structure_level_list_of_speakers_id": 1},
+        )
+
     def test_update_meeting_user_wrong_state(self) -> None:
         self.set_models(
             {
