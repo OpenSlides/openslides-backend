@@ -1,7 +1,6 @@
 # Code generated. DO NOT EDIT.
 
 from enum import Enum
-from typing import Dict, List
 
 from .base_classes import Permission
 
@@ -93,7 +92,7 @@ class Permissions:
 
 
 # Holds the corresponding parent for each permission.
-permission_parents: Dict[Permission, List[Permission]] = {
+permission_parents: dict[Permission, list[Permission]] = {
     _AgendaItem.CAN_SEE: [
         _AgendaItem.CAN_SEE_INTERNAL,
         _AgendaItem.CAN_SEE_MODERATOR_NOTES,

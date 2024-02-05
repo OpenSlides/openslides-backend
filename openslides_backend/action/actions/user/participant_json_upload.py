@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, List, Set, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 from openslides_backend.models.models import MeetingUser
 from openslides_backend.services.datastore.commands import GetManyRequest
@@ -46,14 +47,14 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         {"property": "groups", "type": "string", "is_object": True, "is_list": True},
     ]
     import_name = "participant"
-    lookups: Dict[str, Dict[str, int]] = {}
-    default_group: Dict[str, Any] = {}
-    missing_field_values: Dict[str, Set[str]]
+    lookups: dict[str, dict[str, int]] = {}
+    default_group: dict[str, Any] = {}
+    missing_field_values: dict[str, set[str]]
 
     def prefetch(self, action_data: ActionData) -> None:
         self.meeting_id = next(iter(action_data)).get("meeting_id", 0)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.missing_field_values = {}
         data = super().update_instance(instance)
         self.statistics.append(
@@ -64,7 +65,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         )
         return data
 
-    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         entry["meeting_id"] = self.meeting_id
         results = super().validate_entry(entry)
         messages = results["messages"]
@@ -138,15 +139,15 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
 
     def validate_with_lookup(
         self,
-        entry: Dict[str, Any],
+        entry: dict[str, Any],
         field: str,
-        messages: List[str],
+        messages: list[str],
         create_when_not_found: bool = False,
-    ) -> Tuple[bool, List[Dict[str, Any]]]:
+    ) -> tuple[bool, list[dict[str, Any]]]:
         singular_field = field.rstrip("s")
         names = entry.pop(field, [])
-        objects: List[Dict[str, Any]] = []
-        missing: List[str] = []
+        objects: list[dict[str, Any]] = []
+        missing: list[str] = []
         found = False
         for name in names:
             if id_ := self.lookups[singular_field].get(name):
@@ -156,7 +157,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 objects.append({"value": name, "info": ImportState.NEW})
                 missing.append(name)
                 if self.missing_field_values.get(field) is None:
-                    self.missing_field_values[field] = set([name])
+                    self.missing_field_values[field] = {name}
                 else:
                     self.missing_field_values[field].add(name)
             else:
@@ -172,10 +173,10 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         ]
         return (found, objects)
 
-    def create_lookup(self, instances: Iterable[Dict[str, Any]]) -> Dict[str, int]:
+    def create_lookup(self, instances: Iterable[dict[str, Any]]) -> dict[str, int]:
         return {instance["name"]: instance["id"] for instance in instances}
 
-    def setup_lookups(self, data: List[Dict[str, Any]]) -> None:
+    def setup_lookups(self, data: list[dict[str, Any]]) -> None:
         super().setup_lookups(data)
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", self.meeting_id),

@@ -1,6 +1,6 @@
 from math import ceil, floor
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
@@ -10,7 +10,7 @@ from tests.system.action.base import BaseActionTestCase
 class TestSpeakerUnpause(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.models: Dict[str, Dict[str, Any]] = {
+        self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {"is_active_in_organization_id": 1},
             "user/7": {"username": "test_username1"},
             "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},

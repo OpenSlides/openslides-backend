@@ -1,5 +1,5 @@
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.actions.speaker.delete import SpeakerDeleteAction
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
@@ -61,7 +61,7 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
                 else:
                     self.execute_other_action(SpeakerDeleteAction, [{"id": id}])
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         speaker = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),

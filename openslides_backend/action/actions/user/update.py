@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -61,7 +61,7 @@ class UserUpdate(
     )
     check_email_field = "email"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
@@ -109,7 +109,7 @@ class UserUpdate(
         check_gender_helper(self.datastore, instance)
         return instance
 
-    def get_removed_meeting_id(self, instance: Dict[str, Any]) -> Optional[int]:
+    def get_removed_meeting_id(self, instance: dict[str, Any]) -> int | None:
         if instance.get("group_ids") == []:
             return instance.get("meeting_id")
         return None

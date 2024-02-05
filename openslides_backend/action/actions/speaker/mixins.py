@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.action.actions.structure_level_list_of_speakers.create import (
     StructureLevelListOfSpeakersCreateAction,
@@ -16,9 +16,9 @@ from .speech_state import SpeechState
 class CheckSpeechState(Action):
     def check_speech_state(
         self,
-        speaker: Dict[str, Any],
-        instance: Dict[str, Any],
-        meeting_id: Optional[int] = None,
+        speaker: dict[str, Any],
+        instance: dict[str, Any],
+        meeting_id: int | None = None,
     ) -> None:
         # check speech_state
         if meeting_id is None:
@@ -86,7 +86,7 @@ class CheckSpeechState(Action):
 
 class StructureLevelMixin(Action):
     def handle_structure_level(
-        self, instance: Dict[str, Any], list_of_speakers_id: Optional[int] = None
+        self, instance: dict[str, Any], list_of_speakers_id: int | None = None
     ) -> None:
         if list_of_speakers_id is None:
             list_of_speakers_id = instance["list_of_speakers_id"]

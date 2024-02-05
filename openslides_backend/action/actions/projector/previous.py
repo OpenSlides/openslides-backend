@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from ....models.models import Projector
 from ....permissions.permissions import Permissions
@@ -85,7 +85,7 @@ class ProjectorPrevious(UpdateAction):
             instance["history_projection_ids"] = new_history_projection_ids
             yield instance
 
-    def is_stable(self, value: Dict[str, Any]) -> bool:
+    def is_stable(self, value: dict[str, Any]) -> bool:
         return bool(value.get("stable"))
 
     def get_min_projection_weight(self, meeting_id: int, projector_id: int) -> int:
@@ -99,7 +99,7 @@ class ProjectorPrevious(UpdateAction):
         return minimum
 
     def set_weight_to_projection(
-        self, projection_ids: List[int], meeting_id: int, projector_id: int
+        self, projection_ids: list[int], meeting_id: int, projector_id: int
     ) -> None:
         min_weight = self.get_min_projection_weight(meeting_id, projector_id)
         increment = 1
@@ -111,7 +111,7 @@ class ProjectorPrevious(UpdateAction):
             increment += 1
         self.execute_other_action(ProjectionUpdate, payload_set_weight)
 
-    def get_max_history_projection(self, projector: Dict[str, Any]) -> int:
+    def get_max_history_projection(self, projector: dict[str, Any]) -> int:
         gmr2 = GetManyRequest(
             "projection",
             projector["history_projection_ids"],

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Group
 from ....permissions.permission_helper import filter_surplus_permissions
@@ -23,7 +23,7 @@ class GroupCreate(GroupMixin, WeightMixin, CreateAction):
     )
     permission = Permissions.User.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if instance.get("permissions"):
             instance["permissions"] = filter_surplus_permissions(
                 instance["permissions"]

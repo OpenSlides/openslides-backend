@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, TypedDict
 
 from datastore.migrations import BaseModelMigration
 from datastore.writer.core import (
@@ -13,19 +13,19 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 class StructureLevelEntry(TypedDict):
     id: int
-    meeting_user_ids: List[int]
+    meeting_user_ids: list[int]
 
 
 class Migration(BaseModelMigration):
     target_migration_index = 50
 
-    def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
-        events: List[BaseRequestEvent] = []
+    def migrate_models(self) -> list[BaseRequestEvent] | None:
+        events: list[BaseRequestEvent] = []
         next_id = 1
         # map structure level names to ids per meeting
-        structure_levels: Dict[int, Dict[str, StructureLevelEntry]] = defaultdict(dict)
+        structure_levels: dict[int, dict[str, StructureLevelEntry]] = defaultdict(dict)
         # map user ids to structure level names and ids.
-        default_structure_levels: Dict[int, str] = {}
+        default_structure_levels: dict[int, str] = {}
         # remove default_structure_level
         users = self.reader.get_all("user")
         for id, user in users.items():
@@ -44,7 +44,7 @@ class Migration(BaseModelMigration):
             meeting_id = meeting_user["meeting_id"]
             user_id = meeting_user["user_id"]
             sl_meeting = structure_levels[meeting_id]
-            update: Dict[str, Any] = {}
+            update: dict[str, Any] = {}
             if name := meeting_user.get("structure_level"):
                 update["structure_level"] = None
             elif not (name := default_structure_levels.get(user_id)):
@@ -62,7 +62,7 @@ class Migration(BaseModelMigration):
             )
 
         # create structure levels
-        create_events: List[BaseRequestEvent] = []
+        create_events: list[BaseRequestEvent] = []
         if structure_levels:
             for meeting_id, mapping in structure_levels.items():
                 for name, entry in mapping.items():

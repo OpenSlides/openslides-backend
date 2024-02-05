@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
@@ -72,8 +72,8 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             }
         )
 
-    def request_executor(self, meeting_user4_update: Dict[str, Any]) -> Response:
-        request_data: Dict[str, Any] = {
+    def request_executor(self, meeting_user4_update: dict[str, Any]) -> Response:
+        request_data: dict[str, Any] = {
             "id": 14,
         }
         request_data.update(meeting_user4_update)

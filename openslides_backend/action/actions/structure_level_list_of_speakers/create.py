@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
@@ -24,7 +24,7 @@ class StructureLevelListOfSpeakersCreateAction(CreateActionWithInferredMeeting):
 
     relation_field_for_meeting = "list_of_speakers_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
 
         filter = And(

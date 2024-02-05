@@ -1,4 +1,3 @@
-from typing import Optional, Tuple
 from urllib import parse
 
 from authlib import (
@@ -26,7 +25,7 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
         self.auth_handler = AuthHandler(self.logger.debug)
         self.headers = {"Content-Type": "application/json"}
 
-    def authenticate(self) -> Tuple[int, Optional[str]]:
+    def authenticate(self) -> tuple[int, str | None]:
         """
         Fetches user id from authentication service using request headers.
         Returns a new access token, too, if one is received from auth service.

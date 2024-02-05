@@ -1,6 +1,5 @@
 from enum import Enum, auto
 from time import time
-from typing import Optional
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.actions.structure_level_list_of_speakers.update import (
@@ -25,7 +24,7 @@ class CountdownControl(UpdateAction):
         self,
         countdown_id: int,
         command: CountdownCommand,
-        default_time: Optional[int] = None,
+        default_time: int | None = None,
     ) -> None:
         countdown = self.datastore.get(
             fqid_from_collection_and_id("projector_countdown", countdown_id),
@@ -63,7 +62,7 @@ class CountdownControl(UpdateAction):
         self,
         meeting_id: int,
         command: CountdownCommand,
-        default_time: Optional[int] = None,
+        default_time: int | None = None,
     ) -> None:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),

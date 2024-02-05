@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
@@ -15,7 +15,7 @@ class MediafileMixin(Action):
     Overwrite update_instance(), check_permissions() and get_meeting_id().
     """
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         collection, id_ = self.get_owner_data(instance)
         self.check_parent_is_dir_and_owner(
             instance.get("parent_id"), str(instance.get("owner_id"))
@@ -51,7 +51,7 @@ class MediafileMixin(Action):
 
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         collection, _ = self.get_owner_data(instance)
 
         # handle organization permissions
@@ -69,19 +69,19 @@ class MediafileMixin(Action):
         assert collection == "meeting"
         super().check_permissions(instance)
 
-    def check_for_archived_meeting(self, instance: Dict[str, Any]) -> None:
+    def check_for_archived_meeting(self, instance: dict[str, Any]) -> None:
         collection, id_ = self.get_owner_data(instance)
         if collection != "meeting":
             return
         super().check_for_archived_meeting(instance)
 
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+    def get_meeting_id(self, instance: dict[str, Any]) -> int:
         collection, id_ = self.get_owner_data(instance)
         if collection == "meeting":
             return id_
         raise ActionException("Try to get a meeting id from a organization mediafile.")
 
-    def get_owner_data(self, instance: Dict[str, Any]) -> Tuple[str, int]:
+    def get_owner_data(self, instance: dict[str, Any]) -> tuple[str, int]:
         owner_id = instance.get("owner_id")
         if not owner_id:
             mediafile = self.datastore.get(
@@ -93,7 +93,7 @@ class MediafileMixin(Action):
         return collection, int(id_)
 
     def check_parent_is_dir_and_owner(
-        self, parent_id: Optional[int], owner_id: str
+        self, parent_id: int | None, owner_id: str
     ) -> None:
         if parent_id:
             parent = self.datastore.get(
@@ -107,9 +107,9 @@ class MediafileMixin(Action):
 
     def check_title_parent_unique(
         self,
-        title: Optional[str],
-        parent_id: Optional[int],
-        id_: Optional[int],
+        title: str | None,
+        parent_id: int | None,
+        id_: int | None,
         owner_id: str,
     ) -> None:
         if title:
@@ -137,7 +137,7 @@ class MediafileMixin(Action):
                     )
 
     def check_access_groups_and_owner(
-        self, access_group_ids: Optional[List[int]], meeting_id: int
+        self, access_group_ids: list[int] | None, meeting_id: int
     ) -> None:
         if access_group_ids:
             gm_request = GetManyRequest("group", access_group_ids, ["meeting_id"])
@@ -147,7 +147,7 @@ class MediafileMixin(Action):
                 if group.get("meeting_id") != meeting_id:
                     raise ActionException("Owner and access groups don't match.")
 
-    def check_token_unique(self, token: Optional[str], id_: Optional[int]) -> None:
+    def check_token_unique(self, token: str | None, id_: int | None) -> None:
         if token:
             filter_: Filter = And(
                 FilterOperator("token", "=", token),

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
@@ -36,7 +36,7 @@ class AgendaItemCreate(AgendaItemPermissionMixin, CreateActionWithInferredMeetin
 
     relation_field_for_meeting = "content_object_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         If parent_id is given, set weight to parent.weight + 1
         """

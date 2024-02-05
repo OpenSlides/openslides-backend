@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -11,7 +11,7 @@ from .test_participant_json_upload import ParticipantJsonUploadForUseInImport
 class ParticipantImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.import_preview1_data: Dict[str, Any] = {
+        self.import_preview1_data: dict[str, Any] = {
             "state": ImportState.DONE,
             "name": "participant",
             "result": {

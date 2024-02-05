@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from datastore.migrations import (
     BaseEvent,
     BaseEventMigration,
@@ -15,7 +13,7 @@ class Migration(BaseEventMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         old = (
             self.new_accessor.get_model(event.fqid)
             if self.new_accessor.model_exists(event.fqid)

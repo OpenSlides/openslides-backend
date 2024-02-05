@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
@@ -8,11 +9,11 @@ from ...util.typing import ActionData
 
 
 class SetPasswordMixin(Action):
-    def reset_password(self, instance: Dict[str, Any]) -> None:
+    def reset_password(self, instance: dict[str, Any]) -> None:
         instance["password"] = instance["default_password"]
         self.set_password(instance)
 
-    def set_password(self, instance: Dict[str, Any]) -> None:
+    def set_password(self, instance: dict[str, Any]) -> None:
         """
         Hashes the password given in the instance (which is assumed to be plain text) and sets it as
         the default password if `set_as_default` is True in the instance.

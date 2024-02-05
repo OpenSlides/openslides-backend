@@ -1,15 +1,13 @@
-from typing import List, TypedDict, Union
+from typing import TypedDict, Union
 
 from ..filters import Filter
 
-CollectionFieldLockWithFilter = TypedDict(
-    "CollectionFieldLockWithFilter",
-    {
-        "position": int,
-        "filter": Filter,
-    },
-    total=False,
-)
+
+class CollectionFieldLockWithFilter(TypedDict, total=False):
+    position: int
+    filter: Filter
+
+
 CollectionFieldLock = Union[
-    int, CollectionFieldLockWithFilter, List[CollectionFieldLockWithFilter]
+    int, CollectionFieldLockWithFilter, list[CollectionFieldLockWithFilter]
 ]

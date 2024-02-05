@@ -1,5 +1,5 @@
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 
@@ -21,7 +21,7 @@ class SpeakerPause(SingularActionMixin, CountdownControl, UpdateAction):
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         db_instance = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from datastore.migrations import (
     BaseEvent,
@@ -20,7 +20,7 @@ class Migration(BaseEventMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection, id = collection_and_id_from_fqid(event.fqid)
         if collection != "motion":
             return None
@@ -40,8 +40,8 @@ class Migration(BaseEventMigration):
                 )
                 return [event, meeting_update_event]
         elif isinstance(event, DeleteEvent):
-            new_events: List[BaseEvent] = [event]
-            model: Dict[str, Any] = self.new_accessor.get_model(event.fqid)
+            new_events: list[BaseEvent] = [event]
+            model: dict[str, Any] = self.new_accessor.get_model(event.fqid)
             if "origin_meeting_id" in model:
                 # remove again from reverse meeting field introduced in this migration
                 meeting_fqid = fqid_from_collection_and_id(
@@ -73,7 +73,7 @@ class Migration(BaseEventMigration):
             To fix the current migration deleted motions will be removed from the update event
             """
             if "all_derived_motion_ids" in event.data:
-                new_derived_motion_ids: List[int] = []
+                new_derived_motion_ids: list[int] = []
                 for motion_id in event.data["all_derived_motion_ids"]:
                     _, deleted = self.new_accessor.get_model_ignore_deleted(
                         fqid_from_collection_and_id("motion", motion_id)

@@ -1,5 +1,6 @@
 from abc import abstractmethod
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from fastjsonschema import JsonSchemaException
 
@@ -17,7 +18,7 @@ class BasePresenter(BaseServiceProvider):
     """
 
     data: Any
-    schema: Optional[Callable[[Any], None]] = None
+    schema: Callable[[Any], None] | None = None
     csrf_exempt: bool
 
     def __init__(

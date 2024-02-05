@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, Optional, Type
+from typing import Any
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.actions.speaker.end_speech import SpeakerEndSpeach
@@ -32,7 +32,7 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         db_instance = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
@@ -61,7 +61,7 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
         )
         if result:
             current_speaker = next(iter(result.values()))
-            action: Optional[Type[Action]] = None
+            action: type[Action] | None = None
             if db_instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
                 if current_speaker.get("pause_time") is None:
                     action = SpeakerPause
@@ -77,7 +77,7 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
         instance["begin_time"] = now
 
         # update countdowns, differentiate by speaker type
-        countdown_time: Optional[int] = None
+        countdown_time: int | None = None
         if db_instance.get("speech_state") == SpeechState.INTERVENTION:
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", db_instance["meeting_id"]),

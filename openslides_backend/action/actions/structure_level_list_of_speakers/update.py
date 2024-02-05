@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.permissions.permissions import Permissions
@@ -22,14 +22,14 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if not self.internal:
             for field in ("current_start_time", "spoken_time"):
                 if field in instance:
                     raise ActionException(field + " is not allowed to be set.")
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         db_instance = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["list_of_speakers_id", "meeting_id", "remaining_time", "initial_time"],

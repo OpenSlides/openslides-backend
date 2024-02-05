@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from tests.system.action.base import BaseActionTestCase
 
@@ -6,7 +6,7 @@ from tests.system.action.base import BaseActionTestCase
 class PersonalNoteDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "meeting/111": {
                 "personal_note_ids": [1],
                 "is_active_in_organization_id": 1,

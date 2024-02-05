@@ -1,6 +1,6 @@
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -62,10 +62,10 @@ class BaseActionTestCase(BaseSystemTestCase):
     def request(
         self,
         action: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         anonymous: bool = False,
-        lang: Optional[str] = None,
-        internal: Optional[bool] = None,
+        lang: str | None = None,
+        internal: bool | None = None,
     ) -> Response:
         return self.request_multi(
             action,
@@ -78,10 +78,10 @@ class BaseActionTestCase(BaseSystemTestCase):
     def request_multi(
         self,
         action: str,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         anonymous: bool = False,
-        lang: Optional[str] = None,
-        internal: Optional[bool] = None,
+        lang: str | None = None,
+        internal: bool | None = None,
     ) -> Response:
         ActionClass = actions_map.get(action)
         if internal is None:
@@ -109,7 +109,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         self,
         payload: Payload,
         anonymous: bool = False,
-        lang: Optional[str] = None,
+        lang: str | None = None,
         internal: bool = False,
         atomic: bool = True,
     ) -> Response:
@@ -137,8 +137,8 @@ class BaseActionTestCase(BaseSystemTestCase):
         return response
 
     def execute_action_internally(
-        self, action_name: str, data: Dict[str, Any], user_id: int = 0
-    ) -> Optional[ActionResults]:
+        self, action_name: str, data: dict[str, Any], user_id: int = 0
+    ) -> ActionResults | None:
         """
         Shorthand to execute an action internally where all permissions etc. are ignored.
         Useful when an action is just execute for the end result and not for testing it.
@@ -220,12 +220,12 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.set_models({f"meeting/{meeting_id}": {"enable_anonymous": enable}})
 
     def set_organization_management_level(
-        self, level: Optional[OrganizationManagementLevel], user_id: int = 1
+        self, level: OrganizationManagementLevel | None, user_id: int = 1
     ) -> None:
         self.update_model(f"user/{user_id}", {"organization_management_level": level})
 
     def set_committee_management_level(
-        self, committee_ids: List[int], user_id: int = 1
+        self, committee_ids: list[int], user_id: int = 1
     ) -> None:
         d1 = {
             "committee_ids": committee_ids,
@@ -235,28 +235,28 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.set_models({f"user/{user_id}": d1})
 
     def add_group_permissions(
-        self, group_id: int, permissions: List[Permission]
+        self, group_id: int, permissions: list[Permission]
     ) -> None:
         group = self.get_model(f"group/{group_id}")
         self.set_group_permissions(group_id, group.get("permissions", []) + permissions)
 
     def remove_group_permissions(
-        self, group_id: int, permissions: List[Permission]
+        self, group_id: int, permissions: list[Permission]
     ) -> None:
         group = self.get_model(f"group/{group_id}")
         new_perms = [p for p in group.get("permissions", []) if p not in permissions]
         self.set_group_permissions(group_id, new_perms)
 
     def set_group_permissions(
-        self, group_id: int, permissions: List[Permission]
+        self, group_id: int, permissions: list[Permission]
     ) -> None:
         self.update_model(f"group/{group_id}", {"permissions": permissions})
 
     def create_user(
         self,
         username: str,
-        group_ids: List[int] = [],
-        organization_management_level: Optional[OrganizationManagementLevel] = None,
+        group_ids: list[int] = [],
+        organization_management_level: OrganizationManagementLevel | None = None,
     ) -> int:
         """
         Create a user with the given username, groups and organization management level.
@@ -278,9 +278,9 @@ class BaseActionTestCase(BaseSystemTestCase):
     def _get_user_data(
         self,
         username: str,
-        partitioned_groups: Dict[int, List[Dict[str, Any]]] = {},
-        organization_management_level: Optional[OrganizationManagementLevel] = None,
-    ) -> Dict[str, Any]:
+        partitioned_groups: dict[int, list[dict[str, Any]]] = {},
+        organization_management_level: OrganizationManagementLevel | None = None,
+    ) -> dict[str, Any]:
         return {
             "username": username,
             "organization_management_level": organization_management_level,
@@ -316,7 +316,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         return user_id
 
     @with_database_context
-    def set_user_groups(self, user_id: int, group_ids: List[int]) -> None:
+    def set_user_groups(self, user_id: int, group_ids: list[int]) -> None:
         assert isinstance(group_ids, list)
         groups = self.datastore.get_many(
             [
@@ -328,7 +328,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             ],
             lock_result=False,
         )["group"]
-        meeting_ids: List[int] = list(set((v["meeting_id"] for v in groups.values())))
+        meeting_ids: list[int] = list({v["meeting_id"] for v in groups.values()})
         filtered_result = self.datastore.filter(
             "meeting_user",
             FilterOperator("user_id", "=", user_id),
@@ -405,7 +405,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
 
     @with_database_context
-    def _fetch_groups(self, group_ids: List[int]) -> Dict[int, List[Dict[str, Any]]]:
+    def _fetch_groups(self, group_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
         """
         Helper method to partition the groups by their meeting id.
         """
@@ -422,20 +422,20 @@ class BaseActionTestCase(BaseSystemTestCase):
             ],
             lock_result=False,
         )
-        partitioned_groups: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
+        partitioned_groups: dict[int, list[dict[str, Any]]] = defaultdict(list)
         for group in response.get("group", {}).values():
             partitioned_groups[group["meeting_id"]].append(group)
         return partitioned_groups
 
     def base_permission_test(
         self,
-        models: Dict[str, Dict[str, Any]],
+        models: dict[str, dict[str, Any]],
         action: str,
-        action_data: Dict[str, Any],
-        permission: Optional[
-            Union[Permission, List[Permission], OrganizationManagementLevel]
-        ] = None,
-        fail: Optional[bool] = None,
+        action_data: dict[str, Any],
+        permission: (
+            Permission | list[Permission] | OrganizationManagementLevel | None
+        ) = None,
+        fail: bool | None = None,
     ) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
@@ -464,7 +464,7 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     @with_database_context
     def assert_history_information(
-        self, fqid: FullQualifiedId, information: Optional[List[str]]
+        self, fqid: FullQualifiedId, information: list[str] | None
     ) -> None:
         """
         Asserts that the last history information for the given model is the given information.

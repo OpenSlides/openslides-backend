@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import fastjsonschema
 
@@ -33,7 +33,7 @@ class GetUserScope(UserScopeMixin, BasePresenter):
     schema = get_user_scope_schema
 
     def get_result(self) -> Any:
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         user_ids = self.data["user_ids"]
         for user_id in user_ids:
             scope, scope_id, user_oml = self.get_user_scope(user_id)

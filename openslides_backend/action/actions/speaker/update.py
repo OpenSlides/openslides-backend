@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.shared.exceptions import ActionException
 
@@ -23,7 +23,7 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
             raise ActionException(
                 "You cannot set the speech state to interposed_question."
@@ -61,7 +61,7 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
         self.check_speech_state(speaker, instance, meeting_id=speaker["meeting_id"])
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         speaker = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["meeting_user_id", "meeting_id"],

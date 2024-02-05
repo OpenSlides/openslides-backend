@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Type, cast
+from typing import cast
 
 from ..models.base import Model
 from ..permissions.permissions import Permission
@@ -14,27 +14,27 @@ class ActionSet:
     """
 
     model: Model
-    permission: Optional[Permission] = None
+    permission: Permission | None = None
 
-    create_schema: Dict
-    update_schema: Dict
-    delete_schema: Dict
+    create_schema: dict
+    update_schema: dict
+    delete_schema: dict
 
-    CreateActionClass: Type[Action] = CreateAction
-    UpdateActionClass: Type[Action] = UpdateAction
-    DeleteActionClass: Type[Action] = DeleteAction
+    CreateActionClass: type[Action] = CreateAction
+    UpdateActionClass: type[Action] = UpdateAction
+    DeleteActionClass: type[Action] = DeleteAction
 
-    actions: Dict[str, Type[Action]]
+    actions: dict[str, type[Action]]
 
     @classmethod
-    def get_actions(cls) -> Dict[str, Type[Action]]:
+    def get_actions(cls) -> dict[str, type[Action]]:
         if not hasattr(cls, "actions"):
             actions = {}
             for route in ("create", "update", "delete"):
                 schema = getattr(cls, route + "_schema")
                 base_class = getattr(cls, route.capitalize() + "ActionClass")
                 clazz = cast(
-                    Type[Action],
+                    type[Action],
                     type(
                         type(cls.model).__name__ + route.capitalize(),
                         (base_class,),
@@ -46,5 +46,5 @@ class ActionSet:
         return cls.actions
 
     @classmethod
-    def get_action(cls, route: str) -> Type[Action]:
+    def get_action(cls, route: str) -> type[Action]:
         return cls.get_actions()[route]

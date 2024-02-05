@@ -1,5 +1,6 @@
+from collections.abc import Callable, Iterable
 from functools import wraps
-from typing import Any, Callable, Dict, Iterable, Optional, cast
+from typing import Any, cast
 
 from datastore.shared.flask_frontend import handle_internal_errors
 from datastore.shared.postgresql_backend import DatabaseError
@@ -28,10 +29,10 @@ def handle_datastore_errors(func: Callable) -> Callable:
 
 
 def raise_datastore_error(
-    error: Optional[Dict[str, Any]],
+    error: dict[str, Any] | None,
     error_message_prefix: str = "",
-    logger: Optional[Logger] = None,
-    env: Optional[Env] = None,
+    logger: Logger | None = None,
+    env: Env | None = None,
 ) -> None:
     error_message = error_message_prefix
     type_verbose: str = ""

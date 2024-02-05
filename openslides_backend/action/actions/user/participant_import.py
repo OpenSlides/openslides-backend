@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, cast
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
@@ -15,23 +15,21 @@ from .set_present import UserSetPresentAction
 @register_action("participant.import")
 class ParticipantImport(BaseUserImport, ParticipantCommon):
     import_name = "participant"
-    lookups: Dict[str, Dict[int, str]] = {}
-    structure_level_to_create_list: List[str] = []
-    newly_found_structure_levels: Dict[int, Dict[str, Any]] = {}
+    lookups: dict[str, dict[int, str]] = {}
+    structure_level_to_create_list: list[str] = []
+    newly_found_structure_levels: dict[int, dict[str, Any]] = {}
 
     def prefetch(self, action_data: ActionData) -> None:
         super().prefetch(action_data)
         self.meeting_id = cast(int, self.result["meeting_id"])
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        structure_levels_to_create: Set[str] = set(
-            [
-                level["value"]
-                for row in self.rows
-                for level in row["data"].get("structure_level", [])
-                if level.get("info") == ImportState.NEW
-            ]
-        )
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        structure_levels_to_create: set[str] = {
+            level["value"]
+            for row in self.rows
+            for level in row["data"].get("structure_level", [])
+            if level.get("info") == ImportState.NEW
+        }
         if len(structure_levels_to_create):
             self.newly_found_structure_levels = self.datastore.filter(
                 "structure_level",
@@ -49,12 +47,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         instance = super().update_instance(instance)
         return instance
 
-    def handle_create_relations(self, instance: Dict[str, Any]) -> None:
+    def handle_create_relations(self, instance: dict[str, Any]) -> None:
         if self.import_state != ImportState.ERROR and (
             len(self.structure_level_to_create_list)
             or len(self.newly_found_structure_levels)
         ):
-            newly_found_levels_dict: Dict[str, int] = {
+            newly_found_levels_dict: dict[str, int] = {
                 model["name"]: id_
                 for id_, model in self.newly_found_structure_levels.items()
             }
@@ -171,9 +169,9 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
 
-    def create_other_actions(self, rows: List[ImportRow]) -> List[Optional[int]]:
-        set_present_payload: List[Dict[str, Any]] = []
-        indices_to_set_presence_and_id: List[Optional[Tuple[bool, Optional[int]]]] = []
+    def create_other_actions(self, rows: list[ImportRow]) -> list[int | None]:
+        set_present_payload: list[dict[str, Any]] = []
+        indices_to_set_presence_and_id: list[tuple[bool, int | None] | None] = []
         for row in rows:
             if (present := row["data"].get("is_present")) is not None:
                 indices_to_set_presence_and_id.append((present, row["data"].get("id")))
@@ -206,12 +204,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                     GetManyRequest(
                         singular_field,
                         list(
-                            set(
+                            {
                                 id
                                 for row in self.rows
                                 for instance in row["data"].get(field, [])
                                 if (id := instance.get("id"))
-                            )
+                            }
                         ),
                         ["name"],
                     )

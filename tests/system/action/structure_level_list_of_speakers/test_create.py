@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class StructureLevelListOfSpeakersCreateTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.models: Dict[str, Dict[str, Any]] = {
+        self.models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_default_structure_level_time": 600,
                 "is_active_in_organization_id": 1,

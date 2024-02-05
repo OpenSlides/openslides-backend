@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -62,8 +62,8 @@ class UserCreate(
     history_information = "Account created"
     own_history_information_first = True
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        self.meeting_id: Optional[int] = instance.get("meeting_id")
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.meeting_id: int | None = instance.get("meeting_id")
 
         if instance.get("is_active"):
             self.check_limit_of_user(1)
@@ -94,8 +94,8 @@ class UserCreate(
         return instance
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         result = {"id": instance["id"]}
         if self.meeting_id:
             meeting_user = get_meeting_user(

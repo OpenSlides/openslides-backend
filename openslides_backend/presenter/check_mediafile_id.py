@@ -1,5 +1,5 @@
 import mimetypes
-from typing import Any, Dict
+from typing import Any
 
 import fastjsonschema
 
@@ -84,7 +84,7 @@ class CheckMediafileId(BasePresenter):
         return {"ok": False}
 
     def check_permissions(
-        self, mediafile: Dict[str, Any], owner_collection: str, owner_id: int
+        self, mediafile: dict[str, Any], owner_collection: str, owner_id: int
     ) -> None:
         # Try to get the meeting id.
         if owner_collection == "organization":
@@ -145,7 +145,7 @@ class CheckMediafileId(BasePresenter):
                 return
         raise PermissionDenied("You are not allowed to see this mediafile.")
 
-    def check_can_see_meeting(self, meeting: Dict[str, Any]) -> bool:
+    def check_can_see_meeting(self, meeting: dict[str, Any]) -> bool:
         """needs meeting to include enable_anonymous, user_ids, committee_id."""
         if meeting.get("enable_anonymous"):
             return True

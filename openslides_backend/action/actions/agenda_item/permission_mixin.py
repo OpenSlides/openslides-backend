@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.action import Action
 from openslides_backend.permissions.permission_helper import has_perm
@@ -7,7 +7,7 @@ from openslides_backend.shared.exceptions import MissingPermission
 
 
 class AgendaItemPermissionMixin(Action):
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         fields = set(instance.keys())
         if "id" in fields:
             fields.remove("id")

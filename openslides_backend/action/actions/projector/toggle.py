@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
@@ -79,7 +79,7 @@ class ProjectorToggle(WeightMixin, UpdateAction):
                             meeting_id, projector_id, projection_ids
                         )
                 else:
-                    data: Dict[str, Any] = {
+                    data: dict[str, Any] = {
                         "current_projector_id": projector_id,
                         "stable": stable,
                         "type": instance.get("type"),
@@ -95,7 +95,7 @@ class ProjectorToggle(WeightMixin, UpdateAction):
                     self.execute_other_action(ProjectionCreate, [data])
 
     def move_projections_to_history(
-        self, meeting_id: int, projector_id: int, projection_ids: List[int]
+        self, meeting_id: int, projector_id: int, projection_ids: list[int]
     ) -> None:
         filter_ = And(
             FilterOperator("meeting_id", "=", meeting_id),

@@ -1,6 +1,6 @@
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Union, cast
+from typing import Any, cast
 
 import fastjsonschema
 
@@ -41,15 +41,15 @@ class Field:
 
     required: bool
     read_only: bool
-    default: Optional[str]
-    constraints: Dict[str, Any]
+    default: str | None
+    constraints: dict[str, Any]
 
     def __init__(
         self,
         required: bool = False,
         read_only: bool = False,
-        default: Optional[Any] = None,
-        constraints: Optional[Dict[str, Any]] = None,
+        default: Any | None = None,
+        constraints: dict[str, Any] | None = None,
     ) -> None:
         self.required = required
         self.read_only = read_only
@@ -72,7 +72,7 @@ class Field:
         schema.update(kwargs)
         return schema
 
-    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
+    def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
         """
         Overwrite in subclass to validate/sanitize the input.
         """
@@ -87,7 +87,7 @@ class Field:
             raise ActionException(f"Invalid data for {fqid}/{field_name}: " + e.message)
 
     def check_required_not_fulfilled(
-        self, instance: Dict[str, Any], is_create: bool
+        self, instance: dict[str, Any], is_create: bool
     ) -> bool:
         if self.own_field_name not in instance:
             return is_create
@@ -104,7 +104,7 @@ class IntegerField(Field):
         return self.extend_schema(super().get_schema(), type=["integer", "null"])
 
     def check_required_not_fulfilled(
-        self, instance: Dict[str, Any], is_create: bool
+        self, instance: dict[str, Any], is_create: bool
     ) -> bool:
         if self.own_field_name not in instance:
             return is_create
@@ -126,13 +126,13 @@ class BooleanField(Field):
         )
 
     def check_required_not_fulfilled(
-        self, instance: Dict[str, Any], is_create: bool
+        self, instance: dict[str, Any], is_create: bool
     ) -> bool:
         if self.own_field_name not in instance:
             return is_create
         return instance[self.own_field_name] is None
 
-    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
+    def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
         TRUE_VALUES = ("1", "true", "yes", "t", "y")
         FALSE_VALUES = ("0", "false", "no", "f", "n")
         if isinstance(value, bool):
@@ -176,14 +176,12 @@ class HTMLStrictField(TextField):
     Field for restricted HTML.
     """
 
-    def validate(
-        self, html: Optional[str], payload: Dict[str, Any] = {}
-    ) -> Optional[str]:
+    def validate(self, html: str | None, payload: dict[str, Any] = {}) -> str | None:
         if html is not None:
             return validate_html(html, self.get_allowed_tags())
         return None
 
-    def get_allowed_tags(self) -> Set[str]:
+    def get_allowed_tags(self) -> set[str]:
         return ALLOWED_HTML_TAGS_STRICT
 
 
@@ -192,7 +190,7 @@ class HTMLPermissiveField(HTMLStrictField):
     HTML field which can also contain video tags.
     """
 
-    def get_allowed_tags(self) -> Set[str]:
+    def get_allowed_tags(self) -> set[str]:
         return ALLOWED_HTML_TAGS_PERMISSIVE
 
 
@@ -203,7 +201,7 @@ class FloatField(Field):
         return self.extend_schema(super().get_schema(), type=["number", "null"])
 
     def check_required_not_fulfilled(
-        self, instance: Dict[str, Any], is_create: bool
+        self, instance: dict[str, Any], is_create: bool
     ) -> bool:
         if self.own_field_name not in instance:
             return is_create
@@ -225,7 +223,7 @@ class DecimalField(Field):
         schema.pop("minimum", None)
         return schema
 
-    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
+    def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
             if (min := self.constraints.get("minimum")) is not None:
                 if isinstance(value, str):
@@ -255,9 +253,7 @@ class ArrayField(Field):
     Used for arbitrary arrays.
     """
 
-    def __init__(
-        self, in_array_constraints: Optional[Dict] = None, **kwargs: Any
-    ) -> None:
+    def __init__(self, in_array_constraints: dict | None = None, **kwargs: Any) -> None:
         self.in_array_constraints = in_array_constraints
         super().__init__(**kwargs)
 
@@ -288,9 +284,9 @@ class BaseRelationField(Field):
 
     def __init__(
         self,
-        to: Dict[Collection, str],
+        to: dict[Collection, str],
         on_delete: OnDelete = OnDelete.SET_NULL,
-        equal_fields: Union[str, List[str]] = [],
+        equal_fields: str | list[str] = [],
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -351,7 +347,7 @@ class GenericRelationField(BaseGenericRelationField):
             schema = optional_fqid_schema
         return self.extend_schema(super().get_schema(), **schema)
 
-    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
+    def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
         assert not isinstance(value, list)
         return value
 
@@ -362,7 +358,7 @@ class GenericRelationListField(BaseGenericRelationField):
     def get_schema(self) -> Schema:
         return self.extend_schema(super().get_schema(), **fqid_list_schema)
 
-    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
+    def validate(self, value: Any, payload: dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
             assert isinstance(value, list), "assert list-failure"
             return [cast(FullQualifiedId, fqid) for fqid in value]

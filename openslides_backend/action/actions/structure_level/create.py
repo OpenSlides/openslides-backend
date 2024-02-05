@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.mixins.check_unique_name_mixin import (
@@ -20,7 +20,7 @@ class StructureLevelCreateAction(CheckUniqueInContextMixin, CreateAction):
     )
     permission = Permissions.User.CAN_MANAGE
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         self.check_unique_in_context(
             "name",

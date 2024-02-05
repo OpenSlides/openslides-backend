@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 import roman
 
@@ -24,7 +25,7 @@ class TreeElement:
         self.children = children
 
 
-SerializedAgendaItem = Dict[str, Any]
+SerializedAgendaItem = dict[str, Any]
 
 
 class AgendaTree:
@@ -40,8 +41,8 @@ class AgendaTree:
         )
 
     def get_root_and_children(
-        self, only_item_type: Optional[str] = None
-    ) -> Tuple[Iterable[SerializedAgendaItem], Dict[int, List[SerializedAgendaItem]]]:
+        self, only_item_type: str | None = None
+    ) -> tuple[Iterable[SerializedAgendaItem], dict[int, list[SerializedAgendaItem]]]:
         """
         Returns an iterable with all root items and a dictonary where the key is an
         item id and the value is a list with all children of the item.
@@ -49,7 +50,7 @@ class AgendaTree:
         If only_item_type is given, the tree hides items with other types and
         all of their children.
         """
-        item_children: Dict[int, List[SerializedAgendaItem]] = defaultdict(list)
+        item_children: dict[int, list[SerializedAgendaItem]] = defaultdict(list)
         root_items = []
         for item in self.ordered_agenda_items:
             item_type = item.get("type", self.DEFAULT_AGENDA_ITEM_TYPE)
@@ -61,7 +62,7 @@ class AgendaTree:
                 root_items.append(item)
         return root_items, item_children
 
-    def get_tree(self, only_item_type: Optional[str] = None) -> Iterable[TreeElement]:
+    def get_tree(self, only_item_type: str | None = None) -> Iterable[TreeElement]:
         """
         Generator that yields dictonaries. Each dictonary has two keys, id
         and children, where id is the id of one agenda item and children is a
@@ -121,18 +122,16 @@ class AgendaTree:
     def number_all(
         self,
         numeral_system: str = "arabic",
-        agenda_number_prefix: Optional[str] = None,
-    ) -> Dict[int, str]:
+        agenda_number_prefix: str | None = None,
+    ) -> dict[int, str]:
         """
         Auto numbering of the agenda according to the numeral_system. Manually
         added item numbers will be overwritten.
         """
-        new_numbers: Dict[int, str] = {}
+        new_numbers: dict[int, str] = {}
 
         # Start numbering visable agenda items.
-        def walk_tree(
-            tree: Iterable[TreeElement], number: Optional[str] = None
-        ) -> None:
+        def walk_tree(tree: Iterable[TreeElement], number: str | None = None) -> None:
             for index, tree_element in enumerate(tree):
                 # Calculate number of visable agenda items.
                 if numeral_system == "roman" and number is None:

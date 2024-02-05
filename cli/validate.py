@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import simplejson as json
 import yaml
@@ -61,7 +61,7 @@ class Checker:
     def __init__(self, filepath: str) -> None:
         with open(filepath, "rb") as x:
             self.models = yaml.safe_load(x.read())
-        self.errors: List[str] = []
+        self.errors: list[str] = []
 
     def run_check(self) -> None:
         self._run_checks()
@@ -110,13 +110,13 @@ class Checker:
         self,
         collection: str,
         field_name: str,
-        field: Union[str, Dict[str, Any]],
+        field: str | dict[str, Any],
         nested: bool = False,
     ) -> None:
         collectionfield = f"{collection}{KEYSEPARATOR}{field_name}"
 
         if isinstance(field, str):
-            field = cast(Dict[str, Any], {"type": field})
+            field = cast(dict[str, Any], {"type": field})
 
         if nested:
             field["restriction_mode"] = (
@@ -159,7 +159,7 @@ class Checker:
         if type == "JSON" and "default" in field:
             try:
                 json.loads(json.dumps(field["default"]))
-            except:  # NOQA
+            except:  # noqa
                 self.errors.append(
                     f"Default value for {collectionfield}' is not valid json."
                 )
@@ -255,8 +255,8 @@ class Checker:
             raise NotImplementedError(type_str)
 
     def check_relation(
-        self, collection: str, field_name: str, field: Dict[str, Any]
-    ) -> Optional[str]:
+        self, collection: str, field_name: str, field: dict[str, Any]
+    ) -> str | None:
         collectionfield = f"{collection}{KEYSEPARATOR}{field_name}"
         to = field["to"]
 
@@ -291,7 +291,7 @@ class Checker:
 
     def check_reverse(
         self, from_collectionfield: str, to_collectionfield: str
-    ) -> Optional[str]:
+    ) -> str | None:
         to_unified = []  # a list of target collectionfields (unififed with all
         # the different possibilities for the 'to' field) from the (expected)
         # relation in to_collectionfield. The from_collectionfield must be in this
@@ -320,7 +320,7 @@ class Checker:
             return f"{from_collectionfield} points to {to_collectionfield}, but {to_collectionfield} does not point back."
         return None
 
-    def split_collectionfield(self, collectionfield: str) -> Tuple[str, str]:
+    def split_collectionfield(self, collectionfield: str) -> tuple[str, str]:
         parts = collectionfield.split(KEYSEPARATOR)
         return parts[0], parts[1]
 
