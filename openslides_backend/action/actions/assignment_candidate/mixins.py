@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
@@ -8,7 +8,7 @@ from ...action import Action
 
 
 class PermissionMixin(Action):
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         if "meeting_user_id" in instance:
             meeting_user_id = instance["meeting_user_id"]
             assignment_id = instance["assignment_id"]

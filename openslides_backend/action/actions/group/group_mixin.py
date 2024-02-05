@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.check_unique_name_mixin import (
     CheckUniqueInContextMixin,
@@ -10,7 +10,7 @@ from ...action import Action
 
 
 class GroupMixin(CheckUniqueInContextMixin, Action):
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if instance.get("external_id"):
             self.check_unique_in_context(
@@ -22,7 +22,7 @@ class GroupMixin(CheckUniqueInContextMixin, Action):
                 self.get_meeting_id(instance),
             )
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
         # external id is only allowed for admins
         if "external_id" in instance and not is_admin(

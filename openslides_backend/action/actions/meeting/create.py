@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any
 
 from openslides_backend.models.models import Meeting
 
@@ -67,11 +67,11 @@ class MeetingCreate(
         "users_email_body",
     ]
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         Translator.set_translation_language(instance["language"])
         return super().base_update_instance(instance)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         # handle set_as_template
         if instance.pop("set_as_template", None):
@@ -204,8 +204,8 @@ class MeetingCreate(
         return instance
 
     def get_dependent_action_data(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> List[Dict[str, Any]]:
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
+    ) -> list[dict[str, Any]]:
         if CreateActionClass == MotionWorkflowCreateSimpleWorkflowAction:
             return [
                 {
@@ -237,7 +237,7 @@ class MeetingCreate(
             ]
         return []
 
-    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def set_defaults(self, instance: dict[str, Any]) -> dict[str, Any]:
         for field in self.model.get_fields():
             if (
                 field.own_field_name not in instance.keys()

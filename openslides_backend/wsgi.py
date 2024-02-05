@@ -1,5 +1,3 @@
-from typing import Type
-
 from dependency_injector import containers, providers
 
 from .http.application import OpenSlidesBackendWSGIApplication
@@ -60,7 +58,7 @@ def create_wsgi_application(
     Injects environment, view class and dependencies.
     """
     # Get view class
-    view: Type[View]
+    view: type[View]
     if view_name == "ActionView":
         view = ActionView
     elif view_name == "PresenterView":

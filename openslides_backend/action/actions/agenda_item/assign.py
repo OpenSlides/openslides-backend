@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -63,7 +61,7 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
         )
 
     def prepare_assign_data(
-        self, parent_id: Optional[int], ids: List[int], meeting_id: int
+        self, parent_id: int | None, ids: list[int], meeting_id: int
     ) -> ActionData:
         filter = FilterOperator("meeting_id", "=", meeting_id)
         db_instances = self.datastore.filter(

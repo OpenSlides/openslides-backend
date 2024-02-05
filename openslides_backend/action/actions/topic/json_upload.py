@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from ....models.models import Topic
 from ....permissions.permissions import Permissions
@@ -60,7 +60,7 @@ class TopicJsonUpload(BaseJsonUploadAction):
     row_state: ImportState
     topic_lookup: Lookup
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         data = instance.pop("data")
 
         # enrich data with meeting_id
@@ -74,7 +74,7 @@ class TopicJsonUpload(BaseJsonUploadAction):
         self.generate_statistics()
         return {}
 
-    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         state, messages = None, []
         check_result = self.topic_lookup.check_duplicate(title := entry["title"])
         id_ = self.topic_lookup.get_field_by_name(title, "id")
@@ -96,7 +96,7 @@ class TopicJsonUpload(BaseJsonUploadAction):
             entry["title"] = {"value": title, "info": ImportState.ERROR}
         return {"state": state, "messages": messages, "data": entry}
 
-    def setup_lookups(self, data: List[Dict[str, Any]], meeting_id: int) -> None:
+    def setup_lookups(self, data: list[dict[str, Any]], meeting_id: int) -> None:
         self.topic_lookup = Lookup(
             self.datastore,
             "topic",

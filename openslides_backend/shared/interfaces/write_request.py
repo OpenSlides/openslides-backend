@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -13,10 +12,10 @@ class WriteRequest:
     Write request element that can be sent to the datastore.
     """
 
-    events: List[Event]
-    information: Optional[HistoryInformation] = None
-    user_id: Optional[int] = None
-    locked_fields: Dict[str, CollectionFieldLock] = field(default_factory=dict)
+    events: list[Event]
+    information: HistoryInformation | None = None
+    user_id: int | None = None
+    locked_fields: dict[str, CollectionFieldLock] = field(default_factory=dict)
 
 
 @dataclass
@@ -25,4 +24,4 @@ class WriteRequestWithMigrationIndex(WriteRequest):
     Write request element with a migration index.
     """
 
-    migration_index: Optional[int] = None
+    migration_index: int | None = None

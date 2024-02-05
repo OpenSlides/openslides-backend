@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.import_mixins import BaseImportAction, ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -231,8 +231,8 @@ class AccountJsonImport(BaseActionTestCase):
         )
 
     def get_import_preview_data(
-        self, number: int, row_state: ImportState, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, number: int, row_state: ImportState, data: dict[str, Any]
+    ) -> dict[str, Any]:
         def get_import_state() -> ImportState:
             """Precondition: There is only 1 row(_state)"""
             if row_state == ImportState.ERROR:

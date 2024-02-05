@@ -5,7 +5,7 @@ import subprocess
 from collections import ChainMap
 from io import StringIO, TextIOBase
 from textwrap import dedent
-from typing import Any, Dict, List, Optional, Type, Union, cast
+from typing import Any, Optional, cast
 
 import requests
 import yaml
@@ -58,7 +58,7 @@ RELATION_FIELD_CLASSES = {
     "generic-relation-list": "GenericRelationListField",
 }
 
-MODEL_MIXINS: Dict[str, Type] = {
+MODEL_MIXINS: dict[str, type] = {
     "agenda_item": AgendaItemModelMixin,
     "meeting": MeetingModelMixin,
     "poll": PollModelMixin,
@@ -73,7 +73,7 @@ FILE_TEMPLATE = dedent(
     """
 )
 
-MODELS: Dict[str, Dict[str, Any]] = {}
+MODELS: dict[str, dict[str, Any]] = {}
 
 
 def main() -> None:
@@ -111,8 +111,8 @@ def main() -> None:
         models_yml = requests.get(file).content
 
     # Fix broken keys
-    models_yml = models_yml.replace(" yes:".encode(), ' "yes":'.encode())
-    models_yml = models_yml.replace(" no:".encode(), ' "no":'.encode())
+    models_yml = models_yml.replace(b" yes:", b' "yes":')
+    models_yml = models_yml.replace(b" no:", b' "no":')
 
     # open output stream
     dest: TextIOBase
@@ -145,14 +145,14 @@ def main() -> None:
                 cwd=ROOT,
             )
             result.check_returncode()
-            with open(DESTINATION, "r") as f:
+            with open(DESTINATION) as f:
                 assert f.read() == result.stdout
             print("Models file up-to-date.")
         else:
             print(f"Models file {DESTINATION} successfully created.")
 
 
-def get_model_field(collection: str, field_name: str) -> Union[str, Dict]:
+def get_model_field(collection: str, field_name: str) -> str | dict:
     """
     Helper function the get a specific model field. Used to create generic relations.
     """
@@ -178,7 +178,7 @@ class Node:
 
 class Model(Node):
     collection: str
-    attributes: Dict[str, "Attribute"]
+    attributes: dict[str, "Attribute"]
 
     MODEL_TEMPLATE = string.Template(
         dedent(
@@ -190,7 +190,7 @@ class Model(Node):
         )
     )
 
-    def __init__(self, collection: str, fields: Dict[str, Dict[str, Any]]) -> None:
+    def __init__(self, collection: str, fields: dict[str, dict[str, Any]]) -> None:
         self.collection = collection
         assert collection
         self.attributes = {}
@@ -201,7 +201,7 @@ class Model(Node):
 
     def get_code(self) -> str:
         verbose_name = " ".join(self.collection.split("_"))
-        base_classes: List[Type] = [BaseModel]
+        base_classes: list[type] = [BaseModel]
         if self.collection in MODEL_MIXINS:
             base_classes.append(MODEL_MIXINS[self.collection])
         code = (
@@ -230,15 +230,15 @@ class Attribute(Node):
     required: bool = False
     read_only: bool = False
     default: Any = None
-    on_delete: Optional[OnDelete] = None
-    equal_fields: Optional[Union[str, List[str]]] = None
-    contraints: Dict[str, Any]
+    on_delete: OnDelete | None = None
+    equal_fields: str | list[str] | None = None
+    contraints: dict[str, Any]
 
     FIELD_TEMPLATE = string.Template(
         "    ${field_name} = fields.${field_class}(${properties})\n"
     )
 
-    def __init__(self, value: Union[str, Dict]) -> None:
+    def __init__(self, value: str | dict) -> None:
         self.FIELD_CLASSES = {
             **COMMON_FIELD_CLASSES,
             **RELATION_FIELD_CLASSES,
@@ -309,9 +309,9 @@ class Attribute(Node):
 
 
 class To(Node):
-    to: Dict[Collection, str]  # collection <-> field_name
+    to: dict[Collection, str]  # collection <-> field_name
 
-    def __init__(self, value: Union[str, Dict]) -> None:
+    def __init__(self, value: str | dict) -> None:
         if isinstance(value, str):
             self.to = self.parse_collectionfield(value)
         elif isinstance(value, list):
@@ -322,7 +322,7 @@ class To(Node):
             assert isinstance(collections, list)
             self.to = {c: value["field"] for c in collections}
 
-    def parse_collectionfield(self, collectionfield: str) -> Dict[Collection, str]:
+    def parse_collectionfield(self, collectionfield: str) -> dict[Collection, str]:
         """
         Parses the given collectionfield into its parts and returns a dict consisting of a single
         respective entry.

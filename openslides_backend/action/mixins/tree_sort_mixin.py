@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set
+from typing import Any
 
 import fastjsonschema
 
@@ -18,7 +18,7 @@ class TreeSortMixin(Action):
 
     def sort_tree(
         self,
-        nodes: List,
+        nodes: list,
         meeting_id: int,
         weight_key: str,
         parent_id_key: str,
@@ -44,7 +44,7 @@ class TreeSortMixin(Action):
         all_model_ids = set(db_instances.keys())
 
         # Setup initial node using a fake root node.
-        fake_root: Dict[str, Any] = {"id": None, "children": []}
+        fake_root: dict[str, Any] = {"id": None, "children": []}
         fake_root["children"].extend(nodes)  # This will prevent mutating the nodes.
 
         # The stack where all nodes to check are saved. Invariant: Each node
@@ -53,8 +53,8 @@ class TreeSortMixin(Action):
         nodes_to_check = [fake_root]
 
         # Traverse and check if every id is given, valid and there are no duplicate ids.
-        ids_found: Set[int] = set()  # Set to save all found ids.
-        nodes_to_update: Dict[int, Dict[str, Any]] = {}  # Result data.
+        ids_found: set[int] = set()  # Set to save all found ids.
+        nodes_to_update: dict[int, dict[str, Any]] = {}  # Result data.
 
         # Now walk through the tree.
         while len(nodes_to_check) > 0:
@@ -103,13 +103,13 @@ class TreeSortMixin(Action):
         yield from nodes_to_update.values()
 
     def set_level_main(
-        self, nodes_to_update: Dict[int, Dict[str, Any]], parent_id_key: str
+        self, nodes_to_update: dict[int, dict[str, Any]], parent_id_key: str
     ) -> None:
         for id_ in nodes_to_update:
             self.set_level_helper(id_, nodes_to_update, parent_id_key)
 
     def set_level_helper(
-        self, id_: int, nodes_to_update: Dict[int, Dict[str, Any]], parent_id_key: str
+        self, id_: int, nodes_to_update: dict[int, dict[str, Any]], parent_id_key: str
     ) -> None:
         if nodes_to_update[id_][parent_id_key] is None:
             nodes_to_update[id_]["level"] = 0

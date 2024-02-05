@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.check_unique_name_mixin import (
     CheckUniqueInContextMixin,
@@ -182,7 +182,7 @@ class MeetingUpdate(
     )
     check_email_field = "users_email_replyto"
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if instance.get("external_id"):
             self.check_unique_in_context(
@@ -194,7 +194,7 @@ class MeetingUpdate(
                 self.get_committee_id(instance["id"]),
             )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # handle set_as_template
         set_as_template = instance.pop("set_as_template", None)
         if set_as_template is True:
@@ -252,7 +252,7 @@ class MeetingUpdate(
         instance = super().update_instance(instance)
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         # group A check
         if any([field in instance for field in meeting_settings_keys]) and not has_perm(
             self.datastore,

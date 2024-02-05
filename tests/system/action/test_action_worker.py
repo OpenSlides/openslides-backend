@@ -1,7 +1,7 @@
 from datetime import datetime
 from threading import Lock, Thread
 from time import sleep
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import pytest
 
@@ -113,7 +113,7 @@ class ActionWorkerTest(BaseActionTestCase):
         """action thread used, ended after timeout"""
         self.set_thread_watch_timeout(0)
         count_motions: int = 2
-        data: List[Dict[str, Any]] = [
+        data: list[dict[str, Any]] = [
             {
                 "title": f"test_title {i+1}",
                 "meeting_id": 222,
@@ -178,9 +178,9 @@ class ActionWorkerTest(BaseActionTestCase):
     @pytest.mark.skip("Just for manual stress and thread tests")
     def test_action_worker_permanent_stress(self) -> None:
         self.lock = Lock()
-        self.result_list: List[Tuple] = []
+        self.result_list: list[tuple] = []
         self.number = 201
-        self.collection_types: Dict[str, Dict[str, str]] = {
+        self.collection_types: dict[str, dict[str, str]] = {
             "motion_block": {},
             "topic": {},
             "assignment": {},

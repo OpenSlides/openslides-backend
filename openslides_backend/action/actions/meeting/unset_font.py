@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Meeting
 from ....permissions.permissions import Permissions
@@ -22,7 +22,7 @@ class MeetingUnsetFontAction(UpdateAction, GetMeetingIdFromIdMixin):
     )
     permission = Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         place = instance.pop("place")
         instance[f"font_{place}_id"] = None
         return instance
