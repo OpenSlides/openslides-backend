@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
@@ -15,7 +15,7 @@ from .password_mixins import ClearSessionsMixin
 class UserResetPasswordToDefaultMixin(
     UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin
 ):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Gets the default_password and reset password.
         """
@@ -47,5 +47,5 @@ class UserResetPasswordToDefaultAction(
     schema = DefaultSchema(User()).get_update_schema()
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance["id"])

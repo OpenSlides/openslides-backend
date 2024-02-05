@@ -113,11 +113,11 @@ jobs:
 
     - name: Check black
       if: always()
-      run: black --check --diff openslides_backend/ tests/ cli/
+      run: make check-black
 
     - name: Check isort
       if: always()
-      run: isort --check-only --diff openslides_backend/ tests/ cli/
+      run: make check-isort
 
     - name: Check flake8
       if: always()
@@ -126,6 +126,10 @@ jobs:
     - name: Check mypy
       if: always()
       run: make mypy
+
+    - name: Check pyupgrade
+      if: always()
+      run: make pyupgrade
 
   check-models-all:
     name: Check from models.yml up to permissions and jsons

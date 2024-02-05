@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -19,7 +19,7 @@ class MotionResetRecommendationAction(UpdateAction):
     permission = Permissions.Motion.CAN_MANAGE_METADATA
     history_information = "Recommendation reset"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Set recommendation to None.
         """

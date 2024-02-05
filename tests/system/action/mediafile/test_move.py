@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
@@ -9,7 +9,7 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileMoveActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "mediafile/7": {"owner_id": "meeting/1", "is_directory": True},
             "mediafile/8": {"owner_id": "meeting/1", "is_directory": True},
         }

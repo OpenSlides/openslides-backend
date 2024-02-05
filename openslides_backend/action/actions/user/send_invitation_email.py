@@ -10,7 +10,7 @@ from smtplib import (
 )
 from ssl import SSLCertVerificationError
 from time import time
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 from fastjsonschema import JsonSchemaException
 
@@ -55,10 +55,10 @@ class UserSendInvitationMail(UpdateAction):
 
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
-    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
+    ) -> tuple[WriteRequest | None, ActionResults | None]:
         self.user_id = user_id
         self.index = 0
-        global_result: Dict[str, Any] = {"sent": False}
+        global_result: dict[str, Any] = {"sent": False}
 
         if not EmailUtils.check_email(EmailSettings.default_from_email):
             global_result["message"] = (
@@ -143,7 +143,7 @@ class UserSendInvitationMail(UpdateAction):
         write_request = self.build_write_request()
         return (write_request, self.results)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         user_id = instance["id"]
         meeting_id = instance.get("meeting_id")
 
@@ -180,7 +180,7 @@ class UserSendInvitationMail(UpdateAction):
             return instance
 
         mail_data = self.get_data_from_meeting_or_organization(meeting_id)
-        from_email: Union[str, Address]
+        from_email: str | Address
         if users_email_sender := mail_data.get("users_email_sender", "").strip():
             if any(
                 x in users_email_sender for x in EmailUtils.SENDER_NAME_FORBIDDEN_CHARS
@@ -239,8 +239,8 @@ class UserSendInvitationMail(UpdateAction):
         return super().update_instance(instance)
 
     def get_data_from_meeting_or_organization(
-        self, meeting_id: Optional[int]
-    ) -> Dict[str, Any]:
+        self, meeting_id: int | None
+    ) -> dict[str, Any]:
         fields = [
             "name",
             "users_email_sender",
@@ -270,7 +270,7 @@ class UserSendInvitationMail(UpdateAction):
             res["url"] = organization.get("url", "")
         return res
 
-    def get_verbose_username(self, instance: Dict[str, Any]) -> str:
+    def get_verbose_username(self, instance: dict[str, Any]) -> str:
         first_name = instance.get("first_name", "").strip()
         last_name = instance.get("last_name", "").strip()
 
@@ -283,17 +283,17 @@ class UserSendInvitationMail(UpdateAction):
             name = " ".join([title, name])
         return name
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         type(self).schema_validator(instance)
 
-    def get_initial_result_false(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def get_initial_result_false(self, instance: dict[str, Any]) -> dict[str, Any]:
         return {
             "sent": False,
             "recipient_user_id": instance.get("id"),
             "recipient_meeting_id": instance.get("meeting_id"),
         }
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         if instance.get("meeting_id") and has_perm(
             self.datastore,
             self.user_id,

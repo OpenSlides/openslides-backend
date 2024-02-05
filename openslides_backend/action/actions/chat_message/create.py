@@ -1,5 +1,5 @@
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import ChatMessage
 from ....permissions.permission_helper import has_perm
@@ -26,7 +26,7 @@ class ChatMessageCreate(MeetingUserHelperMixin, CreateActionWithInferredMeeting)
     )
     relation_field_for_meeting = "chat_group_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         instance["meeting_user_id"] = self.create_or_get_meeting_user(
             instance["meeting_id"], self.user_id
@@ -34,7 +34,7 @@ class ChatMessageCreate(MeetingUserHelperMixin, CreateActionWithInferredMeeting)
         instance["created"] = round(time())
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         chat_group = self.datastore.get(
             fqid_from_collection_and_id("chat_group", instance["chat_group_id"]),
             ["meeting_id", "write_group_ids"],

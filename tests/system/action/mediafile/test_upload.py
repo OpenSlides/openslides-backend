@@ -286,7 +286,9 @@ l,m,n,"""
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
         )
         filename = "test.json"
-        raw_content = "plain text, but file with json extension. We got with big json files".encode()
+        raw_content = (
+            b"plain text, but file with json extension. We got with big json files"
+        )
         json_content = base64.b64encode(raw_content).decode()
         response = self.request(
             "mediafile.upload",

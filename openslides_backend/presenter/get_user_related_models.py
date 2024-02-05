@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import fastjsonschema
 
@@ -35,7 +35,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
     schema = get_user_related_models_schema
 
     def get_result(self) -> Any:
-        result: Dict[int, Any] = {}
+        result: dict[int, Any] = {}
         gmr = GetManyRequest(
             "user",
             self.data["user_ids"],
@@ -59,7 +59,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
                 result[user_id]["meetings"] = meetings_data
         return result
 
-    def get_committees_data(self, user: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_committees_data(self, user: dict[str, Any]) -> list[dict[str, Any]]:
         if not user.get("committee_ids"):
             return []
 
@@ -88,7 +88,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             )
         return committees_data
 
-    def get_meetings_data(self, user: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_meetings_data(self, user: dict[str, Any]) -> list[dict[str, Any]]:
         if not user.get("meeting_user_ids"):
             return []
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.migrations import (
@@ -134,7 +134,7 @@ class OrganizationInitialImport(BaseActionTestCase):
     def test_initial_import_empty_data(self) -> None:
         """when there is no data given, use initial_data.json for initial import"""
         self.datastore.truncate_db()
-        request_data: Dict[str, Any] = {"data": {}}
+        request_data: dict[str, Any] = {"data": {}}
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
         initial_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}

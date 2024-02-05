@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openslides_backend.services.datastore.interface import DatastoreService
 
@@ -13,8 +13,8 @@ def get_meeting_user_filter(meeting_id: int, user_id: int) -> Filter:
 
 
 def get_meeting_user(
-    datastore: DatastoreService, meeting_id: int, user_id: int, fields: List[str]
-) -> Optional[Dict[str, Any]]:
+    datastore: DatastoreService, meeting_id: int, user_id: int, fields: list[str]
+) -> dict[str, Any] | None:
     result = datastore.filter(
         "meeting_user",
         get_meeting_user_filter(meeting_id, user_id),
@@ -28,7 +28,7 @@ def get_meeting_user(
 
 def get_groups_from_meeting_user(
     datastore: DatastoreService, meeting_id: int, user_id: int
-) -> List[int]:
+) -> list[int]:
     meeting_user = get_meeting_user(datastore, meeting_id, user_id, ["group_ids"])
     if not meeting_user:
         return []

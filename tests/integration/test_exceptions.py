@@ -1,5 +1,4 @@
 import os
-from typing import Type
 from unittest import TestCase
 from unittest.mock import MagicMock
 
@@ -12,7 +11,7 @@ from openslides_backend.wsgi import OpenSlidesBackendWSGI
 from ..util import Client
 
 
-def create_test_application(view: Type[View]) -> WSGIApplication:
+def create_test_application(view: type[View]) -> WSGIApplication:
     application_factory = OpenSlidesBackendWSGI(
         env=Environment(os.environ),
         logging=MagicMock(),

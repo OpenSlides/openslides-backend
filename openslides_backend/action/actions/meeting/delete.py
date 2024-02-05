@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Meeting
 from ....shared.patterns import fqid_from_collection_and_id
@@ -18,7 +18,7 @@ class MeetingDelete(DeleteAction, MeetingPermissionMixin):
     schema = DefaultSchema(Meeting()).get_delete_schema()
     skip_archived_meeting_check = True
 
-    def get_committee_id(self, instance: Dict[str, Any]) -> int:
+    def get_committee_id(self, instance: dict[str, Any]) -> int:
         meeting = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["committee_id"],

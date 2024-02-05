@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import MotionState
 from ....permissions.permissions import Permissions
@@ -38,7 +38,7 @@ class MotionStateSort(LinearSortMixin, SingularActionMixin, UpdateAction):
             ),
         )
 
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+    def get_meeting_id(self, instance: dict[str, Any]) -> int:
         workflow = self.datastore.get(
             fqid_from_collection_and_id("motion_workflow", instance["workflow_id"]),
             ["meeting_id"],

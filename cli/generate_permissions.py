@@ -2,8 +2,9 @@ import hashlib
 import os
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
 from textwrap import dedent
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any
 
 import requests
 import yaml
@@ -72,8 +73,8 @@ def main() -> None:
     permissions = yaml.safe_load(permissions_yml)
     with open(DESTINATION, "w") as dest:
         dest.write(FILE_TEMPLATE.format(checksum))
-        all_parents: Dict[str, List[str]] = {}
-        all_permissions: Dict[str, Set[str]] = defaultdict(set)
+        all_parents: dict[str, list[str]] = {}
+        all_permissions: dict[str, set[str]] = defaultdict(set)
         for collection, children in permissions.items():
             parents = process_permission_level(collection, None, children)
             for pair in parents:
@@ -102,8 +103,8 @@ def main() -> None:
 
 
 def process_permission_level(
-    collection: str, permission: Optional[str], children: Dict[str, Any]
-) -> Iterable[Tuple[str, Optional[str]]]:
+    collection: str, permission: str | None, children: dict[str, Any]
+) -> Iterable[tuple[str, str | None]]:
     for child, grandchildren in children.items():
         if grandchildren:
             yield from process_permission_level(collection, child, grandchildren)

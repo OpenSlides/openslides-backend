@@ -1,10 +1,10 @@
-from typing import Dict, Iterable, Optional, Type
+from collections.abc import Iterable
 
 from ..shared.exceptions import ActionException
 from ..shared.patterns import Collection
 from . import fields
 
-model_registry: Dict[Collection, Type["Model"]] = {}
+model_registry: dict[Collection, type["Model"]] = {}
 
 
 class ModelMetaClass(type):
@@ -57,7 +57,7 @@ class Model(metaclass=ModelMetaClass):
         """
         return bool(self.try_get_field(field_name))
 
-    def try_get_field(self, field_name: str) -> Optional[fields.Field]:
+    def try_get_field(self, field_name: str) -> fields.Field | None:
         """
         Returns the field for the given field name or None if field is not found.
         """
@@ -94,7 +94,7 @@ class Model(metaclass=ModelMetaClass):
             )
         return {field_name: field.get_schema()}
 
-    def get_properties(self, *fields: str) -> Dict[str, fields.Schema]:
+    def get_properties(self, *fields: str) -> dict[str, fields.Schema]:
         """
         Returns a dictionary of field schemas used for the properties keyword in
         an action schema.

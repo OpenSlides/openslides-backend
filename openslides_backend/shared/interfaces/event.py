@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, TypedDict, Union
+from typing import Any, TypedDict, Union
 
 from typing_extensions import NotRequired
 
@@ -15,7 +15,7 @@ class EventType(str, Enum):
         return repr(self.value)
 
 
-ListFieldsDict = Dict[str, Union[List[int], List[str]]]
+ListFieldsDict = dict[str, Union[list[int], list[str]]]
 
 
 class ListFields(TypedDict):
@@ -30,5 +30,5 @@ class Event(TypedDict):
 
     type: EventType
     fqid: FullQualifiedId
-    fields: NotRequired[Dict[str, Any]]
+    fields: NotRequired[dict[str, Any]]
     list_fields: NotRequired[ListFields]

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCreateForwardedTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_model: Dict[str, Dict[str, Any]] = {
+        self.test_model: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "name": "name_XDAddEAW",
                 "committee_id": 53,

@@ -1,4 +1,4 @@
-class MockGunicornThreadWorker(object):
+class MockGunicornThreadWorker:
     class Tmp:
         @staticmethod
         def notify() -> None:

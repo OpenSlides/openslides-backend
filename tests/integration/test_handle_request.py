@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Tuple
+from collections.abc import Iterable
 from unittest.mock import MagicMock
 
 import pytest
@@ -15,7 +15,7 @@ from openslides_backend.shared.typing import Schema
 class BaseTestAction(Action):
     def perform(
         self, payload: ActionData, user_id: int, internal: bool = False
-    ) -> Tuple[Optional[WriteRequest], ActionResults]:
+    ) -> tuple[WriteRequest | None, ActionResults]:
         return (None, self.mock_perform())
 
     def mock_perform(self) -> ActionResults:

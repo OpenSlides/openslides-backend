@@ -12,7 +12,7 @@ from tests.system.util import CountDatastoreCalls, Profiler, performance
 class MeetingClone(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {
                 "active_meeting_ids": [1],
                 "organization_tag_ids": [1],

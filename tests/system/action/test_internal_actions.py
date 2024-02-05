@@ -1,5 +1,5 @@
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.http.views.action_view import (
     INTERNAL_AUTHORIZATION_HEADER,
@@ -25,7 +25,7 @@ class BaseInternalRequestTest(BaseActionTestCase):
     def call_internal_route(
         self,
         payload: Any,
-        internal_auth_password: Optional[str] = DEV_PASSWORD,
+        internal_auth_password: str | None = DEV_PASSWORD,
     ) -> Response:
         if internal_auth_password is None:
             headers = {}
@@ -68,8 +68,8 @@ class BaseInternalActionTest(BaseInternalRequestTest):
     def internal_request(
         self,
         action: str,
-        data: Dict[str, Any],
-        internal_auth_password: Optional[str] = DEV_PASSWORD,
+        data: dict[str, Any],
+        internal_auth_password: str | None = DEV_PASSWORD,
     ) -> Response:
         return super().call_internal_route(
             [{"action": action, "data": [data]}], internal_auth_password

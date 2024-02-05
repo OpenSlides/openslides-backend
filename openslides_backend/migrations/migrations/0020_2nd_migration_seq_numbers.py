@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, List, Optional, cast
+from typing import cast
 
 from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
 from datastore.shared.typing import JSON
@@ -30,12 +30,12 @@ class Migration(BaseEventMigration):
 
     def __init__(self) -> None:
         super().__init__()
-        self.sequential_numbers_map: Dict[str, Dict[int, int]] = {}
+        self.sequential_numbers_map: dict[str, dict[int, int]] = {}
 
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection = collection_from_fqid(event.fqid)
         if collection in self.collections and isinstance(event, CreateEvent):
             event.data[self.field] = self.get_default(event, collection)

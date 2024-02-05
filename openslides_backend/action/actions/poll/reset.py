@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, List
+from collections.abc import Callable
+from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
@@ -70,7 +71,7 @@ class PollResetAction(
         ]
         self.datastore.get_many(requests, use_changed_models=False)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance["state"] = Poll.STATE_CREATED
         self.delete_all_votes(instance["id"])
         poll = self.datastore.get(
@@ -93,7 +94,7 @@ class PollResetAction(
                 self._delete_votes(option["vote_ids"])
                 self._clear_option_auto_fields(option_id)
 
-    def _get_option_ids(self, poll_id: int) -> List[int]:
+    def _get_option_ids(self, poll_id: int) -> list[int]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, poll_id),
             ["option_ids", "global_option_id"],
@@ -103,16 +104,16 @@ class PollResetAction(
             option_ids.append(poll["global_option_id"])
         return option_ids
 
-    def _get_options(self, option_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+    def _get_options(self, option_ids: list[int]) -> dict[int, dict[str, Any]]:
         get_many_request = GetManyRequest("option", option_ids, ["vote_ids"])
         gm_result = self.datastore.get_many(
             [get_many_request], use_changed_models=False
         )
-        options: Dict[int, Dict[str, Any]] = gm_result.get("option", {})
+        options: dict[int, dict[str, Any]] = gm_result.get("option", {})
 
         return options
 
-    def _delete_votes(self, vote_ids: List[int]) -> None:
+    def _delete_votes(self, vote_ids: list[int]) -> None:
         action_data = []
         for id_ in vote_ids:
             action_data.append({"id": id_})
