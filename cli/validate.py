@@ -50,6 +50,7 @@ OPTIONAL_ATTRIBUTES = (
     "calculated",
     "required",
     "read_only",
+    "constant",
 )
 
 
@@ -70,8 +71,10 @@ class Checker:
             raise CheckException("\n".join(errors))
 
     def _run_checks(self) -> None:
-        for collection in self.models.keys():
-            if not collection_regex.match(collection):
+        for collection in list(self.models.keys()):
+            if collection.startswith("_"):
+                self.models.pop(collection)
+            elif not collection_regex.match(collection):
                 self.errors.append(f"Collection '{collection}' is not valid.")
         if self.errors:
             return

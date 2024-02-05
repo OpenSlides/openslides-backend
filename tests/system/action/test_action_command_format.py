@@ -52,7 +52,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assertCountEqual(
             write_requests[0].locked_fields.keys(),
             [
-                "group/meeting_id",
                 "group/weight",
                 "meeting/1/group_ids",
             ],
@@ -65,7 +64,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assertCountEqual(
             write_requests[1].locked_fields.keys(),
             [
-                "group/meeting_id",
                 "group/weight",
             ],
         )
@@ -97,7 +95,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assertCountEqual(
             write_requests[0].locked_fields.keys(),
             [
-                "group/meeting_id",
                 "group/weight",
                 "meeting/1/group_ids",
             ],
@@ -137,7 +134,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'group/meeting_id', 'group/weight'",
+            "Datastore service sends HTTP 400. The following locks were broken: 'group/weight'",
             response.json["message"],
         )
         self.assert_model_not_exists("group/1")

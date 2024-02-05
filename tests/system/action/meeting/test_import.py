@@ -2152,11 +2152,11 @@ class MeetingImport(BaseActionTestCase):
         data = self.create_request_data({})
         data["meeting"]["_migration_index"] = 1
         del data["meeting"]["user"]["1"]["organization_id"]
-        data["meeting"]["meeting"]["1"]["motion_poll_default_100_percent_base"] = "80"
+        data["meeting"]["meeting"]["1"]["motion_poll_default_100_percent_base"] = "Y"
         data["meeting"]["meeting"]["1"][
             "assignment_poll_default_100_percent_base"
-        ] = "81"
-        data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "82"
+        ] = "YN"
+        data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "YNA"
 
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
@@ -2170,9 +2170,9 @@ class MeetingImport(BaseActionTestCase):
             "meeting/2",
             {
                 "assignment_poll_enable_max_votes_per_option": False,
-                "motion_poll_default_onehundred_percent_base": "80",
-                "assignment_poll_default_onehundred_percent_base": "81",
-                "poll_default_onehundred_percent_base": "82",
+                "motion_poll_default_onehundred_percent_base": "Y",
+                "assignment_poll_default_onehundred_percent_base": "YN",
+                "poll_default_onehundred_percent_base": "YNA",
             },
         )  # checker repair
         self.assertCountEqual(meeting["user_ids"], [1, 2])
