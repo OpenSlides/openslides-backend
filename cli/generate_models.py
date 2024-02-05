@@ -132,7 +132,7 @@ def main() -> None:
             + "\n"
         )
         for collection, fields in MODELS.items():
-            if collection == "_migration_index":
+            if collection.startswith("_"):
                 continue
             model = Model(collection, fields)
             dest.write(model.get_code())
