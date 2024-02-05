@@ -16,9 +16,10 @@ from datastore.reader.core import (
 )
 from datastore.shared.di import injector
 from datastore.shared.services.read_database import HistoryInformation
-from datastore.shared.util import DeletedModelsBehaviour
+from datastore.shared.util import DeletedModelsBehaviour, is_reserved_field
 from simplejson.errors import JSONDecodeError
 
+from ...models.base import model_registry
 from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
 from ...shared.interfaces.collection_field_lock import (
@@ -34,9 +35,13 @@ from ...shared.patterns import (
     CollectionField,
     FullQualifiedField,
     FullQualifiedId,
+    collection_and_field_from_collectionfield,
+    collection_and_field_from_fqfield,
     collectionfield_from_collection_and_field,
     fqfield_from_fqid_and_field,
     fqid_from_collection_and_id,
+    is_collectionfield,
+    is_fqfield,
 )
 from . import commands
 from .handle_datastore_errors import handle_datastore_errors, raise_datastore_error
@@ -401,6 +406,19 @@ class DatastoreAdapter(BaseDatastoreService):
         Updates the locked_fields map by adding the new value for the given FQId or
         FQField. To work properly in case of retry/reread we have to accept the new value always.
         """
+        # check for constant fields
+        if is_fqfield(key) or is_collectionfield(key):
+            if is_fqfield(key):
+                collection, field_name = collection_and_field_from_fqfield(key)
+            else:
+                collection, field_name = collection_and_field_from_collectionfield(key)
+            if is_reserved_field(field_name):
+                return
+            field = model_registry[collection]().get_field(field_name)
+            if field.constant:
+                # constant fields can never be locked
+                return
+
         if not isinstance(lock, int) and not COLLECTIONFIELD_PATTERN.match(key):
             raise DatastoreException(
                 "You can only lock collection fields with a filter"

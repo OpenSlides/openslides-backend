@@ -86,6 +86,7 @@ organization:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     restriction_mode: A
@@ -244,6 +245,7 @@ user:
   id:
     type: number
     restriction_mode: A
+    constant: true
   username:
     type: string
     required: true
@@ -383,12 +385,14 @@ user:
     to: organization/user_ids
     required: True
     restriction_mode: F
+    constant: true
 
 meeting_user:
   id:
     type: number
     required: true
     restriction_mode: A
+    constant: true
 
   comment:
     type: HTMLStrict
@@ -412,11 +416,13 @@ meeting_user:
     to: user/meeting_user_ids
     required: true
     restriction_mode: A
+    constant: true
   meeting_id:
     type: relation
     to: meeting/meeting_user_ids
     required: true
     restriction_mode: A
+    constant: true
 
   personal_note_ids:
     type: relation-list
@@ -480,6 +486,7 @@ organization_tag:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     required: True
@@ -508,6 +515,7 @@ theme:
     restriction_mode: A
     type: number
     required: true
+    constant: true
   name:
     restriction_mode: A
     type: string
@@ -662,11 +670,13 @@ theme:
     restriction_mode: A
     to: organization/theme_ids
     type: relation
+    constant: true
 
 committee:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     required: true
@@ -719,11 +729,13 @@ committee:
     to: organization/committee_ids
     required: true
     restriction_mode: A
+    constant: true
 
 meeting:
   id:
     type: number
     restriction_mode: A
+    constant: true
   external_id:
     type: string
     restriction_mode: A
@@ -776,6 +788,7 @@ meeting:
     restriction_mode: A
     enum: *languages
     required: true
+    constant: true
 
   # Configuration (only for the server owner)
   jitsi_domain:
@@ -1643,6 +1656,7 @@ meeting:
     to: committee/meeting_ids
     required: true
     restriction_mode: B
+    constant: true
   default_meeting_for_committee_id:
     type: relation
     to: committee/default_meeting_id
@@ -1762,6 +1776,7 @@ group:
   id:
     type: number
     restriction_mode: A
+    constant: true
   external_id:
     type: string
     restriction_mode: A
@@ -1886,11 +1901,13 @@ group:
     to: meeting/group_ids
     required: true
     restriction_mode: A
+    constant: true
 
 personal_note:
   id:
     type: number
     restriction_mode: A
+    constant: true
   note:
     type: HTMLStrict
     restriction_mode: A
@@ -1904,6 +1921,7 @@ personal_note:
     equal_fields: meeting_id
     restriction_mode: A
     required: true
+    constant: true
   content_object_id:
     type: generic-relation
     to:
@@ -1912,16 +1930,19 @@ personal_note:
       field: personal_note_ids
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   meeting_id:
     type: relation
     to: meeting/personal_note_ids
     required: true
     restriction_mode: A
+    constant: true
 
 tag:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     required: true
@@ -1942,11 +1963,13 @@ tag:
     to: meeting/tag_ids
     required: true
     restriction_mode: A
+    constant: true
 
 agenda_item:
   id:
     type: number
     restriction_mode: A
+    constant: true
   item_number:
     type: string
     restriction_mode: A
@@ -2001,6 +2024,7 @@ agenda_item:
     required: true
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   parent_id:
     type: relation
     to: agenda_item/child_ids
@@ -2027,11 +2051,13 @@ agenda_item:
     to: meeting/agenda_item_ids
     required: true
     restriction_mode: A
+    constant: true
 
 list_of_speakers:
   id:
     type: number
     restriction_mode: A
+    constant: true
   closed:
     type: boolean
     default: false
@@ -2042,6 +2068,7 @@ list_of_speakers:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
 
   content_object_id:
     type: generic-relation
@@ -2056,6 +2083,7 @@ list_of_speakers:
     required: true
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   speaker_ids:
     type: relation-list
     to: speaker/list_of_speakers_id
@@ -2073,11 +2101,13 @@ list_of_speakers:
     to: meeting/list_of_speakers_ids
     required: true
     restriction_mode: A
+    constant: true
 
 point_of_order_category:
   id:
     type: number
     restriction_mode: A
+    constant: true
   text:
     type: string
     required: true
@@ -2091,6 +2121,7 @@ point_of_order_category:
     to: meeting/point_of_order_category_ids
     required: true
     restriction_mode: A
+    constant: true
   speaker_ids:
     type: relation-list
     to: speaker/point_of_order_category_id
@@ -2101,6 +2132,7 @@ speaker:
   id:
     type: number
     restriction_mode: A
+    constant: true
   begin_time:
     type: timestamp
     read_only: true
@@ -2127,6 +2159,7 @@ speaker:
   point_of_order:
     type: boolean
     restriction_mode: A
+    constant: true
 
   list_of_speakers_id:
     type: relation
@@ -2134,11 +2167,13 @@ speaker:
     required: true
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   meeting_user_id:
     type: relation
     to: meeting_user/speaker_ids
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   point_of_order_category_id:
     type: relation
     to: point_of_order_category/speaker_ids
@@ -2149,11 +2184,13 @@ speaker:
     to: meeting/speaker_ids
     required: true
     restriction_mode: A
+    constant: true
 
 topic:
   id:
     type: number
     restriction_mode: A
+    constant: true
   title:
     type: string
     required: true
@@ -2167,6 +2204,7 @@ topic:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
 
   attachment_ids:
     type: relation-list
@@ -2180,6 +2218,7 @@ topic:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   list_of_speakers_id:
     type: relation
     to: list_of_speakers/content_object_id
@@ -2187,6 +2226,7 @@ topic:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   poll_ids:
     type: relation-list
     to: poll/content_object_id
@@ -2204,11 +2244,13 @@ topic:
     to: meeting/topic_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion:
   id:
     type: number
     restriction_mode: A
+    constant: true
   number:
     type: string
     restriction_mode: C
@@ -2223,6 +2265,7 @@ motion:
     read_only: true
     required: true
     restriction_mode: C
+    constant: true
   title:
     type: string
     required: true
@@ -2424,6 +2467,7 @@ motion:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: C
+    constant: true
   tag_ids:
     type: relation-list
     to: tag/tagged_ids
@@ -2451,11 +2495,13 @@ motion:
     to: meeting/motion_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion_submitter:
   id:
     type: number
     restriction_mode: A
+    constant: true
   weight:
     type: number
     restriction_mode: A
@@ -2470,16 +2516,19 @@ motion_submitter:
     equal_fields: meeting_id
     restriction_mode: A
     required: true
+    constant: true
   meeting_id:
     type: relation
     to: meeting/motion_submitter_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion_comment:
   id:
     type: number
     restriction_mode: A
+    constant: true
   comment:
     type: HTMLStrict
     restriction_mode: A
@@ -2490,22 +2539,26 @@ motion_comment:
     required: true
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   section_id:
     type: relation
     to: motion_comment_section/comment_ids
     required: true
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   meeting_id:
     type: relation
     to: meeting/motion_comment_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion_comment_section:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     required: true
@@ -2520,6 +2573,7 @@ motion_comment_section:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
   submitter_can_write:
     type: boolean
     restriction_mode: A
@@ -2545,11 +2599,13 @@ motion_comment_section:
     to: meeting/motion_comment_section_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion_category:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     required: true
@@ -2572,6 +2628,7 @@ motion_category:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
 
   parent_id:
     type: relation
@@ -2593,11 +2650,13 @@ motion_category:
     to: meeting/motion_category_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion_block:
   id:
     type: number
     restriction_mode: A
+    constant: true
   title:
     type: string
     required: true
@@ -2611,6 +2670,7 @@ motion_block:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
 
   motion_ids:
     type: relation-list
@@ -2641,11 +2701,13 @@ motion_block:
     to: meeting/motion_block_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion_change_recommendation:
   id:
     type: number
     restriction_mode: A
+    constant: true
   rejected:
     type: boolean
     default: false
@@ -2688,16 +2750,19 @@ motion_change_recommendation:
     required: true
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   meeting_id:
     type: relation
     to: meeting/motion_change_recommendation_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion_state:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     required: true
@@ -2830,11 +2895,13 @@ motion_state:
     to: meeting/motion_state_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion_workflow:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     required: true
@@ -2845,6 +2912,7 @@ motion_workflow:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
 
   state_ids:
     type: relation-list
@@ -2875,11 +2943,13 @@ motion_workflow:
     to: meeting/motion_workflow_ids
     required: true
     restriction_mode: A
+    constant: true
 
 motion_statute_paragraph:
   id:
     type: number
     restriction_mode: A
+    constant: true
   title:
     type: string
     required: true
@@ -2897,6 +2967,7 @@ motion_statute_paragraph:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
 
   motion_ids:
     type: relation-list
@@ -2908,11 +2979,13 @@ motion_statute_paragraph:
     to: meeting/motion_statute_paragraph_ids
     required: true
     restriction_mode: A
+    constant: true
 
 poll:
   id:
     type: number
     restriction_mode: A
+    constant: true
   description:
     type: text
     restriction_mode: A
@@ -3012,6 +3085,7 @@ poll:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
   crypt_key:
     type: string
     description: base64 public key to cryptographic votes.
@@ -3043,6 +3117,7 @@ poll:
     equal_fields: meeting_id
     restriction_mode: A
     required: true
+    constant: true
   option_ids:
     type: relation-list
     to: option/poll_id
@@ -3055,6 +3130,7 @@ poll:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   voted_ids:
     type: relation-list
     to: user/poll_voted_ids
@@ -3075,11 +3151,13 @@ poll:
     to: meeting/poll_ids
     restriction_mode: A
     required: true
+    constant: true
 
 option:
   id:
     type: number
     restriction_mode: A
+    constant: true
   weight:
     type: number
     default: 10000
@@ -3102,11 +3180,13 @@ option:
     to: poll/option_ids
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   used_as_global_option_in_poll_id:
     type: relation
     to: poll/global_option_id
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   vote_ids:
     type: relation-list
     to: vote/option_id
@@ -3121,26 +3201,32 @@ option:
       - poll_candidate_list/option_id
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   meeting_id:
     type: relation
     to: meeting/option_ids
     required: true
     restriction_mode: A
+    constant: true
 
 vote:
   id:
     type: number
     restriction_mode: A
+    constant: true
   weight:
     type: decimal(6)
     restriction_mode: A
+    constant: true
   value:
     type: string
     restriction_mode: A
+    constant: true
   user_token:
     type: string
     required: true
     restriction_mode: B
+    constant: true
 
   option_id:
     type: relation
@@ -3148,6 +3234,7 @@ vote:
     equal_fields: meeting_id
     required: true
     restriction_mode: A
+    constant: true
   user_id:
     type: relation
     to: user/vote_ids
@@ -3161,11 +3248,13 @@ vote:
     to: meeting/vote_ids
     required: true
     restriction_mode: A
+    constant: true
 
 assignment:
   id:
     type: number
     restriction_mode: A
+    constant: true
   title:
     type: string
     required: true
@@ -3198,6 +3287,7 @@ assignment:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
 
   candidate_ids:
     type: relation-list
@@ -3224,6 +3314,7 @@ assignment:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
+    constant: true
   tag_ids:
     type: relation-list
     to: tag/tagged_ids
@@ -3245,11 +3336,13 @@ assignment:
     to: meeting/assignment_ids
     required: true
     restriction_mode: A
+    constant: true
 
 assignment_candidate:
   id:
     type: number
     restriction_mode: A
+    constant: true
   weight:
     type: number
     default: 10000
@@ -3261,21 +3354,25 @@ assignment_candidate:
     equal_fields: meeting_id
     restriction_mode: A
     required: true
+    constant: true
   meeting_user_id:
     type: relation
     to: meeting_user/assignment_candidate_ids
     restriction_mode: A
+    constant: true
   meeting_id:
     type: relation
     to: meeting/assignment_candidate_ids
     required: true
     restriction_mode: A
+    constant: true
 
 # models for the poll list election
 poll_candidate_list:
   id:
     type: number
     restriction_mode: A
+    constant: true
   poll_candidate_ids:
     type: relation-list
     to: poll_candidate/poll_candidate_list_id
@@ -3287,27 +3384,32 @@ poll_candidate_list:
     to: meeting/poll_candidate_list_ids
     required: true
     restriction_mode: A
+    constant: true
   option_id:
     type: relation
     to: option/content_object_id
     equal_fields: meeting_id
     required: true
     restriction_mode: A
+    constant: true
 
 poll_candidate:
   id:
     type: number
     restriction_mode: A
+    constant: true
   poll_candidate_list_id:
     type: relation
     to: poll_candidate_list/poll_candidate_ids
     equal_fields: meeting_id
     restriction_mode: A
     required: true
+    constant: true
   user_id:
     type: relation
     to: user/poll_candidate_ids
     restriction_mode: A
+    constant: true
   weight:
     type: number
     required: true
@@ -3317,6 +3419,7 @@ poll_candidate:
     to: meeting/poll_candidate_ids
     required: true
     restriction_mode: A
+    constant: true
 
 # Mediafiles are delivered by the mediafile server with the URL
 # `<media-prefix>/media/<meeting_id>/path`
@@ -3324,6 +3427,7 @@ mediafile:
   id:
     type: number
     restriction_mode: A
+    constant: true
   title:
     type: string
     description: Title and parent_id must be unique.
@@ -3404,6 +3508,7 @@ mediafile:
       - organization/mediafile_ids
     restriction_mode: A
     required: true
+    constant: true
 
   # Reverse relations for meetings, if a mediafile is used as a special resource
   used_as_logo_projector_main_in_meeting_id:
@@ -3475,6 +3580,7 @@ projector:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     restriction_mode: A
@@ -3556,6 +3662,7 @@ projector:
     read_only: true
     required: true
     restriction_mode: A
+    constant: true
 
   current_projection_ids:
     type: relation-list
@@ -3640,6 +3747,7 @@ projector:
     to: meeting/projector_ids
     restriction_mode: A
     required: true
+    constant: true
 
 # A projection is a M2M model between an element that is assigned to a
 # projector. This element can either be the current one projected, in the
@@ -3650,6 +3758,7 @@ projection:
   id:
     type: number
     restriction_mode: A
+    constant: true
   options:
     type: JSON
     restriction_mode: A
@@ -3701,16 +3810,19 @@ projection:
     equal_fields: meeting_id
     restriction_mode: A
     required: true
+    constant: true
   meeting_id:
     type: relation
     to: meeting/all_projection_ids
     required: true
     restriction_mode: A
+    constant: true
 
 projector_message:
   id:
     type: number
     restriction_mode: A
+    constant: true
   message:
     type: HTMLStrict
     restriction_mode: A
@@ -3726,11 +3838,13 @@ projector_message:
     to: meeting/projector_message_ids
     restriction_mode: A
     required: true
+    constant: true
 
 projector_countdown:
   id:
     type: number
     restriction_mode: A
+    constant: true
   title:
     type: string
     required: true
@@ -3770,11 +3884,13 @@ projector_countdown:
     to: meeting/projector_countdown_ids
     restriction_mode: A
     required: true
+    constant: true
 
 chat_group:
   id:
     type: number
     restriction_mode: A
+    constant: true
   name:
     type: string
     required: true
@@ -3805,11 +3921,13 @@ chat_group:
     to: meeting/chat_group_ids
     required: true
     restriction_mode: A
+    constant: true
 
 chat_message:
   id:
     type: number
     restriction_mode: A
+    constant: true
   content:
     type: HTMLStrict 
     required: true
@@ -3823,16 +3941,19 @@ chat_message:
     to: meeting_user/chat_message_ids
     restriction_mode: A
     required: true
+    constant: true
   chat_group_id:
     type: relation
     to: chat_group/chat_message_ids
     restriction_mode: A
     required: true
+    constant: true
   meeting_id:
     type: relation
     to: meeting/chat_message_ids
     required: true
     restriction_mode: A
+    constant: true
 
 action_worker:
   id:

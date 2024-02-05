@@ -10,6 +10,7 @@ KEYSEPARATOR = "/"
 ID_REGEX = rf"^{_id_regex}$"
 FQID_REGEX_PART = rf"{_collection_regex}{KEYSEPARATOR}{_id_regex}"
 FQID_REGEX = rf"^{FQID_REGEX_PART}$"
+FQFIELD_REGEX = f"^{FQID_REGEX_PART}{KEYSEPARATOR}{_field_regex}$"
 COLLECTIONFIELD_REGEX = f"^({_collection_regex}){KEYSEPARATOR}({_field_regex})$"
 
 # Specific regexes for fields etc.
@@ -20,6 +21,8 @@ EXTENSION_REFERENCE_IDS_REGEX = rf"\[(?P<fqid>{FQID_REGEX_PART})\]"
 
 # Regexes as patterns
 ID_PATTERN = re.compile(ID_REGEX)
+FQID_PATTERN = re.compile(FQID_REGEX)
+FQFIELD_PATTERN = re.compile(FQFIELD_REGEX)
 COLLECTIONFIELD_PATTERN = re.compile(COLLECTIONFIELD_REGEX)
 DECIMAL_PATTERN = re.compile(DECIMAL_REGEX)
 COLOR_PATTERN = re.compile(COLOR_REGEX)
@@ -72,12 +75,78 @@ def transform_to_fqids(
     return fqid_list
 
 
-def collectionfield_from_collection_and_field(collection: str, field: str) -> str:
-    return f"{collection}{KEYSEPARATOR}{field}"
+# Existence checks
 
 
-def collectionfield_from_fqid_and_field(fqid: str, field: str) -> str:
-    return f"{collection_from_fqid(fqid)}{KEYSEPARATOR}{field}"
+def is_fqid(value: str) -> bool:
+    return bool(FQID_PATTERN.match(value))
+
+
+def is_fqfield(value: str) -> bool:
+    return bool(FQFIELD_PATTERN.match(value))
+
+
+def is_collectionfield(value: str) -> bool:
+    return bool(COLLECTIONFIELD_PATTERN.match(value))
+
+
+# Parse FQIDs
+
+
+def collection_from_fqid(fqid: str) -> str:
+    return fqid.split(KEYSEPARATOR)[0]
+
+
+def id_from_fqid(fqid: str) -> int:
+    return int(fqid.split(KEYSEPARATOR)[1])
+
+
+def collection_and_id_from_fqid(fqid: str) -> tuple[str, int]:
+    s = fqid.split(KEYSEPARATOR)
+    return s[0], int(s[1])
+
+
+# Build FQIDs
+
+
+def fqid_from_collection_and_id(collection: str, id: str | int) -> str:
+    return f"{collection}{KEYSEPARATOR}{id}"
+
+
+# Parse FQFields
+
+
+def collection_from_fqfield(fqfield: str) -> str:
+    return str(fqfield).split(KEYSEPARATOR)[0]
+
+
+def id_from_fqfield(fqfield: FullQualifiedField) -> int:
+    return int(str(fqfield).split(KEYSEPARATOR)[1])
+
+
+def field_from_fqfield(fqfield: str) -> str:
+    return fqfield.split(KEYSEPARATOR)[2]
+
+
+def collection_and_field_from_fqfield(fqfield: str) -> tuple[str, str]:
+    parts = fqfield.split(KEYSEPARATOR)
+    return parts[0], parts[2]
+
+
+def fqid_from_fqfield(fqfield: str) -> str:
+    return collectionfield_and_fqid_from_fqfield(fqfield)[1]
+
+
+def fqid_and_field_from_fqfield(fqfield: str) -> tuple[str, str]:
+    return cast(tuple[str, str], fqfield.rsplit(KEYSEPARATOR, 1))
+
+
+def collectionfield_and_fqid_from_fqfield(fqfield: str) -> tuple[str, str]:
+    parts = fqfield.split(KEYSEPARATOR)
+    return f"{parts[0]}{KEYSEPARATOR}{parts[2]}", f"{parts[0]}{KEYSEPARATOR}{parts[1]}"
+
+
+# Build FQFields
 
 
 def fqfield_from_collection_and_id_and_field(
@@ -92,51 +161,27 @@ def fqfield_from_fqid_and_field(fqid: str, field: str) -> str:
     return f"{fqid}{KEYSEPARATOR}{field}"
 
 
-def collection_from_fqfield(fqfield: str) -> str:
-    return str(fqfield).split(KEYSEPARATOR)[0]
-
-
-def fqid_from_fqfield(fqfield: str) -> str:
-    return collectionfield_and_fqid_from_fqfield(fqfield)[1]
-
-
-def field_from_fqfield(fqfield: str) -> str:
-    return fqfield.split(KEYSEPARATOR)[2]
-
-
-def field_from_collectionfield(collectionfield: str) -> str:
-    return collectionfield.split(KEYSEPARATOR)[1]
-
-
-def id_from_fqid(fqid: str) -> int:
-    return int(fqid.split(KEYSEPARATOR)[1])
-
-
-def id_from_fqfield(fqfield: FullQualifiedField) -> int:
-    return int(str(fqfield).split(KEYSEPARATOR)[1])
-
-
-def fqid_and_field_from_fqfield(fqfield: str) -> tuple[str, str]:
-    return cast(tuple[str, str], fqfield.rsplit(KEYSEPARATOR, 1))
-
-
-def collectionfield_and_fqid_from_fqfield(fqfield: str) -> tuple[str, str]:
-    parts = fqfield.split(KEYSEPARATOR)
-    return f"{parts[0]}{KEYSEPARATOR}{parts[2]}", f"{parts[0]}{KEYSEPARATOR}{parts[1]}"
-
-
-def collection_from_fqid(fqid: str) -> str:
-    return fqid.split(KEYSEPARATOR)[0]
-
-
-def collection_and_id_from_fqid(fqid: str) -> tuple[str, int]:
-    s = fqid.split(KEYSEPARATOR)
-    return s[0], int(s[1])
+# Parse collectionfields
 
 
 def collection_from_collectionfield(collectionfield: str) -> str:
     return collectionfield.split(KEYSEPARATOR)[0]
 
 
-def fqid_from_collection_and_id(collection: str, id: str | int) -> str:
-    return f"{collection}{KEYSEPARATOR}{id}"
+def field_from_collectionfield(collectionfield: str) -> str:
+    return collectionfield.split(KEYSEPARATOR)[1]
+
+
+def collection_and_field_from_collectionfield(collectionfield: str) -> tuple[str, str]:
+    return cast(tuple[str, str], collectionfield.split(KEYSEPARATOR))
+
+
+# Build collection fields
+
+
+def collectionfield_from_collection_and_field(collection: str, field: str) -> str:
+    return f"{collection}{KEYSEPARATOR}{field}"
+
+
+def collectionfield_from_fqid_and_field(fqid: str, field: str) -> str:
+    return f"{collection_from_fqid(fqid)}{KEYSEPARATOR}{field}"
