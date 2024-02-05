@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import MotionSubmitter
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -36,7 +36,7 @@ class MotionSubmitterCreateAction(
 
     relation_field_for_meeting = "motion_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Check if motion and user belong to the same meeting.
         """

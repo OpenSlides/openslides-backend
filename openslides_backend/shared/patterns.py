@@ -1,5 +1,6 @@
 import re
-from typing import List, NewType, Optional, Sequence, Tuple, Union, cast
+from collections.abc import Sequence
+from typing import NewType, Union, cast
 
 from datastore.shared.util.key_types import _collection_regex, _field_regex, _id_regex
 
@@ -28,7 +29,7 @@ COLOR_PATTERN = re.compile(COLOR_REGEX)
 EXTENSION_REFERENCE_IDS_PATTERN = re.compile(EXTENSION_REFERENCE_IDS_REGEX)
 
 Identifier = Union[int, str, "FullQualifiedId"]
-IdentifierList = Union[List[int], List[str], List["FullQualifiedId"]]
+IdentifierList = Union[list[int], list[str], list["FullQualifiedId"]]
 
 _Collection = NewType("_Collection", str)
 _FullQualifiedId = NewType("_FullQualifiedId", str)
@@ -42,18 +43,16 @@ CollectionField = Union[str, _CollectionField]  # meeting/name
 
 
 def transform_to_fqids(
-    value: Optional[
-        Union[
-            int,
-            str,
-            FullQualifiedId,
-            Sequence[int],
-            Sequence[str],
-            Sequence[FullQualifiedId],
-        ]
-    ],
+    value: None | (
+        int
+        | str
+        | FullQualifiedId
+        | Sequence[int]
+        | Sequence[str]
+        | Sequence[FullQualifiedId]
+    ),
     collection: Collection,
-) -> List[FullQualifiedId]:
+) -> list[FullQualifiedId]:
     """
     Get the given value as a list of fqids. The list may be empty.
     Transform all to fqids to handle everything in the same fashion.
@@ -102,7 +101,7 @@ def id_from_fqid(fqid: str) -> int:
     return int(fqid.split(KEYSEPARATOR)[1])
 
 
-def collection_and_id_from_fqid(fqid: str) -> Tuple[str, int]:
+def collection_and_id_from_fqid(fqid: str) -> tuple[str, int]:
     s = fqid.split(KEYSEPARATOR)
     return s[0], int(s[1])
 
@@ -110,7 +109,7 @@ def collection_and_id_from_fqid(fqid: str) -> Tuple[str, int]:
 # Build FQIDs
 
 
-def fqid_from_collection_and_id(collection: str, id: Union[str, int]) -> str:
+def fqid_from_collection_and_id(collection: str, id: str | int) -> str:
     return f"{collection}{KEYSEPARATOR}{id}"
 
 
@@ -129,7 +128,7 @@ def field_from_fqfield(fqfield: str) -> str:
     return fqfield.split(KEYSEPARATOR)[2]
 
 
-def collection_and_field_from_fqfield(fqfield: str) -> Tuple[str, str]:
+def collection_and_field_from_fqfield(fqfield: str) -> tuple[str, str]:
     parts = fqfield.split(KEYSEPARATOR)
     return parts[0], parts[2]
 
@@ -138,11 +137,11 @@ def fqid_from_fqfield(fqfield: str) -> str:
     return collectionfield_and_fqid_from_fqfield(fqfield)[1]
 
 
-def fqid_and_field_from_fqfield(fqfield: str) -> Tuple[str, str]:
-    return cast(Tuple[str, str], fqfield.rsplit(KEYSEPARATOR, 1))
+def fqid_and_field_from_fqfield(fqfield: str) -> tuple[str, str]:
+    return cast(tuple[str, str], fqfield.rsplit(KEYSEPARATOR, 1))
 
 
-def collectionfield_and_fqid_from_fqfield(fqfield: str) -> Tuple[str, str]:
+def collectionfield_and_fqid_from_fqfield(fqfield: str) -> tuple[str, str]:
     parts = fqfield.split(KEYSEPARATOR)
     return f"{parts[0]}{KEYSEPARATOR}{parts[2]}", f"{parts[0]}{KEYSEPARATOR}{parts[1]}"
 
@@ -173,8 +172,8 @@ def field_from_collectionfield(collectionfield: str) -> str:
     return collectionfield.split(KEYSEPARATOR)[1]
 
 
-def collection_and_field_from_collectionfield(collectionfield: str) -> Tuple[str, str]:
-    return cast(Tuple[str, str], collectionfield.split(KEYSEPARATOR))
+def collection_and_field_from_collectionfield(collectionfield: str) -> tuple[str, str]:
+    return cast(tuple[str, str], collectionfield.split(KEYSEPARATOR))
 
 
 # Build collection fields

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -14,11 +14,11 @@ from openslides_backend.shared.typing import DeletedModel
 
 
 class BaseTestExtendedDatastoreAdapter(TestCase):
-    db_method_name: Optional[str] = None
+    db_method_name: str | None = None
     db_method_return_value: Any
     filter_return_value: Any
 
-    mock_datastore_content: Dict[Collection, Dict[int, Dict[str, Any]]]
+    mock_datastore_content: dict[Collection, dict[int, dict[str, Any]]]
 
     collection = "test"
 
@@ -56,9 +56,9 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
         }
 
     def _get_many_mock(
-        self, get_many_requests: List[GetManyRequest], *args: Any, **kwargs: Any
-    ) -> Dict[Collection, Dict[int, Dict[str, Any]]]:
-        results: Dict[Collection, Dict[int, Dict[str, Any]]] = defaultdict(
+        self, get_many_requests: list[GetManyRequest], *args: Any, **kwargs: Any
+    ) -> dict[Collection, dict[int, dict[str, Any]]]:
+        results: dict[Collection, dict[int, dict[str, Any]]] = defaultdict(
             lambda: defaultdict(dict)
         )
         for request in get_many_requests:
@@ -70,7 +70,7 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
                             results[request.collection][id][field] = model[field]
         return results
 
-    def set_additional_models(self, models: Dict[str, Dict[str, Any]]) -> None:
+    def set_additional_models(self, models: dict[str, dict[str, Any]]) -> None:
         for fqid, model in models.items():
             self.adapter.apply_changed_model(
                 fqid, model, isinstance(model, DeletedModel)

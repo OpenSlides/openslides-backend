@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, cast
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
@@ -83,9 +83,9 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
 
-    def create_other_actions(self, rows: List[ImportRow]) -> List[Optional[int]]:
-        set_present_payload: List[Dict[str, Any]] = []
-        indices_to_set_presence_and_id: List[Optional[Tuple[bool, Optional[int]]]] = []
+    def create_other_actions(self, rows: list[ImportRow]) -> list[int | None]:
+        set_present_payload: list[dict[str, Any]] = []
+        indices_to_set_presence_and_id: list[tuple[bool, int | None] | None] = []
         for row in rows:
             if (present := row["data"].get("is_present")) is not None:
                 indices_to_set_presence_and_id.append((present, row["data"].get("id")))
@@ -116,12 +116,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 GetManyRequest(
                     "group",
                     list(
-                        set(
+                        {
                             group_id
                             for row in self.rows
                             for group in row["data"].get("groups", [])
                             if (group_id := group.get("id"))
-                        )
+                        }
                     ),
                     ["name"],
                 )

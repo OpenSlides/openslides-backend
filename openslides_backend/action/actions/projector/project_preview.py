@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
@@ -24,7 +24,7 @@ class ProjectorProjectPreview(WeightMixin, UpdateAction):
     permission_model = Projection()
     permission = Permissions.Projector.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         projection_id = instance.pop("id")
         projection = self.datastore.get(
             fqid_from_collection_and_id("projection", projection_id),
@@ -82,11 +82,11 @@ class ProjectorProjectPreview(WeightMixin, UpdateAction):
         instance["history_projection_ids"] = new_history_projection_ids
         return instance
 
-    def is_stable(self, value: Dict[str, Any]) -> bool:
+    def is_stable(self, value: dict[str, Any]) -> bool:
         return value.get("stable", False)
 
     def set_weight_to_projection(
-        self, projection_ids: List[int], meeting_id: int, projector_id: int
+        self, projection_ids: list[int], meeting_id: int, projector_id: int
     ) -> None:
         filter = And(
             FilterOperator("meeting_id", "=", meeting_id),

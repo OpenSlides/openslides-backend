@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.shared.filters import And, FilterOperator
 
@@ -12,7 +12,7 @@ class ConditionalSpeakerCascadeMixin(Action):
     Mixin for user actions that deletes unstarted speeches of users that were either deleted, or removed from a meeting
     """
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         removed_meeting_id = self.get_removed_meeting_id(instance)
         if removed_meeting_id is not None:
             filter_: Any = FilterOperator("user_id", "=", instance["id"])
@@ -55,7 +55,7 @@ class ConditionalSpeakerCascadeMixin(Action):
 
         return super().update_instance(instance)
 
-    def get_removed_meeting_id(self, instance: Dict[str, Any]) -> Optional[int]:
+    def get_removed_meeting_id(self, instance: dict[str, Any]) -> int | None:
         """
         Get the id of the meetings from which the user is removed.
         If the user is removed from all meetings, the return value will be 0.

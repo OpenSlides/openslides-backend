@@ -1,11 +1,15 @@
 from abc import abstractmethod
-from typing import Any, Dict, List, Protocol, TypedDict
+from typing import Any, Protocol, TypedDict
 
-PresenterBlob = TypedDict(
-    "PresenterBlob", {"presenter": str, "data": Any}, total=False
-)  # TODO: Check if Any is correct here.
-Payload = List[PresenterBlob]
-PresenterResponse = List[Dict[Any, Any]]
+
+class PresenterBlob(TypedDict, total=False):
+    presenter: str
+    data: Any
+    # TODO: Check if Any is correct here.
+
+
+Payload = list[PresenterBlob]
+PresenterResponse = list[dict[Any, Any]]
 
 
 class Presenter(Protocol):

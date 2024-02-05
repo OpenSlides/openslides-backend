@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import requests
 
@@ -38,7 +38,7 @@ class MediaServiceAdapter(MediaService):
         self.logger.debug("File successfully duplicated on the media service")
 
     def _handle_upload(
-        self, url: str, payload: Dict[str, Any], description: str
+        self, url: str, payload: dict[str, Any], description: str
     ) -> None:
         try:
             response = requests.post(url, json=payload)

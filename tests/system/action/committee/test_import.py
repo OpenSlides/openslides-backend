@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.models.models import Meeting
@@ -9,7 +9,7 @@ from .test_json_upload import TestCommitteeJsonUploadForImport
 
 
 class TestCommitteeImport(TestCommitteeJsonUploadForImport):
-    def get_row(self, response: Response, index: int = 0) -> Dict[str, Any]:
+    def get_row(self, response: Response, index: int = 0) -> dict[str, Any]:
         return response.json["results"][0][0]["rows"][index]
 
     def test_import_correct(self) -> None:

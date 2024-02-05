@@ -1,6 +1,6 @@
 from collections import defaultdict
 from time import time
-from typing import Any, Dict
+from typing import Any
 from urllib.parse import quote
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -115,5 +115,5 @@ The link will be valid for 10 minutes."""
         )
         return self.PW_FORGET_EMAIL_TEMPLATE.format_map(body_format)
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         pass

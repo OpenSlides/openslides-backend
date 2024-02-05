@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, cast
 
 from datastore.migrations import (
     BaseEvent,
@@ -19,8 +19,8 @@ committee_cml_permission_field = f"user_${cml_permission}_management_level"
 
 class AddRemove:
     def __init__(self) -> None:
-        self.add: Set[int] = set()
-        self.remove: Set[int] = set()
+        self.add: set[int] = set()
+        self.remove: set[int] = set()
 
 
 class Migration(BaseEventMigration):
@@ -55,21 +55,21 @@ class Migration(BaseEventMigration):
     target_migration_index = 13
 
     def position_init(self) -> None:
-        self.user_committee_ids: Dict[int, AddRemove] = defaultdict(AddRemove)
-        self.committee_user_ids: Dict[int, AddRemove] = defaultdict(AddRemove)
-        self.event_user: List[Tuple[BaseEvent, Optional[Dict[str, Any]]]] = []
+        self.user_committee_ids: dict[int, AddRemove] = defaultdict(AddRemove)
+        self.committee_user_ids: dict[int, AddRemove] = defaultdict(AddRemove)
+        self.event_user: list[tuple[BaseEvent, dict[str, Any] | None]] = []
 
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection, user_id = collection_and_id_from_fqid(event.fqid)
 
         if collection != "user":
             return None
 
         if isinstance(event, (CreateEvent, UpdateEvent, DeleteEvent, RestoreEvent)):
-            user: Optional[Dict[str, Any]]
+            user: dict[str, Any] | None
             if not isinstance(event, CreateEvent):
                 user = self.new_accessor.get_model_ignore_deleted(f"user/{user_id}")[0]
             else:
@@ -91,9 +91,9 @@ class Migration(BaseEventMigration):
                 self.event_user.append((event, user))
         return None
 
-    def get_additional_events(self) -> Optional[List[BaseEvent]]:
-        events: List[BaseEvent] = []
-        payload: Dict[str, Dict[str, List[int]]]
+    def get_additional_events(self) -> list[BaseEvent] | None:
+        events: list[BaseEvent] = []
+        payload: dict[str, dict[str, list[int]]]
 
         for event, user in self.event_user:
             user_id = id_from_fqid(event.fqid)
@@ -101,15 +101,15 @@ class Migration(BaseEventMigration):
                 add_events = self.handle_user_create_event(event, user_id)
             elif isinstance(event, DeleteEvent):
                 add_events = self.handle_user_delete_event(
-                    event, cast(Dict[str, Any], user), user_id
+                    event, cast(dict[str, Any], user), user_id
                 )
             elif isinstance(event, RestoreEvent):
                 add_events = self.handle_user_restore_event(
-                    event, cast(Dict[str, Any], user), user_id
+                    event, cast(dict[str, Any], user), user_id
                 )
             elif isinstance(event, UpdateEvent):
                 add_events = self.handle_user_update_event(
-                    event, cast(Dict[str, Any], user), user_id
+                    event, cast(dict[str, Any], user), user_id
                 )
             if add_events:
                 events.extend(add_events)
@@ -134,16 +134,16 @@ class Migration(BaseEventMigration):
 
     def handle_user_create_event(
         self, event: CreateEvent, user_id: int
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         meeting_ids = list(map(int, event.data.get("group_$_ids", []))) or []
         committee_ids = cast(
-            Set[int],
-            set(
+            set[int],
+            {
                 self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[
                     0
                 ].get("committee_id")
                 for meeting_id in meeting_ids
-            ),
+            },
         )
         cml_committee_ids = list(
             map(int, event.data.get(user_cml_permission_field, []))
@@ -173,21 +173,21 @@ class Migration(BaseEventMigration):
         ]
 
     def handle_user_delete_event(
-        self, event: DeleteEvent, user: Dict[str, Any], user_id: int
-    ) -> Optional[List[BaseEvent]]:
-        meeting_ids = list(map(int, cast(List[str], user.get("group_$_ids", [])))) or []
-        committee_ids = set(
+        self, event: DeleteEvent, user: dict[str, Any], user_id: int
+    ) -> list[BaseEvent] | None:
+        meeting_ids = list(map(int, cast(list[str], user.get("group_$_ids", [])))) or []
+        committee_ids = {
             self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[0].get(
                 "committee_id"
             )
             for meeting_id in meeting_ids
-        )
-        cml_committee_ids = cast(List[int], user.get(user_cml_permission_field, []))
+        }
+        cml_committee_ids = cast(list[int], user.get(user_cml_permission_field, []))
         committee_ids.update(cml_committee_ids)
         # don't apply remove on user instance, because it is deleted
         self.update_add_remove(
             self.committee_user_ids,
-            cast(List[int], list(committee_ids)),
+            cast(list[int], list(committee_ids)),
             [user_id],
             add=False,
         )
@@ -204,20 +204,20 @@ class Migration(BaseEventMigration):
         ]
 
     def handle_user_restore_event(
-        self, event: RestoreEvent, user: Dict[str, Any], user_id: int
-    ) -> Optional[List[BaseEvent]]:
-        meeting_ids = list(map(int, cast(List[str], user.get("group_$_ids", [])))) or []
-        committee_ids = set(
+        self, event: RestoreEvent, user: dict[str, Any], user_id: int
+    ) -> list[BaseEvent] | None:
+        meeting_ids = list(map(int, cast(list[str], user.get("group_$_ids", [])))) or []
+        committee_ids = {
             self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[0].get(
                 "committee_id"
             )
             for meeting_id in meeting_ids
-        )
-        cml_committee_ids = cast(List[int], user.get(user_cml_permission_field, []))
+        }
+        cml_committee_ids = cast(list[int], user.get(user_cml_permission_field, []))
         committee_ids.update(cml_committee_ids)
         self.update_add_remove(
             self.committee_user_ids,
-            cast(List[int], list(committee_ids)),
+            cast(list[int], list(committee_ids)),
             [user_id],
             add=True,
         )
@@ -234,27 +234,27 @@ class Migration(BaseEventMigration):
         ]
 
     def handle_user_update_event(
-        self, event: UpdateEvent, user: Dict[str, Any], user_id: int
-    ) -> Optional[List[BaseEvent]]:
-        meeting_ids = list(map(int, cast(List[str], user.get("group_$_ids", [])))) or []
-        old_committee_ids = set(
+        self, event: UpdateEvent, user: dict[str, Any], user_id: int
+    ) -> list[BaseEvent] | None:
+        meeting_ids = list(map(int, cast(list[str], user.get("group_$_ids", [])))) or []
+        old_committee_ids = {
             self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[0].get(
                 "committee_id"
             )
             for meeting_id in meeting_ids
-        )
+        }
         if "group_$_ids" in event.data:
             meeting_ids = list(map(int, event.data["group_$_ids"]))
-            new_committee_ids = set(
+            new_committee_ids = {
                 self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[
                     0
                 ].get("committee_id")
                 for meeting_id in meeting_ids
-            )
+            }
         else:
             new_committee_ids = old_committee_ids.copy()
 
-        old_cml_committee_ids = cast(List[int], user.get(user_cml_permission_field, []))
+        old_cml_committee_ids = cast(list[int], user.get(user_cml_permission_field, []))
         if user_cml_permission_field in event.data:
             new_cml_committee_ids = list(
                 map(int, event.data[user_cml_permission_field])
@@ -264,9 +264,9 @@ class Migration(BaseEventMigration):
 
         new_committee_ids.update(new_cml_committee_ids)
         old_committee_ids.update(old_cml_committee_ids)
-        add_committee_ids = cast(List[int], list(new_committee_ids - old_committee_ids))
+        add_committee_ids = cast(list[int], list(new_committee_ids - old_committee_ids))
         remove_committee_ids = cast(
-            List[int], list(old_committee_ids - new_committee_ids)
+            list[int], list(old_committee_ids - new_committee_ids)
         )
         if add_committee_ids:
             self.update_add_remove(
@@ -326,13 +326,13 @@ class Migration(BaseEventMigration):
                 for committee_id in remove_cml_committee_ids
             ]
         )
-        return cast(List[BaseEvent], events)
+        return cast(list[BaseEvent], events)
 
     def update_add_remove(
         self,
-        add_remove_results: Dict[int, AddRemove],
-        keys: List[int],
-        values: List[int],
+        add_remove_results: dict[int, AddRemove],
+        keys: list[int],
+        values: list[int],
         add: bool,
     ) -> None:
         if add:

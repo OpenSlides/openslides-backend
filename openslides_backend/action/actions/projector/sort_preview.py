@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Projector
 from ....permissions.permissions import Permissions
@@ -36,7 +36,7 @@ class ProjectorSortPreview(UpdateAction):
                 weight += 1
         return []
 
-    def check_preview_ids(self, instance: Dict[str, Any]) -> None:
+    def check_preview_ids(self, instance: dict[str, Any]) -> None:
         projector = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["preview_projection_ids"],

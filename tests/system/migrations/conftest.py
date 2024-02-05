@@ -1,7 +1,7 @@
 import json
 from copy import deepcopy
 from importlib import import_module
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from datastore.migrations import MigrationHandler
@@ -33,14 +33,14 @@ class MigrationChecker(Checker):
     def check_collections(self) -> None:
         pass
 
-    def check_normal_fields(self, model: Dict[str, Any], collection: str) -> bool:
+    def check_normal_fields(self, model: dict[str, Any], collection: str) -> bool:
         return False
 
     def check_types(self, *args, **kwargs) -> None:
         pass
 
     def check_relation(
-        self, model: Dict[str, Any], collection: str, field: str
+        self, model: dict[str, Any], collection: str, field: str
     ) -> None:
         if collection not in model_registry or not self.get_model(
             collection
@@ -66,7 +66,7 @@ def clear_datastore(setup) -> None:
 
 @pytest.fixture()
 def write(clear_datastore) -> None:
-    def _write(*events: Dict[str, Any]):
+    def _write(*events: dict[str, Any]):
         payload = {
             "user_id": 1,
             "information": {},

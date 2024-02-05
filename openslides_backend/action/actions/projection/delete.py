@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Projection
 from ....permissions.permissions import Permissions
@@ -19,7 +19,7 @@ class ProjectionDelete(DeleteAction):
     schema = DefaultSchema(Projection()).get_delete_schema()
     permission = Permissions.Projector.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         projection = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [

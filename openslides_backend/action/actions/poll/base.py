@@ -1,10 +1,8 @@
-from typing import Optional
-
 from ....shared.exceptions import ActionException
 
 
 def base_check_onehundred_percent_base(
-    pollmethod: Optional[str], onehundred_percent_base: Optional[str]
+    pollmethod: str | None, onehundred_percent_base: str | None
 ) -> None:
     error_msg = "This onehundred_percent_base not allowed in this pollmethod."
     if pollmethod == "Y" and onehundred_percent_base in ("N", "YN", "YNA"):
