@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from openslides_backend.action.actions.meeting.mixins import MeetingCheckTimesMixin
 from openslides_backend.shared.exceptions import ActionException
@@ -87,7 +87,7 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         data = instance.pop("data")
         self.setup_lookups(data)
         self.rows = [self.validate_entry(entry) for entry in data]
@@ -98,8 +98,8 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
         self.generate_statistics()
         return {}
 
-    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        messages: List[str] = []
+    def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
+        messages: list[str] = []
         row_state = ImportState.DONE
 
         # committee state handling
@@ -166,7 +166,7 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
 
     def check_meetings(self) -> None:
         # search for relevant meetings in datastore
-        filters: List[Filter] = []
+        filters: list[Filter] = []
         for row in self.rows:
             entry = row["data"]
             if (committee_id := entry["name"].get("id")) and (
@@ -264,7 +264,7 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
                             f"The meeting template {template} was not found, the meeting will be created without a template."
                         )
 
-    def is_same_day(self, a: Optional[int], b: Optional[int]) -> bool:
+    def is_same_day(self, a: int | None, b: int | None) -> bool:
         if a is None or b is None:
             return a == b
         dt_a = datetime.fromtimestamp(a, timezone.utc)
@@ -273,16 +273,16 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
 
     def validate_with_lookup(
         self,
-        entry: Dict[str, Any],
+        entry: dict[str, Any],
         field: str,
         lookup: Lookup,
-        messages: List[str],
+        messages: list[str],
         create: bool = False,
     ) -> None:
         names = entry.get(field, [])
-        objects: List[Dict[str, Any]] = []
-        missing: List[str] = []
-        duplicates: List[str] = []
+        objects: list[dict[str, Any]] = []
+        missing: list[str] = []
+        duplicates: list[str] = []
         for name in names:
             obj = {"value": name, "info": ImportState.DONE}
             if (result := lookup.check_duplicate(name)) == ResultType.FOUND_ID:
@@ -335,12 +335,12 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
             {"name": key, "value": value} for key, value in statistics_data.items()
         )
 
-    def setup_lookups(self, data: List[Dict[str, Any]]) -> None:
-        committee_names: Set[str] = set()
-        committee_tuples: List[Tuple[str | Tuple[str, ...], Dict[str, Any]]] = []
-        usernames: Set[str] = set()
-        organization_tags: Set[str] = set()
-        forward_committees: Set[str] = set()
+    def setup_lookups(self, data: list[dict[str, Any]]) -> None:
+        committee_names: set[str] = set()
+        committee_tuples: list[tuple[str | tuple[str, ...], dict[str, Any]]] = []
+        usernames: set[str] = set()
+        organization_tags: set[str] = set()
+        forward_committees: set[str] = set()
 
         for entry in data:
             committee_names.add(entry["name"])

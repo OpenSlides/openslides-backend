@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import PersonalNote
 from ....shared.exceptions import ActionException
@@ -28,7 +28,7 @@ class PersonalNoteCreateAction(
     )
     relation_field_for_meeting = "content_object_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         - set meeting_user_id from action.
         - check star or note.
@@ -73,6 +73,6 @@ class PersonalNoteCreateAction(
             )
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         instance = self.update_instance_with_meeting_id(instance)
         self.check_anonymous_and_user_in_meeting(instance["meeting_id"])

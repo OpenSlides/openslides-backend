@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent, UpdateEvent
 
 ONE_ORGANIZATION_FQID = "organization/1"
@@ -14,7 +12,7 @@ class Migration(BaseEventMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         if event.fqid != ONE_ORGANIZATION_FQID:
             return None
 
@@ -37,7 +35,7 @@ class Migration(BaseEventMigration):
             ]
         return None
 
-    def get_additional_events(self) -> Optional[List[BaseEvent]]:
+    def get_additional_events(self) -> list[BaseEvent] | None:
         if self.update_theme_id:
             return [
                 UpdateEvent(ONE_ORGANIZATION_FQID, {"theme_id": 1, "theme_ids": [1]})

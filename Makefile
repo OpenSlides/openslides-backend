@@ -2,10 +2,19 @@
 
 paths = openslides_backend/ tests/ cli/
 
-all: black autoflake isort flake8 mypy
+all: pyupgrade black autoflake isort flake8 mypy
+
+pyupgrade:
+	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
+
+check-pyupgrade:
+	pyupgrade --py310-plus $$(find . -name '*.py')
 
 black:
 	black $(paths)
+
+check-black:
+	black --check --diff $(paths)
 
 autoflake:
 	autoflake --verbose --in-place --remove-all-unused-imports \
@@ -13,6 +22,9 @@ autoflake:
 
 isort:
 	isort $(paths)
+
+check-isort:
+	isort --check-only --diff $(paths)
 
 flake8:
 	flake8 $(paths)

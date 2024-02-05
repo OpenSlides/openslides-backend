@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from datastore.migrations import (
     BaseEvent,
@@ -25,7 +25,7 @@ class Migration(RemoveFieldsMigration):
         "projector": ["used_as_default_$_in_meeting_id"],
     }
 
-    def remove_replacement(self, obj: Dict[str, Any], fields: List[str]) -> None:
+    def remove_replacement(self, obj: dict[str, Any], fields: list[str]) -> None:
         for field in fields:
             if obj.get(field) and "user" in obj[field]:
                 obj[field].remove("user")
@@ -35,7 +35,7 @@ class Migration(RemoveFieldsMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         events = super().migrate_event(event)
         if events is None:
             return events

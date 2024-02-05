@@ -1,5 +1,3 @@
-from typing import List, Optional, Set
-
 from datastore.migrations import (
     BaseEvent,
     BaseEventMigration,
@@ -17,12 +15,12 @@ class Migration(BaseEventMigration):
     target_migration_index = 30
 
     def position_init(self) -> None:
-        self.user_ids: Set[int] = set()
+        self.user_ids: set[int] = set()
 
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         if collection_from_fqid(event.fqid) != "user":
             return None
         if isinstance(event, CreateEvent):
@@ -43,7 +41,7 @@ class Migration(BaseEventMigration):
             ]
         return None
 
-    def get_additional_events(self) -> Optional[List[BaseEvent]]:
+    def get_additional_events(self) -> list[BaseEvent] | None:
         if not self.user_ids:
             return None
         return [

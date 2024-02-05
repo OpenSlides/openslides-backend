@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class OptionUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.vote_models: Dict[str, Dict[str, Any]] = {
+        self.vote_models: dict[str, dict[str, Any]] = {
             "option/57": {
                 "vote_ids": [22],
             },

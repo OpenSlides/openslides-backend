@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 from datastore.reader.core import GetAllRequest, GetRequest, Reader
 from datastore.reader.services import register_services as register_reader_services
@@ -41,7 +41,7 @@ collection_to_fields_map = {
 possible_languages = Organization().default_language.constraints["enum"]
 
 
-def read_collection(collection: str, fields: List[str]) -> Any:
+def read_collection(collection: str, fields: list[str]) -> Any:
     reader: Reader = injector.get(Reader)
     with reader.get_database_context():
         response = reader.get_all(
@@ -93,7 +93,7 @@ def main() -> None:
     for collection in collection_to_fields_map:
         fields = collection_to_fields_map[collection]
         for id_, model in read_collection(collection, fields):
-            changed_fields: Dict[str, Any] = {}
+            changed_fields: dict[str, Any] = {}
             for field in fields:
                 old_value = model[field]
                 possible_new_value = Translator.translate(old_value)

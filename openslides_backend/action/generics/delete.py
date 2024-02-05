@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, List, Tuple, Type
+from collections.abc import Iterable
+from typing import Any
 
 from ...models.fields import OnDelete
 from ...shared.exceptions import ActionException, ProtectedModelsException
@@ -21,7 +22,7 @@ class DeleteAction(Action):
     Generic delete action.
     """
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Takes care of on_delete handling.
         """
@@ -40,13 +41,13 @@ class DeleteAction(Action):
 
         # Update instance and set relation fields to None.
         # Gather all delete actions with action data and also all models to be deleted
-        delete_actions: List[Tuple[Type[Action], ActionData]] = []
+        delete_actions: list[tuple[type[Action], ActionData]] = []
         self.datastore.apply_changed_model(this_fqid, DeletedModel())
         for field in self.model.get_relation_fields():
             # Check on_delete.
             if field.on_delete != OnDelete.SET_NULL:
                 # Extract all foreign keys as fqids from the model
-                foreign_fqids: List[FullQualifiedId] = []
+                foreign_fqids: list[FullQualifiedId] = []
                 value = db_instance.get(field.get_own_field_name(), [])
                 foreign_fqids = transform_to_fqids(value, field.get_target_collection())
 
@@ -81,7 +82,7 @@ class DeleteAction(Action):
 
         # Add additional relation models and execute all previously gathered delete actions
         # catch all protected models exception to gather all protected fqids
-        all_protected_fqids: List[FullQualifiedId] = []
+        all_protected_fqids: list[FullQualifiedId] = []
         for delete_action_class, delete_action_data in delete_actions:
             try:
                 self.execute_other_action(delete_action_class, delete_action_data)
@@ -93,7 +94,7 @@ class DeleteAction(Action):
 
         return instance
 
-    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         yield self.build_event(EventType.Delete, fqid)
 

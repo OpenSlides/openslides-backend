@@ -1,6 +1,3 @@
-from typing import List
-
-
 class AgendaItemModelMixin:
     AGENDA_ITEM = "common"
     INTERNAL_ITEM = "internal"
@@ -46,30 +43,30 @@ class MeetingModelMixin:
     )
 
     @classmethod
-    def all_logo_places(cls) -> List[str]:
+    def all_logo_places(cls) -> list[str]:
         return [f"logo_{place}_id" for place in cls.LOGO_PLACES]
 
     @classmethod
-    def reverse_logo_places(cls) -> List[str]:
+    def reverse_logo_places(cls) -> list[str]:
         return [f"used_as_logo_{place}_in_meeting_id" for place in cls.LOGO_PLACES]
 
     @classmethod
-    def all_font_places(cls) -> List[str]:
+    def all_font_places(cls) -> list[str]:
         return [f"font_{place}_id" for place in cls.FONT_PLACES]
 
     @classmethod
-    def reverse_font_places(cls) -> List[str]:
+    def reverse_font_places(cls) -> list[str]:
         return [f"used_as_font_{place}_in_meeting_id" for place in cls.FONT_PLACES]
 
     @classmethod
-    def all_default_projectors(cls) -> List[str]:
+    def all_default_projectors(cls) -> list[str]:
         return [
             f"default_projector_{option}_ids"
             for option in cls.DEFAULT_PROJECTOR_OPTIONS
         ]
 
     @classmethod
-    def reverse_default_projectors(cls) -> List[str]:
+    def reverse_default_projectors(cls) -> list[str]:
         return [
             f"used_as_default_projector_for_{option}_in_meeting_id"
             for option in cls.DEFAULT_PROJECTOR_OPTIONS

@@ -1,4 +1,4 @@
-from typing import Any, List, Set
+from typing import Any
 
 import bleach
 import simplejson as json
@@ -80,8 +80,8 @@ ONE_ORGANIZATION_FQID = fqid_from_collection_and_id("organization", ONE_ORGANIZA
 
 def validate_html(
     html: str,
-    allowed_tags: Set[str] = ALLOWED_HTML_TAGS_STRICT,
-    allowed_styles: List[str] = ALLOWED_STYLES,
+    allowed_tags: set[str] = ALLOWED_HTML_TAGS_STRICT,
+    allowed_styles: list[str] = ALLOWED_STYLES,
 ) -> str:
     def allow_all_except_some_iframe_attrs(tag: str, name: str, value: str) -> bool:
         if tag == "iframe" and name in (

@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from babel.messages.catalog import Catalog
 from babel.messages.pofile import read_po
@@ -8,7 +7,7 @@ DEFAULT_LANGUAGE = "en"
 
 
 class _Translator:
-    translations: Dict[str, Catalog] = {}
+    translations: dict[str, Catalog] = {}
     current_language: str
 
     def __init__(self) -> None:
@@ -28,7 +27,7 @@ class _Translator:
         else:
             return msg
 
-    def set_translation_language(self, lang_header: Optional[str]) -> None:
+    def set_translation_language(self, lang_header: str | None) -> None:
         langs = []
         if lang_header is not None:
             langs = self.parse_language_header(lang_header)
@@ -39,7 +38,7 @@ class _Translator:
         else:
             self.current_language = DEFAULT_LANGUAGE
 
-    def parse_language_header(self, lang_header: str) -> List[str]:
+    def parse_language_header(self, lang_header: str) -> list[str]:
         # each language is separated by a comma
         languages = lang_header.split(",")
         result = []

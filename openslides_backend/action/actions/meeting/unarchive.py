@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -19,7 +19,7 @@ class MeetingUnarchive(UpdateAction):
     permission = OrganizationManagementLevel.SUPERADMIN
     skip_archived_meeting_check = True
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["committee_id", "is_active_in_organization_id"],

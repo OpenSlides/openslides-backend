@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -23,7 +23,7 @@ class MotionSetRecommendationAction(UpdateAction, MotionStateHistoryInformationM
     schema = DefaultSchema(Motion()).get_update_schema(["recommendation_id"])
     permission = Permissions.Motion.CAN_MANAGE_METADATA
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Check recommendation workflow_id and recommendation_label.
         """
@@ -49,7 +49,7 @@ class MotionSetRecommendationAction(UpdateAction, MotionStateHistoryInformationM
         instance["last_modified"] = round(time.time())
         return instance
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         return self._get_state_history_information(
             "recommendation_id", "Recommendation"
         )

@@ -1,6 +1,7 @@
 from collections import defaultdict
+from collections.abc import Callable
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, TypedDict
+from typing import Any, NamedTuple, TypedDict
 
 from datastore.migrations import BaseModelMigration, MigrationException
 from datastore.writer.core import (
@@ -59,11 +60,11 @@ FieldNameFunc = Callable[[str], str]
 
 class ParametrizedFieldStrategy(TypedDict):
     strategy: FieldStrategy
-    name: str | Dict[str, str]
+    name: str | dict[str, str]
 
 
-TEMPLATE_FIELDS: Dict[
-    Collection, Dict[str, FieldStrategy | ParametrizedFieldStrategy]
+TEMPLATE_FIELDS: dict[
+    Collection, dict[str, FieldStrategy | ParametrizedFieldStrategy]
 ] = {
     "user": {
         "committee_$_management_level": {
@@ -175,9 +176,9 @@ class MeetingUserKey(NamedTuple):
     user_id: int
 
 
-class MeetingUsersDict(Dict[MeetingUserKey, Dict[str, Any]]):
+class MeetingUsersDict(dict[MeetingUserKey, dict[str, Any]]):
     last_id: int
-    ids_by_parent_object: Dict[Collection, Dict[int, List[int]]]
+    ids_by_parent_object: dict[Collection, dict[int, list[int]]]
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -187,7 +188,7 @@ class MeetingUsersDict(Dict[MeetingUserKey, Dict[str, Any]]):
             "meeting": defaultdict(list),
         }
 
-    def __missing__(self, key: MeetingUserKey) -> Dict[str, Any]:
+    def __missing__(self, key: MeetingUserKey) -> dict[str, Any]:
         self.last_id += 1
         self.ids_by_parent_object["user"][key.user_id].append(self.last_id)
         self.ids_by_parent_object["meeting"][key.meeting_id].append(self.last_id)
@@ -212,9 +213,9 @@ class Migration(BaseModelMigration):
 
     target_migration_index = 45
 
-    def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
+    def migrate_models(self) -> list[BaseRequestEvent] | None:
         self.meeting_users = MeetingUsersDict()
-        updates: Dict[FullQualifiedId, Dict[str, Any]] = defaultdict(dict)
+        updates: dict[FullQualifiedId, dict[str, Any]] = defaultdict(dict)
 
         for collection, fields in TEMPLATE_FIELDS.items():
             db_models = self.reader.get_all(collection)
@@ -241,7 +242,7 @@ class Migration(BaseModelMigration):
                             )
                         )
 
-        events: List[BaseRequestEvent] = []
+        events: list[BaseRequestEvent] = []
         # Create meeting users
         events.extend(
             RequestCreateEvent(
@@ -268,20 +269,20 @@ class Migration(BaseModelMigration):
 
     def apply_strategy(
         self,
-        model: Dict[str, Any],
+        model: dict[str, Any],
         strategy: FieldStrategy,
         old_field: str,
         new_field_func: FieldNameFunc,
         replacement_collection: str | None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # always remove the old field
-        update: Dict[str, Any] = {
+        update: dict[str, Any] = {
             old_field: None,
         }
 
         def get_meeting_user_ids(
-            meeting_id: int, user_ids: int | List[int]
-        ) -> int | List[int]:
+            meeting_id: int, user_ids: int | list[int]
+        ) -> int | list[int]:
             if isinstance(user_ids, list):
                 return [
                     self.meeting_users[MeetingUserKey(meeting_id, user_id)]["id"]
@@ -298,7 +299,7 @@ class Migration(BaseModelMigration):
                 model["meeting_id"], model[old_field]
             )
         else:
-            new_value: List[Any] = []
+            new_value: list[Any] = []
             for replacement in model[old_field]:
                 structured_field = old_field.replace("$", f"${replacement}")
                 # always remove the old field
@@ -349,7 +350,7 @@ class Migration(BaseModelMigration):
 
     def resolve_strategy(
         self, strategy: FieldStrategy | ParametrizedFieldStrategy
-    ) -> Tuple[FieldStrategy, FieldNameFunc]:
+    ) -> tuple[FieldStrategy, FieldNameFunc]:
         """
         Resolves a (parametrized) strategy to a tuple of strategy and the new field name.
         """

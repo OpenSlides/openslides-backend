@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 import fastjsonschema
 from datastore.shared.util import DeletedModelsBehaviour
@@ -29,8 +29,8 @@ check_database_schema = fastjsonschema.compile(
 
 
 def check_meetings(
-    datastore: DatastoreService, meeting_id: Optional[int]
-) -> Dict[int, str]:
+    datastore: DatastoreService, meeting_id: int | None
+) -> dict[int, str]:
     if meeting_id:
         meeting_ids = [meeting_id]
     else:
@@ -39,7 +39,7 @@ def check_meetings(
         ).values()
         meeting_ids = [meeting["id"] for meeting in meetings]
 
-    errors: Dict[int, str] = {}
+    errors: dict[int, str] = {}
     for meeting_id in meeting_ids:
         export = export_meeting(datastore, meeting_id)
         try:
@@ -77,7 +77,7 @@ class CheckDatabase(BasePresenter):
             return {"ok": True, "errors": ""}
         return {"ok": False, "errors": self.gen_error_message(errors)}
 
-    def gen_error_message(self, errors: Dict[int, str]) -> str:
+    def gen_error_message(self, errors: dict[int, str]) -> str:
         buf = []
         for meeting_id in errors:
             buf.append(f"Meeting {meeting_id}")

@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from openslides_backend.models.fields import GenericRelationField, RelationField
 from openslides_backend.shared.interfaces.event import Event, EventType
@@ -15,7 +16,7 @@ class ExtendHistoryMixin(Action):
 
     extend_history_to: str
 
-    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         yield from super().create_events(instance)
         field = self.model.get_field(self.extend_history_to)
         for instance in self.instances:

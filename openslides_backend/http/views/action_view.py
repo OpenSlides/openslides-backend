@@ -1,6 +1,5 @@
 import binascii
 from base64 import b64decode
-from typing import Optional, Tuple
 
 from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
@@ -25,7 +24,7 @@ class ActionView(BaseView):
     """
 
     @route(["handle_request", "handle_separately"])
-    def action_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
+    def action_route(self, request: Request) -> tuple[ResponseBody, str | None]:
         self.logger.debug("Start dispatching action request.")
 
         assert_migration_index()
@@ -52,7 +51,7 @@ class ActionView(BaseView):
     @route("handle_request", internal=True)
     def internal_action_route(
         self, request: Request
-    ) -> Tuple[ResponseBody, Optional[str]]:
+    ) -> tuple[ResponseBody, str | None]:
         self.logger.debug("Start dispatching internal action request.")
 
         assert_migration_index()
@@ -67,7 +66,7 @@ class ActionView(BaseView):
         return response, None
 
     @route("migrations", internal=True)
-    def migrations_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
+    def migrations_route(self, request: Request) -> tuple[ResponseBody, str | None]:
         self.logger.debug("Start executing migrations request.")
         self.check_internal_auth_password(request)
         handler = MigrationHandler(self.env, self.services, self.logging)
@@ -76,11 +75,11 @@ class ActionView(BaseView):
         return {"success": True, **response}, None
 
     @route("health", method="GET", json=False)
-    def health_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
+    def health_route(self, request: Request) -> tuple[ResponseBody, str | None]:
         return {"status": "running"}, None
 
     @route("info", method="GET", json=False)
-    def info_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
+    def info_route(self, request: Request) -> tuple[ResponseBody, str | None]:
         return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}, None
 
     def check_internal_auth_password(self, request: Request) -> None:

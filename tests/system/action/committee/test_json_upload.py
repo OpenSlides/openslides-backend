@@ -1,6 +1,6 @@
 from math import ceil, floor
 from time import time
-from typing import Any, Dict, List
+from typing import Any
 
 from openslides_backend.action.mixins.import_mixins import ImportState, StatisticEntry
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -9,13 +9,13 @@ from tests.util import Response
 
 
 class BaseCommitteeJsonUploadTest(BaseActionTestCase):
-    def get_row(self, response: Response, index: int = 0) -> Dict[str, Any]:
+    def get_row(self, response: Response, index: int = 0) -> dict[str, Any]:
         return response.json["results"][0][0]["rows"][index]
 
-    def get_statistics(self, response: Response) -> List[StatisticEntry]:
+    def get_statistics(self, response: Response) -> list[StatisticEntry]:
         return response.json["results"][0][0]["statistics"]
 
-    def assert_statistics(self, response: Response, expected: Dict[str, int]) -> None:
+    def assert_statistics(self, response: Response, expected: dict[str, int]) -> None:
         for key, value in expected.items():
             self.assertIn({"name": key, "value": value}, self.get_statistics(response))
 

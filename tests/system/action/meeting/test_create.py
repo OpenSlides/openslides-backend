@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.i18n.translator import translate as _
@@ -10,8 +10,8 @@ from tests.system.action.base import BaseActionTestCase
 
 class MeetingCreateActionTest(BaseActionTestCase):
     def basic_test(
-        self, datapart: Dict[str, Any], set_400_str: str = ""
-    ) -> Dict[str, Any]:
+        self, datapart: dict[str, Any], set_400_str: str = ""
+    ) -> dict[str, Any]:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {

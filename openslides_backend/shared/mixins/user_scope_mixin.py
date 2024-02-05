@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Set, Tuple
+from typing import Any
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
@@ -29,16 +29,16 @@ class UserScope(str, Enum):
 
 class UserScopeMixin(BaseServiceProvider):
     def get_user_scope(
-        self, id_or_instance: int | Dict[str, Any]
-    ) -> Tuple[UserScope, int, str]:
+        self, id_or_instance: int | dict[str, Any]
+    ) -> tuple[UserScope, int, str]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
         Returns the scope of the given user id together with the relevant scope id (either meeting,
         committee or organization) and the OML level of the user as string (empty string if the user
         has none).
         """
-        meetings: Set[int] = set()
-        committees_manager: Set[int] = set()
+        meetings: set[int] = set()
+        committees_manager: set[int] = set()
         if isinstance(id_or_instance, dict):
             if "group_ids" in id_or_instance:
                 if "meeting_id" in id_or_instance:
@@ -69,7 +69,7 @@ class UserScopeMixin(BaseServiceProvider):
             ]
         ).get("meeting", {})
 
-        meetings_committee: Dict[int, int] = {
+        meetings_committee: dict[int, int] = {
             meeting_id: meeting_data["committee_id"]
             for meeting_id, meeting_data in result.items()
             if meeting_data.get("is_active_in_organization_id")

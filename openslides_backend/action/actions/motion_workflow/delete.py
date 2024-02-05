@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from ....models.models import MotionWorkflow
 from ....permissions.permissions import Permissions
@@ -19,7 +19,7 @@ class MotionWorkflowDeleteAction(DeleteAction):
     schema = DefaultSchema(MotionWorkflow()).get_delete_schema()
     permission = Permissions.Motion.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         check if is default or last workflow of meeting.
         """
@@ -52,7 +52,7 @@ class MotionWorkflowDeleteAction(DeleteAction):
                     "You cannot delete the workflow as long as it is selected as default workflow for new statute amendments in the settings. Please set another workflow as default in the settings and try to delete the workflow again."
                 )
 
-            workflow_ids = cast(List[int], meeting.get("motion_workflow_ids"))
+            workflow_ids = cast(list[int], meeting.get("motion_workflow_ids"))
             if len(workflow_ids) == 1:
                 raise ActionException(
                     "You cannot delete the last workflow of a meeting."

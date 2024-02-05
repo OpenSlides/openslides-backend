@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
@@ -46,7 +46,7 @@ class PollUpdateAction(
     poll_history_information = "updated"
     extend_history_to = "content_object_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["state", "type"],
@@ -122,7 +122,7 @@ class PollUpdateAction(
         instance.pop("publish_immediately", None)
         return instance
 
-    def check_onehundred_percent_base(self, instance: Dict[str, Any]) -> None:
+    def check_onehundred_percent_base(self, instance: dict[str, Any]) -> None:
         onehundred_percent_base = instance.get("onehundred_percent_base")
         if "pollmethod" in instance:
             pollmethod = instance["pollmethod"]
@@ -135,7 +135,7 @@ class PollUpdateAction(
         base_check_onehundred_percent_base(pollmethod, onehundred_percent_base)
 
     def check_state_change(
-        self, instance: Dict[str, Any], poll: Dict[str, Any]
+        self, instance: dict[str, Any], poll: dict[str, Any]
     ) -> bool:
         if poll.get("type") != Poll.TYPE_ANALOG:
             return False

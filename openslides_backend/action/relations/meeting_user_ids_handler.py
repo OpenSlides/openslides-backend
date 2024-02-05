@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set
+from typing import Any
 
 from openslides_backend.action.mixins.meeting_user_helper import get_meeting_user
 
@@ -19,7 +19,7 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
     """
 
     def process_field(
-        self, field: Field, field_name: str, instance: Dict[str, Any], action: str
+        self, field: Field, field_name: str, instance: dict[str, Any], action: str
     ) -> RelationUpdates:
         # Try to fetch db instance to compare if any new ids were added
         fqid = fqid_from_collection_and_id(field.own_collection, instance["id"])
@@ -66,8 +66,8 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         )
         return {fqfield: relation_el}
 
-    def get_user_ids(self, meeting_user_ids: Set[int]) -> List[int]:
-        user_ids: List[int] = []
+    def get_user_ids(self, meeting_user_ids: set[int]) -> list[int]:
+        user_ids: list[int] = []
         for id_ in meeting_user_ids:
             meeting_user = self.datastore.get(
                 fqid_from_collection_and_id("meeting_user", id_), ["user_id"]
