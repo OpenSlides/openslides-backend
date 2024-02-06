@@ -501,7 +501,17 @@ class Meeting(Model, MeetingModelMixin):
     motion_poll_default_onehundred_percent_base = fields.CharField(
         default="YNA",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     motion_poll_default_group_ids = fields.RelationListField(
@@ -559,7 +569,17 @@ class Meeting(Model, MeetingModelMixin):
     assignment_poll_default_onehundred_percent_base = fields.CharField(
         default="valid",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     assignment_poll_default_group_ids = fields.RelationListField(
@@ -584,7 +604,17 @@ class Meeting(Model, MeetingModelMixin):
     poll_default_onehundred_percent_base = fields.CharField(
         default="YNA",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     poll_default_group_ids = fields.RelationListField(
@@ -1649,7 +1679,17 @@ class Poll(Model, PollModelMixin):
         required=True,
         default="disabled",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     votesvalid = fields.DecimalField()
