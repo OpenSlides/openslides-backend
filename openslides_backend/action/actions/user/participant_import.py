@@ -2,10 +2,11 @@ from typing import Any, cast
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.filters import FilterOperator, Or
+from ....shared.filters import And, FilterOperator, Or
 from ...mixins.import_mixins import ImportRow, ImportState
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..group.create import GroupCreate
 from ..structure_level.create import StructureLevelCreateAction
 from .base_import import BaseUserImport
 from .participant_common import ParticipantCommon
@@ -16,14 +17,37 @@ from .set_present import UserSetPresentAction
 class ParticipantImport(BaseUserImport, ParticipantCommon):
     import_name = "participant"
     lookups: dict[str, dict[int, str]] = {}
-    structure_level_to_create_list: list[str] = []
-    newly_found_structure_levels: dict[int, dict[str, Any]] = {}
+    models_to_create: dict[str, list[str]] = {}
+    newly_found_models: dict[str, dict[int, dict[str, Any]]] = {}
 
     def prefetch(self, action_data: ActionData) -> None:
         super().prefetch(action_data)
         self.meeting_id = cast(int, self.result["meeting_id"])
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        groups_to_create: set[str] = {
+            level["value"]
+            for row in self.rows
+            for level in row["data"].get("groups", [])
+            if level.get("info") == ImportState.NEW
+        }
+        if len(groups_to_create):
+            self.newly_found_models["groups"] = self.datastore.filter(
+                "group",
+                And(
+                    FilterOperator("meeting_id", "=", self.meeting_id),
+                    Or(
+                        [
+                            FilterOperator("name", "=", level)
+                            for level in groups_to_create
+                        ]
+                    ),
+                ),
+                ["name", "id"],
+            )
+            for group in self.newly_found_models["groups"].values():
+                groups_to_create.discard(group["name"])
+            self.models_to_create["groups"] = list(groups_to_create)
         structure_levels_to_create: set[str] = {
             level["value"]
             for row in self.rows
@@ -31,62 +55,76 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
             if level.get("info") == ImportState.NEW
         }
         if len(structure_levels_to_create):
-            self.newly_found_structure_levels = self.datastore.filter(
+            self.newly_found_models["structure_level"] = self.datastore.filter(
                 "structure_level",
-                Or(
-                    [
-                        FilterOperator("name", "=", level)
-                        for level in structure_levels_to_create
-                    ]
+                And(
+                    FilterOperator("meeting_id", "=", self.meeting_id),
+                    Or(
+                        [
+                            FilterOperator("name", "=", level)
+                            for level in structure_levels_to_create
+                        ]
+                    ),
                 ),
                 ["name", "id"],
             )
-            for level in self.newly_found_structure_levels.values():
+            for level in self.newly_found_models["structure_level"].values():
                 structure_levels_to_create.discard(level["name"])
-            self.structure_level_to_create_list = list(structure_levels_to_create)
+            self.models_to_create["structure_level"] = list(structure_levels_to_create)
         instance = super().update_instance(instance)
         return instance
 
     def handle_create_relations(self, instance: dict[str, Any]) -> None:
-        if self.import_state != ImportState.ERROR and (
-            len(self.structure_level_to_create_list)
-            or len(self.newly_found_structure_levels)
-        ):
-            newly_found_levels_dict: dict[str, int] = {
-                model["name"]: id_
-                for id_, model in self.newly_found_structure_levels.items()
-            }
-            created_levels = (
-                self.execute_other_action(
-                    StructureLevelCreateAction,
-                    [
-                        {"name": name, "meeting_id": self.meeting_id}
-                        for name in self.structure_level_to_create_list
-                    ],
-                )
-                if len(self.structure_level_to_create_list)
-                else None
-            )
-            if created_levels:
-                levels_dict = dict(
-                    zip(self.structure_level_to_create_list, created_levels)
-                )
-                for row in self.rows:
-                    for level in row["data"].get("structure_level", []):
-                        if level.get("info") == ImportState.NEW:
-                            if structure_level := levels_dict.get(level["value"]):
-                                level["id"] = structure_level["id"]
-                            elif structure_level_id := newly_found_levels_dict.get(
-                                level["value"]
-                            ):
-                                level["id"] = structure_level_id
-                                level["info"] = ImportState.DONE
-                            else:
-                                raise ActionException(
-                                    "Couldn't correctly create new structure_levels"
-                                )
-            else:
-                raise ActionException("Couldn't correctly create new structure_levels")
+        if self.import_state != ImportState.ERROR:
+            for field in ["structure_level", "groups"]:
+                singular_field = field.rstrip("s")
+                if len(self.models_to_create.get(field, [])) or len(
+                    self.newly_found_models.get(field, {})
+                ):
+                    newly_found_models_dict: dict[str, int] = {
+                        model["name"]: id_
+                        for id_, model in self.newly_found_models[field].items()
+                    }
+                    created_models = (
+                        self.execute_other_action(
+                            (
+                                StructureLevelCreateAction
+                                if field == "structure_level"
+                                else GroupCreate
+                            ),
+                            [
+                                {"name": name, "meeting_id": self.meeting_id}
+                                for name in self.models_to_create[field]
+                            ],
+                        )
+                        if len(self.models_to_create.get(field, []))
+                        else None
+                    )
+                    if created_models or not len(self.models_to_create.get(field, [])):
+                        models_dict = dict(
+                            zip(
+                                self.models_to_create.get(field, []),
+                                created_models or [],
+                            )
+                        )
+                        for row in self.rows:
+                            for model in row["data"].get(field, []):
+                                if model.get("info") == ImportState.NEW:
+                                    if created_model := models_dict.get(model["value"]):
+                                        model["id"] = created_model["id"]
+                                    elif model_id := newly_found_models_dict.get(
+                                        model["value"]
+                                    ):
+                                        model["id"] = model_id
+                                        model["info"] = ImportState.DONE
+                                    else:
+                                        raise ActionException(
+                                            f"Couldn't correctly create new {singular_field}s"
+                                        )
+                    else:
+                        raise ActionException(
+                            f"Couldn't correctly create new {singular_field}s"
+                        )
 
     def validate_entry(self, row: ImportRow) -> None:
         super().validate_entry(row)
@@ -141,9 +179,7 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
             if field in entry:
                 singular_field = field.rstrip("s")
                 for instance in (instances := entry[field]):
-                    if not (instance_id := instance.get("id")):
-                        continue
-                    if instance_id in self.lookups[field]:
+                    if (instance_id := instance.get("id")) in self.lookups[field]:
                         if self.lookups[field][instance_id] == instance["value"]:
                             valid = True
                         else:
@@ -151,7 +187,7 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                             row["messages"].append(
                                 f"The {singular_field} '{instance_id} {instance['value']}' changed its name to '{self.lookups[field][instance_id]}'."
                             )
-                    elif instance["info"] == ImportState.NEW and instance.get("id"):
+                    elif instance["info"] == ImportState.NEW:
                         valid = True
                     else:
                         instance["info"] = ImportState.WARNING

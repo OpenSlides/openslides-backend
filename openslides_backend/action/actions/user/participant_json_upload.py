@@ -57,11 +57,17 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.missing_field_values = {}
         data = super().update_instance(instance)
-        self.statistics.append(
-            {
-                "name": "structure levels created",
-                "value": len(self.missing_field_values.get("structure_level", [])),
-            }
+        self.statistics.extend(
+            [
+                {
+                    "name": "structure levels created",
+                    "value": len(self.missing_field_values.get("structure_level", [])),
+                },
+                {
+                    "name": "groups created",
+                    "value": len(self.missing_field_values.get("groups", [])),
+                },
+            ]
         )
         return data
 
@@ -72,7 +78,9 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         entry = results["data"]
 
         # validate groups
-        found, group_objects = self.validate_with_lookup(entry, "groups", messages)
+        found, group_objects = self.validate_with_lookup(
+            entry, "groups", messages, True
+        )
         if not found:
             if not self.default_group.get("name") or not self.default_group.get("id"):
                 raise ActionException(
@@ -160,6 +168,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                     self.missing_field_values[field] = {name}
                 else:
                     self.missing_field_values[field].add(name)
+                found = True
             else:
                 objects.append({"value": name, "info": ImportState.WARNING})
                 missing.append(name)
