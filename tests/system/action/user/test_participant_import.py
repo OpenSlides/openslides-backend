@@ -125,6 +125,56 @@ class ParticipantImport(BaseActionTestCase):
             },
         )
 
+    def test_import_with_group_created_in_between(self) -> None:
+        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
+            {"info": ImportState.DONE, "value": "group1", "id": 1}
+        ]
+        self.update_model("import_preview/1", self.import_preview1_data)
+        self.set_models(
+            {
+                "group/123": {"meeting_id": 1, "name": "2Bcreated"},
+                "import_preview/2": {
+                    "state": ImportState.DONE,
+                    "name": "participant",
+                    "result": {
+                        "meeting_id": 1,
+                        "rows": [
+                            {
+                                "state": ImportState.NEW,
+                                "messages": [],
+                                "data": {
+                                    "username": {
+                                        "value": "friend",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "groups": [
+                                        {"info": ImportState.NEW, "value": "2Bcreated"}
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            }
+        )
+        response = self.request("participant.import", {"id": 2, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "friend",
+                "meeting_user_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "meeting_id": 1,
+                "group_ids": [123],
+            },
+        )
+
     def test_import_saml_id_error_new_and_saml_id_exists(self) -> None:
         """Set saml_id 'testsaml' to user 1, add the import user 1 will be
         found and the import should result in an error."""
