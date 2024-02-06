@@ -110,10 +110,6 @@ def main() -> None:
     else:
         models_yml = requests.get(file).content
 
-    # Fix broken keys
-    models_yml = models_yml.replace(b" yes:", b' "yes":')
-    models_yml = models_yml.replace(b" no:", b' "no":')
-
     # open output stream
     dest: TextIOBase
     if args.check:
@@ -132,7 +128,7 @@ def main() -> None:
             + "\n"
         )
         for collection, fields in MODELS.items():
-            if collection == "_migration_index":
+            if collection.startswith("_"):
                 continue
             model = Model(collection, fields)
             dest.write(model.get_code())
@@ -229,6 +225,7 @@ class Attribute(Node):
     fields: Optional["Attribute"] = None
     required: bool = False
     read_only: bool = False
+    constant: bool = False
     default: Any = None
     on_delete: OnDelete | None = None
     equal_fields: str | list[str] | None = None
@@ -258,6 +255,7 @@ class Attribute(Node):
                 )
             self.required = value.get("required", False)
             self.read_only = value.get("read_only", False)
+            self.constant = value.get("constant", False)
             self.default = value.get("default")
             self.equal_fields = value.get("equal_fields")
             for k, v in value.items():
@@ -266,6 +264,7 @@ class Attribute(Node):
                     "to",
                     "required",
                     "read_only",
+                    "constant",
                     "default",
                     "on_delete",
                     "equal_fields",
@@ -291,6 +290,8 @@ class Attribute(Node):
             properties += "required=True, "
         if self.read_only:
             properties += "read_only=True, "
+        if self.constant:
+            properties += "constant=True, "
         if self.default is not None:
             properties += f"default={repr(self.default)}, "
         if self.equal_fields is not None:

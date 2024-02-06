@@ -41,6 +41,7 @@ class Field:
 
     required: bool
     read_only: bool
+    constant: bool
     default: str | None
     constraints: dict[str, Any]
 
@@ -48,11 +49,13 @@ class Field:
         self,
         required: bool = False,
         read_only: bool = False,
+        constant: bool = False,
         default: Any | None = None,
         constraints: dict[str, Any] | None = None,
     ) -> None:
         self.required = required
         self.read_only = read_only
+        self.constant = constant
         self.default = default
         if not self.required and constraints and "enum" in constraints:
             constraints["enum"].append(None)

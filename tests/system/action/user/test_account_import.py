@@ -49,7 +49,10 @@ class AccountJsonImport(BaseActionTestCase):
                                     },
                                     "first_name": "Testy",
                                     "last_name": "Tester",
-                                    "email": "email@test.com",
+                                    "email": {
+                                        "value": "email@test.com",
+                                        "info": ImportState.DONE,
+                                    },
                                     "gender": {
                                         "value": "male",
                                         "info": ImportState.DONE,
@@ -558,7 +561,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         ]
         assert row["data"] == {
             "id": 34,
-            "email": "test@ntvtn.de",
+            "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "error", "value": "test"},
             "last_name": "Mustermann",
             "first_name": "Max",
@@ -574,7 +577,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         assert row["messages"] == []
         assert row["data"] == {
             "id": 34,
-            "email": "test@ntvtn.de",
+            "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "done", "value": "test"},
             "last_name": "Mustermann",
             "first_name": "Max",
@@ -801,7 +804,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         ]
         assert row["data"] == {
             "id": 4,
-            "email": "mlk@america.com",
+            "email": {"value": "mlk@america.com", "info": ImportState.DONE},
             "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"},
             "last_name": "Luther King",
             "first_name": "Martin",
@@ -845,3 +848,17 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         }
         assert row["data"]["default_password"]["info"] == ImportState.GENERATED
         assert row["data"]["default_password"]["value"]
+
+    def test_json_upload_wrong_gender(self) -> None:
+        self.json_upload_wrong_gender()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        user = self.assert_model_exists("user/2", {"username": "test"})
+        assert "gender" not in user.keys()
+
+    def test_json_upload_wrong_gender_2(self) -> None:
+        self.json_upload_wrong_gender_2()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        user = self.assert_model_exists("user/2", {"username": "test"})
+        assert "gender" not in user.keys()
