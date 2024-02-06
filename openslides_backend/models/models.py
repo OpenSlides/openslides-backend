@@ -34,7 +34,7 @@ class Organization(Model):
         },
     )
     default_language = fields.CharField(
-        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
+        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
@@ -332,7 +332,7 @@ class Meeting(Model, MeetingModelMixin):
     language = fields.CharField(
         required=True,
         constant=True,
-        constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]},
+        constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]},
     )
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
