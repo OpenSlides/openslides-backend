@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Motion
 from ....permissions.base_classes import Permission
@@ -83,7 +83,7 @@ class MotionCreate(AmendmentParagraphHelper, TextHashMixin, MotionCreateBase):
             ]
         )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # special check logic
         if instance.get("lead_motion_id"):
             if instance.get("statute_paragraph_id"):
@@ -141,7 +141,7 @@ class MotionCreate(AmendmentParagraphHelper, TextHashMixin, MotionCreateBase):
         self.set_text_hash(instance)
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         perm: Permission
         # Check can create amendment if needed else check can_create
         if instance.get("lead_motion_id"):

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import fastjsonschema
 
@@ -45,7 +45,7 @@ class Export(BasePresenter):
         return export_data
 
     def exclude_organization_tags_and_default_meeting_for_committee(
-        self, export_data: Dict[str, Any]
+        self, export_data: dict[str, Any]
     ) -> None:
         self.get_meeting_from_json(export_data).pop("organization_tag_ids", None)
         self.get_meeting_from_json(export_data).pop(

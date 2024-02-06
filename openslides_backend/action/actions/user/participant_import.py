@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, cast
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
@@ -18,8 +18,8 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         super().prefetch(action_data)
         self.meeting_id = cast(int, self.result["meeting_id"])
 
-    def validate_entry(self, row: ImportRow) -> ImportRow:
-        row = super().validate_entry(row)
+    def validate_entry(self, row: ImportRow) -> None:
+        super().validate_entry(row)
         entry = row["data"]
         entry["meeting_id"] = self.meeting_id
         if "groups" not in entry:
@@ -56,7 +56,7 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         entry["groups"] = groups
 
         valid = False
-        for group in (groups := entry["groups"]):
+        for group in groups:
             if not (group_id := group.get("id")):
                 continue
             if group_id in self.group_names_lookup:
@@ -65,12 +65,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 else:
                     group["info"] = ImportState.WARNING
                     row["messages"].append(
-                        f"Expected group '{group_id} {group['value']}' changed it's name to '{self.group_names_lookup[group_id]}'."
+                        f"Expected group '{group_id} {group['value']}' changed its name to '{self.group_names_lookup[group_id]}'."
                     )
             else:
                 group["info"] = ImportState.WARNING
                 row["messages"].append(
-                    f"Group '{group_id} {group['value']}' don't exist anymore"
+                    f"Group '{group_id} {group['value']}' doesn't exist anymore"
                 )
         if not valid:
             row["messages"].append(
@@ -82,11 +82,10 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         entry.pop("meeting_id")
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
-        return row
 
-    def create_other_actions(self, rows: List[ImportRow]) -> List[Optional[int]]:
-        set_present_payload: List[Dict[str, Any]] = []
-        indices_to_set_presence_and_id: List[Optional[Tuple[bool, Optional[int]]]] = []
+    def create_other_actions(self, rows: list[ImportRow]) -> list[int | None]:
+        set_present_payload: list[dict[str, Any]] = []
+        indices_to_set_presence_and_id: list[tuple[bool, int | None] | None] = []
         for row in rows:
             if (present := row["data"].get("is_present")) is not None:
                 indices_to_set_presence_and_id.append((present, row["data"].get("id")))
@@ -117,12 +116,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 GetManyRequest(
                     "group",
                     list(
-                        set(
+                        {
                             group_id
                             for row in self.rows
                             for group in row["data"].get("groups", [])
                             if (group_id := group.get("id"))
-                        )
+                        }
                     ),
                     ["name"],
                 )

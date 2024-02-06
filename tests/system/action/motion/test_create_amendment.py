@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.base_classes import Permission
@@ -233,7 +233,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             "motion/3", {"text_hash": hash, "identical_motion_ids": None}
         )
 
-    def setup_permissions(self, permissions: List[Permission]) -> None:
+    def setup_permissions(self, permissions: list[Permission]) -> None:
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])

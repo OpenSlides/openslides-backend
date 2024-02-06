@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import PollCandidateList
 from ....shared.schema import required_id_schema
@@ -33,7 +33,7 @@ class PollCandidateListCreate(CreateAction):
         },
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         entries = instance.pop("entries")
         self.apply_instance(instance)

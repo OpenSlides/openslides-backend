@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -22,7 +22,7 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
     schema = DefaultSchema(Motion()).get_update_schema()
     permission = Permissions.Motion.CAN_MANAGE_METADATA
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Set state_id to motion_state.first_state_of_workflow_id.
         """

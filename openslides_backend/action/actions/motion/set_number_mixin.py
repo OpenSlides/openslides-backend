@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
@@ -9,13 +9,13 @@ from ...action import Action
 class SetNumberMixin(Action):
     def set_number(
         self,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
         meeting_id: int,
         state_id: int,
-        lead_motion_id: Optional[int],
-        category_id: Optional[int],
-        existing_number: Optional[str] = None,
-        existing_number_value: Optional[int] = None,
+        lead_motion_id: int | None,
+        category_id: int | None,
+        existing_number: str | None = None,
+        existing_number_value: int | None = None,
     ) -> None:
         """
         Sets the motion number and the motion number value.
@@ -66,7 +66,7 @@ class SetNumberMixin(Action):
         instance["number_value"] = number_value
 
     def _get_prefix(
-        self, meeting_id: int, lead_motion_id: Optional[int], category_id: Optional[int]
+        self, meeting_id: int, lead_motion_id: int | None, category_id: int | None
     ) -> str:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),
@@ -93,9 +93,9 @@ class SetNumberMixin(Action):
     def _get_number_value(
         self,
         meeting_id: int,
-        lead_motion_id: Optional[int],
-        category_id: Optional[int],
-        existing_number_value: Optional[int],
+        lead_motion_id: int | None,
+        category_id: int | None,
+        existing_number_value: int | None,
     ) -> int:
         if existing_number_value:
             return existing_number_value
@@ -106,7 +106,7 @@ class SetNumberMixin(Action):
             lock_result=False,
         )
         if lead_motion_id:
-            filter: Union[And, FilterOperator] = FilterOperator(
+            filter: And | FilterOperator = FilterOperator(
                 "lead_motion_id", "=", lead_motion_id
             )
         elif meeting.get("motions_number_type") == "per_category":

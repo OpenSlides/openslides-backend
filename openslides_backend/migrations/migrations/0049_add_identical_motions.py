@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, List, NamedTuple, Optional
+from typing import NamedTuple
 
 from datastore.migrations import BaseModelMigration
 from datastore.shared.util import fqid_from_collection_and_id
@@ -10,17 +10,17 @@ from openslides_backend.action.actions.motion.mixins import TextHashMixin
 
 class HashKey(NamedTuple):
     meeting_id: int
-    lead_motion_id: Optional[int]
+    lead_motion_id: int | None
     hash: str
 
 
 class Migration(BaseModelMigration):
     target_migration_index = 50
 
-    def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
-        events: List[BaseRequestEvent] = []
+    def migrate_models(self) -> list[BaseRequestEvent] | None:
+        events: list[BaseRequestEvent] = []
         motions = self.reader.get_all("motion")
-        hash_map: Dict[HashKey, List[int]] = defaultdict(list)
+        hash_map: dict[HashKey, list[int]] = defaultdict(list)
         for id, motion in motions.items():
             if html := motion.get("text"):
                 text = TextHashMixin.get_text_from_html(html)

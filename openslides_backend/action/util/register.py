@@ -1,4 +1,4 @@
-from typing import Callable, Type
+from collections.abc import Callable
 
 from ..action import Action
 from ..action_set import ActionSet
@@ -8,13 +8,13 @@ from .actions_map import actions_map
 
 def register_action(
     name: str, action_type: ActionType = ActionType.PUBLIC
-) -> Callable[[Type[Action]], Type[Action]]:
+) -> Callable[[type[Action]], type[Action]]:
     """
     Decorator to be used for action classes. Registers the class so that it can
     be found by the handler.
     """
 
-    def wrapper(clazz: Type[Action]) -> Type[Action]:
+    def wrapper(clazz: type[Action]) -> type[Action]:
         _register_action(name, clazz)
         clazz.action_type = action_type
         return clazz
@@ -24,13 +24,13 @@ def register_action(
 
 def register_action_set(
     name_prefix: str,
-) -> Callable[[Type[ActionSet]], Type[ActionSet]]:
+) -> Callable[[type[ActionSet]], type[ActionSet]]:
     """
     Decorator to be used for action set classes. Registers the class so that its
     actions can be found by the handler.
     """
 
-    def wrapper(clazz: Type[ActionSet]) -> Type[ActionSet]:
+    def wrapper(clazz: type[ActionSet]) -> type[ActionSet]:
         for route, action in clazz.get_actions().items():
             name = ".".join((name_prefix, route))
             action.permission = clazz.permission
@@ -40,7 +40,7 @@ def register_action_set(
     return wrapper
 
 
-def _register_action(name: str, ActionClass: Type[Action]) -> Type[Action]:
+def _register_action(name: str, ActionClass: type[Action]) -> type[Action]:
     if actions_map.get(name):
         raise RuntimeError(f"Action {name} is registered twice.")
     actions_map[name] = ActionClass

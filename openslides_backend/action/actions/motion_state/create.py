@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import MotionState
 from ....permissions.permissions import Permissions
@@ -43,7 +43,7 @@ class MotionStateCreateAction(WeightMixin, CreateActionWithInferredMeeting):
 
     relation_field_for_meeting = "workflow_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         if (
             first_state_of_workflow_id := instance.get("first_state_of_workflow_id")

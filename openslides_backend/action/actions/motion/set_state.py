@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -30,7 +30,7 @@ class MotionSetStateAction(
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema(["state_id"])
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Check if the state_id is from a previous or next state.
         """
@@ -80,7 +80,7 @@ class MotionSetStateAction(
             set_workflow_timestamp_helper(self.datastore, instance, timestamp)
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         self.skip_state_graph_check = False
         motion = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["id"]),
@@ -121,5 +121,5 @@ class MotionSetStateAction(
 
         raise MissingPermission(Permissions.Motion.CAN_MANAGE_METADATA)
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         return self._get_state_history_information("state_id", "State")

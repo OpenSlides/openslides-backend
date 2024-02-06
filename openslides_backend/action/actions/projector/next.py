@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from ....models.models import Projector
 from ....permissions.permissions import Permissions
@@ -76,11 +76,11 @@ class ProjectorNext(WeightMixin, UpdateAction):
             instance["history_projection_ids"] = new_history_projection_ids
             yield instance
 
-    def is_stable(self, value: Dict[str, Any]) -> bool:
+    def is_stable(self, value: dict[str, Any]) -> bool:
         return bool(value.get("stable"))
 
     def set_weight_to_projection(
-        self, projection_ids: List[int], meeting_id: int, projector_id: int
+        self, projection_ids: list[int], meeting_id: int, projector_id: int
     ) -> None:
         filter = And(
             FilterOperator("meeting_id", "=", meeting_id),
@@ -92,7 +92,7 @@ class ProjectorNext(WeightMixin, UpdateAction):
             action_data.append({"id": projection_id, "weight": weight + i})
         self.execute_other_action(ProjectionUpdate, action_data)
 
-    def get_min_preview_projection(self, projector: Dict[str, Any]) -> int:
+    def get_min_preview_projection(self, projector: dict[str, Any]) -> int:
         gmr2 = GetManyRequest(
             "projection",
             projector["preview_projection_ids"],

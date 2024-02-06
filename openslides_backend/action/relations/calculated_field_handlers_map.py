@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Dict, List, Type
 
 from ...models.fields import Field
 from ...models.models import Group, MeetingUser, User
@@ -10,7 +9,7 @@ from .user_meeting_ids_handler import UserMeetingIdsHandler
 
 # This maps all CalculatedFieldsHandlers to the fields for which they need to get the
 # updates. Fill this map if you add more handlers.
-handler_to_field_map: Dict[Type[CalculatedFieldHandler], List[Field]] = {
+handler_to_field_map: dict[type[CalculatedFieldHandler], list[Field]] = {
     MeetingUserIdsHandler: [Group.meeting_user_ids],  # calcs meeting.user_ids
     UserMeetingIdsHandler: [MeetingUser.group_ids],  # calcs user.meeting_ids
     UserCommitteeCalculateHandler: [
@@ -18,9 +17,9 @@ handler_to_field_map: Dict[Type[CalculatedFieldHandler], List[Field]] = {
         User.committee_management_ids,
     ],  # calcs user.committee_ids and committee.user_ids
 }
-calculated_field_handlers_map: Dict[
-    Field, List[Type[CalculatedFieldHandler]]
-] = defaultdict(list)
+calculated_field_handlers_map: dict[Field, list[type[CalculatedFieldHandler]]] = (
+    defaultdict(list)
+)
 
 
 def prepare_calculated_field_handlers_map() -> None:

@@ -2,7 +2,7 @@ import base64
 import mimetypes
 from io import BytesIO
 from time import time
-from typing import Any, Dict, List, TypedDict, cast
+from typing import Any, TypedDict, cast
 
 import magic as python_magic
 from pygments.lexers import guess_lexer, guess_lexer_for_filename
@@ -24,14 +24,10 @@ from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
 from .delete import MediafileDelete
 from .mixins import MediafileMixin
 
-PDFInformation = TypedDict(
-    "PDFInformation",
-    {
-        "pages": int,
-        "encrypted": bool,
-    },
-    total=False,
-)
+
+class PDFInformation(TypedDict, total=False):
+    pages: int
+    encrypted: bool
 
 
 @register_action("mediafile.upload")
@@ -50,7 +46,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        tokens: List[Any] = []
+        tokens: list[Any] = []
         for instance in action_data:
             collection, _ = self.get_owner_data(instance)
             if collection != "organization":
@@ -85,7 +81,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             )
         return action_data
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Looks for the mimetype of the file by name and content
         """
@@ -136,7 +132,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
                the Iana-specification
             """
 
-            def check_extension(filename: str, extensions: List[str]) -> bool:
+            def check_extension(filename: str, extensions: list[str]) -> bool:
                 return not any(
                     [filename_.endswith(extension) for extension in possible_extensions]
                 )

@@ -100,6 +100,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -111,11 +113,11 @@ jobs:
 
     - name: Check black
       if: always()
-      run: black --check --diff openslides_backend/ tests/ cli/
+      run: make check-black
 
     - name: Check isort
       if: always()
-      run: isort --check-only --diff openslides_backend/ tests/ cli/
+      run: make check-isort
 
     - name: Check flake8
       if: always()
@@ -125,6 +127,10 @@ jobs:
       if: always()
       run: make mypy
 
+    - name: Check pyupgrade
+      if: always()
+      run: make pyupgrade
+
   check-models-all:
     name: Check from models.yml up to permissions and jsons
     runs-on: ubuntu-latest
@@ -133,6 +139,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Set up Python
       uses: actions/setup-python@v5

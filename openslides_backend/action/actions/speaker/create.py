@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
 from openslides_backend.services.datastore.commands import GetManyRequest
@@ -34,7 +34,7 @@ class SpeakerCreateAction(
         ],
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
 
         self.check_speech_state({}, instance)
@@ -101,7 +101,7 @@ class SpeakerCreateAction(
                     break
                 index -= 1
             los.insert(index + 1, {"id": instance["id"]})
-            speaker_ids: List[int] = [speaker["id"] for speaker in los]
+            speaker_ids: list[int] = [speaker["id"] for speaker in los]
         else:
             weight_no_poos_min = self._get_no_poo_min(
                 list_of_speakers_id, instance["meeting_id"]
@@ -129,7 +129,7 @@ class SpeakerCreateAction(
 
     def _insert_before_weight(
         self, new_id: int, weight: int, list_of_speakers_id: int, meeting_id: int
-    ) -> List[int]:
+    ) -> list[int]:
         """
         We need to bild a list of speakers, sort them by weight and
         insert the new speaker before the entry with the weight from parameter
@@ -152,9 +152,7 @@ class SpeakerCreateAction(
             list_to_sort.append(speaker["id"])
         return list_to_sort
 
-    def _get_max_weight(
-        self, list_of_speakers_id: int, meeting_id: int
-    ) -> Optional[int]:
+    def _get_max_weight(self, list_of_speakers_id: int, meeting_id: int) -> int | None:
         return self.datastore.max(
             collection="speaker",
             filter=And(
@@ -165,9 +163,7 @@ class SpeakerCreateAction(
             field="weight",
         )
 
-    def _get_no_poo_min(
-        self, list_of_speakers_id: int, meeting_id: int
-    ) -> Optional[int]:
+    def _get_no_poo_min(self, list_of_speakers_id: int, meeting_id: int) -> int | None:
         return self.datastore.min(
             collection="speaker",
             filter=And(
@@ -182,7 +178,7 @@ class SpeakerCreateAction(
             field="weight",
         )
 
-    def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_fields(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Checks
         - that only the requesting user can file a point-of-order
@@ -290,7 +286,7 @@ class SpeakerCreateAction(
                 )
         return super().validate_fields(instance)
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         meeting_user = self.datastore.get(
             fqid_from_collection_and_id("meeting_user", instance["meeting_user_id"]),
             ["user_id"],

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ....models.helper import calculate_inherited_groups_helper
 from ....services.datastore.commands import GetManyRequest
@@ -15,9 +15,9 @@ class MediafileCalculatedFieldsMixin(Action):
 
     def handle_children(
         self,
-        instance: Dict[str, Any],
-        parent_is_public: Optional[bool],
-        parent_inherited_access_group_ids: Optional[List[int]],
+        instance: dict[str, Any],
+        parent_is_public: bool | None,
+        parent_inherited_access_group_ids: list[int] | None,
     ) -> ActionData:
         mediafile = self.datastore.get(
             fqid_from_collection_and_id("mediafile", instance["id"]), ["child_ids"]
@@ -37,7 +37,7 @@ class MediafileCalculatedFieldsMixin(Action):
             children = gm_result.get("mediafile", {})
             for child_id in children:
                 child = children.get(child_id, {})
-                new_instance: Dict[str, Any] = {"id": child_id}
+                new_instance: dict[str, Any] = {"id": child_id}
                 (
                     new_instance["is_public"],
                     new_instance["inherited_access_group_ids"],
@@ -62,9 +62,9 @@ class MediafileCalculatedFieldsMixin(Action):
 
 def calculate_inherited_groups_helper_with_parent_id(
     datastore: DatastoreService,
-    access_group_ids: Optional[List[int]],
-    parent_id: Optional[int],
-) -> Tuple[bool, Optional[List[int]]]:
+    access_group_ids: list[int] | None,
+    parent_id: int | None,
+) -> tuple[bool, list[int] | None]:
     if parent_id:
         parent = datastore.get(
             fqid_from_collection_and_id("mediafile", parent_id),

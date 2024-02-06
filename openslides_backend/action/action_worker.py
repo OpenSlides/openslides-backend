@@ -3,7 +3,7 @@ import threading
 from enum import Enum
 from http import HTTPStatus
 from time import sleep, time
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 
 from gunicorn.http.message import Request
 from gunicorn.http.wsgi import Response
@@ -93,7 +93,7 @@ def handle_action_in_worker_thread(
     )
 
 
-class ActionWorkerWriting(object):
+class ActionWorkerWriting:
     def __init__(
         self,
         user_id: int,
@@ -107,7 +107,7 @@ class ActionWorkerWriting(object):
         self.action_names = action_names
         self.datastore = datastore
 
-        self.new_id: Optional[int] = None
+        self.new_id: int | None = None
         self.fqid: str = "Still not set"
         self.written: bool = False
 
@@ -256,7 +256,7 @@ class OSGunicornThread(threading.Thread):
 
 
 def gunicorn_post_request(
-    worker: ThreadWorker, req: Request, environ: Dict[str, Any], resp: Response
+    worker: ThreadWorker, req: Request, environ: dict[str, Any], resp: Response
 ) -> None:
     """
     gunicorn server hook, called after response of one request

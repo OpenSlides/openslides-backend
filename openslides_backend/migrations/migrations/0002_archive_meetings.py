@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Set
+from typing import Any
 
 from datastore.migrations import (
     BaseEvent,
@@ -52,13 +52,13 @@ class Migration(BaseEventMigration):
     def position_init(self) -> None:
         # Capture all meeting ids to add/remove from
         # `organization/active_meeting_ids` in this position.
-        self.meeting_ids_to_add: Set[int] = set()
-        self.meeting_ids_to_remove: Set[int] = set()
+        self.meeting_ids_to_add: set[int] = set()
+        self.meeting_ids_to_remove: set[int] = set()
 
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection, id = collection_and_id_from_fqid(event.fqid)
 
         if collection != "meeting":
@@ -80,7 +80,7 @@ class Migration(BaseEventMigration):
                 self.meeting_ids_to_add.add(id)
         return None
 
-    def get_additional_events(self) -> Optional[List[BaseEvent]]:
+    def get_additional_events(self) -> list[BaseEvent] | None:
         if not self.meeting_ids_to_add and not self.meeting_ids_to_remove:
             return None
 

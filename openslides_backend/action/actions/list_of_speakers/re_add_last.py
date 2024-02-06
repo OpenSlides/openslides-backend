@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import ListOfSpeakers, Speaker
 from ....permissions.permissions import Permissions
@@ -25,7 +25,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
     permission_model = ListOfSpeakers()
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # Fetch all speakers.
         list_of_speakers_id = instance["id"]
         meeting_id = self.get_meeting_id(instance)

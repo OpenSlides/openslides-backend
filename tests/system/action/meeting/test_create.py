@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.i18n.translator import translate as _
@@ -10,8 +10,8 @@ from tests.system.action.base import BaseActionTestCase
 
 class MeetingCreateActionTest(BaseActionTestCase):
     def basic_test(
-        self, datapart: Dict[str, Any], set_400_str: str = ""
-    ) -> Dict[str, Any]:
+        self, datapart: dict[str, Any], set_400_str: str = ""
+    ) -> dict[str, Any]:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -304,6 +304,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {"end_time": 170000},
             set_400_str="Only one of start_time and end_time is not allowed.",
         )
+
+    def test_create_empty_times(self) -> None:
+        self.basic_test({"start_time": None, "end_time": None})
 
     def test_create_name_too_long(self) -> None:
         self.basic_test(

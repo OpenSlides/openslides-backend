@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.shared.exceptions import PermissionDenied
 
@@ -23,14 +23,14 @@ class GroupUpdateAction(GroupMixin, UpdateAction):
     )
     permission = Permissions.User.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if "permissions" in instance:
             instance["permissions"] = filter_surplus_permissions(
                 instance["permissions"]
             )
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
         # external id is only allowed for admins
         if "external_id" in instance and not is_admin(

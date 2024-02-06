@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, Field
@@ -33,7 +33,7 @@ class RelationManager:
     def get_relation_updates(
         self,
         model: Model,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
         action: str,
         process_calculated_fields_only: bool = False,
     ) -> RelationUpdates:
@@ -41,7 +41,7 @@ class RelationManager:
         assert "id" in instance
 
         relations: RelationUpdates = {}
-        calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
+        calculated_field_handler_calls: list[CalculatedFieldHandlerCall] = []
         for field_name in instance:
             if not model.has_field(field_name):
                 continue
@@ -94,7 +94,7 @@ class RelationManager:
     def call_calculated_field_handlers(
         self,
         relations: RelationUpdates,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
         field: Field,
         field_name: str,
         action: str,
@@ -128,9 +128,9 @@ class RelationManager:
             relation_update_element = self.merge_relation_elements(
                 self.relation_field_updates[fqfield], relation_update_element
             )
-        relations[fqfield] = self.relation_field_updates[
-            fqfield
-        ] = relation_update_element
+        relations[fqfield] = self.relation_field_updates[fqfield] = (
+            relation_update_element
+        )
 
     def apply_relation_updates(self, relations: RelationUpdates) -> None:
         """
@@ -171,7 +171,7 @@ class RelationManager:
         if a["type"] in ("add", "remove"):
             a = cast(FieldUpdateElement, a)
             assert isinstance(a["value"], list)
-            new_value: List[Any] = list(a["value"])  # copy list to prevent data leaks
+            new_value: list[Any] = list(a["value"])  # copy list to prevent data leaks
             if b["type"] == "add":
                 b = cast(FieldUpdateElement, b)
                 new_value.append(b["modified_element"])
@@ -186,8 +186,8 @@ class RelationManager:
         elif b["type"] == "list_update":
             a = cast(ListUpdateElement, a)
             b = cast(ListUpdateElement, b)
-            new_add: List[Any] = a.get("add", [])
-            new_remove: List[Any] = a.get("remove", [])
+            new_add: list[Any] = a.get("add", [])
+            new_remove: list[Any] = a.get("remove", [])
             new_add = [x for x in new_add if x not in b.get("remove", [])]
             new_add += [x for x in b.get("add", []) if x not in new_add]
             new_remove = [x for x in new_remove if x not in new_add]

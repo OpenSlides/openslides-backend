@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from ...shared.filters import Filter, FilterOperator
 from ...shared.patterns import Collection
 from ..action import Action
@@ -7,7 +5,7 @@ from ..action import Action
 
 class WeightMixin(Action):
     def get_weight(
-        self, filter: Union[int, Filter], collection: Optional[Collection] = None
+        self, filter: int | Filter, collection: Collection | None = None
     ) -> int:
         """
         Returns the current maximum weight + 1.
