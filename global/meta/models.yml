@@ -37,7 +37,8 @@
 #       Or `to` can be a list of collection fields:
 #         to:
 #           - motion/option_ids
-#           - user/option_$_ids
+#           - user/option_ids
+#           - poll_candidate_list/option_id
 #     - on_delete: This fields determines what should happen with the foreign model if
 #       this model gets deleted. Possible values are:
 #           - SET_NULL (default): delete the id from the foreign key
@@ -169,16 +170,16 @@ organization:
   organization_tag_ids:
     type: relation-list
     restriction_mode: B
-    to: organization_tag/organization_id
+    reference: organization_tag(id)
   theme_id:
     type: relation
     required: true
     restriction_mode: A
-    to: theme/theme_for_organization_id
+    reference: theme(id)
   theme_ids:
     type: relation-list
     restriction_mode: A
-    sql: (select array_agg(t.id) from themeT t) as theme_ids
+    reference: theme(id)
   mediafile_ids:
     type: relation-list
     to: mediafile/owner_id
@@ -187,7 +188,7 @@ organization:
   user_ids:
     type: relation-list
     restriction_mode: C
-    to: user/organization_id
+    reference: user(id)
   users_email_sender:
     type: string
     default: OpenSlides
@@ -311,12 +312,22 @@ user:
   # Calculates all committee's where the user is
   # - committee-manager (= committees in committee_management_ids)
   # - is member (= has group-rights) of a meeting in the committee
+  # TODO: fix sql, not correct for the current design and naming
   committee_ids:
-    type: relation-list
+    type: number[]
     to: committee/user_ids
     restriction_mode: E
     read_only: true
-    description: "Calculated field."
+    description: "Calculated field: Returns committee_ids, where the user is manager or member in a meeting"
+    sql: >-
+      select array_agg(committee_id) from (
+          select m.committee_id as committee_id from group_to_user gtu
+            join groupT g on g.id = gtu.group_id
+            join meetingT m on m.id = g.meeting_id
+            where gtu.user_id = u.id
+          union
+          select ctu.committee_id as committee_id from committee_manager_to_user ctu where ctu.user_id = u.id
+        ) as cs
 
   # committee specific permissions
   committee_management_ids:
@@ -361,11 +372,6 @@ user:
     description: Calculated. All ids from meetings calculated via meeting_user and group_ids as integers.
     read_only: true
     restriction_mode: E
-  organization_id:
-    type: relation
-    to: organization/user_ids
-    required: True
-    restriction_mode: F
 
 meeting_user:
   id:
@@ -480,11 +486,6 @@ organization_tag:
         - meeting
       field: organization_tag_ids
     restriction_mode: A
-  organization_id:
-    type: relation
-    to: organization/organization_tag_ids
-    restriction_mode: A
-    required: true
 
 theme:
   id:
@@ -665,12 +666,22 @@ committee:
     type: relation
     to: meeting/default_meeting_for_committee_id
     restriction_mode: A
+    primary: True
   user_ids:
-    type: relation-list
+    type: number[]
     to: user/committee_ids
     restriction_mode: A
     read_only: true
-    description: "Calculated field."
+    description: "Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee"
+    sql: >-
+      select array_agg(user_id) from (
+        select gtu.user_id as user_id from meetingT m
+          join groupT g on g.meeting_id = m.id
+          join group_to_user gtu on gtu.group_id = g.id
+          where m.committee_id = c.id
+        union
+        select ctu.user_id as user_id from committee_manager_to_user ctu where ctu.committee_id = c.id
+      ) as x
   manager_ids:
     type: relation-list
     to: user/committee_management_ids
@@ -1568,66 +1579,82 @@ meeting:
     type: relation
     to: mediafile/used_as_logo_projector_main_in_meeting_id
     restriction_mode: B
+    primary: True
   logo_projector_header_id:
     type: relation
     to: mediafile/used_as_logo_projector_header_in_meeting_id
     restriction_mode: B
+    primary: True
   logo_web_header_id:
     type: relation
     to: mediafile/used_as_logo_web_header_in_meeting_id
     restriction_mode: B
+    primary: True
   logo_pdf_header_l_id:
     type: relation
     to: mediafile/used_as_logo_pdf_header_l_in_meeting_id
     restriction_mode: B
+    primary: True
   logo_pdf_header_r_id:
     type: relation
     to: mediafile/used_as_logo_pdf_header_r_in_meeting_id
     restriction_mode: B
+    primary: True
   logo_pdf_footer_l_id:
     type: relation
     to: mediafile/used_as_logo_pdf_footer_l_in_meeting_id
     restriction_mode: B
+    primary: True
   logo_pdf_footer_r_id:
     type: relation
     to: mediafile/used_as_logo_pdf_footer_r_in_meeting_id
     restriction_mode: B
+    primary: True
   logo_pdf_ballot_paper_id:
     type: relation
     to: mediafile/used_as_logo_pdf_ballot_paper_in_meeting_id
     restriction_mode: B
+    primary: True
   font_regular_id:
     type: relation
     to: mediafile/used_as_font_regular_in_meeting_id
     restriction_mode: B
+    primary: True
   font_italic_id:
     type: relation
     to: mediafile/used_as_font_italic_in_meeting_id
     restriction_mode: B
+    primary: True
   font_bold_id:
     type: relation
     to: mediafile/used_as_font_bold_in_meeting_id
     restriction_mode: B
+    primary: True
   font_bold_italic_id:
     type: relation
     to: mediafile/used_as_font_bold_italic_in_meeting_id
     restriction_mode: B
+    primary: True
   font_monospace_id:
     type: relation
     to: mediafile/used_as_font_monospace_in_meeting_id
     restriction_mode: B
+    primary: True
   font_chyron_speaker_name_id:
     type: relation
     to: mediafile/used_as_font_chyron_speaker_name_in_meeting_id
     restriction_mode: B
+    primary: True
   font_projector_h1_id:
     type: relation
     to: mediafile/used_as_font_projector_h1_in_meeting_id
     restriction_mode: B
+    primary: True
   font_projector_h2_id:
     type: relation
     to: mediafile/used_as_font_projector_h2_in_meeting_id
     restriction_mode: B
+    primary: True
   # Other relations
   committee_id:
     type: relation
@@ -1748,6 +1775,7 @@ meeting:
     type: relation
     to: group/admin_group_for_meeting_id
     restriction_mode: B
+    primary: True
 
 group:
   id:
@@ -3107,6 +3135,7 @@ option:
     to: poll/global_option_id
     equal_fields: meeting_id
     restriction_mode: A
+    primary: True
   vote_ids:
     type: relation-list
     to: vote/option_id
@@ -3761,10 +3790,12 @@ projector_countdown:
     type: relation
     to: meeting/list_of_speakers_countdown_id
     restriction_mode: A
+    primary: True
   used_as_poll_countdown_meeting_id:
     type: relation
     to: meeting/poll_countdown_id
     restriction_mode: A
+    primary: True
   meeting_id:
     type: relation
     to: meeting/projector_countdown_ids
