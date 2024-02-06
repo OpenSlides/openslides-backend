@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.shared.schema import id_list_schema
 
@@ -35,7 +35,7 @@ class OptionCreateAction(CreateAction):
         additional_optional_fields={"poll_candidate_user_ids": id_list_schema},
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         keyword = self.check_one_of_three_keywords(instance)
         action_data = []
         user_token = get_user_token()
@@ -71,8 +71,8 @@ class OptionCreateAction(CreateAction):
         return instance
 
     def get_vote_action_data(
-        self, instance: Dict[str, Any], value: str, prop: str, user_token: str
-    ) -> Optional[Dict[str, Any]]:
+        self, instance: dict[str, Any], value: str, prop: str, user_token: str
+    ) -> dict[str, Any] | None:
         if instance.get(prop):
             return {
                 "value": value,
@@ -83,7 +83,7 @@ class OptionCreateAction(CreateAction):
         return None
 
     @staticmethod
-    def check_one_of_three_keywords(instance: Dict[str, Any]) -> str:
+    def check_one_of_three_keywords(instance: dict[str, Any]) -> str:
         keys = [
             key
             for key in ("text", "content_object_id", "poll_candidate_user_ids")

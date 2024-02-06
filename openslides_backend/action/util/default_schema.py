@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from ...models.base import Model
 from ...shared.schema import id_list_schema, required_id_schema, schema_version
@@ -36,10 +37,10 @@ class DefaultSchema:
         self,
         required_properties: Iterable[str] = [],
         optional_properties: Iterable[str] = [],
-        additional_required_fields: Dict[str, Any] = {},
-        additional_optional_fields: Dict[str, Any] = {},
-        title: Optional[str] = None,
-        description: Optional[str] = None,
+        additional_required_fields: dict[str, Any] = {},
+        additional_optional_fields: dict[str, Any] = {},
+        title: str | None = None,
+        description: str | None = None,
     ) -> Schema:
         """
         Returns a default schema with properties and required properties as given.
@@ -66,8 +67,8 @@ class DefaultSchema:
         self,
         required_properties: Iterable[str] = [],
         optional_properties: Iterable[str] = [],
-        additional_required_fields: Dict[str, Any] = {},
-        additional_optional_fields: Dict[str, Any] = {},
+        additional_required_fields: dict[str, Any] = {},
+        additional_optional_fields: dict[str, Any] = {},
     ) -> Schema:
         return self.get_default_schema(
             required_properties,
@@ -82,8 +83,8 @@ class DefaultSchema:
         self,
         required_properties: Iterable[str] = [],
         optional_properties: Iterable[str] = [],
-        additional_required_fields: Dict[str, Any] = {},
-        additional_optional_fields: Dict[str, Any] = {},
+        additional_required_fields: dict[str, Any] = {},
+        additional_optional_fields: dict[str, Any] = {},
     ) -> Schema:
         """
         Returns a default update schema with properties as given. The required

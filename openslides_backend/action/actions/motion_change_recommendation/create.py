@@ -1,5 +1,5 @@
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import MotionChangeRecommendation
 from ....permissions.permissions import Permissions
@@ -31,7 +31,7 @@ class MotionChangeRecommendationCreateAction(
     history_relation_field = "motion_id"
     relation_field_for_meeting = "motion_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Check for colliding change recommendations and set creation time.
         """

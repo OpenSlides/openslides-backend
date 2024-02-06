@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
@@ -71,7 +71,7 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
                     yield {"id": projector_id, "scroll": 0}
 
     def move_equal_projections_to_history_or_unset(
-        self, instance: Dict[str, Any], meeting_id: int
+        self, instance: dict[str, Any], meeting_id: int
     ) -> None:
         filter_ = And(
             FilterOperator("meeting_id", "=", meeting_id),
@@ -115,7 +115,7 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
                     ]
                     self.execute_other_action(ProjectionUpdate, action_data)
 
-    def move_unstable_projections_to_history(self, instance: Dict[str, Any]) -> None:
+    def move_unstable_projections_to_history(self, instance: dict[str, Any]) -> None:
         for projector_id in instance["ids"]:
             filter_ = And(
                 FilterOperator("meeting_id", "=", instance["meeting_id"]),

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, cast
 
 from datastore.migrations import (
     BaseEvent,
@@ -37,10 +37,10 @@ class Migration(BaseEventMigration):
     target_migration_index = 20
 
     def position_init(self) -> None:
-        self.mediafiles: Dict[int, Dict[str, Any]] = defaultdict(dict)
-        self.events: List[BaseEvent] = []
+        self.mediafiles: dict[int, dict[str, Any]] = defaultdict(dict)
+        self.events: list[BaseEvent] = []
 
-    def migrate_event(self, event: BaseEvent) -> Optional[List[BaseEvent]]:
+    def migrate_event(self, event: BaseEvent) -> list[BaseEvent] | None:
         collection, id_ = collection_and_id_from_fqid(event.fqid)
 
         if collection != "mediafile":
@@ -74,9 +74,9 @@ class Migration(BaseEventMigration):
                     self.mediafiles[id_][key] = list(set(old_value) | set(value))
         return None
 
-    def get_additional_events(self) -> Optional[List[BaseEvent]]:
-        self.groups: Dict[int, Dict[str, Dict[str, List[int]]]] = defaultdict(dict)
-        roots: Set[int] = set()
+    def get_additional_events(self) -> list[BaseEvent] | None:
+        self.groups: dict[int, dict[str, dict[str, list[int]]]] = defaultdict(dict)
+        roots: set[int] = set()
         for key in self.mediafiles.keys():
             root_id = key
             while (
@@ -92,8 +92,8 @@ class Migration(BaseEventMigration):
         return self.events
 
     def check_recursive(self, id_: int) -> None:
-        parent_is_public: Optional[bool] = None
-        parent_inherited_access_group_ids: Optional[List[int]] = []
+        parent_is_public: bool | None = None
+        parent_inherited_access_group_ids: list[int] | None = []
         fqid = f"mediafile/{id_}"
 
         if id_ not in self.mediafiles:
@@ -105,7 +105,7 @@ class Migration(BaseEventMigration):
                 )[0]
             parent_is_public = cast(bool, self.mediafiles[parent_id].get("is_public"))
             parent_inherited_access_group_ids = cast(
-                List, self.mediafiles[parent_id].get("inherited_access_group_ids")
+                list, self.mediafiles[parent_id].get("inherited_access_group_ids")
             )
         (
             calc_is_public,
@@ -149,7 +149,7 @@ class Migration(BaseEventMigration):
             if changed or child_id in self.mediafiles.keys():
                 self.check_recursive(child_id)
 
-    def __add_to_group(self, group_ids: Set[int], mediafile_id: int, add: bool) -> None:
+    def __add_to_group(self, group_ids: set[int], mediafile_id: int, add: bool) -> None:
         for group_id in group_ids:
             for group_id in self.groups:
                 value_list = set(
@@ -177,11 +177,11 @@ class Migration(BaseEventMigration):
 
 
 def calculate_inherited_groups_helper(
-    access_group_ids: Optional[List[int]],
-    parent_is_public: Optional[bool],
-    parent_inherited_access_group_ids: Optional[List[int]],
-) -> Tuple[bool, List[int]]:
-    inherited_access_group_ids: List[int]
+    access_group_ids: list[int] | None,
+    parent_is_public: bool | None,
+    parent_inherited_access_group_ids: list[int] | None,
+) -> tuple[bool, list[int]]:
+    inherited_access_group_ids: list[int]
     is_public = False
     if parent_inherited_access_group_ids and access_group_ids:
         inherited_access_group_ids = [

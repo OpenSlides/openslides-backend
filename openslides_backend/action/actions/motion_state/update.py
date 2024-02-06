@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import MotionState
 from ....permissions.permissions import Permissions
@@ -40,7 +40,7 @@ class MotionStateUpdateAction(UpdateAction):
     )
     permission = Permissions.Motion.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Check workflow_id of this state, next states and previous states.
         """

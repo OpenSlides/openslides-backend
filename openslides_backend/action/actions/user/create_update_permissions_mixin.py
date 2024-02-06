@@ -1,6 +1,7 @@
 from collections import defaultdict
+from collections.abc import Callable
 from functools import reduce
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, cast
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.relations.relation_manager import RelationManager
@@ -51,11 +52,11 @@ class PermissionVarStore:
         self.user_oml = OrganizationManagementLevel(
             self.user.get("organization_management_level")
         )
-        self._user_committees: Optional[Set[int]] = None
-        self._user_meetings: Optional[Set[int]] = None
+        self._user_committees: set[int] | None = None
+        self._user_meetings: set[int] | None = None
 
     @property
-    def user_committees(self) -> Set[int]:
+    def user_committees(self) -> set[int]:
         """Set of committee-ids where the request user has manage rights"""
         if self._user_committees is None:
             (
@@ -65,7 +66,7 @@ class PermissionVarStore:
         return self._user_committees
 
     @property
-    def user_committees_meetings(self) -> Set[int]:
+    def user_committees_meetings(self) -> set[int]:
         """Set of meetings where the request user has manage rights from committee"""
         if self._user_committees is None:
             (
@@ -75,7 +76,7 @@ class PermissionVarStore:
         return self._user_committees_meetings
 
     @property
-    def user_meetings(self) -> Set[int]:
+    def user_meetings(self) -> set[int]:
         """Set of meetings where the request user has user.can_manage/can_update permissions"""
         if self._user_meetings is None:
             self._user_meetings = self._get_user_meetings_with_permission(
@@ -83,7 +84,7 @@ class PermissionVarStore:
             )
         return self._user_meetings
 
-    def _get_user_committees_and_meetings(self) -> Tuple[Set[int], Set[int]]:
+    def _get_user_committees_and_meetings(self) -> tuple[set[int], set[int]]:
         """
         Returns a set of committees and a set of meetings
         belonging to those committees, where the request user has minimum
@@ -116,15 +117,15 @@ class PermissionVarStore:
         return user_committees, user_meetings
 
     def _get_user_meetings_with_permission(
-        self, meeting_user_ids: List[str] = []
-    ) -> Set[int]:
+        self, meeting_user_ids: list[str] = []
+    ) -> set[int]:
         """
         Returns a set of meetings, where the request user has user.can_manage/can_update permissions
         """
         user_meetings = set()
         if meeting_user_ids:
             # fetch all group_ids
-            all_groups: List[int] = []
+            all_groups: list[int] = []
             for meeting_user_id in meeting_user_ids:
                 meeting_user = self.datastore.get(
                     fqid_from_collection_and_id("meeting_user", meeting_user_id),
@@ -166,7 +167,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
     permstore: PermissionVarStore
     permission: Permission
 
-    field_rights: Dict[str, list] = {
+    field_rights: dict[str, list] = {
         "A": [
             "title",
             "first_name",
@@ -201,7 +202,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         "H": ["saml_id"],
     }
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         """
         Checks the permissions on a per field and user.scope base, details see
         https://github.com/OpenSlides/OpenSlides/wiki/user.update or user.create
@@ -241,7 +242,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
 
     def check_group_A(
         self,
-        fields: List[str],
+        fields: list[str],
     ) -> None:
         """Check Group A: Depending on scope of user to act on"""
         if (
@@ -277,7 +278,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 }
             )
 
-    def check_group_B(self, fields: List[str], instance: Dict[str, Any]) -> None:
+    def check_group_B(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group B meeting fields: Only meeting.permissions for each meeting"""
         if fields:
             meeting_ids = self._meetings_from_group_B_fields_from_instance(instance)
@@ -286,7 +287,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                     {self.permission: meeting_id for meeting_id in diff}
                 )
 
-    def check_group_C(self, fields: List[str], instance: Dict[str, Any]) -> None:
+    def check_group_C(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group C group_ids: OML, CML or meeting.permissions for each meeting"""
         if (
             fields
@@ -301,7 +302,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                     f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission {self.permission} for meeting {touch_meeting_id}"
                 )
 
-    def check_group_D(self, fields: List[str], instance: Dict[str, Any]) -> None:
+    def check_group_D(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group D committee-related fields: OML or CML level for each committee"""
         if (
             fields
@@ -316,7 +317,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                     }
                 )
 
-    def check_group_E(self, fields: List[str], instance: Dict[str, Any]) -> None:
+    def check_group_E(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group E organization_management_level: OML level necessary"""
         if fields:
             expected_oml = max(
@@ -332,7 +333,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
 
     def check_group_F(
         self,
-        fields: List[str],
+        fields: list[str],
     ) -> None:
         """Check F common fields: scoped permissions necessary, but if instance user has
         an oml-permission, that of the request user must be higher"""
@@ -381,14 +382,14 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 }
             )
 
-    def check_group_G(self, fields: List[str]) -> None:
+    def check_group_G(self, fields: list[str]) -> None:
         """Group G: OML SUPERADMIN necessary"""
         if fields and self.permstore.user_oml < OrganizationManagementLevel.SUPERADMIN:
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 
     def check_group_H(
         self,
-        fields: List[str],
+        fields: list[str],
     ) -> None:
         """
         Check Group H: Like group A, but only on internal calls, which will never call
@@ -409,8 +410,8 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
 
     def _check_for_higher_OML(
         self,
-        fields: Dict[str, List[str]],
-        instance: Dict[str, Any],
+        fields: dict[str, list[str]],
+        instance: dict[str, Any],
     ) -> None:
         # groups B and C are meeting-specific and therefore allowed to be changed, even by lower-OML users
         if "id" in instance and any(
@@ -425,15 +426,15 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 )
 
     def _get_actual_grouping_from_instance(
-        self, instance: Dict[str, Any]
-    ) -> Dict[str, List[str]]:
+        self, instance: dict[str, Any]
+    ) -> dict[str, list[str]]:
         """
         Returns a dictionary with an entry for each field group A-E with
         a list of fields from payload instance.
         The field groups A-F refer to https://github.com/OpenSlides/OpenSlides/wiki/user.create
         or user.update
         """
-        act_grouping: Dict[str, List[str]] = defaultdict(list)
+        act_grouping: dict[str, list[str]] = defaultdict(list)
         for key, _ in instance.items():
             for group in self.field_rights.keys():
                 if key in self.field_rights[group]:
@@ -446,7 +447,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                     )
         return act_grouping
 
-    def _get_all_committees_from_instance(self, instance: Dict[str, Any]) -> Set[int]:
+    def _get_all_committees_from_instance(self, instance: dict[str, Any]) -> set[int]:
         """
         Gets a Set of all committees from the instance regarding committees from group D.
         To get committees, that should be removed from cml, the user must be read.
@@ -466,14 +467,14 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         return committees
 
     def _meetings_from_group_B_fields_from_instance(
-        self, instance: Dict[str, Any]
-    ) -> Set[int]:
+        self, instance: dict[str, Any]
+    ) -> set[int]:
         """
         Gets a set of all meetings from the curious field is_present_in_meeting_ids.
         The meeting_id don't belong explicitly to group B and is only added, if there is
         any other group B field.
         """
-        meetings: Set[int] = set(instance.get("is_present_in_meeting_ids", []))
+        meetings: set[int] = set(instance.get("is_present_in_meeting_ids", []))
         meetings.add(cast(int, instance.get("meeting_id")))
         return meetings
 
@@ -489,8 +490,8 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         relation_manager: RelationManager,
         logging: LoggingModule,
         env: Env,
-        skip_archived_meeting_check: Optional[bool] = None,
-        use_meeting_ids_for_archived_meeting_check: Optional[bool] = None,
+        skip_archived_meeting_check: bool | None = None,
+        use_meeting_ids_for_archived_meeting_check: bool | None = None,
     ) -> None:
         self.permstore = permstore
         super().__init__(
@@ -503,7 +504,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             use_meeting_ids_for_archived_meeting_check,
         )
 
-    def get_failing_fields(self, instance: Dict[str, Any]) -> List[str]:
+    def get_failing_fields(self, instance: dict[str, Any]) -> list[str]:
         """
         Checks the permissions on a per field and user.scope base, details see
         https://github.com/OpenSlides/OpenSlides/wiki/user.update or user.create
@@ -533,7 +534,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         They have to be checked like group[A] fields"""
         if actual_group_fields["H"]:
             actual_group_fields["A"] += actual_group_fields["H"]
-        failing_fields: List[str] = []
+        failing_fields: list[str] = []
         for method, fields, inst_param in [
             (self.check_group_E, actual_group_fields["E"], instance),
             (self.check_group_D, actual_group_fields["D"], instance),
@@ -544,16 +545,16 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         ]:
             try:
                 if inst_param is None:
-                    cast(Callable[[List[str]], None], method)(fields)
+                    cast(Callable[[list[str]], None], method)(fields)
                 else:
-                    cast(Callable[[List[str], Dict[str, Any]], None], method)(
+                    cast(Callable[[list[str], dict[str, Any]], None], method)(
                         fields, inst_param
                     )
             except PermissionDenied:
                 failing_fields += fields
         return failing_fields
 
-    def get_all_checked_fields(self) -> Set[str]:
+    def get_all_checked_fields(self) -> set[str]:
         all_fields = set()
         for letter in "ABDEFGH":
             all_fields.update(self.field_rights[letter])

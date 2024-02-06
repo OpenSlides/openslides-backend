@@ -1,4 +1,4 @@
-from typing import Any, Optional, Protocol, Tuple
+from typing import Any, Protocol
 
 from authlib import AUTHENTICATION_HEADER, COOKIE_NAME  # noqa
 
@@ -12,7 +12,7 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
 
     auth_handler: Any
 
-    def authenticate(self) -> Tuple[int, Optional[str]]:
+    def authenticate(self) -> tuple[int, str | None]:
         """
         A request to get knowledge about themselves. This information is contained in the payload of
         a Token. So, this function handles the refreshing of a Token.

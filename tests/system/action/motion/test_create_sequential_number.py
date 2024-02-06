@@ -1,5 +1,4 @@
 import threading
-from typing import Optional
 
 from openslides_backend.action.action_handler import ActionHandler
 from tests.system.action.base import ACTION_URL, BaseActionTestCase
@@ -219,7 +218,7 @@ def thread_method(
     motion_title: str,
     testlock: threading.Lock,
     name: str,
-    sync_event: Optional[threading.Event] = None,
+    sync_event: threading.Event | None = None,
 ) -> None:
     if testlock:
         pytest_thread_local.testlock = testlock

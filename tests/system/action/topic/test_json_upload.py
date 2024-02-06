@@ -168,7 +168,7 @@ class TopicJsonUpload(BaseActionTestCase):
             {}, "topic.json_upload", {"data": [{"title": "test"}], "meeting_id": 1}
         )
 
-    def test_json_uplad_permission(self) -> None:
+    def test_json_upload_permission(self) -> None:
         self.base_permission_test(
             {},
             "topic.json_upload",

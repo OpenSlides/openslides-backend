@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from ....models.models import Organization
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -18,9 +19,9 @@ class DeleteHistoryInformation(Action):
     skip_archived_meeting_check = True
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.datastore.delete_history_information()
         return instance
 
-    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         return []

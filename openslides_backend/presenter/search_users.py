@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set
+from typing import Any
 
 import fastjsonschema
 
@@ -64,9 +64,9 @@ class SearchUsers(BasePresenter):
 
     schema = search_users_schema
 
-    def get_result(self) -> List[List[Dict[str, Any]]]:
+    def get_result(self) -> list[list[dict[str, Any]]]:
         self.check_permissions(self.data["permission_type"], self.data["permission_id"])
-        filters: Set[Filter] = set()
+        filters: set[Filter] = set()
         for search in self.data["search"]:
             # strip all fields and use "" if no value was given
             for field in all_fields:

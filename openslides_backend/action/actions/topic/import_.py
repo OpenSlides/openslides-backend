@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
-    ImportMixin,
+    BaseImportAction,
     ImportRow,
     ImportState,
     Lookup,
@@ -19,7 +19,7 @@ from .update import TopicUpdate
 
 
 @register_action("topic.import")
-class TopicImport(ImportMixin):
+class TopicImport(BaseImportAction):
     """
     Action to import a result from the import_preview.
     """
@@ -28,20 +28,17 @@ class TopicImport(ImportMixin):
     import_name = "topic"
     agenda_item_fields = ["agenda_comment", "agenda_duration", "agenda_type"]
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        if not instance["import"]:
-            return {}
-
         meeting_id = self.get_meeting_id(instance)
-        self.setup_lookups(self.result.get("rows", []), meeting_id)
-
-        self.rows = [self.validate_entry(row) for row in self.result["rows"]]
+        self.setup_lookups(meeting_id)
+        for row in self.rows:
+            self.validate_entry(row)
 
         if self.import_state != ImportState.ERROR:
-            create_action_payload: List[Dict[str, Any]] = []
-            update_action_payload: List[Dict[str, Any]] = []
-            update_agenda_item_payload: List[Dict[str, Any]] = []
+            create_action_payload: list[dict[str, Any]] = []
+            update_action_payload: list[dict[str, Any]] = []
+            update_agenda_item_payload: list[dict[str, Any]] = []
             rows = self.flatten_copied_object_fields()
             for row in rows:
                 entry = row["data"]
@@ -67,7 +64,7 @@ class TopicImport(ImportMixin):
 
         return {}
 
-    def validate_entry(self, row: ImportRow) -> ImportRow:
+    def validate_entry(self, row: ImportRow) -> None:
         entry = row["data"]
         title = cast(str, self.get_value_from_union_str_object(entry.get("title")))
         check_result = self.topic_lookup.check_duplicate(title)
@@ -98,13 +95,8 @@ class TopicImport(ImportMixin):
 
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
-        return {
-            "state": row["state"],
-            "data": row["data"],
-            "messages": row.get("messages", []),
-        }
 
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+    def get_meeting_id(self, instance: dict[str, Any]) -> int:
         store_id = instance["id"]
         worker = self.datastore.get(
             fqid_from_collection_and_id("import_preview", store_id),
@@ -115,13 +107,13 @@ class TopicImport(ImportMixin):
             return next(iter(worker.get("result", {})["rows"]))["data"]["meeting_id"]
         raise ActionException("Import data cannot be found.")
 
-    def setup_lookups(self, data: List[Dict[str, Any]], meeting_id: int) -> None:
+    def setup_lookups(self, meeting_id: int) -> None:
         self.topic_lookup = Lookup(
             self.datastore,
             "topic",
             [
                 (title, entry["data"])
-                for entry in data
+                for entry in self.rows
                 if (title := entry["data"].get("title", {}).get("value"))
             ],
             field="title",

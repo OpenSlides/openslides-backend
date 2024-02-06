@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import fastjsonschema
 from datastore.shared.util import is_reserved_field
@@ -27,7 +27,7 @@ check_database_schema = fastjsonschema.compile(
 
 def check_everything(datastore: DatastoreService) -> None:
     result = datastore.get_everything()
-    data: Dict[str, Any] = {
+    data: dict[str, Any] = {
         collection: {
             str(id): {
                 field: value

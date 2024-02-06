@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from datastore.migrations import (
     BaseEvent,
@@ -20,7 +20,7 @@ class Migration(BaseEventMigration):
     target_migration_index = 37
     collection = "meeting"
 
-    def modify(self, object: Dict[str, Any]) -> None:
+    def modify(self, object: dict[str, Any]) -> None:
         for field in list(object.keys()):
             if field == "default_projector_$_id":
                 object[field + "s"] = object[field]
@@ -32,7 +32,7 @@ class Migration(BaseEventMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection = collection_from_fqid(event.fqid)
         if collection != self.collection:
             return None

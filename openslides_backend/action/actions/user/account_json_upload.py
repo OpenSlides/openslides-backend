@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -28,7 +28,7 @@ class AccountJsonUpload(BaseUserJsonUpload):
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     import_name = "account"
 
-    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         results = super().validate_entry(entry)
 
         messages = results["messages"]

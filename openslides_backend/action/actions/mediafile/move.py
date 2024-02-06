@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
@@ -54,7 +54,7 @@ class MediafileMoveAction(
         )
 
     def prepare_move_data(
-        self, parent_id: Optional[int], ids: List[int], owner_id: str
+        self, parent_id: int | None, ids: list[int], owner_id: str
     ) -> ActionData:
         get_many_request = GetManyRequest(
             self.model.collection, ids, ["owner_id", "access_group_ids"]
@@ -84,7 +84,7 @@ class MediafileMoveAction(
         for id_ in ids:
             if id_ not in db_instances:
                 raise ActionException(f"Id {id_} not in db_instances.")
-            instance: Dict[str, Any] = {
+            instance: dict[str, Any] = {
                 "id": id_,
                 "parent_id": parent_id,
                 "owner_id": owner_id,

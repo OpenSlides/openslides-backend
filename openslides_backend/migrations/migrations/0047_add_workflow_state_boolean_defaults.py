@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from datastore.migrations import BaseModelMigration
 from datastore.shared.util import fqid_from_collection_and_id
@@ -13,11 +13,11 @@ class Migration(BaseModelMigration):
     target_migration_index = 48
     fields = ["set_workflow_timestamp", "allow_motion_forwarding"]
 
-    def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
-        events: List[BaseRequestEvent] = []
+    def migrate_models(self) -> list[BaseRequestEvent] | None:
+        events: list[BaseRequestEvent] = []
         db_models = self.reader.get_all("motion_state")
         for id, model in db_models.items():
-            update: Dict[str, Any] = {
+            update: dict[str, Any] = {
                 field: False for field in self.fields if field not in model
             }
             if len(update):

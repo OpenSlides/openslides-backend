@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, List
+from collections.abc import Iterable
+from typing import Any
 
 from datastore.shared.util import is_reserved_field
 
@@ -20,8 +21,8 @@ from .patterns import collection_from_fqid, fqid_from_collection_and_id, id_from
 FORBIDDEN_FIELDS = ["forwarded_motion_ids"]
 
 
-def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, Any]:
-    export: Dict[str, Any] = {}
+def export_meeting(datastore: DatastoreService, meeting_id: int) -> dict[str, Any]:
+    export: dict[str, Any] = {}
 
     # fetch meeting
     meeting = datastore.get(
@@ -74,11 +75,11 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
                 and user_field.get_target_collection() == "user"
             ):
                 user_ids.update(
-                    set(
+                    {
                         entry.get(user_field.get_own_field_name())
                         for entry in export[collection].values()
                         if entry.get(user_field.get_own_field_name())
-                    )
+                    }
                 )
             if (
                 isinstance(user_field, RelationListField)
@@ -87,11 +88,11 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
                 for entry in export[collection].values():
                     if entry.get(user_field.get_own_field_name()):
                         user_ids.update(
-                            set(
+                            {
                                 id_
                                 for id_ in entry.get(user_field.get_own_field_name())
                                 or []
-                            )
+                            }
                         )
             if (
                 isinstance(user_field, RelationField)
@@ -108,7 +109,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
                 for entry in export[collection].values():
                     if entry.get(user_field.get_own_field_name()):
                         user_ids.update(
-                            set(
+                            {
                                 user_id
                                 for id_ in entry.get(user_field.get_own_field_name())
                                 if (
@@ -116,7 +117,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
                                         "user_id"
                                     )
                                 )
-                            )
+                            }
                         )
             if isinstance(user_field, GenericRelationField):
                 for entry in export[collection].values():
@@ -133,8 +134,8 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
 
 
 def add_users(
-    user_ids: List[int],
-    export_data: Dict[str, Any],
+    user_ids: list[int],
+    export_data: dict[str, Any],
     meeting_id: int,
     datastore: DatastoreService,
 ) -> None:
@@ -180,7 +181,7 @@ def add_users(
     export_data["user"] = users
 
 
-def remove_meta_fields(res: Dict[str, Any]) -> Dict[str, Any]:
+def remove_meta_fields(res: dict[str, Any]) -> dict[str, Any]:
     dict_without_meta_fields = {}
     for key in res:
         new_entry = {}
@@ -201,7 +202,7 @@ def get_relation_fields() -> Iterable[RelationListField]:
             yield field
 
 
-def transfer_keys(res: Dict[int, Any]) -> Dict[str, Any]:
+def transfer_keys(res: dict[int, Any]) -> dict[str, Any]:
     new_dict = {}
     for key in res:
         new_dict[str(key)] = res[key]

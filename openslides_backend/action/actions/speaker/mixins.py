@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
@@ -10,9 +10,9 @@ from ...action import Action
 class CheckSpeechState(Action):
     def check_speech_state(
         self,
-        speaker: Dict[str, Any],
-        instance: Dict[str, Any],
-        meeting_id: Optional[int] = None,
+        speaker: dict[str, Any],
+        instance: dict[str, Any],
+        meeting_id: int | None = None,
     ) -> None:
         # check speech_state
         if meeting_id is None:
