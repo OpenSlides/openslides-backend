@@ -6,11 +6,10 @@ from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 
 
 @register_action("user.delete")
-class UserDelete(UserScopeMixin, ConditionalSpeakerCascadeMixin, DeleteAction):
+class UserDelete(UserScopeMixin, DeleteAction):
     """
     Action to delete a user.
     """
