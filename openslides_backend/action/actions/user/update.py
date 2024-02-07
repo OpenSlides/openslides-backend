@@ -4,12 +4,14 @@ from typing import Any
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..meeting_user.delete import MeetingUserDelete
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixins import (
@@ -63,7 +65,20 @@ class UserUpdate(
     check_email_field = "email"
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        removed_meeting_id = self.get_removed_meeting_id(instance)
         instance = super().update_instance(instance)
+        if removed_meeting_id:
+            meeting_users = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("user_id", "=", instance["id"]),
+                    FilterOperator("meeting_id", "=", removed_meeting_id),
+                ),
+                [],
+            )
+            self.execute_other_action(
+                MeetingUserDelete, [{"id": id_} for id_ in meeting_users]
+            )
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[

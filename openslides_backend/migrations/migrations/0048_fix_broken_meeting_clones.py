@@ -10,7 +10,6 @@ class Migration(BaseModelMigration):
     """
 
     target_migration_index = 49
-    fields = ["set_workflow_timestamp", "allow_motion_forwarding"]
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []
