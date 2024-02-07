@@ -44,7 +44,7 @@ class TestCommitteeJsonUpload(BaseCommitteeJsonUploadTest):
             "state": ImportState.DONE,
             "id": 1,
             "headers": [
-                {"property": "name", "type": "string"},
+                {"property": "name", "type": "string", "is_object": True},
                 {"property": "description", "type": "string"},
                 {
                     "property": "forward_to_committees",
