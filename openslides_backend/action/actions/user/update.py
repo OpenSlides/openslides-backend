@@ -47,7 +47,6 @@ class UserUpdate(
             "can_change_own_password",
             "gender",
             "email",
-            "default_number",
             "default_structure_level",
             "default_vote_weight",
             "organization_management_level",

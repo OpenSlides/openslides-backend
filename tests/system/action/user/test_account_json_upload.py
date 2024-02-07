@@ -22,7 +22,6 @@ class AccountJsonUpload(BaseActionTestCase):
                         "default_password": "secret",
                         "is_active": "1",
                         "is_physical_person": "F",
-                        "default_number": "strange number",
                         "default_structure_level": "CEO",
                         "default_vote_weight": "1.12",
                         "wrong": 15,
@@ -41,7 +40,6 @@ class AccountJsonUpload(BaseActionTestCase):
                 "default_password": {"value": "secret", "info": ImportState.DONE},
                 "is_active": True,
                 "is_physical_person": False,
-                "default_number": "strange number",
                 "default_structure_level": "CEO",
                 "default_vote_weight": {"value": "1.120000", "info": ImportState.DONE},
                 "gender": {"value": "female", "info": ImportState.DONE},
@@ -84,11 +82,7 @@ class AccountJsonUpload(BaseActionTestCase):
         response = self.request(
             "account.json_upload",
             {
-                "data": [
-                    {
-                        "default_number": "strange number",
-                    }
-                ],
+                "data": [{}],
             },
         )
         self.assert_status_code(response, 200)
@@ -99,7 +93,6 @@ class AccountJsonUpload(BaseActionTestCase):
             ],
             "data": {
                 "username": {"value": "", "info": ImportState.GENERATED},
-                "default_number": "strange number",
             },
         }
 
@@ -149,7 +142,6 @@ class AccountJsonUpload(BaseActionTestCase):
                 {"property": "gender", "type": "string", "is_object": True},
                 {"property": "pronoun", "type": "string"},
                 {"property": "saml_id", "type": "string", "is_object": True},
-                {"property": "default_number", "type": "string"},
                 {"property": "default_structure_level", "type": "string"},
                 {
                     "property": "default_vote_weight",
