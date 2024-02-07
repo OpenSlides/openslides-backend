@@ -1,6 +1,6 @@
 # Development and testing inside docker container or without docker (only unit and integration tests)
 
-paths = openslides_backend/ tests/ cli/
+paths = openslides_backend/ tests/ cli/ global/meta/models_validator/
 
 all: pyupgrade black autoflake isort flake8 mypy
 
@@ -41,7 +41,7 @@ test-unit-integration:
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
 validate-models-yml:
-	python cli/validate.py
+	python global/meta/models_validator/validate.py global/meta/models.yml
 
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)

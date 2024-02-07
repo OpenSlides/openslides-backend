@@ -3,11 +3,46 @@ from typing import Any
 from openslides_backend.shared.filters import And, FilterOperator
 
 from ....services.datastore.commands import GetManyRequest
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ..speaker.delete import SpeakerDeleteAction
 
 
-class ConditionalSpeakerCascadeMixin(Action):
+class ConditionalSpeakerCascadeMixinHelper(Action):
+    def conditionally_delete_speakers(self, speaker_ids: list[int]) -> None:
+        speaker_to_read_ids = [
+            speaker_id
+            for speaker_id in speaker_ids
+            if not self.datastore.is_deleted(
+                fqid_from_collection_and_id("speaker", speaker_id)
+            )
+        ]
+        speakers = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "speaker",
+                    speaker_to_read_ids,
+                    [
+                        "begin_time",
+                        "id",
+                    ],
+                )
+            ]
+        ).get("speaker", {})
+        speakers_to_delete = [
+            speaker
+            for speaker in speakers.values()
+            if speaker.get("begin_time") is None
+        ]
+
+        if len(speakers_to_delete):
+            self.execute_other_action(
+                SpeakerDeleteAction,
+                [{"id": speaker["id"]} for speaker in speakers_to_delete],
+            )
+
+
+class ConditionalSpeakerCascadeMixin(ConditionalSpeakerCascadeMixinHelper):
     """
     Mixin for user actions that deletes unstarted speeches of users that were either deleted, or removed from a meeting
     """
@@ -29,29 +64,7 @@ class ConditionalSpeakerCascadeMixin(Action):
                 if val.get("speaker_ids")
                 for speaker_id in val.get("speaker_ids", [])
             ]
-            speakers = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "speaker",
-                        speaker_ids,
-                        [
-                            "begin_time",
-                            "id",
-                        ],
-                    )
-                ]
-            )
-            speakers_to_delete = [
-                speaker
-                for speaker in speakers.get("speaker", {}).values()
-                if speaker.get("begin_time") is None
-            ]
-
-            if len(speakers_to_delete):
-                self.execute_other_action(
-                    SpeakerDeleteAction,
-                    [{"id": speaker["id"]} for speaker in speakers_to_delete],
-                )
+            self.conditionally_delete_speakers(speaker_ids)
 
         return super().update_instance(instance)
 

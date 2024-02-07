@@ -34,7 +34,7 @@ class Organization(Model):
         },
     )
     default_language = fields.CharField(
-        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
+        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
@@ -333,7 +333,7 @@ class Meeting(Model, MeetingModelMixin):
     language = fields.CharField(
         required=True,
         constant=True,
-        constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]},
+        constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]},
     )
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
@@ -512,7 +512,17 @@ class Meeting(Model, MeetingModelMixin):
     motion_poll_default_onehundred_percent_base = fields.CharField(
         default="YNA",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     motion_poll_default_group_ids = fields.RelationListField(
@@ -570,7 +580,17 @@ class Meeting(Model, MeetingModelMixin):
     assignment_poll_default_onehundred_percent_base = fields.CharField(
         default="valid",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     assignment_poll_default_group_ids = fields.RelationListField(
@@ -595,7 +615,17 @@ class Meeting(Model, MeetingModelMixin):
     poll_default_onehundred_percent_base = fields.CharField(
         default="YNA",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     poll_default_group_ids = fields.RelationListField(
@@ -1208,7 +1238,7 @@ class Speaker(Model):
         equal_fields="meeting_id",
     )
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "speaker_ids"}, constant=True, equal_fields="meeting_id"
+        to={"meeting_user": "speaker_ids"}, equal_fields="meeting_id"
     )
     point_of_order_category_id = fields.RelationField(
         to={"point_of_order_category": "speaker_ids"}, equal_fields="meeting_id"
@@ -1756,7 +1786,17 @@ class Poll(Model, PollModelMixin):
         required=True,
         default="disabled",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     votesvalid = fields.DecimalField()
