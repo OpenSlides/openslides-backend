@@ -1,95 +1,78 @@
-from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict, Union, cast
+from typing import Any, TypedDict, cast
 
 from typing_extensions import NotRequired
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from tests.system.action.base import BaseActionTestCase
 
-SetupUserSetting = TypedDict(
-    "SetupUserSetting",
-    {
-        "username": str,
-        "meeting_ids": NotRequired[List[int]],
-        "submitted_motion_ids": NotRequired[List[int]],
-        "supported_motion_ids": NotRequired[List[int]],
-        "no_group": NotRequired[bool],
-    },
-)
 
-SetupCommonMotionSetting = TypedDict(
-    "SetupCommonMotionSetting",
-    {"has_number": bool, "category_id": int, "tag_ids": List[int], "block_id": int},
-    total=False,
-)
+class SetupUserSetting(TypedDict):
+    username: str
+    meeting_ids: NotRequired[list[int]]
+    submitted_motion_ids: NotRequired[list[int]]
+    supported_motion_ids: NotRequired[list[int]]
+    no_group: NotRequired[bool]
 
-SetupAmendmentSetting = TypedDict(
-    "SetupAmendmentSetting",
-    {
-        "base": SetupCommonMotionSetting,
-        "fields": List[str],
-    },
-)
 
-SetupMotionSetting = TypedDict(
-    "SetupMotionSetting",
-    {
-        "base": SetupCommonMotionSetting,
-        "amendments": NotRequired[Dict[int, SetupAmendmentSetting]],
-    },
-)
+class SetupCommonMotionSetting(TypedDict, total=False):
+    has_number: bool
+    category_id: int
+    tag_ids: list[int]
+    block_id: int
 
-SetupWorkflowSetting = TypedDict(
-    "SetupWorkflowSetting",
-    {"first_state_fields": List[str]},
-)
 
-SetupCategorySetting = TypedDict(
-    "SetupCategorySetting", {"name": str, "prefix": NotRequired[str]}
-)
+class SetupAmendmentSetting(TypedDict):
+    base: SetupCommonMotionSetting
+    fields: list[str]
 
-SetupMeetingSetting = TypedDict(
-    "SetupMeetingSetting",
-    {
-        "fields": List[str],
-        "motions": NotRequired[Dict[int, SetupMotionSetting]],
-        "categories": NotRequired[Dict[int, SetupCategorySetting]],
-        "workflow": NotRequired[SetupWorkflowSetting],
-        "tags": NotRequired[Dict[int, str]],
-        "blocks": NotRequired[Dict[int, str]],
-        "set_number": NotRequired[bool],
-    },
-)
 
-UsernameTestData = TypedDict(
-    "UsernameTestData",
-    {
-        "submitters": Optional[Union[List[str], str]],
-        "supporters": Optional[Union[List[str], str]],
-    },
-    total=False,
-)
+class SetupMotionSetting(TypedDict):
+    base: SetupCommonMotionSetting
+    amendments: NotRequired[dict[int, SetupAmendmentSetting]]
 
-UsernameTestAssertionData = TypedDict(
-    "UsernameTestAssertionData",
-    {
-        "usernames": List[str],
-        "own_meeting_usernames": List[str],
-        "own_meeting_groupless_usernames": List[str],
-        "unknown_user_present": bool,
-        "usernames_to_user_ids": Dict[str, int],
-    },
-)
 
-UsernameTestExpectationInfo = Dict[str, UsernameTestAssertionData]
+class SetupWorkflowSetting(TypedDict):
+    first_state_fields: list[str]
+
+
+class SetupCategorySetting(TypedDict):
+    name: str
+    prefix: NotRequired[str]
+
+
+class SetupMeetingSetting(TypedDict):
+    fields: list[str]
+    motions: NotRequired[dict[int, SetupMotionSetting]]
+    categories: NotRequired[dict[int, SetupCategorySetting]]
+    workflow: NotRequired[SetupWorkflowSetting]
+    tags: NotRequired[dict[int, str]]
+    blocks: NotRequired[dict[int, str]]
+    set_number: NotRequired[bool]
+
+
+class UsernameTestData(TypedDict, total=False):
+    submitters: list[str] | str | None
+    supporters: list[str] | str | None
+
+
+class UsernameTestAssertionData(TypedDict):
+    usernames: list[str]
+    own_meeting_usernames: list[str]
+    own_meeting_groupless_usernames: list[str]
+    unknown_user_present: bool
+    usernames_to_user_ids: dict[str, int]
+
+
+UsernameTestExpectationInfo = dict[str, UsernameTestAssertionData]
 
 
 class MotionImportTestMixin(BaseActionTestCase):
     def set_up_models(
         self,
-        meetings: Dict[int, SetupMeetingSetting],
-        users: Optional[List[SetupUserSetting]] = None,
-    ) -> Dict[str, Any]:
-        model_data: Dict[str, Any] = {}
+        meetings: dict[int, SetupMeetingSetting],
+        users: list[SetupUserSetting] | None = None,
+    ) -> dict[str, Any]:
+        model_data: dict[str, Any] = {}
         next_ids = {"workflow": 1, "state": 1}
         meeting_prototype = {
             "name": "test",
@@ -150,8 +133,8 @@ class MotionImportTestMixin(BaseActionTestCase):
         return model_data
 
     def _build_base_model_data_from_prototype(
-        self, prototype: Dict[str, Any], fields: List[str]
-    ) -> Dict[str, Any]:
+        self, prototype: dict[str, Any], fields: list[str]
+    ) -> dict[str, Any]:
         data = {}
         for field in fields:
             if prototype.get(field):
@@ -162,9 +145,9 @@ class MotionImportTestMixin(BaseActionTestCase):
         self,
         user_id: int,
         setting: SetupUserSetting,
-        model_data: Dict[str, Dict[str, Any]],
+        model_data: dict[str, dict[str, Any]],
     ) -> None:
-        user_data: Dict[str, Any] = {"username": setting["username"]}
+        user_data: dict[str, Any] = {"username": setting["username"]}
         if setting.get("meeting_ids") and not setting.get("no_group"):
             user_data["meeting_ids"] = setting.get("meeting_ids")
         next_meeting_user_id = user_id * 100
@@ -176,7 +159,7 @@ class MotionImportTestMixin(BaseActionTestCase):
                     *user_data.get("meeting_user_ids", []),
                     next_meeting_user_id,
                 ]
-                meeting_user_data: Dict[str, Any] = {
+                meeting_user_data: dict[str, Any] = {
                     "user_id": user_id,
                     "meeting_id": meeting_id,
                 }
@@ -186,9 +169,9 @@ class MotionImportTestMixin(BaseActionTestCase):
                 ]
                 if not setting.get("no_group"):
                     meeting_user_data["group_ids"] = [meeting_id * 10]
-                    model_data["group/" + str(meeting_id * 10)][
-                        "meeting_user_ids"
-                    ] = meeting["meeting_user_ids"]
+                    model_data["group/" + str(meeting_id * 10)]["meeting_user_ids"] = (
+                        meeting["meeting_user_ids"]
+                    )
                 motion_submitter_ids = []
                 supported_motion_ids = []
                 for motion_id in meeting.get("motion_ids", []):
@@ -222,18 +205,18 @@ class MotionImportTestMixin(BaseActionTestCase):
                         *meeting.get("motion_submitter_ids", []),
                         *motion_submitter_ids,
                     ]
-                model_data[
-                    "meeting_user/" + str(next_meeting_user_id)
-                ] = meeting_user_data
+                model_data["meeting_user/" + str(next_meeting_user_id)] = (
+                    meeting_user_data
+                )
                 next_meeting_user_id += 1
         model_data["user/" + str(user_id)] = user_data
 
     def _set_up_categories(
         self,
-        model_data: Dict[str, Any],
+        model_data: dict[str, Any],
         meeting_id: int,
-        meeting_data: Dict[str, Any],
-        category_settings: Dict[int, SetupCategorySetting],
+        meeting_data: dict[str, Any],
+        category_settings: dict[int, SetupCategorySetting],
     ) -> None:
         category_ids = [id_ for id_ in category_settings]
         meeting_data["motion_category_ids"] = category_ids
@@ -250,10 +233,10 @@ class MotionImportTestMixin(BaseActionTestCase):
 
     def _set_up_motions(
         self,
-        model_data: Dict[str, Any],
+        model_data: dict[str, Any],
         meeting_id: int,
-        meeting_data: Dict[str, Any],
-        motion_settings: Dict[int, SetupMotionSetting],
+        meeting_data: dict[str, Any],
+        motion_settings: dict[int, SetupMotionSetting],
     ) -> None:
         amendment_prototype = {
             "amendment_paragraphs": {"1": "one"},
@@ -308,10 +291,10 @@ class MotionImportTestMixin(BaseActionTestCase):
 
     def _set_up_extras_for_motion(
         self,
-        model_data: Dict[str, Dict[str, Any]],
+        model_data: dict[str, dict[str, Any]],
         motion_id: int,
         motion_setting: Any,
-        motion_data: Dict[str, Any],
+        motion_data: dict[str, Any],
     ) -> None:
         base = cast(SetupCommonMotionSetting, motion_setting["base"])
         if category_id := base.get("category_id"):
@@ -331,10 +314,10 @@ class MotionImportTestMixin(BaseActionTestCase):
 
     def _set_up_workflow(
         self,
-        model_data: Dict[str, Any],
-        meeting_data: Dict[str, Any],
+        model_data: dict[str, Any],
+        meeting_data: dict[str, Any],
         meeting_id: int,
-        next_ids: Dict[str, int],
+        next_ids: dict[str, int],
         is_set_number: bool,
     ) -> None:
         workflow_id = next_ids["workflow"]
@@ -352,7 +335,7 @@ class MotionImportTestMixin(BaseActionTestCase):
             "first_state_id": state_id,
             "meeting_id": meeting_id,
         }
-        state_data: Dict[str, Any] = {
+        state_data: dict[str, Any] = {
             "meeting_id": meeting_id,
             "workflow_id": workflow_id,
             "first_state_of_workflow_id": workflow_id,
@@ -472,7 +455,7 @@ class MotionImportTestMixin(BaseActionTestCase):
         base_motion_id: int = 222,
         is_reason_required: bool = False,
         is_set_number: bool = False,
-    ) -> Tuple[Dict[int, SetupMeetingSetting], List[SetupUserSetting]]:
+    ) -> tuple[dict[int, SetupMeetingSetting], list[SetupUserSetting]]:
         meeting_settings = {
             base_meeting_id: self.get_base_meeting_setting(
                 base_motion_id, is_reason_required, is_set_number
@@ -566,7 +549,7 @@ class MotionImportTestMixin(BaseActionTestCase):
         return (meeting_settings, user_settings)
 
     def get_base_meeting_setting_with_tags(
-        self, base_motion_id: int, base_tag_id: int, extra_tags: List[str] = []
+        self, base_motion_id: int, base_tag_id: int, extra_tags: list[str] = []
     ) -> SetupMeetingSetting:
         return self.extend_meeting_setting_with_tags(
             self.get_base_meeting_setting(base_motion_id, False, False),
@@ -578,8 +561,8 @@ class MotionImportTestMixin(BaseActionTestCase):
         self,
         setting: SetupMeetingSetting,
         base_tag_id: int,
-        extra_tags: List[str] = [],
-        motion_to_tag_ids: Dict[int, List[int]] = {},
+        extra_tags: list[str] = [],
+        motion_to_tag_ids: dict[int, list[int]] = {},
     ) -> SetupMeetingSetting:
         setting["tags"] = {
             base_tag_id: "Tag-liatelle",
@@ -604,7 +587,7 @@ class MotionImportTestMixin(BaseActionTestCase):
         return setting
 
     def get_base_meeting_setting_with_blocks(
-        self, base_motion_id: int, base_block_id: int, extra_blocks: List[str] = []
+        self, base_motion_id: int, base_block_id: int, extra_blocks: list[str] = []
     ) -> SetupMeetingSetting:
         return self.extend_meeting_setting_with_blocks(
             self.get_base_meeting_setting(base_motion_id, False, False),
@@ -616,8 +599,8 @@ class MotionImportTestMixin(BaseActionTestCase):
         self,
         setting: SetupMeetingSetting,
         base_block_id: int,
-        extra_blocks: List[str] = [],
-        motion_to_block_ids: Dict[int, int] = {},
+        extra_blocks: list[str] = [],
+        motion_to_block_ids: dict[int, int] = {},
     ) -> SetupMeetingSetting:
         setting["blocks"] = {
             base_block_id: "Blockolade",
@@ -644,8 +627,8 @@ class MotionImportTestMixin(BaseActionTestCase):
     def extend_meeting_setting_with_categories(
         self,
         setting: SetupMeetingSetting,
-        categories: Dict[int, SetupCategorySetting],
-        motion_to_category_ids: Dict[int, int],
+        categories: dict[int, SetupCategorySetting],
+        motion_to_category_ids: dict[int, int],
     ) -> SetupMeetingSetting:
         setting["categories"] = categories
         for motion_id in setting.get("motions", {}):
@@ -663,7 +646,7 @@ class MotionImportTestMixin(BaseActionTestCase):
         self,
         motion_id: int,
         motion: Any,
-        motion_to_category_ids: Dict[int, int],
+        motion_to_category_ids: dict[int, int],
     ) -> None:
         if motion_to_category_ids.get(motion_id):
             motion["base"]["category_id"] = motion_to_category_ids[motion_id]
@@ -672,7 +655,7 @@ class MotionImportTestMixin(BaseActionTestCase):
         self,
         motion_id: int,
         motion: Any,
-        motion_to_tag_ids: Dict[int, List[int]],
+        motion_to_tag_ids: dict[int, list[int]],
     ) -> None:
         if motion_to_tag_ids.get(motion_id):
             motion["base"]["tag_ids"] = motion_to_tag_ids[motion_id]
@@ -681,7 +664,7 @@ class MotionImportTestMixin(BaseActionTestCase):
         self,
         motion_id: int,
         motion: Any,
-        motion_to_block_ids: Dict[int, int],
+        motion_to_block_ids: dict[int, int],
     ) -> None:
         if motion_to_block_ids.get(motion_id):
             motion["base"]["block_id"] = motion_to_block_ids[motion_id]
@@ -689,10 +672,10 @@ class MotionImportTestMixin(BaseActionTestCase):
     def _generate_user_setting(
         self,
         username: str,
-        meeting_settings: Dict[int, SetupMeetingSetting],
-        meeting_ids: List[int] = [],
-        submitted_motion_ids: List[int] = [],
-        supported_motion_ids: List[int] = [],
+        meeting_settings: dict[int, SetupMeetingSetting],
+        meeting_ids: list[int] = [],
+        submitted_motion_ids: list[int] = [],
+        supported_motion_ids: list[int] = [],
         no_group: bool = False,
     ) -> SetupUserSetting:
         user_data: SetupUserSetting = {"username": username, "no_group": no_group}
@@ -702,7 +685,7 @@ class MotionImportTestMixin(BaseActionTestCase):
         if len(meeting_ids) == 0:
             return user_data
         user_data["meeting_ids"] = meeting_ids
-        motion_ids: List[int] = []
+        motion_ids: list[int] = []
         for meeting_id in meeting_ids:
             meeting_setting = meeting_settings[meeting_id]
             motion_ids.extend(meeting_setting.get("motions", {}).keys())
@@ -1286,7 +1269,7 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def assert_custom_number_create(
         self, is_set_number: bool = False
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         self.set_up_models(
             {42: self.get_base_meeting_setting(223, is_set_number=is_set_number)}
         )
@@ -1396,12 +1379,12 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def make_conditional_number_assertions_for_category_test(
         self,
-        rows: List[Dict[str, Any]],
+        rows: list[dict[str, Any]],
         is_update: bool = False,
         request_with_numbers: bool = False,
         is_set_number: bool = False,
-        ids_for_row_indices: Dict[int, Optional[int]] = {},
-        generated_numbers_for_row_indices: Dict[int, Optional[str]] = {},
+        ids_for_row_indices: dict[int, int | None] = {},
+        generated_numbers_for_row_indices: dict[int, str | None] = {},
     ) -> None:
         for i in range(len(rows)):
             if is_update:
@@ -1425,7 +1408,7 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def make_category_request(
         self,
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         meeting_id: int,
         is_update: bool = False,
         request_with_numbers: bool = False,
@@ -1458,7 +1441,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                 )
             }
         )
-        data: List[Dict[str, Any]] = list(
+        data: list[dict[str, Any]] = list(
             (
                 {
                     "title": "test",
@@ -1537,7 +1520,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                 )
             }
         )
-        data: List[Dict[str, Any]] = list(
+        data: list[dict[str, Any]] = list(
             (
                 {
                     "title": "New title",
@@ -1715,7 +1698,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                 )
             }
         )
-        data: List[Dict[str, Any]] = list(
+        data: list[dict[str, Any]] = list(
             (
                 {
                     "title": "test",
@@ -1779,7 +1762,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                 )
             }
         )
-        data: List[Dict[str, Any]] = list(
+        data: list[dict[str, Any]] = list(
             (
                 {
                     "title": "test",
@@ -1848,7 +1831,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                 )
             }
         )
-        data: List[Dict[str, Any]] = list(
+        data: list[dict[str, Any]] = list(
             (
                 {
                     "title": "test",
@@ -1919,7 +1902,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                 )
             }
         )
-        data: List[Dict[str, Any]] = list(
+        data: list[dict[str, Any]] = list(
             (
                 {
                     "title": "test",
@@ -1990,7 +1973,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                 43: self.get_category_extended_base_meeting_setting(334, 3334),
             }
         )
-        data: List[Dict[str, Any]] = list(
+        data: list[dict[str, Any]] = list(
             (
                 {
                     "title": "test",
@@ -2021,19 +2004,19 @@ class MotionJsonUpload(MotionImportTestMixin):
         add_unknown_user: bool = False,
         is_update: bool = False,
         multiple: bool = False,
-    ) -> Tuple[Any, Dict[str, Any]]:
+    ) -> tuple[Any, dict[str, Any]]:
         rows = 2 if multiple else 1
         model_data = self.set_up_models(*self.get_base_user_and_meeting_settings())
         payloads = []
         username_dict = cast(dict, username_data)
         for i in range(rows):
-            payload: Dict[str, Any] = {"title": "test", "text": "my"}
+            payload: dict[str, Any] = {"title": "test", "text": "my"}
             for key in username_dict:
                 uname_data = username_dict[key]
                 (username, usernames) = (
                     (uname_data, None)
                     if isinstance(uname_data, str)
-                    else (None, cast(List[str], uname_data))
+                    else (None, cast(list[str], uname_data))
                 )
                 if add_unknown_user:
                     payload[f"{key}_username"] = [
@@ -2055,8 +2038,8 @@ class MotionJsonUpload(MotionImportTestMixin):
         return (response, model_data)
 
     def get_own_meeting_users_groupless_users_and_user_id_dict(
-        self, usernames: List[str], meeting_id: int, model_data: Dict[str, Any]
-    ) -> Tuple[List[str], List[str], Dict[str, int]]:
+        self, usernames: list[str], meeting_id: int, model_data: dict[str, Any]
+    ) -> tuple[list[str], list[str], dict[str, int]]:
         collections_and_ids = {fqid: fqid.split("/") for fqid in model_data}
         usernames_to_user_ids = {
             username: int(collections_and_ids[fqid][1])
@@ -2099,20 +2082,20 @@ class MotionJsonUpload(MotionImportTestMixin):
         self,
         user_data: UsernameTestAssertionData,
         add_default_if_necessary: bool = False,
-    ) -> List[Dict[str, Any]]:
-        expected_user_objects: List[Dict[str, Any]] = [
-            {"info": ImportState.WARNING, "value": name}
-            if (
-                (
+    ) -> list[dict[str, Any]]:
+        expected_user_objects: list[dict[str, Any]] = [
+            (
+                {"info": ImportState.WARNING, "value": name}
+                if (
                     name not in user_data["own_meeting_usernames"]
                     or name in user_data["own_meeting_groupless_usernames"]
                 )
+                else {
+                    "info": ImportState.DONE,
+                    "id": user_data["usernames_to_user_ids"][name],
+                    "value": name,
+                }
             )
-            else {
-                "info": ImportState.DONE,
-                "id": user_data["usernames_to_user_ids"][name],
-                "value": name,
-            }
             for name in user_data["usernames"]
         ]
         if user_data["unknown_user_present"]:
@@ -2145,7 +2128,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.assert_status_code(response, 200)
         assert len(response.json["results"][0][0]["rows"]) == (2 if multiple else 1)
         has_warning = False
-        expected_data: Dict[str, Any] = {}
+        expected_data: dict[str, Any] = {}
         for key in user_data:
             expected_data.update(
                 {
@@ -2155,7 +2138,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                 }
             )
         for row in response.json["results"][0][0]["rows"]:
-            expected_messages: List[str] = []
+            expected_messages: list[str] = []
             for usertype in user_data:
                 user_date = user_data[usertype]
                 has_unknown_users = (
@@ -2188,7 +2171,7 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def assert_with_submitters_in_first_meeting(
         self,
-        username_data: Optional[Union[List[str], str]] = None,
+        username_data: list[str] | str | None = None,
         add_unknown_user: bool = False,
         is_update: bool = False,
         multiple: bool = False,
@@ -2208,7 +2191,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         usernames = (
             [username_data]
             if isinstance(username_data, str)
-            else cast(List[str], username_data) or []
+            else cast(list[str], username_data) or []
         )
         (
             own_meeting_usernames,
@@ -2298,7 +2281,7 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def assert_with_supporters_in_first_meeting(
         self,
-        username_data: Optional[Union[List[str], str]] = None,
+        username_data: list[str] | str | None = None,
         add_unknown_user: bool = False,
         is_update: bool = False,
         multiple: bool = False,
@@ -2318,7 +2301,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         usernames = (
             [username_data]
             if isinstance(username_data, str)
-            else cast(List[str], username_data) or []
+            else cast(list[str], username_data) or []
         )
         (
             own_meeting_usernames,
@@ -2408,8 +2391,8 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def assert_with_both_usertypes_in_first_meeting(
         self,
-        submitter_username_data: Optional[Union[List[str], str]] = None,
-        supporter_username_data: Optional[Union[List[str], str]] = None,
+        submitter_username_data: list[str] | str | None = None,
+        supporter_username_data: list[str] | str | None = None,
         add_unknown_user: bool = False,
         is_update: bool = False,
         multiple: bool = False,
@@ -2437,7 +2420,7 @@ class MotionJsonUpload(MotionImportTestMixin):
             usernames = (
                 [username_data]
                 if isinstance(username_data, str)
-                else cast(List[str], username_data) or []
+                else cast(list[str], username_data) or []
             )
             (
                 own_meeting_usernames,
@@ -2532,9 +2515,9 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def assert_with_verbose_users_in_first_meeting(
         self,
-        usernames: Optional[List[str]],
-        verbose_usernames: List[str],
-        username_fields: List[str] = ["submitter"],
+        usernames: list[str] | None,
+        verbose_usernames: list[str],
+        username_fields: list[str] = ["submitter"],
         is_update: bool = False,
         multiple: bool = False,
     ) -> None:
@@ -2543,7 +2526,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         self.set_up_models(*self.get_base_user_and_meeting_settings())
         payloads = []
         for i in range(rows):
-            payload: Dict[str, Any] = {
+            payload: dict[str, Any] = {
                 "title": "test",
                 "text": "my",
             }
@@ -2584,9 +2567,7 @@ class MotionJsonUpload(MotionImportTestMixin):
             assert row["state"] == (
                 ImportState.ERROR
                 if has_error
-                else ImportState.DONE
-                if is_update
-                else ImportState.NEW
+                else ImportState.DONE if is_update else ImportState.NEW
             )
             for fieldname in username_fields:
                 assert (
@@ -2847,14 +2828,14 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def assert_and_check_for_duplicate_users_in_row(
         self,
-        usernames: List[str],
-        username_fields: List[str] = ["submitter"],
+        usernames: list[str],
+        username_fields: list[str] = ["submitter"],
         is_update: bool = False,
-        duplicated_users: List[str] = ["firstMeeting"],
+        duplicated_users: list[str] = ["firstMeeting"],
     ) -> None:
         meeting_id = 42
         self.set_up_models(*self.get_base_user_and_meeting_settings())
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "title": "test",
             "text": "my",
         }
@@ -2876,7 +2857,7 @@ class MotionJsonUpload(MotionImportTestMixin):
             response.json["results"][0][0]["state"] == ImportState.WARNING
         ) == has_warnings
         row = response.json["results"][0][0]["rows"][0]
-        user_set: Set[str] = set([])
+        user_set: set[str] = set()
         for user in [
             *row["data"].get("submitters_username", []),
             *row["data"].get("supporters_username", []),
@@ -2964,11 +2945,11 @@ class MotionJsonUpload(MotionImportTestMixin):
     ) -> None:
         meeting_id = 42
         self.setup_assert_with_tags(meeting_id)
-        use_tags: List[str] = []
+        use_tags: list[str] = []
         number_of_common_tags = 0
-        expected_not_found: List[str] = []
+        expected_not_found: list[str] = []
         expect_duplicates = False
-        messages: List[str] = []
+        messages: list[str] = []
         if common_tags:
             number_of_common_tags = max(min(common_tags, 3), 1)
             use_tags = ["Tag-liatelle", "Tag-you're-it", "Price tag"][
@@ -2998,7 +2979,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         has_warnings = (
             add_unidentifiable_tag or len(expected_not_found) or expect_duplicates
         )
-        expected_data: List[Dict[str, Any]] = []
+        expected_data: list[dict[str, Any]] = []
         for i in range(len(use_tags)):
             tag = use_tags[i]
             if number_of_common_tags > 0:
@@ -3014,9 +2995,9 @@ class MotionJsonUpload(MotionImportTestMixin):
             else:
                 expected_data.append({"info": ImportState.WARNING, "value": tag})
         rows = 2 if multiple else 1
-        payloads: List[Dict[str, Any]] = []
+        payloads: list[dict[str, Any]] = []
         for i in range(rows):
-            payload: Dict[str, Any] = {
+            payload: dict[str, Any] = {
                 "title": "Tagged",
                 "text": "to infinity",
                 "tags": use_tags,
@@ -3180,18 +3161,18 @@ class MotionJsonUpload(MotionImportTestMixin):
     def assert_with_blocks(
         self,
         block: str,
-        expected_id: Optional[int] = None,
-        expected_message: Optional[str] = None,
+        expected_id: int | None = None,
+        expected_message: str | None = None,
         is_update: bool = False,
         multiple: bool = False,
     ) -> None:
         meeting_id = 42
         self.setup_assert_with_blocks(meeting_id)
-        messages: List[str] = []
+        messages: list[str] = []
         rows = 2 if multiple else 1
-        payloads: List[Dict[str, Any]] = []
+        payloads: list[dict[str, Any]] = []
         for i in range(rows):
-            payload: Dict[str, Any] = {
+            payload: dict[str, Any] = {
                 "title": "Blocks",
                 "text": "are cool",
                 "block": block,
@@ -3206,7 +3187,7 @@ class MotionJsonUpload(MotionImportTestMixin):
                 "meeting_id": meeting_id,
             },
         )
-        expected_data: Dict[str, Any] = {
+        expected_data: dict[str, Any] = {
             "info": ImportState.WARNING if expected_message else ImportState.DONE,
             "value": block,
         }

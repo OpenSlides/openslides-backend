@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, TypedDict
+from typing import Any, TypedDict
 
 from openslides_backend.shared.patterns import (
     EXTENSION_REFERENCE_IDS_PATTERN,
@@ -22,13 +22,9 @@ class MotionErrorType(str, Enum):
     TITLE = "title"
 
 
-MotionActionErrorData = TypedDict(
-    "MotionActionErrorData",
-    {
-        "type": MotionErrorType,
-        "message": str,
-    },
-)
+class MotionActionErrorData(TypedDict):
+    type: MotionErrorType
+    message: str
 
 
 class MotionBasePayloadValidationMixin(SetNumberMixin):
@@ -38,11 +34,11 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
 
     def conduct_common_checks(
         self,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
         meeting_id: int,
-        previous_numbers: List[str] = [],
-    ) -> List[MotionActionErrorData]:
-        errors: List[MotionActionErrorData] = []
+        previous_numbers: list[str] = [],
+    ) -> list[MotionActionErrorData]:
+        errors: list[MotionActionErrorData] = []
         if instance.get("number"):
             if not self._check_if_unique(
                 instance["number"], meeting_id, instance.get("id"), previous_numbers
@@ -66,9 +62,9 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
         return meeting.get("motions_reason_required", False)
 
     def _check_recommendation_and_state(
-        self, instance: Dict[str, Any]
-    ) -> List[MotionActionErrorData]:
-        errors: List[MotionActionErrorData] = []
+        self, instance: dict[str, Any]
+    ) -> list[MotionActionErrorData]:
+        errors: list[MotionActionErrorData] = []
         for prefix in ("recommendation", "state"):
             if f"{prefix}_extension" in instance:
                 possible_rerids = EXTENSION_REFERENCE_IDS_PATTERN.findall(
@@ -79,9 +75,11 @@ class MotionBasePayloadValidationMixin(SetNumberMixin):
                     if collection != "motion":
                         errors.append(
                             {
-                                "type": MotionErrorType.STATE_EXTENSION
-                                if prefix == "state"
-                                else MotionErrorType.RECO_EXTENSION,
+                                "type": (
+                                    MotionErrorType.STATE_EXTENSION
+                                    if prefix == "state"
+                                    else MotionErrorType.RECO_EXTENSION
+                                ),
                                 "message": f"Found {fqid} but only motion is allowed.",
                             }
                         )
@@ -95,8 +93,8 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
     """
 
     def get_create_payload_integrity_error_message(
-        self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[MotionActionErrorData]:
+        self, instance: dict[str, Any], meeting_id: int
+    ) -> list[MotionActionErrorData]:
         return (
             self._create_conduct_before_checks(instance, meeting_id)
             + self.conduct_common_checks(instance, meeting_id)
@@ -104,9 +102,9 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
         )
 
     def _create_conduct_before_checks(
-        self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[MotionActionErrorData]:
-        errors: List[MotionActionErrorData] = []
+        self, instance: dict[str, Any], meeting_id: int
+    ) -> list[MotionActionErrorData]:
+        errors: list[MotionActionErrorData] = []
         if not instance.get("title"):
             errors.append(
                 {"type": MotionErrorType.TITLE, "message": "Title is required"}
@@ -152,8 +150,8 @@ class MotionCreatePayloadValidationMixin(MotionBasePayloadValidationMixin):
         return errors
 
     def _create_conduct_after_checks(
-        self, instance: Dict[str, Any]
-    ) -> List[MotionActionErrorData]:
+        self, instance: dict[str, Any]
+    ) -> list[MotionActionErrorData]:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             [
@@ -189,16 +187,16 @@ class MotionUpdatePayloadValidationMixin(MotionBasePayloadValidationMixin):
     """
 
     def get_update_payload_integrity_error_message(
-        self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[MotionActionErrorData]:
+        self, instance: dict[str, Any], meeting_id: int
+    ) -> list[MotionActionErrorData]:
         return self._update_conduct_before_checks(
             instance, meeting_id
         ) + self.conduct_common_checks(instance, meeting_id)
 
     def _update_conduct_before_checks(
-        self, instance: Dict[str, Any], meeting_id: int
-    ) -> List[MotionActionErrorData]:
-        errors: List[MotionActionErrorData] = []
+        self, instance: dict[str, Any], meeting_id: int
+    ) -> list[MotionActionErrorData]:
+        errors: list[MotionActionErrorData] = []
         if instance.get("text") or instance.get("amendment_paragraphs"):
             motion = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["id"]),

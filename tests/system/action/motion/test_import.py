@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 
@@ -8,7 +8,7 @@ from .test_json_upload import MotionImportTestMixin
 class MotionJsonUpload(MotionImportTestMixin):
     def set_up_models_with_import_previews_and_get_next_motion_id(
         self,
-        additional_data: List[Dict[str, Any]] = [{}],
+        additional_data: list[dict[str, Any]] = [{}],
         base_meeting_id: int = 42,
         base_motion_id: int = 100,
         base_block_id: int = 1000,
@@ -83,9 +83,9 @@ class MotionJsonUpload(MotionImportTestMixin):
                 "result": {
                     "rows": [
                         {
-                            "state": ImportState.DONE
-                            if date.get("id")
-                            else ImportState.NEW,
+                            "state": (
+                                ImportState.DONE if date.get("id") else ImportState.NEW
+                            ),
                             "messages": [],
                             "data": {
                                 "title": {
@@ -149,8 +149,8 @@ class MotionJsonUpload(MotionImportTestMixin):
         self,
         response: Any,
         motion_id: int,
-        row_data: Dict[str, Any],
-        submitter_user_id_to_weight: Dict[int, int] = {1: 1},
+        row_data: dict[str, Any],
+        submitter_user_id_to_weight: dict[int, int] = {1: 1},
     ) -> None:
         self.assert_status_code(response, 200)
         motion = self.assert_model_exists(
@@ -349,13 +349,13 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def prepare_complex_test(
         self,
-        changed_entries: Dict[str, Any] = {},
+        changed_entries: dict[str, Any] = {},
         is_update: bool = False,
         multiple: bool = False,
     ) -> int:
-        payload: List[Dict[str, Any]] = []
+        payload: list[dict[str, Any]] = []
         for i in range(2 if multiple else 1):
-            data: Dict[str, Any] = {
+            data: dict[str, Any] = {
                 "number": {"info": ImportState.DONE, "value": f"DUM0{i + 1}"},
                 "title": {"info": ImportState.DONE, "value": "Always look on..."},
                 "text": {
@@ -463,7 +463,7 @@ class MotionJsonUpload(MotionImportTestMixin):
         )
 
     def assert_error_for_changed_property(
-        self, response: Any, changed_keys: List[str], error_messages: list[str]
+        self, response: Any, changed_keys: list[str], error_messages: list[str]
     ) -> None:
         assert response.json["results"][0][0]["state"] == ImportState.ERROR
         errors = response.json["results"][0][0]["rows"][0]["messages"]
@@ -473,13 +473,13 @@ class MotionJsonUpload(MotionImportTestMixin):
         data = response.json["results"][0][0]["rows"][0]["data"]
         for key in data:
             if key in changed_keys:
-                if isinstance(data[key], Dict):
+                if isinstance(data[key], dict):
                     assert data[key]["info"] == ImportState.ERROR
-                elif isinstance(data[key], List):
+                elif isinstance(data[key], list):
                     assert ImportState.ERROR in [date["info"] for date in data[key]]
-            elif isinstance(data[key], Dict):
+            elif isinstance(data[key], dict):
                 assert data[key]["info"] != ImportState.ERROR
-            elif isinstance(data[key], List):
+            elif isinstance(data[key], list):
                 assert ImportState.ERROR not in [date["info"] for date in data[key]]
 
     def test_import_update_changed_number_name(self) -> None:
@@ -686,11 +686,11 @@ class MotionJsonUpload(MotionImportTestMixin):
 
     def prepare_complex_different_found_test(
         self,
-        changed_entries: Dict[str, Any] = {},
+        changed_entries: dict[str, Any] = {},
         is_update: bool = False,
     ) -> int:
-        payload: List[Dict[str, Any]] = []
-        data: Dict[str, Any] = {
+        payload: list[dict[str, Any]] = []
+        data: dict[str, Any] = {
             "number": {"info": ImportState.DONE, "value": "DUM01"},
             "title": {"info": ImportState.DONE, "value": "Always look on..."},
             "text": {
@@ -802,7 +802,7 @@ class MotionJsonUpload(MotionImportTestMixin):
     def assert_different_category(
         self,
         is_update: bool = False,
-        changed_entries: Dict[str, Any] = {
+        changed_entries: dict[str, Any] = {
             "category_name": {
                 "info": ImportState.DONE,
                 "id": 407,
@@ -1024,9 +1024,11 @@ class MotionJsonUpload(MotionImportTestMixin):
     ) -> None:
         self.prepare_complex_test(
             {
-                "motion_amendment": {"value": "1", "info": ImportState.WARNING}
-                if is_amendment
-                else {"value": "0", "info": ImportState.DONE},
+                "motion_amendment": (
+                    {"value": "1", "info": ImportState.WARNING}
+                    if is_amendment
+                    else {"value": "0", "info": ImportState.DONE}
+                ),
             },
             is_update,
         )
@@ -1051,9 +1053,9 @@ class MotionJsonUpload(MotionImportTestMixin):
         response: Any,
         meeting_id: int,
         motion_id: int,
-        motion_data: Dict[str, Any],
-        submitter_user_ids: List[int] = [1],
-        supporter_user_ids: List[int] = [],
+        motion_data: dict[str, Any],
+        submitter_user_ids: list[int] = [1],
+        supporter_user_ids: list[int] = [],
     ) -> None:
         self.assert_status_code(response, 200)
         motion = self.assert_model_exists(

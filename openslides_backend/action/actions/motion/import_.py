@@ -1,7 +1,7 @@
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from openslides_backend.action.mixins.import_mixins import (
-    ImportMixin,
+    BaseImportAction,
     ImportRow,
     ImportState,
     Lookup,
@@ -32,7 +32,9 @@ from .update import MotionUpdate
 
 @register_action("motion.import")
 class MotionImport(
-    ImportMixin, MotionCreatePayloadValidationMixin, MotionUpdatePayloadValidationMixin
+    BaseImportAction,
+    MotionCreatePayloadValidationMixin,
+    MotionUpdatePayloadValidationMixin,
 ):
     """
     Action to import a result from the import_preview.
@@ -49,14 +51,14 @@ class MotionImport(
     skip_archived_meeting_check = True
     import_name = "motion"
     number_lookup: Lookup
-    username_lookup: Dict[str, List[Dict[str, Any]]]
-    category_lookup: Dict[str, List[Dict[str, Any]]]
-    tags_lookup: Dict[str, List[Dict[str, Any]]]
-    block_lookup: Dict[str, List[Dict[str, Any]]]
-    _user_ids_to_meeting_user: Dict[int, Any]
-    _submitter_ids_to_user_id: Dict[int, int]
+    username_lookup: dict[str, list[dict[str, Any]]]
+    category_lookup: dict[str, list[dict[str, Any]]]
+    tags_lookup: dict[str, list[dict[str, Any]]]
+    block_lookup: dict[str, list[dict[str, Any]]]
+    _user_ids_to_meeting_user: dict[int, Any]
+    _submitter_ids_to_user_id: dict[int, int]
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if not instance["import"]:
             return {}
 
@@ -67,17 +69,17 @@ class MotionImport(
         self.rows = [self.validate_entry(row) for row in self.result["rows"]]
 
         if self.import_state != ImportState.ERROR:
-            create_action_payload: List[Dict[str, Any]] = []
-            update_action_payload: List[Dict[str, Any]] = []
-            submitter_create_action_payload: List[Dict[str, Any]] = []
-            submitter_delete_action_payload: List[Dict[str, Any]] = []
+            create_action_payload: list[dict[str, Any]] = []
+            update_action_payload: list[dict[str, Any]] = []
+            submitter_create_action_payload: list[dict[str, Any]] = []
+            submitter_delete_action_payload: list[dict[str, Any]] = []
 
-            motion_to_submitter_user_ids: Dict[int, List[int]] = {}
-            old_submitters: Dict[
-                int, Dict[int, int]
-            ] = {}  # {motion_id: {user_id:submitter_id}}
+            motion_to_submitter_user_ids: dict[int, list[int]] = {}
+            old_submitters: dict[int, dict[int, int]] = (
+                {}
+            )  # {motion_id: {user_id:submitter_id}}
             for row in self.rows:
-                payload: Dict[str, Any] = row["data"].copy()
+                payload: dict[str, Any] = row["data"].copy()
                 used_list = ["text", "reason", "title", "number"]
                 for field in used_list:
                     if field in payload:
@@ -108,7 +110,7 @@ class MotionImport(
                 ]
                 if len(meeting_users_to_create):
                     meeting_users = cast(
-                        List[Dict[str, int]],
+                        list[dict[str, int]],
                         self.execute_other_action(
                             MeetingUserCreate, meeting_users_to_create
                         ),
@@ -128,7 +130,7 @@ class MotionImport(
                 ]
                 payload["supporter_meeting_user_ids"] = supporters
                 payload.pop("category_prefix", None)
-                errors: List[MotionActionErrorData] = []
+                errors: list[MotionActionErrorData] = []
                 if row["state"] == ImportState.NEW:
                     payload.update({"submitter_ids": submitters})
                     create_action_payload.append(payload)
@@ -155,7 +157,7 @@ class MotionImport(
                             if not motion.get(field):
                                 payload.pop(field)
                     if len(submitters):
-                        motion_submitter_ids: List[int] = (
+                        motion_submitter_ids: list[int] = (
                             motion.get("submitter_ids", []) or []
                         )
                         matched_submitters = {
@@ -218,14 +220,14 @@ class MotionImport(
                     row["state"] = ImportState.ERROR
                     self.import_state = ImportState.ERROR
             if self.import_state != ImportState.ERROR:
-                created_submitters: List[Dict[str, int]] = []
+                created_submitters: list[dict[str, int]] = []
                 if create_action_payload:
                     self.execute_other_action(MotionCreate, create_action_payload)
                 if update_action_payload:
                     self.execute_other_action(MotionUpdate, update_action_payload)
                 if len(submitter_create_action_payload):
                     created_submitters = cast(
-                        List[Dict[str, int]],
+                        list[dict[str, int]],
                         self.execute_other_action(
                             MotionSubmitterCreateAction, submitter_create_action_payload
                         ),
@@ -234,9 +236,9 @@ class MotionImport(
                     self.execute_other_action(
                         MotionSubmitterDeleteAction, submitter_delete_action_payload
                     )
-                new_submitters: Dict[
-                    int, Dict[int, int]
-                ] = {}  # {motion_id: {meeting_user_id:submitter_id}}
+                new_submitters: dict[int, dict[int, int]] = (
+                    {}
+                )  # {motion_id: {meeting_user_id:submitter_id}}
                 for i in range(len(created_submitters)):
                     motion_id = submitter_create_action_payload[i]["motion_id"]
                     new_submitters[motion_id] = {
@@ -245,9 +247,9 @@ class MotionImport(
                             "meeting_user_id"
                         ]: created_submitters[i]["id"],
                     }
-                sort_payload: List[Dict[str, Any]] = []
+                sort_payload: list[dict[str, Any]] = []
                 for motion_id in motion_to_submitter_user_ids:
-                    sorted_motion_submitter_ids: List[int] = []
+                    sorted_motion_submitter_ids: list[int] = []
                     for submitter_user_id in motion_to_submitter_user_ids[motion_id]:
                         meeting_user_id = cast(
                             int, self._user_ids_to_meeting_user[submitter_user_id]["id"]
@@ -281,7 +283,7 @@ class MotionImport(
 
         return {}
 
-    def get_ids_from_object_list(self, object_list: List[Dict[str, Any]]) -> List[int]:
+    def get_ids_from_object_list(self, object_list: list[dict[str, Any]]) -> list[int]:
         return [
             obj["id"]
             for obj in object_list
@@ -290,7 +292,7 @@ class MotionImport(
         ]
 
     def remove_fields_from_data(
-        self, data: Dict[str, Any], fieldnames: List[str]
+        self, data: dict[str, Any], fieldnames: list[str]
     ) -> None:
         for fieldname in fieldnames:
             data.pop(fieldname, None)
@@ -386,9 +388,9 @@ class MotionImport(
                 row["messages"].append("Error: Couldn't find motion block anymore")
                 row["state"] = ImportState.ERROR
 
-        if isinstance(entry.get("tags"), List):
-            different: List[str] = []
-            not_found: List[str] = []
+        if isinstance(entry.get("tags"), list):
+            different: list[str] = []
+            not_found: list[str] = []
             for tag_entry in entry.get("tags", []):
                 tag = self.get_value_from_union_str_object(tag_entry)
                 if tag and tag_entry.get("info") == ImportState.DONE:
@@ -419,7 +421,7 @@ class MotionImport(
                 row["state"] = ImportState.ERROR
 
         for fieldname in ["submitter", "supporter"]:
-            if isinstance(entry.get(f"{fieldname}s_username"), List):
+            if isinstance(entry.get(f"{fieldname}s_username"), list):
                 different = []
                 not_found = []
                 for user_entry in entry.get(f"{fieldname}s_username", []):
@@ -511,20 +513,18 @@ class MotionImport(
         self.username_lookup = self.get_lookup_dict(
             "user",
             list(
-                set(
-                    [
-                        user["value"]
-                        for row in rows
-                        if (
-                            users := [
-                                *row["data"].get("submitters_username", []),
-                                *row["data"].get("supporters_username", []),
-                            ]
-                        )
-                        for user in users
-                        if user and user.get("info") != ImportState.WARNING
-                    ]
-                )
+                {
+                    user["value"]
+                    for row in rows
+                    if (
+                        users := [
+                            *row["data"].get("submitters_username", []),
+                            *row["data"].get("supporters_username", []),
+                        ]
+                    )
+                    for user in users
+                    if user and user.get("info") != ImportState.WARNING
+                }
             ),
             "username",
             ["meeting_ids", "meeting_user_ids"],
@@ -548,7 +548,7 @@ class MotionImport(
                 for submitter in submitters
             ]
         )
-        all_meeting_users: Dict[int, Dict[str, Any]] = {}
+        all_meeting_users: dict[int, dict[str, Any]] = {}
         if len(all_user_ids):
             all_meeting_users = self.datastore.filter(
                 "meeting_user",
@@ -600,12 +600,12 @@ class MotionImport(
     def get_lookup_dict(
         self,
         collection: str,
-        entries: List[str],
+        entries: list[str],
         fieldname: str = "name",
-        mapped_fields: List[str] = [],
-        and_filters: List[Filter] = [],
-    ) -> Dict[str, List[Dict[str, Any]]]:
-        lookup: Dict[str, List[Dict[str, Any]]] = {}
+        mapped_fields: list[str] = [],
+        and_filters: list[Filter] = [],
+    ) -> dict[str, list[dict[str, Any]]]:
+        lookup: dict[str, list[dict[str, Any]]] = {}
         if len(entries):
             data = self.datastore.filter(
                 collection,
@@ -624,7 +624,7 @@ class MotionImport(
                 ]
         return lookup
 
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+    def get_meeting_id(self, instance: dict[str, Any]) -> int:
         store_id = instance["id"]
         worker = self.datastore.get(
             fqid_from_collection_and_id("import_preview", store_id),

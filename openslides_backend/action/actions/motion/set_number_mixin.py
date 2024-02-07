@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
@@ -12,11 +12,11 @@ class SetNumberMixin(Action):
         instance: dict[str, Any],
         meeting_id: int,
         state_id: int,
-        lead_motion_id: Optional[int],
-        category_id: Optional[int],
-        existing_number: Optional[str] = None,
-        existing_number_value: Optional[int] = None,
-        other_forbidden_numbers: List[str] = [],
+        lead_motion_id: int | None,
+        category_id: int | None,
+        existing_number: str | None = None,
+        existing_number_value: int | None = None,
+        other_forbidden_numbers: list[str] = [],
     ) -> None:
         """
         Sets the motion number and the motion number value.
@@ -133,8 +133,8 @@ class SetNumberMixin(Action):
         self,
         number: str,
         meeting_id: int,
-        own_id: Optional[int],
-        other_forbidden_numbers: List[str] = [],
+        own_id: int | None,
+        other_forbidden_numbers: list[str] = [],
     ) -> bool:
         filter = And(
             FilterOperator("meeting_id", "=", meeting_id),

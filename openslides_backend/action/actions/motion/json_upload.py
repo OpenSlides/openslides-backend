@@ -1,6 +1,7 @@
 from collections import defaultdict
+from collections.abc import Iterable
 from re import search, sub
-from typing import Any, Dict, Iterable, List, Optional, Set, cast
+from typing import Any, cast
 
 from openslides_backend.shared.filters import And, Filter, FilterOperator, Or
 
@@ -8,7 +9,12 @@ from ....models.models import Motion
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.schema import required_id_schema
-from ...mixins.import_mixins import ImportState, JsonUploadMixin, Lookup, ResultType
+from ...mixins.import_mixins import (
+    BaseJsonUploadAction,
+    ImportState,
+    Lookup,
+    ResultType,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .payload_validation_mixin import (
@@ -31,7 +37,7 @@ LIST_TYPE = {
 
 @register_action("motion.json_upload")
 class MotionJsonUpload(
-    JsonUploadMixin,
+    BaseJsonUploadAction,
     MotionCreatePayloadValidationMixin,
     MotionUpdatePayloadValidationMixin,
 ):
@@ -118,15 +124,16 @@ class MotionJsonUpload(
     permission = Permissions.Motion.CAN_MANAGE
     row_state: ImportState
     number_lookup: Lookup
-    username_lookup: Dict[str, List[Dict[str, Any]]] = {}
-    category_lookup: Dict[str, List[Dict[str, Any]]] = {}
-    tags_lookup: Dict[str, List[Dict[str, Any]]] = {}
-    block_lookup: Dict[str, List[Dict[str, Any]]] = {}
-    _first_state_id: Optional[int] = None
-    _operator_username: Optional[str] = None
-    _previous_numbers: List[str]
+    username_lookup: dict[str, list[dict[str, Any]]] = {}
+    category_lookup: dict[str, list[dict[str, Any]]] = {}
+    tags_lookup: dict[str, list[dict[str, Any]]] = {}
+    block_lookup: dict[str, list[dict[str, Any]]] = {}
+    _first_state_id: int | None = None
+    _operator_username: str | None = None
+    _previous_numbers: list[str]
+    import_name = "motion"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # transform instance into a correct create/update payload
         # try to find a pre-existing motion with the same number
         # if there is one, validate for a motion.update, otherwise for a motion.create
@@ -164,12 +171,11 @@ class MotionJsonUpload(
         self.set_state(
             state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
         )
-        self.store_rows_in_the_import_preview("motion")
         return {}
 
-    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        messages: List[str] = []
-        id_: Optional[int] = None
+    def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
+        messages: list[str] = []
+        id_: int | None = None
         meeting_id: int = entry["meeting_id"]
         set_entry_id = False
 
@@ -231,11 +237,11 @@ class MotionJsonUpload(
                 }
                 messages.append("Error: Found multiple motions with the same number")
         else:
-            category_id: Optional[int] = None
+            category_id: int | None = None
             if entry.get("category_name"):
                 category_id = entry["category_name"].get("id")
             self.row_state = ImportState.NEW
-            value: Dict[str, Any] = {}
+            value: dict[str, Any] = {}
             self.set_number(
                 value,
                 meeting_id,
@@ -253,10 +259,10 @@ class MotionJsonUpload(
             if users := entry.get(f"{fieldname}s_username"):
                 verbose = entry.get(f"{fieldname}s_verbose", [])
                 verbose_user_mismatch = len(verbose) > len(users)
-                username_set: Set[str] = set([])
-                entry_list: list[Dict[str, Any]] = []
-                duplicates: Set[str] = set()
-                not_found: Set[str] = set()
+                username_set: set[str] = set()
+                entry_list: list[dict[str, Any]] = []
+                duplicates: set[str] = set()
+                not_found: set[str] = set()
                 for user in users:
                     if verbose_user_mismatch:
                         entry_list.append({"value": user, "info": ImportState.ERROR})
@@ -308,7 +314,7 @@ class MotionJsonUpload(
 
         if not has_submitter_error:
             if (
-                len((cast(List[dict[str, Any]], entry.get("submitters_username", []))))
+                len(cast(list[dict[str, Any]], entry.get("submitters_username", [])))
                 == 0
             ):
                 entry["submitters_username"] = [self._get_self_username_object()]
@@ -318,7 +324,7 @@ class MotionJsonUpload(
                         entry
                         for entry in (
                             cast(
-                                List[dict[str, Any]],
+                                list[dict[str, Any]],
                                 entry.get("submitters_username", []),
                             )
                         )
@@ -333,8 +339,8 @@ class MotionJsonUpload(
             entry_list = []
             duplicates = set()
             not_found = set()
-            multiple: Set[str] = set()
-            tags_set: Set[str] = set()
+            multiple: set[str] = set()
+            tags_set: set[str] = set()
             for tag in tags:
                 if tag in tags_set:
                     entry_list.append({"value": tag, "info": ImportState.WARNING})
@@ -459,7 +465,7 @@ class MotionJsonUpload(
             },
         }
 
-        errors: List[MotionActionErrorData] = []
+        errors: list[MotionActionErrorData] = []
         if id_:
             payload = {"id": id_, **payload}
             errors = self.get_update_payload_integrity_error_message(
@@ -485,7 +491,7 @@ class MotionJsonUpload(
 
         return {"state": self.row_state, "messages": messages, "data": entry}
 
-    def setup_lookups(self, data: Iterable[Dict[str, Any]], meeting_id: int) -> None:
+    def setup_lookups(self, data: Iterable[dict[str, Any]], meeting_id: int) -> None:
         self.number_lookup = Lookup(
             self.datastore,
             "motion",
@@ -510,20 +516,18 @@ class MotionJsonUpload(
         self.username_lookup = self.get_lookup_dict(
             "user",
             list(
-                set(
-                    [
-                        username
-                        for entry in data
-                        if (
-                            usernames := [
-                                *entry.get("submitters_username", []),
-                                *entry.get("supporters_username", []),
-                            ]
-                        )
-                        for username in usernames
-                        if username
-                    ]
-                )
+                {
+                    username
+                    for entry in data
+                    if (
+                        usernames := [
+                            *entry.get("submitters_username", []),
+                            *entry.get("supporters_username", []),
+                        ]
+                    )
+                    for username in usernames
+                    if username
+                }
             ),
             "username",
             ["meeting_ids"],
@@ -552,12 +556,12 @@ class MotionJsonUpload(
     def get_lookup_dict(
         self,
         collection: str,
-        entries: List[str],
+        entries: list[str],
         fieldname: str = "name",
-        mapped_fields: List[str] = [],
-        and_filters: List[Filter] = [],
-    ) -> Dict[str, List[Dict[str, Any]]]:
-        lookup: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        mapped_fields: list[str] = [],
+        and_filters: list[Filter] = [],
+    ) -> dict[str, list[dict[str, Any]]]:
+        lookup: dict[str, list[dict[str, Any]]] = defaultdict(list)
         if len(entries):
             data = self.datastore.filter(
                 collection,
@@ -572,7 +576,7 @@ class MotionJsonUpload(
                 lookup[date[fieldname]].append(date)
         return lookup
 
-    def _get_self_username_object(self) -> Dict[str, Any]:
+    def _get_self_username_object(self) -> dict[str, Any]:
         if not self._operator_username:
             user = self.datastore.get("user/" + str(self.user_id), ["username"])
             if not (user and user.get("username")):
@@ -598,7 +602,7 @@ class MotionJsonUpload(
             )
         return self._first_state_id
 
-    def _get_field_array(self, entry: Dict[str, Any], fieldname: str) -> List[str]:
+    def _get_field_array(self, entry: dict[str, Any], fieldname: str) -> list[str]:
         date = entry.get(fieldname)
         if isinstance(date, list):
             return date
@@ -606,18 +610,18 @@ class MotionJsonUpload(
             return [date]
         return []
 
-    def _get_field_ids(self, entry: Dict[str, Any], fieldname: str) -> List[int]:
+    def _get_field_ids(self, entry: dict[str, Any], fieldname: str) -> list[int]:
         value = entry.get(fieldname, [])
         if not isinstance(value, list):
             value = [entry[fieldname]]
         return [val["id"] for val in value if val.get("id")]
 
-    def _get_field_id(self, entry: Dict[str, Any], fieldname: str) -> int:
+    def _get_field_id(self, entry: dict[str, Any], fieldname: str) -> int:
         return entry[fieldname].get("id")
 
     def _add_error_to_entry(
-        self, entry: Dict[str, Any], err: MotionActionErrorData
-    ) -> Dict[str, Any]:
+        self, entry: dict[str, Any], err: MotionActionErrorData
+    ) -> dict[str, Any]:
         fieldname = ""
         match err["type"]:
             case MotionErrorType.UNIQUE_NUMBER:
