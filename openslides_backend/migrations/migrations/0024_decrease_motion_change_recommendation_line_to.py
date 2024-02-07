@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
 from datastore.shared.util import collection_and_id_from_fqid
 
@@ -15,7 +13,7 @@ class Migration(BaseEventMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection, id = collection_and_id_from_fqid(event.fqid)
 
         if collection != "motion_change_recommendation":

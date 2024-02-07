@@ -1,6 +1,5 @@
 import time
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
 
 from ....models.models import Motion, MotionCategory
 from ....permissions.permissions import Permissions
@@ -52,8 +51,8 @@ class MotionCategoryNumberMotions(UpdateAction):
 
             # generate number_value_map with the number_values for motion_ids.
             main_counter = 1
-            lead_motions_counter: Dict[int, int] = defaultdict(lambda: 1)
-            number_value_map: Dict[int, int] = dict()
+            lead_motions_counter: dict[int, int] = defaultdict(lambda: 1)
+            number_value_map: dict[int, int] = dict()
             for motion_id in affected_motions:
                 lead_motion_id = self.get_lead_motion_id(motion_id)
                 if lead_motion_id:
@@ -131,20 +130,20 @@ class MotionCategoryNumberMotions(UpdateAction):
         else:
             return self.get_prefix(category["parent_id"])
 
-    def get_lead_motion_id(self, motion_id: int) -> Optional[int]:
+    def get_lead_motion_id(self, motion_id: int) -> int | None:
         """Helper to get the lead_motions_id."""
         motion = self.mem_motions.get(motion_id, {})
         return motion.get("lead_motion_id")
 
-    def get_affected_categories(self, category_id: int) -> List[int]:
+    def get_affected_categories(self, category_id: int) -> list[int]:
         """Get all affected categories, inits and calls the helper."""
-        affected_categories: List[int] = []
+        affected_categories: list[int] = []
         queue = [category_id]
         self.helper_affected_categories(queue, affected_categories)
         return affected_categories
 
     def helper_affected_categories(
-        self, queue: List[int], aff_categories: List[int]
+        self, queue: list[int], aff_categories: list[int]
     ) -> None:
         """Fill the aff_categories, tree walk by level."""
         if not queue:
@@ -154,7 +153,7 @@ class MotionCategoryNumberMotions(UpdateAction):
         queue.extend(self.sort_category_children(category.get("child_ids", [])))
         self.helper_affected_categories(queue[1:], aff_categories)
 
-    def sort_category_children(self, child_ids: List[int]) -> List[int]:
+    def sort_category_children(self, child_ids: list[int]) -> list[int]:
         """Sort the categories by weight. Important for the helper_affected_categories."""
         weighted_child_ids = []
         for id in child_ids:
@@ -163,7 +162,7 @@ class MotionCategoryNumberMotions(UpdateAction):
         weighted_child_ids.sort()
         return [id for (_, id) in weighted_child_ids]
 
-    def get_affected_motions(self, category_ids: List[int]) -> List[int]:
+    def get_affected_motions(self, category_ids: list[int]) -> list[int]:
         """Get the affected motions from the categories"""
         affected_motions = []
         for category_id in category_ids:
@@ -171,7 +170,7 @@ class MotionCategoryNumberMotions(UpdateAction):
             affected_motions.extend(self.sort_motions(category.get("motion_ids", [])))
         return affected_motions
 
-    def sort_motions(self, ids: List[int]) -> List[int]:
+    def sort_motions(self, ids: list[int]) -> list[int]:
         """Sort motions by category_weight."""
         weighted_motion_ids = []
         for id in ids:
@@ -181,8 +180,8 @@ class MotionCategoryNumberMotions(UpdateAction):
         return [id for (_, id) in weighted_motion_ids]
 
     def get_number(
-        self, motion_id: int, number_value_map: Dict[int, int]
-    ) -> Tuple[str, int]:
+        self, motion_id: int, number_value_map: dict[int, int]
+    ) -> tuple[str, int]:
         """Get number, uses the number_value_map, two main cases."""
         lead_motion_id = self.get_lead_motion_id(motion_id)
         if lead_motion_id:

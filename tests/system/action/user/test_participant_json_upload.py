@@ -368,12 +368,203 @@ class ParticipantJsonUpload(BaseActionTestCase):
             in entry["messages"]
         )
 
+    def test_json_upload_invalid_vote_weight(self) -> None:
+        self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "first_name": "Max",
+                        "last_name": "Mustermann",
+                        "email": "max@mustermann.org",
+                        "vote_weight": "0",
+                        "default_password": "halloIchBinMax",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
+        assert result["rows"][0]["messages"] == [
+            "vote_weight must be bigger than or equal to 0.000001."
+        ]
+        assert result["rows"][0]["state"] == ImportState.ERROR
+        assert result["rows"][0]["data"] == {
+            "first_name": {"value": "Max", "info": ImportState.DONE},
+            "last_name": {"value": "Mustermann", "info": ImportState.DONE},
+            "email": {"value": "max@mustermann.org", "info": ImportState.DONE},
+            "vote_weight": {"value": "0.000000", "info": ImportState.ERROR},
+            "username": {"value": "MaxMustermann", "info": ImportState.GENERATED},
+            "default_password": {"value": "halloIchBinMax", "info": ImportState.DONE},
+            "groups": [{"id": 1, "info": "generated", "value": "testgroup"}],
+        }
+
+    def test_json_upload_not_sufficient_field_permission_update_with_wrong_email(
+        self,
+    ) -> None:
+        self.create_meeting(1)
+        self.create_meeting(4)
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None},
+                "user/2": {
+                    "username": "user2",
+                    "first_name": "John",
+                    "meeting_user_ids": [11, 44],
+                    "meeting_ids": [1, 4],
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                    "default_password": "secret",
+                    "can_change_own_password": True,
+                    "password": "secretcrypted",
+                },
+                "committee/60": {"meeting_ids": [1, 4]},
+                "meeting/1": {"meeting_user_ids": [11]},
+                "meeting/4": {"meeting_user_ids": [44], "committee_id": 60},
+                "meeting_user/11": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
+                "meeting_user/44": {"meeting_id": 4, "user_id": 2, "group_ids": [5]},
+                "group/1": {"meeting_user_ids": [11]},
+                "group/5": {"meeting_user_ids": [44]},
+            }
+        )
+        self.set_user_groups(1, [3])
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "user2",
+                        "email": "Jim.Knopf@@Lummer.land",
+                        "vote_weight": "1.23456",
+                    }
+                ],
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == [
+            "Error: 'Jim.Knopf@@Lummer.land' is not a valid email address.",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, email",
+        ]
+        assert row["data"] == {
+            "id": 2,
+            "username": {"value": "user2", "info": "remove", "id": 2},
+            "email": {"value": "Jim.Knopf@@Lummer.land", "info": ImportState.ERROR},
+            "vote_weight": {"value": "1.234560", "info": "done"},
+            "groups": [{"id": 1, "info": ImportState.GENERATED, "value": "group1"}],
+        }
+
+    def test_json_upload_wrong_email(self) -> None:
+        self.create_meeting(1)
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {"username": "test1", "email": "veryveryverybad"},
+                    {"username": "test2", "email": "slightly@bad"},
+                    {"username": "test3", "email": "somewhat@@worse"},
+                    {"username": "test4", "email": "this.is@wrong,too"},
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["name"] == "participant"
+        assert import_preview["state"] == ImportState.ERROR
+        rows = import_preview["result"]["rows"]
+        row = rows[0]
+        assert row["data"]["email"] == {
+            "value": "veryveryverybad",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: 'veryveryverybad' is not a valid email address." in row["messages"]
+        )
+        row = rows[1]
+        assert row["data"]["email"] == {
+            "value": "slightly@bad",
+            "info": ImportState.ERROR,
+        }
+        assert "Error: 'slightly@bad' is not a valid email address." in row["messages"]
+        row = rows[2]
+        assert row["data"]["email"] == {
+            "value": "somewhat@@worse",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: 'somewhat@@worse' is not a valid email address." in row["messages"]
+        )
+        row = rows[3]
+        assert row["data"]["email"] == {
+            "value": "this.is@wrong,too",
+            "info": ImportState.ERROR,
+        }
+        assert (
+            "Error: 'this.is@wrong,too' is not a valid email address."
+            in row["messages"]
+        )
+
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_meeting(1)
         self.create_meeting(4)
+
+    def json_upload_invalid_vote_weight_with_remove(self) -> None:
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": "can_manage_users"},
+                "user/2": {
+                    "meeting_user_ids": [12],
+                    "username": "wilhelm",
+                    "meeting_ids": [1],
+                },
+                "meeting_user/12": {"meeting_id": 1, "group_ids": [1], "user_id": 2},
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "wilhelm",
+                        "first_name": "Wilhelm",
+                        "last_name": "Aberhatnurhut",
+                        "email": "will@helm.hut",
+                        "vote_weight": "0",
+                        "default_password": "123",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.DONE
+        assert (
+            "vote_weight must be bigger than or equal to 0.000001."
+            not in result["rows"][0]["messages"]
+        )
+        assert result["rows"][0]["state"] == ImportState.DONE
+        assert result["rows"][0]["data"] == {
+            "id": 2,
+            "first_name": {"value": "Wilhelm", "info": ImportState.DONE},
+            "last_name": {"value": "Aberhatnurhut", "info": ImportState.DONE},
+            "email": {"value": "will@helm.hut", "info": ImportState.DONE},
+            "vote_weight": {"value": "0.000000", "info": ImportState.REMOVE},
+            "username": {"id": 2, "value": "wilhelm", "info": ImportState.DONE},
+            "default_password": {"value": "123", "info": ImportState.DONE},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
 
     def json_upload_saml_id_new(self) -> None:
         self.set_models(
@@ -809,6 +1000,47 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             ],
         }
 
+    def json_upload_with_complicated_names(self) -> None:
+        response = self.request(
+            "participant.json_upload",
+            {
+                "data": [
+                    {
+                        "first_name": "One Two",
+                        "last_name": "Three",
+                    },
+                    {
+                        "first_name": "One-Two",
+                        "last_name": "Three",
+                    },
+                    {
+                        "first_name": "One",
+                        "last_name": "Two Three",
+                    },
+                    {
+                        "first_name": "One",
+                        "last_name": "Two-Three",
+                    },
+                    {
+                        "first_name": "One Two Thre",
+                        "last_name": "e",
+                    },
+                ],
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert [
+            entry["data"]["username"]["value"] + " " + entry["data"]["username"]["info"]
+            for entry in response.json["results"][0][0]["rows"]
+        ] == [
+            "OneTwoThree generated",
+            "OneTwoThree1 generated",
+            "OneTwoThree2 generated",
+            "OneTwoThree3 generated",
+            "OneTwoThree4 generated",
+        ]
+
     def json_upload_not_sufficient_field_permission_update(self) -> None:
         """try to change users first_name, but missing rights for user_scope committee"""
         self.set_models(
@@ -844,6 +1076,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     {
                         "username": "user2",  # group A, will be removed
                         "first_name": "Jim",  # group A, will be removed
+                        "email": "Jim.Knopf@Lummer.land",  # group A, will be removed
                         "vote_weight": "1.23456",  # group B
                         "groups": ["group1", "group2", "group3", "group4"],  # group C
                         "committee_management_ids": [1],  # group D, not in payload
@@ -862,12 +1095,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
-            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, email, saml_id, default_password",
         ]
         assert row["data"] == {
             "id": 2,
             "username": {"value": "user2", "info": "remove", "id": 2},
             "first_name": {"value": "Jim", "info": "remove"},
+            "email": {"value": "Jim.Knopf@Lummer.land", "info": "remove"},
             "vote_weight": {"value": "1.234560", "info": "done"},
             "saml_id": {"value": "saml_id1", "info": "remove"},
             "default_password": {"value": "", "info": "remove"},

@@ -1,15 +1,15 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from .patterns import FullQualifiedId
 
-ModelMap = Dict[FullQualifiedId, Dict[str, Any]]
+ModelMap = dict[FullQualifiedId, dict[str, Any]]
 
-Schema = Dict[str, Any]
+Schema = dict[str, Any]
 
-HistoryInformation = Dict[str, List[str]]
+HistoryInformation = dict[str, list[str]]
 
 
-class DeletedModel(Dict):
+class DeletedModel(dict):
     """Used to mark deleted models which return None for each field"""
 
     def __repr__(self) -> str:

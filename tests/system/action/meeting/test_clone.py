@@ -2,6 +2,7 @@ from time import time
 from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock
 
+from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import AgendaItem, Meeting
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
@@ -11,7 +12,7 @@ from tests.system.util import CountDatastoreCalls, Profiler, performance
 class MeetingClone(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {
                 "active_meeting_ids": [1],
                 "organization_tag_ids": [1],
@@ -1209,12 +1210,20 @@ class MeetingClone(BaseActionTestCase):
         self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2
         self.test_models[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [3]
         self.test_models["meeting/1"]["is_active_in_organization_id"] = None
+        self.test_models["meeting/1"]["is_archived_in_organization_id"] = 1
+        self.test_models[ONE_ORGANIZATION_FQID]["archived_meeting_ids"] = [1]
         self.set_models(self.test_models)
 
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"is_active_in_organization_id": 1})
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [3, 2]})
+        self.assert_model_exists(
+            "meeting/2",
+            {"is_active_in_organization_id": 1, "is_archived_in_organization_id": None},
+        )
+        self.assert_model_exists(
+            ONE_ORGANIZATION_FQID,
+            {"active_meeting_ids": [3, 2], "archived_meeting_ids": [1]},
+        )
 
     def test_limit_of_meetings_ok(self) -> None:
         self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2
@@ -1681,7 +1690,7 @@ class MeetingClone(BaseActionTestCase):
         aw_name = "test action_worker"
         self.test_models["action_worker/1"] = {
             "name": aw_name,
-            "state": "end",
+            "state": ActionWorkerState.END,
             "created": round(time() - 3),
             "timestamp": round(time()),
         }

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.check_unique_name_mixin import (
     CheckUniqueInContextMixin,
@@ -11,7 +11,7 @@ from ....shared.exceptions import ActionException
 class CommitteeCommonCreateUpdateMixin(
     CheckUniqueInContextMixin, CheckForArchivedMeetingMixin
 ):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Check if own committee is forwarded or received explicitly,
         it may not be excluded by the opposite setting
@@ -31,7 +31,7 @@ class CommitteeCommonCreateUpdateMixin(
             )
         return instance
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if instance.get("external_id"):
             self.check_unique_in_context(

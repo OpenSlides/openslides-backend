@@ -1,10 +1,11 @@
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
-from tests.system.action.base import BaseActionTestCase
+
+from .base_poll_test import BasePollTestCase
 
 
-class CreatePoll(BaseActionTestCase):
+class CreatePoll(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.set_models(
@@ -485,7 +486,7 @@ class CreatePoll(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.onehundred_percent_base must be one of ['Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'disabled']",
+            "data.onehundred_percent_base must be one of ['Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'entitled_present', 'disabled']",
             response.json["message"],
         )
         self.assert_model_not_exists("poll/1")

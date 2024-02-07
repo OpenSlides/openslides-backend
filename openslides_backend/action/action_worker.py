@@ -1,8 +1,9 @@
 import logging
 import threading
+from enum import Enum
 from http import HTTPStatus
 from time import sleep, time
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 
 from gunicorn.http.message import Request
 from gunicorn.http.wsgi import Response
@@ -17,6 +18,12 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
 from .util.typing import ActionsResponse, Payload
+
+
+class ActionWorkerState(str, Enum):
+    RUNNING = "running"
+    END = "end"
+    ABORTED = "aborted"
 
 
 def handle_action_in_worker_thread(
@@ -86,7 +93,7 @@ def handle_action_in_worker_thread(
     )
 
 
-class ActionWorkerWriting(object):
+class ActionWorkerWriting:
     def __init__(
         self,
         user_id: int,
@@ -100,7 +107,7 @@ class ActionWorkerWriting(object):
         self.action_names = action_names
         self.datastore = datastore
 
-        self.new_id: Optional[int] = None
+        self.new_id: int | None = None
         self.fqid: str = "Still not set"
         self.written: bool = False
 
@@ -120,7 +127,7 @@ class ActionWorkerWriting(object):
                                 fields={
                                     "id": self.new_id,
                                     "name": self.action_names,
-                                    "state": "running",
+                                    "state": ActionWorkerState.RUNNING,
                                     "created": self.start_time,
                                     "timestamp": current_time,
                                 },
@@ -165,17 +172,15 @@ class ActionWorkerWriting(object):
     def final_action_worker_write(self, action_worker_thread: "ActionWorker") -> None:
         current_time = round(time())
         with self.datastore.get_database_context():
-            state = "end"
+            state = ActionWorkerState.END
             if hasattr(action_worker_thread, "exception"):
-                message = str(action_worker_thread.exception)
-                response = {
-                    "success": False,
-                    "message": message,
-                    "action_error_index": 0,
-                    "action_data_error_index": 0,
-                }
+                if isinstance(action_worker_thread.exception, ActionException):
+                    exception = action_worker_thread.exception
+                else:
+                    exception = ActionException(str(action_worker_thread.exception))
+                response = exception.get_json()
                 self.logger.error(
-                    f"finish action_worker '{self.fqid}' ({self.action_names}) {current_time} with exception: {message}"
+                    f"finish action_worker '{self.fqid}' ({self.action_names}) {current_time} with exception: {exception.message}"
                 )
             elif hasattr(action_worker_thread, "response"):
                 response = action_worker_thread.response
@@ -183,16 +188,13 @@ class ActionWorkerWriting(object):
                     f"finish action_worker '{self.fqid}' ({self.action_names}): {current_time}"
                 )
             else:
-                message = "action_worker aborted without any specific message"
-                state = "aborted"
-                response = {
-                    "success": False,
-                    "message": message,
-                    "action_error_index": 0,
-                    "action_data_error_index": 0,
-                }
+                exception = ActionException(
+                    "action_worker aborted without any specific message"
+                )
+                state = ActionWorkerState.ABORTED
+                response = exception.get_json()
                 self.logger.error(
-                    f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {message}"
+                    f"aborted action_worker '{self.fqid}' ({self.action_names}) {current_time}: {exception.message}"
                 )
 
             self.datastore.write_without_events(
@@ -254,7 +256,7 @@ class OSGunicornThread(threading.Thread):
 
 
 def gunicorn_post_request(
-    worker: ThreadWorker, req: Request, environ: Dict[str, Any], resp: Response
+    worker: ThreadWorker, req: Request, environ: dict[str, Any], resp: Response
 ) -> None:
     """
     gunicorn server hook, called after response of one request

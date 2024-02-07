@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.generics.create import CreateAction
@@ -82,8 +82,8 @@ class FakeModelCRBCreateAction(CreateActionWithDependencies):
     dependencies = [FakeModelCRCCreateAction]
 
     def get_dependent_action_data(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> List[Dict[str, Any]]:
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
+    ) -> list[dict[str, Any]]:
         return [
             {
                 "name": "modelC",

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -72,7 +72,7 @@ class OrganizationUpdate(
     )
     check_email_field = "users_email_replyto"
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         if any(
             [field in instance for field in OrganizationUpdate.group_A_fields]
         ) and not has_organization_management_level(
@@ -91,9 +91,8 @@ class OrganizationUpdate(
         ):
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        organization_id = instance.get("id", 0)
         if limit_of_meetings := instance.get("limit_of_meetings"):
             organization = self.datastore.get(
                 ONE_ORGANIZATION_FQID,
@@ -104,7 +103,7 @@ class OrganizationUpdate(
                 count_active_meetings := len(organization.get("active_meeting_ids", []))
             ) > limit_of_meetings:
                 raise ActionException(
-                    f"Organization {organization_id} has {count_active_meetings} active meetings. You cannot set the limit lower."
+                    f"Your organization has {count_active_meetings} active meetings. You cannot set the limit lower."
                 )
 
         if limit_of_users := instance.get("limit_of_users"):
@@ -114,11 +113,11 @@ class OrganizationUpdate(
                 raise ActionException(
                     f"Active users: {count_active_users}. You cannot set the limit lower."
                 )
-        if instance.get("genders"):
+        if "genders" in instance:
             organization = self.datastore.get(ONE_ORGANIZATION_FQID, ["genders"])
             removed_genders = [
                 gender
-                for gender in (organization.get("genders") or [])
+                for gender in organization.get("genders", [])
                 if gender not in instance["genders"]
             ]
 

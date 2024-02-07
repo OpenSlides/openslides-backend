@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from datastore.shared.util import DeletedModelsBehaviour
 
@@ -28,7 +28,7 @@ class SequentialNumbersMixin(CreateAction):
         number = 1 if number is None else number + 1
         return number
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         instance["sequential_number"] = self.get_sequential_number(
             instance["meeting_id"]
@@ -36,8 +36,8 @@ class SequentialNumbersMixin(CreateAction):
         return instance
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         result = super().create_action_result_element(instance)
         if result is None:
             result = {"id": instance["id"]}

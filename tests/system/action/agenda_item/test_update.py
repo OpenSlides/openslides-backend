@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -131,7 +129,7 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.assertEqual(tag.get("tagged_ids"), [])
 
     def update_multiple_with_type_variations(
-        self, variations: List[Dict[str, int | str]]
+        self, variations: list[dict[str, int | str]]
     ) -> None:
         self.set_models(
             {

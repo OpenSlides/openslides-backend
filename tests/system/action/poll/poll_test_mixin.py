@@ -1,5 +1,3 @@
-from typing import List
-
 from openslides_backend.models.models import Poll
 from tests.system.action.base import DEFAULT_PASSWORD, BaseActionTestCase
 from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME
@@ -9,7 +7,7 @@ class PollTestMixin(BaseActionTestCase):
     def start_poll(self, id: int) -> None:
         self.vote_service.start(id)
 
-    def prepare_users_and_poll(self, user_count: int) -> List[int]:
+    def prepare_users_and_poll(self, user_count: int) -> list[int]:
         user_ids = list(range(2, user_count + 2))
         self.set_models(
             {

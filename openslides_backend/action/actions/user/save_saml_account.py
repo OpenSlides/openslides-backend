@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 import fastjsonschema
 
@@ -42,14 +43,14 @@ class UserSaveSamlAccount(
     It should be called from the auth service.
     """
 
-    user: Dict[str, Any] = {}
-    saml_attr_mapping: Dict[str, str]
+    user: dict[str, Any] = {}
+    saml_attr_mapping: dict[str, str]
     check_email_field = "email"
     model = User()
     schema: Schema = {}
     skip_archived_meeting_check = True
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         organization = self.datastore.get(
             ONE_ORGANIZATION_FQID,
             ["saml_enabled", "saml_attr_mapping"],
@@ -90,11 +91,11 @@ class UserSaveSamlAccount(
         except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(exception.message)
 
-    def validate_fields(self, instance_old: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_fields(self, instance_old: dict[str, Any]) -> dict[str, Any]:
         """
         Transforms the payload fields into model fields, removes the possible array-wrapped format
         """
-        instance: Dict[str, Any] = dict()
+        instance: dict[str, Any] = dict()
         for model_field, payload_field in self.saml_attr_mapping.items():
             if payload_field in instance_old and model_field in allowed_user_fields:
                 value = (
@@ -111,10 +112,10 @@ class UserSaveSamlAccount(
         """Necessary to prevent id reservation in CreateAction's prepare_action_data"""
         return action_data
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         pass
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         users = self.datastore.filter(
             "user",
             FilterOperator("saml_id", "=", instance["saml_id"]),
@@ -133,7 +134,7 @@ class UserSaveSamlAccount(
 
         return UpdateAction.base_update_instance(self, instance)
 
-    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         """
         Handles create and update
         """
@@ -146,11 +147,11 @@ class UserSaveSamlAccount(
             yield from UpdateAction.create_events(self, fields)
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         return {"user_id": instance["id"]}
 
-    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def set_defaults(self, instance: dict[str, Any]) -> dict[str, Any]:
         if "is_active" not in instance:
             instance["is_active"] = True
         if "is_physical_person" not in instance:

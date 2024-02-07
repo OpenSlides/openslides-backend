@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Set
+from typing import Any
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -33,14 +33,14 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     use_meeting_ids_for_archived_meeting_check = True
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         user_id = instance["id"]
         meeting_ids = set(instance.pop("meeting_ids"))
         group_name = instance.pop("group_name")
         meeting_to_group = {}
-        meeting_ids_of_user_in_group: Set[int] = set()
-        groups_meeting_ids: Set[int] = set()
-        meeting_to_meeting_user: Dict[int, Dict[str, Any]] = {}
+        meeting_ids_of_user_in_group: set[int] = set()
+        groups_meeting_ids: set[int] = set()
+        meeting_to_meeting_user: dict[int, dict[str, Any]] = {}
         user = self.datastore.get(
             fqid_from_collection_and_id("user", user_id),
             [
@@ -59,7 +59,7 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
             )
             groups = self.datastore.filter("group", filter_, ["meeting_id", "user_ids"])
             groups_meeting_ids.update(
-                set(group["meeting_id"] for group in groups.values())
+                {group["meeting_id"] for group in groups.values()}
             )
             for key, group in groups.items():
                 meeting_to_group[group["meeting_id"]] = key
@@ -104,7 +104,7 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
                         "id": meeting_user["id"],
                         "group_ids": list(
                             set(meeting_user.get("group_ids") or []).union(
-                                set([meeting_to_group[meeting_id]])
+                                {meeting_to_group[meeting_id]}
                             )
                         ),
                     }
@@ -126,7 +126,7 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
                         "id": meeting_user["id"],
                         "group_ids": list(
                             set(meeting_user.get("group_ids") or []).union(
-                                set([meeting["default_group_id"]])
+                                {meeting["default_group_id"]}
                             )
                         ),
                     }
@@ -136,8 +136,8 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
         return instance
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         result = {}
         result["succeeded"] = list(self.success)
         result["standard_group"] = list(self.standard_meeting_ids)

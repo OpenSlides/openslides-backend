@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
@@ -8,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_workflow/12": {
                 "name": "name_workflow1",
                 "first_state_id": 34,
@@ -399,7 +399,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def setup_permission_test(
-        self, permissions: List[Permission], additional_data: Dict[str, Any] = {}
+        self, permissions: list[Permission], additional_data: dict[str, Any] = {}
     ) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")

@@ -2,7 +2,8 @@ import copy
 import cProfile
 import os
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Tuple, Type
+from collections.abc import Callable
+from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -36,12 +37,11 @@ class TestVoteService(VoteService):
     url: str
 
     @abstractmethod
-    def vote(self, data: Dict[str, Any]) -> Response:
-        ...
+    def vote(self, data: dict[str, Any]) -> Response: ...
 
 
 class TestVoteAdapter(VoteAdapter, TestVoteService):
-    def vote(self, data: Dict[str, Any]) -> Response:
+    def vote(self, data: dict[str, Any]) -> Response:
         data_copy = copy.deepcopy(data)
         del data_copy["id"]
         response = self.make_request(
@@ -59,7 +59,7 @@ def create_presenter_test_application() -> WSGIApplication:
     return create_test_application(PresenterView)
 
 
-def create_test_application(view: Type[View]) -> WSGIApplication:
+def create_test_application(view: type[View]) -> WSGIApplication:
     env = Environment(os.environ)
     services = OpenSlidesBackendServices(
         config=env.get_service_url(),
@@ -103,7 +103,7 @@ def get_route_path(route_function: RouteFunction, name: str = "") -> str:
     raise ValueError(f"Route {name} does not exist")
 
 
-def mock_datastore_method(method: str, verbose: bool = False) -> Tuple[Mock, Any]:
+def mock_datastore_method(method: str, verbose: bool = False) -> tuple[Mock, Any]:
     """
     Patches the given method of the DatastoreAdapter and returns the created mock as well as the
     patcher.
@@ -163,8 +163,8 @@ class CountDatastoreCalls:
         self.verbose = verbose
 
     def __enter__(self) -> "CountDatastoreCalls":
-        self.patcher: List[Any] = []
-        self.mocks: List[Mock] = []
+        self.patcher: list[Any] = []
+        self.mocks: list[Mock] = []
         for method in ("get", "get_many"):
             mock, patcher = mock_datastore_method(method, self.verbose)
             self.mocks.append(mock)

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import AssignmentCandidate
 from ....shared.exceptions import ActionException
@@ -20,7 +20,7 @@ class AssignmentCandidateDelete(PermissionMixin, DeleteAction):
     history_information = "Candidate removed"
     history_relation_field = "assignment_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         assignment_candidate = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),

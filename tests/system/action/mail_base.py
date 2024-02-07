@@ -2,7 +2,7 @@ import os
 import ssl
 import subprocess
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, cast
 
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import SMTP, AuthResult, Envelope, LoginPassword, Session
@@ -23,7 +23,7 @@ if not os.path.exists("key.pem") or not os.path.exists("cert.pem"):
 
 class AIOHandler:
     def __init__(self) -> None:
-        self.emails: List[Dict[str, Any]] = []
+        self.emails: list[dict[str, Any]] = []
         self.ret_status = "unset"
 
     async def handle_RCPT(
@@ -32,7 +32,7 @@ class AIOHandler:
         session: Session,
         envelope: Envelope,
         address: str,
-        rcpt_options: List[Any],
+        rcpt_options: list[Any],
     ) -> Any:
         if not EmailUtils.check_email(address):
             self.ret_status = "550 invalid eMail address"
@@ -116,9 +116,9 @@ class AiosmtpdServerManager:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        exc_traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
     ) -> None:
         if self.controller.loop.is_running():
             self.controller.stop(no_assert=True)

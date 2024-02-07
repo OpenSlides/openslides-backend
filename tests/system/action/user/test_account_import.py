@@ -1,6 +1,6 @@
-from typing import Any, Dict
+from typing import Any
 
-from openslides_backend.action.mixins.import_mixins import ImportMixin, ImportState
+from openslides_backend.action.mixins.import_mixins import BaseImportAction, ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -49,7 +49,10 @@ class AccountJsonImport(BaseActionTestCase):
                                     },
                                     "first_name": "Testy",
                                     "last_name": "Tester",
-                                    "email": "email@test.com",
+                                    "email": {
+                                        "value": "email@test.com",
+                                        "info": ImportState.DONE,
+                                    },
                                     "gender": {
                                         "value": "male",
                                         "info": ImportState.DONE,
@@ -231,13 +234,13 @@ class AccountJsonImport(BaseActionTestCase):
         )
 
     def get_import_preview_data(
-        self, number: int, row_state: ImportState, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, number: int, row_state: ImportState, data: dict[str, Any]
+    ) -> dict[str, Any]:
         def get_import_state() -> ImportState:
             """Precondition: There is only 1 row(_state)"""
             if row_state == ImportState.ERROR:
                 return row_state
-            if ImportMixin.count_warnings_in_payload(data):
+            if BaseImportAction.count_warnings_in_payload(data):
                 return ImportState.WARNING
             else:
                 return ImportState.DONE
@@ -321,7 +324,7 @@ class AccountJsonImport(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == [
-            "Error: user 78 not found anymore for updating user 'XYZ'."
+            "Error: account 78 not found anymore for updating account 'XYZ'."
         ]
 
     def test_import_error_state_done_missing_username(self) -> None:
@@ -362,7 +365,7 @@ class AccountJsonImport(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == [
-            "Error: user 111 not found anymore for updating user 'fred'."
+            "Error: account 111 not found anymore for updating account 'fred'."
         ]
 
     def test_import_error_state_done_search_data_error(self) -> None:
@@ -554,11 +557,11 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Error: user 34 not found anymore for updating user 'test'."
+            "Error: account 34 not found anymore for updating account 'test'."
         ]
         assert row["data"] == {
             "id": 34,
-            "email": "test@ntvtn.de",
+            "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "error", "value": "test"},
             "last_name": "Mustermann",
             "first_name": "Max",
@@ -574,7 +577,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         assert row["messages"] == []
         assert row["data"] == {
             "id": 34,
-            "email": "test@ntvtn.de",
+            "email": {"value": "test@ntvtn.de", "info": ImportState.DONE},
             "username": {"id": 34, "info": "done", "value": "test"},
             "last_name": "Mustermann",
             "first_name": "Max",
@@ -601,6 +604,20 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "can_change_own_password": True,
             },
         )
+
+    def test_json_upload_with_complicated_names(self) -> None:
+        self.json_upload_with_complicated_names()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        rows = response_import.json["results"][0][0]["rows"]
+        for i in range(5):
+            number = f"{i}" if i else ""
+            assert rows[i]["state"] == ImportState.NEW
+            assert rows[i]["messages"] == []
+            assert rows[i]["data"]["username"] == {
+                "info": ImportState.GENERATED,
+                "value": "OneTwoThree" + number,
+            }
 
     def test_json_upload_generate_default_password(self) -> None:
         self.json_upload_generate_default_password()
@@ -652,13 +669,13 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         row = response_import.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Error: user 11 not found anymore for updating user 'user11'."
+            "Error: account 11 not found anymore for updating account 'user11'."
         ]
         assert row["data"] == {
             "id": 11,
             "saml_id": {"info": "done", "value": "saml_id11"},
             "username": {"id": 11, "info": ImportState.ERROR, "value": "user11"},
-            "default_vote_weight": "11.000000",
+            "default_vote_weight": {"value": "11.000000", "info": ImportState.DONE},
         }
 
     def test_json_upload_update_multiple_users_okay(self) -> None:
@@ -756,14 +773,14 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Because this account is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Error: user 2 not found anymore for updating user 'user2'.",
+            "Error: account 2 not found anymore for updating account 'user2'.",
         ]
         assert row["data"] == {
             "id": 2,
             "saml_id": {"info": ImportState.NEW, "value": "test_saml_id2"},
             "username": {"id": 2, "info": ImportState.ERROR, "value": "user2"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": "2.345678",
+            "default_vote_weight": {"value": "2.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][1]
@@ -777,21 +794,21 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "saml_id": {"info": ImportState.ERROR, "value": "saml3"},
             "username": {"id": 3, "info": ImportState.DONE, "value": "user3"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": "3.345678",
+            "default_vote_weight": {"value": "3.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][2]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Error: user 4 not found anymore for updating user 'user4'."
+            "Error: account 4 not found anymore for updating account 'user4'."
         ]
         assert row["data"] == {
             "id": 4,
-            "email": "mlk@america.com",
+            "email": {"value": "mlk@america.com", "info": ImportState.DONE},
             "username": {"id": 4, "info": ImportState.ERROR, "value": "user4"},
             "last_name": "Luther King",
             "first_name": "Martin",
-            "default_vote_weight": "4.345678",
+            "default_vote_weight": {"value": "4.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][3]
@@ -804,7 +821,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "username": {"info": ImportState.DONE, "value": "new_user5"},
             "saml_id": {"info": ImportState.ERROR, "value": "saml5"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": "5.345678",
+            "default_vote_weight": {"value": "5.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][4]
@@ -817,7 +834,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             "username": {"info": ImportState.GENERATED, "value": "new_saml6"},
             "saml_id": {"info": ImportState.ERROR, "value": "new_saml6"},
             "default_password": {"info": ImportState.WARNING, "value": ""},
-            "default_vote_weight": "6.345678",
+            "default_vote_weight": {"value": "6.345678", "info": ImportState.DONE},
         }
 
         row = result["rows"][5]
@@ -831,3 +848,17 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         }
         assert row["data"]["default_password"]["info"] == ImportState.GENERATED
         assert row["data"]["default_password"]["value"]
+
+    def test_json_upload_wrong_gender(self) -> None:
+        self.json_upload_wrong_gender()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        user = self.assert_model_exists("user/2", {"username": "test"})
+        assert "gender" not in user.keys()
+
+    def test_json_upload_wrong_gender_2(self) -> None:
+        self.json_upload_wrong_gender_2()
+        response_import = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        user = self.assert_model_exists("user/2", {"username": "test"})
+        assert "gender" not in user.keys()

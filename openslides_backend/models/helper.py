@@ -1,12 +1,9 @@
-from typing import List, Optional, Tuple
-
-
 def calculate_inherited_groups_helper(
-    access_group_ids: Optional[List[int]],
-    parent_is_public: Optional[bool],
-    parent_inherited_access_group_ids: Optional[List[int]],
-) -> Tuple[bool, List[int]]:
-    inherited_access_group_ids: List[int]
+    access_group_ids: list[int] | None,
+    parent_is_public: bool | None,
+    parent_inherited_access_group_ids: list[int] | None,
+) -> tuple[bool, list[int]]:
+    inherited_access_group_ids: list[int]
     is_public = False
     if parent_inherited_access_group_ids and access_group_ids:
         inherited_access_group_ids = [

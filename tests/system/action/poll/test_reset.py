@@ -1,16 +1,17 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
+from .base_poll_test import BasePollTestCase
 from .poll_test_mixin import PollTestMixin
 
 
-class PollResetActionTest(PollTestMixin):
+class PollResetActionTest(PollTestMixin, BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "topic/1": {
                 "meeting_id": 1,
             },

@@ -1,10 +1,11 @@
 from datetime import datetime
 from threading import Lock, Thread
 from time import sleep
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import pytest
 
+from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
@@ -72,7 +73,7 @@ class ActionWorkerTest(BaseActionTestCase):
         """action thread used, main process ends before action_worker is ready,
         but the final result will be okay.
         """
-        self.set_thread_watch_timeout(0.0001)
+        self.set_thread_watch_timeout(0)
         count_motions: int = 2
         response = self.request_multi(
             "motion.create",
@@ -106,13 +107,13 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assert_model_exists(
             f"motion/{count_motions}", {"title": f"test_title {count_motions}"}
         )
-        self.assert_model_exists("action_worker/1", {"state": "end"})
+        self.assert_model_exists("action_worker/1", {"state": ActionWorkerState.END})
 
     def test_action_worker_not_ready_before_timeout_exception(self) -> None:
         """action thread used, ended after timeout"""
-        self.set_thread_watch_timeout(0.0001)
+        self.set_thread_watch_timeout(0)
         count_motions: int = 2
-        data: List[Dict[str, Any]] = [
+        data: list[dict[str, Any]] = [
             {
                 "title": f"test_title {i+1}",
                 "meeting_id": 222,
@@ -148,16 +149,38 @@ class ActionWorkerTest(BaseActionTestCase):
         if action_worker := self.get_thread_by_name("action_worker"):
             action_worker.join()
         self.assert_model_not_exists("motion/1")
-        action_worker1 = self.assert_model_exists("action_worker/1", {"state": "end"})
+        action_worker1 = self.assert_model_exists(
+            "action_worker/1", {"state": ActionWorkerState.END}
+        )
         self.assertFalse(action_worker1["result"]["success"])
         self.assertIn("Text is required", action_worker1["result"]["message"])
+
+    def test_action_error_index_with_action_worker(self) -> None:
+        self.set_thread_watch_timeout(0)
+        response = self.request_multi(
+            "user.create",
+            [
+                {
+                    "username": "test",
+                },
+                {
+                    "username": "admin",
+                },
+            ],
+        )
+        self.assert_status_code(response, 202)
+        if action_worker := self.get_thread_by_name("action_worker"):
+            action_worker.join()
+        result = self.get_model("action_worker/1")["result"]
+        expected = {"success": False, "action_data_error_index": 1}
+        self.assertLessEqual(expected.items(), result.items())
 
     @pytest.mark.skip("Just for manual stress and thread tests")
     def test_action_worker_permanent_stress(self) -> None:
         self.lock = Lock()
-        self.result_list: List[Tuple] = []
+        self.result_list: list[tuple] = []
         self.number = 201
-        self.collection_types: Dict[str, Dict[str, str]] = {
+        self.collection_types: dict[str, dict[str, str]] = {
             "motion_block": {},
             "topic": {},
             "assignment": {},
@@ -236,7 +259,7 @@ class ActionWorkerTest(BaseActionTestCase):
                             fields={
                                 "id": self.new_id,
                                 "name": "test",
-                                "state": "running",
+                                "state": ActionWorkerState.RUNNING,
                             },
                         )
                     ],
@@ -247,7 +270,7 @@ class ActionWorkerTest(BaseActionTestCase):
             end2 = datetime.now()
         thread.join()
         self.assert_model_exists(
-            "action_worker/1", {"name": "test", "state": "running"}
+            "action_worker/1", {"name": "test", "state": ActionWorkerState.RUNNING}
         )
         assert (
             self.start1 < start2 and self.end1 > end2
@@ -266,7 +289,7 @@ class ActionWorkerTest(BaseActionTestCase):
                             fields={
                                 "id": new_id,
                                 "name": "test",
-                                "state": "running",
+                                "state": ActionWorkerState.RUNNING,
                             },
                         )
                     ],
@@ -275,7 +298,8 @@ class ActionWorkerTest(BaseActionTestCase):
                 )
             )
             self.assert_model_exists(
-                f"action_worker/{new_id}", {"name": "test", "state": "running"}
+                f"action_worker/{new_id}",
+                {"name": "test", "state": ActionWorkerState.RUNNING},
             )
 
         self.datastore.write_without_events(

@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException
@@ -30,7 +30,7 @@ class MotionCreateBase(
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 
     def set_state_from_workflow(
-        self, instance: Dict[str, Any], meeting: Dict[str, Any]
+        self, instance: dict[str, Any], meeting: dict[str, Any]
     ) -> None:
         workflow_id = instance.pop("workflow_id", None)
         if workflow_id is None:
@@ -53,7 +53,7 @@ class MotionCreateBase(
                 "No matching default workflow defined on this meeting"
             )
 
-    def create_submitters(self, instance: Dict[str, Any]) -> None:
+    def create_submitters(self, instance: dict[str, Any]) -> None:
         submitter_ids = instance.pop("submitter_ids", None)
         if not submitter_ids:
             submitter_ids = [self.user_id]
@@ -73,12 +73,12 @@ class MotionCreateBase(
                 MotionSubmitterCreateAction, [data], skip_history=True
             )
 
-    def set_sequential_number(self, instance: Dict[str, Any]) -> None:
+    def set_sequential_number(self, instance: dict[str, Any]) -> None:
         instance["sequential_number"] = self.get_sequential_number(
             instance["meeting_id"]
         )
 
-    def set_created_last_modified_and_number(self, instance: Dict[str, Any]) -> None:
+    def set_created_last_modified_and_number(self, instance: dict[str, Any]) -> None:
         timestamp = round(time.time())
         set_workflow_timestamp_helper(self.datastore, instance, timestamp)
         instance["last_modified"] = timestamp

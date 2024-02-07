@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import PersonalNote
 from ....shared.exceptions import PermissionDenied
@@ -20,7 +20,7 @@ class PersonalNoteUpdateAction(UpdateAction, PermissionMixin):
         optional_properties=["star", "note"]
     )
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         meeting_id = self.get_meeting_id(instance)
         self.check_anonymous_and_user_in_meeting(meeting_id)
         personal_note = self.datastore.get(

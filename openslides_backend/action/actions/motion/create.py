@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Motion
 from ....permissions.base_classes import Permission
@@ -86,7 +86,7 @@ class MotionCreate(
             ]
         )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # special check logic
         error_messages = self.get_create_payload_integrity_error_message(
             instance, instance["meeting_id"]
@@ -126,7 +126,7 @@ class MotionCreate(
         self.set_created_last_modified_and_number(instance)
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         perm: Permission
         # Check can create amendment if needed else check can_create
         if instance.get("lead_motion_id"):

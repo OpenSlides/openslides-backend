@@ -1,5 +1,6 @@
+from math import floor
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -9,8 +10,8 @@ from tests.system.util import CountDatastoreCalls
 class MotionUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"meeting_user_ids": [1]},
+        self.permission_test_models: dict[str, dict[str, Any]] = {
+            "meeting/1": {"meeting_user_ids": [1], "is_active_in_organization_id": 1},
             "motion/111": {
                 "meeting_id": 1,
                 "title": "title_srtgb123",
@@ -88,6 +89,25 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("created") == 1687339000
         self.assert_history_information("motion/111", ["Motion updated"])
         assert counter.calls == 3
+
+    def test_update_editor_and_speaker(self) -> None:
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "editor_id": 1,
+                "working_group_speaker_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/111",
+            {
+                "editor_id": 1,
+                "working_group_speaker_id": 1,
+            },
+        )
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
@@ -454,6 +474,23 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion/2", {"referenced_in_motion_recommendation_extension_ids": []}
         )
 
+    def test_set_supporter_other_meeting(self) -> None:
+        self.create_meeting(2)
+        self.permission_test_models["meeting_user/1"]["meeting_id"] = 2
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "supporter_meeting_user_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['meeting_user/1']",
+            response.json["message"],
+        )
+
     def test_update_no_permissions(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
@@ -504,35 +541,43 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/111", {"created": 11223344})
 
-    def test_update_permission_metadata_no_wl(self) -> None:
+    def setup_can_manage_metadata(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "title": "title_bDFsWtKL",
-                "text": "text_eNPkDVuq",
-                "reason": "reason_ukWqADfE",
-            },
-        )
-        self.assert_status_code(response, 403)
-        assert "Forbidden fields:" in response.json["message"]
-        self.assert_model_exists(
-            "meeting_user/2", {"meeting_id": 1, "user_id": 2, "group_ids": [3]}
-        )
 
-    def test_update_permission_metadata_and_wl(self) -> None:
-        self.create_meeting()
-        self.set_models(self.permission_test_models)
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
+    def test_update_permission_metadata_forbidden(self) -> None:
+        self.setup_can_manage_metadata()
+        self.set_models(
+            {
+                "mediafile/1": {"owner_id": "meeting/1"},
+            }
+        )
+        for field, value in {
+            "title": "test",
+            "number": "test",
+            "text": "test",
+            "reason": "test",
+            "modified_final_version": "test",
+            "editor_id": 1,
+            "working_group_speaker_id": 1,
+            "attachment_ids": [1],
+        }.items():
+            response = self.request(
+                "motion.update",
+                {
+                    "id": 111,
+                    field: value,
+                },
+            )
+            self.assert_status_code(response, 403)
+            assert "Forbidden fields:" in response.json["message"]
+
+    def test_update_permission_metadata_allowed(self) -> None:
+        self.setup_can_manage_metadata()
         self.set_models(
             {
                 "motion_category/2": {"meeting_id": 1, "name": "test"},
@@ -540,19 +585,24 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "tag/3": {"meeting_id": 1, "name": "bla"},
             }
         )
+        now = floor(time())
         response = self.request(
             "motion.update",
             {
                 "id": 111,
                 "category_id": 2,
-                "state_extension": "testtesttest",
+                "state_extension": "test",
+                "recommendation_extension": "test",
+                "start_line_number": 1,
+                "created": now,
                 "tag_ids": [3],
                 "block_id": 4,
+                "supporter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
 
-    def test_update_permission_submitter_and_wl(self) -> None:
+    def test_update_permission_submitter_allowed(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)

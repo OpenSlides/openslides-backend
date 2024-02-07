@@ -286,7 +286,9 @@ l,m,n,"""
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
         )
         filename = "test.json"
-        raw_content = "plain text, but file with json extension. We got with big json files".encode()
+        raw_content = (
+            b"plain text, but file with json extension. We got with big json files"
+        )
         json_content = base64.b64encode(raw_content).decode()
         response = self.request(
             "mediafile.upload",
@@ -376,6 +378,30 @@ l,m,n,"""
         self.assertIn(
             f"{filename} does not have a file extension that matches the determined mimetype image/png.",
             response.json["message"],
+        )
+
+    def test_upload_ttf_mimetype_sfnt(self) -> None:
+        """
+        There exists a mimetype 'font/sntf', whose
+        extensions are ttf or otf, see https://www.iana.org/assignments/media-types/font/sfnt
+        """
+        sfnt_content = "AAEAAAAQAQAABAAATFRTSLVpLZsAAAbAAAAAVE9TLzJ22xUOAAABiAAAAE5jbWFwp1APwwAABSAAAAGeY3Z0IAAVBBYAAAiQAAAAEmZwZ20yRHNdAAAHLAAAAWJnbHlmStRAoQAAEXgAAP26aGRteBZioyEAAAnkAAAHlGhlYWSXgnjPAAABDAAAADZoaGVhBn4BtAAAAUQAAAAkaG10eI1/BT4AAAikAAABQGtlcm6kmKYpAAEP+AAAN25sb2NhRp4FDAABDzQAAACibWF4cAJlBb4AAAFoAAAAIG5hbWUlcYIyAAAB2AAAA0hwb3N0/58AMgABD9gAAAAgcHJlcBz/fZwAAAcUAAAAFgABAAAAAQAAxnW44F8PPPUAGQPoAAAAAHwlQAAAAAAAuRX1xv/o/uIDNANKAAAAAAAAAAAAAAAAAAEAAANK/uIAFQMA/+j/gQM0AAEAAAAAAAAAAAAAAAAAAABQAAEAAABQApQACgAAAAAAAQAAAAAACgAAAgADKQAAAAAAAAFJAZAABQAAAGQAZAAAAIwAZABkAAAAjAAyAPoAAAIAAAAAAAAAAACAAAABAAAAAAAAAAAAAAAAcGpsZgAAACAgMAKg/uIAKgNKAR4AAAAAABoBPgABAAAAAAAAAC0AAAABAAAAAAABAAUALQABAAAAAAACAAc="
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
+        filename = "zenda.ttf"
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "meeting/110",
+                "filename": filename,
+                "file": sfnt_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "mediafile/1", {"filename": filename, "mimetype": "font/ttf"}
         )
 
     def test_error_in_resource_upload(self) -> None:

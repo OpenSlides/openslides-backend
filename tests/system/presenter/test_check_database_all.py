@@ -1,6 +1,7 @@
 from time import time
-from typing import Any, Dict
+from typing import Any
 
+from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
@@ -21,7 +22,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert "meeting/1: Missing fields" in data["errors"]
         assert "meeting/2: Missing fields" in data["errors"]
 
-    def get_meeting_defaults(self) -> Dict[str, Any]:
+    def get_meeting_defaults(self) -> dict[str, Any]:
         return {
             "motions_export_title": "Motions",
             "motions_preamble": "blablabla",
@@ -225,6 +226,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -256,7 +259,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "action_worker/1": {
                     "name": "testcase",
-                    "state": "end",
+                    "state": ActionWorkerState.END,
                     "created": round(time() - 3),
                     "timestamp": round(time()),
                 },
@@ -272,7 +275,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert data["ok"] is True
         assert "errors" not in data
 
-    def get_new_user(self, username: str, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def get_new_user(self, username: str, datapart: dict[str, Any]) -> dict[str, Any]:
         return {
             "username": username,
             "can_change_own_password": False,
@@ -470,6 +473,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -676,6 +681,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -762,6 +769,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",

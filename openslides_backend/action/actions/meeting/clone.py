@@ -1,6 +1,6 @@
 import time
 from decimal import Decimal
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from openslides_backend.models.checker import (
     Checker,
@@ -70,11 +70,11 @@ class MeetingClone(MeetingImport):
             use_changed_models=False,
         )
 
-    def preprocess_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def preprocess_data(self, instance: dict[str, Any]) -> dict[str, Any]:
         # overwrite method from meeting.import
         return instance
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json
         additional_user_ids = instance.pop("user_ids", None) or []
@@ -151,6 +151,7 @@ class MeetingClone(MeetingImport):
 
         # set active
         meeting["is_active_in_organization_id"] = ONE_ORGANIZATION_ID
+        meeting.pop("is_archived_in_organization_id", 0)
         meeting["template_for_organization_id"] = (
             ONE_ORGANIZATION_ID if set_as_template else None
         )
@@ -194,9 +195,9 @@ class MeetingClone(MeetingImport):
 
     def _update_default_and_admin_group(
         self,
-        group_in_instance: Dict[str, Any],
-        meeting_users_in_instance: Dict[str, Any],
-        additional_user_ids: List[int],
+        group_in_instance: dict[str, Any],
+        meeting_users_in_instance: dict[str, Any],
+        additional_user_ids: list[int],
         meeting_id: int,
     ) -> None:
         additional_meeting_user_ids = [
@@ -213,7 +214,7 @@ class MeetingClone(MeetingImport):
                 "meeting_user", meeting_user_id
             )
             meeting_user = cast(
-                Dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
+                dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
             )
             group_ids = meeting_user.get("group_ids", [])
             if group_id not in group_ids:
@@ -222,7 +223,7 @@ class MeetingClone(MeetingImport):
             meeting_users_in_instance[str(meeting_user_id)] = meeting_user
         group_in_instance["meeting_user_ids"] = list(meeting_user_ids)
 
-    def duplicate_mediafiles(self, json_data: Dict[str, Any]) -> None:
+    def duplicate_mediafiles(self, json_data: dict[str, Any]) -> None:
         for mediafile_id in json_data["mediafile"]:
             mediafile = json_data["mediafile"][mediafile_id]
             if not mediafile.get("is_directory"):
@@ -231,7 +232,7 @@ class MeetingClone(MeetingImport):
                 )
 
     def append_extra_events(
-        self, events: List[Event], json_data: Dict[str, Any]
+        self, events: list[Event], json_data: dict[str, Any]
     ) -> None:
         meeting_id = self.get_meeting_from_json(json_data)["id"]
         if organization_tag_ids := self.get_meeting_from_json(json_data).get(
@@ -254,7 +255,7 @@ class MeetingClone(MeetingImport):
                     ),
                 )
 
-    def get_committee_id(self, instance: Dict[str, Any]) -> int:
+    def get_committee_id(self, instance: dict[str, Any]) -> int:
         if instance.get("committee_id"):
             return instance["committee_id"]
         else:

@@ -1,4 +1,3 @@
-from typing import Optional, Tuple
 from urllib import parse
 
 from authlib import (
@@ -6,6 +5,7 @@ from authlib import (
     AUTHORIZATION_HEADER,
     AuthenticateException,
     AuthHandler,
+    AuthorizationException,
     InvalidCredentialsException,
 )
 
@@ -25,7 +25,7 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
         self.auth_handler = AuthHandler(self.logger.debug)
         self.headers = {"Content-Type": "application/json"}
 
-    def authenticate(self) -> Tuple[int, Optional[str]]:
+    def authenticate(self) -> tuple[int, str | None]:
         """
         Fetches user id from authentication service using request headers.
         Returns a new access token, too, if one is received from auth service.
@@ -63,12 +63,17 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
         return user_id == ANONYMOUS_USER
 
     def create_authorization_token(self, user_id: int, email: str) -> str:
-        response = self.auth_handler.create_authorization_token(user_id, email)
-        token = response.headers.get(AUTHORIZATION_HEADER, "")
-        return token
+        try:
+            response = self.auth_handler.create_authorization_token(user_id, email)
+        except AuthenticateException as e:
+            raise AuthenticationException(e.message)
+        return response.headers.get(AUTHORIZATION_HEADER, "")
 
     def verify_authorization_token(self, user_id: int, token: str) -> bool:
-        found_user_id, _ = self.auth_handler.verify_authorization_token(token)
+        try:
+            found_user_id, _ = self.auth_handler.verify_authorization_token(token)
+        except (AuthenticateException, AuthorizationException) as e:
+            raise AuthenticationException(e.message)
         return user_id == found_user_id
 
     def clear_all_sessions(self) -> None:

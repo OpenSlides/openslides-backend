@@ -1,5 +1,3 @@
-from typing import List
-
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.patterns import fqid_from_collection_and_id
@@ -24,7 +22,7 @@ class MediafileDelete(MediafileMixin, DeleteAction):
         for instance in action_data:
             yield from ({"id": id_} for id_ in self.get_tree_ids(instance["id"]))
 
-    def get_tree_ids(self, id_: int) -> List[int]:
+    def get_tree_ids(self, id_: int) -> list[int]:
         tree_ids = [id_]
         node = self.datastore.get(
             fqid_from_collection_and_id("mediafile", id_), ["child_ids"]

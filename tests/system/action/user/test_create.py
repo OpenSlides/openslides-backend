@@ -44,6 +44,18 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "JohnAloasSmithBrick"})
 
+    def test_create_name_with_connecting_minus(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "first_name": " John-Aloas ",
+                "last_name": " Smith-Brick ",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "JohnAloasSmithBrick"})
+
     def test_create_first_name_and_count(self) -> None:
         self.set_models(
             {"user/2": {"username": "John"}, "user/3": {"username": "John1"}}
@@ -1061,6 +1073,28 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assertIn(
             "The field 'saml_id' can only be used in internal action calls",
             response.json["message"],
+        )
+
+    def test_create_permission_group_H_oml_can_manage_user_saml_id(self) -> None:
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS
+        )
+
+        response = self.request(
+            "user.create",
+            {
+                "saml_id": "11111",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "11111",
+                "saml_id": "11111",
+                "can_change_own_password": False,
+                "default_password": None,
+            },
         )
 
     def test_create_permission_group_F_demo_user_permission(self) -> None:

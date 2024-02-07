@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.import_mixins import ImportState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -11,7 +11,7 @@ from .test_participant_json_upload import ParticipantJsonUploadForUseInImport
 class ParticipantImport(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.import_preview1_data: Dict[str, Any] = {
+        self.import_preview1_data: dict[str, Any] = {
             "state": ImportState.DONE,
             "name": "participant",
             "result": {
@@ -203,7 +203,7 @@ class ParticipantImport(BaseActionTestCase):
         entry = response.json["results"][0][0]["rows"][0]
         assert entry["state"] == ImportState.ERROR
         assert entry["messages"] == [
-            "Error: user 111 not found anymore for updating user 'fred'."
+            "Error: participant 111 not found anymore for updating participant 'fred'."
         ]
 
     def test_import_error_state_import_preview(self) -> None:
@@ -230,6 +230,46 @@ class ParticipantImport(BaseActionTestCase):
 
 
 class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInImport):
+    def test_upload_import_invalid_vote_weight_with_remove(self) -> None:
+        self.json_upload_invalid_vote_weight_with_remove()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.DONE
+        assert (
+            "vote_weight must be bigger than or equal to 0.000001."
+            not in result["rows"][0]["messages"]
+        )
+        assert result["rows"][0]["state"] == ImportState.DONE
+        assert result["rows"][0]["data"] == {
+            "id": 2,
+            "first_name": {"value": "Wilhelm", "info": ImportState.DONE},
+            "last_name": {"value": "Aberhatnurhut", "info": ImportState.DONE},
+            "email": {"value": "will@helm.hut", "info": ImportState.DONE},
+            "vote_weight": {"value": "0.000000", "info": ImportState.REMOVE},
+            "username": {"id": 2, "value": "wilhelm", "info": ImportState.DONE},
+            "default_password": {"value": "123", "info": ImportState.DONE},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "wilhelm",
+                "first_name": "Wilhelm",
+                "last_name": "Aberhatnurhut",
+                "email": "will@helm.hut",
+                "default_password": "123",
+                "meeting_user_ids": [12],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/12",
+            {
+                "vote_weight": None,
+                "group_ids": [1],
+            },
+        )
+
     def test_upload_import_with_generated_usernames_okay(self) -> None:
         self.json_upload_saml_id_new()
         response = self.request("participant.import", {"id": 1, "import": True})
@@ -407,7 +447,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         row = response.json["results"][0][0]["rows"][0]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
-            "Error: user 11 not found anymore for updating user 'user11'."
+            "Error: participant 11 not found anymore for updating participant 'user11'."
         ]
         assert row["data"] == {
             "id": 11,
@@ -577,8 +617,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
-            "Error: user 2 not found anymore for updating user 'user2'.",
-            "Group '3 group3' don't exist anymore",
+            "Error: participant 2 not found anymore for updating participant 'user2'.",
+            "Group '3 group3' doesn't exist anymore",
             "Error in groups: No valid group found inside the pre checked groups from import, see warnings.",
         ]
         assert row["data"] == {
@@ -596,7 +636,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
-            "Group '3 group3' don't exist anymore",
+            "Group '3 group3' doesn't exist anymore",
             "Error in groups: No valid group found inside the pre checked groups from import, see warnings.",
         ]
         assert row["data"] == {
@@ -612,7 +652,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Following groups were not found: 'group4'",
-            "Error: user 4 not found anymore for updating user 'user4'.",
+            "Error: participant 4 not found anymore for updating participant 'user4'.",
         ]
         assert row["data"] == {
             "id": 4,
@@ -661,8 +701,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Following groups were not found: 'group4, unknown'",
-            "Group '2 group2' don't exist anymore",
-            "Expected group '7 group7M1' changed it's name to 'changed'.",
+            "Group '2 group2' doesn't exist anymore",
+            "Expected group '7 group7M1' changed its name to 'changed'.",
             "Error in groups: No valid group found inside the pre checked groups from import, see warnings.",
         ]
         assert row["data"]["username"] == {
@@ -675,6 +715,20 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             {"info": "warning", "value": "unknown"},
             {"id": 7, "info": "warning", "value": "group7M1"},
         ]
+
+    def test_json_upload_with_complicated_names(self) -> None:
+        self.json_upload_with_complicated_names()
+        response_import = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response_import, 200)
+        rows = response_import.json["results"][0][0]["rows"]
+        for i in range(5):
+            number = f"{i}" if i else ""
+            assert rows[i]["state"] == ImportState.NEW
+            assert rows[i]["messages"] == []
+            assert rows[i]["data"]["username"] == {
+                "info": ImportState.GENERATED,
+                "value": "OneTwoThree" + number,
+            }
 
     def test_json_upload_with_sufficient_field_permission_update(self) -> None:
         """fields in preview forbidden, in import allowed => okay"""
@@ -690,14 +744,15 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
-            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
-            "In contrast to preview you may import field(s) 'first_name, saml_id, username'",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, email, saml_id, default_password",
+            "In contrast to preview you may import field(s) 'email, first_name, saml_id, username'",
         ]
         assert row["data"] == {
             "id": 2,
             "saml_id": {"info": "done", "value": "saml_id1"},
             "username": {"id": 2, "info": "done", "value": "user2"},
             "first_name": {"info": "done", "value": "Jim"},
+            "email": {"info": "done", "value": "Jim.Knopf@Lummer.land"},
             "vote_weight": {"info": "done", "value": "1.234560"},
             "default_password": {"info": "remove", "value": ""},
             "groups": [
@@ -749,13 +804,14 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
             "Following groups were not found: 'group4'",
-            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, saml_id, default_password",
+            "Following fields were removed from payload, because the user has no permissions to change them: username, first_name, email, saml_id, default_password",
         ]
         assert row["data"] == {
             "id": 2,
             "saml_id": {"info": "remove", "value": "saml_id1"},
             "username": {"id": 2, "info": "remove", "value": "user2"},
             "first_name": {"info": "remove", "value": "Jim"},
+            "email": {"info": "remove", "value": "Jim.Knopf@Lummer.land"},
             "vote_weight": {"info": "done", "value": "1.234560"},
             "default_password": {"info": "remove", "value": ""},
             "groups": [

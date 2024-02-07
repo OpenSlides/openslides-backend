@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 from openslides_backend.shared.typing import HistoryInformation
@@ -28,7 +28,7 @@ class PollPublishAction(
     schema = DefaultSchema(Poll()).get_update_schema()
     extend_history_to = "content_object_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["state"],
@@ -43,7 +43,7 @@ class PollPublishAction(
         instance["state"] = Poll.STATE_PUBLISHED
         return instance
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         polls = self.get_instances_with_fields(["content_object_id", "state"])
         return {
             poll["content_object_id"]: [

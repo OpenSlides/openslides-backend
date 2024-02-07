@@ -1,5 +1,5 @@
 {
-    "_migration_index": 47,
+    "_migration_index": 49,
     "organization": {
         "1": {
             "id": 1,
@@ -1531,6 +1531,7 @@
             "allow_submitter_edit": false,
             "allow_create_poll": false,
             "allow_support": false,
+            "set_workflow_timestamp": false,
             "allow_motion_forwarding": true,
             "meeting_id": 1
         },
@@ -1553,6 +1554,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "4": {
@@ -1574,6 +1576,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "5": {
@@ -1622,6 +1625,7 @@
             "allow_create_poll": false,
             "allow_support": true,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "7": {
@@ -1655,6 +1659,7 @@
             "allow_create_poll": true,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "8": {
@@ -1676,6 +1681,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "9": {
@@ -1697,6 +1703,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "10": {
@@ -1719,6 +1726,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "11": {
@@ -1740,6 +1748,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "12": {
@@ -1761,6 +1770,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "13": {
@@ -1782,6 +1792,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "14": {
@@ -1802,6 +1813,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "15": {
@@ -1823,6 +1835,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         }
     },

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any
 
 from ....models.models import AgendaItem
 from ....shared.patterns import fqid_from_collection_and_id
@@ -52,7 +52,7 @@ class CreateActionWithAgendaItemMixin(Action):
     """
 
     def check_dependant_action_execution_agenda_item(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
     ) -> bool:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
@@ -80,8 +80,8 @@ class CreateActionWithAgendaItemMixin(Action):
         return result_value
 
     def get_dependent_action_data_agenda_item(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> List[Dict[str, Any]]:
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
+    ) -> list[dict[str, Any]]:
         agenda_item_action_data = self.remove_agenda_prefix_from_fieldnames(instance)
         agenda_item_action_data["content_object_id"] = fqid_from_collection_and_id(
             self.model.collection, instance["id"]
@@ -90,8 +90,8 @@ class CreateActionWithAgendaItemMixin(Action):
 
     @staticmethod
     def remove_agenda_prefix_from_fieldnames(
-        instance: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        instance: dict[str, Any]
+    ) -> dict[str, Any]:
         prefix_len = len(AGENDA_PREFIX)
         extra_field = f"{AGENDA_PREFIX}create"  # This field should not be provided to the AgendaItemCreate action.
         agenda_item = {
