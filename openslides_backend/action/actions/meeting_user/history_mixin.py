@@ -1,5 +1,4 @@
 from copy import deepcopy
-from typing import List, Optional
 
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.typing import HistoryInformation
@@ -7,7 +6,7 @@ from ...action import Action
 
 
 class MeetingUserHistoryMixin(Action):
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         information = {}
 
         # Scan the instances and collect the info for the history information
@@ -59,7 +58,7 @@ class MeetingUserHistoryMixin(Action):
                 removed.discard(meeting.get("default_group_id"))
                 changed = added | removed
 
-                group_information: List[str] = []
+                group_information: list[str] = []
                 if added and removed:
                     group_information.append("Groups changed")
                 elif len(instance_group_ids) != 0:
@@ -82,7 +81,7 @@ class MeetingUserHistoryMixin(Action):
                 instance_information.extend(group_information)
 
             if instance_information:
-                information[
-                    fqid_from_collection_and_id("user", user_id)
-                ] = instance_information
+                information[fqid_from_collection_and_id("user", user_id)] = (
+                    instance_information
+                )
         return information

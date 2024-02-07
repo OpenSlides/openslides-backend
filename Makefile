@@ -1,11 +1,20 @@
 # Development and testing inside docker container or without docker (only unit and integration tests)
 
-paths = openslides_backend/ tests/ cli/
+paths = openslides_backend/ tests/ cli/ global/meta/models_validator/
 
-all: black autoflake isort flake8 mypy
+all: pyupgrade black autoflake isort flake8 mypy
+
+pyupgrade:
+	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
+
+check-pyupgrade:
+	pyupgrade --py310-plus $$(find . -name '*.py')
 
 black:
 	black $(paths)
+
+check-black:
+	black --check --diff $(paths)
 
 autoflake:
 	autoflake --verbose --in-place --remove-all-unused-imports \
@@ -13,6 +22,9 @@ autoflake:
 
 isort:
 	isort $(paths)
+
+check-isort:
+	isort --check-only --diff $(paths)
 
 flake8:
 	flake8 $(paths)
@@ -29,14 +41,14 @@ test-unit-integration:
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
 validate-models-yml:
-	python cli/validate.py
+	python global/meta/models_validator/validate.py global/meta/models.yml
 
 generate-models:
 	python cli/generate_models.py $(MODELS_PATH)
 	black openslides_backend/models/models.py
 
 check-models:
-	python cli/generate_models.py check
+	python cli/generate_models.py --check
 
 generate-permissions:
 	python cli/generate_permissions.py $(MODELS_PATH)

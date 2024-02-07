@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
@@ -23,7 +23,7 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
     )
     permission = Permissions.Mediafile.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Calculate inherited_access_group_ids and inherited_access_group_ids, if
         access_group_ids are given.

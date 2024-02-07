@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
@@ -24,7 +24,7 @@ class AgendaItemDelete(DeleteAction):
     schema = DefaultSchema(AgendaItem()).get_delete_schema()
     permission = Permissions.AgendaItem.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         agenda_item = self.datastore.get(
             fqid,

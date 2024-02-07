@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -41,7 +41,7 @@ class CreateEventsHelper(BaseActionTestCase):
 
         def mock_parse_actions(
             *args: Any, **kwargs: Any
-        ) -> Tuple[List[WriteRequest], ActionsResponseResults]:
+        ) -> tuple[list[WriteRequest], ActionsResponseResults]:
             write_requests, results = orig_parse_actions(*args, **kwargs)
             for write_request in write_requests:
                 print(write_request.events)

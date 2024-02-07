@@ -1,6 +1,6 @@
 import re
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -19,14 +19,14 @@ from ..meeting_user.set_data import MeetingUserSetData
 
 class UsernameMixin(Action):
     def generate_usernames(
-        self, usernames: List[str], fix_usernames: Optional[List[str]] = None
-    ) -> List[str]:
+        self, usernames: list[str], fix_usernames: list[str] | None = None
+    ) -> list[str]:
         """
         Generate unique usernames in parallel to a given list of usernames
         """
         if fix_usernames is None:
             fix_usernames = []
-        used_usernames: List[str] = []
+        used_usernames: list[str] = []
         for username in usernames:
             template_username = username
             count = 0
@@ -48,7 +48,7 @@ class UsernameMixin(Action):
             used_usernames.append(username)
         return used_usernames
 
-    def generate_username(self, entry: Dict[str, Any]) -> str:
+    def generate_username(self, entry: dict[str, Any]) -> str:
         return self.generate_usernames(
             [
                 re.sub(
@@ -88,7 +88,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         "group_ids": id_list_schema,
     }
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if "meeting_id" not in instance and any(
             key in self.transfer_field_list for key in instance.keys()
@@ -104,7 +104,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 self.strip_field(field, instance)
         return super().get_updated_instances(action_data)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
 
         def check_existence(what: str) -> None:
@@ -130,19 +130,19 @@ class UserMixin(CheckForArchivedMeetingMixin):
         self.meeting_user_set_data(instance)
         return instance
 
-    def strip_field(self, field: str, instance: Dict[str, Any]) -> None:
+    def strip_field(self, field: str, instance: dict[str, Any]) -> None:
         if instance.get(field):
             instance[field] = instance[field].strip()
 
     def check_meeting_and_users(
-        self, instance: Dict[str, Any], user_fqid: FullQualifiedId
+        self, instance: dict[str, Any], user_fqid: FullQualifiedId
     ) -> None:
         if instance.get("meeting_id") is not None:
             self.datastore.apply_changed_model(
                 user_fqid, {"meeting_id": instance.get("meeting_id")}
             )
 
-    def meeting_user_set_data(self, instance: Dict[str, Any]) -> None:
+    def meeting_user_set_data(self, instance: dict[str, Any]) -> None:
         meeting_user_data = {}
         meeting_id = instance.pop("meeting_id", None)
         for field in self.transfer_field_list:
@@ -156,7 +156,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
 
 
 class UpdateHistoryMixin(Action):
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         information = {}
 
         # Scan the instances and collect the info for the history information
@@ -206,14 +206,14 @@ class UpdateHistoryMixin(Action):
                     instance_information.append("Set inactive")
 
             if instance_information:
-                information[
-                    fqid_from_collection_and_id("user", instance["id"])
-                ] = instance_information
+                information[fqid_from_collection_and_id("user", instance["id"])] = (
+                    instance_information
+                )
         return information
 
 
 class DuplicateCheckMixin(Action):
-    def init_duplicate_set(self, data: List[Any]) -> None:
+    def init_duplicate_set(self, data: list[Any]) -> None:
         self.users_in_double_lists = self.execute_presenter(
             SearchUsers,
             {
@@ -222,9 +222,9 @@ class DuplicateCheckMixin(Action):
                 "search": data,
             },
         )
-        self.used_usernames: List[str] = []
-        self.used_saml_ids: List[str] = []
-        self.used_names_and_email: List[Any] = []
+        self.used_usernames: list[str] = []
+        self.used_saml_ids: list[str] = []
+        self.used_names_and_email: list[Any] = []
 
     def check_username_for_duplicate(self, username: str, payload_index: int) -> bool:
         result = (
@@ -256,12 +256,12 @@ class DuplicateCheckMixin(Action):
             self.used_names_and_email.append(entry)
         return result
 
-    def get_search_data(self, payload_index: int) -> Optional[Dict[str, Any]]:
+    def get_search_data(self, payload_index: int) -> dict[str, Any] | None:
         if len(self.users_in_double_lists[payload_index]) == 1:
             return self.users_in_double_lists[payload_index][0]
         return None
 
-    def has_multiple_search_data(self, payload_index: int) -> List[str]:
+    def has_multiple_search_data(self, payload_index: int) -> list[str]:
         if len(self.users_in_double_lists[payload_index]) >= 2:
             return [
                 entry["username"] for entry in self.users_in_double_lists[payload_index]
@@ -269,7 +269,7 @@ class DuplicateCheckMixin(Action):
         return []
 
 
-def check_gender_helper(datastore: DatastoreService, instance: Dict[str, Any]) -> None:
+def check_gender_helper(datastore: DatastoreService, instance: dict[str, Any]) -> None:
     if instance.get("gender"):
         organization = datastore.get(ONE_ORGANIZATION_FQID, ["genders"])
         if organization.get("genders"):

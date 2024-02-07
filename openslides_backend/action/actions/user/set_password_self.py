@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
@@ -26,7 +26,7 @@ class UserSetPasswordSelf(
         }
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         old_pw = instance.pop("old_password")
         new_pw = instance.pop("new_password")
 
@@ -45,7 +45,7 @@ class UserSetPasswordSelf(
         instance["password"] = self.auth.hash(new_pw)
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         self.assert_not_anonymous()
         instance["id"] = self.user_id
         user = self.datastore.get(

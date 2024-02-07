@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Dict, Protocol
+from typing import Protocol
 
 from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 
@@ -18,8 +18,8 @@ class AuthenticatedService(AuthenticatedServiceInterface):
         self.access_token = access_token
         self.refresh_id = refresh_id
 
-    def get_auth_header(self) -> Dict[str, str]:
+    def get_auth_header(self) -> dict[str, str]:
         return {AUTHENTICATION_HEADER: self.access_token}
 
-    def get_auth_cookie(self) -> Dict[str, str]:
+    def get_auth_cookie(self) -> dict[str, str]:
         return {COOKIE_NAME: self.refresh_id}

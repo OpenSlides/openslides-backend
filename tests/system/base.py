@@ -1,6 +1,7 @@
 import threading
+from collections.abc import Callable
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Set, Type, cast
+from typing import Any, cast
 from unittest import TestCase
 
 import simplejson as json
@@ -47,10 +48,10 @@ class BaseSystemTestCase(TestCase):
     anon_client: Client
 
     # Save auth data as class variable
-    auth_data: Optional[AuthData] = None
+    auth_data: AuthData | None = None
 
     # Save all created fqids
-    created_fqids: Set[str]
+    created_fqids: set[str]
 
     def setUp(self) -> None:
         self.app = self.get_application()
@@ -78,6 +79,7 @@ class BaseSystemTestCase(TestCase):
             ONE_ORGANIZATION_FQID,
             {
                 "name": "OpenSlides Organization",
+                "default_language": "en",
                 "user_ids": [1],
             },
         )
@@ -107,7 +109,7 @@ class BaseSystemTestCase(TestCase):
         super().tearDown()
 
     @staticmethod
-    def get_thread_by_name(name: str) -> Optional[threading.Thread]:
+    def get_thread_by_name(name: str) -> threading.Thread | None:
         for thread in threading.enumerate():
             if thread.name == name:
                 return thread
@@ -130,7 +132,7 @@ class BaseSystemTestCase(TestCase):
             data = json.loads(file.read())
         self._load_data(data)
 
-    def _load_data(self, raw_data: Dict[str, Dict[str, Any]]) -> None:
+    def _load_data(self, raw_data: dict[str, dict[str, Any]]) -> None:
         data = {}
         for collection, models in raw_data.items():
             if collection == "_migration_index":
@@ -142,7 +144,7 @@ class BaseSystemTestCase(TestCase):
         self.set_models(data)
 
     def create_client(
-        self, on_auth_data_changed: Optional[Callable[[AuthData], None]] = None
+        self, on_auth_data_changed: Callable[[AuthData], None] | None = None
     ) -> Client:
         return Client(self.app, on_auth_data_changed)
 
@@ -172,20 +174,20 @@ class BaseSystemTestCase(TestCase):
         self.assertEqual(response.status_code, code)
 
     def create_model(
-        self, fqid: str, data: Dict[str, Any] = {}, deleted: bool = False
+        self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
     ) -> None:
         write_request = self.get_write_request(
             self.get_create_events(fqid, data, deleted)
         )
         self.datastore.write(write_request)
 
-    def update_model(self, fqid: str, data: Dict[str, Any]) -> None:
+    def update_model(self, fqid: str, data: dict[str, Any]) -> None:
         write_request = self.get_write_request(self.get_update_events(fqid, data))
         self.datastore.write(write_request)
 
     def get_create_events(
-        self, fqid: str, data: Dict[str, Any] = {}, deleted: bool = False
-    ) -> List[Event]:
+        self, fqid: str, data: dict[str, Any] = {}, deleted: bool = False
+    ) -> list[Event]:
         self.created_fqids.add(fqid)
         data["id"] = id_from_fqid(fqid)
         self.validate_fields(fqid, data)
@@ -194,21 +196,21 @@ class BaseSystemTestCase(TestCase):
             events.append(Event(type=EventType.Delete, fqid=fqid))
         return events
 
-    def get_update_events(self, fqid: str, data: Dict[str, Any]) -> List[Event]:
+    def get_update_events(self, fqid: str, data: dict[str, Any]) -> list[Event]:
         self.validate_fields(fqid, data)
         return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
-    def get_write_request(self, events: List[Event]) -> WriteRequest:
+    def get_write_request(self, events: list[Event]) -> WriteRequest:
         return WriteRequest(events, user_id=0)
 
-    def set_models(self, models: Dict[str, Dict[str, Any]]) -> None:
+    def set_models(self, models: dict[str, dict[str, Any]]) -> None:
         """
         Can be used to set multiple models at once, independent of create or update.
         Uses self.created_fqids to determine which models are already created. If you want to update
         a model which was not set in the test but created via an action, you may have to add the
         fqid to this set.
         """
-        events: List[Event] = []
+        events: list[Event] = []
         for fqid, model in models.items():
             if fqid in self.created_fqids:
                 events.extend(self.get_update_events(fqid, model))
@@ -217,7 +219,7 @@ class BaseSystemTestCase(TestCase):
         write_request = self.get_write_request(events)
         self.datastore.write(write_request)
 
-    def validate_fields(self, fqid: str, fields: Dict[str, Any]) -> None:
+    def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
         model = model_registry[collection_from_fqid(fqid)]()
         for field_name, value in fields.items():
             try:
@@ -228,7 +230,7 @@ class BaseSystemTestCase(TestCase):
                 raise JsonSchemaException(e.message)
 
     @with_database_context
-    def get_model(self, fqid: str) -> Dict[str, Any]:
+    def get_model(self, fqid: str) -> dict[str, Any]:
         model = self.datastore.get(
             fqid,
             mapped_fields=[],
@@ -241,8 +243,8 @@ class BaseSystemTestCase(TestCase):
         return model
 
     def assert_model_exists(
-        self, fqid: str, fields: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, fqid: str, fields: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return self._assert_fields(fqid, (fields or {}) | {"meta_deleted": False})
 
     def assert_model_not_exists(self, fqid: str) -> None:
@@ -250,13 +252,13 @@ class BaseSystemTestCase(TestCase):
             self.get_model(fqid)
 
     def assert_model_deleted(
-        self, fqid: str, fields: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, fqid: str, fields: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return self._assert_fields(fqid, (fields or {}) | {"meta_deleted": True})
 
     def _assert_fields(
-        self, fqid: FullQualifiedId, fields: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, fqid: FullQualifiedId, fields: dict[str, Any]
+    ) -> dict[str, Any]:
         model = self.get_model(fqid)
         model_cls = model_registry[collection_from_fqid(fqid)]()
         for field_name, value in fields.items():
@@ -270,7 +272,7 @@ class BaseSystemTestCase(TestCase):
             )
         return model
 
-    def assert_defaults(self, model: Type[Model], instance: Dict[str, Any]) -> None:
+    def assert_defaults(self, model: type[Model], instance: dict[str, Any]) -> None:
         for field in model().get_fields():
             if getattr(field, "default", None) is not None:
                 self.assertEqual(

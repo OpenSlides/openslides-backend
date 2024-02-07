@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -81,7 +81,7 @@ class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
             ]
         )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             [
@@ -163,7 +163,7 @@ class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
         instance["forwarded"] = round(time.time())
         return instance
 
-    def check_for_origin_id(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def check_for_origin_id(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["committee_id"],
@@ -190,7 +190,7 @@ class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
             )
         return committee
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["meeting_id"],
@@ -214,7 +214,7 @@ class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
             msg = "Amendments cannot be forwarded."
             raise PermissionDenied(msg)
 
-    def set_origin_ids(self, instance: Dict[str, Any]) -> None:
+    def set_origin_ids(self, instance: dict[str, Any]) -> None:
         if instance.get("origin_id"):
             origin = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["origin_id"]),
@@ -224,7 +224,7 @@ class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
             instance["all_origin_ids"].append(instance["origin_id"])
 
-    def check_state_allow_forwarding(self, instance: Dict[str, Any]) -> None:
+    def check_state_allow_forwarding(self, instance: dict[str, Any]) -> None:
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["state_id"],
@@ -236,7 +236,7 @@ class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
         if not state.get("allow_motion_forwarding"):
             raise ActionException("State doesn't allow to forward motion.")
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         forwarded_entries = defaultdict(list)
         for instance in self.instances:
             forwarded_entries[

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -9,7 +9,7 @@ DEFAULT_PASSWORD = "password"
 class SpeakerCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "name": "name_asdewqasd",
                 "is_active_in_organization_id": 1,

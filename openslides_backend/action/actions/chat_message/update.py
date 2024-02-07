@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import ChatMessage
 from ....shared.exceptions import PermissionDenied
@@ -19,7 +19,7 @@ class ChatMessageUpdate(UpdateAction):
         optional_properties=["content"],
     )
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         chat_message = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["meeting_user_id"],

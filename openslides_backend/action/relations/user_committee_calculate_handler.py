@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set, cast
+from typing import Any, cast
 
 from openslides_backend.services.datastore.commands import GetManyRequest
 
@@ -31,7 +31,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     """
 
     def process_field(
-        self, field: Field, field_name: str, instance: Dict[str, Any], action: str
+        self, field: Field, field_name: str, instance: dict[str, Any], action: str
     ) -> RelationUpdates:
         if (
             (field.own_collection != "user" and field.own_collection != "meeting_user")
@@ -65,7 +65,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
                 field.own_collection, instance["id"]
             )
             user_id = cast(
-                Dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
+                dict[str, Any], self.datastore.changed_models.get(fqid_meeting_user)
             ).get("user_id")
             meeting_users = self.get_meeting_users_from_changed_models(user_id)
             fqid_user = fqid_from_collection_and_id("user", user_id)
@@ -85,8 +85,8 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     def do_changes(
         self,
         fqid: FullQualifiedId,
-        db_user: Dict[str, Any],
-        meeting_users: Dict[int, Dict[str, Any]],
+        db_user: dict[str, Any],
+        meeting_users: dict[int, dict[str, Any]],
         action: str,
     ) -> RelationUpdates:
         user_id = id_from_fqid(fqid)
@@ -100,7 +100,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         meeting_ids = self.get_all_meeting_ids_by_user_id(user_id, meeting_users)
         if meeting_ids:
             meeting_collection = "meeting"
-            committee_ids: Set[int] = set(
+            committee_ids: set[int] = set(
                 map(
                     lambda x: x.get("committee_id", 0),
                     self.datastore.get_many(
@@ -135,14 +135,14 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             }
             relation_update[fqfield_user] = relation_el
 
-        def add_relation(add: bool, set_: Set[int]) -> None:
+        def add_relation(add: bool, set_: set[int]) -> None:
             for committee_id in set_:
                 fqfield_committee = fqfield_from_collection_and_id_and_field(
                     "committee", committee_id, "user_ids"
                 )
                 relation_update[fqfield_committee] = {
                     "type": "list_update",
-                    "add": [user_id] if add else cast(List[int], []),
+                    "add": [user_id] if add else cast(list[int], []),
                     "remove": [] if add else [user_id],  # type: ignore
                 }
 
@@ -152,7 +152,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         return relation_update
 
     def fill_meeting_user_changed_models_with_user_and_meeting_id(self) -> None:
-        meeting_user_ids: List[int] = [
+        meeting_user_ids: list[int] = [
             id_from_fqid(key)
             for key, data in self.datastore.changed_models.items()
             if collection_from_fqid(key) == "meeting_user"
@@ -177,8 +177,8 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
                 changed_model["meeting_id"] = value["meeting_id"]
 
     def get_all_meeting_ids_by_user_id(
-        self, user_id: int, meeting_users: Dict[int, Dict[str, Any]]
-    ) -> List[int]:
+        self, user_id: int, meeting_users: dict[int, dict[str, Any]]
+    ) -> list[int]:
         filter_ = And(
             FilterOperator("user_id", "=", user_id),
             Not(FilterOperator("group_ids", "=", None)),
@@ -199,7 +199,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
 
     def get_meeting_users_from_changed_models(
         self, user_id: int
-    ) -> Dict[int, Dict[str, Any]]:
+    ) -> dict[int, dict[str, Any]]:
         return {
             id_from_fqid(key): data
             for key, data in self.datastore.changed_models.items()

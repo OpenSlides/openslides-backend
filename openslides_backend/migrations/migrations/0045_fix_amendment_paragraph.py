@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from datastore.migrations import BaseModelMigration
 from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
@@ -18,8 +18,8 @@ class Migration(BaseModelMigration):
     old_field = "amendment_paragraph_$"
     new_field = "amendment_paragraphs"
 
-    def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
-        events: List[BaseRequestEvent] = []
+    def migrate_models(self) -> list[BaseRequestEvent] | None:
+        events: list[BaseRequestEvent] = []
         db_models = self.reader.filter(
             collection="motion",
             filter=And(
@@ -29,7 +29,7 @@ class Migration(BaseModelMigration):
         )
 
         for id, model in db_models.items():
-            update: Dict[str, Any] = {self.old_field: None, self.new_field: {}}
+            update: dict[str, Any] = {self.old_field: None, self.new_field: {}}
             for replacement in model.get(self.old_field, []):
                 structured_field = self.old_field.replace("$", f"${replacement}")
                 update[structured_field] = None

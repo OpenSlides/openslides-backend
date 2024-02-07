@@ -1,6 +1,6 @@
 import time
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -50,6 +50,8 @@ class MotionUpdate(
             "category_id",
             "block_id",
             "supporter_meeting_user_ids",
+            "editor_id",
+            "working_group_speaker_id",
             "tag_ids",
             "attachment_ids",
             "created",
@@ -74,8 +76,6 @@ class MotionUpdate(
                     ),
                     [
                         "meeting_id",
-                        "is_active_in_organization_id",
-                        "name",
                         "id",
                         "category_id",
                         "block_id",
@@ -92,7 +92,7 @@ class MotionUpdate(
             ]
         )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
         if (
@@ -157,7 +157,7 @@ class MotionUpdate(
         return instance
 
     def set_extension_reference_ids(
-        self, prefix: str, instance: Dict[str, Any]
+        self, prefix: str, instance: dict[str, Any]
     ) -> None:
         extension_reference_ids = []
         possible_rerids = EXTENSION_REFERENCE_IDS_PATTERN.findall(
@@ -178,7 +178,7 @@ class MotionUpdate(
                 )
         instance[f"{prefix}_extension_reference_ids"] = extension_reference_ids
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         motion = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["meeting_id", "state_id", "submitter_ids"],
@@ -197,8 +197,7 @@ class MotionUpdate(
             allowed_fields += [
                 "category_id",
                 "block_id",
-                "origin",
-                "supporters_id",
+                "supporter_meeting_user_ids",
                 "recommendation_extension",
                 "start_line_number",
                 "tag_ids",
@@ -223,7 +222,7 @@ class MotionUpdate(
             msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
             raise PermissionDenied(msg)
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         information = {}
         for instance in deepcopy(self.instances):
             instance_information = []
@@ -273,11 +272,11 @@ class MotionUpdate(
 
     def create_history_information_for_field(
         self,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
         field: str,
         collection: Collection,
         verbose_collection: str,
-    ) -> List[str]:
+    ) -> list[str]:
         if field in instance:
             value = instance.pop(field)
             if value is None:

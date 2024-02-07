@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, cast
 
 from openslides_backend.models.models import MeetingUser
 from openslides_backend.shared.exceptions import ActionException
@@ -49,22 +49,22 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         {"property": "groups", "type": "string", "is_object": True, "is_list": True},
     ]
     import_name = "participant"
-    groups: Dict[str, int] = {}
-    default_group: Dict[str, Union[int, str]] = {}
+    groups: dict[str, int] = {}
+    default_group: dict[str, int | str] = {}
 
     def prefetch(self, action_data: ActionData) -> None:
-        self.meeting_id = cast(List[Dict[str, Any]], action_data)[0].get(
+        self.meeting_id = cast(list[dict[str, Any]], action_data)[0].get(
             "meeting_id", 0
         )
 
-    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         entry["meeting_id"] = self.meeting_id
         results = super().validate_entry(entry)
 
         group_names = (entry := results["data"]).get("groups", [])
         messages = results["messages"]
-        grp_objects: List[Dict[str, Any]] = []
-        not_founds: List[str] = []
+        grp_objects: list[dict[str, Any]] = []
+        not_founds: list[str] = []
         found = False
         for group_name in group_names:
             if id_ := self.lookup_group_ids.get(group_name):
@@ -114,7 +114,8 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         for field in field_to_fail:
             if field in failing_fields:
                 if isinstance(entry[field], dict):
-                    entry[field]["info"] = ImportState.REMOVE
+                    if entry[field]["info"] != ImportState.ERROR:
+                        entry[field]["info"] = ImportState.REMOVE
                 else:
                     entry[field] = {"value": entry[field], "info": ImportState.REMOVE}
             else:
@@ -141,7 +142,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         return results
 
     def setup_lookups(
-        self, data: List[Dict[str, Any]], meeting_id: Optional[int] = None
+        self, data: list[dict[str, Any]], meeting_id: int | None = None
     ) -> None:
         super().setup_lookups(data)
         groups = self.datastore.filter(

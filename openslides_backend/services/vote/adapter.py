@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
 import simplejson as json
@@ -18,7 +18,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
         self.url = vote_url
         self.logger = logging.getLogger(__name__)
 
-    def retrieve(self, endpoint: str, payload: Optional[Dict[str, Any]] = None) -> Any:
+    def retrieve(self, endpoint: str, payload: dict[str, Any] | None = None) -> Any:
         response = self.make_request(endpoint, payload)
         message = f"Vote service sends HTTP {response.status_code} with the following content: {str(response.content)}."
         if response.status_code < 400:
@@ -34,9 +34,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
         if response.content:
             return response.json()
 
-    def make_request(
-        self, endpoint: str, payload: Optional[Dict[str, Any]] = None
-    ) -> Any:
+    def make_request(self, endpoint: str, payload: dict[str, Any] | None = None) -> Any:
         if not self.access_token or not self.refresh_id:
             raise VoteServiceException("You must be logged in to vote")
         payload_json = json.dumps(payload, separators=(",", ":")) if payload else None
@@ -60,7 +58,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
         endpoint = self.get_endpoint("start", id)
         self.retrieve(endpoint)
 
-    def stop(self, id: int) -> Dict[str, Any]:
+    def stop(self, id: int) -> dict[str, Any]:
         endpoint = self.get_endpoint("stop", id)
         return self.retrieve(endpoint)
 
@@ -72,5 +70,5 @@ class VoteAdapter(VoteService, AuthenticatedService):
         endpoint = self.get_endpoint("clear_all")
         self.retrieve(endpoint)
 
-    def get_endpoint(self, route: str, id: Optional[int] = None) -> str:
+    def get_endpoint(self, route: str, id: int | None = None) -> str:
         return f"{self.url}/{route}" + (f"?id={id}" if id else "")

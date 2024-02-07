@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any
 
 from openslides_backend.models.models import Meeting
 
@@ -8,6 +8,7 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
 from ....shared.schema import id_list_schema
+from ....shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -66,22 +67,18 @@ class MeetingCreate(
         "users_email_body",
     ]
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         Translator.set_translation_language(instance["language"])
         return super().base_update_instance(instance)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         # handle set_as_template
         if instance.pop("set_as_template", None):
-            instance["template_for_organization_id"] = 1
+            instance["template_for_organization_id"] = ONE_ORGANIZATION_ID
 
-        committee = self.datastore.get(
-            fqid_from_collection_and_id("committee", instance["committee_id"]),
-            ["user_ids", "organization_id"],
-        )
         organization = self.datastore.get(
-            fqid_from_collection_and_id("organization", committee["organization_id"]),
+            ONE_ORGANIZATION_FQID,
             ["limit_of_meetings", "active_meeting_ids"],
         )
         if (
@@ -92,7 +89,7 @@ class MeetingCreate(
             )
         self.check_start_and_end_time(instance)
 
-        instance["is_active_in_organization_id"] = committee["organization_id"]
+        instance["is_active_in_organization_id"] = ONE_ORGANIZATION_ID
         self.apply_instance(instance)
         action_data = [
             {
@@ -207,8 +204,8 @@ class MeetingCreate(
         return instance
 
     def get_dependent_action_data(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> List[Dict[str, Any]]:
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
+    ) -> list[dict[str, Any]]:
         if CreateActionClass == MotionWorkflowCreateSimpleWorkflowAction:
             return [
                 {
@@ -240,7 +237,7 @@ class MeetingCreate(
             ]
         return []
 
-    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def set_defaults(self, instance: dict[str, Any]) -> dict[str, Any]:
         for field in self.model.get_fields():
             if (
                 field.own_field_name not in instance.keys()

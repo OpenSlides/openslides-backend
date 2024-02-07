@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import ListOfSpeakers
 from ....shared.patterns import fqid_from_collection_and_id
@@ -17,7 +17,7 @@ class ListOfSpeakersCreate(SequentialNumbersMixin, CreateActionWithInferredMeeti
 
     relation_field_for_meeting = "content_object_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),

@@ -1,6 +1,6 @@
 import threading
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
 from openslides_backend.shared.interfaces.write_request import WriteRequest

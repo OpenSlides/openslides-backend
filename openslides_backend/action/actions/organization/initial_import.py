@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, Optional, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 from datastore.shared.util import DeletedModelsBehaviour
 
@@ -41,7 +42,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
 
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
-    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
+    ) -> tuple[WriteRequest | None, ActionResults | None]:
         """
         Simplified entrypoint to perform the action.
         """
@@ -56,7 +57,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         write_request = self.build_write_request()
         return (write_request, self.results)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         data = instance["data"]
 
         self.check_empty_datastore()
@@ -87,7 +88,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         ):
             raise ActionException("Datastore is not empty.")
 
-    def translate_organization_and_theme(self, data: Dict[str, Any]) -> None:
+    def translate_organization_and_theme(self, data: dict[str, Any]) -> None:
         organization = data["organization"]["1"]
         Translator.set_translation_language(organization["default_language"])
         translation_fields = (
@@ -104,7 +105,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
                 if entry.get("name"):
                     entry["name"] = _(entry["name"])
 
-    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         json_data = instance["data"]
         events = []
         for collection in json_data:
@@ -123,7 +124,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
 
     def build_write_request(
         self,
-    ) -> Optional[WriteRequest]:
+    ) -> WriteRequest | None:
         """
         Add Migration Index to the one and only write request
         """
@@ -133,8 +134,8 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         return write_request
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         backend_migration_index = get_backend_migration_index()
         result = {
             "data_migration_index": self.data_migration_index,
@@ -144,8 +145,8 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             result["message"] = "Data imported, but must be migrated!"
             result["migration_needed"] = True
         else:
-            result[
-                "message"
-            ] = f"Data imported, Migration Index set to {backend_migration_index}"
+            result["message"] = (
+                f"Data imported, Migration Index set to {backend_migration_index}"
+            )
             result["migration_needed"] = False
         return result

@@ -16,7 +16,7 @@ def test_with_sql_dump():
     connection_handler = injector.get(ConnectionHandler)
     with connection_handler.get_connection_context():
         with connection_handler.get_current_connection().cursor() as cursor:
-            with open(SQL_FILE, "r") as file:
+            with open(SQL_FILE) as file:
                 content = file.read()
                 if content.startswith("COPY"):
                     cursor.execute("SET session_replication_role = 'replica'")
