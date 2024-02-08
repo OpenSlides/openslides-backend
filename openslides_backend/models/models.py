@@ -1219,7 +1219,7 @@ class Motion(Model):
     sort_weight = fields.IntegerField(default=10000)
     created = fields.TimestampField()
     last_modified = fields.TimestampField(read_only=True)
-    workflow_timestamp = fields.TimestampField(read_only=True)
+    workflow_timestamp = fields.TimestampField()
     start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
     lead_motion_id = fields.RelationField(
