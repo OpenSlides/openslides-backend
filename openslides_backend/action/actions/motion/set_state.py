@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -11,7 +11,7 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import PermissionHelperMixin
+from .mixins import PermissionHelperMixin, set_workflow_timestamp_helper
 from .motion_state_history_information_mixin import MotionStateHistoryInformationMixin
 from .set_number_mixin import SetNumberMixin
 
@@ -30,7 +30,7 @@ class MotionSetStateAction(
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema(["state_id"])
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Check if the state_id is from a previous or next state.
         """
@@ -44,7 +44,7 @@ class MotionSetStateAction(
                 "category_id",
                 "number",
                 "number_value",
-                "created",
+                "workflow_timestamp",
             ],
             lock_result=["state_id"],
         )
@@ -76,17 +76,11 @@ class MotionSetStateAction(
         )
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
-        if not motion.get("created"):
-            state = self.datastore.get(
-                fqid_from_collection_and_id("motion_state", instance["state_id"]),
-                ["set_created_timestamp"],
-                lock_result=False,
-            )
-            if state.get("set_created_timestamp"):
-                instance["created"] = timestamp
+        if not motion.get("workflow_timestamp"):
+            set_workflow_timestamp_helper(self.datastore, instance, timestamp)
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         self.skip_state_graph_check = False
         motion = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["id"]),
@@ -127,5 +121,5 @@ class MotionSetStateAction(
 
         raise MissingPermission(Permissions.Motion.CAN_MANAGE_METADATA)
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         return self._get_state_history_information("state_id", "State")

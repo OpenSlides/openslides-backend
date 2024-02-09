@@ -8,5 +8,5 @@ class MeetingSetLogoAction(BaseMeetingSetMediafileAction):
     Action to set a mediafile as logo.
     """
 
-    field = "logo_$_id"
+    file_type = "logo"
     allowed_mimetypes = ["image/png", "image/jpeg", "image/gif", "image/svg+xml"]

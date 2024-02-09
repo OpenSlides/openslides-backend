@@ -1,11 +1,20 @@
 # Development and testing inside docker container or without docker (only unit and integration tests)
 
-paths = openslides_backend/ tests/ cli/
+paths = openslides_backend/ tests/ cli/ global/meta/models_validator/
 
-all: black autoflake isort flake8 mypy
+all: pyupgrade black autoflake isort flake8 mypy
+
+pyupgrade:
+	pyupgrade --py310-plus --exit-zero-even-if-changed $$(find . -name '*.py')
+
+check-pyupgrade:
+	pyupgrade --py310-plus $$(find . -name '*.py')
 
 black:
 	black $(paths)
+
+check-black:
+	black --check --diff $(paths)
 
 autoflake:
 	autoflake --verbose --in-place --remove-all-unused-imports \
@@ -13,6 +22,9 @@ autoflake:
 
 isort:
 	isort $(paths)
+
+check-isort:
+	isort --check-only --diff $(paths)
 
 flake8:
 	flake8 $(paths)
@@ -29,33 +41,33 @@ test-unit-integration:
 check-all: validate-models-yml check-models check-initial-data-json check-example-data-json check-permissions
 
 validate-models-yml:
-	PYTHONPATH=. python cli/modelsvalidator/validate.py
+	python global/meta/models_validator/validate.py global/meta/models.yml
 
 generate-models:
-	PYTHONPATH=. python cli/generate_models.py $(MODELS_PATH)
+	python cli/generate_models.py $(MODELS_PATH)
 	black openslides_backend/models/models.py
 
 check-models:
-	PYTHONPATH=. python cli/generate_models.py check
+	python cli/generate_models.py --check
 
 generate-permissions:
-	PYTHONPATH=. python cli/generate_permissions.py $(MODELS_PATH)
+	python cli/generate_permissions.py $(MODELS_PATH)
 	black openslides_backend/permissions/permissions.py
 
 check-permissions:
-	PYTHONPATH=. python cli/generate_permissions.py check
+	python cli/generate_permissions.py check
 
 check-initial-data-json:
-	PYTHONPATH=. python cli/check_json.py global/data/initial-data.json
+	python cli/check_json.py global/data/initial-data.json
 
 check-example-data-json:
-	PYTHONPATH=. python cli/check_json.py global/data/example-data.json
+	python cli/check_json.py global/data/example-data.json
 
 run-debug:
 	OPENSLIDES_DEVELOPMENT=1 python -m openslides_backend
 
 pip-check:
-	pip-check
+	pip-check -H
 
 coverage:
 	pytest --cov --cov-report html

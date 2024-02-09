@@ -5,23 +5,37 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_correct(self) -> None:
         self.set_models(
             {
-                "group/11": {"name": "to_find", "meeting_id": 1, "user_ids": [1]},
-                "group/22": {"name": "nothing", "meeting_id": 2, "user_ids": [1]},
+                "group/11": {
+                    "name": "to_find",
+                    "meeting_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "group/22": {
+                    "name": "nothing",
+                    "meeting_id": 2,
+                    "meeting_user_ids": [2],
+                },
                 "group/31": {"name": "to_find", "meeting_id": 3},
                 "group/43": {"name": "standard", "meeting_id": 4},
                 "group/51": {"name": "to_find", "meeting_id": 5},
-                "group/52": {"name": "nothing", "meeting_id": 5, "user_ids": [1]},
+                "group/52": {
+                    "name": "nothing",
+                    "meeting_id": 5,
+                    "meeting_user_ids": [5],
+                },
                 "meeting/1": {
                     "name": "success(existing)",
                     "group_ids": [11],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
+                    "meeting_user_ids": [1],
                 },
                 "meeting/2": {
                     "name": "nothing",
                     "group_ids": [22],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
+                    "meeting_user_ids": [2],
                 },
                 "meeting/3": {
                     "name": "success(added)",
@@ -41,13 +55,26 @@ class UserAssignMeetings(BaseActionTestCase):
                     "group_ids": [51, 52],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
+                    "meeting_user_ids": [5],
                 },
                 "user/1": {
-                    "group_$_ids": ["1", "2", "5"],
-                    "group_$1_ids": [11],
-                    "group_$2_ids": [22],
-                    "group_$5_ids": [52],
+                    "meeting_user_ids": [1, 2, 5],
                     "meeting_ids": [1, 2, 5],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [11],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 2,
+                    "user_id": 1,
+                    "group_ids": [22],
+                },
+                "meeting_user/5": {
+                    "meeting_id": 5,
+                    "user_id": 1,
+                    "group_ids": [52],
                 },
                 "committee/2": {"meeting_ids": [1, 2, 3, 4, 5]},
             }
@@ -64,29 +91,64 @@ class UserAssignMeetings(BaseActionTestCase):
         assert response.json["results"][0][0]["succeeded"] == [1, 3, 5]
         assert response.json["results"][0][0]["standard_group"] == [4]
         assert response.json["results"][0][0]["nothing"] == [2]
-        user1 = self.assert_model_exists(
-            "user/1",
+        self.assert_model_exists(
+            "meeting_user/1", {"meeting_id": 1, "user_id": 1, "group_ids": [11]}
+        )
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 2, "user_id": 1, "group_ids": [22]}
+        )
+        self.assert_model_exists(
+            "meeting_user/5", {"meeting_id": 5, "user_id": 1, "group_ids": [51, 52]}
+        )
+        self.assert_model_exists(
+            "meeting_user/6", {"meeting_id": 3, "user_id": 1, "group_ids": [31]}
+        )
+        self.assert_model_exists(
+            "meeting_user/7", {"meeting_id": 4, "user_id": 1, "group_ids": [43]}
+        )
+
+    def test_assign_meetings_multiple_committees(self) -> None:
+        self.set_models(
             {
-                "group_$1_ids": [11],
-                "group_$2_ids": [22],
-                "group_$3_ids": [31],
-                "group_$4_ids": [43],
+                "group/11": {
+                    "name": "to_find",
+                    "meeting_id": 1,
+                },
+                "group/22": {
+                    "name": "to_find",
+                    "meeting_id": 2,
+                },
+                "meeting/1": {
+                    "name": "m1",
+                    "group_ids": [11],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                },
+                "meeting/2": {
+                    "name": "m2",
+                    "group_ids": [22],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 3,
+                },
+                "committee/2": {"meeting_ids": [1]},
+                "committee/3": {"meeting_ids": [2]},
+            }
+        )
+        response = self.request(
+            "user.assign_meetings",
+            {
+                "id": 1,
+                "meeting_ids": [1, 2],
+                "group_name": "to_find",
             },
         )
-        assert sorted(user1.get("group_$_ids", [])) == ["1", "2", "3", "4", "5"]
-        assert sorted(user1.get("group_$5_ids", [])) == [51, 52]
-        assert sorted(user1.get("meeting_ids", [])) == [1, 2, 3, 4, 5]
-        self.assert_model_exists("group/11", {"user_ids": [1]})
-        self.assert_model_exists("group/22", {"user_ids": [1]})
-        self.assert_model_exists("group/31", {"user_ids": [1]})
-        self.assert_model_exists("group/43", {"user_ids": [1]})
-        self.assert_model_exists("group/51", {"user_ids": [1]})
-        self.assert_model_exists("group/52", {"user_ids": [1]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/1", {"committee_ids": [2, 3]})
 
     def test_assign_meetings_with_existing_user_in_group(self) -> None:
         self.set_models(
             {
-                "group/1": {"name": "Test", "meeting_id": 1, "user_ids": [2]},
+                "group/1": {"name": "Test", "meeting_id": 1, "meeting_user_ids": [2]},
                 "meeting/1": {
                     "name": "Find Test",
                     "group_ids": [1],
@@ -94,11 +156,11 @@ class UserAssignMeetings(BaseActionTestCase):
                     "committee_id": 2,
                 },
                 "user/2": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [2],
                     "meeting_ids": [1],
                 },
                 "committee/2": {"meeting_ids": [1]},
+                "meeting_user/2": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
             }
         )
         response = self.request(
@@ -115,28 +177,21 @@ class UserAssignMeetings(BaseActionTestCase):
         assert response.json["results"][0][0]["nothing"] == []
         self.assert_model_exists(
             "user/1",
-            {
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
-                "meeting_ids": [1],
-            },
         )
         self.assert_model_exists(
             "user/2",
             {
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
                 "meeting_ids": [1],
             },
         )
 
         group1 = self.assert_model_exists("group/1")
-        assert sorted(group1.get("user_ids", [])) == [1, 2]
+        assert sorted(group1.get("meeting_user_ids", [])) == [2, 3]
 
     def test_assign_meetings_group_not_found(self) -> None:
         self.set_models(
             {
-                "group/1": {"name": "Test", "meeting_id": 1, "user_ids": [2]},
+                "group/1": {"name": "Test", "meeting_id": 1, "meeting_user_ids": [2]},
                 "meeting/1": {
                     "name": "Find Test",
                     "group_ids": [1],
@@ -144,10 +199,10 @@ class UserAssignMeetings(BaseActionTestCase):
                     "committee_id": 2,
                 },
                 "user/2": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [1],
+                    "meeting_user_ids": [2],
                     "meeting_ids": [1],
                 },
+                "meeting_user/2": {"meeting_id": 1, "user_id": 2, "group_ids": [1]},
                 "committee/2": {"meeting_ids": [1]},
             }
         )

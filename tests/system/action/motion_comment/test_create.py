@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCommentCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 1},
             "motion_comment_section/78": {
                 "meeting_id": 1,
@@ -19,11 +19,17 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.set_models(
             {
-                "user/1": {"group_$111_ids": [3]},
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {
+                    "meeting_id": 111,
+                    "user_id": 1,
+                    "group_ids": [3],
+                },
                 "meeting/111": {
                     "name": "name_m123etrd",
                     "admin_group_id": 3,
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [1],
                 },
                 "group/3": {},
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
@@ -46,7 +52,12 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
     def test_create_not_unique_error(self) -> None:
         self.set_models(
             {
-                "user/1": {"group_$111_ids": [3]},
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {
+                    "meeting_id": 111,
+                    "user_id": 1,
+                    "group_ids": [3],
+                },
                 "meeting/111": {
                     "name": "name_m123etrd",
                     "admin_group_id": 3,
@@ -155,8 +166,13 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
         self.permission_test_models["motion_submitter/1234"] = {
-            "user_id": self.user_id,
+            "meeting_user_id": 1,
             "motion_id": 357,
+        }
+        self.permission_test_models["meeting_user/1"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "motion_submitter_ids": [1234],
         }
         self.set_models(self.permission_test_models)
         response = self.request(
@@ -167,4 +183,13 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "motion_comment/1",
             {"comment": "test_Xcdfgee", "motion_id": 357, "section_id": 78},
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "group_ids": [3],
+                "motion_submitter_ids": [1234],
+                "meeting_id": 1,
+                "user_id": 2,
+            },
         )

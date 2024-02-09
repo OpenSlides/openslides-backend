@@ -1,5 +1,5 @@
 {
-    "_migration_index": 41,
+    "_migration_index": 49,
     "organization": {
         "1": {
             "id": 1,
@@ -7,6 +7,7 @@
             "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly.",
             "login_text": "Good Morning!",
             "default_language": "en",
+            "genders": ["male", "female", "diverse", "non-binary"],
             "enable_electronic_voting": true,
             "enable_chat": true,
             "reset_password_verbose_errors": true,
@@ -32,7 +33,20 @@
             "users_email_subject": "OpenSlides access data",
             "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
             "url": "https://example.com",
-            "user_ids": [1, 2, 3]
+            "user_ids": [1, 2, 3],
+            "saml_enabled": false,
+            "saml_login_button_text": "SAML Login",
+            "saml_attr_mapping": {
+                "saml_id": "username",
+                "title": "title",
+                "first_name": "firstName",
+                "last_name": "lastName",
+                "email": "email",
+                "gender": "gender",
+                "pronoun": "pronoun",
+                "is_active": "is_active",
+                "is_physical_person": "is_person"
+              }
         }
     },
     "user": {
@@ -54,91 +68,12 @@
             "committee_ids": [
                 1
             ],
-            "committee_$_management_level": [
-                "can_manage"
-            ],
-            "committee_$can_manage_management_level": [1],
-            "comment_$": [
-                "1"
-            ],
-            "comment_$1": "Test comment",
-            "number_$": [
-                "1"
-            ],
-            "number_$1": "12345-67890",
-            "structure_level_$": [
-                "1"
-            ],
-            "structure_level_$1": "Test structure level",
-            "about_me_$": [
-                "1"
-            ],
-            "about_me_$1": "What I want to say about me.",
-            "vote_weight_$": [
-                "1"
-            ],
-            "vote_weight_$1": "1.000000",
-            "group_$_ids": [
-                "1"
-            ],
-            "group_$1_ids": [
-                2
-            ],
-            "speaker_$_ids": [
-                "1"
-            ],
-            "speaker_$1_ids": [
-                1,
-                5,
-                6,
-                12
-            ],
-            "personal_note_$_ids": [
-                "1"
-            ],
-            "personal_note_$1_ids": [
-                1
-            ],
-            "submitted_motion_$_ids": [
-                "1"
-            ],
-            "submitted_motion_$1_ids": [
-                1,
-                2,
-                3,
-                4
-            ],
-            "assignment_candidate_$_ids": [
-                "1"
-            ],
-            "assignment_candidate_$1_ids": [
-                1
-            ],
-            "poll_voted_$_ids": [
-                "1"
-            ],
-            "poll_voted_$1_ids": [
-                5
-            ],
-            "option_$_ids": [
-                "1"
-            ],
-            "option_$1_ids": [
-                5,
-                7
-            ],
-            "vote_$_ids": [
-                "1"
-            ],
-            "vote_$1_ids": [
-                9
-            ],
-            "vote_delegated_vote_$_ids": [
-                "1"
-            ],
-            "vote_delegated_vote_$1_ids": [
-                9
-            ],
+            "committee_management_ids": [1],
+            "poll_voted_ids": [5],
+            "option_ids": [5, 7],
+            "vote_ids": [9],
+            "delegated_vote_ids": [9],
+            "meeting_user_ids": [1],
             "meeting_ids": [
                 1
             ],
@@ -158,60 +93,11 @@
             "committee_ids": [
                 1
             ],
-            "comment_$": [
-                "1"
-            ],
-            "comment_$1": "Test comment a",
-            "number_$": [
-                "1"
-            ],
-            "number_$1": "12345-67891",
-            "structure_level_$": [
-                "1"
-            ],
-            "structure_level_$1": "Test structure level a",
-            "about_me_$": [
-                "1"
-            ],
-            "about_me_$1": "What I want to say about me with a",
-            "vote_weight_$": [
-                "1"
-            ],
-            "vote_weight_$1": "1.000000",
-            "group_$_ids": [
-                "1"
-            ],
-            "group_$1_ids": [
-                5
-            ],
-            "speaker_$_ids": [
-                "1"
-            ],
-            "speaker_$1_ids": [
-                2,
-                3,
-                7,
-                10,
-                11,
-                13
-            ],
-            "assignment_candidate_$_ids": [
-                "1"
-            ],
-            "assignment_candidate_$1_ids": [
-                3,
-                5
-            ],
-            "option_$_ids": [
-                "1"
-            ],
-            "option_$1_ids": [
-                9,
-                12
-            ],
+            "option_ids": [9, 12],
+            "meeting_user_ids": [2],
             "meeting_ids": [
                 1
-            ],
+          ],
             "organization_id": 1
         },
         "3": {
@@ -225,60 +111,8 @@
             "can_change_own_password": true,
             "gender": "diverse",
             "default_vote_weight": "1.000000",
-            "comment_$": [
-                "1"
-            ],
-            "comment_$1": "Test comment b as guest",
-            "number_$": [
-                "1"
-            ],
-            "number_$1": "12345-67892",
-            "structure_level_$": [
-                "1"
-            ],
-            "structure_level_$1": "Test structure level b",
-            "about_me_$": [
-                "1"
-            ],
-            "about_me_$1": "What I want to say about me. B",
-            "vote_weight_$": [
-                "1"
-            ],
-            "vote_weight_$1": "1.000000",
-            "group_$_ids": [
-                "1"
-            ],
-            "group_$1_ids": [
-                5
-            ],
-            "speaker_$_ids": [
-                "1"
-            ],
-            "speaker_$1_ids": [
-                4,
-                8,
-                9
-            ],
-            "supported_motion_$_ids": [
-                "1"
-            ],
-            "supported_motion_$1_ids": [
-                3
-            ],
-            "assignment_candidate_$_ids": [
-                "1"
-            ],
-            "assignment_candidate_$1_ids": [
-                2,
-                4
-            ],
-            "option_$_ids": [
-                "1"
-            ],
-            "option_$1_ids": [
-                8,
-                11
-            ],
+            "option_ids": [8, 11],
+            "meeting_user_ids": [3],
             "meeting_ids": [
                 1
             ],
@@ -286,6 +120,50 @@
             "committee_ids": [
                 1
             ]
+        }
+    },
+    "meeting_user": {
+        "1": {
+            "id": 1,
+            "user_id": 1,
+            "meeting_id": 1,
+            "comment": "Test comment",
+            "number": "12345-67890",
+            "structure_level": "Test structure level",
+            "about_me": "What I want to say about me.",
+            "vote_weight": "1.000000",
+            "personal_note_ids": [1],
+            "speaker_ids": [1, 5, 6, 12],
+            "motion_submitter_ids": [1, 2, 3, 4],
+            "assignment_candidate_ids": [1],
+            "group_ids": [2]
+        },
+        "2": {
+            "id": 2,
+            "user_id": 2,
+            "meeting_id": 1,
+            "comment": "Test comment a",
+            "number": "12345-67891",
+            "structure_level": "Test structure level a",
+            "about_me": "What I want to say about me with a",
+            "vote_weight": "1.000000",
+            "speaker_ids": [2, 3, 7, 10, 11, 13],
+            "assignment_candidate_ids": [3, 5],
+            "group_ids": [5]
+        },
+        "3": {
+            "id": 3,
+            "user_id": 3,
+            "meeting_id": 1,
+            "comment": "Test comment b as guest",
+            "number": "12345-67892",
+            "structure_level": "Test structure level b",
+            "about_me": "What I want to say about me. B",
+            "vote_weight": "1.000000",
+            "speaker_ids": [4, 8, 9],
+            "supported_motion_ids": [3],
+            "assignment_candidate_ids": [2, 4],
+            "group_ids": [5]
         }
     },
     "theme": {
@@ -341,8 +219,7 @@
                 2,
                 3
             ],
-            "user_$_management_level": ["can_manage"],
-            "user_$can_manage_management_level": [1],
+            "manager_ids": [1],
             "organization_tag_ids": [
                 1
             ],
@@ -353,6 +230,7 @@
         "1": {
             "id": 1,
             "is_active_in_organization_id": 1,
+            "language": "en",
             "name": "OpenSlides Demo",
             "description": "Presentation and assembly system",
             "welcome_title": "Welcome to OpenSlides",
@@ -396,6 +274,8 @@
             "list_of_speakers_show_amount_of_speakers_on_slide": true,
             "list_of_speakers_show_first_contribution": false,
             "list_of_speakers_enable_point_of_order_speakers": true,
+            "list_of_speakers_enable_point_of_order_categories": false,
+            "list_of_speakers_closing_disables_point_of_order": false,
             "list_of_speakers_enable_pro_contra_speech": false,
             "list_of_speakers_can_set_contribution_self": false,
             "list_of_speakers_speaker_note_for_everyone": true,
@@ -442,12 +322,14 @@
                 3
             ],
             "motion_poll_default_backend": "fast",
+            "meeting_user_ids": [1, 2, 3],
             "users_enable_presence_view": true,
             "users_enable_vote_weight": false,
             "users_enable_vote_delegations": true,
             "users_allow_self_set_present": true,
             "users_pdf_welcometitle": "Welcome to OpenSlides",
             "users_pdf_welcometext": "[Place for your welcome and help text.]",
+            "users_pdf_wlan_encryption": "",
             "users_email_sender": "Openslides",
             "users_email_subject": "OpenSlides access data",
             "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
@@ -685,36 +567,20 @@
             "reference_projector_id": 1,
             "list_of_speakers_countdown_id": 1,
             "poll_countdown_id": 2,
-            "default_projector_$_ids": [
-                "agenda_all_items",
-                "topics",
-                "list_of_speakers",
-                "current_list_of_speakers",
-                "motion",
-                "amendment",
-                "motion_block",
-                "assignment",
-                "mediafile",
-                "projector_message",
-                "projector_countdowns",
-                "assignment_poll",
-                "motion_poll",
-                "poll"
-            ],
-            "default_projector_$agenda_all_items_ids": [1],
-            "default_projector_$topics_ids": [1],
-            "default_projector_$list_of_speakers_ids": [2],
-            "default_projector_$current_list_of_speakers_ids": [2],
-            "default_projector_$motion_ids": [1],
-            "default_projector_$amendment_ids": [1],
-            "default_projector_$motion_block_ids": [1],
-            "default_projector_$assignment_ids": [1],
-            "default_projector_$mediafile_ids": [1],
-            "default_projector_$projector_message_ids": [1],
-            "default_projector_$projector_countdowns_ids": [1],
-            "default_projector_$assignment_poll_ids": [1],
-            "default_projector_$motion_poll_ids": [1],
-            "default_projector_$poll_ids": [1],
+            "default_projector_agenda_item_list_ids": [1],
+            "default_projector_topic_ids": [1],
+            "default_projector_list_of_speakers_ids": [2],
+            "default_projector_current_list_of_speakers_ids": [2],
+            "default_projector_motion_ids": [1],
+            "default_projector_amendment_ids": [1],
+            "default_projector_motion_block_ids": [1],
+            "default_projector_assignment_ids": [1],
+            "default_projector_mediafile_ids": [1],
+            "default_projector_message_ids": [1],
+            "default_projector_countdown_ids": [1],
+            "default_projector_assignment_poll_ids": [1],
+            "default_projector_motion_poll_ids": [1],
+            "default_projector_poll_ids": [1],
             "projection_ids": [
                 3
             ],
@@ -752,7 +618,7 @@
             "admin_group_for_meeting_id": 1,
             "permissions": [],
             "weight": 2,
-            "user_ids": [
+            "meeting_user_ids": [
                 1
             ],
             "mediafile_access_group_ids": [
@@ -848,7 +714,7 @@
                 "user.can_see"
             ],
             "weight": 5,
-            "user_ids": [
+            "meeting_user_ids": [
                 2,
                 3
             ],
@@ -873,7 +739,7 @@
         "1": {
             "id": 1,
             "note": "<p>Some content..</p>",
-            "user_id": 1,
+            "meeting_user_id": 1,
             "content_object_id": "motion/2",
             "meeting_id": 1
         }
@@ -1204,91 +1070,91 @@
             "begin_time": 1584512636,
             "end_time": 1584512638,
             "list_of_speakers_id": 1,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "12": {
             "id": 12,
             "weight": 2,
             "list_of_speakers_id": 1,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "meeting_id": 1
         },
         "13": {
             "id": 13,
             "weight": 3,
             "list_of_speakers_id": 1,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "1": {
             "id": 1,
             "weight": 1,
             "list_of_speakers_id": 3,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "meeting_id": 1
         },
         "2": {
             "id": 2,
             "weight": 0,
             "list_of_speakers_id": 3,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "3": {
             "id": 3,
             "weight": 1,
             "list_of_speakers_id": 7,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "4": {
             "id": 4,
             "weight": 2,
             "list_of_speakers_id": 7,
-            "user_id": 3,
+            "meeting_user_id": 3,
             "meeting_id": 1
         },
         "5": {
             "id": 5,
             "weight": 1,
             "list_of_speakers_id": 8,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "meeting_id": 1
         },
         "6": {
             "id": 6,
             "weight": 1,
             "list_of_speakers_id": 11,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "meeting_id": 1
         },
         "7": {
             "id": 7,
             "weight": 2,
             "list_of_speakers_id": 11,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "8": {
             "id": 8,
             "weight": 3,
             "list_of_speakers_id": 11,
-            "user_id": 3,
+            "meeting_user_id": 3,
             "meeting_id": 1
         },
         "9": {
             "id": 9,
             "weight": 1,
             "list_of_speakers_id": 14,
-            "user_id": 3,
+            "meeting_user_id": 3,
             "meeting_id": 1
         },
         "10": {
             "id": 10,
             "weight": 2,
             "list_of_speakers_id": 14,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         }
     },
@@ -1443,7 +1309,7 @@
             "submitter_ids": [
                 3
             ],
-            "supporter_ids": [
+            "supporter_meeting_user_ids": [
                 3
             ],
             "change_recommendation_ids": [
@@ -1488,28 +1354,28 @@
         "1": {
             "id": 1,
             "weight": 1,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "motion_id": 1,
             "meeting_id": 1
         },
         "2": {
             "id": 2,
             "weight": 1,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "motion_id": 2,
             "meeting_id": 1
         },
         "3": {
             "id": 3,
             "weight": 1,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "motion_id": 3,
             "meeting_id": 1
         },
         "4": {
             "id": 4,
             "weight": 1,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "motion_id": 4,
             "meeting_id": 1
         }
@@ -1643,7 +1509,7 @@
             "restrictions": [],
             "show_state_extension_field": false,
             "show_recommendation_extension_field": false,
-            "set_created_timestamp": true,
+            "set_workflow_timestamp": true,
             "allow_motion_forwarding": true,
             "meeting_id": 1
         },
@@ -1665,6 +1531,7 @@
             "allow_submitter_edit": false,
             "allow_create_poll": false,
             "allow_support": false,
+            "set_workflow_timestamp": false,
             "allow_motion_forwarding": true,
             "meeting_id": 1
         },
@@ -1687,6 +1554,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "4": {
@@ -1708,6 +1576,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "5": {
@@ -1729,7 +1598,7 @@
             "show_recommendation_extension_field": false,
             "allow_create_poll": false,
             "allow_support": false,
-            "set_created_timestamp": true,
+            "set_workflow_timestamp": true,
             "allow_motion_forwarding": true,
             "meeting_id": 1
         },
@@ -1756,6 +1625,7 @@
             "allow_create_poll": false,
             "allow_support": true,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "7": {
@@ -1789,6 +1659,7 @@
             "allow_create_poll": true,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "8": {
@@ -1810,6 +1681,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "9": {
@@ -1831,6 +1703,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "10": {
@@ -1853,6 +1726,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "11": {
@@ -1874,6 +1748,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "12": {
@@ -1895,6 +1770,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "13": {
@@ -1916,6 +1792,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "14": {
@@ -1936,6 +1813,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "15": {
@@ -1957,6 +1835,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         }
     },
@@ -2403,35 +2282,35 @@
             "id": 1,
             "weight": 1,
             "assignment_id": 1,
-            "user_id": 1,
+            "meeting_user_id": 1,
             "meeting_id": 1
         },
         "2": {
             "id": 2,
             "weight": 2,
             "assignment_id": 1,
-            "user_id": 3,
+            "meeting_user_id": 3,
             "meeting_id": 1
         },
         "3": {
             "id": 3,
             "weight": 3,
             "assignment_id": 1,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         },
         "4": {
             "id": 4,
             "weight": 1,
             "assignment_id": 2,
-            "user_id": 3,
+            "meeting_user_id": 3,
             "meeting_id": 1
         },
         "5": {
             "id": 5,
             "weight": 2,
             "assignment_id": 2,
-            "user_id": 2,
+            "meeting_user_id": 2,
             "meeting_id": 1
         }
     },
@@ -2459,6 +2338,7 @@
         "1": {
             "id": 1,
             "name": "Default projector",
+            "is_internal": false,
             "scale": 0,
             "scroll": 0,
             "width": 1220,
@@ -2485,37 +2365,24 @@
                 2
             ],
             "used_as_reference_projector_meeting_id": 1,
-            "used_as_default_$_in_meeting_id": [
-                "agenda_all_items",
-                "topics",
-                "motion",
-                "amendment",
-                "motion_block",
-                "assignment",
-                "mediafile",
-                "projector_message",
-                "projector_countdowns",
-                "assignment_poll",
-                "motion_poll",
-                "poll"
-            ],
-            "used_as_default_$agenda_all_items_in_meeting_id": 1,
-            "used_as_default_$topics_in_meeting_id": 1,
-            "used_as_default_$motion_in_meeting_id": 1,
-            "used_as_default_$amendment_in_meeting_id": 1,
-            "used_as_default_$motion_block_in_meeting_id": 1,
-            "used_as_default_$assignment_in_meeting_id": 1,
-            "used_as_default_$mediafile_in_meeting_id": 1,
-            "used_as_default_$projector_message_in_meeting_id": 1,
-            "used_as_default_$projector_countdowns_in_meeting_id": 1,
-            "used_as_default_$assignment_poll_in_meeting_id": 1,
-            "used_as_default_$motion_poll_in_meeting_id": 1,
-            "used_as_default_$poll_in_meeting_id": 1,
+            "used_as_default_projector_for_agenda_item_list_in_meeting_id": 1,
+            "used_as_default_projector_for_topic_in_meeting_id": 1,
+            "used_as_default_projector_for_motion_in_meeting_id": 1,
+            "used_as_default_projector_for_amendment_in_meeting_id": 1,
+            "used_as_default_projector_for_motion_block_in_meeting_id": 1,
+            "used_as_default_projector_for_assignment_in_meeting_id": 1,
+            "used_as_default_projector_for_mediafile_in_meeting_id": 1,
+            "used_as_default_projector_for_message_in_meeting_id": 1,
+            "used_as_default_projector_for_countdown_in_meeting_id": 1,
+            "used_as_default_projector_for_assignment_poll_in_meeting_id": 1,
+            "used_as_default_projector_for_motion_poll_in_meeting_id": 1,
+            "used_as_default_projector_for_poll_in_meeting_id": 1,
             "meeting_id": 1
         },
         "2": {
             "id": 2,
             "name": "Nebenprojektor",
+            "is_internal": false,
             "scale": 0,
             "scroll": 0,
             "width": 1024,
@@ -2533,12 +2400,8 @@
             "show_logo": true,
             "show_clock": true,
             "sequential_number": 2,
-            "used_as_default_$_in_meeting_id": [
-                "list_of_speakers",
-                "current_list_of_speakers"
-            ],
-            "used_as_default_$list_of_speakers_in_meeting_id": 1,
-            "used_as_default_$current_list_of_speakers_in_meeting_id": 1,
+            "used_as_default_projector_for_list_of_speakers_in_meeting_id": 1,
+            "used_as_default_projector_for_current_list_of_speakers_in_meeting_id": 1,
             "meeting_id": 1
         }
     },

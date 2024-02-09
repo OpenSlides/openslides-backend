@@ -67,7 +67,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         response = self.request("motion_change_recommendation.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['line_from', 'line_to', 'text', 'motion_id'] properties",
+            "data must contain ['line_from', 'line_to', 'motion_id', 'text'] properties",
             response.json["message"],
         )
 

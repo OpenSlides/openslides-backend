@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple, cast
+from typing import Any
 
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -11,7 +11,7 @@ from tests.util import Response
 class MeetingUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "committee/1": {"name": "test_committee"},
             "meeting/1": {
                 "name": "test_name",
@@ -21,31 +21,19 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "admin_group_id": 1,
                 "projector_ids": [1],
                 "reference_projector_id": 1,
-                "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
-                **{
-                    f"default_projector_${name}_ids": [1]
-                    for name in cast(
-                        List[str], Meeting.default_projector__ids.replacement_enum
-                    )
-                },
+                **{field: [1] for field in Meeting.all_default_projectors()},
             },
             "projector/1": {
                 "name": "Projector 1",
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
-                "used_as_default_$_in_meeting_id": Meeting.default_projector__ids.replacement_enum,
-                **{
-                    f"used_as_default_${name}_in_meeting_id": 1
-                    for name in cast(
-                        List[str], Meeting.default_projector__ids.replacement_enum
-                    )
-                },
+                **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
         }
 
     def basic_test(
-        self, datapart: Dict[str, Any], check_200: bool = True
-    ) -> Tuple[Dict[str, Any], Response]:
+        self, datapart: dict[str, Any], check_200: bool = True
+    ) -> tuple[dict[str, Any], Response]:
         self.set_models(
             {
                 "committee/1": {"name": "test_committee"},
@@ -57,25 +45,13 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "default_group_id": 1,
                     "projector_ids": [1],
                     "reference_projector_id": 1,
-                    "default_projector_$_ids": Meeting.default_projector__ids.replacement_enum,
-                    **{
-                        f"default_projector_${name}_ids": [1]
-                        for name in cast(
-                            List[str], Meeting.default_projector__ids.replacement_enum
-                        )
-                    },
+                    **{field: [1] for field in Meeting.all_default_projectors()},
                 },
                 "projector/1": {
                     "name": "Projector 1",
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
-                    "used_as_default_$_in_meeting_id": Meeting.default_projector__ids.replacement_enum,
-                    **{
-                        f"used_as_default_${name}_in_meeting_id": 1
-                        for name in cast(
-                            List[str], Meeting.default_projector__ids.replacement_enum
-                        )
-                    },
+                    **{field: 1 for field in Meeting.reverse_default_projectors()},
                 },
             }
         )
@@ -151,30 +127,30 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             }
         )
         self.basic_test(
-            {"reference_projector_id": 2, "default_projector_$_ids": {"topics": [2]}}
+            {"reference_projector_id": 2, "default_projector_topic_ids": [2]}
         )
         self.assert_model_exists(
             "meeting/1",
             {
                 "reference_projector_id": 2,
-                "default_projector_$topics_ids": [2],
-                "default_projector_$motion_ids": [1],
+                "default_projector_topic_ids": [2],
+                "default_projector_motion_ids": [1],
             },
         )
         self.assert_model_exists(
             "projector/1",
             {
                 "used_as_reference_projector_meeting_id": None,
-                "used_as_default_$topics_in_meeting_id": None,
-                "used_as_default_$motion_in_meeting_id": 1,
+                "used_as_default_projector_for_topic_in_meeting_id": None,
+                "used_as_default_projector_for_motion_in_meeting_id": 1,
             },
         )
         self.assert_model_exists(
             "projector/2",
             {
                 "used_as_reference_projector_meeting_id": 1,
-                "used_as_default_$topics_in_meeting_id": 1,
-                "used_as_default_$motion_in_meeting_id": None,
+                "used_as_default_projector_for_topic_in_meeting_id": 1,
+                "used_as_default_projector_for_motion_in_meeting_id": None,
             },
         )
 
@@ -189,7 +165,27 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         _, response = self.basic_test({"reference_projector_id": 10}, check_200=False)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: ['projector/10']",
+            "Model 'projector/10' does not exist.",
+            response.json["message"],
+        )
+
+    def test_update_reference_projector_to_internal_projector_error(self) -> None:
+        self.set_models(
+            {
+                "projector/2": {
+                    "name": "Projector 2",
+                    "is_internal": True,
+                    "meeting_id": 1,
+                },
+                "meeting/1": {
+                    "projector_ids": [1, 2],
+                },
+            }
+        )
+        _, response = self.basic_test({"reference_projector_id": 2}, check_200=False)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "An internal projector cannot be set as reference projector.",
             response.json["message"],
         )
 
@@ -211,29 +207,29 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_default_projector_to_not_existing_replacement_error(self) -> None:
+    def test_update_default_projector_to_not_existing_option_error(self) -> None:
         _, response = self.basic_test(
-            {"default_projector_$_ids": {"not_existing": 1}}, check_200=False
+            {"default_projector_non_existing_ids": [1]}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.default_projector_$_ids must not contain {'not_existing'} properties",
+            "data must not contain {'default_projector_non_existing_ids'} properties",
             response.json["message"],
         )
 
     def test_update_default_projector_to_null_error(self) -> None:
         _, response = self.basic_test(
-            {"default_projector_$_ids": {"topics": None}}, check_200=False
+            {"default_projector_topic_ids": None}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.default_projector_$_ids.topics must be array",
+            "data.default_projector_topic_ids must be array",
             response.json["message"],
         )
 
     def test_update_default_projector_to_not_existing_projector_error(self) -> None:
         _, response = self.basic_test(
-            {"default_projector_$_ids": {"topics": [2]}}, check_200=False
+            {"default_projector_topic_ids": [2]}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -253,7 +249,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             }
         )
         _, response = self.basic_test(
-            {"default_projector_$_ids": {"topics": [2]}}, check_200=False
+            {"default_projector_topic_ids": [2]}, check_200=False
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -363,6 +359,42 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_update_enable_poo_categories_without_poo(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "list_of_speakers_enable_point_of_order_categories": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "You cannot enable point of order categories without enabling point of order speakers."
+            in response.json["message"]
+        )
+
+    def test_update_disable_poo_with_enabled_poo_categories(self) -> None:
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_point_of_order_speakers"
+        ] = True
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_point_of_order_categories"
+        ] = True
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "list_of_speakers_enable_point_of_order_speakers": False,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "You cannot enable point of order categories without enabling point of order speakers."
+            in response.json["message"]
+        )
+
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}
@@ -426,12 +458,16 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             {
                 "id": 1,
                 "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/1",
-            {"custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"}},
+            {
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
         )
 
     def test_update_group_e_no_permission(self) -> None:
@@ -487,6 +523,15 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting/1", {"list_of_speakers_enable_point_of_order_speakers": True}
         )
 
+    def test_update_list_of_speakers_closing_disables_point_of_order(
+        self,
+    ) -> None:
+        self.basic_test({"list_of_speakers_closing_disables_point_of_order": True})
+        self.assert_model_exists(
+            "meeting/1",
+            {"list_of_speakers_closing_disables_point_of_order": True},
+        )
+
     def test_update_with_user(self) -> None:
         self.set_models(
             {
@@ -526,7 +571,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 },
                 {
                     "action": "user.update",
-                    "data": [{"id": 4, "group_$_ids": {"3": [11]}}],
+                    "data": [{"id": 4, "meeting_id": 3, "group_ids": [11]}],
                 },
             ]
         )
@@ -585,3 +630,38 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "It is not allowed to end jitsi_domain with '/'."
             in response.json["message"]
         )
+
+    def test_update_external_id_not_unique(self) -> None:
+        external_id = "external"
+        self.set_models(
+            {
+                "meeting/1": {"committee_id": 1, "external_id": external_id},
+                "meeting/2": {"committee_id": 1},
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 2,
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the meeting is not unique in the committee scope.",
+            response.json["message"],
+        )
+
+    def test_update_external_id_self(self) -> None:
+        external_id = "external"
+        self.set_models(
+            {
+                "meeting/1": {
+                    "committee_id": 1,
+                    "external_id": external_id,
+                    "is_active_in_organization_id": 1,
+                },
+            }
+        )
+        response = self.request("meeting.update", {"id": 1, "external_id": external_id})
+        self.assert_status_code(response, 200)

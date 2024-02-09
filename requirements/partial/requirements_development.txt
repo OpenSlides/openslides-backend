@@ -1,20 +1,22 @@
-aiosmtpd==1.4.4
-autoflake==2.0.1
-black==23.1.0
-debugpy==1.6.6
-flake8==6.0.0
-isort==5.12.0
-mypy==1.0.0
+aiosmtpd==1.4.4.post2
+autoflake==2.2.1
+black==24.1.1
+debugpy==1.8.0
+flake8==7.0.0
+isort==5.13.2
+mypy==1.8.0
 pip-check==2.8.1
-pytest==7.2.1
-pytest-cov==4.0.0
+pytest==8.0.0
+pytest-cov==4.1.0
 pytest-profiling==1.7.0
-pyyaml==6.0
 cryptography==38.0.3
+pyupgrade==3.15.0
+pyyaml==6.0.1
 
 # typing
-types-Babel==2.11.0
-types-bleach==6.0.0.0
-types-PyYAML==6.0.12.4
-types-requests==2.28.11.12
-types-simplejson==3.18.0.0
+types-babel==2.11.0.15
+types-bleach==6.1.0.1
+types-PyYAML==6.0.12.12
+types-requests==2.31.0.20240125
+types-simplejson==3.19.0.2
+types-Pygments==2.17.0.20240106

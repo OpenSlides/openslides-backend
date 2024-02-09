@@ -3,76 +3,60 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class GroupDeleteActionTest(BaseActionTestCase):
-    def test_delete_correct(self) -> None:
+    def setUp(self) -> None:
+        super().setUp()
         self.set_models(
             {
                 "meeting/22": {
-                    "name": "name_meeting_22",
+                    "name": "meeting",
                     "group_ids": [111],
                     "is_active_in_organization_id": 1,
                 },
-                "group/111": {"name": "name_srtgb123", "meeting_id": 22},
+                "group/111": {"name": "group", "meeting_id": 22},
             }
         )
-        response = self.request("group.delete", {"id": 111})
 
+    def test_delete_correct(self) -> None:
+        response = self.request("group.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("group/111")
 
     def test_delete_wrong_id(self) -> None:
-        self.set_models(
-            {
-                "meeting/22": {"name": "name_meeting_22", "group_ids": [111]},
-                "group/112": {"name": "name_srtgb123", "meeting_id": 22},
-            }
-        )
-        response = self.request("group.delete", {"id": 111})
+        response = self.request("group.delete", {"id": 112})
         self.assert_status_code(response, 400)
-        model = self.get_model("group/112")
-        assert model.get("name") == "name_srtgb123"
+        model = self.get_model("group/111")
+        assert model.get("name") == "group"
 
     def test_delete_default_group(self) -> None:
         self.set_models(
             {
-                "meeting/22": {"name": "name_meeting_22", "group_ids": [111]},
-                "group/111": {
-                    "name": "name_srtgb123",
-                    "default_group_for_meeting_id": 22,
-                    "meeting_id": 22,
-                },
+                "meeting/22": {"default_group_id": 111},
+                "group/111": {"default_group_for_meeting_id": 22},
             }
         )
         response = self.request("group.delete", {"id": 111})
-
         self.assert_status_code(response, 400)
 
     def test_delete_admin_group(self) -> None:
         self.set_models(
             {
-                "meeting/22": {"name": "name_meeting_22", "group_ids": [111]},
-                "group/111": {
-                    "name": "name_srtgb123",
-                    "admin_group_for_meeting_id": 22,
-                    "meeting_id": 22,
-                },
+                "meeting/22": {"admin_group_id": 111},
+                "group/111": {"admin_group_for_meeting_id": 22},
             }
         )
         response = self.request("group.delete", {"id": 111})
-
         self.assert_status_code(response, 400)
 
     def test_delete_with_users(self) -> None:
         self.set_models(
             {
                 "user/42": {
-                    "group_$22_ids": [111],
-                    "group_$_ids": ["22"],
+                    "meeting_user_ids": [142],
                     "meeting_ids": [22],
                     "committee_ids": [3],
                 },
                 "user/43": {
-                    "group_$22_ids": [111],
-                    "group_$_ids": ["22"],
+                    "meeting_user_ids": [143],
                     "meeting_ids": [22],
                     "committee_ids": [3],
                 },
@@ -83,38 +67,31 @@ class GroupDeleteActionTest(BaseActionTestCase):
                     "group_ids": [111],
                     "user_ids": [42, 43],
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [142, 143],
                 },
                 "group/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 22,
-                    "user_ids": [42, 43],
+                    "meeting_user_ids": [142, 143],
+                },
+                "meeting_user/142": {
+                    "meeting_id": 22,
+                    "user_id": 42,
+                    "group_ids": [111],
+                },
+                "meeting_user/143": {
+                    "meeting_id": 22,
+                    "user_id": 43,
+                    "group_ids": [111],
                 },
             }
         )
         response = self.request("group.delete", {"id": 111})
 
-        self.assert_status_code(response, 200)
-        self.assert_model_deleted("group/111", {"user_ids": [42, 43]})
-        self.assert_model_exists(
-            "user/42",
-            {
-                "group_$22_ids": [],
-                "group_$_ids": [],
-                "meeting_ids": [],
-                "committee_ids": [],
-            },
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json["message"], "You cannot delete a group with users."
         )
-        self.assert_model_exists(
-            "user/43",
-            {
-                "group_$22_ids": [],
-                "group_$_ids": [],
-                "meeting_ids": [],
-                "committee_ids": [],
-            },
-        )
-        self.assert_model_exists("meeting/22", {"user_ids": [], "group_ids": []})
-        self.assert_model_exists("committee/3", {"user_ids": []})
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
@@ -140,10 +117,8 @@ class GroupDeleteActionTest(BaseActionTestCase):
             {
                 "meeting/22": {
                     "group_ids": [111, 112],
-                    "is_active_in_organization_id": 1,
                 },
                 "group/111": {
-                    "meeting_id": 22,
                     "mediafile_access_group_ids": [1, 2],
                     "mediafile_inherited_access_group_ids": [1, 2],
                 },
@@ -203,10 +178,8 @@ class GroupDeleteActionTest(BaseActionTestCase):
             {
                 "meeting/22": {
                     "group_ids": [111, 112],
-                    "is_active_in_organization_id": 1,
                 },
                 "group/111": {
-                    "meeting_id": 22,
                     "mediafile_access_group_ids": [1, 4],
                     "mediafile_inherited_access_group_ids": [1, 2, 3, 4],
                 },
@@ -297,10 +270,8 @@ class GroupDeleteActionTest(BaseActionTestCase):
             {
                 "meeting/22": {
                     "group_ids": [111, 112],
-                    "is_active_in_organization_id": 1,
                 },
                 "group/111": {
-                    "meeting_id": 22,
                     "mediafile_access_group_ids": [1, 2],
                     "mediafile_inherited_access_group_ids": [1, 2],
                 },

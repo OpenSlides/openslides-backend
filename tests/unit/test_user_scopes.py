@@ -1,8 +1,7 @@
-from typing import Any, Dict, List
+from typing import Any
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 
 
@@ -11,10 +10,10 @@ class UserScopeTest(TestCase):
         self.mock_datastore = MagicMock()
         self.mixin = UserScopeMixin(MagicMock(), self.mock_datastore, MagicMock())
 
-    def set_user_data(self, data: Dict[str, Any]) -> None:
+    def set_user_data(self, data: dict[str, Any]) -> None:
         self.mock_datastore.get = MagicMock(return_value=data)
 
-    def set_meeting_committees(self, ids: List[int]) -> None:
+    def set_meeting_committees(self, ids: list[int]) -> None:
         return_val = {
             "meeting": {
                 i + 1: {"committee_id": id, "is_active_in_organization_id": 1}
@@ -38,8 +37,7 @@ class UserScopeTest(TestCase):
     def test_single_committee_no_meetings(self) -> None:
         self.set_user_data(
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             }
         )
         assert self.get_scope() == UserScope.Committee
@@ -47,8 +45,7 @@ class UserScopeTest(TestCase):
     def test_single_committee_single_related_meeting(self) -> None:
         self.set_user_data(
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
                 "meeting_ids": [1],
             }
         )
@@ -63,8 +60,7 @@ class UserScopeTest(TestCase):
     def test_single_committee_differing_meeting(self) -> None:
         self.set_user_data(
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
                 "meeting_ids": [1],
             }
         )
@@ -74,8 +70,7 @@ class UserScopeTest(TestCase):
     def test_single_committee_mixed_meetings(self) -> None:
         self.set_user_data(
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
                 "meeting_ids": [1, 2],
             }
         )
@@ -85,8 +80,7 @@ class UserScopeTest(TestCase):
     def test_multiple_committees_no_meetings(self) -> None:
         self.set_user_data(
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1, 2],
+                "committee_management_ids": [1, 2],
             }
         )
         assert self.get_scope() == UserScope.Organization
@@ -94,8 +88,7 @@ class UserScopeTest(TestCase):
     def test_multiple_committees_related_meeting(self) -> None:
         self.set_user_data(
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1, 2],
+                "committee_management_ids": [1, 2],
                 "meeting_ids": [1],
             }
         )
@@ -105,8 +98,7 @@ class UserScopeTest(TestCase):
     def test_multiple_committees_differing_meeting(self) -> None:
         self.set_user_data(
             {
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1, 2],
+                "committee_management_ids": [1, 2],
                 "meeting_ids": [1],
             }
         )

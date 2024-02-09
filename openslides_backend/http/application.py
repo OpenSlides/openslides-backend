@@ -1,9 +1,10 @@
-from typing import Any, Iterable, Union
+from collections.abc import Iterable
+from typing import Any
 
 import simplejson as json
 from werkzeug.wrappers import Response
 
-from ..services.auth.adapter import AUTHENTICATION_HEADER
+from ..services.auth.interface import AUTHENTICATION_HEADER
 from ..shared.env import is_truthy
 from ..shared.exceptions import ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment
@@ -32,7 +33,7 @@ class OpenSlidesBackendWSGIApplication:
         self.view = view
         self.services = services
 
-    def dispatch_request(self, request: Request) -> Union[Response, HTTPException]:
+    def dispatch_request(self, request: Request) -> Response | HTTPException:
         """
         Dispatches request to route according to URL rules. Returns a Response
         object or a HTTPException (or a subclass of it). Both are WSGI
@@ -63,9 +64,9 @@ class OpenSlidesBackendWSGIApplication:
                 raise
         except HTTPException as exception:
             return exception
-        if type(response_body) == dict:
+        if isinstance(response_body, dict):
             status_code = response_body.get("status_code", 200)
-        elif request.path == r"/system/presenter/handle_request":
+        elif request.path == "/system/presenter/handle_request":
             status_code = Response.default_status
         else:
             raise ViewException(f"Unknown type of response_body:{response_body}.")

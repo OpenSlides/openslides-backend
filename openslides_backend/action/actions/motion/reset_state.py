@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -8,6 +8,7 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import set_workflow_timestamp_helper
 from .set_number_mixin import SetNumberMixin
 
 
@@ -21,7 +22,7 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
     schema = DefaultSchema(Motion()).get_update_schema()
     permission = Permissions.Motion.CAN_MANAGE_METADATA
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Set state_id to motion_state.first_state_of_workflow_id.
         """
@@ -34,7 +35,7 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
                 "category_id",
                 "number",
                 "number_value",
-                "created",
+                "workflow_timestamp",
             ],
         )
         if not motion.get("state_id"):
@@ -67,12 +68,6 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
         )
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
-        if not motion.get("created"):
-            state = self.datastore.get(
-                fqid_from_collection_and_id("motion_state", instance["state_id"]),
-                ["set_created_timestamp"],
-                lock_result=False,
-            )
-            if state.get("set_created_timestamp"):
-                instance["created"] = timestamp
+        instance["workflow_timestamp"] = None
+        set_workflow_timestamp_helper(self.datastore, instance, timestamp)
         return instance

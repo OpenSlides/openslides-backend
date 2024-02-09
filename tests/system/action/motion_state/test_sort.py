@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -8,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStateSort(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {"active_meeting_ids": [1]},
             "meeting/1": {
                 "motion_state_ids": [1, 2, 3],
@@ -38,7 +38,10 @@ class MotionStateSort(BaseActionTestCase):
             {"workflow_id": 1, "motion_state_ids": [3, 2, 4, 1]},
         )
         self.assert_status_code(response, 400)
-        assert "Id 4 not in db_instances." == response.json["message"]
+        assert (
+            "motion_state sorting failed, because element motion_state/4 doesn't exist."
+            == response.json["message"]
+        )
 
     def test_sort_missing_id_in_payload(self) -> None:
         self.set_models(self.permission_test_models)
@@ -47,7 +50,10 @@ class MotionStateSort(BaseActionTestCase):
             {"workflow_id": 1, "motion_state_ids": [3, 1]},
         )
         self.assert_status_code(response, 400)
-        assert "Additional db_instances found." == response.json["message"]
+        assert (
+            "motion_state sorting failed, because some elements were not included in the call."
+            == response.json["message"]
+        )
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(

@@ -1,21 +1,20 @@
-Babel==2.11.0
-bleach[css]==6.0.0
+Babel==2.14.0
+bleach[css]==6.1.0
 dependency_injector==4.41.0
-fastjsonschema==2.16.2
-gunicorn==20.1.0
-lxml==4.9.2
-pypdf[crypto]==3.4.0
-requests==2.28.2
-roman==3.3
-simplejson==3.18.3
-Werkzeug==2.2.2
+fastjsonschema==2.19.1
+gunicorn==21.2.0
+lxml==5.1.0
+pypdf[crypto]==4.0.1
+requests==2.31.0
+roman==4.1
+simplejson==3.19.2
+Werkzeug==3.0.1
+python-magic==0.4.27
+pygments==2.17.2
 
-# authlib
-git+https://github.com/OpenSlides/openslides-auth-service.git@04930a310538113a7eb4ac132cd4ae7b1d4fc176#egg=authlib&subdirectory=auth/libraries/pip-auth
-
-# opentelemtry
-opentelemetry-api==1.15.0
-opentelemetry-sdk==1.15.0
-opentelemetry-exporter-otlp==1.15.0
-opentelemetry-instrumentation-flask==0.36b0
-opentelemetry-instrumentation-requests==0.36b0
+# opentelemetry
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+opentelemetry-exporter-otlp==1.22.0
+opentelemetry-instrumentation-flask==0.43b0
+opentelemetry-instrumentation-requests==0.43b0

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_workflow/42": {
                 "name": "test_name_fjwnq8d8tje8",
                 "meeting_id": 1,
@@ -30,7 +30,7 @@ class MotionStateActionTest(BaseActionTestCase):
                 "name": "test_Xcdfgee",
                 "workflow_id": 42,
                 "allow_motion_forwarding": True,
-                "set_created_timestamp": True,
+                "set_workflow_timestamp": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -41,7 +41,7 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("merge_amendment_into_final") == "undefined"
         assert model.get("css_class") == "lightblue"
         assert model.get("allow_motion_forwarding") is True
-        assert model.get("set_created_timestamp") is True
+        assert model.get("set_workflow_timestamp") is True
 
     def test_create_as_new_first_state(self) -> None:
         self.set_models(

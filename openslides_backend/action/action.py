@@ -1,35 +1,21 @@
 from collections import defaultdict
+from collections.abc import Callable, Iterable
 from copy import deepcopy
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, TypeVar, cast
 
 import fastjsonschema
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
 from ..models.base import Model, model_registry
-from ..models.fields import (
-    BaseRelationField,
-    BaseTemplateField,
-    BaseTemplateRelationField,
-)
+from ..models.fields import BaseRelationField
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
+from ..presenter.base import BasePresenter
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import (
@@ -48,9 +34,8 @@ from ..shared.otel import make_span
 from ..shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
-    field_from_fqfield,
+    fqid_and_field_from_fqfield,
     fqid_from_collection_and_id,
-    fqid_from_fqfield,
     transform_to_fqids,
 )
 from ..shared.typing import DeletedModel, HistoryInformation
@@ -73,8 +58,15 @@ class SchemaProvider(type):
         return super().__new__(cls, name, bases, attrs)
 
 
+ORIGINAL_INSTANCES_FLAG = "_original_instances"
+
+
 def original_instances(method: Callable) -> Callable:
-    setattr(method, "_original_instances", True)
+    """
+    Marker decorator for get_updated_instances to indicate that the method returns the original
+    instances from the action data in the same order. Must be set to create action result.
+    """
+    setattr(method, ORIGINAL_INSTANCES_FLAG, True)
     return method
 
 
@@ -88,25 +80,26 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     name: str
     model: Model
-    schema: Dict
-    schema_validator: Callable[[Dict[str, Any]], None]
+    schema: dict
+    schema_validator: Callable[[dict[str, Any]], None]
 
     is_singular: bool = False
     action_type: ActionType = ActionType.PUBLIC
-    permission: Optional[Union[Permission, OrganizationManagementLevel]] = None
-    permission_model: Optional[Model] = None
-    permission_id: Optional[str] = None
+    permission: Permission | OrganizationManagementLevel | None = None
+    permission_model: Model | None = None
+    permission_id: str | None = None
     skip_archived_meeting_check: bool = False
     use_meeting_ids_for_archived_meeting_check: bool = False
-    history_information: Optional[str] = None
-    history_relation_field: Optional[str] = None
+    history_information: str | None = None
+    history_relation_field: str | None = None
     add_self_history_information: bool = False
+    own_history_information_first: bool = False
 
     relation_manager: RelationManager
 
     action_data: ActionData
-    instances: List[Dict[str, Any]]
-    events: List[Event]
+    instances: list[dict[str, Any]]
+    events: list[Event]
     results: ActionResults
     cascaded_actions_history: HistoryInformation
 
@@ -117,8 +110,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         relation_manager: RelationManager,
         logging: LoggingModule,
         env: Env,
-        skip_archived_meeting_check: Optional[bool] = None,
-        use_meeting_ids_for_archived_meeting_check: Optional[bool] = None,
+        skip_archived_meeting_check: bool | None = None,
+        use_meeting_ids_for_archived_meeting_check: bool | None = None,
     ) -> None:
         super().__init__(services, datastore, logging)
         self.relation_manager = relation_manager
@@ -136,18 +129,20 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
-    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
+    ) -> tuple[WriteRequest | None, ActionResults | None]:
         """
         Entrypoint to perform the action.
         """
         self.user_id = user_id
         self.index = 0
+        self.internal = internal
 
         # prefetch as much data as possible
         self.prefetch(action_data)
 
-        for instance in action_data:
+        for i, instance in enumerate(action_data):
             self.validate_instance(instance)
+            cast(list[dict[str, Any]], action_data)[i] = self.validate_fields(instance)
             self.check_for_archived_meeting(instance)
             # perform permission check not for internal requests or backend_internal actions
             if not internal and self.action_type != ActionType.BACKEND_INTERNAL:
@@ -164,7 +159,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self.action_data = deepcopy(action_data)
         self.instances = list(self.get_updated_instances(action_data))
         is_original_instances = hasattr(
-            self.get_updated_instances, "_original_instances"
+            self.get_updated_instances, ORIGINAL_INSTANCES_FLAG
         )
         for instance in self.instances:
             # only increment index if the instances which are iterated here are the
@@ -197,12 +192,12 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         Implement in subclasses to prefetch data for the action.
         """
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         """
         Checks permission by requesting permission service or using internal check.
         """
         if self.permission:
-            if type(self.permission) == OrganizationManagementLevel:
+            if isinstance(self.permission, OrganizationManagementLevel):
                 if has_organization_management_level(
                     self.datastore,
                     self.user_id,
@@ -210,7 +205,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                 ):
                     return
                 raise MissingPermission(self.permission)
-            elif type(self.permission) == CommitteeManagementLevel:
+            elif isinstance(self.permission, CommitteeManagementLevel):
                 """
                 set permission in class to: permission = CommitteeManagementLevel.CAN_MANAGE
                 A specialized realisation see in create_update_permissions_mixin.py
@@ -230,7 +225,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         msg = f"You are not allowed to perform action {self.name}."
         raise PermissionDenied(msg)
 
-    def check_for_archived_meeting(self, instance: Dict[str, Any]) -> None:
+    def check_for_archived_meeting(self, instance: dict[str, Any]) -> None:
         """Do not allow changing any data in an archived meeting"""
         if self.skip_archived_meeting_check:
             return
@@ -260,7 +255,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         if self.auth.is_anonymous(self.user_id):
             raise AnonymousNotAllowed(self.name)
 
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+    def get_meeting_id(self, instance: dict[str, Any]) -> int:
         """
         Returns the meeting_id, either directly from the instance or from the datastore.
         Must be overwritten if no meeting_id is present in either!
@@ -286,7 +281,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         By default this does nothing. Override in subclasses to adjust the updates
         to all instances of the action data. You can only update instances of the model
-        of this action.
+        of this action. If overridden and not decorated with @original_instances, no
+        action results will be created.
         If needed, this can also be used to do additional validation on the whole
         action data.
         """
@@ -299,7 +295,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         return action_data
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         """
         Validates one instance of the action data according to schema class attribute.
         """
@@ -308,14 +304,14 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(exception.message)
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Updates one instance of the action data. This can be overridden by custom
         action classes.
         """
         return self.update_instance(instance)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Updates one instance of the action data. This can be overridden by custom
         action classes. Meant to be called inside base_update_instance.
@@ -324,7 +320,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     def handle_relation_updates(
         self,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
     ) -> Iterable[Event]:
         """
         Creates write request elements (with update events) for all relations.
@@ -332,33 +328,28 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         relation_updates = self.relation_manager.get_relation_updates(
             self.model, instance, self.name
         )
-
         return self.handle_relation_updates_helper(relation_updates)
 
     def handle_relation_updates_helper(
         self,
         relation_updates: RelationUpdates,
     ) -> Iterable[Event]:
-        fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
-            list_fields: Optional[ListFields] = None
+            fields: dict[str, Any] = {}
+            list_fields: ListFields = {}
+            fqid, field = fqid_and_field_from_fqfield(fqfield)
             if data["type"] in ("add", "remove"):
                 data = cast(FieldUpdateElement, data)
-                fields = {field_from_fqfield(fqfield): data["value"]}
+                fields[field] = data["value"]
             elif data["type"] == "list_update":
                 data = cast(ListUpdateElement, data)
-                fields = None
-                list_fields_tmp = {}
                 if data["add"]:
-                    list_fields_tmp["add"] = {field_from_fqfield(fqfield): data["add"]}
+                    list_fields["add"] = {field: data["add"]}
                 if data["remove"]:
-                    list_fields_tmp["remove"] = {
-                        field_from_fqfield(fqfield): data["remove"]
-                    }
-                list_fields = cast(ListFields, list_fields_tmp)
+                    list_fields["remove"] = {field: data["remove"]}
             yield self.build_event(
                 EventType.Update,
-                fqid_from_fqfield(fqfield),
+                fqid,
                 fields,
                 list_fields,
             )
@@ -367,8 +358,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         self,
         type: EventType,
         fqid: FullQualifiedId,
-        fields: Optional[Dict[str, Any]] = None,
-        list_fields: Optional[ListFields] = None,
+        fields: dict[str, Any] | None = None,
+        list_fields: ListFields | None = None,
     ) -> Event:
         """
         Helper function to create a WriteRequest.
@@ -384,15 +375,15 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             event["list_fields"] = list_fields
         return event
 
-    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         """
         Creates events for one instance of the current model. To be overriden in subclasses.
         """
         raise NotImplementedError()
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         """
         Create an ActionResponseResultsElement describing the result of this action.
         Defaults to None (to be overridden in subclasses).
@@ -401,7 +392,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     def build_write_request(
         self,
-    ) -> Optional[WriteRequest]:
+    ) -> WriteRequest | None:
         """
         Merge all created events to one single write request which is returned by this action.
         """
@@ -410,11 +401,11 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     def _build_write_request(
         self,
         write_request: T,
-    ) -> Optional[T]:
+    ) -> T | None:
         # merge all events, if any, into a write request
         if self.events:
             # sort events: create - update - delete
-            events_by_type: Dict[EventType, List[Event]] = defaultdict(list)
+            events_by_type: dict[EventType, list[Event]] = defaultdict(list)
             for event in self.events:
                 self.apply_event(event)
                 events_by_type[event["type"]].append(event)
@@ -428,20 +419,25 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             return write_request
         return None
 
-    def get_full_history_information(self) -> Optional[HistoryInformation]:
+    def get_full_history_information(self) -> HistoryInformation | None:
         """
         Get history information for this action and all cascading ones. Should only be overridden if
         the order should be changed.
         """
         information = self.get_history_information()
         if self.cascaded_actions_history or information:
-            return merge_history_informations(
-                self.cascaded_actions_history, information or {}
-            )
+            if self.own_history_information_first:
+                return merge_history_informations(
+                    information, self.cascaded_actions_history
+                )
+            else:
+                return merge_history_informations(
+                    self.cascaded_actions_history, information
+                )
         else:
             return None
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         """
         Get the history information for this action. Can be overridden to get
         context-dependent information.
@@ -472,8 +468,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         return information
 
     def get_instances_with_fields(
-        self, fields: List[str], instances: Optional[List[Dict[str, Any]]] = None
-    ) -> List[Dict[str, Any]]:
+        self, fields: list[str], instances: list[dict[str, Any]] | None = None
+    ) -> list[dict[str, Any]]:
         if not instances:
             instances = self.instances
         # if any field is missing in any instance, we need to access the datastore
@@ -495,11 +491,11 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         else:
             return instances
 
-    def get_field_from_instance(self, field: str, instance: Dict[str, Any]) -> Any:
+    def get_field_from_instance(self, field: str, instance: dict[str, Any]) -> Any:
         _instance = self.get_instances_with_fields([field], [instance])[0]
         return _instance.get(field)
 
-    def merge_update_events(self, update_events: List[Event]) -> List[Event]:
+    def merge_update_events(self, update_events: list[Event]) -> list[Event]:
         """
         This is optimation to reduce the amount of update events.
         """
@@ -507,15 +503,15 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         for event in update_events:
             events_by_fqid[event["fqid"]].append(event)
 
-        result: List[Event] = []
+        result: list[Event] = []
         for fqid in events_by_fqid:
             result.extend(self.merge_update_events_for_fqid(events_by_fqid[fqid]))
 
         return result
 
-    def merge_update_events_for_fqid(self, events: List[Event]) -> List[Event]:
-        result: List[Event] = []
-        trailing_index: Optional[int] = None
+    def merge_update_events_for_fqid(self, events: list[Event]) -> list[Event]:
+        result: list[Event] = []
+        trailing_index: int | None = None
         count = 0
         for event in events[::-1]:
             if not event.get("list_fields"):
@@ -547,11 +543,10 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         Validate required fields with the events of one WriteRequest.
         Precondition: Events are sorted create/update/delete-events
         Not implemented: required RelationListFields of all types raise a NotImplementedError, if there exist
-        one, during getting required_fields from model, except TemplateRelationField and
-        TemplateRelationListField with replacement_enum-attribute.
+        one, during getting required_fields from model.
         Also check for fields in the write request, which are not model fields.
         """
-        fdict: Dict[FullQualifiedId, Dict[str, Any]] = {}
+        fdict: dict[FullQualifiedId, dict[str, Any]] = {}
         for event in write_request.events:
             if fdict.get(event["fqid"]):
                 if event["type"] == EventType.Delete:
@@ -592,9 +587,9 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                         f"{field_name} is not a valid field for model {fqid_model.collection}."
                     )
 
-    def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_fields(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
-        Validates all model fields according to the model definition.
+        Validates and sanitizes all model fields according to the model definition.
         """
         try:
             for field_name in instance:
@@ -603,30 +598,19 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     instance[field_name] = field.validate(instance[field_name])
         except AssertionError as e:
             raise ActionException(str(e))
+        except ValueError as e:
+            raise ActionException(str(e))
         return instance
 
-    def validate_relation_fields(self, instance: Dict[str, Any]) -> None:
+    def validate_relation_fields(self, instance: dict[str, Any]) -> None:
         """
         Validates all relation fields according to the model definition.
         """
         for field in self.model.get_relation_fields():
-            if not field.equal_fields:
+            if not field.equal_fields or field.own_field_name not in instance:
                 continue
 
-            if field.own_field_name in instance:
-                fields = [field.own_field_name]
-            elif isinstance(field, BaseTemplateRelationField):
-                fields = [
-                    instance_field
-                    for instance_field, replacement in self.get_structured_fields_in_instance(
-                        field, instance
-                    )
-                ]
-                if not fields:
-                    continue
-            else:
-                continue
-
+            fields = [field.own_field_name]
             for equal_field in field.equal_fields:
                 if not (own_equal_field_value := instance.get(equal_field)):
                     fqid = fqid_from_collection_and_id(
@@ -666,22 +650,8 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                                     f"{related_instance.get(equal_field)}"
                                 )
 
-    def get_structured_fields_in_instance(
-        self, field: BaseTemplateField, instance: Dict[str, Any]
-    ) -> List[Tuple[str, str]]:
-        """
-        Finds the given field in the given instance and returns the names as well as
-        the used replacements of it.
-        """
-        structured_fields: List[Tuple[str, str]] = []
-        for instance_field in instance:
-            replacement = field.try_get_replacement(instance_field)
-            if replacement:
-                structured_fields.append((instance_field, replacement))
-        return structured_fields
-
     def apply_instance(
-        self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None
+        self, instance: dict[str, Any], fqid: FullQualifiedId | None = None
     ) -> None:
         if not fqid:
             fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
@@ -689,11 +659,11 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
 
     def execute_other_action(
         self,
-        ActionClass: Type["Action"],
+        ActionClass: type["Action"],
         action_data: ActionData,
         skip_archived_meeting_check: bool = False,
         skip_history: bool = False,
-    ) -> Optional[ActionResults]:
+    ) -> ActionResults | None:
         """
         Executes the given action class as a dependent action with the given action
         data and the given addtional relation models. Merges its own additional
@@ -727,28 +697,45 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
                     )
             return action_results
 
-    def get_on_success(self, action_data: ActionData) -> Optional[Callable[[], None]]:
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:
         """
         Can be overridden by actions to return a cleanup method to execute
         after the result was successfully written to the DS.
         """
         return None
 
-    def get_on_failure(self, action_data: ActionData) -> Optional[Callable[[], None]]:
+    def get_on_failure(self, action_data: ActionData) -> Callable[[], None] | None:
         """
         Can be overridden by actions to return a cleanup method to execute
         after an error appeared in an action.
         """
         return None
 
+    def execute_presenter(
+        self, PresenterClass: type[BasePresenter], payload: Any
+    ) -> Any:
+        presenter_instance = PresenterClass(
+            payload,
+            self.services,
+            self.datastore,
+            self.logging,
+            self.user_id,
+        )
+        presenter_instance.validate()
+        return presenter_instance.get_result()
+
 
 def merge_history_informations(
-    a: HistoryInformation, *other: HistoryInformation
+    a: HistoryInformation | None, *other: HistoryInformation | None
 ) -> HistoryInformation:
     """
     Merges multiple history informations. All latter ones are merged into the first one.
     """
+    if a is None:
+        a = {}
     for b in other:
+        if b is None:
+            b = {}
         for fqid, information in b.items():
             if fqid in a:
                 a[fqid].extend(information)

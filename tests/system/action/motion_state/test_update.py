@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_workflow/110": {
                 "name": "name_Ycefgee",
                 "state_ids": [111],
@@ -46,8 +46,9 @@ class MotionStateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "name": "name_Xcdfgee",
+                "is_internal_recommendation": True,
                 "allow_motion_forwarding": True,
-                "set_created_timestamp": True,
+                "set_workflow_timestamp": True,
                 "submitter_withdraw_state_id": 112,
             },
         )
@@ -55,8 +56,9 @@ class MotionStateActionTest(BaseActionTestCase):
         self.assert_model_exists("motion_state/111")
         model = self.get_model("motion_state/111")
         assert model.get("name") == "name_Xcdfgee"
+        assert model.get("is_internal_recommendation") is True
         assert model.get("allow_motion_forwarding") is True
-        assert model.get("set_created_timestamp") is True
+        assert model.get("set_workflow_timestamp") is True
         assert model.get("submitter_withdraw_state_id") == 112
 
     def test_update_correct_plus_next_previous(self) -> None:

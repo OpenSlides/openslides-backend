@@ -13,6 +13,6 @@ class TopicUpdate(UpdateAction):
 
     model = Topic()
     schema = DefaultSchema(Topic()).get_update_schema(
-        optional_properties=["title", "text", "attachment_ids", "tag_ids"]
+        optional_properties=["title", "text", "attachment_ids"]
     )
     permission = Permissions.AgendaItem.CAN_MANAGE

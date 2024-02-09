@@ -1,20 +1,17 @@
-from typing import Any, Dict, Iterable, List, cast
+from typing import Any
 
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.i18n.translator import translate as _
 from openslides_backend.models.models import Meeting
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
 class MeetingCreateActionTest(BaseActionTestCase):
     def basic_test(
-        self, datapart: Dict[str, Any], set_400_str: str = ""
-    ) -> Dict[str, Any]:
+        self, datapart: dict[str, Any], set_400_str: str = ""
+    ) -> dict[str, Any]:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -51,24 +48,20 @@ class MeetingCreateActionTest(BaseActionTestCase):
             return self.get_model("meeting/1")
 
     def test_create_simple_and_complex_workflow(self) -> None:
-        meeting = self.basic_test(dict())
-        self.assertCountEqual(
-            cast(Iterable[Any], meeting.get("default_projector_$_ids")),
-            cast(List[str], Meeting.default_projector__ids.replacement_enum),
-        )
+        self.basic_test(dict())
         self.assert_model_exists(
             "meeting/1",
             {
                 "name": "test_name",
                 "committee_id": 1,
-                "group_ids": [2, 3, 4, 5, 6],
+                "group_ids": [2, 3, 4, 5],
                 "default_group_id": 2,
                 "admin_group_id": 3,
                 "motion_workflow_ids": [1, 2],
                 "motions_default_workflow_id": 1,
                 "motions_default_amendment_workflow_id": 1,
                 "motions_default_statute_amendment_workflow_id": 1,
-                "motion_state_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                "motion_state_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
                 "list_of_speakers_countdown_id": 1,
                 "poll_countdown_id": 2,
                 "projector_countdown_warning_time": 0,
@@ -77,12 +70,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "assignment_poll_default_group_ids": [4],
                 "motion_poll_default_group_ids": [4],
                 "topic_poll_default_group_ids": [4],
-                **{
-                    f"default_projector_${name}_ids": [1]
-                    for name in cast(
-                        List[str], Meeting.default_projector__ids.replacement_enum
-                    )
-                },
+                **{field: [1] for field in Meeting.all_default_projectors()},
             },
         )
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1]})
@@ -90,7 +78,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("group/3", {"name": "Admin"})
         self.assert_model_exists("group/4", {"name": "Delegates"})
         self.assert_model_exists("group/5", {"name": "Staff"})
-        self.assert_model_exists("group/6", {"name": "Committees"})
         self.assert_model_exists(
             "motion_workflow/1",
             {
@@ -126,7 +113,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "Complex Workflow",
                 "meeting_id": 1,
-                "state_ids": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                "state_ids": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
                 "first_state_id": 5,
             },
         )
@@ -156,19 +143,11 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion_state/13",
-            {"name": "referred to committee", "previous_state_ids": [7]},
+            {"name": "referred to", "previous_state_ids": [7]},
         )
         self.assert_model_exists(
-            "motion_state/14", {"name": "needs review", "previous_state_ids": [7]}
-        )
-        self.assert_model_exists(
-            "motion_state/15",
-            {"name": "rejected (not authorized)", "previous_state_ids": [6]},
-        )
-        projector1 = self.get_model("projector/1")
-        self.assertCountEqual(
-            cast(Iterable[Any], projector1.get("used_as_default_$_in_meeting_id")),
-            cast(List[str], Meeting.default_projector__ids.replacement_enum),
+            "motion_state/14",
+            {"name": "not permitted", "previous_state_ids": [6]},
         )
         self.assert_model_exists(
             "projector/1",
@@ -176,12 +155,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "name": "Default projector",
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
-                **{
-                    f"used_as_default_${name}_in_meeting_id": 1
-                    for name in cast(
-                        List[str], Meeting.default_projector__ids.replacement_enum
-                    )
-                },
+                **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
         )
         self.assert_model_exists(
@@ -206,19 +180,21 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
 
     def test_check_action_data_fields(self) -> None:
+        external_id = "external"
         meeting = self.basic_test(
             {
                 "description": "RRfnzxHA",
                 "location": "LSFHPTgE",
                 "start_time": 1608120653,
                 "end_time": 1608121653,
+                "external_id": external_id,
             }
         )
         assert meeting.get("description") == "RRfnzxHA"
         assert meeting.get("location") == "LSFHPTgE"
         assert meeting.get("start_time") == 1608120653
         assert meeting.get("end_time") == 1608121653
-
+        assert meeting.get("external_id") == external_id
         # check two defaults:
         assert meeting.get("assignment_poll_default_type") == "pseudoanonymous"
         assert meeting.get("assignment_poll_default_method") == "Y"
@@ -227,24 +203,34 @@ class MeetingCreateActionTest(BaseActionTestCase):
         meeting = self.basic_test({"user_ids": [2]})
         assert meeting.get("user_ids") == [2]
         default_group_id = meeting.get("default_group_id")
+        self.assert_model_exists("user/2", {"meeting_user_ids": [1]})
         self.assert_model_exists(
-            "user/2", {f"group_${meeting['id']}_ids": [default_group_id]}
+            "meeting_user/1",
+            {
+                "meeting_id": meeting["id"],
+                "user_id": 2,
+                "group_ids": [default_group_id],
+            },
         )
 
     def test_create_check_admins(self) -> None:
         meeting = self.basic_test({"admin_ids": [2]})
         assert meeting.get("user_ids") == [2]
         admin_group_id = meeting.get("admin_group_id")
+        self.assert_model_exists("user/2", {"meeting_user_ids": [1]})
         self.assert_model_exists(
-            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
+            "meeting_user/1",
+            {"meeting_id": meeting["id"], "user_id": 2, "group_ids": [admin_group_id]},
         )
 
     def test_create_with_same_user_in_users_and_admins(self) -> None:
         meeting = self.basic_test({"user_ids": [2], "admin_ids": [2]})
         assert meeting.get("user_ids") == [2]
         admin_group_id = meeting.get("admin_group_id")
+        self.assert_model_exists("user/2", {"meeting_user_ids": [1]})
         self.assert_model_exists(
-            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
+            "meeting_user/1",
+            {"meeting_id": meeting["id"], "user_id": 2, "group_ids": [admin_group_id]},
         )
 
     def test_create_multiple_users(self) -> None:
@@ -272,15 +258,27 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
         default_group_id = meeting.get("default_group_id")
-        self.assert_model_exists(
-            "user/2", {"group_$1_ids": [default_group_id], "committee_ids": [1]}
-        )
-        self.assert_model_exists(
-            "user/3", {"group_$1_ids": [default_group_id], "committee_ids": [1]}
-        )
         admin_group_id = meeting.get("admin_group_id")
         self.assert_model_exists(
-            "user/1", {"group_$1_ids": [admin_group_id], "committee_ids": [1]}
+            "user/2", {"meeting_user_ids": [2], "committee_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {"meeting_id": 1, "user_id": 1, "group_ids": [admin_group_id]},
+        )
+        self.assert_model_exists(
+            "user/3", {"meeting_user_ids": [3], "committee_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/2",
+            {"meeting_id": 1, "user_id": 2, "group_ids": [default_group_id]},
+        )
+        self.assert_model_exists(
+            "user/1", {"meeting_user_ids": [1], "committee_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/3",
+            {"meeting_id": 1, "user_id": 3, "group_ids": [default_group_id]},
         )
         self.assertCountEqual(meeting.get("user_ids", []), [1, 2, 3])
         committee = self.get_model("committee/1")
@@ -306,6 +304,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {"end_time": 170000},
             set_400_str="Only one of start_time and end_time is not allowed.",
         )
+
+    def test_create_empty_times(self) -> None:
+        self.basic_test({"start_time": None, "end_time": None})
 
     def test_create_name_too_long(self) -> None:
         self.basic_test(
@@ -335,7 +336,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
+            "Missing permission: CommitteeManagementLevel can_manage in committee 1"
+            in response.json["message"]
         )
 
     def test_create_permissions(self) -> None:
@@ -343,10 +345,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 }
             }
         )
@@ -357,18 +356,17 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 }
             }
         )
         meeting = self.basic_test({"admin_ids": [2]})
         assert meeting.get("user_ids") == [2]
         admin_group_id = meeting.get("admin_group_id")
+        self.assert_model_exists("user/2", {"meeting_user_ids": [1]})
         self.assert_model_exists(
-            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
+            "meeting_user/1",
+            {"meeting_id": meeting["id"], "user_id": 2, "group_ids": [admin_group_id]},
         )
 
     def test_create_with_admin_ids_and_permissions_oml(self) -> None:
@@ -376,15 +374,17 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-                    "committee_$can_manage_management_level": [],
+                    "committee_management_ids": [],
                 }
             }
         )
         meeting = self.basic_test({"admin_ids": [2]})
         assert meeting.get("user_ids") == [2]
         admin_group_id = meeting.get("admin_group_id")
+        self.assert_model_exists("user/2", {"meeting_user_ids": [1]})
         self.assert_model_exists(
-            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
+            "meeting_user/1",
+            {"meeting_id": meeting["id"], "user_id": 2, "group_ids": [admin_group_id]},
         )
 
     def test_create_limit_of_meetings_reached(self) -> None:
@@ -411,7 +411,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_create_language(self) -> None:
+    def test_create_language_and_external_id(self) -> None:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -441,4 +441,74 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         Translator.set_translation_language("de")
-        self.assert_model_exists("group/2", {"name": _("Default")})
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "description": "Präsentations- und Versammlungssystem",
+                "welcome_title": "Willkommen bei OpenSlides",
+                "welcome_text": "Platz für Ihren Begrüßungstext.",
+                "motions_preamble": "Die Versammlung möge beschließen:",
+                "motions_export_title": "Anträge",
+                "assignments_export_title": "Wahlen",
+                "users_pdf_welcometitle": "Willkommen bei OpenSlides",
+                "users_pdf_welcometext": "[Platz für Ihren Begrüßungs- und Hilfetext.]",
+                "users_email_sender": "OpenSlides",
+                "users_email_subject": "OpenSlides-Zugangsdaten",
+                "users_email_body": "Hallo {name},\n\nhier ist Ihr persönlicher OpenSlides-Zugang:\n\n{url}\nBenutzername: {username}\nPasswort: {password}\n\n\nDiese E-Mail wurde automatisch erstellt.",
+            },
+        )
+        for i, name in enumerate(["Default", "Admin", "Delegates", "Staff"], 2):
+            self.assert_model_exists(
+                f"group/{i}", {"name": _(name), "external_id": name}
+            )
+
+    def test_create_external_id_not_unique(self) -> None:
+        external_id = "external"
+        self.set_models(
+            {
+                "meeting/1": {"committee_id": 1, "external_id": external_id},
+                "committee/1": {"name": "test committee", "organization_id": 1},
+            }
+        )
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "meeting2",
+                "committee_id": 1,
+                "language": "en",
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The external_id of the meeting is not unique in the committee scope.",
+            response.json["message"],
+        )
+
+    def test_create_external_id_empty_special_case(self) -> None:
+        external_id = ""
+        self.set_models(
+            {
+                "meeting/1": {"committee_id": 1, "external_id": external_id},
+                "committee/1": {"name": "test committee", "organization_id": 1},
+            }
+        )
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "meeting2",
+                "committee_id": 1,
+                "language": "de",
+                "external_id": external_id,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "name": "meeting2",
+                "committee_id": 1,
+                "language": "de",
+                "external_id": external_id,
+            },
+        )

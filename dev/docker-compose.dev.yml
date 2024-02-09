@@ -24,7 +24,8 @@ services:
             - DATASTORE_WRITER_PORT=9011
             - AUTH_HOST=auth
             - MESSAGE_BUS_HOST=redis
-            - DATASTORE_DATABASE_HOST=postgres
+            - CACHE_HOST=redis
+            - DATABASE_HOST=postgres
             - DATASTORE_LOG_LEVEL=CRITICAL
         depends_on:
             - datastore-writer
@@ -44,7 +45,7 @@ services:
             - "9010:9010"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
-            - DATASTORE_DATABASE_HOST=postgres
+            - DATABASE_HOST=postgres
         depends_on:
             - postgres
         networks:
@@ -61,7 +62,7 @@ services:
             - "9011:9011"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
-            - DATASTORE_DATABASE_HOST=postgres
+            - DATABASE_HOST=postgres
         depends_on:
             - postgres
             - redis
@@ -77,6 +78,8 @@ services:
         ports:
             - "9004:9004"
         environment:
+            - ACTION_HOST=backend
+            - ACTION_PORT=9002
             - MESSAGE_BUS_HOST=redis
             - CACHE_HOST=redis
             - DATASTORE_READER_HOST=datastore-reader
@@ -99,17 +102,14 @@ services:
             - "9013:9013"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
-            - VOTE_HOST=vote
-            - DATASTORE_READER_HOST=datastore-reader
             - MESSAGING=redis
-            - MESSAGE_BUS_HOST=redis
-            - VOTE_REDIS_HOST=redis
-            - VOTE_DATABASE_HOST=postgres
-            - VOTE_DATABASE_USER=openslides
-            - VOTE_DATABASE_NAME=openslides
-            - DATASTORE_DATABASE_HOST=postgres
+            - DATASTORE_READER_HOST=datastore-reader
             - AUTH_HOST=auth
             - VOTE_DECRYPT_SERVICE=vote-decrypt:9014
+            - DATABASE_HOST=postgres
+            - VOTE_DATABASE_HOST=postgres
+            - MESSAGE_BUS_HOST=redis
+            - CACHE_HOST=redis
         depends_on:
             - datastore-reader
             - redis
@@ -139,7 +139,7 @@ services:
             - vote-decrypt
             - postgres
     postgres:
-        image: postgres:13
+        image: postgres:15
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides

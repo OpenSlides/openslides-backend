@@ -59,7 +59,7 @@ class ThemeCreateActionTest(BaseActionTestCase):
         response = self.request("theme.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['name', 'primary_500', 'accent_500', 'warn_500'] properties",
+            "data must contain ['accent_500', 'name', 'primary_500', 'warn_500'] properties",
             response.json["message"],
         )
 

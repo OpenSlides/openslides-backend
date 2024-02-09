@@ -1,5 +1,5 @@
-from openslides_backend.models.fields import BaseRelationField, BaseTemplateField
-from openslides_backend.models.models import User
+from typing import Any
+
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -41,7 +41,8 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 403)
         assert (
-            "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
+            "Missing permission: CommitteeManagementLevel can_manage in committee 1"
+            in response.json["message"]
         )
 
     def test_delete_permissions_can_manage_organization(self) -> None:
@@ -56,8 +57,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": ["can_manage"],
+                    "committee_management_ids": [1],
                     "organization_management_level": "can_manage_users",
                 }
             }
@@ -140,21 +140,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_deleted(f"projector_countdown/{i+1}")
         for i in range(2):
             self.assert_model_deleted(f"chat_group/{i+1}")
-        # assert that all structured fields on all users of the meeting are deleted.
-        for i in range(3):
-            user = self.get_model(f"user/{i+1}")
-            for field in User().get_fields():
-                if (
-                    isinstance(field, BaseTemplateField)
-                    and field.replacement_collection
-                    and field.replacement_collection == "meeting"
-                ):
-                    assert user.get(field.get_template_field_name()) in ([], None)
-                    val = user.get(field.get_structured_field_name(1))
-                    if isinstance(field, BaseRelationField) and field.is_list_field:
-                        assert val in ([], None)
-                    else:
-                        assert val is None
 
     def test_delete_with_tag_and_motion(self) -> None:
         self.set_models(
@@ -223,25 +208,28 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             {
                 "committee/1": {
                     "user_ids": [1, 2],
-                    "user_$can_manage_management_level": [1],
-                    "user_$_management_level": ["can_manage"],
+                    "manager_ids": [1],
                 },
                 "user/1": {
-                    "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": ["can_manage"],
+                    "committee_management_ids": [1],
                     "organization_management_level": "can_manage_users",
                     "committee_ids": [1],
                 },
                 "user/2": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [11],
                     "committee_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [11],
                 },
                 "group/11": {
-                    "user_ids": [2],
+                    "meeting_user_ids": [2],
                 },
                 "meeting/1": {
                     "user_ids": [2],
+                    "meeting_user_ids": [2],
                 },
             }
         )
@@ -249,7 +237,13 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting1 = self.assert_model_deleted(
             "meeting/1",
-            {"group_ids": [11], "committee_id": 1, "is_active_in_organization_id": 1},
+            {
+                "meeting_user_ids": [2],
+                "user_ids": [],
+                "group_ids": [11],
+                "committee_id": 1,
+                "is_active_in_organization_id": 1,
+            },
         )
         # One would expect the user_ids is still filled with user_ids = [2],
         # but relation user_ids will be reseted in an execute_other_action
@@ -264,20 +258,25 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             {
                 "user_ids": [1],
                 "meeting_ids": [],
-                "user_$can_manage_management_level": [1],
-                "user_$_management_level": ["can_manage"],
+                "manager_ids": [1],
             },
         )
-        self.assert_model_deleted("group/11", {"user_ids": [2], "meeting_id": 1})
+        self.assert_model_deleted(
+            "group/11", {"meeting_user_ids": [2], "meeting_id": 1}
+        )
         self.assert_model_exists(
             "user/1",
             {
                 "committee_ids": [1],
-                "committee_$_management_level": ["can_manage"],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
-        self.assert_model_exists("user/2", {"group_$_ids": [], "committee_ids": []})
+        self.assert_model_exists(
+            "user/2", {"meeting_user_ids": [], "committee_ids": []}
+        )
+        self.assert_model_deleted(
+            "meeting_user/2", {"meeting_id": 1, "user_id": 2, "group_ids": [11]}
+        )
 
     def test_delete_archived_meeting(self) -> None:
         self.set_models(
@@ -285,22 +284,24 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {"active_meeting_ids": []},
                 "committee/1": {
                     "user_ids": [1, 2],
-                    "user_$can_manage_management_level": [1],
-                    "user_$_management_level": ["can_manage"],
+                    "manager_ids": [1],
                 },
                 "user/1": {
-                    "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": ["can_manage"],
+                    "committee_management_ids": [1],
                     "organization_management_level": "can_manage_users",
                     "committee_ids": [1],
                 },
                 "user/2": {
-                    "group_$_ids": ["1"],
-                    "group_$1_ids": [11],
+                    "meeting_user_ids": [2],
                     "committee_ids": [1],
                 },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [11],
+                },
                 "group/11": {
-                    "user_ids": [2],
+                    "meeting_user_ids": [2],
                 },
                 "meeting/1": {
                     "user_ids": [2],
@@ -311,3 +312,106 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("meeting/1")
+
+    def test_delete_with_poll_candidates_and_speakers(self) -> None:
+        data: dict[str, dict[str, Any]] = {
+            "meeting/100": {
+                "committee_id": 1,
+                "meeting_user_ids": [110, 111, 112],
+                "group_ids": [120],
+                "assignment_ids": [140],
+                "poll_ids": [150],
+                "option_ids": [160],
+                "poll_candidate_list_ids": [170],
+                "poll_candidate_ids": [180, 181],
+                "list_of_speakers_ids": [190],
+                "speaker_ids": [210, 211, 212],
+            },
+            "meeting_user/110": {
+                "meeting_id": 100,
+                "user_id": 220,
+                "group_ids": [120],
+                "speaker_ids": [210],
+            },
+            "meeting_user/111": {
+                "meeting_id": 100,
+                "user_id": 221,
+                "group_ids": [120],
+                "speaker_ids": [211],
+            },
+            "meeting_user/112": {
+                "meeting_id": 100,
+                "user_id": 222,
+                "group_ids": [120],
+                "speaker_ids": [212],
+            },
+            "group/120": {"meeting_id": 100, "meeting_user_ids": [110, 111, 112]},
+            "assignment/140": {"meeting_id": 100, "poll_ids": [150]},
+            "poll/150": {
+                "meeting_id": 100,
+                "content_object_id": "assignment/140",
+                "option_ids": [160],
+            },
+            "option/160": {
+                "meeting_id": 100,
+                "poll_id": 150,
+                "content_object_id": "poll_candidate_list/170",
+            },
+            "poll_candidate_list/170": {
+                "meeting_id": 100,
+                "option_id": 160,
+                "poll_candidate_ids": [180, 181],
+            },
+            "poll_candidate/180": {
+                "meeting_id": 100,
+                "poll_candidate_list_id": 170,
+                "user_id": 220,
+            },
+            "poll_candidate/181": {
+                "meeting_id": 100,
+                "poll_candidate_list_id": 170,
+                "user_id": 221,
+            },
+            "list_of_speakers/190": {
+                "meeting_id": 100,
+                "content_object_id": "assignment/140",
+                "speaker_ids": [210, 211, 212],
+            },
+            "speaker/210": {
+                "meeting_id": 100,
+                "list_of_speakers_id": 190,
+                "meeting_user_id": 110,
+                "begin_time": 1234567,
+                "end_time": 1234578,
+            },
+            "speaker/211": {
+                "meeting_id": 100,
+                "list_of_speakers_id": 190,
+                "meeting_user_id": 111,
+                "begin_time": 1234589,
+            },
+            "speaker/212": {
+                "meeting_id": 100,
+                "list_of_speakers_id": 190,
+                "meeting_user_id": 112,
+            },
+        }
+        self.set_models(
+            {
+                **data,
+                ONE_ORGANIZATION_FQID: {"active_meeting_ids": [101]},
+                "committee/1": {
+                    "user_ids": [1, 220, 221, 222],
+                    "manager_ids": [1],
+                },
+                "user/220": {"meeting_user_ids": [110], "poll_candidate_ids": [180]},
+                "user/221": {"meeting_user_ids": [111], "poll_candidate_ids": [181]},
+                "user/222": {"meeting_user_ids": [112]},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 100})
+        self.assert_status_code(response, 200)
+        for fqid in data:
+            self.assert_model_deleted(fqid)
+        for i in range(220, 222):
+            self.assert_model_exists(f"user/{i}", {})

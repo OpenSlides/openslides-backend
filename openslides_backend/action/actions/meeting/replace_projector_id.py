@@ -1,5 +1,3 @@
-from typing import List, cast
-
 from openslides_backend.models.models import Meeting
 
 from ....shared.patterns import fqid_from_collection_and_id
@@ -28,12 +26,7 @@ class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
     def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             projector_id = instance.pop("projector_id")
-            fields = [
-                "default_projector_${}_ids".format(replacement)
-                for replacement in cast(
-                    List[str], Meeting.default_projector__ids.replacement_enum
-                )
-            ]
+            fields = Meeting.all_default_projectors()
             meeting = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 fields + ["reference_projector_id"],

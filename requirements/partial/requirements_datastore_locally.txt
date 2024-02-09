@@ -1,3 +1,0 @@
--r https://raw.githubusercontent.com/OpenSlides/openslides-datastore-service/${DATASTORE_COMMIT_HASH}/requirements/requirements-general.txt
-
-types-redis==4.4.0.6

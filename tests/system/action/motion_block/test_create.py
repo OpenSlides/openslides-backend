@@ -28,7 +28,7 @@ class MotionBlockActionTest(BaseActionTestCase):
                 "is_internal": False,
                 "level": 0,
                 "type": AgendaItem.AGENDA_ITEM,
-                "weight": 10000,
+                "weight": 1,
                 "meeting_id": 42,
                 "content_object_id": "motion_block/1",
                 "meta_deleted": False,
@@ -42,7 +42,7 @@ class MotionBlockActionTest(BaseActionTestCase):
         response = self.request("motion_block.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['title', 'meeting_id'] properties",
+            "data must contain ['meeting_id', 'title'] properties",
             response.json["message"],
         )
 
@@ -52,7 +52,7 @@ class MotionBlockActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['title', 'meeting_id'] properties",
+            "data must contain ['meeting_id', 'title'] properties",
             response.json["message"],
         )
 

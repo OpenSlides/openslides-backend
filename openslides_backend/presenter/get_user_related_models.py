@@ -1,15 +1,12 @@
-from typing import Any, Dict, List, cast
+from typing import Any
 
 import fastjsonschema
 
 from openslides_backend.shared.mixins.user_scope_mixin import UserScopeMixin
 from openslides_backend.shared.schema import id_list_schema
 
-from ..models.models import Committee
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PresenterException
-from ..shared.filters import And, FilterOperator
-from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -38,32 +35,35 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
     schema = get_user_related_models_schema
 
     def get_result(self) -> Any:
-        result: Dict[str, Any] = {}
-        for user_id in self.data["user_ids"]:
+        result: dict[int, Any] = {}
+        gmr = GetManyRequest(
+            "user",
+            self.data["user_ids"],
+            [
+                "id",
+                "organization_management_level",
+                "meeting_user_ids",
+                "committee_ids",
+                "committee_management_ids",
+            ],
+        )
+        users = self.datastore.get_many([gmr]).get("user", {})
+        for user_id, user in users.items():
+            result[user_id] = {}
             self.check_permissions_for_scope(user_id)
-            result[str(user_id)] = {}
-            committees_data = self.get_committees_data(user_id)
-            meetings_data = self.get_meetings_data(user_id)
-            if committees_data:
-                result[str(user_id)]["committees"] = committees_data
-            if meetings_data:
-                result[str(user_id)]["meetings"] = meetings_data
+            if oml := user.get("organization_management_level"):
+                result[user_id]["organization_management_level"] = oml
+            if committees_data := self.get_committees_data(user):
+                result[user_id]["committees"] = committees_data
+            if meetings_data := self.get_meetings_data(user):
+                result[user_id]["meetings"] = meetings_data
         return result
 
-    def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
-        committees_data = []
-        cml_fields = [
-            f"committee_${cml_field}_management_level"
-            for cml_field in cast(
-                List[str], Committee.user__management_level.replacement_enum
-            )
-        ]
-        user = self.datastore.get(
-            fqid_from_collection_and_id("user", user_id),
-            ["committee_ids", "committee_$_management_level", *cml_fields],
-        )
+    def get_committees_data(self, user: dict[str, Any]) -> list[dict[str, Any]]:
         if not user.get("committee_ids"):
             return []
+
+        committees_data = []
         gmr = GetManyRequest("committee", user["committee_ids"], ["id", "name"])
         committees = {
             committee["id"]: {"name": committee.get("name", ""), "cml": []}
@@ -71,14 +71,13 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             .get("committee", {})
             .values()
         }
-        for level in user.get("committee_$_management_level", []):
-            for committee_nr in user.get(f"committee_${level}_management_level", []):
-                if committee_nr in committees:
-                    committees[committee_nr]["cml"].append(level)
-                else:
-                    raise PresenterException(
-                        f"Data error: user has rights for committee {committee_nr}, but faultily is no member of committee."
-                    )
+        for committee_nr in user.get("committee_management_ids", []):
+            if committee_nr in committees:
+                committees[committee_nr]["cml"].append("can_manage")
+            else:
+                raise PresenterException(
+                    f"Data error: user has rights for committee {committee_nr}, but faultily is no member of committee."
+                )
         for committee_id, committee in committees.items():
             committees_data.append(
                 {
@@ -89,40 +88,41 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             )
         return committees_data
 
-    def get_meetings_data(self, user_id: int) -> List[Dict[str, Any]]:
-        meetings_data = []
-        user = self.datastore.get(
-            fqid_from_collection_and_id("user", user_id), ["meeting_ids"]
-        )
-        if not user.get("meeting_ids"):
+    def get_meetings_data(self, user: dict[str, Any]) -> list[dict[str, Any]]:
+        if not user.get("meeting_user_ids"):
             return []
+
+        result_fields = (
+            "speaker_ids",
+            "motion_submitter_ids",
+            "assignment_candidate_ids",
+        )
+        gmr = GetManyRequest(
+            "meeting_user",
+            user["meeting_user_ids"],
+            ["meeting_id", *result_fields],
+        )
+        meeting_users = self.datastore.get_many([gmr]).get("meeting_user", {}).values()
+
         gmr = GetManyRequest(
             "meeting",
-            user["meeting_ids"],
+            [meeting_user["meeting_id"] for meeting_user in meeting_users],
             ["id", "name", "is_active_in_organization_id"],
         )
-        meetings = self.datastore.get_many([gmr]).get("meeting", {}).values()
-        for meeting in meetings:
-            filter_ = And(
-                FilterOperator("meeting_id", "=", meeting["id"]),
-                FilterOperator("user_id", "=", user_id),
-            )
-            submitter_ids = self.datastore.filter("motion_submitter", filter_, ["id"])
-            candidate_ids = self.datastore.filter(
-                "assignment_candidate", filter_, ["id"]
-            )
-            speaker_ids = self.datastore.filter("speaker", filter_, ["id"])
-            if submitter_ids or candidate_ids or speaker_ids:
-                meetings_data.append(
-                    {
-                        "id": meeting["id"],
-                        "name": meeting.get("name"),
-                        "is_active_in_organization_id": meeting.get(
-                            "is_active_in_organization_id"
-                        ),
-                        "submitter_ids": list(submitter_ids),
-                        "candidate_ids": list(candidate_ids),
-                        "speaker_ids": list(speaker_ids),
-                    }
-                )
-        return meetings_data
+        meetings = self.datastore.get_many([gmr]).get("meeting", {})
+        return [
+            {
+                "id": meeting["id"],
+                "name": meeting.get("name"),
+                "is_active_in_organization_id": meeting.get(
+                    "is_active_in_organization_id"
+                ),
+                **{
+                    field: value
+                    for field in result_fields
+                    if (value := meeting_user.get(field))
+                },
+            }
+            for meeting_user in meeting_users
+            if (meeting := meetings.get(meeting_user["meeting_id"]))
+        ]

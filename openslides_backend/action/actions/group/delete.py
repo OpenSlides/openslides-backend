@@ -1,5 +1,8 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Set, Union, cast
+from collections.abc import Iterable
+from typing import Any
+
+from openslides_backend.shared.exceptions import ActionException
 
 from ....models.models import Group
 from ....permissions.permissions import Permissions
@@ -28,20 +31,30 @@ class GroupDeleteAction(DeleteAction):
     schema = DefaultSchema(Group()).get_delete_schema()
     permission = Permissions.User.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         group = self.datastore.get(
-            fqid_from_collection_and_id("group", instance["id"]), []
+            fqid_from_collection_and_id("group", instance["id"]),
+            [
+                "mediafile_access_group_ids",
+                "mediafile_inherited_access_group_ids",
+                "meeting_user_ids",
+                "meeting_id",
+            ],
         )
-        self.mediafile_ids: List[int] = list(
-            (set(group.get("mediafile_access_group_ids", set())) or set())
-            | (set(group.get("mediafile_inherited_access_group_ids", set()) or set()))
+        if len(group.get("meeting_user_ids", [])) and not self.is_meeting_deleted(
+            group["meeting_id"]
+        ):
+            raise ActionException("You cannot delete a group with users.")
+        self.mediafile_ids: list[int] = list(
+            set(group.get("mediafile_access_group_ids", []))
+            | set(group.get("mediafile_inherited_access_group_ids", []))
         )
         return instance
 
     def handle_relation_updates(
         self,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
     ) -> Iterable[Event]:
         """
         Method use the WriteRequests for mediafiles, that were generated
@@ -72,7 +85,7 @@ class GroupDeleteAction(DeleteAction):
                 yield event
 
         # search root changed mediafiles
-        roots: Set[int] = set()
+        roots: set[int] = set()
         for id_ in self.mediafile_ids:
             root_id = id_
             while (
@@ -83,7 +96,7 @@ class GroupDeleteAction(DeleteAction):
                 root_id = parent_id
             roots.add(root_id)
 
-        self.group_writes: Dict[int, List[int]] = defaultdict(list)
+        self.group_writes: dict[int, list[int]] = defaultdict(list)
         for mediafile_id in roots:
             yield from self.check_recursive(mediafile_id, db_mediafiles)
 
@@ -92,17 +105,13 @@ class GroupDeleteAction(DeleteAction):
                 EventType.Update,
                 fqid_from_collection_and_id("group", group_id),
                 list_fields={
-                    "add": {
-                        "mediafile_inherited_access_group_ids": cast(
-                            List[Union[int, str]], mediafile_ids
-                        )
-                    },
+                    "add": {"mediafile_inherited_access_group_ids": mediafile_ids},
                     "remove": {},
                 },
             )
 
     def check_recursive(
-        self, id_: int, db_mediafiles: Dict[int, Any]
+        self, id_: int, db_mediafiles: dict[int, Any]
     ) -> Iterable[Event]:
         fqid = fqid_from_collection_and_id("mediafile", id_)
 
@@ -154,8 +163,8 @@ class GroupDeleteAction(DeleteAction):
         self,
         type: EventType,
         fqid: FullQualifiedId,
-        fields: Optional[Dict[str, Any]] = None,
-        list_fields: Optional[ListFields] = None,
+        fields: dict[str, Any] | None = None,
+        list_fields: ListFields | None = None,
     ) -> Event:
         """
         Building event by hand, but with eliminating the meta-* fields

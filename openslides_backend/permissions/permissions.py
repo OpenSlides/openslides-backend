@@ -1,11 +1,10 @@
 # Code generated. DO NOT EDIT.
 
 from enum import Enum
-from typing import Dict, List
 
 from .base_classes import Permission
 
-PERMISSION_YML_CHECKSUM = "8b461a28b723790de132bdea315d4a21"
+PERMISSION_YML_CHECKSUM = "ef7ca2dc9651ba3b9615ef7f1ea7fde6"
 
 
 class _AgendaItem(str, Permission, Enum):
@@ -91,7 +90,7 @@ class Permissions:
 
 
 # Holds the corresponding parent for each permission.
-permission_parents: Dict[Permission, List[Permission]] = {
+permission_parents: dict[Permission, list[Permission]] = {
     _AgendaItem.CAN_SEE: [_AgendaItem.CAN_SEE_INTERNAL],
     _AgendaItem.CAN_SEE_INTERNAL: [_AgendaItem.CAN_MANAGE],
     _AgendaItem.CAN_MANAGE: [],
@@ -103,10 +102,7 @@ permission_parents: Dict[Permission, List[Permission]] = {
     _Assignment.CAN_MANAGE: [],
     _Assignment.CAN_NOMINATE_SELF: [],
     _Chat.CAN_MANAGE: [],
-    _ListOfSpeakers.CAN_SEE: [
-        _ListOfSpeakers.CAN_MANAGE,
-        _ListOfSpeakers.CAN_BE_SPEAKER,
-    ],
+    _ListOfSpeakers.CAN_SEE: [_ListOfSpeakers.CAN_MANAGE],
     _ListOfSpeakers.CAN_MANAGE: [],
     _ListOfSpeakers.CAN_BE_SPEAKER: [],
     _Mediafile.CAN_SEE: [_Mediafile.CAN_MANAGE],

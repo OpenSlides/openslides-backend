@@ -58,7 +58,7 @@ To setup and local development version run
 
     $ python -m venv .virtualenv
     $ source .virtualenv/bin/activate
-    $ . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
+    $ . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
 
 To start it run
 
@@ -71,77 +71,90 @@ The action component listens to port 9002. The presenter component listens to po
 
 ## Environment variables
 
-* OPENSLIDES_BACKEND_COMPONENT
+### Functionality
+
+* `OPENSLIDES_BACKEND_COMPONENT`
 
   Use one of the following values to start only one component of this service: `action` or `presenter`. Defaults to all of them using different child processes. If using `all` you can shut down all compontes by sending SIGTERM to Python master process.
 
-* ACTION_PORT
+* `ACTION_PORT`
 
-  Action component listens on this port. Default: 9002
+  Action component listens on this port. Default: `9002`
 
-* PRESENTER_PORT
+* `PRESENTER_PORT`
 
-  Presenter component listens on this port. Default 9003
+  Presenter component listens on this port. Default `9003`
 
-* OPENSLIDES_DEVELOPMENT
+* `OPENTELEMETRY_ENABLED`
 
-  Set this variable e. g. to 1 to set loglevel to `debug` and activate Gunicorn's reload mechanism.
+  Set this variable e. g. to `1` to enable span reporting to an OpenTelemetry collector (defined in the main OpenSlides repository).
 
-* OPENTELEMETRY_ENABLED
-
-  Set this variable e. g. to 1 to enable span reporting to an OpenTelemetry collector (defined in the main OpenSlides repository).
-
-* OPENSLIDES_LOGLEVEL
+* `OPENSLIDES_LOGLEVEL`
 
   In production mode you can set the loglevel to `debug`, `info`, `warning`, `error` or `critical`. Default is `info`.
 
-* OPENSLIDES_BACKEND_RAISE_4XX
+* `OPENSLIDES_BACKEND_NUM_WORKERS`
+
+  Number of Gunicorn workers. Default: `1`
+
+* `OPENSLIDES_BACKEND_WORKER_TIMEOUT`
+
+  Gunicorn worker timeout in seconds. Default: `30`
+
+* `OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT`
+
+  Seconds after which an action is delegated to an action worker. `-1` represents an infinite timeout. `-2` deactivates action workers and local threading alltogether. Default: `1`
+
+### Development
+
+* `OPENSLIDES_DEVELOPMENT`
+
+  Set this variable e. g. to `1` to set loglevel to `debug` and activate Gunicorn's reload mechanism.
+
+* `OPENSLIDES_BACKEND_RAISE_4XX`
 
   Set this variable to raise HTTP 400 and 403 as exceptions instead of valid HTTP responses.
 
-* DATASTORE_READER_PROTOCOL
+### Connection to other services
+* `DATASTORE_READER_PROTOCOL`
 
-  Protocol of datastore reader service. Default: http
+  Protocol of datastore reader service. Default: `http`
 
-* DATASTORE_READER_HOST
+* `DATASTORE_READER_HOST`
 
-  Host of datastore reader service. Default: localhost
+  Host of datastore reader service. Default: `localhost`
 
-* DATASTORE_READER_PORT
+* `DATASTORE_READER_PORT`
 
-  Port of datastore reader service. Default: 9010
+  Port of datastore reader service. Default: `9010`
 
-* DATASTORE_READER_PATH
+* `DATASTORE_READER_PATH`
 
-  Path of datastore reader service. Default: /internal/datastore/reader
+  Path of datastore reader service. Default: `/internal/datastore/reader`
 
-* DATASTORE_WRITER_PROTOCOL
+* `DATASTORE_WRITER_PROTOCOL`
 
-  Protocol of datastore writer service. Default: http
+  Protocol of datastore writer service. Default: `http`
 
-* DATASTORE_WRITER_HOST
+* `DATASTORE_WRITER_HOST`
 
-  Host of datastore writer service. Default: localhost
+  Host of datastore writer service. Default: `localhost`
 
-* DATASTORE_WRITER_PORT
+* `DATASTORE_WRITER_PORT`
 
-  Port of datastore writer service. Default: 9011
+  Port of datastore writer service. Default: `9011`
 
-* DATASTORE_WRITER_PATH
+* `DATASTORE_WRITER_PATH`
 
-  Path of datastore writer service. Default: /internal/datastore/writer
+  Path of datastore writer service. Default: `/internal/datastore/writer`
 
-* OPENSLIDES_BACKEND_NUM_WORKERS
+* `AUTH_HOST`
 
-  Number of Gunicorn workers. Default: 1
+  Host of auth service. Used by the `authlib` package. Default: `localhost`
 
-* OPENSLIDES_BACKEND_WORKER_TIMEOUT
+* `AUTH_PORT`
 
-  Gunicorn worker timeout in seconds. Default: 30
-
-* AUTH_HOST and AUTH_PORT
-
-  Implicitly used by the authlib to get the endpoint for the auth-service
+  Port of auth service. Used by the `authlib` package. Default: `9004`
 
 
 # Some curl examples

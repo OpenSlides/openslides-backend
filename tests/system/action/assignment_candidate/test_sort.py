@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,18 +7,28 @@ from tests.system.action.base import BaseActionTestCase
 class AssignmentCandidateSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-            "user/233": {"username": "username_233"},
-            "user/234": {"username": "username_234"},
+            "user/233": {"username": "username_233", "meeting_user_ids": [233]},
+            "user/234": {"username": "username_234", "meeting_user_ids": [234]},
+            "meeting_user/233": {
+                "meeting_id": 1,
+                "user_id": 233,
+                "assignment_candidate_ids": [31],
+            },
+            "meeting_user/234": {
+                "meeting_id": 1,
+                "user_id": 234,
+                "assignment_candidate_ids": [32],
+            },
             "assignment_candidate/31": {
                 "assignment_id": 222,
-                "user_id": 233,
+                "meeting_user_id": 233,
                 "meeting_id": 1,
             },
             "assignment_candidate/32": {
                 "assignment_id": 222,
-                "user_id": 234,
+                "meeting_user_id": 234,
                 "meeting_id": 1,
             },
         }
@@ -28,16 +38,26 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-                "user/233": {"username": "username_233"},
-                "user/234": {"username": "username_234"},
+                "user/233": {"username": "username_233", "meeting_user_ids": [233]},
+                "user/234": {"username": "username_234", "meeting_user_ids": [234]},
+                "meeting_user/233": {
+                    "meeting_id": 1,
+                    "user_id": 233,
+                    "assignment_candidate_ids": [31],
+                },
+                "meeting_user/234": {
+                    "meeting_id": 1,
+                    "user_id": 234,
+                    "assignment_candidate_ids": [32],
+                },
                 "assignment_candidate/31": {
                     "assignment_id": 222,
-                    "user_id": 233,
+                    "meeting_user_id": 233,
                     "meeting_id": 1,
                 },
                 "assignment_candidate/32": {
                     "assignment_id": 222,
-                    "user_id": 234,
+                    "meeting_user_id": 234,
                     "meeting_id": 1,
                 },
             }
@@ -57,11 +77,21 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
-                "user/233": {"username": "username_233"},
-                "user/234": {"username": "username_234"},
+                "user/233": {"username": "username_233", "meeting_user_ids": [233]},
+                "user/234": {"username": "username_234", "meeting_user_ids": [234]},
+                "meeting_user/233": {
+                    "meeting_id": 1,
+                    "user_id": 233,
+                    "assignment_candidate_ids": [31],
+                },
+                "meeting_user/234": {
+                    "meeting_id": 1,
+                    "user_id": 234,
+                    "assignment_candidate_ids": [32],
+                },
                 "assignment_candidate/31": {
                     "assignment_id": 222,
-                    "user_id": 233,
+                    "meeting_user_id": 233,
                     "meeting_id": 1,
                 },
             }
@@ -71,7 +101,10 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             {"assignment_id": 222, "candidate_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Id 32 not in db_instances." in response.json["message"]
+        assert (
+            "assignment_candidate sorting failed, because element assignment_candidate/32 doesn't exist."
+            in response.json["message"]
+        )
 
     def test_sort_another_section_db(self) -> None:
         self.set_models(
@@ -81,19 +114,34 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
                 "user/233": {"username": "username_233"},
                 "user/234": {"username": "username_234"},
                 "user/236": {"username": "username_236"},
+                "meeting_user/233": {
+                    "meeting_id": 1,
+                    "user_id": 233,
+                    "assignment_candidate_ids": [31],
+                },
+                "meeting_user/234": {
+                    "meeting_id": 1,
+                    "user_id": 234,
+                    "assignment_candidate_ids": [32],
+                },
+                "meeting_user/236": {
+                    "meeting_id": 1,
+                    "user_id": 236,
+                    "assignment_candidate_ids": [33],
+                },
                 "assignment_candidate/31": {
                     "assignment_id": 222,
-                    "user_id": 233,
+                    "meeting_user_id": 233,
                     "meeting_id": 1,
                 },
                 "assignment_candidate/32": {
                     "assignment_id": 222,
-                    "user_id": 234,
+                    "meeting_user_id": 234,
                     "meeting_id": 1,
                 },
                 "assignment_candidate/33": {
                     "assignment_id": 222,
-                    "user_id": 236,
+                    "meeting_user_id": 236,
                     "meeting_id": 1,
                 },
             }
@@ -103,7 +151,10 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             {"assignment_id": 222, "candidate_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Additional db_instances found." in response.json["message"]
+        assert (
+            "assignment_candidate sorting failed, because some elements were not included in the call."
+            in response.json["message"]
+        )
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(

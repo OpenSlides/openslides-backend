@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCommentUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "motion/111": {"meeting_id": 1, "comment_ids": [111]},
             "motion_comment/111": {
                 "comment": "comment_srtgb123",
@@ -25,9 +25,18 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "user/1": {"group_$1_ids": [2]},
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
                 "meeting/1": {"admin_group_id": 2, "is_active_in_organization_id": 1},
-                "group/2": {"meeting_id": 1, "admin_group_for_meeting_id": 1},
+                "group/2": {
+                    "meeting_id": 1,
+                    "admin_group_for_meeting_id": 1,
+                    "meeting_user_ids": [1],
+                },
                 **self.test_models,
             }
         )
@@ -119,10 +128,15 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
         self.test_models["motion_comment_section/78"]["submitter_can_write"] = True
         self.test_models["motion_submitter/777"] = {
-            "user_id": self.user_id,
+            "meeting_user_id": 1,
             "motion_id": 111,
         }
         self.test_models["motion/111"]["submitter_ids"] = [self.user_id]
+        self.test_models["meeting_user/1"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "motion_submitter_ids": [777],
+        }
         self.set_models(self.test_models)
         response = self.request(
             "motion_comment.update",

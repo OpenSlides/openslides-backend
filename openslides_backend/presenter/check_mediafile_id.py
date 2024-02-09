@@ -1,9 +1,13 @@
 import mimetypes
-from typing import Any, Dict
+from typing import Any
 
 import fastjsonschema
 
-from ..models.models import Mediafile
+from openslides_backend.action.mixins.meeting_user_helper import (
+    get_groups_from_meeting_user,
+)
+
+from ..models.models import Mediafile, Meeting
 from ..permissions.management_levels import CommitteeManagementLevel
 from ..permissions.permission_helper import (
     has_committee_management_level,
@@ -54,12 +58,12 @@ class CheckMediafileId(BasePresenter):
                     "owner_id",
                     "token",
                     "mimetype",
-                    "used_as_logo_$_in_meeting_id",
-                    "used_as_font_$_in_meeting_id",
                     "projection_ids",
                     "is_public",
                     "inherited_access_group_ids",
-                ],
+                ]
+                + Meeting.reverse_logo_places()
+                + Meeting.reverse_font_places(),
             )
         except DatastoreException:
             return {"ok": False}
@@ -80,7 +84,7 @@ class CheckMediafileId(BasePresenter):
         return {"ok": False}
 
     def check_permissions(
-        self, mediafile: Dict[str, Any], owner_collection: str, owner_id: int
+        self, mediafile: dict[str, Any], owner_collection: str, owner_id: int
     ) -> None:
         # Try to get the meeting id.
         if owner_collection == "organization":
@@ -100,12 +104,14 @@ class CheckMediafileId(BasePresenter):
         if is_admin(self.datastore, self.user_id, owner_id):
             return
 
-        # The user can see the meeting and (used_as_logo_$_in_meeting_id
-        #    or used_as_font_$_in_meeting_id is not empty)
+        # The user can see the meeting and (used_as_logo_xxx_in_meeting_id
+        #    or used_as_font_xxx_in_meeting_id is not empty)
         can_see_meeting = self.check_can_see_meeting(meeting)
         if can_see_meeting:
-            if mediafile.get("used_as_logo_$_in_meeting_id") or mediafile.get(
-                "used_as_font_$_in_meeting_id"
+            if any(
+                mediafile.get(field)
+                for field in Meeting.reverse_logo_places()
+                + Meeting.reverse_font_places()
             ):
                 return
         # The user has projector.can_see
@@ -132,16 +138,14 @@ class CheckMediafileId(BasePresenter):
             inherited_access_group_ids = set(
                 mediafile.get("inherited_access_group_ids", [])
             )
-            user = self.datastore.get(
-                fqid_from_collection_and_id("user", self.user_id),
-                [f"group_${owner_id}_ids"],
+            user_groups = set(
+                get_groups_from_meeting_user(self.datastore, owner_id, self.user_id)
             )
-            user_groups = set(user.get(f"group_${owner_id}_ids", []))
             if inherited_access_group_ids & user_groups:
                 return
         raise PermissionDenied("You are not allowed to see this mediafile.")
 
-    def check_can_see_meeting(self, meeting: Dict[str, Any]) -> bool:
+    def check_can_see_meeting(self, meeting: dict[str, Any]) -> bool:
         """needs meeting to include enable_anonymous, user_ids, committee_id."""
         if meeting.get("enable_anonymous"):
             return True

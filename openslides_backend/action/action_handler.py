@@ -1,6 +1,7 @@
+from collections.abc import Callable, Iterable
 from copy import deepcopy
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 import fastjsonschema
 
@@ -68,20 +69,20 @@ class ActionHandler(BaseHandler):
 
     MAX_RETRY = 3
 
-    on_success: List[Callable[[], None]]
+    on_success: list[Callable[[], None]]
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
         self.on_success = []
 
     @classmethod
-    def get_health_info(cls) -> Iterable[Tuple[str, Dict[str, Any]]]:
+    def get_health_info(cls) -> Iterable[tuple[str, dict[str, Any]]]:
         """
         Returns name and development status of all actions.
         """
         for name in sorted(actions_map):
             action = actions_map[name]
-            schema: Dict[str, Any] = deepcopy(action_data_schema)
+            schema: dict[str, Any] = deepcopy(action_data_schema)
             schema["items"] = action.schema
             if action.is_singular:
                 schema["maxItems"] = 1
@@ -116,8 +117,8 @@ class ActionHandler(BaseHandler):
             else:
 
                 def transform_to_list(
-                    tuple: Tuple[Optional[WriteRequest], Optional[ActionResults]]
-                ) -> Tuple[List[WriteRequest], Optional[ActionResults]]:
+                    tuple: tuple[WriteRequest | None, ActionResults | None]
+                ) -> tuple[list[WriteRequest], ActionResults | None]:
                     return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
 
                 for element in payload:
@@ -146,7 +147,7 @@ class ActionHandler(BaseHandler):
 
     def execute_write_requests(
         self,
-        get_write_requests: Callable[..., Tuple[List[WriteRequest], T]],
+        get_write_requests: Callable[..., tuple[list[WriteRequest], T]],
         *args: Any,
     ) -> T:
         with make_span(self.env, "execute write requests"):
@@ -166,22 +167,19 @@ class ActionHandler(BaseHandler):
 
     def parse_actions(
         self, payload: Payload
-    ) -> Tuple[List[WriteRequest], ActionsResponseResults]:
+    ) -> tuple[list[WriteRequest], ActionsResponseResults]:
         """
         Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
         """
-        write_requests: List[WriteRequest] = []
+        write_requests: list[WriteRequest] = []
         action_response_results: ActionsResponseResults = []
         relation_manager = RelationManager(self.datastore)
         action_name_list = []
         for i, element in enumerate(payload):
             with make_span(self.env, f"parse action: { element['action'] }"):
                 action_name = element["action"]
-                if (
-                    actions_map.get(action_name)
-                    and actions_map.get(action_name).is_singular  # type: ignore
-                ):
+                if (action := actions_map.get(action_name)) and action.is_singular:
                     if action_name in action_name_list:
                         exception = ActionException(
                             f"Action {action_name} may not appear twice in one request."
@@ -211,18 +209,20 @@ class ActionHandler(BaseHandler):
     def perform_action(
         self,
         action_payload_element: PayloadElement,
-        relation_manager: Optional[RelationManager] = None,
-    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
+        relation_manager: RelationManager | None = None,
+    ) -> tuple[WriteRequest | None, ActionResults | None]:
         action_name = action_payload_element["action"]
         ActionClass = actions_map.get(action_name)
-        if ActionClass is None or (
-            not self.env.is_dev_mode()
-            and (
+        # Actions cannot be accessed in the following three cases:
+        # - they do not exist
+        # - they are not public and the request is not internal
+        # - they are backend internal and the backend is not in dev mode
+        if (
+            ActionClass is None
+            or (ActionClass.action_type != ActionType.PUBLIC and not self.internal)
+            or (
                 ActionClass.action_type == ActionType.BACKEND_INTERNAL
-                or (
-                    not self.internal
-                    and ActionClass.action_type == ActionType.STACK_INTERNAL
-                )
+                and not self.env.is_dev_mode()
             )
         ):
             raise View400Exception(f"Action {action_name} does not exist.")

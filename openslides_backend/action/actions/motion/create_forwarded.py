@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -13,13 +13,15 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..meeting_user.create import MeetingUserCreate
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
+from ..meeting_user.update import MeetingUserUpdate
 from ..user.create import UserCreate
-from ..user.update import UserUpdate
 from .create_base import MotionCreateBase
 
 
 @register_action("motion.create_forwarded")
-class MotionCreateForwarded(MotionCreateBase):
+class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
     """
     Create action for forwarded motions.
     """
@@ -34,7 +36,13 @@ class MotionCreateForwarded(MotionCreateBase):
             [
                 GetManyRequest(
                     "meeting",
-                    list({instance["meeting_id"] for instance in action_data}),
+                    list(
+                        {
+                            meeting_id
+                            for instance in action_data
+                            if (meeting_id := instance.get("meeting_id"))
+                        }
+                    ),
                     [
                         "id",
                         "is_active_in_organization_id",
@@ -53,7 +61,13 @@ class MotionCreateForwarded(MotionCreateBase):
                 ),
                 GetManyRequest(
                     "motion",
-                    list({instance["origin_id"] for instance in action_data}),
+                    list(
+                        {
+                            origin_id
+                            for instance in action_data
+                            if (origin_id := instance.get("origin_id"))
+                        }
+                    ),
                     [
                         "meeting_id",
                         "lead_motion_id",
@@ -67,7 +81,7 @@ class MotionCreateForwarded(MotionCreateBase):
             ]
         )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             [
@@ -85,36 +99,44 @@ class MotionCreateForwarded(MotionCreateBase):
         )
         if committee.get("forwarding_user_id"):
             forwarding_user_id = committee["forwarding_user_id"]
-            forwarding_user = self.datastore.get(
-                fqid_from_collection_and_id("user", forwarding_user_id),
-                [f"group_${instance['meeting_id']}_ids"],
+            meeting_id = instance["meeting_id"]
+            forwarding_user_groups = self.get_groups_from_meeting_user(
+                meeting_id, forwarding_user_id
             )
-            if target_meeting["default_group_id"] not in forwarding_user.get(
-                f"group_${instance['meeting_id']}_ids", []
-            ):
-                user_update_payload = [
-                    {
-                        "id": forwarding_user_id,
-                        "group_$_ids": {
-                            str(instance["meeting_id"]): forwarding_user.get(
-                                f"group_${instance['meeting_id']}_ids", []
-                            )
-                            + [target_meeting["default_group_id"]]
-                        },
-                    }
-                ]
-                self.execute_other_action(
-                    UserUpdate, user_update_payload, skip_history=True
+            if target_meeting["default_group_id"] not in forwarding_user_groups:
+                meeting_user = self.get_meeting_user(
+                    meeting_id, forwarding_user_id, ["id", "group_ids"]
                 )
+                if not meeting_user:
+                    self.execute_other_action(
+                        MeetingUserCreate,
+                        [
+                            {
+                                "meeting_id": meeting_id,
+                                "user_id": forwarding_user_id,
+                                "group_ids": [target_meeting["default_group_id"]],
+                            }
+                        ],
+                    )
+                else:
+                    self.execute_other_action(
+                        MeetingUserUpdate,
+                        [
+                            {
+                                "id": meeting_user["id"],
+                                "group_ids": (meeting_user.get("group_ids") or [])
+                                + [target_meeting["default_group_id"]],
+                            }
+                        ],
+                    )
+
         else:
             username = committee.get("name", "Committee User")
+            meeting_id = instance["meeting_id"]
             committee_user_create_payload = {
                 "last_name": username,
                 "is_physical_person": False,
                 "is_active": False,
-                "group_$_ids": {
-                    str(target_meeting["id"]): [target_meeting["default_group_id"]]
-                },
                 "forwarding_committee_ids": [committee["id"]],
             }
             action_result = self.execute_other_action(
@@ -122,6 +144,16 @@ class MotionCreateForwarded(MotionCreateBase):
             )
             assert action_result and action_result[0]
             forwarding_user_id = action_result[0]["id"]
+            self.execute_other_action(
+                MeetingUserCreate,
+                [
+                    {
+                        "user_id": forwarding_user_id,
+                        "meeting_id": meeting_id,
+                        "group_ids": [target_meeting["default_group_id"]],
+                    }
+                ],
+            )
         instance["submitter_ids"] = [forwarding_user_id]
 
         self.create_submitters(instance)
@@ -131,7 +163,7 @@ class MotionCreateForwarded(MotionCreateBase):
         instance["forwarded"] = round(time.time())
         return instance
 
-    def check_for_origin_id(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def check_for_origin_id(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["committee_id"],
@@ -158,7 +190,7 @@ class MotionCreateForwarded(MotionCreateBase):
             )
         return committee
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["meeting_id"],
@@ -182,7 +214,7 @@ class MotionCreateForwarded(MotionCreateBase):
             msg = "Amendments cannot be forwarded."
             raise PermissionDenied(msg)
 
-    def set_origin_ids(self, instance: Dict[str, Any]) -> None:
+    def set_origin_ids(self, instance: dict[str, Any]) -> None:
         if instance.get("origin_id"):
             origin = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["origin_id"]),
@@ -192,7 +224,7 @@ class MotionCreateForwarded(MotionCreateBase):
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
             instance["all_origin_ids"].append(instance["origin_id"])
 
-    def check_state_allow_forwarding(self, instance: Dict[str, Any]) -> None:
+    def check_state_allow_forwarding(self, instance: dict[str, Any]) -> None:
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["state_id"],
@@ -204,7 +236,7 @@ class MotionCreateForwarded(MotionCreateBase):
         if not state.get("allow_motion_forwarding"):
             raise ActionException("State doesn't allow to forward motion.")
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         forwarded_entries = defaultdict(list)
         for instance in self.instances:
             forwarded_entries[

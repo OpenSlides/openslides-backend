@@ -1,6 +1,6 @@
 import builtins
 from collections import defaultdict
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Literal
 
 from datastore.shared.postgresql_backend import filter_models, is_comparable
 from datastore.shared.util import DeletedModelsBehaviour
@@ -20,7 +20,13 @@ from ...shared.typing import DeletedModel, ModelMap
 from .cache_adapter import CacheDatastoreAdapter
 from .commands import GetManyRequest
 from .handle_datastore_errors import raise_datastore_error
-from .interface import Engine, LockResult, MappedFieldsPerFqid, PartialModel
+from .interface import (
+    DatastoreService,
+    Engine,
+    LockResult,
+    MappedFieldsPerFqid,
+    PartialModel,
+)
 
 MODEL_FIELD_SQL = "data->>%s"
 MODEL_FIELD_NUMERIC_SQL = r"\(data->%s\)::numeric"
@@ -29,7 +35,7 @@ COMPARISON_VALUE_TEXT_SQL = "%s::text"
 COMPARISON_VALUE_SQL = "%s"
 
 
-class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
+class ExtendedDatastoreAdapter(CacheDatastoreAdapter, DatastoreService):
     """
     Subclass of the datastore adapter to extend the functions with the usage of the changed_models.
     This is the implementation of the interface DatastoreService
@@ -87,8 +93,8 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     def get(
         self,
         fqid: FullQualifiedId,
-        mapped_fields: List[str],
-        position: Optional[int] = None,
+        mapped_fields: list[str],
+        position: int | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
         use_changed_models: bool = True,
@@ -152,12 +158,12 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
 
     def get_many(
         self,
-        get_many_requests: List[GetManyRequest],
-        position: Optional[int] = None,
+        get_many_requests: list[GetManyRequest],
+        position: int | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
         use_changed_models: bool = True,
-    ) -> Dict[Collection, Dict[int, PartialModel]]:
+    ) -> dict[Collection, dict[int, PartialModel]]:
         if use_changed_models:
             if position:
                 raise DatastoreException(
@@ -197,11 +203,11 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         self,
         collection: Collection,
         filter: Filter,
-        mapped_fields: List[str],
+        mapped_fields: list[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
         use_changed_models: bool = True,
-    ) -> Dict[int, PartialModel]:
+    ) -> dict[int, PartialModel]:
         results = super().filter(
             collection, filter, mapped_fields, get_deleted_models, lock_result
         )
@@ -266,7 +272,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
         use_changed_models: bool = True,
-    ) -> Optional[int]:
+    ) -> int | None:
         return self._extended_minmax(
             collection,
             filter,
@@ -285,7 +291,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
         use_changed_models: bool = True,
-    ) -> Optional[int]:
+    ) -> int | None:
         return self._extended_minmax(
             collection,
             filter,
@@ -305,7 +311,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         lock_result: bool,
         use_changed_models: bool,
         mode: Literal["min", "max"],
-    ) -> Optional[int]:
+    ) -> int | None:
         if not use_changed_models:
             return getattr(super(), mode)(
                 collection, filter, field, get_deleted_models, lock_result
@@ -339,12 +345,12 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     def _get_many_from_changed_models(
         self,
         mapped_fields_per_fqid: MappedFieldsPerFqid,
-    ) -> Tuple[Dict[Collection, Dict[int, PartialModel]], MappedFieldsPerFqid]:
+    ) -> tuple[dict[Collection, dict[int, PartialModel]], MappedFieldsPerFqid]:
         """
         Returns a dictionary of the changed models for the given collections together with all
         missing fields.
         """
-        results: Dict[Collection, Dict[int, PartialModel]] = defaultdict(
+        results: dict[Collection, dict[int, PartialModel]] = defaultdict(
             lambda: defaultdict(dict)
         )
         missing_fields_per_fqid: MappedFieldsPerFqid = defaultdict(list)
@@ -359,9 +365,9 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                         else:
                             missing_fields_per_fqid[fqid].append(field)
                 else:
-                    results[collection_from_fqid(fqid)][
-                        id_from_fqid(fqid)
-                    ] = self.changed_models[fqid]
+                    results[collection_from_fqid(fqid)][id_from_fqid(fqid)] = (
+                        self.changed_models[fqid]
+                    )
                     missing_fields_per_fqid[fqid] = []
             else:
                 missing_fields_per_fqid[fqid] = mapped_fields
@@ -370,8 +376,8 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     def _apply_changed_model_updates(
         self,
         collection: Collection,
-        results: Dict[int, PartialModel],
-        mapped_fields: List[str],
+        results: dict[int, PartialModel],
+        mapped_fields: list[str],
         get_deleted_models: DeletedModelsBehaviour,
     ) -> None:
         # create temp list of ids to be able to change the models dict in place
@@ -395,9 +401,9 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     def _update_results_and_get_missing_fields(
         self,
         collection: Collection,
-        results: Dict[int, PartialModel],
-        changed_results: Dict[int, PartialModel],
-        mapped_fields: List[str],
+        results: dict[int, PartialModel],
+        changed_results: dict[int, PartialModel],
+        mapped_fields: list[str],
     ) -> MappedFieldsPerFqid:
         missing_fields_per_fqid = defaultdict(list)
         for id, model in changed_results.items():
@@ -417,7 +423,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
 
     def _fetch_missing_fields_from_datastore(
         self, missing_fields_per_fqid: MappedFieldsPerFqid, lock_result: bool
-    ) -> Dict[Collection, Dict[int, PartialModel]]:
+    ) -> dict[Collection, dict[int, PartialModel]]:
         get_many_requests = [
             GetManyRequest(collection_from_fqid(fqid), [id_from_fqid(fqid)], fields)
             for fqid, fields in missing_fields_per_fqid.items()

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
@@ -9,9 +9,13 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "meeting/1": {"name": "meeting_1", "is_active_in_organization_id": 1},
-            "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+            "group/7": {
+                "name": "group_LxAHErRs",
+                "meeting_user_ids": [],
+                "meeting_id": 1,
+            },
             "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/1"},
         }
 
@@ -19,7 +23,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/1"},
             }
         )
@@ -38,7 +46,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_ekxORNiV",
                     "child_ids": [111],
@@ -68,7 +80,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -97,8 +113,16 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
-                "group/8": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
+                "group/8": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -159,8 +183,16 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/2": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
-                "group/4": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
+                "group/2": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
+                "group/4": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -191,8 +223,16 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/3": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
-                "group/6": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
+                "group/3": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
+                "group/6": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -227,9 +267,21 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/1": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
-                "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
-                "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 1},
+                "group/1": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
+                "group/2": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
+                "group/3": {
+                    "name": "group_ghjeei",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -264,9 +316,21 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/1": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
-                "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
-                "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 1},
+                "group/1": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
+                "group/2": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
+                "group/3": {
+                    "name": "group_ghjeei",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -339,7 +403,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -379,7 +447,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -448,7 +520,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "meeting_user_ids": [],
+                    "meeting_id": 1,
+                },
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],

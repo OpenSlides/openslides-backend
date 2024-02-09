@@ -1,12 +1,10 @@
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
-
-from openslides_backend.shared.typing import HistoryInformation
+from typing import Any
 
 import simplejson as json
-
 from openslides_backend.models.models import Poll
+from openslides_backend.shared.typing import HistoryInformation
 
 from ....action.util.typing import ActionResultElement
 from ....permissions.permission_helper import has_perm
@@ -14,11 +12,8 @@ from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, VoteServiceException
-from ....shared.patterns import (
-    KEYSEPARATOR,
-    collection_from_fqid,
-    fqid_from_collection_and_id,
-)
+from ....shared.patterns import (KEYSEPARATOR, collection_from_fqid,
+                                 fqid_from_collection_and_id)
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownControl
@@ -27,7 +22,7 @@ from ..vote.user_token_helper import get_user_token
 
 
 class PollPermissionMixin(Action):
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         if "meeting_id" in instance:
             content_object_id = instance.get("content_object_id", "")
             meeting_id = instance["meeting_id"]
@@ -61,9 +56,9 @@ def check_poll_or_option_perms(
 
 
 class StopControl(CountdownControl, Action):
-    invalid_votes: List[Dict[str, str]] = []
+    invalid_votes: list[dict[str, str]] = []
 
-    def on_stop(self, instance: Dict[str, Any]) -> None:
+    def on_stop(self, instance: dict[str, Any]) -> None:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [
@@ -98,8 +93,8 @@ class StopControl(CountdownControl, Action):
             instance["votes_signature"] = results.get("signature")
         action_data = []
         votesvalid = Decimal("0.000000")
-        self.invalid_votes: List[Dict[str, str]] = []
-        option_results: Dict[int, Dict[str, Decimal]] = defaultdict(
+        self.invalid_votes: list[dict[str, str]] = []
+        option_results: dict[int, dict[str, Decimal]] = defaultdict(
             lambda: defaultdict(lambda: Decimal("0.000000"))
         )  # maps options to their respective YNA sums
         for i, ballot in enumerate(votes):
@@ -120,7 +115,7 @@ class StopControl(CountdownControl, Action):
                 "1.000000"
             )
             votesvalid += vote_weight
-            vote_template = {"user_token": user_token}
+            vote_template: dict[str, str | int] = {"user_token": user_token}
             if "vote_user_id" in ballot:
                 vote_template["user_id"] = ballot["vote_user_id"]
             if "request_user_id" in ballot:
@@ -208,44 +203,46 @@ class StopControl(CountdownControl, Action):
         )
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_users(
-            {**poll, **instance}
-        )
+        instance["entitled_users_at_stop"] = self.get_entitled_users(poll | instance)
 
-    def get_entitled_users(self, poll: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_entitled_users(self, poll: dict[str, Any]) -> list[dict[str, Any]]:
         entitled_users = []
-        entitled_users_ids = set()
         all_voted_users = set(poll.get("voted_ids", []))
-        meeting_id = poll["meeting_id"]
 
         # get all users from the groups.
-        gmr = GetManyRequest("group", poll.get("entitled_group_ids", []), ["user_ids"])
+        gmr = GetManyRequest(
+            "group", poll.get("entitled_group_ids", []), ["meeting_user_ids"]
+        )
         gm_result = self.datastore.get_many([gmr])
         groups = gm_result.get("group", {}).values()
 
+        meeting_user_ids = set()
         for group in groups:
-            user_ids = group.get("user_ids", [])
-            entitled_users_ids.update(user_ids)
+            meeting_user_ids.update(group.get("meeting_user_ids", []))
+        gmr = GetManyRequest(
+            "meeting_user", list(meeting_user_ids), ["user_id", "vote_delegated_to_id"]
+        )
+        gm_result = self.datastore.get_many([gmr])
+        meeting_users = gm_result.get("meeting_user", {})
 
         gmr = GetManyRequest(
             "user",
-            list(entitled_users_ids),
-            [
-                "id",
-                "is_present_in_meeting_ids",
-                f"vote_delegated_${meeting_id}_to_id",
-            ],
+            [mu["user_id"] for mu in meeting_users.values()],
+            ["is_present_in_meeting_ids"],
         )
-        gm_result = self.datastore.get_many([gmr], lock_result=False)
-        users = gm_result.get("user", {}).values()
+        users = self.datastore.get_many([gmr]).get("user", {})
 
-        for user in users:
+        for mu in meeting_users.values():
             entitled_users.append(
                 {
-                    "user_id": user["id"],
-                    "voted": user["id"] in all_voted_users,
-                    "vote_delegated_to_id": user.get(
-                        f"vote_delegated_${meeting_id}_to_id"
+                    "voted": mu["user_id"] in all_voted_users,
+                    "present": poll["meeting_id"]
+                    in users[mu["user_id"]].get("is_present_in_meeting_ids", []),
+                    "user_id": mu["user_id"],
+                    "vote_delegated_to_user_id": (
+                        meeting_users[vote_mu_id]["user_id"]
+                        if (vote_mu_id := mu.get("vote_delegated_to_id"))
+                        else None
                     ),
                 }
             )
@@ -260,7 +257,7 @@ class StopControl(CountdownControl, Action):
 class PollHistoryMixin(Action):
     poll_history_information: str
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         # no datastore access necessary if information is in payload
         polls = self.get_instances_with_fields(["content_object_id"])
         return {
@@ -270,7 +267,7 @@ class PollHistoryMixin(Action):
             for poll in polls
         }
 
-    def get_history_title(self, poll: Dict[str, Any]) -> str:
+    def get_history_title(self, poll: dict[str, Any]) -> str:
         content_collection = collection_from_fqid(poll["content_object_id"])
         if content_collection == "assignment":
             return "Ballot"

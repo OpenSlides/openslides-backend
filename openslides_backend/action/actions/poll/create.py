@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -65,11 +65,14 @@ class PollCreateAction(
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
+            "amount_global_yes": decimal_schema,
+            "amount_global_no": decimal_schema,
+            "amount_global_abstain": decimal_schema,
         },
     )
     poll_history_information = "created"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         action_data = []
 
@@ -88,12 +91,14 @@ class PollCreateAction(
         if instance["type"] == Poll.TYPE_ANALOG and "entitled_group_ids" in instance:
             raise ActionException("entitled_group_ids is not allowed for analog.")
         # check analog and onehundredpercentbase entitled
-        if (
-            instance["type"] == Poll.TYPE_ANALOG
-            and instance.get("onehundred_percent_base") == "entitled"
+        if instance["type"] == Poll.TYPE_ANALOG and (
+            base := instance.get("onehundred_percent_base")
+        ) in (
+            Poll.ONEHUNDRED_PERCENT_BASE_ENTITLED,
+            Poll.ONEHUNDRED_PERCENT_BASE_ENTITLED_PRESENT,
         ):
             raise ActionException(
-                "onehundred_percent_base: value entitled is not allowed for analog."
+                f"onehundred_percent_base: value {base} is not allowed for analog."
             )
         self.check_onehundred_percent_base(instance)
 
@@ -122,7 +127,7 @@ class PollCreateAction(
         for weight, option in enumerate(instance.get("options", []), start=1):
             # check the keys with staticmethod from option.create, where they belong
             key = OptionCreateAction.check_one_of_three_keywords(option)
-            data: Dict[str, Any] = {
+            data: dict[str, Any] = {
                 "poll_id": instance["id"],
                 "meeting_id": instance["meeting_id"],
                 "weight": weight,
@@ -156,6 +161,13 @@ class PollCreateAction(
             "meeting_id": instance["meeting_id"],
             "weight": 1,
         }
+        if instance["type"] == "analog":
+            for option in ["yes", "no", "abstain"]:
+                if instance["type"] == "analog" and instance.get(f"global_{option}"):
+                    global_data[option] = self.parse_vote_value(
+                        instance, f"amount_global_{option}"
+                    )
+                instance.pop(f"amount_global_{option}", None)
         action_data.append(global_data)
 
         # Execute the create option actions
@@ -191,15 +203,15 @@ class PollCreateAction(
         instance.pop("publish_immediately", None)
         return instance
 
-    def parse_vote_value(self, data: Dict[str, Any], field: str) -> Any:
+    def parse_vote_value(self, data: dict[str, Any], field: str) -> Any:
         return data.get(field, "-2.000000")
 
-    def check_onehundred_percent_base(self, instance: Dict[str, Any]) -> None:
+    def check_onehundred_percent_base(self, instance: dict[str, Any]) -> None:
         pollmethod = instance["pollmethod"]
         onehundred_percent_base = instance.get("onehundred_percent_base")
         base_check_onehundred_percent_base(pollmethod, onehundred_percent_base)
 
-    def check_state_change(self, instance: Dict[str, Any]) -> bool:
+    def check_state_change(self, instance: dict[str, Any]) -> bool:
         if instance["type"] != Poll.TYPE_ANALOG:
             return False
         check_fields = (

@@ -1,12 +1,12 @@
-FROM python:3.10.3-slim-buster
+FROM python:3.10.13-slim-bookworm
 
-RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support gcc libpq-dev
+RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support gcc libpq-dev libmagic1
 
 WORKDIR /app
 
 COPY requirements/ requirements/
 ARG REQUIREMENTS_FILE=requirements_development.txt
-RUN . requirements/export_datastore_commit.sh && pip install --no-cache-dir --requirement requirements/$REQUIREMENTS_FILE
+RUN . requirements/export_service_commits.sh && pip install --no-cache-dir --requirement requirements/$REQUIREMENTS_FILE
 
 COPY dev/.bashrc .
 COPY dev/cleanup.sh .

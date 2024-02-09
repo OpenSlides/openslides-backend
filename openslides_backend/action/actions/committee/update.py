@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Committee
 from ....permissions.management_levels import (
@@ -32,11 +32,12 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
             "organization_tag_ids",
-            "user_$_management_level",
+            "manager_ids",
+            "external_id",
         ],
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         if instance.get("default_meeting_id"):
             self.check_meeting_in_committee(
@@ -55,7 +56,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 f"Meeting {meeting_id} does not belong to committee {committee_id}"
             )
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         if has_organization_management_level(
             self.datastore,
             self.user_id,
@@ -69,7 +70,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 for field in [
                     "forward_to_committee_ids",
                     "receive_forwardings_from_committee_ids",
-                    "user_$_management_level",
+                    "manager_ids",
                 ]
             ]
         ):

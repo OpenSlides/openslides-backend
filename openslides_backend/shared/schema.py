@@ -1,6 +1,6 @@
 from datastore.shared.util.key_types import _collection_regex, _field_regex, _id_regex
 
-from .patterns import DECIMAL_REGEX, FQID_REGEX
+from .patterns import DECIMAL_REGEX, FQID_REGEX, POSITIVE_NUMBER_REGEX
 from .typing import Schema
 
 schema_version = "http://json-schema.org/draft-07/schema#"
@@ -39,7 +39,11 @@ optional_str_list_schema: Schema = {**base_list_schema, "items": optional_str_sc
 str_list_schema: Schema = {**base_list_schema, "items": required_str_schema}
 
 decimal_schema: Schema = {"type": "string", "pattern": DECIMAL_REGEX}
-
+number_string_json_schema: Schema = {
+    "type": "object",
+    "patternProperties": {POSITIVE_NUMBER_REGEX: {"type": "string"}},
+    "additionalProperties": False,
+}
 models_map_object: Schema = {
     "type": "object",
     "properties": {

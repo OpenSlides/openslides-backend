@@ -53,7 +53,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
         response = self.request("motion_category.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['name', 'meeting_id'] properties",
+            "data must contain ['meeting_id', 'name'] properties",
             response.json["message"],
         )
 
@@ -123,8 +123,15 @@ class MotionCategorySystemTest(BaseActionTestCase):
                 "prefix": "test",
             },
         )
-        self.assert_status_code(response, 400)
-        assert "Prefix 'test' is not unique in the meeting." in response.json["message"]
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion_category/2",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "prefix": "test",
+            },
+        )
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(

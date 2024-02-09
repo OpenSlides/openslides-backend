@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
@@ -8,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_workflow/12": {
                 "name": "name_workflow1",
                 "first_state_id": 34,
@@ -32,7 +32,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_state/34": {
                     "name": "name_state34",
                     "meeting_id": 222,
-                    "set_created_timestamp": True,
+                    "set_workflow_timestamp": True,
                 },
             }
         )
@@ -50,14 +50,19 @@ class MotionCreateActionTest(BaseActionTestCase):
         model = self.get_model("motion/1")
         assert model.get("title") == "test_Xcdfgee"
         assert model.get("meeting_id") == 222
-        assert model.get("created") is not None
+        assert model.get("workflow_timestamp") is not None
+        assert model.get("workflow_timestamp") == model.get("last_modified")
         assert model.get("created") == model.get("last_modified")
         assert model.get("submitter_ids") == [1]
         assert "agenda_create" not in model
         submitter = self.get_model("motion_submitter/1")
-        assert submitter.get("user_id") == 1
+        assert submitter.get("meeting_user_id") == 1
         assert submitter.get("meeting_id") == 222
         assert submitter.get("motion_id") == 1
+        self.assert_model_exists(
+            "meeting_user/1",
+            {"meeting_id": 222, "user_id": 1, "motion_submitter_ids": [1]},
+        )
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 222)
         self.assertEqual(agenda_item.get("content_object_id"), "motion/1")
@@ -84,6 +89,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "tag/56": {"name": "name_56", "meeting_id": 1},
                 "mediafile/8": {"owner_id": "meeting/1"},
                 "meeting/1": {"mediafile_ids": [8]},
+                "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
 
@@ -97,7 +103,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "sort_parent_id": 1,
                 "category_id": 124,
                 "block_id": 78,
-                "supporter_ids": [1],
+                "supporter_meeting_user_ids": [1],
                 "tag_ids": [56],
                 "attachment_ids": [8],
                 "text": "test",
@@ -112,7 +118,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert model.get("sort_parent_id") == 1
         assert model.get("category_id") == 124
         assert model.get("block_id") == 78
-        assert model.get("supporter_ids") == [1]
+        assert model.get("supporter_meeting_user_ids") == [1]
         assert model.get("tag_ids") == [56]
         assert model.get("attachment_ids") == [8]
 
@@ -157,7 +163,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_state/34": {
                     "name": "name_state34",
                     "meeting_id": 222,
-                    "set_created_timestamp": True,
+                    "set_workflow_timestamp": True,
                 },
                 "user/1": {"meeting_ids": [222]},
             }
@@ -174,6 +180,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         motion = self.get_model("motion/1")
         assert motion.get("state_id") == 34
+        assert motion.get("workflow_timestamp")
         assert motion.get("created")
 
     def test_create_workflow_id_from_meeting(self) -> None:
@@ -228,11 +235,11 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "text": "text",
-                "amendment_paragraph_$": {4: "text"},
+                "amendment_paragraphs": {4: "text"},
             },
         )
         self.assert_status_code(response, 400)
-        assert "give amendment_paragraph_$ in this context" in response.json["message"]
+        assert "give amendment_paragraphs in this context" in response.json["message"]
 
     def test_create_reason_missing(self) -> None:
         self.create_model(
@@ -281,7 +288,12 @@ class MotionCreateActionTest(BaseActionTestCase):
             }
         )
         self.set_models(
-            {"user/56": {"meeting_ids": [222]}, "user/57": {"meeting_ids": [222]}}
+            {
+                "user/56": {"meeting_ids": [222]},
+                "user/57": {"meeting_ids": [222]},
+                "meeting_user/56": {"meeting_id": 222, "user_id": 56},
+                "meeting_user/57": {"meeting_id": 222, "user_id": 57},
+            }
         )
         response = self.request(
             "motion.create",
@@ -298,12 +310,12 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert motion.get("submitter_ids") == [1, 2]
         submitter_1 = self.get_model("motion_submitter/1")
         assert submitter_1.get("meeting_id") == 222
-        assert submitter_1.get("user_id") == 56
+        assert submitter_1.get("meeting_user_id") == 56
         assert submitter_1.get("motion_id") == 1
         assert submitter_1.get("weight") == 1
         submitter_2 = self.get_model("motion_submitter/2")
         assert submitter_2.get("meeting_id") == 222
-        assert submitter_2.get("user_id") == 57
+        assert submitter_2.get("meeting_user_id") == 57
         assert submitter_2.get("motion_id") == 1
         assert submitter_2.get("weight") == 2
 
@@ -323,38 +335,6 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "data must not contain {'origin_id'} properties" in response.json["message"]
-        )
-
-    def test_create_amendment(self) -> None:
-        self.set_models(self.permission_test_models)
-        self.set_models(
-            {
-                "meeting/1": {
-                    "name": "meeting_1 _test",
-                    "is_active_in_organization_id": 1,
-                },
-                "motion/3": {"meeting_id": 1, "category_id": 114, "block_id": 123},
-                "motion_category/12": {"meeting_id": 1},
-                "motion_block/13": {"meeting_id": 1},
-                "motion_category/114": {"meeting_id": 1},
-                "motion_block/123": {"meeting_id": 1},
-            }
-        )
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "text": "test",
-                "lead_motion_id": 3,
-                "block_id": 13,
-                "category_id": 12,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "motion/4", {"lead_motion_id": 3, "block_id": 13, "category_id": 12}
         )
 
     def test_create_no_permission(self) -> None:
@@ -383,7 +363,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def setup_permission_test(
-        self, permissions: List[Permission], additional_data: Dict[str, Any] = {}
+        self, permissions: list[Permission], additional_data: dict[str, Any] = {}
     ) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
@@ -485,160 +465,3 @@ class MotionCreateActionTest(BaseActionTestCase):
             response.json["message"]
             == "You are not allowed to perform action motion.create. Forbidden fields: attachment_ids"
         )
-
-    def test_create_no_permission_amendment(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
-        self.set_models(self.permission_test_models)
-        self.set_models({"motion/3": {"meeting_id": 1}})
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "text": "test",
-                "lead_motion_id": 3,
-            },
-        )
-        self.assert_status_code(response, 403)
-        assert (
-            "Missing Permission: motion.can_create_amendments"
-            in response.json["message"]
-        )
-
-    def test_create_permission_amendment(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(
-            3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
-        )
-        self.set_models(self.permission_test_models)
-        self.set_models(
-            {
-                "motion/3": {"meeting_id": 1, "category_id": 56, "block_id": 57},
-                "motion_category/12": {"meeting_id": 1},
-                "motion_category/56": {"meeting_id": 1},
-                "motion_block/13": {"meeting_id": 1},
-                "motion_block/57": {"meeting_id": 1},
-            }
-        )
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "text": "test",
-                "lead_motion_id": 3,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/4", {"block_id": 57, "category_id": 56})
-
-    def test_create_permission_amendment_non_admin(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(
-            3,
-            [
-                Permissions.Motion.CAN_CREATE,
-                Permissions.Motion.CAN_CREATE_AMENDMENTS,
-                Permissions.Motion.CAN_MANAGE,
-            ],
-        )
-        self.set_models(self.permission_test_models)
-        self.set_models(
-            {
-                "motion/3": {
-                    "meeting_id": 1,
-                    "category_id": 56,
-                    "block_id": 57,
-                },
-                "motion_category/12": {"meeting_id": 1},
-                "motion_category/56": {"meeting_id": 1},
-                "motion_block/13": {"meeting_id": 1},
-                "motion_block/57": {"meeting_id": 1},
-            }
-        )
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "text": "test",
-                "lead_motion_id": 3,
-                "category_id": 12,
-                "block_id": 13,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/4", {"block_id": 13, "category_id": 12})
-
-    def test_create_amendment_no_perms_category_id(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(
-            3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
-        )
-        self.set_models(self.permission_test_models)
-        self.set_models(
-            {
-                "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},
-                "motion_category/12": {"meeting_id": 1},
-                "motion_block/13": {"meeting_id": 1},
-            }
-        )
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "text": "test",
-                "lead_motion_id": 3,
-                "category_id": 12,
-            },
-        )
-        self.assert_status_code(response, 403)
-        assert "Forbidden fields: category_id" in response.json["message"]
-
-    def test_create_amendment_no_perms_block_id(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(
-            3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
-        )
-        self.set_models(self.permission_test_models)
-        self.set_models(
-            {
-                "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},
-                "motion_category/12": {"meeting_id": 1},
-                "motion_block/13": {"meeting_id": 1},
-            }
-        )
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "text": "test",
-                "lead_motion_id": 3,
-                "block_id": 13,
-            },
-        )
-        self.assert_status_code(response, 403)
-        assert "Forbidden fields: block_id" in response.json["message"]

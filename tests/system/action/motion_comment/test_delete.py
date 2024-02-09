@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCommentDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion/1": {"meeting_id": 1, "comment_ids": [111]},
             "motion_comment/111": {"meeting_id": 1, "section_id": 78, "motion_id": 1},
             "motion_comment_section/78": {
@@ -20,7 +20,12 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "user/1": {"group_$1_ids": [2]},
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [2],
+                },
                 "meeting/1": {"admin_group_id": 2, "is_active_in_organization_id": 1},
                 "group/2": {"meeting_id": 1, "admin_group_for_meeting_id": 1},
                 "group/3": {"meeting_id": 1},
@@ -99,8 +104,13 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
             {
                 "motion/1": {"meeting_id": 1, "comment_ids": [111]},
                 "motion_comment/111": {"motion_id": 1},
-                "motion_submitter/12": {"user_id": self.user_id, "motion_id": 1},
+                "motion_submitter/12": {"meeting_user_id": 1, "motion_id": 1},
                 "motion_comment_section/78": {"submitter_can_write": True},
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": self.user_id,
+                    "motion_submitter_ids": [12],
+                },
             }
         )
 

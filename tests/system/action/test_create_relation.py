@@ -1,6 +1,4 @@
-from typing import Any, Dict, List, Type
-
-import pytest
+from typing import Any
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.generics.create import CreateAction
@@ -84,8 +82,8 @@ class FakeModelCRBCreateAction(CreateActionWithDependencies):
     dependencies = [FakeModelCRCCreateAction]
 
     def get_dependent_action_data(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> List[Dict[str, Any]]:
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
+    ) -> list[dict[str, Any]]:
         return [
             {
                 "name": "modelC",
@@ -154,11 +152,3 @@ class TestCreateRelation(BaseActionTestCase):
             response.json["message"],
         )
         self.assert_model_not_exists("fake_model_cr_c/1")
-
-    def test_not_implemented_error(self) -> None:
-        """
-        The validation of required fields is not implemented for alle types of RelationListFields,
-        when they are required.
-        """
-        with pytest.raises(NotImplementedError):
-            self.request("fake_model_cr_d.create", {"name": "never"})

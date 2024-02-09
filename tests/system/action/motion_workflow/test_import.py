@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from tests.system.action.base import BaseActionTestCase
 
@@ -7,10 +7,10 @@ class MotionWorkflowImport(BaseActionTestCase):
     def get_state(
         self,
         name: str,
-        next_state_names: List[str],
-        previous_state_names: List[str],
+        next_state_names: list[str],
+        previous_state_names: list[str],
         weight: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return {
             "name": name,
             "recommendation_label": "",
@@ -26,6 +26,8 @@ class MotionWorkflowImport(BaseActionTestCase):
             "next_state_names": next_state_names,
             "previous_state_names": previous_state_names,
             "weight": weight,
+            "set_workflow_timestamp": True,
+            "allow_motion_forwarding": True,
         }
 
     def test_import_simple_case(self) -> None:
@@ -39,7 +41,9 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "name": "test_Xcdfgee",
                 "meeting_id": 42,
                 "first_state_name": "begin",
-                "states": [self.get_state("begin", [], [])],
+                "states": [
+                    self.get_state("begin", [], []),
+                ],
             },
         )
         self.assert_status_code(response, 200)
@@ -58,6 +62,8 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "name": "begin",
                 "first_state_of_workflow_id": 1,
                 "weight": 1,
+                "set_workflow_timestamp": True,
+                "allow_motion_forwarding": True,
             },
         )
 

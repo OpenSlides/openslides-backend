@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from datastore.migrations import (
     BaseEvent,
@@ -29,7 +29,7 @@ class Migration(BaseEventMigration):
     target_migration_index = 36
 
     prefixes = ("state", "recommendation")
-    list_updates: List[BaseEvent]
+    list_updates: list[BaseEvent]
 
     def position_init(self) -> None:
         self.list_updates = []
@@ -37,7 +37,7 @@ class Migration(BaseEventMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection, _ = collection_and_id_from_fqid(event.fqid)
         if collection != "motion":
             return None
@@ -45,7 +45,7 @@ class Migration(BaseEventMigration):
         if isinstance(event, CreateEvent):
             self.handle_event("state", event)
         elif isinstance(event, DeleteEvent):
-            model: Dict[str, Any] = self.new_accessor.get_model(event.fqid)
+            model: dict[str, Any] = self.new_accessor.get_model(event.fqid)
             for prefix in self.prefixes:
                 if f"{prefix}_extension_reference_ids" in model:
                     self.list_updates += [
@@ -76,7 +76,7 @@ class Migration(BaseEventMigration):
                             f"referenced_in_motion_{prefix}_extension_ids"
                         ]
                         if self.will_exist(
-                            (fqid := fqid_from_collection_and_id("motion", motion_id))
+                            fqid := fqid_from_collection_and_id("motion", motion_id)
                         )
                         and fqid != event.fqid
                     ]
@@ -85,10 +85,10 @@ class Migration(BaseEventMigration):
                 self.handle_event(prefix, event)
         return [event]
 
-    def get_additional_events(self) -> Optional[List[BaseEvent]]:
+    def get_additional_events(self) -> list[BaseEvent] | None:
         return self.list_updates
 
-    def handle_event(self, prefix: str, event: Union[CreateEvent, UpdateEvent]) -> None:
+    def handle_event(self, prefix: str, event: CreateEvent | UpdateEvent) -> None:
         if f"{prefix}_extension" in event.data:
             value = event.data[f"{prefix}_extension"]
             replaced_value, motion_fqids = self.extract_and_replace_motion_ids(value)
@@ -110,7 +110,7 @@ class Migration(BaseEventMigration):
                 for fqid in motion_fqids
             ]
 
-    def extract_and_replace_motion_ids(self, value: str) -> Tuple[str, List[str]]:
+    def extract_and_replace_motion_ids(self, value: str) -> tuple[str, list[str]]:
         motion_fqids = []
 
         def replace(match: Any) -> str:

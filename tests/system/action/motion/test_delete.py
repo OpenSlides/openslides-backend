@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,23 +7,38 @@ from tests.system.action.base import BaseActionTestCase
 class MotionDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"motion_ids": [111], "is_active_in_organization_id": 1},
+        self.permission_test_models: dict[str, dict[str, Any]] = {
+            "meeting/1": {
+                "motion_ids": [111, 112],
+                "is_active_in_organization_id": 1,
+                "meeting_user_ids": [5],
+            },
+            "user/1": {"meeting_user_ids": [5]},
             "motion/111": {
                 "title": "title_srtgb123",
                 "meeting_id": 1,
                 "state_id": 78,
                 "submitter_ids": [12],
             },
+            "motion/112": {
+                "title": "title_fgehemn",
+                "meeting_id": 1,
+                "state_id": 78,
+            },
             "motion_state/78": {
                 "meeting_id": 1,
                 "allow_submitter_edit": True,
-                "motion_ids": [111],
+                "motion_ids": [111, 112],
             },
             "motion_submitter/12": {
                 "meeting_id": 1,
                 "motion_id": 111,
+                "meeting_user_id": 5,
+            },
+            "meeting_user/5": {
+                "meeting_id": 1,
                 "user_id": 1,
+                "motion_submitter_ids": [12],
             },
         }
 
@@ -189,7 +204,17 @@ class MotionDeleteActionTest(BaseActionTestCase):
                     "submitter_ids": [1],
                     "change_recommendation_ids": [1],
                 },
-                "motion_submitter/1": {"meeting_id": 1, "motion_id": 110, "user_id": 1},
+                "motion_submitter/1": {
+                    "meeting_id": 1,
+                    "motion_id": 110,
+                    "meeting_user_id": 1,
+                },
+                "meeting_user/1": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "motion_submitter_ids": [1],
+                },
+                "user/1": {"meeting_user_ids": [1]},
                 "motion_change_recommendation/1": {"meeting_id": 1, "motion_id": 110},
             }
         )
@@ -201,14 +226,14 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_models,
             "motion.delete",
-            {"id": 111},
+            {"id": 112},
         )
 
     def test_delete_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_models,
             "motion.delete",
-            {"id": 111},
+            {"id": 112},
             Permissions.Motion.CAN_MANAGE,
         )
 
@@ -216,7 +241,13 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
-        self.permission_test_models["motion_submitter/12"]["user_id"] = self.user_id
+        self.permission_test_models["meeting_user/2"] = {
+            "meeting_id": 1,
+            "user_id": self.user_id,
+            "motion_submitter_ids": [12],
+        }
+        self.permission_test_models["motion_submitter/12"]["meeting_user_id"] = 2
+        self.set_models({f"user/{self.user_id}": {"meeting_user_ids": [2]}})
         self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         response = self.request("motion.delete", {"id": 111})

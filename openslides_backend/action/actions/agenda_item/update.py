@@ -1,5 +1,3 @@
-from typing import Optional
-
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -31,13 +29,11 @@ class AgendaItemUpdate(UpdateAction):
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     def calc_is_internal(
-        self, type_: Optional[int], parent_is_internal: Optional[bool]
+        self, type_: int | None, parent_is_internal: bool | None
     ) -> bool:
         return type_ == AgendaItem.INTERNAL_ITEM or bool(parent_is_internal)
 
-    def calc_is_hidden(
-        self, type_: Optional[int], parent_is_hidden: Optional[bool]
-    ) -> bool:
+    def calc_is_hidden(self, type_: int | None, parent_is_hidden: bool | None) -> bool:
         return type_ == AgendaItem.HIDDEN_ITEM or bool(parent_is_hidden)
 
     def handle_children(
@@ -71,6 +67,7 @@ class AgendaItemUpdate(UpdateAction):
                 ):
                     continue
                 instances.append(instance)
+                self.apply_instance(instance)
                 instances.extend(
                     self.handle_children(
                         child_id,
@@ -84,10 +81,12 @@ class AgendaItemUpdate(UpdateAction):
         new_instances = []
         agenda_item_ids = [instance["id"] for instance in action_data]
         get_many_request = GetManyRequest(
-            self.model.collection, agenda_item_ids, ["parent_id"]
+            self.model.collection, agenda_item_ids, ["parent_id", "child_ids"]
         )
+
         gm_result = self.datastore.get_many([get_many_request])
         agenda_items = gm_result.get(self.model.collection, {})
+
         for instance in action_data:
             if instance.get("type") is None:
                 new_instances.append(instance)
@@ -109,6 +108,7 @@ class AgendaItemUpdate(UpdateAction):
                 instance["type"], parent_ai.get("is_internal")
             )
             new_instances.append(instance)
+            self.apply_instance(instance)
             new_instances.extend(
                 self.handle_children(
                     instance["id"], instance["is_hidden"], instance["is_internal"]

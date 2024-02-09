@@ -1,11 +1,17 @@
-from typing import Any, Dict
+from typing import Any
+
+from openslides_backend.action.mixins.check_unique_name_mixin import (
+    CheckUniqueInContextMixin,
+)
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....shared.exceptions import ActionException
 
 
-class CommitteeCommonCreateUpdateMixin(CheckForArchivedMeetingMixin):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+class CommitteeCommonCreateUpdateMixin(
+    CheckUniqueInContextMixin, CheckForArchivedMeetingMixin
+):
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Check if own committee is forwarded or received explicitly,
         it may not be excluded by the opposite setting
@@ -24,3 +30,13 @@ class CommitteeCommonCreateUpdateMixin(CheckForArchivedMeetingMixin):
                 "Forwarding or receiving to/from own must be configured in both directions!"
             )
         return instance
+
+    def validate_instance(self, instance: dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if instance.get("external_id"):
+            self.check_unique_in_context(
+                "external_id",
+                instance["external_id"],
+                "The external_id of the committee is not unique.",
+                instance.get("id"),
+            )

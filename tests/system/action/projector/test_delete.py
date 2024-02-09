@@ -10,8 +10,7 @@ class ProjectorDelete(BaseActionTestCase):
                 "projector/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 1,
-                    "used_as_default_$motion_in_meeting_id": 1,
-                    "used_as_default_$_in_meeting_id": ["motion"],
+                    "used_as_default_projector_for_motion_in_meeting_id": 1,
                 },
                 "projector/113": {
                     "name": "name_test1",
@@ -20,8 +19,7 @@ class ProjectorDelete(BaseActionTestCase):
                 },
                 "meeting/1": {
                     "reference_projector_id": 113,
-                    "default_projector_$_ids": ["motion"],
-                    "default_projector_$motion_ids": [111],
+                    "default_projector_motion_ids": [111],
                     "projector_ids": [111, 113],
                     "is_active_in_organization_id": 1,
                 },
@@ -33,13 +31,11 @@ class ProjectorDelete(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("projector/111")
         meeting = self.get_model("meeting/1")
-        assert meeting.get("default_projector_$_ids") == ["motion"]
-        assert meeting.get("default_projector_$motion_ids") == [113]
+        assert meeting.get("default_projector_motion_ids") == [113]
         self.assert_model_exists(
             "projector/113",
             {
-                "used_as_default_$motion_in_meeting_id": 1,
-                "used_as_default_$_in_meeting_id": ["motion"],
+                "used_as_default_projector_for_motion_in_meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
             },
         )

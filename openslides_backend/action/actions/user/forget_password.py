@@ -1,6 +1,6 @@
 from collections import defaultdict
 from time import time
-from typing import Any, Dict
+from typing import Any
 from urllib.parse import quote
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -36,12 +36,12 @@ class UserForgetPassword(UpdateAction):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         self.PW_FORGET_EMAIL_TEMPLATE = _(
-            """You are receiving this email because you have requested a new password for your OpenSlides-account.
+            """You are receiving this email because you have requested a new password for your OpenSlides account.
 
 Please open the following link and choose a new password:
 {url}/login/forget-password-confirm?user_id={user_id}&token={token}
 
-For completeness your username: {username}"""
+The link will be valid for 10 minutes."""
         )
         self.PW_FORGET_EMAIL_SUBJECT = _("Reset your OpenSlides password")
         for instance in action_data:
@@ -58,7 +58,7 @@ For completeness your username: {username}"""
             # search for users with email
             filter_ = FilterOperator("email", "=", email)
             results = self.datastore.filter(
-                self.model.collection, filter_, ["id", "username"]
+                self.model.collection, filter_, ["id", "username", "saml_id"]
             )
 
             organization = self.datastore.get(
@@ -70,12 +70,17 @@ For completeness your username: {username}"""
             try:
                 with EmailUtils.get_mail_connection() as mail_client:
                     for user in results.values():
+                        if user.get("saml_id"):
+                            raise ActionException(
+                                f"user {user['saml_id']} is a Single Sign On user and has no local OpenSlides password."
+                            )
+                        username = user["username"]
                         ok, errors = EmailUtils.send_email_safe(
                             mail_client,
                             self.logger,
                             EmailSettings.default_from_email,
                             email,
-                            self.PW_FORGET_EMAIL_SUBJECT,
+                            self.PW_FORGET_EMAIL_SUBJECT + f": {username}",
                             self.get_email_body(
                                 user["id"],
                                 self.get_token(user["id"], email),
@@ -86,6 +91,9 @@ For completeness your username: {username}"""
                         )
                         if ok:
                             yield {"id": user["id"], "last_email_sent": round(time())}
+            except ActionException as e:
+                self.logger.error(f"send mail action exception: {str(e)}")
+                raise
             except Exception as e:
                 self.logger.error(f"General send mail exception: {str(e)}")
                 raise ActionException(
@@ -107,5 +115,5 @@ For completeness your username: {username}"""
         )
         return self.PW_FORGET_EMAIL_TEMPLATE.format_map(body_format)
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         pass

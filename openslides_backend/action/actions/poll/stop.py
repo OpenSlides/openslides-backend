@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
@@ -72,12 +73,44 @@ class PollStopAction(
                         for group_id in poll.get("entitled_group_ids", [])
                     }
                 ),
-                ["user_ids"],
+                ["meeting_user_ids"],
             ),
         ]
-        self.datastore.get_many(requests, use_changed_models=False)
+        result = self.datastore.get_many(requests, use_changed_models=False)
+        groups = result["group"].values()
+        result = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user",
+                    list(
+                        {
+                            meeting_user_id
+                            for group in groups
+                            for meeting_user_id in group.get("meeting_user_ids", [])
+                        }
+                    ),
+                    ["user_id"],
+                ),
+            ],
+            use_changed_models=False,
+        )
+        meeting_users = result["meeting_user"].values()
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "user",
+                    list({mu["user_id"] for mu in meeting_users}),
+                    [
+                        "poll_voted_ids",
+                        "delegated_vote_ids",
+                        "vote_ids",
+                    ],
+                ),
+            ],
+            use_changed_models=False,
+        )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["state", "meeting_id", "voted_ids"],

@@ -1,7 +1,4 @@
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.filters import And, FilterOperator, Or
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope
@@ -19,6 +16,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "first_name": "first2",
             "last_name": "last2",
             "username": "user2",
+            "saml_id": None,
         }
         self.user3 = {
             "id": 3,
@@ -26,6 +24,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "first_name": "first3",
             "last_name": "last3",
             "username": "user3",
+            "saml_id": None,
         }
         self.user4 = {
             "id": 4,
@@ -33,7 +32,17 @@ class TestSearchUsers(BasePresenterTestCase):
             "first_name": "first4",
             "last_name": "last4",
             "username": "user4",
+            "saml_id": None,
         }
+        self.user5 = {
+            "id": 5,
+            "email": "userX@test.de",
+            "first_name": "first5",
+            "last_name": "last5",
+            "username": "user5",
+            "saml_id": "saml5",
+        }
+
         self.set_models(
             {
                 "user/2": {
@@ -44,6 +53,9 @@ class TestSearchUsers(BasePresenterTestCase):
                 },
                 "user/4": {
                     **self.user4,
+                },
+                "user/5": {
+                    **self.user5,
                 },
             }
         )
@@ -87,15 +99,32 @@ class TestSearchUsers(BasePresenterTestCase):
                         "first_name": "first4",
                         "last_name": "last4",
                     },
+                    {
+                        "username": "user2",
+                        "saml_id": "saml5",
+                    },
+                    {
+                        "saml_id": "saml5",
+                        "email": "userX@test.de",
+                        "first_name": "first4",
+                        "last_name": "last4",
+                    },
+                    {
+                        "username": "userX",
+                        "saml_id": "saml5",
+                    },
                 ],
             },
         )
         self.assertEqual(status_code, 200)
-        self.assertEqual(len(data), 4)
+        self.assertEqual(len(data), 7)
         self.assertEqual(data[0], [self.user2])
         self.assertEqual(data[1], [])
         self.assertEqual(data[2], [self.user2])
         self.assertEqual(data[3], [self.user4])
+        self.assertEqual(data[4], [self.user2])
+        self.assertEqual(data[5], [self.user5])
+        self.assertEqual(data[6], [])
 
     def test_search_ignore_case_strip(self) -> None:
         status_code, data = self.request(
@@ -129,7 +158,7 @@ class TestSearchUsers(BasePresenterTestCase):
                 "search": [
                     {
                         "username": "user2",
-                        "email": "user4@test.de",
+                        "email": "userX@test.de",
                         "first_name": "first4",
                         "last_name": "last4",
                     },
@@ -374,8 +403,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "user/1",
             {
                 "organization_management_level": None,
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
         status_code, _ = self.request(
@@ -413,17 +441,20 @@ class TestSearchUsers(BasePresenterTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "group/1": {
-                    "user_ids": [1],
+                    "meeting_user_ids": [1],
                     "meeting_id": 1,
                     "permissions": [Permissions.User.CAN_MANAGE],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [1],
                 },
             }
         )
         self.update_model(
             "user/1",
             {
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
                 "organization_management_level": None,
             },
         )
@@ -472,8 +503,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "user/1",
             {
                 "organization_management_level": None,
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
         status_code, data = self.request(
@@ -498,8 +528,7 @@ class TestSearchUsers(BasePresenterTestCase):
             "user/1",
             {
                 "organization_management_level": None,
-                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-                "committee_$can_manage_management_level": [1],
+                "committee_management_ids": [1],
             },
         )
         status_code, data = self.request(

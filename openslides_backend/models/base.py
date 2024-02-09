@@ -1,11 +1,10 @@
-import re
-from typing import Dict, Iterable, Optional, Type
+from collections.abc import Iterable
 
 from ..shared.exceptions import ActionException
 from ..shared.patterns import Collection
 from . import fields
 
-model_registry: Dict[Collection, Type["Model"]] = {}
+model_registry: dict[Collection, type["Model"]] = {}
 
 
 class ModelMetaClass(type):
@@ -23,18 +22,11 @@ class ModelMetaClass(type):
             metaclass, class_name, class_parents, class_attributes
         )
         if class_name != "Model":
-            new_class.field_prefix_map = {}
             for attr_name in class_attributes:
                 attr = getattr(new_class, attr_name)
                 if isinstance(attr, fields.Field):
                     attr.own_collection = new_class.collection
                     attr.own_field_name = attr_name
-
-                    # Save field name. For template fields also save prefix.
-                    new_class.field_prefix_map[attr_name] = attr
-                    if isinstance(attr, fields.BaseTemplateField):
-                        prefix = attr_name[: attr.index]
-                        new_class.field_prefix_map[prefix] = attr
             model_registry[new_class.collection] = new_class
         return new_class
 
@@ -46,11 +38,6 @@ class Model(metaclass=ModelMetaClass):
 
     collection: Collection
     verbose_name: str
-
-    # Saves all fields with their respective unique prefix for easier access.
-    # Template fields are saved twice. Once with the pythonic name from models.py and
-    # once only with the prefix.
-    field_prefix_map: Dict[str, fields.BaseRelationField]
 
     def __str__(self) -> str:
         return self.verbose_name
@@ -66,30 +53,18 @@ class Model(metaclass=ModelMetaClass):
 
     def has_field(self, field_name: str) -> bool:
         """
-        Returns True if the model has such a field (including populated template fields).
+        Returns True if the model has such a field.
         """
         return bool(self.try_get_field(field_name))
 
-    def try_get_field(self, field_name: str) -> Optional[fields.Field]:
+    def try_get_field(self, field_name: str) -> fields.Field | None:
         """
-        Returns the field for the given field name. You may give the
-        pythonic field name or even a populated template field.
-
-        E. g. for User the `group__ids` field alias `group_$_ids` field is also found
-        if you look for `group_$42_ids`.
-
-        Returns None if field is not found.
+        Returns the field for the given field name or None if field is not found.
         """
-        prefix = field_name.split("$")[0]
-        if prefix not in self.field_prefix_map:
-            return None
-
-        field = self.field_prefix_map[prefix]
-        if isinstance(field, fields.BaseTemplateField):
-            # We use the regex here since we want to also match template fields.
-            if "$" in field_name and not re.match(field.get_regex(), field_name):
-                return None
-        return field
+        field = getattr(self, field_name, None)
+        if isinstance(field, fields.Field):
+            return field
+        return None
 
     def get_fields(self) -> Iterable[fields.Field]:
         """
@@ -108,9 +83,7 @@ class Model(metaclass=ModelMetaClass):
             if isinstance(model_field, fields.BaseRelationField):
                 yield model_field
 
-    def get_property(
-        self, field_name: str, replacement_pattern: Optional[str] = None
-    ) -> fields.Schema:
+    def get_property(self, field_name: str) -> fields.Schema:
         """
         Returns JSON schema for the given field. Throws an error if it's read_only.
         """
@@ -119,9 +92,9 @@ class Model(metaclass=ModelMetaClass):
             raise ActionException(
                 f"The field {field_name} is read_only and cannot be used in a payload schema."
             )
-        return {field_name: field.get_payload_schema(replacement_pattern)}
+        return {field_name: field.get_schema()}
 
-    def get_properties(self, *fields: str) -> Dict[str, fields.Schema]:
+    def get_properties(self, *fields: str) -> dict[str, fields.Schema]:
         """
         Returns a dictionary of field schemas used for the properties keyword in
         an action schema.
@@ -137,18 +110,4 @@ class Model(metaclass=ModelMetaClass):
         """
         for model_field in self.get_fields():
             if model_field.required:
-                if isinstance(
-                    model_field,
-                    (
-                        fields.RelationListField,
-                        fields.GenericRelationListField,
-                        fields.BaseTemplateField,
-                    ),
-                ) and (
-                    not hasattr(model_field, "replacement_enum")
-                    or not model_field.replacement_enum  # type: ignore
-                ):
-                    raise NotImplementedError(
-                        f"{self.collection}.{model_field.own_field_name}"
-                    )
                 yield model_field

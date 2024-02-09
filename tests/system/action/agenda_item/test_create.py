@@ -7,7 +7,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.set_models(
             {
-                "meeting/2": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 2},
             }
         )
@@ -18,7 +18,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(model.get("meeting_id"), 2)
         self.assertEqual(model.get("content_object_id"), "topic/1")
         self.assertEqual(model.get("type"), AgendaItem.AGENDA_ITEM)
-        self.assertEqual(model.get("weight"), 10000)
+        self.assertEqual(model.get("weight"), 1)
         self.assertEqual(model.get("level"), 0)
 
         model = self.get_model("meeting/2")
@@ -30,9 +30,10 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_more_fields(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 1},
                 "agenda_item/42": {"comment": "test", "meeting_id": 1},
+                "tag/561": {"meeting_id": 1},
             }
         )
         response = self.request(
@@ -43,6 +44,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
                 "type": AgendaItem.INTERNAL_ITEM,
                 "parent_id": 42,
                 "duration": 360,
+                "tag_ids": [561],
             },
         )
         self.assert_status_code(response, 200)
@@ -54,12 +56,33 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["weight"], 1)
         self.assertFalse(agenda_item.get("closed"))
         assert agenda_item.get("level") == 1
+        assert agenda_item.get("tag_ids") == [561]
+        self.assert_model_exists(
+            "tag/561", {"meeting_id": 1, "tagged_ids": ["agenda_item/43"]}
+        )
+
+    def test_create_twice_without_parent(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "topic/1": {"meeting_id": 1},
+                "topic/2": {"meeting_id": 1},
+            }
+        )
+        for i in range(1, 3):
+            response = self.request(
+                "agenda_item.create",
+                {"content_object_id": f"topic/{i}"},
+            )
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(f"agenda_item/{i}", {"weight": i})
 
     def test_create_parent_weight(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 1},
+                "topic/2": {"meeting_id": 1},
                 "agenda_item/42": {"comment": "test", "meeting_id": 1, "weight": 10},
             }
         )
@@ -71,7 +94,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
                     "parent_id": 42,
                 },
                 {
-                    "content_object_id": "topic/1",
+                    "content_object_id": "topic/2",
                     "parent_id": 42,
                 },
             ],
@@ -83,6 +106,33 @@ class AgendaItemSystemTest(BaseActionTestCase):
         agenda_item = self.get_model("agenda_item/44")
         self.assertEqual(agenda_item["parent_id"], 42)
         self.assertEqual(agenda_item["weight"], 2)
+
+    def test_create_same_content_object(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "topic/1": {"meeting_id": 1},
+            }
+        )
+        response = self.request_multi(
+            "agenda_item.create",
+            [
+                {
+                    "content_object_id": "topic/1",
+                },
+                {
+                    "content_object_id": "topic/1",
+                },
+            ],
+        )
+        # This should not work! The relation handling is broken here
+        self.assert_status_code(response, 200)
+        agenda_item = self.get_model("agenda_item/1")
+        self.assertEqual(agenda_item["content_object_id"], "topic/1")
+        agenda_item = self.get_model("agenda_item/2")
+        self.assertEqual(agenda_item["content_object_id"], "topic/1")
+        topic = self.get_model("topic/1")
+        self.assertEqual(topic["agenda_item_id"], 2)
 
     def test_create_content_object_does_not_exist(self) -> None:
         response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
@@ -123,7 +173,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_calc_fields_no_parent_agenda_type(self) -> None:
         self.set_models(
             {
-                "meeting/2": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 2},
             }
         )
@@ -140,7 +190,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_calc_fields_no_parent_hidden_type(self) -> None:
         self.set_models(
             {
-                "meeting/2": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 2},
             }
         )
@@ -157,7 +207,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_calc_fields_no_parent_internal_type(self) -> None:
         self.set_models(
             {
-                "meeting/2": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 2},
                 "topic/2": {"meeting_id": 2},
             }
@@ -178,7 +228,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_calc_fields_parent_agenda_internal(self) -> None:
         self.set_models(
             {
-                "meeting/2": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 2},
                 "agenda_item/3": {
                     "content_object_id": "topic/2",
@@ -207,7 +257,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_calc_fields_parent_internal_internal(self) -> None:
         self.set_models(
             {
-                "meeting/2": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 2},
                 "agenda_item/3": {
                     "content_object_id": "topic/2",
@@ -235,7 +285,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_calc_fields_parent_internal_hidden(self) -> None:
         self.set_models(
             {
-                "meeting/2": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 2},
                 "agenda_item/3": {
                     "content_object_id": "topic/2",
@@ -281,7 +331,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     ) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "assignment/1": {"meeting_id": 1, "agenda_item_id": 1},
                 "agenda_item/1": {"meeting_id": 1, "content_object_id": "assignment/1"},
             }

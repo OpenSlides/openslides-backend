@@ -1,12 +1,12 @@
 from operator import itemgetter
-from typing import Any, Dict, List
+from typing import Any
 
 import fastjsonschema
 from datastore.shared.util import DeletedModelsBehaviour
 
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
-from ..shared.exceptions import MissingPermission, PresenterException
+from ..shared.exceptions import MissingPermission
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -62,7 +62,7 @@ class GetUsers(BasePresenter):
 
     def get_result(self) -> Any:
         self.check_permissions()
-        criteria = self.get_and_check_criteria()
+        criteria = self.get_criteria()
         users = self.get_all_users(criteria)
         users = self.filter_keyword(users)
         users = self.sort_users(users, criteria)
@@ -75,16 +75,12 @@ class GetUsers(BasePresenter):
         ):
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
 
-    def get_and_check_criteria(self) -> List[str]:
+    def get_criteria(self) -> list[str]:
         default_criteria = ["last_name", "first_name", "username"]
         criteria = self.data.get("sort_criteria", default_criteria)
-
-        not_allowed = [crit for crit in criteria if crit not in ALLOWED]
-        if not_allowed:
-            raise PresenterException(f"Sort criteria '{not_allowed}' are not allowed")
         return criteria
 
-    def get_all_users(self, criteria: List[str]) -> List[Dict[str, Any]]:
+    def get_all_users(self, criteria: list[str]) -> list[dict[str, Any]]:
         fields = criteria[:]
         for name in ("username", "first_name", "last_name", "id"):
             if name not in fields:
@@ -98,10 +94,10 @@ class GetUsers(BasePresenter):
             ).values()
         )
 
-    def _check_name(self, user: Dict[str, Any], name: str) -> bool:
+    def _check_name(self, user: dict[str, Any], name: str) -> bool:
         return user.get(name) is not None and self.data["filter"] in user[name]
 
-    def filter_keyword(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def filter_keyword(self, users: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if self.data.get("filter"):
             users = [
                 user
@@ -113,8 +109,8 @@ class GetUsers(BasePresenter):
         return users
 
     def sort_users(
-        self, users: List[Dict[str, Any]], criteria: List[str]
-    ) -> List[Dict[str, Any]]:
+        self, users: list[dict[str, Any]], criteria: list[str]
+    ) -> list[dict[str, Any]]:
         for user in users:
             for crit in criteria:
                 if user.get(crit) is None:
@@ -123,7 +119,7 @@ class GetUsers(BasePresenter):
         users.sort(key=itemgetter(*criteria), reverse=self.data.get("reverse", False))
         return users
 
-    def paginate_users(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def paginate_users(self, users: list[dict[str, Any]]) -> list[dict[str, Any]]:
         start_index = self.data.get("start_index", 0)
         end_index = start_index + self.data.get("entries", 100)
         users = users[start_index:end_index]

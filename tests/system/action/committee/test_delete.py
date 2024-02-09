@@ -13,14 +13,12 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
                 "user/20": {"committee_ids": [self.COMMITTEE_ID]},
                 "user/21": {
                     "committee_ids": [self.COMMITTEE_ID],
-                    "committee_$_management_level": ["can_manage"],
-                    "committee_$can_manage_management_level": [self.COMMITTEE_ID],
+                    "committee_management_ids": [self.COMMITTEE_ID],
                 },
                 self.COMMITTEE_FQID: {
                     "organization_id": 1,
                     "user_ids": [20, 21],
-                    "user_$_management_level": ["can_manage"],
-                    "user_$can_manage_management_level": [21],
+                    "manager_ids": [21],
                 },
             }
         )
@@ -57,8 +55,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
             {
                 "organization_id": 1,
                 "organization_tag_ids": [12],
-                "user_$_management_level": ["can_manage"],
-                "user_$can_manage_management_level": [21],
+                "manager_ids": [21],
                 "forward_to_committee_ids": [2],
                 "receive_forwardings_from_committee_ids": [3],
                 "meeting_ids": None,
@@ -68,7 +65,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("user/20", {"committee_ids": []})
         self.assert_model_exists(
             "user/21",
-            {"committee_ids": [], "committee_$can_manage_management_level": []},
+            {"committee_ids": [], "committee_management_ids": []},
         )
         organization1 = self.get_model(ONE_ORGANIZATION_FQID)
         self.assertCountEqual(organization1["committee_ids"], [2, 3])
@@ -130,21 +127,18 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {"committee_ids": [1, 2]},
                 "user/20": {
                     "committee_ids": [1, 2],
-                    "committee_$_management_level": ["can_manage"],
-                    "committee_$can_manage_management_level": [1, 2],
+                    "committee_management_ids": [1, 2],
                 },
                 "committee/1": {
                     "organization_id": 1,
                     "user_ids": [20],
-                    "user_$_management_level": ["can_manage"],
-                    "user_$can_manage_management_level": [20],
+                    "manager_ids": [20],
                     "forward_to_committee_ids": [2],
                 },
                 "committee/2": {
                     "organization_id": 1,
                     "user_ids": [20],
-                    "user_$_management_level": ["can_manage"],
-                    "user_$can_manage_management_level": [20],
+                    "manager_ids": [20],
                     "receive_forwardings_from_committee_ids": [1],
                 },
             }
@@ -154,8 +148,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted(
             "committee/1",
             {
-                "user_$_management_level": ["can_manage"],
-                "user_$can_manage_management_level": [20],
+                "manager_ids": [20],
                 "forward_to_committee_ids": [2],
                 "user_ids": [20],
             },
@@ -163,8 +156,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted(
             "committee/2",
             {
-                "user_$_management_level": ["can_manage"],
-                "user_$can_manage_management_level": [20],
+                "manager_ids": [20],
                 "receive_forwardings_from_committee_ids": [],
                 "user_ids": [20],
             },
@@ -172,8 +164,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/20",
             {
-                "committee_$can_manage_management_level": [],
-                "committee_$_management_level": [],
+                "committee_management_ids": [],
                 "committee_ids": [],
             },
         )

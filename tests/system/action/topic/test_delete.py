@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class TopicDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "topic/111": {"title": "title_srtgb123", "meeting_id": 1}
         }
 
@@ -91,6 +91,7 @@ class TopicDeleteActionTest(BaseActionTestCase):
                     "topic_ids": [1],
                     "speaker_ids": [1, 2],
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [1, 2],
                 },
                 "topic/1": {
                     "agenda_item_id": 3,
@@ -103,10 +104,20 @@ class TopicDeleteActionTest(BaseActionTestCase):
                     "speaker_ids": [1, 2],
                     "meeting_id": 1,
                 },
-                "speaker/1": {"list_of_speakers_id": 3, "user_id": 1, "meeting_id": 1},
-                "speaker/2": {"list_of_speakers_id": 3, "user_id": 2, "meeting_id": 1},
-                "user/1": {"speaker_$1_ids": [1], "speaker_$_ids": ["1"]},
-                "user/2": {"speaker_$1_ids": [2], "speaker_$_ids": ["1"]},
+                "speaker/1": {
+                    "list_of_speakers_id": 3,
+                    "meeting_user_id": 1,
+                    "meeting_id": 1,
+                },
+                "speaker/2": {
+                    "list_of_speakers_id": 3,
+                    "meeting_user_id": 2,
+                    "meeting_id": 1,
+                },
+                "user/1": {"meeting_user_ids": [1]},
+                "user/2": {"meeting_user_ids": [2]},
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1, "speaker_ids": [1]},
+                "meeting_user/2": {"user_id": 2, "meeting_id": 1, "speaker_ids": [2]},
             }
         )
         response = self.request("topic.delete", {"id": 1})
@@ -116,9 +127,8 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("list_of_speakers/3")
         self.assert_model_deleted("speaker/1")
         self.assert_model_deleted("speaker/2")
-        user_1 = self.get_model("user/1")
-        assert user_1.get("speaker_$1_ids") == []
-        assert user_1.get("speaker_$_ids") == []
+        self.assert_model_exists("meeting_user/1", {"speaker_ids": []})
+        self.assert_model_exists("meeting_user/2", {"speaker_ids": []})
 
     def test_delete_no_permission(self) -> None:
         self.base_permission_test(

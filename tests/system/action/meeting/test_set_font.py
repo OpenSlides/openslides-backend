@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MeetingSetFontActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "meeting/1": {"name": "name_meeting1", "is_active_in_organization_id": 1},
             "mediafile/17": {
                 "is_directory": False,
@@ -34,9 +34,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "bold"}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting/222", {"font_$_id": ["bold"], "font_$bold_id": 17}
-        )
+        self.assert_model_exists("meeting/222", {"font_bold_id": 17})
 
     def test_set_font_wrong_place(self) -> None:
         self.set_models(
@@ -57,7 +55,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Replacement broken does not exist in field font__id´s replacement_enum."
+            "font_broken_id is not a valid field for model meeting."
             == response.json["message"]
         )
 

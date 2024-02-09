@@ -1,9 +1,8 @@
 from enum import Enum
 from io import StringIO
 from threading import Lock, Thread
-from typing import Any, Dict, Optional
+from typing import Any
 
-from datastore.migrations import MigrationException
 from datastore.migrations import MigrationState as DatastoreMigrationState
 
 from ..shared.exceptions import View400Exception
@@ -32,15 +31,15 @@ class MigrationState(str, Enum):
 class MigrationHandler(BaseHandler):
     lock = Lock()
     migration_running = False
-    migrate_thread_stream: Optional[StringIO] = None
+    migrate_thread_stream: StringIO | None = None
     migrate_thread_stream_can_be_closed: bool = False
-    migrate_thread_exception: Optional[MigrationException] = None
+    migrate_thread_exception: Exception | None = None
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
         self.migration_wrapper = MigrationWrapper(False, self.logger.info)
 
-    def handle_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def handle_request(self, payload: dict[str, Any]) -> dict[str, Any]:
         if not (command := payload.get("cmd")):
             raise View400Exception("No command provided")
         self.logger.info(f"Migration command: {command}")
@@ -92,13 +91,13 @@ class MigrationHandler(BaseHandler):
         handler = MigrationWrapper(verbose, self.write_line)
         try:
             return handler.execute_command(command)
-        except MigrationException as e:
+        except Exception as e:
             MigrationHandler.migrate_thread_exception = e
             self.logger.exception(e)
         finally:
             MigrationHandler.migration_running = False
 
-    def handle_progress_command(self) -> Dict[str, Any]:
+    def handle_progress_command(self) -> dict[str, Any]:
         if MigrationHandler.migration_running:
             if MigrationHandler.migrate_thread_stream:
                 # Migration still running
@@ -111,7 +110,7 @@ class MigrationHandler(BaseHandler):
         else:
             return self.get_migration_result()
 
-    def get_migration_result(self) -> Dict[str, Any]:
+    def get_migration_result(self) -> dict[str, Any]:
         stats = self.migration_wrapper.handler.get_stats()
         if MigrationHandler.migrate_thread_stream:
             # Migration finished and the full output can be returned. Do not remove the

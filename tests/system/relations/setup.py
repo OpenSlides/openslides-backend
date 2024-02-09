@@ -44,18 +44,6 @@ class FakeModelA(Model):
         },
     )
 
-    # template field / structured relation
-    fake_model_b__ids = fields.TemplateRelationListField(
-        replacement_collection="meeting",
-        index=13,
-        to={"fake_model_b": "structured_relation_field"},
-    )
-    fake_model_c__ids = fields.TemplateRelationListField(
-        replacement_collection="meeting",
-        index=13,
-        to={"fake_model_c": "structured_relation_field"},
-    )
-
 
 class FakeModelB(Model):
     collection = "fake_model_b"
@@ -83,11 +71,6 @@ class FakeModelB(Model):
     fake_model_a_generic_multitype_m = fields.RelationListField(
         to={"fake_model_a": "fake_model_generic_multitype"},
     )
-
-    structured_relation_field = fields.RelationField(
-        to={"fake_model_a": "fake_model_b_$_ids"},
-    )
-
     fake_model_c_ids = fields.RelationListField(
         to={"fake_model_c": "foreign_key_field"},
     )
@@ -108,12 +91,8 @@ class FakeModelC(Model):
         to={"fake_model_a": "fake_model_generic_multitype"},
     )
 
-    # nested structured field
     foreign_key_field = fields.RelationField(
         to={"fake_model_b": "fake_model_c_ids"},
-    )
-    structured_relation_field = fields.RelationField(
-        to={"fake_model_a": "fake_model_c_$_ids"},
     )
 
 

@@ -1,11 +1,11 @@
-from typing import Any, Dict
+from typing import Any
 
 import fastjsonschema
 
-from ..action.actions.meeting.export_helper import export_meeting
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..shared.exceptions import PermissionDenied
+from ..shared.export_helper import export_meeting
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -45,7 +45,7 @@ class Export(BasePresenter):
         return export_data
 
     def exclude_organization_tags_and_default_meeting_for_committee(
-        self, export_data: Dict[str, Any]
+        self, export_data: dict[str, Any]
     ) -> None:
         self.get_meeting_from_json(export_data).pop("organization_tag_ids", None)
         self.get_meeting_from_json(export_data).pop(

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,11 +7,12 @@ from tests.system.action.base import BaseActionTestCase
 class SpeakerEndSpeachTester(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_couple_countdown": True,
                 "list_of_speakers_countdown_id": 11,
                 "is_active_in_organization_id": 1,
+                "meeting_user_ids": [7],
             },
             "projector_countdown/11": {
                 "running": True,
@@ -19,10 +20,11 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
                 "countdown_time": 31.0,
                 "meeting_id": 1,
             },
-            "user/7": {"username": "test_username1"},
+            "user/7": {"username": "test_username1", "meeting_user_ids": [7]},
+            "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
             "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
             "speaker/890": {
-                "user_id": 7,
+                "meeting_user_id": 7,
                 "list_of_speakers_id": 23,
                 "begin_time": 10000,
                 "meeting_id": 1,
@@ -36,6 +38,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
                     "list_of_speakers_couple_countdown": True,
                     "list_of_speakers_countdown_id": 11,
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [7],
                 },
                 "projector_countdown/11": {
                     "running": True,
@@ -43,10 +46,14 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
                     "countdown_time": 31.0,
                     "meeting_id": 1,
                 },
-                "user/7": {"username": "test_username1"},
+                "user/7": {
+                    "username": "test_username1",
+                    "meeting_user_ids": [7],
+                },
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 10000,
                     "meeting_id": 1,
@@ -61,10 +68,11 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
     def test_wrong_id(self) -> None:
         self.set_models(
             {
-                "user/7": {"username": "test_username1"},
+                "user/7": {"username": "test_username1", "meeting_user_ids": [7]},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {"speaker_ids": [890]},
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 10000,
                 },
@@ -83,9 +91,10 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 100000,
                     "end_time": 200000,
@@ -107,9 +116,10 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
                 },
@@ -139,9 +149,10 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 10000,
                     "meeting_id": 1,
@@ -172,13 +183,14 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
+                "meeting_user/7": {"meeting_id": 1, "user_id": 7, "speaker_ids": [890]},
                 "list_of_speakers/23": {
                     "speaker_ids": [890],
                     "meeting_id": 1,
                     "closed": True,
                 },
                 "speaker/890": {
-                    "user_id": 7,
+                    "meeting_user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 10000,
                     "meeting_id": 1,

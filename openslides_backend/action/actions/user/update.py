@@ -1,25 +1,33 @@
-from typing import Any, Dict, Optional
+import re
+from typing import Any
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.exceptions import PermissionException
-from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
+from ....shared.exceptions import ActionException, PermissionException
+from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .user_mixin import LimitOfUserMixin, UpdateHistoryMixin, UserMixin
+from .user_mixins import (
+    LimitOfUserMixin,
+    UpdateHistoryMixin,
+    UserMixin,
+    check_gender_helper,
+)
 
 
 @register_action("user.update")
 class UserUpdate(
     EmailCheckMixin,
-    UserMixin,
     CreateUpdatePermissionsMixin,
     UpdateAction,
     LimitOfUserMixin,
     UpdateHistoryMixin,
+    ConditionalSpeakerCascadeMixin,
 ):
     """
     Action to update a user.
@@ -43,29 +51,42 @@ class UserUpdate(
             "default_structure_level",
             "default_vote_weight",
             "organization_management_level",
-            "committee_$_management_level",
-            "number_$",
-            "structure_level_$",
-            "vote_weight_$",
-            "about_me_$",
-            "comment_$",
-            "vote_delegated_$_to_id",
-            "vote_delegations_$_from_ids",
-            "group_$_ids",
+            "committee_management_ids",
             "is_demo_user",
+            "saml_id",
         ],
+        additional_optional_fields={
+            "meeting_id": optional_id_schema,
+            **UserMixin.transfer_field_list,
+        },
     )
     check_email_field = "email"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[
                 "is_active",
                 "organization_management_level",
+                "saml_id",
+                "password",
             ],
         )
+        if user.get("saml_id") and (
+            instance.get("can_change_own_password") or instance.get("default_password")
+        ):
+            raise ActionException(
+                f"user {user['saml_id']} is a Single Sign On user and may not set the local default_passwort or the right to change it locally."
+            )
+        if instance.get("saml_id") and user.get("password"):
+            instance["can_change_own_password"] = False
+            instance["default_password"] = ""
+            instance["password"] = ""
+
+        if instance.get("username") and re.search(r"\s", instance["username"]):
+            raise ActionException("Username may not contain spaces")
+
         if (
             instance["id"] == self.user_id
             and user.get("organization_management_level")
@@ -86,19 +107,10 @@ class UserUpdate(
         if instance.get("is_active") and not user.get("is_active"):
             self.check_limit_of_user(1)
 
+        check_gender_helper(self.datastore, instance)
         return instance
 
-    def apply_instance(
-        self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None
-    ) -> None:
-        if not fqid:
-            fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
-        if (
-            fqid in self.datastore.changed_models
-            and (cm_user := self.datastore.changed_models[fqid]).get("meta_new")
-            and "group_$_ids" in instance
-        ):
-            instance["group_$_ids"].update(
-                {k: cm_user.get(f"group_${k}_ids", []) for k in cm_user["group_$_ids"]}
-            )
-        self.datastore.apply_changed_model(fqid, instance)
+    def get_removed_meeting_id(self, instance: dict[str, Any]) -> int | None:
+        if instance.get("group_ids") == []:
+            return instance.get("meeting_id")
+        return None

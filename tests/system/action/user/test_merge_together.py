@@ -17,7 +17,7 @@ class UserMergeTogether(BaseActionTestCase):
         response = self.request("user.merge_together", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['username', 'user_ids'] properties",
+            "data must contain ['user_ids', 'username'] properties",
             response.json["message"],
         )
 

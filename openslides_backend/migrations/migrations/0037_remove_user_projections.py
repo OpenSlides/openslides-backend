@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional
+from collections.abc import Iterable
 
 from datastore.migrations import (
     BaseEvent,
@@ -13,7 +13,7 @@ from datastore.shared.util import collection_from_fqid, fqid_from_collection_and
 class Migration(BaseEventMigration):
     target_migration_index = 38
 
-    def order_events(self, events: List[BaseEvent]) -> Iterable[BaseEvent]:
+    def order_events(self, events: list[BaseEvent]) -> Iterable[BaseEvent]:
         """
         We always have to process create events for projections first so that we can filter them out
         correctly when processing the reverse relations.
@@ -35,7 +35,7 @@ class Migration(BaseEventMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection = collection_from_fqid(event.fqid)
         # remove all projection ids from users
         if collection == "user":
@@ -87,7 +87,7 @@ class Migration(BaseEventMigration):
 
         return [event]
 
-    def filter_projection_ids(self, projection_ids: List[int]) -> List[int]:
+    def filter_projection_ids(self, projection_ids: list[int]) -> list[int]:
         new_projection_ids = []
         for projection_id in projection_ids:
             if self.new_accessor.model_exists(

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_category/222": {
                 "meeting_id": 1,
             },
@@ -50,7 +50,10 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
             {"id": 222, "motion_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Id 32 not in db_instances." in response.json["message"]
+        assert (
+            "motion sorting failed, because element motion/32 doesn't exist."
+            in response.json["message"]
+        )
 
     def test_sort_another_section_db(self) -> None:
         self.set_models(
@@ -67,7 +70,10 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
             {"id": 222, "motion_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Additional db_instances found." in response.json["message"]
+        assert (
+            "motion sorting failed, because some elements were not included in the call."
+            in response.json["message"]
+        )
 
     def test_sort_no_permission(self) -> None:
         self.base_permission_test(

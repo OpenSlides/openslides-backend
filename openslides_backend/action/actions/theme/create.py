@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Theme
@@ -69,6 +69,6 @@ class ThemeCreate(CreateAction, CheckForArchivedMeetingMixin):
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance["organization_id"] = ONE_ORGANIZATION_ID
         return instance

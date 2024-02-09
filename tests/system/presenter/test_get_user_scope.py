@@ -1,7 +1,4 @@
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
 
@@ -11,55 +8,48 @@ class TestGetUSerScope(BasePresenterTestCase):
         self.set_models(
             {
                 "meeting/1": {
-                    "name": "meeting1",
                     "committee_id": 2,
                     "is_active_in_organization_id": 1,
                 },
+                # archived meeting
+                "meeting/2": {
+                    "committee_id": 2,
+                    "is_active_in_organization_id": None,
+                    "is_archived_in_organization_id": 1,
+                },
                 "committee/1": {},
-                "committee/2": {"meeting_ids": [1]},
+                "committee/2": {"meeting_ids": [1, 2]},
                 "user/2": {
                     "username": "only_oml_level",
-                    "first_name": "Florian",
-                    "last_name": "Freiheit",
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 },
                 "user/3": {
                     "username": "only_cml_level",
-                    "first_name": "Testy",
-                    "last_name": "Tester",
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                     "meeting_ids": [],
                 },
                 "user/4": {
                     "username": "cml_and_meeting",
-                    "first_name": "John",
-                    "last_name": "Xylon",
                     "meeting_ids": [1],
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [2],
+                    "committee_management_ids": [2],
                 },
                 "user/5": {
                     "username": "no_organization",
-                    "first_name": "John",
-                    "last_name": "Freelancer",
                     "meeting_ids": [],
                 },
                 "user/6": {
                     "username": "oml_and_meeting",
-                    "first_name": "Florian",
-                    "last_name": "Freiheit",
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                     "meeting_ids": [1],
+                },
+                "user/7": {
+                    "username": "meeting_and_archived_meeting",
+                    "meeting_ids": [1, 2],
                 },
             }
         )
         status_code, data = self.request(
-            "get_user_scope", {"user_ids": [2, 3, 4, 5, 6]}
+            "get_user_scope", {"user_ids": [2, 3, 4, 5, 6, 7]}
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(
@@ -77,6 +67,11 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "collection": "meeting",
                     "id": 1,
                     "user_oml": OrganizationManagementLevel.SUPERADMIN,
+                },
+                "7": {
+                    "collection": "meeting",
+                    "id": 1,
+                    "user_oml": "",
                 },
             },
         )

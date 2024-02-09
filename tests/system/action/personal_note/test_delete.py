@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from tests.system.action.base import BaseActionTestCase
 
@@ -6,21 +6,26 @@ from tests.system.action.base import BaseActionTestCase
 class PersonalNoteDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "meeting/111": {
                 "personal_note_ids": [1],
                 "is_active_in_organization_id": 1,
+                "meeting_user_ids": [1],
             },
             "user/1": {
-                "personal_note_$111_ids": [1],
-                "personal_note_$_ids": ["111"],
+                "meeting_user_ids": [1],
                 "meeting_ids": [111],
             },
             "personal_note/1": {
                 "star": True,
                 "note": "blablabla",
+                "meeting_user_id": 1,
+                "meeting_id": 111,
+            },
+            "meeting_user/1": {
                 "user_id": 1,
                 "meeting_id": 111,
+                "personal_note_ids": [1],
             },
         }
 
@@ -30,9 +35,7 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
         response = self.request("personal_note.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("personal_note/1")
-        user = self.get_model("user/1")
-        assert user.get("personal_note_$111_ids") == []
-        assert user.get("personal_note_$_ids") == []
+        self.assert_model_exists("meeting_user/1", {"personal_note_ids": []})
 
     def test_delete_wrong_user_id(self) -> None:
         self.set_models(
@@ -40,18 +43,23 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
                 "meeting/111": {
                     "personal_note_ids": [1],
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [2],
                 },
                 "user/2": {
-                    "personal_note_$111_ids": [1],
-                    "personal_note_$_ids": ["111"],
+                    "meeting_user_ids": [2],
                 },
                 "personal_note/1": {
                     "star": True,
                     "note": "blablabla",
-                    "user_id": 2,
+                    "meeting_user_id": 2,
                     "meeting_id": 111,
                 },
                 "user/1": {"meeting_ids": [111]},
+                "meeting_user/2": {
+                    "personal_note_ids": [1],
+                    "user_id": 2,
+                    "meeting_id": 111,
+                },
             }
         )
         response = self.request("personal_note.delete", {"id": 1})

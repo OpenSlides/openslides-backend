@@ -1,5 +1,5 @@
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import ChatMessage
 from ....permissions.permission_helper import has_perm
@@ -11,10 +11,11 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 
 
 @register_action("chat_message.create")
-class ChatMessageCreate(CreateActionWithInferredMeeting):
+class ChatMessageCreate(MeetingUserHelperMixin, CreateActionWithInferredMeeting):
     """
     Action to create a chat message.
     """
@@ -25,13 +26,15 @@ class ChatMessageCreate(CreateActionWithInferredMeeting):
     )
     relation_field_for_meeting = "chat_group_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        instance["user_id"] = self.user_id
+        instance["meeting_user_id"] = self.create_or_get_meeting_user(
+            instance["meeting_id"], self.user_id
+        )
         instance["created"] = round(time())
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         chat_group = self.datastore.get(
             fqid_from_collection_and_id("chat_group", instance["chat_group_id"]),
             ["meeting_id", "write_group_ids"],
@@ -39,12 +42,9 @@ class ChatMessageCreate(CreateActionWithInferredMeeting):
         )
         write_group_set = set(chat_group.get("write_group_ids", []))
         meeting_id = chat_group["meeting_id"]
-        user = self.datastore.get(
-            fqid_from_collection_and_id("user", self.user_id),
-            [f"group_${meeting_id}_ids"],
-            lock_result=False,
+        user_group_set = set(
+            self.get_groups_from_meeting_user(meeting_id, self.user_id)
         )
-        user_group_set = set(user.get(f"group_${meeting_id}_ids", []))
         if not (
             (write_group_set & user_group_set)
             or has_perm(

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
@@ -9,10 +9,10 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileCreateDirectoryActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "group/7": {
                 "name": "group_LxAHErRs",
-                "user_ids": [],
+                "meeting_user_ids": [],
                 "meeting_id": 1,
             },
         }
@@ -22,7 +22,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "group/7": {
                     "name": "group_LxAHErRs",
-                    "user_ids": [],
+                    "meeting_user_ids": [],
                     "meeting_id": 110,
                 },
                 "meeting/110": {
@@ -72,7 +72,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "group/7": {
                     "name": "group_LxAHErRs",
-                    "user_ids": [],
+                    "meeting_user_ids": [],
                     "meeting_id": 110,
                 },
                 "meeting/110": {
@@ -107,10 +107,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "group/7": {
                     "name": "group_LxAHErRs",
-                    "user_ids": [],
+                    "meeting_user_ids": [],
                     "meeting_id": 110,
                 },
-                "group/8": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
+                "group/8": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 110,
+                },
                 "meeting/110": {
                     "name": "meeting110",
                     "is_active_in_organization_id": 1,
@@ -177,10 +181,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "group/2": {
                     "name": "group_LxAHErRs",
-                    "user_ids": [],
+                    "meeting_user_ids": [],
                     "meeting_id": 110,
                 },
-                "group/4": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
+                "group/4": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 110,
+                },
                 "meeting/110": {
                     "name": "meeting110",
                     "is_active_in_organization_id": 1,
@@ -215,10 +223,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "group/3": {
                     "name": "group_LxAHErRs",
-                    "user_ids": [],
+                    "meeting_user_ids": [],
                     "meeting_id": 110,
                 },
-                "group/6": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
+                "group/6": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 110,
+                },
                 "meeting/110": {
                     "name": "meeting110",
                     "is_active_in_organization_id": 1,
@@ -253,11 +265,19 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "group/1": {
                     "name": "group_LxAHErRs",
-                    "user_ids": [],
+                    "meeting_user_ids": [],
                     "meeting_id": 110,
                 },
-                "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
-                "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 110},
+                "group/2": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 110,
+                },
+                "group/3": {
+                    "name": "group_ghjeei",
+                    "meeting_user_ids": [],
+                    "meeting_id": 110,
+                },
                 "meeting/110": {
                     "name": "meeting110",
                     "is_active_in_organization_id": 1,
@@ -292,11 +312,19 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "group/1": {
                     "name": "group_LxAHErRs",
-                    "user_ids": [],
+                    "meeting_user_ids": [],
                     "meeting_id": 110,
                 },
-                "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
-                "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 110},
+                "group/2": {
+                    "name": "group_sdfafd",
+                    "meeting_user_ids": [],
+                    "meeting_id": 110,
+                },
+                "group/3": {
+                    "name": "group_ghjeei",
+                    "meeting_user_ids": [],
+                    "meeting_id": 110,
+                },
                 "meeting/110": {
                     "name": "meeting110",
                     "is_active_in_organization_id": 1,

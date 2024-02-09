@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -9,15 +9,15 @@ DEFAULT_PASSWORD = "password"
 class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "name": "name_JhlFOAfK",
                 "assignment_candidate_ids": [111],
                 "is_active_in_organization_id": 1,
+                "meeting_user_ids": [110],
             },
             "user/110": {
-                "assignment_candidate_$1_ids": [111],
-                "assignment_candidate_$_ids": ["1"],
+                "meeting_user_ids": [110],
                 "is_active": True,
                 "default_password": DEFAULT_PASSWORD,
                 "password": self.auth.hash(DEFAULT_PASSWORD),
@@ -30,9 +30,14 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "phase": "voting",
             },
             "assignment_candidate/111": {
-                "user_id": 110,
+                "meeting_user_id": 110,
                 "assignment_id": 111,
                 "meeting_id": 1,
+            },
+            "meeting_user/110": {
+                "meeting_id": 1,
+                "user_id": 110,
+                "assignment_candidate_ids": [111],
             },
         }
 
@@ -45,8 +50,12 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                 },
                 "user/110": {
-                    "assignment_candidate_$1333_ids": [111],
-                    "assignment_candidate_$_ids": ["1333"],
+                    "meeting_user_ids": [110],
+                },
+                "meeting_user/110": {
+                    "meeting_id": 1333,
+                    "user_id": 110,
+                    "assignment_candidate_ids": [111],
                 },
                 "assignment/111": {
                     "title": "title_xTcEkItp",
@@ -54,7 +63,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                     "candidate_ids": [111],
                 },
                 "assignment_candidate/111": {
-                    "user_id": 110,
+                    "meeting_user_id": 110,
                     "assignment_id": 111,
                     "meeting_id": 1333,
                 },
@@ -80,7 +89,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                     "candidate_ids": [111],
                 },
                 "assignment_candidate/111": {
-                    "user_id": None,
+                    "meeting_user_id": None,
                     "assignment_id": 111,
                     "meeting_id": 1333,
                 },
@@ -98,10 +107,15 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                     "name": "name_JhlFOAfK",
                     "assignment_candidate_ids": [112],
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [110],
                 },
                 "user/110": {
-                    "assignment_candidate_$1333_ids": [112],
-                    "assignment_candidate_$_ids": ["1333"],
+                    "meeting_user_ids": [110],
+                },
+                "meeting_user/110": {
+                    "meeting_id": 1333,
+                    "user_id": 110,
+                    "assignment_candidate_ids": [112],
                 },
                 "assignment/111": {
                     "title": "title_xTcEkItp",
@@ -109,7 +123,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                     "candidate_ids": [111],
                 },
                 "assignment_candidate/112": {
-                    "user_id": 110,
+                    "meeting_user_id": 110,
                     "assignment_id": 111,
                     "meeting_id": 1333,
                 },
@@ -122,7 +136,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
             response.json["message"]
         )
         model = self.get_model("assignment_candidate/112")
-        assert model.get("user_id") == 110
+        assert model.get("meeting_user_id") == 110
         assert model.get("assignment_id") == 111
 
     def test_delete_finished(self) -> None:
@@ -132,10 +146,15 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                     "name": "name_JhlFOAfK",
                     "assignment_candidate_ids": [111],
                     "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [110],
                 },
                 "user/110": {
-                    "assignment_candidate_$1333_ids": [111],
-                    "assignment_candidate_$_ids": ["1333"],
+                    "meeting_user_ids": [110],
+                },
+                "meeting_user/110": {
+                    "meeting_id": 1333,
+                    "user_id": 110,
+                    "assignment_candidate_ids": [111],
                 },
                 "assignment/111": {
                     "title": "title_xTcEkItp",
@@ -144,7 +163,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                     "phase": "finished",
                 },
                 "assignment_candidate/111": {
-                    "user_id": 110,
+                    "meeting_user_id": 110,
                     "assignment_id": 111,
                     "meeting_id": 1333,
                 },

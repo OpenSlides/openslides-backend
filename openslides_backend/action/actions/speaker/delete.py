@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Speaker
 from ....permissions.permissions import Permissions
@@ -14,12 +14,18 @@ class SpeakerDeleteAction(DeleteAction):
     schema = DefaultSchema(Speaker()).get_delete_schema()
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         speaker = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["user_id"],
+            ["meeting_user_id"],
             lock_result=False,
         )
-        if speaker.get("user_id") == self.user_id:
-            return
+        if speaker.get("meeting_user_id"):
+            meeting_user = self.datastore.get(
+                fqid_from_collection_and_id("meeting_user", speaker["meeting_user_id"]),
+                ["user_id"],
+            )
+
+            if meeting_user.get("user_id") == self.user_id:
+                return
         super().check_permissions(instance)

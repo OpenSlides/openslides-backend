@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException
@@ -12,11 +12,14 @@ from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
+from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..motion_submitter.create import MotionSubmitterCreateAction
+from .mixins import set_workflow_timestamp_helper
 from .set_number_mixin import SetNumberMixin
 
 
 class MotionCreateBase(
+    MeetingUserHelperMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     SequentialNumbersMixin,
@@ -27,7 +30,7 @@ class MotionCreateBase(
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 
     def set_state_from_workflow(
-        self, instance: Dict[str, Any], meeting: Dict[str, Any]
+        self, instance: dict[str, Any], meeting: dict[str, Any]
     ) -> None:
         workflow_id = instance.pop("workflow_id", None)
         if workflow_id is None:
@@ -50,33 +53,36 @@ class MotionCreateBase(
                 "No matching default workflow defined on this meeting"
             )
 
-    def create_submitters(self, instance: Dict[str, Any]) -> None:
+    def create_submitters(self, instance: dict[str, Any]) -> None:
         submitter_ids = instance.pop("submitter_ids", None)
         if not submitter_ids:
             submitter_ids = [self.user_id]
         self.apply_instance(instance)
         weight = 1
         for user_id in submitter_ids:
-            data = {"motion_id": instance["id"], "user_id": user_id, "weight": weight}
+            meeting_user_id = self.create_or_get_meeting_user(
+                instance["meeting_id"], user_id
+            )
+            data = {
+                "motion_id": instance["id"],
+                "meeting_user_id": meeting_user_id,
+                "weight": weight,
+            }
             weight += 1
             self.execute_other_action(
                 MotionSubmitterCreateAction, [data], skip_history=True
             )
 
-    def set_sequential_number(self, instance: Dict[str, Any]) -> None:
+    def set_sequential_number(self, instance: dict[str, Any]) -> None:
         instance["sequential_number"] = self.get_sequential_number(
             instance["meeting_id"]
         )
 
-    def set_created_last_modified_and_number(self, instance: Dict[str, Any]) -> None:
+    def set_created_last_modified_and_number(self, instance: dict[str, Any]) -> None:
         timestamp = round(time.time())
-        state = self.datastore.get(
-            fqid_from_collection_and_id("motion_state", instance["state_id"]),
-            ["set_created_timestamp"],
-        )
-        if state.get("set_created_timestamp"):
-            instance["created"] = timestamp
+        set_workflow_timestamp_helper(self.datastore, instance, timestamp)
         instance["last_modified"] = timestamp
+        instance["created"] = timestamp
         self.set_number(
             instance,
             instance["meeting_id"],

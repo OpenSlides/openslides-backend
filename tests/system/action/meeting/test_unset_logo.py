@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -7,21 +7,19 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileUnsetLogoActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "name": "name_meeting1",
-                "logo_$place_id": 17,
-                "logo_$other_id": 17,
-                "logo_$_id": ["place", "other"],
+                "logo_pdf_header_l_id": 17,
+                "logo_pdf_header_r_id": 17,
                 "is_active_in_organization_id": 1,
             },
             "mediafile/17": {
                 "is_directory": False,
                 "mimetype": "image/png",
                 "owner_id": "meeting/1",
-                "used_as_logo_$place_in_meeting_id": 1,
-                "used_as_logo_$other_in_meeting_id": 1,
-                "used_as_logo_$_in_meeting_id": ["place", "other"],
+                "used_as_logo_pdf_header_l_in_meeting_id": 1,
+                "used_as_logo_pdf_header_r_in_meeting_id": 1,
             },
         }
 
@@ -30,47 +28,43 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
             {
                 "meeting/222": {
                     "name": "name_meeting222",
-                    "logo_$place_id": 17,
-                    "logo_$other_id": 17,
-                    "logo_$_id": ["place", "other"],
+                    "logo_pdf_header_l_id": 17,
+                    "logo_pdf_header_r_id": 17,
                     "is_active_in_organization_id": 1,
                 },
                 "mediafile/17": {
                     "is_directory": False,
                     "mimetype": "image/png",
                     "owner_id": "meeting/222",
-                    "used_as_logo_$place_in_meeting_id": 222,
-                    "used_as_logo_$other_in_meeting_id": 222,
-                    "used_as_logo_$_in_meeting_id": ["place", "other"],
+                    "used_as_logo_pdf_header_l_in_meeting_id": 222,
+                    "used_as_logo_pdf_header_r_in_meeting_id": 222,
                 },
             }
         )
-        response = self.request("meeting.unset_logo", {"id": 222, "place": "place"})
+        response = self.request(
+            "meeting.unset_logo", {"id": 222, "place": "pdf_header_l"}
+        )
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/222")
-        assert meeting.get("logo_$place_id") is None
-        assert meeting.get("logo_$other_id") == 17
-        assert meeting.get("logo_$_id") == ["other"]
+        assert meeting.get("logo_pdf_header_l_id") is None
+        assert meeting.get("logo_pdf_header_r_id") == 17
         mediafile = self.get_model("mediafile/17")
-        assert mediafile.get("used_as_logo_$place_in_meeting_id") is None
-        assert mediafile.get("used_as_logo_$other_in_meeting_id") == 222
-        assert mediafile.get("used_as_logo_$_in_meeting_id") == ["other"]
+        assert mediafile.get("used_as_logo_pdf_header_l_in_meeting_id") is None
+        assert mediafile.get("used_as_logo_pdf_header_r_in_meeting_id") == 222
 
     def test_unset_with_underscore(self) -> None:
         self.set_models(
             {
                 "meeting/222": {
                     "name": "name_meeting222",
-                    "logo_$web_header_id": 17,
-                    "logo_$_id": ["web_header"],
+                    "logo_web_header_id": 17,
                     "is_active_in_organization_id": 1,
                 },
                 "mediafile/17": {
                     "is_directory": False,
                     "mimetype": "image/png",
                     "owner_id": "meeting/222",
-                    "used_as_logo_$web_header_in_meeting_id": 222,
-                    "used_as_logo_$_in_meeting_id": ["web_header"],
+                    "used_as_logo_web_header_in_meeting_id": 222,
                 },
             }
         )
@@ -79,11 +73,9 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/222")
-        assert meeting.get("logo_$web_header_id") is None
-        assert meeting.get("logo_$_id") == []
+        assert meeting.get("logo_web_header_id") is None
         mediafile = self.get_model("mediafile/17")
-        assert mediafile.get("used_as_logo_$web_header_in_meeting_id") is None
-        assert mediafile.get("used_as_logo_$_in_meeting_id") == []
+        assert mediafile.get("used_as_logo_web_header_in_meeting_id") is None
 
     def test_unset_logo_no_permissions(self) -> None:
         self.base_permission_test(

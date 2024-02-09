@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
@@ -8,17 +8,17 @@ from ...action import Action
 
 
 class PermissionMixin(Action):
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if "user_id" in instance:
-            user_id = instance["user_id"]
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        if "meeting_user_id" in instance:
+            meeting_user_id = instance["meeting_user_id"]
             assignment_id = instance["assignment_id"]
         else:
             assignment_candidate = self.datastore.get(
                 fqid_from_collection_and_id("assignment_candidate", instance["id"]),
-                ["user_id", "assignment_id"],
+                ["meeting_user_id", "assignment_id"],
                 lock_result=False,
             )
-            user_id = assignment_candidate.get("user_id")
+            meeting_user_id = assignment_candidate.get("meeting_user_id")
             assignment_id = assignment_candidate["assignment_id"]
         assignment = self.datastore.get(
             fqid_from_collection_and_id("assignment", assignment_id),
@@ -35,7 +35,10 @@ class PermissionMixin(Action):
 
         # check special assignment part
         missing_permission = None
-        if self.user_id == user_id:
+        user = self.datastore.get(
+            fqid_from_collection_and_id("user", self.user_id), ["meeting_user_ids"]
+        )
+        if meeting_user_id in (user.get("meeting_user_ids") or []):
             permission = Permissions.Assignment.CAN_NOMINATE_SELF
             if not has_perm(self.datastore, self.user_id, permission, meeting_id):
                 missing_permission = permission

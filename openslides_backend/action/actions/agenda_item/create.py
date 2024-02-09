@@ -1,14 +1,14 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionData
 
 
 @register_action("agenda_item.create")
@@ -27,52 +27,44 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
             "parent_id",
             "duration",
             "weight",
+            "tag_ids",
         ],
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     relation_field_for_meeting = "content_object_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         If parent_id is given, set weight to parent.weight + 1
         """
         instance = super().update_instance(instance)
+
         if instance.get("parent_id") is None:
-            return instance
-        parent = self.datastore.get(
-            fqid_from_collection_and_id("agenda_item", instance["parent_id"]),
-            ["child_ids"],
-        )
-        max_weight = 0
-        for child_id in parent.get("child_ids", []):
-            child = self.datastore.get(
-                fqid_from_collection_and_id("agenda_item", child_id),
-                ["weight"],
+            parent = {"is_hidden": False, "is_internal": False, "level": -1}
+        else:
+            parent = self.datastore.get(
+                fqid_from_collection_and_id(
+                    self.model.collection, instance["parent_id"]
+                ),
+                ["is_hidden", "is_internal", "level"],
             )
-            if child.get("weight", 0) > max_weight:
-                max_weight = child["weight"]
-        instance["weight"] = max_weight + 1
+        instance["level"] = parent.get("level", 0) + 1
+        instance["is_hidden"] = instance.get(
+            "type"
+        ) == AgendaItem.HIDDEN_ITEM or parent.get("is_hidden", False)
+        instance["is_internal"] = instance.get(
+            "type"
+        ) == AgendaItem.INTERNAL_ITEM or parent.get("is_internal", False)
+
+        if "weight" not in instance:
+            max_weight = self.datastore.max(
+                self.model.collection,
+                And(
+                    FilterOperator("parent_id", "=", instance.get("parent_id")),
+                    FilterOperator("meeting_id", "=", instance["meeting_id"]),
+                ),
+                "weight",
+            )
+            instance["weight"] = (max_weight or 0) + 1
         return instance
-
-    def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        for instance in action_data:
-            if instance.get("parent_id") is None:
-                parent = {"is_hidden": False, "is_internal": False}
-                instance["level"] = 0
-            else:
-                parent = self.datastore.get(
-                    fqid_from_collection_and_id(
-                        self.model.collection, instance["parent_id"]
-                    ),
-                    ["is_hidden", "is_internal", "level"],
-                )
-                instance["level"] = parent.get("level", 0) + 1
-            instance["is_hidden"] = instance.get(
-                "type"
-            ) == AgendaItem.HIDDEN_ITEM or parent.get("is_hidden", False)
-            instance["is_internal"] = instance.get(
-                "type"
-            ) == AgendaItem.INTERNAL_ITEM or parent.get("is_internal", False)
-
-        return action_data

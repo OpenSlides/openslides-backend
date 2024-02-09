@@ -1,6 +1,6 @@
 import time
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -11,22 +11,27 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import (
     EXTENSION_REFERENCE_IDS_PATTERN,
-    POSITIVE_NUMBER_REGEX,
     Collection,
     collection_and_id_from_fqid,
     fqid_from_collection_and_id,
 )
-from ....shared.schema import optional_id_schema
+from ....shared.schema import number_string_json_schema, optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .mixins import PermissionHelperMixin
+from .mixins import (
+    AmendmentParagraphHelper,
+    PermissionHelperMixin,
+    set_workflow_timestamp_helper,
+)
 from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.update")
-class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
+class MotionUpdate(
+    UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin, SetNumberMixin
+):
     """
     Action to update motions.
     """
@@ -44,13 +49,16 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
             "start_line_number",
             "category_id",
             "block_id",
-            "supporter_ids",
+            "supporter_meeting_user_ids",
+            "editor_id",
+            "working_group_speaker_id",
             "tag_ids",
             "attachment_ids",
+            "created",
         ],
         additional_optional_fields={
-            **Motion().get_property("amendment_paragraph_$", POSITIVE_NUMBER_REGEX),
             "workflow_id": optional_id_schema,
+            "amendment_paragraphs": number_string_json_schema,
         },
     )
 
@@ -68,35 +76,33 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                     ),
                     [
                         "meeting_id",
-                        "is_active_in_organization_id",
-                        "name",
                         "id",
                         "category_id",
                         "block_id",
-                        "supporter_ids",
+                        "supporter_meeting_user_ids",
                         "tag_ids",
                         "attachment_ids",
                         "recommendation_extension_reference_ids",
                         "state_id",
                         "submitter_ids",
                         "text",
-                        "amendment_paragraph_$",
+                        "amendment_paragraphs",
                     ],
                 )
             ]
         )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
         if (
             instance.get("text")
-            or instance.get("amendment_paragraph_$")
+            or instance.get("amendment_paragraphs")
             or instance.get("reason") == ""
         ):
             motion = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["text", "amendment_paragraph_$", "meeting_id"],
+                ["text", "amendment_paragraphs", "meeting_id"],
             )
 
         if instance.get("text"):
@@ -104,11 +110,12 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                 raise ActionException(
                     "Cannot update text, because it was not set in the old values."
                 )
-        if instance.get("amendment_paragraph_$"):
-            if not motion.get("amendment_paragraph_$"):
+        if instance.get("amendment_paragraphs"):
+            if not motion.get("amendment_paragraphs"):
                 raise ActionException(
-                    "Cannot update amendment_paragraph_$, because it was not set in the old values."
+                    "Cannot update amendment_paragraphs, because it was not set in the old values."
                 )
+            self.validate_amendment_paragraphs(instance)
         if instance.get("reason") == "":
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", motion["meeting_id"]),
@@ -121,7 +128,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
             workflow_id = instance.pop("workflow_id")
             motion = self.datastore.get(
                 fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["state_id", "created"],
+                ["state_id", "workflow_timestamp"],
             )
             state = self.datastore.get(
                 fqid_from_collection_and_id("motion_state", motion["state_id"]),
@@ -134,15 +141,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                 )
                 instance["state_id"] = workflow["first_state_id"]
                 instance["recommendation_id"] = None
-                if not motion.get("created"):
-                    first_state = self.datastore.get(
-                        fqid_from_collection_and_id(
-                            "motion_state", instance["state_id"]
-                        ),
-                        ["set_created_timestamp"],
-                    )
-                    if first_state.get("set_created_timestamp"):
-                        instance["created"] = timestamp
+                set_workflow_timestamp_helper(self.datastore, instance, timestamp)
 
         for prefix in ("recommendation", "state"):
             if f"{prefix}_extension" in instance:
@@ -158,7 +157,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
         return instance
 
     def set_extension_reference_ids(
-        self, prefix: str, instance: Dict[str, Any]
+        self, prefix: str, instance: dict[str, Any]
     ) -> None:
         extension_reference_ids = []
         possible_rerids = EXTENSION_REFERENCE_IDS_PATTERN.findall(
@@ -179,7 +178,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                 )
         instance[f"{prefix}_extension_reference_ids"] = extension_reference_ids
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         motion = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["meeting_id", "state_id", "submitter_ids"],
@@ -197,11 +196,13 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
         if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
             allowed_fields += [
                 "category_id",
-                "motion_block_id",
-                "origin",
-                "supporters_id",
+                "block_id",
+                "supporter_meeting_user_ids",
                 "recommendation_extension",
                 "start_line_number",
+                "tag_ids",
+                "state_extension",
+                "created",
             ]
 
         # check for self submitter and whitelist
@@ -212,7 +213,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                 "title",
                 "text",
                 "reason",
-                "amendment_paragraph_$",
+                "amendment_paragraphs",
             ]
 
         forbidden_fields = [field for field in instance if field not in allowed_fields]
@@ -221,14 +222,14 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
             msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
             raise PermissionDenied(msg)
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         information = {}
         for instance in deepcopy(self.instances):
             instance_information = []
 
             # supporters changed
-            if "supporter_ids" in instance:
-                instance.pop("supporter_ids")
+            if "supporter_meeting_user_ids" in instance:
+                instance.pop("supporter_meeting_user_ids")
                 instance_information.append("Supporters changed")
 
             # category changed
@@ -253,7 +254,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
                 "text",
                 "reason",
                 "attachment_ids",
-                "amendment_paragraph_$",
+                "amendment_paragraphs",
                 "workflow_id",
                 "start_line_number",
                 "state_extension",
@@ -271,11 +272,11 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin, SetNumberMixin):
 
     def create_history_information_for_field(
         self,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
         field: str,
         collection: Collection,
         verbose_collection: str,
-    ) -> List[str]:
+    ) -> list[str]:
         if field in instance:
             value = instance.pop(field)
             if value is None:

@@ -13,8 +13,6 @@ from .action.action_worker import gunicorn_post_request, gunicorn_worker_abort
 from .shared.env import Environment
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
-from .shared.otel import init as otel_init
-from .shared.otel import instrument_requests as otel_instrument_requests
 
 register_services()
 
@@ -79,8 +77,6 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         # TODO: Fix this typing problem.
         logging_module: LoggingModule = logging  # type: ignore
 
-        otel_instrument_requests()
-        otel_init(self.env, "backend")
         return create_wsgi_application(logging_module, self.view_name, self.env)
 
 
@@ -105,7 +101,7 @@ def start_them_all(env: Environment) -> None:  # pragma: no cover
     for process in processes.values():
         process.start()
 
-    def sigterm_handler(signalnum: int, current_stack_frame: Any) -> None:
+    def sigterm_handler(signalnum: int, _: Any) -> None:
         strsignal = signal.strsignal  # type: ignore
         print(
             f"Parent process {os.getpid()} received {strsignal(signalnum)} "

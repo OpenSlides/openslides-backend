@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -8,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionResetRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             "motion_state/77": {
                 "meeting_id": 1,
                 "name": "test1",
@@ -104,5 +104,5 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
             self.permission_test_models,
             "motion.reset_recommendation",
             {"id": 22},
-            Permissions.Motion.CAN_MANAGE,
+            Permissions.Motion.CAN_MANAGE_METADATA,
         )

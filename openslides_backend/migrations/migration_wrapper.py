@@ -1,6 +1,6 @@
 import pkgutil
 from importlib import import_module
-from typing import Any, Dict, List, Optional, Type
+from typing import Any
 
 from datastore.migrations import (
     BaseMigration,
@@ -37,8 +37,8 @@ class MigrationWrapper:
 
     @staticmethod
     def load_migrations(
-        base_migration_module_pypath: Optional[str] = None,
-    ) -> List[Type[BaseMigration]]:
+        base_migration_module_pypath: str | None = None,
+    ) -> list[type[BaseMigration]]:
         if not base_migration_module_pypath:
             base_module = __name__.rsplit(".", 1)[0]
             if base_module == "__main__":
@@ -53,7 +53,7 @@ class MigrationWrapper:
             if not is_pkg
         }
 
-        migration_classes: List[Type[BaseMigration]] = []
+        migration_classes: list[type[BaseMigration]] = []
         for module_name in module_names:
             module_pypath = f"{base_migration_module_pypath}.{module_name}"
             migration_module = import_module(module_pypath)
@@ -79,7 +79,7 @@ class MigrationWrapper:
         elif command == "clear-collectionfield-tables":
             self.handler.delete_collectionfield_aux_tables()
         elif command == "stats":
-            return self.handler.get_stats()
+            self.handler.print_stats()
         else:
             raise InvalidMigrationCommand(command)
 
@@ -92,10 +92,10 @@ class MigrationWrapperMemory(MigrationWrapper):
 
     def set_import_data(
         self,
-        models: Dict[Fqid, Model],
+        models: dict[Fqid, Model],
         start_migration_index: int,
     ) -> None:
         self.handler.set_import_data(models, start_migration_index)
 
-    def get_migrated_models(self) -> Dict[Fqid, Model]:
+    def get_migrated_models(self) -> dict[Fqid, Model]:
         return self.handler.get_migrated_models()

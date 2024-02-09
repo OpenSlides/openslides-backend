@@ -53,6 +53,11 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
             ],
         )
 
+    def test_missing_meeting_id(self) -> None:
+        status_code, data = self.request("get_forwarding_meetings", {})
+        self.assertEqual(status_code, 400)
+        assert "data must contain ['meeting_id'] properties" == data["message"]
+
     def test_no_permissions(self) -> None:
         self.set_models(
             {
@@ -61,7 +66,12 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                     "is_active": True,
                     "default_password": TEST_USER_PW,
                     "password": self.auth.hash(TEST_USER_PW),
-                    "group_$3_ids": [3],
+                    "meeting_user_ids": [3],
+                },
+                "meeting_user/3": {
+                    "meeting_id": 3,
+                    "user_id": 3,
+                    "group_ids": [3],
                 },
                 "meeting/3": {"group_ids": [3]},
                 "group/3": {"meeting_id": 3},
@@ -118,10 +128,27 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                     "is_active": True,
                     "default_password": TEST_USER_PW,
                     "password": self.auth.hash(TEST_USER_PW),
-                    "group_$1_ids": [2],
-                    "group_$2_ids": [3],
-                    "group_$3_ids": [4],
-                    "group_$4_ids": [5],
+                    "meeting_user_ids": [1, 2, 3, 4],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 3,
+                    "group_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 2,
+                    "user_id": 3,
+                    "group_ids": [3],
+                },
+                "meeting_user/3": {
+                    "meeting_id": 3,
+                    "user_id": 3,
+                    "group_ids": [4],
+                },
+                "meeting_user/4": {
+                    "meeting_id": 4,
+                    "user_id": 3,
+                    "group_ids": [5],
                 },
                 "group/2": {
                     "meeting_id": 1,

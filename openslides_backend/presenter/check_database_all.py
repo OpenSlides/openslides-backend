@@ -1,13 +1,14 @@
-from typing import Any, Dict
+from typing import Any
 
 import fastjsonschema
-from datastore.shared.util import strip_reserved_fields
+from datastore.shared.util import is_reserved_field
 
 from openslides_backend.migrations import get_backend_migration_index
 
 from ..models.checker import Checker, CheckException
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
+from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PermissionDenied
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -22,6 +23,27 @@ check_database_schema = fastjsonschema.compile(
         "properties": {},
     }
 )
+
+
+def check_everything(datastore: DatastoreService) -> None:
+    result = datastore.get_everything()
+    data: dict[str, Any] = {
+        collection: {
+            str(id): {
+                field: value
+                for field, value in model.items()
+                if not is_reserved_field(field)
+            }
+            for id, model in models.items()
+        }
+        for collection, models in result.items()
+        if collection not in ["action_worker", "import_preview"]
+    }
+    data["_migration_index"] = get_backend_migration_index()
+    Checker(
+        data=data,
+        mode="all",
+    ).run_check()
 
 
 @register_presenter("check_database_all")
@@ -40,30 +62,8 @@ class CheckDatabaseAll(BasePresenter):
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
 
-        export = self.get_everything()
-        checker = Checker(
-            data=export,
-            mode="all",
-        )
         try:
-            checker.run_check()
+            check_everything(self.datastore)
             return {"ok": True}
         except CheckException as ce:
             return {"ok": False, "errors": str(ce)}
-
-    def get_everything(self) -> Dict[str, Any]:
-        everything = self.datastore.get_everything()
-        export: Dict[str, Any] = {
-            collection: self.remove_meta_fields(everything[collection])
-            for collection in everything
-            if collection != "action_worker"
-        }
-        export["_migration_index"] = get_backend_migration_index()
-        return export
-
-    def remove_meta_fields(self, res: Dict[int, Any]) -> Dict[str, Any]:
-        dict_without_meta_fields = {}
-        for key in res:
-            strip_reserved_fields(res[key])
-            dict_without_meta_fields[str(key)] = res[key]
-        return dict_without_meta_fields

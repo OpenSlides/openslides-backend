@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Any, ContextManager, Dict, List, Optional, Sequence, Set, Union
+from collections.abc import Sequence
+from typing import Any, ContextManager
 
 import simplejson as json
 from datastore.reader.core import (
@@ -15,9 +16,10 @@ from datastore.reader.core import (
 )
 from datastore.shared.di import injector
 from datastore.shared.services.read_database import HistoryInformation
-from datastore.shared.util import DeletedModelsBehaviour
+from datastore.shared.util import DeletedModelsBehaviour, is_reserved_field
 from simplejson.errors import JSONDecodeError
 
+from ...models.base import model_registry
 from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
 from ...shared.interfaces.collection_field_lock import (
@@ -33,15 +35,19 @@ from ...shared.patterns import (
     CollectionField,
     FullQualifiedField,
     FullQualifiedId,
+    collection_and_field_from_collectionfield,
+    collection_and_field_from_fqfield,
     collectionfield_from_collection_and_field,
     fqfield_from_fqid_and_field,
     fqid_from_collection_and_id,
+    is_collectionfield,
+    is_fqfield,
 )
 from . import commands
 from .handle_datastore_errors import handle_datastore_errors, raise_datastore_error
 from .interface import BaseDatastoreService, Engine, LockResult, PartialModel
 
-MappedFieldsPerFqid = Dict[FullQualifiedId, List[str]]
+MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
 
 
 class DatastoreAdapter(BaseDatastoreService):
@@ -52,7 +58,7 @@ class DatastoreAdapter(BaseDatastoreService):
     reader: Reader
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField or CollectionField
-    locked_fields: Dict[str, CollectionFieldLock]
+    locked_fields: dict[str, CollectionFieldLock]
 
     def __init__(self, engine: Engine, logging: LoggingModule, env: Env) -> None:
         self.logger = logging.getLogger(__name__)
@@ -94,8 +100,8 @@ class DatastoreAdapter(BaseDatastoreService):
     def get(
         self,
         fqid: FullQualifiedId,
-        mapped_fields: List[str],
-        position: Optional[int] = None,
+        mapped_fields: list[str],
+        position: int | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
     ) -> PartialModel:
@@ -129,11 +135,11 @@ class DatastoreAdapter(BaseDatastoreService):
     @handle_datastore_errors
     def get_many(
         self,
-        get_many_requests: List[commands.GetManyRequest],
-        position: Optional[int] = None,
+        get_many_requests: list[commands.GetManyRequest],
+        position: int | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
-    ) -> Dict[Collection, Dict[int, PartialModel]]:
+    ) -> dict[Collection, dict[int, PartialModel]]:
         if lock_result:
             for get_many_request in get_many_requests:
                 if get_many_request.mapped_fields:
@@ -150,7 +156,7 @@ class DatastoreAdapter(BaseDatastoreService):
             f"Start GET_MANY request to datastore with the following data: {request}"
         )
         response = self.reader.get_many(request)
-        result: Dict[Collection, Dict[int, PartialModel]] = defaultdict(dict)
+        result: dict[Collection, dict[int, PartialModel]] = defaultdict(dict)
         for get_many_request in get_many_requests:
             collection = get_many_request.collection
             if collection not in response:
@@ -177,10 +183,10 @@ class DatastoreAdapter(BaseDatastoreService):
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: List[str],
+        mapped_fields: list[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
-    ) -> Dict[int, PartialModel]:
+    ) -> dict[int, PartialModel]:
         mapped_fields_set = set(mapped_fields)
         if lock_result:
             mapped_fields_set.add("meta_position")
@@ -216,10 +222,10 @@ class DatastoreAdapter(BaseDatastoreService):
         self,
         collection: Collection,
         filter: Filter,
-        mapped_fields: List[str],
+        mapped_fields: list[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
-    ) -> Dict[int, PartialModel]:
+    ) -> dict[int, PartialModel]:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
         )
@@ -288,7 +294,7 @@ class DatastoreAdapter(BaseDatastoreService):
         field: str,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
-    ) -> Optional[int]:
+    ) -> int | None:
         return self._minmax(
             "min", collection, filter, field, get_deleted_models, lock_result
         )
@@ -300,7 +306,7 @@ class DatastoreAdapter(BaseDatastoreService):
         field: str,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
-    ) -> Optional[int]:
+    ) -> int | None:
         return self._minmax(
             "max", collection, filter, field, get_deleted_models, lock_result
         )
@@ -314,7 +320,7 @@ class DatastoreAdapter(BaseDatastoreService):
         field: str,
         get_deleted_models: DeletedModelsBehaviour,
         lock_result: bool,
-    ) -> Optional[int]:
+    ) -> int | None:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
         )
@@ -332,8 +338,8 @@ class DatastoreAdapter(BaseDatastoreService):
         return response[route]
 
     def history_information(
-        self, fqids: List[str]
-    ) -> Dict[str, List[HistoryInformation]]:
+        self, fqids: list[str]
+    ) -> dict[str, list[HistoryInformation]]:
         request = HistoryInformationRequest(fqids=fqids)
         self.logger.debug(
             f"Start HISTORY_INFORMATION request to datastore with the following data: {request}"
@@ -344,19 +350,19 @@ class DatastoreAdapter(BaseDatastoreService):
         self,
         collection: Collection,
         filter: Filter,
-        position: Optional[int],
-        additional_field: Optional[str] = None,
+        position: int | None,
+        additional_field: str | None = None,
     ) -> None:
         if position is None:
             raise DatastoreException("Invalid response from datastore.")
-        fields = []
-        filter_visitor(filter, lambda fo: fields.append(fo.field))
+        fields = set()
+        filter_visitor(filter, lambda fo: fields.add(fo.field))
         if "meeting_id" not in fields:
             self.logger.debug(
                 "Locking a collection field with a filter which does not contain meeting_id!"
             )
         if additional_field:
-            fields.append(additional_field)
+            fields.add(additional_field)
         for field in fields:
             cf = collectionfield_from_collection_and_field(collection, field)
             self.update_locked_fields(cf, {"position": position, "filter": filter})
@@ -379,7 +385,7 @@ class DatastoreAdapter(BaseDatastoreService):
         return And(filter, deleted_models_filter)
 
     def update_locked_fields_from_mapped_fields(
-        self, fqid: FullQualifiedId, position: int, mapped_fields: Optional[Set[str]]
+        self, fqid: FullQualifiedId, position: int, mapped_fields: set[str] | None
     ) -> None:
         if mapped_fields is not None:
             for field in mapped_fields:
@@ -393,13 +399,26 @@ class DatastoreAdapter(BaseDatastoreService):
 
     def update_locked_fields(
         self,
-        key: Union[FullQualifiedId, FullQualifiedField, CollectionField],
-        lock: Union[int, CollectionFieldLockWithFilter],
+        key: FullQualifiedId | FullQualifiedField | CollectionField,
+        lock: int | CollectionFieldLockWithFilter,
     ) -> None:
         """
         Updates the locked_fields map by adding the new value for the given FQId or
         FQField. To work properly in case of retry/reread we have to accept the new value always.
         """
+        # check for constant fields
+        if is_fqfield(key) or is_collectionfield(key):
+            if is_fqfield(key):
+                collection, field_name = collection_and_field_from_fqfield(key)
+            else:
+                collection, field_name = collection_and_field_from_collectionfield(key)
+            if is_reserved_field(field_name):
+                return
+            field = model_registry[collection]().get_field(field_name)
+            if field.constant:
+                # constant fields can never be locked
+                return
+
         if not isinstance(lock, int) and not COLLECTIONFIELD_PATTERN.match(key):
             raise DatastoreException(
                 "You can only lock collection fields with a filter"
@@ -435,7 +454,7 @@ class DatastoreAdapter(BaseDatastoreService):
     def reserve_id(self, collection: Collection) -> int:
         return self.reserve_ids(collection=collection, amount=1)[0]
 
-    def write(self, write_requests: Union[List[WriteRequest], WriteRequest]) -> None:
+    def write(self, write_requests: list[WriteRequest] | WriteRequest) -> None:
         if isinstance(write_requests, WriteRequest):
             write_requests = [write_requests]
         command = commands.Write(write_requests=write_requests)
@@ -445,10 +464,10 @@ class DatastoreAdapter(BaseDatastoreService):
         )
         self.retrieve(command)
 
-    def write_action_worker(self, write_request: WriteRequest) -> None:
-        command = commands.WriteActionWorker(write_requests=[write_request])
+    def write_without_events(self, write_request: WriteRequest) -> None:
+        command = commands.WriteWithoutEvents(write_requests=[write_request])
         self.logger.debug(
-            f"Start WRITE_ACTION_WORKER request to datastore with the following data: "
+            f"Start WRITE_WITHOUT_EVENTS request to datastore with the following data: "
             f"Write request: {write_request}"
         )
         self.retrieve(command)
@@ -458,7 +477,7 @@ class DatastoreAdapter(BaseDatastoreService):
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
 
-    def get_everything(self) -> Dict[Collection, Dict[int, PartialModel]]:
+    def get_everything(self) -> dict[Collection, dict[int, PartialModel]]:
         command = commands.GetEverything()
         self.logger.debug("Get Everything from datastore.")
         return self.retrieve(command)

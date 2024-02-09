@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Iterable, Sequence, Union
+from collections.abc import Callable, Iterable, Sequence
+from typing import Any, Union
 
 from datastore.shared.util import And as BaseAnd
 from datastore.shared.util import FilterOperator as BaseFilterOperator
 from datastore.shared.util import Not as BaseNot
 from datastore.shared.util import Or as BaseOr
 
-FilterData = Dict[str, Any]
+FilterData = dict[str, Any]
 
 
 class _FilterBase(ABC):
@@ -17,7 +18,7 @@ class _FilterBase(ABC):
 
 class _ListFilterBase(_FilterBase, ABC):
     def __init__(
-        self, arg: "Filter" | Iterable["Filter"], *more_filters: "Filter"
+        self, arg: Union["Filter", Iterable["Filter"]], *more_filters: "Filter"
     ) -> None:
         self._set_filters(
             (list(arg) if isinstance(arg, Iterable) else [arg]) + list(more_filters)

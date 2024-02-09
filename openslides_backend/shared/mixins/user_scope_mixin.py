@@ -1,9 +1,8 @@
 from enum import Enum
-from typing import Any, Dict, List, Set, Tuple, cast
+from typing import Any
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
-from ...models.models import Committee
 from ...permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -17,7 +16,6 @@ from ...permissions.permissions import Permissions
 from ...services.datastore.interface import GetManyRequest
 from ..exceptions import MissingPermission
 from ..patterns import fqid_from_collection_and_id
-from ..util_dict_sets import get_set_from_dict_by_fieldlist, get_set_from_dict_from_dict
 
 
 class UserScope(str, Enum):
@@ -31,35 +29,35 @@ class UserScope(str, Enum):
 
 class UserScopeMixin(BaseServiceProvider):
     def get_user_scope(
-        self, id_or_instance: int | Dict[str, Any]
-    ) -> Tuple[UserScope, int, str]:
+        self, id_or_instance: int | dict[str, Any]
+    ) -> tuple[UserScope, int, str]:
         """
-        Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
-        and the oml-level of the user as string (Empty string, if no)
+        Parameter id_or_instance: id for existing user or instance for user to create
+        Returns the scope of the given user id together with the relevant scope id (either meeting,
+        committee or organization) and the OML level of the user as string (empty string if the user
+        has none).
         """
-        meetings: Set[int] = set()
-        committees_manager: Set[int] = set()
-        cml_fields = [
-            f"committee_${cml_field}_management_level"
-            for cml_field in cast(
-                List[str], Committee.user__management_level.replacement_enum
-            )
-        ]
+        meetings: set[int] = set()
+        committees_manager: set[int] = set()
         if isinstance(id_or_instance, dict):
-            meetings.update(map(int, id_or_instance.get("group_$_ids", {}).keys()))
+            if "group_ids" in id_or_instance:
+                if "meeting_id" in id_or_instance:
+                    meetings.add(id_or_instance["meeting_id"])
             committees_manager.update(
-                get_set_from_dict_from_dict(
-                    id_or_instance, "committee_$_management_level"
-                )
+                set(id_or_instance.get("committee_management_ids", []))
             )
             oml_right = id_or_instance.get("organization_management_level", "")
         else:
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", id_or_instance),
-                ["meeting_ids", "organization_management_level", *cml_fields],
+                [
+                    "meeting_ids",
+                    "organization_management_level",
+                    "committee_management_ids",
+                ],
             )
             meetings.update(user.get("meeting_ids", []))
-            committees_manager.update(get_set_from_dict_by_fieldlist(user, cml_fields))
+            committees_manager.update(set(user.get("committee_management_ids") or []))
             oml_right = user.get("organization_management_level", "")
         result = self.datastore.get_many(
             [
@@ -70,21 +68,17 @@ class UserScopeMixin(BaseServiceProvider):
                 )
             ]
         ).get("meeting", {})
-        committees_of_meetings = set(
-            meeting_data.get("committee_id")
-            for _, meeting_data in result.items()
-            if meeting_data.get("is_active_in_organization_id")
-        )
-        committees = list(committees_manager | committees_of_meetings)
-        meetings_committee = {
-            meeting_id: meeting_data.get("committee_id")  # type: ignore
+
+        meetings_committee: dict[int, int] = {
+            meeting_id: meeting_data["committee_id"]
             for meeting_id, meeting_data in result.items()
             if meeting_data.get("is_active_in_organization_id")
         }
+        committees = committees_manager | set(meetings_committee.values())
         if len(meetings_committee) == 1 and len(committees) == 1:
             return UserScope.Meeting, next(iter(meetings_committee)), oml_right
         elif len(committees) == 1:
-            return UserScope.Committee, cast(int, committees[0]), oml_right
+            return UserScope.Committee, next(iter(committees)), oml_right
         return UserScope.Organization, 1, oml_right
 
     def check_permissions_for_scope(

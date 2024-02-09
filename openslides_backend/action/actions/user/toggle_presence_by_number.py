@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
@@ -36,7 +36,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         }
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         update is_present_in_meeting_ids:
         """
@@ -60,30 +60,41 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         return instance
 
     def find_user_to_number(self, meeting_id: int, number: str) -> int:
-        filter_: Filter = FilterOperator(f"number_${meeting_id}", "=", number)
-        result = self.datastore.filter("user", filter_, ["id"])
+        filter_: Filter = And(
+            FilterOperator("number", "=", number),
+            FilterOperator("meeting_id", "=", meeting_id),
+        )
+        result = self.datastore.filter("meeting_user", filter_, ["user_id"])
         if len(result.keys()) == 1:
-            return list(result.keys())[0]
+            return list(result.values())[0]["user_id"]
         elif len(result.keys()) > 1:
             raise ActionException("Found more than one user with the number.")
 
-        filter_ = And(
-            FilterOperator(f"number_${meeting_id}", "=", ""),
-            FilterOperator("default_number", "=", number),
-        )
+        filter_ = FilterOperator("default_number", "=", number)
         result = self.datastore.filter("user", filter_, ["id"])
-        if len(result.keys()) == 1:
-            return list(result.keys())[0]
-        elif len(result.keys()) > 1:
-            raise ActionException("Found more than one user with the default number.")
+        ids = {user["id"] for user in result.values()}
+        if len(ids) >= 1:
+            filter_ = And(
+                FilterOperator("number", "=", ""),
+                FilterOperator("meeting_id", "=", meeting_id),
+            )
+            result = self.datastore.filter("meeting_user", filter_, ["user_id"])
+            user_ids = {meeting_user["user_id"] for meeting_user in result.values()}
+            found_user_ids = user_ids & ids
+            if len(found_user_ids) == 1:
+                return list(found_user_ids)[0]
+            elif len(found_user_ids) > 1:
+                raise ActionException(
+                    "Found more than one user with the default number."
+                )
         raise ActionException("No user with this number found.")
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         return {"id": instance["id"]}
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         if has_organization_management_level(
             self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):

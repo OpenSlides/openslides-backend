@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
@@ -30,7 +31,7 @@ class PollStartAction(
     poll_history_information = "started"
     extend_history_to = "content_object_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["state", "meeting_id", "type"],

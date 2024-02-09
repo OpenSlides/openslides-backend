@@ -1,3 +1,4 @@
+from openslides_backend.action.util.crypto import PASSWORD_CHARS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,15 +6,20 @@ from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
 
 
 class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.reset_redis()
+
     def test_correct(self) -> None:
         self.update_model("user/1", {"password": "old_pw"})
         response = self.request("user.generate_new_password", {"id": 1})
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")
-        assert model.get("password") is not None
-        assert self.auth.is_equals(
-            model.get("default_password", ""), model.get("password", "")
-        )
+        assert (hash := model.get("password")) is not None
+        assert (password := model.get("default_password")) is not None
+        assert all(char in PASSWORD_CHARS for char in password)
+        assert self.auth.is_equal(password, hash)
+        self.assert_logged_out()
 
     def test_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
@@ -32,6 +38,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
+        self.assert_logged_in()
 
     def test_scope_meeting_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -40,6 +47,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
+        self.assert_logged_in()
 
     def test_scope_meeting_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
@@ -48,6 +56,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
+        self.assert_logged_in()
 
     def test_scope_committee_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
@@ -66,6 +75,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
+        self.assert_logged_in()
 
     def test_scope_committee_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -74,6 +84,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
+        self.assert_logged_in()
 
     def test_scope_committee_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)
@@ -102,6 +113,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 200)
         user = self.get_model("user/111")
         assert user.get("password") and user.get("default_password")
+        self.assert_logged_in()
 
     def test_scope_organization_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
@@ -137,5 +149,14 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action user.generate_new_password. Missing permission: OrganizationManagementLevel superadmin in organization 1",
+            response.json["message"],
+        )
+
+    def test_saml_user_error(self) -> None:
+        self.update_model("user/1", {"password": "pw", "saml_id": "111"})
+        response = self.request("user.generate_new_password", {"id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "user 111 is a Single Sign On user and has no local OpenSlides password.",
             response.json["message"],
         )

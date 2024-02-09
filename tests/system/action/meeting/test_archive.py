@@ -1,7 +1,4 @@
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -66,10 +63,7 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                     "committee_ids": [1],
                 }
             }

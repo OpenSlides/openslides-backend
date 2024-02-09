@@ -204,7 +204,7 @@ class ProjectorProject(BaseActionTestCase):
             "projector.project",
             {
                 "ids": [23],
-                "content_object_id": "user/0",
+                "content_object_id": "meeting_user/0",
                 "meeting_id": 1,
                 "stable": False,
             },
@@ -356,16 +356,16 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_user_as_content_object_okay(self) -> None:
-        self.create_model(
-            "user/2",
+    def test_user_as_content_object(self) -> None:
+        self.set_models(
             {
-                "username": "normal user",
-                "group_$1_ids": [1],
-                "group_$_ids": ["1"],
-                "meeting_ids": [1],
-            },
+                "user/2": {
+                    "username": "normal user",
+                    "meeting_ids": [1],
+                },
+            }
         )
+        self.set_user_groups(2, [1])
         response = self.request(
             "projector.project",
             {"ids": [75], "content_object_id": "user/2", "meeting_id": 1},
@@ -373,6 +373,31 @@ class ProjectorProject(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "The collection 'user' is not available for field 'content_object_id' in collection 'projection'."
+            in response.json["message"]
+        )
+
+    def test_meeting_user_as_content_object(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "normal user",
+                    "meeting_ids": [1],
+                    "meeting_user_ids": [2],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [1],
+                },
+            }
+        )
+        response = self.request(
+            "projector.project",
+            {"ids": [75], "content_object_id": "meeting_user/2", "meeting_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "The collection 'meeting_user' is not available for field 'content_object_id' in collection 'projection'."
             in response.json["message"]
         )
 
@@ -386,7 +411,7 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['content_object_id', 'meeting_id', 'ids'] properties",
+            "data must contain ['meeting_id'] properties",
             response.json["message"],
         )
 
@@ -406,6 +431,24 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assertIn("'assignment/452'", response.json["message"])
         self.assertIn("'projector/23'", response.json["message"])
+
+    def test_project_wrong_meeting_by_content_user(self) -> None:
+        self.create_model(
+            "user/2",
+            {"username": "normal user", "meeting_user_ids": [2]},
+        )
+        self.set_models(
+            {"meeting_user/2": {"meeting_id": 1, "user_id": 2, "group_ids": [1]}}
+        )
+        response = self.request(
+            "projector.project",
+            {"ids": [], "content_object_id": "user/2", "meeting_id": 2, "stable": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 2: ['user/2']",
+            response.json["message"],
+        )
 
     def test_project_wrong_meeting_by_content_meeting(self) -> None:
         response = self.request(

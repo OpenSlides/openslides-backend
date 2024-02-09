@@ -1,19 +1,15 @@
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from ...models.base import Model, model_registry
-from ...models.fields import BaseRelationField, BaseTemplateField, Field
+from ...models.fields import BaseRelationField, Field
 from ...services.datastore.interface import DatastoreService
-from ...shared.exceptions import ActionException, DatastoreException
 from ...shared.patterns import (
     FullQualifiedField,
     collection_from_fqfield,
     field_from_fqfield,
-    fqid_from_collection_and_id,
     fqid_from_fqfield,
     id_from_fqfield,
-    transform_to_fqids,
 )
-from ..util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .calculated_field_handler import CalculatedFieldHandlerCall
 from .calculated_field_handlers_map import calculated_field_handlers_map
 from .single_relation_handler import SingleRelationHandler
@@ -37,18 +33,15 @@ class RelationManager:
     def get_relation_updates(
         self,
         model: Model,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
         action: str,
         process_calculated_fields_only: bool = False,
     ) -> RelationUpdates:
         # id has to be provided to be able to correctly update relations
         assert "id" in instance
 
-        if not process_calculated_fields_only:
-            self.process_template_fields(model, instance)
-
         relations: RelationUpdates = {}
-        calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
+        calculated_field_handler_calls: list[CalculatedFieldHandlerCall] = []
         for field_name in instance:
             if not model.has_field(field_name):
                 continue
@@ -66,12 +59,6 @@ class RelationManager:
             # only relations are handled here
             if not isinstance(field, BaseRelationField):
                 continue
-            # ignore template fields, we have to do no relation handling there
-            if isinstance(field, BaseTemplateField) and field.is_template_field(
-                field_name
-            ):
-                continue
-
             handler = SingleRelationHandler(
                 self.datastore,
                 field,
@@ -104,115 +91,10 @@ class RelationManager:
             self.call_calculated_field_handlers(relations, **call)
         return relations
 
-    def process_template_fields(self, model: Model, instance: Dict[str, Any]) -> None:
-        """
-        Processes all template fields in the given instance. They must be given as
-        objects (mapping replacements to values). The corresponding structured fields
-        will be set accordingly.
-        """
-        additional_instance_fields = {}
-
-        # gather all template fields and structured fields in this instance
-        structured_fields = []
-        template_fields = []
-        for field_name in instance:
-            field = model.try_get_field(field_name)
-            if not field or not isinstance(field, BaseTemplateField):
-                continue
-
-            if field.is_template_field(field_name):
-                template_fields.append((field_name, field))
-            else:
-                structured_fields.append((field_name, field))
-
-        def get_template_field_db_value(template_field_name: str) -> List[str]:
-            try:
-                return self.datastore.get(
-                    fqid=fqid_from_collection_and_id(model.collection, instance["id"]),
-                    mapped_fields=[template_field_name],
-                    use_changed_models=False,
-                ).get(template_field_name, [])
-            except DatastoreException:
-                return []
-
-        def set_structured_field(
-            field: BaseTemplateField, replacement: str, value: Any
-        ) -> None:
-            if (
-                isinstance(field, BaseRelationField)
-                and field.is_list_field
-                and value == []
-            ):
-                value = None
-
-            template_field_name = field.get_template_field_name()
-            structured_field_name = field.get_structured_field_name(replacement)
-            additional_instance_fields[structured_field_name] = value
-            template_field = additional_instance_fields[template_field_name]
-
-            if value is not None:
-                if replacement not in template_field:
-                    if field.replacement_collection:
-                        # check if the model the replacement is referring to exists
-                        self.datastore.get(
-                            fqid=fqid_from_collection_and_id(
-                                field.replacement_collection, int(replacement)
-                            ),
-                            mapped_fields=["id"],
-                        )
-                    elif field.replacement_enum:
-                        if replacement not in field.replacement_enum:
-                            raise ActionException(
-                                f"Replacement {replacement} does not exist in field {field.own_field_name}´s replacement_enum."
-                            )
-                    template_field.append(replacement)
-
-                if field.replacement_collection and isinstance(
-                    field, BaseRelationField
-                ):
-                    # check that the given (fq)ids are valid for this replacement
-                    if field.replacement_collection != "meeting":
-                        raise NotImplementedError(
-                            "Structured relation fields with a replacement collection other than meeting are not permitted"
-                        )
-
-                    fqids = transform_to_fqids(value, field.get_target_collection())
-                    assert_belongs_to_meeting(self.datastore, fqids, int(replacement))
-            else:
-                if replacement in template_field:
-                    template_field.remove(replacement)
-
-        # process template fields and set the contained structured fields
-        for field_name, field in template_fields:
-            field_value = instance[field_name]
-            assert isinstance(
-                field_value, dict
-            ), f"Field '{field_name}' has no dict as value: '{field_value}'"
-            additional_instance_fields[field_name] = get_template_field_db_value(
-                field_name
-            )
-            for replacement, value in field_value.items():
-                set_structured_field(field, str(replacement), value)
-
-        # process directly given structured fields, overwriting any previous ones
-        for field_name, field in structured_fields:
-            value = instance[field_name]
-            template_field_name = field.get_template_field_name()
-            # if this template field wasn't touched before, we have to fetch it from the db
-            if template_field_name not in additional_instance_fields:
-                additional_instance_fields[
-                    template_field_name
-                ] = get_template_field_db_value(template_field_name)
-
-            replacement = field.get_replacement(field_name)
-            set_structured_field(field, replacement, value)
-
-        instance.update(additional_instance_fields)
-
     def call_calculated_field_handlers(
         self,
         relations: RelationUpdates,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
         field: Field,
         field_name: str,
         action: str,
@@ -246,9 +128,9 @@ class RelationManager:
             relation_update_element = self.merge_relation_elements(
                 self.relation_field_updates[fqfield], relation_update_element
             )
-        relations[fqfield] = self.relation_field_updates[
-            fqfield
-        ] = relation_update_element
+        relations[fqfield] = self.relation_field_updates[fqfield] = (
+            relation_update_element
+        )
 
     def apply_relation_updates(self, relations: RelationUpdates) -> None:
         """
@@ -283,13 +165,13 @@ class RelationManager:
         a = b = ListUpdateElement
             The two ListUpdateElements can just be combined into one.
         a = ListUpdateElement, b = FieldUpdateElement
-            Not possible and currently not needed.
+            The FieldUpdate is more specific and therefore overrides the ListUpdate.
         """
         # list field is updated, merge updates
         if a["type"] in ("add", "remove"):
             a = cast(FieldUpdateElement, a)
             assert isinstance(a["value"], list)
-            new_value: List[Any] = list(a["value"])  # copy list to prevent data leaks
+            new_value: list[Any] = list(a["value"])  # copy list to prevent data leaks
             if b["type"] == "add":
                 b = cast(FieldUpdateElement, b)
                 new_value.append(b["modified_element"])
@@ -304,8 +186,8 @@ class RelationManager:
         elif b["type"] == "list_update":
             a = cast(ListUpdateElement, a)
             b = cast(ListUpdateElement, b)
-            new_add: List[Any] = a.get("add", [])
-            new_remove: List[Any] = a.get("remove", [])
+            new_add: list[Any] = a.get("add", [])
+            new_remove: list[Any] = a.get("remove", [])
             new_add = [x for x in new_add if x not in b.get("remove", [])]
             new_add += [x for x in b.get("add", []) if x not in new_add]
             new_remove = [x for x in new_remove if x not in new_add]
@@ -313,5 +195,5 @@ class RelationManager:
             a["add"] = new_add
             a["remove"] = new_remove
         else:
-            raise NotImplementedError()
+            return b
         return a

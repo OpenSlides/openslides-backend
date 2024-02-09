@@ -31,20 +31,24 @@ class TagDeleteTest(BaseActionTestCase):
                 "tag/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 1,
-                    "tagged_ids": ["topic/222"],
+                    "tagged_ids": ["agenda_item/222"],
                 },
-                "topic/222": {"title": "test_title_ertgd590854398", "tag_ids": [111]},
+                "agenda_item/222": {
+                    "comment": "test_comment_ertgd590854398",
+                    "tag_ids": [111],
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request("tag.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("tag/112")
         self.assert_model_exists(
-            "topic/222",
+            "agenda_item/222",
             {
                 "id": 222,
                 "meta_deleted": False,
-                "title": "test_title_ertgd590854398",
+                "comment": "test_comment_ertgd590854398",
                 "tag_ids": [],
             },
         )

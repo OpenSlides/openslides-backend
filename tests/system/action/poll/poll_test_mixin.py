@@ -1,5 +1,3 @@
-from typing import List
-
 from openslides_backend.models.models import Poll
 from tests.system.action.base import DEFAULT_PASSWORD, BaseActionTestCase
 from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME
@@ -10,7 +8,7 @@ class PollTestMixin(BaseActionTestCase):
         response = self.request("poll.start", {"id": id})
         self.assert_status_code(response, 200)
 
-    def prepare_users_and_poll(self, user_count: int) -> List[int]:
+    def prepare_users_and_poll(self, user_count: int) -> list[int]:
         user_ids = list(range(2, user_count + 2))
         self.set_models(
             {
@@ -32,10 +30,23 @@ class PollTestMixin(BaseActionTestCase):
                     f"user/{i}": {
                         **self._get_user_data(f"user{i}", {1: [{"id": 3}]}),
                         "is_present_in_meeting_ids": [1],
+                        "meeting_ids": [1],
+                        "meeting_user_ids": [i + 10],
                     }
                     for i in user_ids
                 },
-                "group/3": {"user_ids": user_ids, "meeting_id": 1},
+                **{
+                    f"meeting_user/{i+10}": {
+                        "meeting_id": 1,
+                        "user_id": i,
+                        "group_ids": [3],
+                    }
+                    for i in user_ids
+                },
+                "group/3": {
+                    "meeting_user_ids": [id_ + 10 for id_ in user_ids],
+                    "meeting_id": 1,
+                },
                 "meeting/1": {
                     "user_ids": user_ids,
                     "group_ids": [3],

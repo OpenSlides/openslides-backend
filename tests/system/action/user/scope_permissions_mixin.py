@@ -1,5 +1,3 @@
-from typing import Optional
-
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope
@@ -7,7 +5,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class ScopePermissionsTestMixin(BaseActionTestCase):
-    def setup_admin_scope_permissions(self, scope: Optional[UserScope]) -> None:
+    def setup_admin_scope_permissions(self, scope: UserScope | None) -> None:
         """
         Helper function to setup permissions for different scopes for user 1. If no scope is given, the user has no permissions.
         """
@@ -22,7 +20,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                 "user/1",
                 {
                     "organization_management_level": None,
-                    "committee_$can_manage_management_level": [1],
+                    "committee_management_ids": [1],
                 },
             )
         elif scope == UserScope.Meeting:
@@ -55,12 +53,20 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                     "user/111": {
                         "meeting_ids": [1, 2],
                         "committee_ids": [1, 2],
-                        "group_$_ids": ["1", "2"],
-                        "group_$1_ids": [11],
-                        "group_$2_ids": [22],
+                        "meeting_user_ids": [11, 22],
                     },
-                    "group/11": {"meeting_id": 1, "user_ids": [111]},
-                    "group/22": {"meeting_id": 2, "user_ids": [111]},
+                    "meeting_user/11": {
+                        "meeting_id": 1,
+                        "user_id": 111,
+                        "group_ids": [11],
+                    },
+                    "meeting_user/22": {
+                        "meeting_id": 1,
+                        "user_id": 111,
+                        "group_ids": [22],
+                    },
+                    "group/11": {"meeting_id": 1, "meeting_user_ids": [11]},
+                    "group/22": {"meeting_id": 2, "meeting_user_ids": [22]},
                 }
             )
         elif scope == UserScope.Committee:
@@ -82,17 +88,26 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                     "user/111": {
                         "meeting_ids": [1, 2],
                         "committee_ids": [1],
-                        "group_$_ids": ["1", "2"],
-                        "group_$1_ids": [11],
-                        "group_$2_ids": [22],
+                        "meeting_user_ids": [11, 22],
                     },
-                    "group/11": {"meeting_id": 1, "user_ids": [111]},
-                    "group/22": {"meeting_id": 2, "user_ids": [111]},
+                    "meeting_user/11": {
+                        "meeting_id": 1,
+                        "user_id": 111,
+                        "group_ids": [11],
+                    },
+                    "meeting_user/22": {
+                        "meeting_id": 1,
+                        "user_id": 111,
+                        "group_ids": [22],
+                    },
+                    "group/11": {"meeting_id": 1, "meeting_user_ids": [11]},
+                    "group/22": {"meeting_id": 2, "meeting_user_ids": [22]},
                 }
             )
         elif scope == UserScope.Meeting:
             self.set_models(
                 {
+                    "committee/1": {"meeting_ids": [1]},
                     "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                     "user/111": {"meeting_ids": [1], "committee_ids": [1]},
                 }

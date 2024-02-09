@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -8,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class ChatGroupSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {"enable_chat": True},
             "meeting/1": {"is_active_in_organization_id": 1},
             "chat_group/31": {
@@ -89,7 +89,10 @@ class ChatGroupSortActionTest(BaseActionTestCase):
             {"meeting_id": 222, "chat_group_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Id 32 not in db_instances." in response.json["message"]
+        assert (
+            "chat_group sorting failed, because element chat_group/32 doesn't exist."
+            in response.json["message"]
+        )
 
     def test_sort_additional_chat_groups_in_meeting(self) -> None:
         self.set_models(
@@ -118,7 +121,10 @@ class ChatGroupSortActionTest(BaseActionTestCase):
             {"meeting_id": 222, "chat_group_ids": [32, 31]},
         )
         self.assert_status_code(response, 400)
-        assert "Additional db_instances found." in response.json["message"]
+        assert (
+            "chat_group sorting failed, because some elements were not included in the call."
+            in response.json["message"]
+        )
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(

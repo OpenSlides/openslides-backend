@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Dict, List
+from typing import Any
 
 from ....models.models import MotionState, MotionWorkflow
 from ....permissions.permissions import Permissions
@@ -41,6 +41,8 @@ class MotionWorkflowImport(SequentialNumbersMixin):
                             "show_state_extension_field",
                             "show_recommendation_extension_field",
                             "merge_amendment_into_final",
+                            "set_workflow_timestamp",
+                            "allow_motion_forwarding",
                         ),
                         "next_state_names": str_list_schema,
                         "previous_state_names": str_list_schema,
@@ -52,7 +54,7 @@ class MotionWorkflowImport(SequentialNumbersMixin):
     )
     permission = Permissions.Motion.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         first_state_name = instance.pop("first_state_name", "")
         states = instance.pop("states", [])
@@ -79,7 +81,7 @@ class MotionWorkflowImport(SequentialNumbersMixin):
         )
 
         # calculate name to id map.
-        self.name_to_id: Dict[str, int] = {}
+        self.name_to_id: dict[str, int] = {}
         for idx, state in enumerate(states):
             name = state.get("name")
             if name in self.name_to_id:
@@ -89,7 +91,7 @@ class MotionWorkflowImport(SequentialNumbersMixin):
         # add first_state_id, next_state_ids and previous_state_ids
         action_data = []
         for state in states:
-            data: Dict[str, Any] = {"id": self.name_to_id[state["name"]]}
+            data: dict[str, Any] = {"id": self.name_to_id[state["name"]]}
             data["next_state_ids"] = [
                 self.name_to_id[state_tmp] for state_tmp in state["next_state_names"]
             ]
@@ -105,8 +107,8 @@ class MotionWorkflowImport(SequentialNumbersMixin):
 
         return instance
 
-    def check_states(self, first_state_name: str, states: List[Dict[str, Any]]) -> None:
-        found_names = set(state["name"] for state in states)
+    def check_states(self, first_state_name: str, states: list[dict[str, Any]]) -> None:
+        found_names = {state["name"] for state in states}
         needed_names = set()
         if first_state_name:
             needed_names.add(first_state_name)

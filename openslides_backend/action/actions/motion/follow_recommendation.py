@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -17,7 +17,7 @@ from .set_state import MotionSetStateAction
 class MotionFollowRecommendationAction(MotionSetStateAction):
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema()
-    permission = Permissions.Motion.CAN_MANAGE
+    permission = Permissions.Motion.CAN_MANAGE_METADATA
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         ids = [instance["id"] for instance in action_data]
@@ -38,7 +38,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
             if motion.get("recommendation_id"):
                 yield motion
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         If motion has a recommendation_id, set the state to it and
         set state_extension.
@@ -68,5 +68,5 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
         instance["last_modified"] = round(time.time())
         return instance
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         return self._get_state_history_information("state_id", "State")
