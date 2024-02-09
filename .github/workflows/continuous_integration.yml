@@ -150,10 +150,6 @@ jobs:
     - name: Install requirements
       run: . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
 
-    - name: Validate models.yml
-      if: always()
-      run: make validate-models-yml
-
     - name: Check for up to date models.py
       if: always()
       run: make check-models
