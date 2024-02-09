@@ -50,8 +50,6 @@ class MotionUpdate(
             "category_id",
             "block_id",
             "supporter_meeting_user_ids",
-            "editor_id",
-            "working_group_speaker_id",
             "tag_ids",
             "attachment_ids",
             "created",
