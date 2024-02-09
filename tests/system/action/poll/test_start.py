@@ -220,7 +220,7 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
 
 
 class VotePollCryptographicYNA(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "YNA",
             "type": Poll.TYPE_CRYPTOGRAPHIC,
@@ -240,7 +240,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
 
 
 class VotePollCryptographicY(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "Y",
             "type": Poll.TYPE_CRYPTOGRAPHIC,
@@ -260,7 +260,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
 
 
 class VotePollCryptographicN(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "N",
             "type": Poll.TYPE_CRYPTOGRAPHIC,

@@ -10,8 +10,7 @@ class VoteService(AuthenticatedServiceInterface, Protocol):
     """
 
     @abstractmethod
-    def start(self, id: int) -> dict[str, Any]:
-        ...
+    def start(self, id: int) -> dict[str, Any]: ...
 
     @abstractmethod
     def stop(self, id: int) -> dict[str, Any]: ...

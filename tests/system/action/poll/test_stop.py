@@ -311,7 +311,7 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "backend": "fast",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
-                }
+                },
             }
         )
         response = self.request("poll.stop", {"id": 1})

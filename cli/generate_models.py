@@ -4,25 +4,34 @@ import string
 import subprocess
 from collections import ChainMap
 from io import StringIO, TextIOBase
-from textwrap import dedent
+from textwrap import dedent, indent
 from typing import Any, Optional, cast
 
 import requests
 import yaml
+
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
-from openslides_backend.models.mixins import (AgendaItemModelMixin,
-                                              MeetingModelMixin,
-                                              PollModelMixin)
+from openslides_backend.models.mixins import (
+    AgendaItemModelMixin,
+    MeetingModelMixin,
+    PollModelMixin,
+)
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
-
-SOURCE = "./global/meta/models.yml"
 
 ROOT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "..",
 )
 
+SOURCE = os.path.abspath(
+    os.path.join(
+        ROOT,
+        "global",
+        "meta",
+        "models.yml",
+    )
+)
 DESTINATION = os.path.abspath(
     os.path.join(
         ROOT,
@@ -236,6 +245,7 @@ class Model(Node):
         )
         for field_name, attribute in self.attributes.items():
             code += attribute.get_code(field_name)
+        code += indent(self.ADDITIONAL_MODEL_CODE.get(self.collection, ""), " " * 4)
         return code
 
     def get_class_name(self) -> str:

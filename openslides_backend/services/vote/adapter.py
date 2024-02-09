@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import requests
 import simplejson as json
@@ -54,9 +54,7 @@ class VoteAdapter(VoteService, AuthenticatedService):
             )
             raise VoteServiceException(f"Cannot reach the vote service on {endpoint}.")
 
-    def set_authentication(
-        self, access_token: Optional[str], refresh_id: Optional[str]
-    ) -> None:
+    def set_authentication(self, access_token: str, refresh_id: str) -> None:
         self.access_token = access_token
         self.refresh_id = refresh_id
 

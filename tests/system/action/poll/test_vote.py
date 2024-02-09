@@ -1,8 +1,9 @@
-from typing import Any, Dict, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import pytest
 import requests
 import simplejson as json
+
 from openslides_backend.models.models import Poll
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -13,7 +14,7 @@ from .base_poll_test import BasePollTestCase
 
 
 class BaseVoteTestCase(BasePollTestCase):
-    def request(
+    def request_tuple_response(
         self,
         action: str,
         data: dict[str, Any],
@@ -22,7 +23,7 @@ class BaseVoteTestCase(BasePollTestCase):
         internal: bool | None = None,
         start_poll_before_vote: bool = True,
         stop_poll_after_vote: bool = True,
-    ) -> Union[Response, Tuple[Response, Optional[Response]]]:
+    ) -> tuple[Response, Response | None]:
         """Overwrite request method to reroute voting requests to the vote service."""
         if action == "poll.vote":
             if start_poll_before_vote:
@@ -35,7 +36,7 @@ class BaseVoteTestCase(BasePollTestCase):
                 )
             return (response, stop_response)
         else:
-            return super().request(action, data, anonymous, lang, internal)
+            return (super().request(action, data, anonymous, lang, internal), None)
 
     def anonymous_vote(self, payload: dict[str, Any], id: int = 1) -> Response:
         # make request manually to prevent sending of cookie & header
@@ -114,12 +115,12 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote", {"id": 1, "value": {"11": 1}}, stop_poll_after_vote=False
         )
         self.assert_status_code(vote_response, 200)
         self.login(user_id)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"id": 1, "value": {"11": 1}}, start_poll_before_vote=False
         )
         self.assert_status_code(vote_response, 200)
@@ -186,7 +187,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {
                 "id": 1,
@@ -240,7 +241,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {
                 "id": 1,
@@ -332,7 +333,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {
                 "id": 1,
@@ -381,7 +382,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {
                 "id": 1,
@@ -432,7 +433,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {
                 "id": 1,
@@ -483,7 +484,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {
                 "id": 1,
@@ -534,7 +535,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {
                 "id": 1,
@@ -597,13 +598,13 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "user_id": 1, "value": "N"},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "user_id": 2, "value": "Y"},
             start_poll_before_vote=False,
@@ -676,7 +677,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"id": 1, "user_id": 1, "value": "X"}
         )
         self.assert_status_code(vote_response, 400)
@@ -717,7 +718,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {
                 "id": 1,
@@ -765,7 +766,7 @@ class PollVoteTest(BaseVoteTestCase):
             }
         )
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"id": 1, "value": "Y"},
                 start_poll_before_vote=False,
@@ -803,7 +804,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {
                 "id": 1,
@@ -864,13 +865,13 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "user_id": 1, "value": "N"},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "user_id": 1, "value": "N"},
             start_poll_before_vote=False,
@@ -928,7 +929,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"id": 1, "user_id": 1, "value": "N"}
         )
         self.assert_status_code(vote_response, 400)
@@ -972,7 +973,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"id": 1, "value": "N"}
         )
         self.assert_status_code(vote_response, 400)
@@ -1011,7 +1012,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"id": 1, "user_id": 1, "value": "X"}
         )
         self.assert_status_code(vote_response, 400)
@@ -1055,7 +1056,7 @@ class PollVoteTest(BaseVoteTestCase):
                 "meeting/113": {"users_enable_vote_weight": True},
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"id": 1, "user_id": 1, "value": {"11": 1}}
         )
         self.assert_status_code(vote_response, 200)
@@ -1126,7 +1127,7 @@ class PollVoteTest(BaseVoteTestCase):
                 },
             }
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"id": 1, "user_id": 1, "value": {"11": 1}}
         )
         self.assert_status_code(vote_response, 200)
@@ -1242,7 +1243,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
 
     def test_vote(self) -> None:
         self.add_option()
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "2": "N", "3": "A"}, "id": 1, "user_id": 1},
         )
@@ -1283,7 +1284,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
             }
         )
         self.add_option()
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "2": "N", "3": "A"}, "id": 1, "user_id": 1},
         )
@@ -1312,13 +1313,13 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("abstain"), "4.200000")
 
     def test_change_vote(self) -> None:
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "N"}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -1333,7 +1334,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_exists("vote/1", {"value": "Y"})
 
     def test_too_many_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "3": "N"}, "id": 1, "user_id": 1},
         )
@@ -1348,7 +1349,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "3": "N"}, "id": 1, "user_id": 1},
         )
@@ -1370,7 +1371,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.update_model("user/1", {"is_present_in_meeting_ids": []})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
         )
@@ -1386,7 +1387,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
 
     def test_wrong_state(self) -> None:
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"value": {"1": "Y"}, "id": 1, "user_id": 1},
                 start_poll_before_vote=False,
@@ -1396,7 +1397,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_missing_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": {}, "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -1413,7 +1414,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertNotIn(1, poll.get("voted_ids", []))
 
     def test_wrong_data_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": [1, 2, 5], "id": 1, "user_id": 1},
         )
@@ -1429,7 +1430,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
@@ -1445,7 +1446,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_id_type(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"id": "Y"}, "id": 1, "user_id": 1},
         )
@@ -1461,7 +1462,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_vote_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": [None]}, "id": 1, "user_id": 1},
         )
@@ -1501,7 +1502,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         )
 
     def test_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
         )
@@ -1528,12 +1529,12 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_change_vote(self) -> None:
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 0, "2": 1}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -1554,7 +1555,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_global_yes(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "Y", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 200)
@@ -1570,7 +1571,7 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_global_yes_forbidden(self) -> None:
         self.update_model("poll/1", {"global_yes": False})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "Y", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -1582,7 +1583,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_global_no(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "N", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 200)
@@ -1597,7 +1598,7 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_global_no_forbidden(self) -> None:
         self.update_model("poll/1", {"global_no": False})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "N", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -1609,7 +1610,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_global_abstain(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "A", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 200)
@@ -1624,7 +1625,7 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_global_abstain_forbidden(self) -> None:
         self.update_model("poll/1", {"global_abstain": False})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "A", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -1636,7 +1637,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_negative_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": -1}, "id": 1, "user_id": 1},
         )
@@ -1651,7 +1652,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_too_many_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 1, "3": 1}, "id": 1, "user_id": 1},
         )
@@ -1666,7 +1667,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "value": {"3": 1}},
         )
@@ -1687,7 +1688,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_anonymous_as_vote_user(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 0},
         )
@@ -1706,7 +1707,7 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.update_model("user/1", {"is_present_in_meeting_ids": []})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
         )
@@ -1722,7 +1723,7 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_wrong_state(self) -> None:
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"value": {"1": 1}, "id": 1, "user_id": 1},
                 start_poll_before_vote=False,
@@ -1732,7 +1733,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_missing_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": {}, "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -1749,7 +1750,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assertNotIn(1, poll.get("voted_ids", []))
 
     def test_wrong_data_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": [1, 2, 5], "id": 1, "user_id": 1},
         )
@@ -1765,7 +1766,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
@@ -1781,7 +1782,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_id_type(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"id": 1}, "id": 1, "user_id": 1},
         )
@@ -1797,7 +1798,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_vote_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": [None]}, "id": 1, "user_id": 1},
         )
@@ -1837,7 +1838,7 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         )
 
     def test_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 2, "2": 3}, "id": 1, "user_id": 1},
         )
@@ -1862,13 +1863,13 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_change_vote(self) -> None:
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 3}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 2, "2": 0}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -1891,7 +1892,7 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
     def test_vote_weight(self) -> None:
         self.update_model("user/1", {"default_vote_weight": "3.000000"})
         self.update_model("meeting/113", {"users_enable_vote_weight": True})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 3}, "id": 1, "user_id": 1},
         )
@@ -1912,13 +1913,13 @@ class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
     def test_vote_change_weight(self) -> None:
         self.update_model("user/1", {"default_vote_weight": "3.000000"})
         self.update_model("meeting/113", {"users_enable_vote_weight": True})
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 2, "2": 0}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 0, "2": 3}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -1963,7 +1964,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         )
 
     def test_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
         )
@@ -1990,13 +1991,13 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_change_vote(self) -> None:
         self.add_option()
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 0, "2": 1}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -2017,7 +2018,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_global_yes(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "Y", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 200)
@@ -2032,7 +2033,7 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_global_yes_forbidden(self) -> None:
         self.update_model("poll/1", {"global_yes": False})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "Y", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -2044,7 +2045,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_global_no(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "N", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 200)
@@ -2059,7 +2060,7 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_global_no_forbidden(self) -> None:
         self.update_model("poll/1", {"global_no": False})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "N", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -2071,7 +2072,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_global_abstain(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "A", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 200)
@@ -2086,7 +2087,7 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_global_abstain_forbidden(self) -> None:
         self.update_model("poll/1", {"global_abstain": False})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": "A", "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -2098,7 +2099,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_negative_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": -1}, "id": 1, "user_id": 1},
         )
@@ -2113,7 +2114,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"3": 1}, "id": 1, "user_id": 1},
         )
@@ -2135,7 +2136,7 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.update_model("user/1", {"is_present_in_meeting_ids": []})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
         )
@@ -2151,7 +2152,7 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_wrong_state(self) -> None:
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"value": {"1": 1}, "id": 1, "user_id": 1},
                 start_poll_before_vote=False,
@@ -2161,7 +2162,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_missing_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": {}, "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -2178,7 +2179,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assertNotIn(1, poll.get("voted_ids", []))
 
     def test_wrong_data_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": [1, 2, 5], "id": 1, "user_id": 1},
         )
@@ -2194,7 +2195,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
@@ -2210,7 +2211,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_id_type(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"id": 1}, "id": 1, "user_id": 1},
         )
@@ -2226,7 +2227,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_vote_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": [None]}, "id": 1, "user_id": 1},
         )
@@ -2264,7 +2265,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
 
     def test_vote(self) -> None:
         self.add_option()
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "2": "N", "3": "A"}, "id": 1, "user_id": 1},
         )
@@ -2292,13 +2293,13 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("abstain"), "1.000000")
 
     def test_change_vote(self) -> None:
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "N"}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -2315,7 +2316,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assertEqual(option1.get("abstain"), "0.000000")
 
     def test_too_many_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "3": "N"}, "id": 1, "user_id": 1},
         )
@@ -2331,7 +2332,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
 
     def test_partial_vote(self) -> None:
         self.add_option()
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
         )
@@ -2343,7 +2344,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_exists("vote/1")
 
     def test_wrong_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "3": "N"}, "id": 1, "user_id": 1},
         )
@@ -2365,7 +2366,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.update_model("user/1", {"is_present_in_meeting_ids": []})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
         )
@@ -2381,7 +2382,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
 
     def test_wrong_state(self) -> None:
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"value": {}, "id": 1, "user_id": 1},
                 start_poll_before_vote=False,
@@ -2391,7 +2392,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_missing_value(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": {}, "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -2408,7 +2409,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assertNotIn(1, poll.get("voted_ids", []))
 
     def test_wrong_value_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": [1, 2, 5], "id": 1, "user_id": 1},
         )
@@ -2424,7 +2425,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
@@ -2440,7 +2441,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_id_type(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"id": "Y"}, "id": 1, "user_id": 1},
         )
@@ -2456,7 +2457,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_vote_value(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": [None]}, "id": 1, "user_id": 1},
         )
@@ -2493,7 +2494,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         )
 
     def test_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
         )
@@ -2521,13 +2522,13 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assertIsNone(vote.get("user_id"))
 
     def test_change_vote(self) -> None:
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 0, "2": 1}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -2549,7 +2550,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_negative_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": -1}, "id": 1, "user_id": 1},
         )
@@ -2564,7 +2565,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"3": 1}, "id": 1, "user_id": 1},
         )
@@ -2580,7 +2581,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.update_model("user/1", {"is_present_in_meeting_ids": []})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
         )
@@ -2596,7 +2597,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
 
     def test_wrong_state(self) -> None:
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"value": {"1": 1}, "id": 1, "user_id": 1},
                 start_poll_before_vote=False,
@@ -2606,7 +2607,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_missing_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": {}, "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 400)
@@ -2623,7 +2624,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assertNotIn(1, poll.get("voted_ids", []))
 
     def test_wrong_data_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"value": [1, 2, 5]}, "id": 1, "user_id": 1},
         )
@@ -2639,7 +2640,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
@@ -2655,7 +2656,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_id_type(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"id": 1}, "id": 1, "user_id": 1},
         )
@@ -2671,7 +2672,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_vote_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": [None]}, "id": 1, "user_id": 1},
         )
@@ -2708,7 +2709,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
         )
 
     def test_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "value": {"1": 1, "2": 0}, "user_id": 1},
         )
@@ -2734,13 +2735,13 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_change_vote(self) -> None:
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 0, "2": 1}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -2762,7 +2763,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_negative_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": -1}, "id": 1, "user_id": 1},
         )
@@ -2779,7 +2780,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
     def test_vote_not_present(self) -> None:
         self.update_model("user/1", {"is_present_in_meeting_ids": []})
 
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "user_id": 1, "value": {"1": 1}},
         )
@@ -2795,7 +2796,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
 
     def test_wrong_state(self) -> None:
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"value": {"1": 1}, "id": 1, "user_id": 1},
                 start_poll_before_vote=False,
@@ -2805,7 +2806,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_data_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": [1, 2, 5], "id": 1, "user_id": 1},
         )
@@ -2821,7 +2822,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
@@ -2834,7 +2835,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_id_type(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1},
         )
@@ -2847,7 +2848,7 @@ class VotePollPseudoanonymousN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_vote_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "value": {"1": [None]}, "user_id": 1},
         )
@@ -2883,7 +2884,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
 
     def test_vote(self) -> None:
         self.add_option()
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "2": "N", "3": "A"}, "id": 1, "user_id": 1},
         )
@@ -2911,13 +2912,13 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("abstain"), "1.000000")
 
     def test_change_vote(self) -> None:
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "N"}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -2934,7 +2935,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
         self.assertEqual(option1.get("abstain"), "0.000000")
 
     def test_too_many_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "3": "N"}, "id": 1, "user_id": 1},
         )
@@ -2950,7 +2951,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
 
     def test_partial_vote(self) -> None:
         self.add_option()
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
         )
@@ -2962,7 +2963,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
         self.assert_model_exists("vote/1")
 
     def test_wrong_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y", "3": "N"}, "id": 1, "user_id": 1},
         )
@@ -2983,7 +2984,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.update_model("user/1", {"is_present_in_meeting_ids": []})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
         )
@@ -2999,7 +3000,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
 
     def test_wrong_state(self) -> None:
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"value": {}, "id": 1, "user_id": 1},
                 start_poll_before_vote=False,
@@ -3009,7 +3010,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_missing_value(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": {}, "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 200)
@@ -3038,7 +3039,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
         vote_service log: Error: encoding decrypted votes: unknown vote value: `[1,2,5]`
         Error poll_stop: Vote service sends HTTP 500 Internal Server Error.
         """
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": [1, 2, 5], "id": 1, "user_id": 1},
         )
@@ -3051,7 +3052,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
@@ -3071,7 +3072,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
         vote-service log: encoding decrypted votes: unknown vote value: `{"id":"Y"}`,
         but kills the whole poll with "Vote service sends HTTP 500 Internal Server Error.".
         """
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"id": "Y"}, "id": 1, "user_id": 1},
         )
@@ -3089,7 +3090,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
         Log Message vote-service: decrypting votes: sending grpc message: rpc error: code = Internal desc = Ups, someting went wrong!
         Error message stop_response: Vote service sends HTTP 500 Internal Server Error.
         """
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": [None]}, "id": 1, "user_id": 1},
         )
@@ -3124,7 +3125,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
         )
 
     def test_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
         )
@@ -3153,13 +3154,13 @@ class VotePollCryptographicY(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_change_vote(self) -> None:
-        vote_response, _ = self.request(
+        vote_response, _ = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
         self.assert_status_code(vote_response, 200)
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 0, "2": 1}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -3181,7 +3182,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_negative_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": -1}, "id": 1, "user_id": 1},
         )
@@ -3195,7 +3196,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_options(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"3": 1}, "id": 1, "user_id": 1},
         )
@@ -3210,7 +3211,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.update_model("user/1", {"is_present_in_meeting_ids": []})
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
         )
@@ -3226,7 +3227,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
 
     def test_wrong_state(self) -> None:
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"value": {"1": 1}, "id": 1, "user_id": 1},
                 start_poll_before_vote=False,
@@ -3236,7 +3237,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_missing_data(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote", {"value": {}, "id": 1, "user_id": 1}
         )
         self.assert_status_code(vote_response, 200)
@@ -3259,7 +3260,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
         Should give the error for the one vote in poll.stop, but not kill the whole poll:
         Vote-Service-Log: encoding decrypted votes: unknown vote value: `{"value":[1,2,5]}`
         """
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"value": [1, 2, 5]}, "id": 1, "user_id": 1},
         )
@@ -3272,7 +3273,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
@@ -3292,7 +3293,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
         vote-service log-message: encoding decrypted votes: unknown vote value: `{"id":1}`
         Will be replaced in vote adapter thru 'Vote service sends HTTP 500 Internal Server Error.'
         """
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"id": 1}, "id": 1, "user_id": 1},
         )
@@ -3309,7 +3310,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
         vote-service-log: decrypting votes: sending grpc message: rpc error: code = Internal desc = Ups, someting went wrong!
         shouldn't kill the whole poll.stop, instead give an error just for the one vote
         """
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": [None]}, "id": 1, "user_id": 1},
         )
@@ -3344,7 +3345,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
         )
 
     def test_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "value": {"1": 1, "2": 0}, "user_id": 1},
         )
@@ -3374,13 +3375,13 @@ class VotePollCryptographicN(VotePollBaseTestClass):
 
     def test_change_vote_REPORT(self) -> None:
         """typo in message: Should be double instead douple"""
-        self.request(
+        self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
             stop_poll_after_vote=False,
         )
 
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": 0, "2": 1}, "id": 1, "user_id": 1},
             start_poll_before_vote=False,
@@ -3403,7 +3404,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_negative_vote(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": -1}, "id": 1, "user_id": 1},
         )
@@ -3423,7 +3424,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
     def test_vote_not_present(self) -> None:
         self.update_model("user/1", {"is_present_in_meeting_ids": []})
 
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "user_id": 1, "value": {"1": 1}},
         )
@@ -3439,7 +3440,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
 
     def test_wrong_state(self) -> None:
         with pytest.raises(ActionException) as e:
-            self.request(
+            self.request_tuple_response(
                 "poll.vote",
                 {"value": {"1": 1}, "id": 1, "user_id": 1},
                 start_poll_before_vote=False,
@@ -3450,7 +3451,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
 
     def test_wrong_data_format_REPORT(self) -> None:
         """ """
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": [1, 2, 5], "id": 1, "user_id": 1},
         )
@@ -3463,7 +3464,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
@@ -3487,7 +3488,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
         vote-service log: decrypting votes: sending grpc message: rpc error: code = Internal desc = Ups, someting went wrong!
         shouldn't kill the whole poll.stop
         """
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1},
         )
@@ -3504,7 +3505,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
         vote-service log: decrypting votes: sending grpc message: rpc error: code = Internal desc = Ups, someting went wrong!
         shouldn't kill the whole poll.stop
         """
-        vote_response, stop_response = self.request(
+        vote_response, stop_response = self.request_tuple_response(
             "poll.vote",
             {"id": 1, "value": {"1": [None]}, "user_id": 1},
         )

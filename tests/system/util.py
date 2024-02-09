@@ -13,27 +13,25 @@ from cryptography.hazmat.primitives.asymmetric import ed25519, x25519
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from dependency_injector import providers
+from requests.models import Response as RequestsResponse
+
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.http.views import ActionView, PresenterView
-from openslides_backend.http.views.base_view import (ROUTE_OPTIONS_ATTR,
-                                                     RouteFunction)
+from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
 from openslides_backend.models.models import Poll
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
 from openslides_backend.services.datastore.interface import DatastoreService
-from openslides_backend.services.datastore.with_database_context import \
-    with_database_context
+from openslides_backend.services.datastore.with_database_context import (
+    with_database_context,
+)
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.env import Environment, is_truthy
-from openslides_backend.shared.exceptions import (ActionException,
-                                                  MediaServiceException)
-from openslides_backend.shared.interfaces.wsgi import (Headers, View,
-                                                       WSGIApplication)
+from openslides_backend.shared.exceptions import ActionException, MediaServiceException
+from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
-from openslides_backend.wsgi import (OpenSlidesBackendServices,
-                                     OpenSlidesBackendWSGI)
-from requests.models import Response as RequestsResponse
+from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 from tests.util import Response
 
 with open("public_vote_main_key", "rb") as keyfile:
@@ -81,7 +79,7 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         return convert_to_test_response(response)
 
     def encrypt_votes(
-        self, data: Dict[str, Any], crypt_key: bytes, crypt_signature: bytes
+        self, data: dict[str, Any], crypt_key: bytes, crypt_signature: bytes
     ) -> None:
         pubKeySize = 32
         nonceSize = 12

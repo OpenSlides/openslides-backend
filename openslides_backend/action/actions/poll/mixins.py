@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any
 
 import simplejson as json
+
 from openslides_backend.models.models import Poll
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -12,8 +13,11 @@ from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, VoteServiceException
-from ....shared.patterns import (KEYSEPARATOR, collection_from_fqid,
-                                 fqid_from_collection_and_id)
+from ....shared.patterns import (
+    KEYSEPARATOR,
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+)
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownControl
@@ -250,9 +254,10 @@ class StopControl(CountdownControl, Action):
         return entitled_users
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         return {"invalid_votes": self.invalid_votes}
+
 
 class PollHistoryMixin(Action):
     poll_history_information: str
