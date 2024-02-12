@@ -155,7 +155,7 @@ class MotionImport(
                     for field in ["category_id", "block_id"]:
                         if payload.get(field) is None:
                             if not motion.get(field):
-                                payload.pop(field)
+                                payload.pop(field, None)
                     if len(submitters):
                         motion_submitter_ids: list[int] = (
                             motion.get("submitter_ids", []) or []

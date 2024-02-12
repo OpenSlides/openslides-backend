@@ -426,20 +426,6 @@ class MotionJsonUpload(
             if (date := entry.get(field)) and isinstance(date, str):
                 entry[field] = {"value": date, "info": ImportState.DONE}
 
-        for field in [
-            "title",
-            "text",
-            "number",
-            "reason",
-            "category_name",
-            "block",
-        ]:
-            if not entry.get(field):
-                entry[field] = {"value": "", "info": ImportState.DONE}
-        for field in ["submitters_username", "supporters_username", "tags"]:
-            if not entry.get(field):
-                entry[field] = []
-
         # check via mixin
         payload = {
             **{
