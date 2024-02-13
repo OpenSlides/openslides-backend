@@ -1,0 +1,14 @@
+## Payload
+Payload:
+```
+{
+    id: Id;
+    place: string;
+}
+```
+
+## Action
+Unsets the `meeting/font_<place>_id` relation. The font can be set via [[meeting.set_font]].
+
+## Permissions
+The user needs `meeting.can_manage_logos_and_fonts`
