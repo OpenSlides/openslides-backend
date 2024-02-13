@@ -33,7 +33,7 @@ class MeetingUserHistoryMixin(Action):
                     del instance[field]
 
             # meeting specific data
-            update_fields = ["structure_level", "number", "vote_weight"]
+            update_fields = ["structure_level_ids", "number", "vote_weight"]
             if any(field in instance for field in update_fields):
                 instance_information.extend(
                     [

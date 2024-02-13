@@ -15,7 +15,7 @@ class HashKey(NamedTuple):
 
 
 class Migration(BaseModelMigration):
-    target_migration_index = 50
+    target_migration_index = 51
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []

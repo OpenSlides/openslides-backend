@@ -70,7 +70,7 @@ def test_migration(write, finalize, assert_motion):
         create_motion(8, 2, "text1"),
         create_motion(9, 2, "text1"),
     )
-    finalize("0049_add_identical_motions")
+    finalize("0050_add_identical_motions")
 
     assert_motion(1, 1, "text1", [2])
     assert_motion(2, 1, "text1", [1])

@@ -48,7 +48,6 @@ class UserUpdate(
             "gender",
             "email",
             "default_number",
-            "default_structure_level",
             "default_vote_weight",
             "organization_management_level",
             "committee_management_ids",

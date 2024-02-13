@@ -1,5 +1,5 @@
 {
-    "_migration_index": 50,
+    "_migration_index": 51,
     "organization": {
         "1": {
             "id": 1,
@@ -129,13 +129,13 @@
             "meeting_id": 1,
             "comment": "Test comment",
             "number": "12345-67890",
-            "structure_level": "Test structure level",
             "about_me": "What I want to say about me.",
             "vote_weight": "1.000000",
             "personal_note_ids": [1],
             "speaker_ids": [1, 5, 6, 12],
             "motion_submitter_ids": [1, 2, 3, 4],
             "assignment_candidate_ids": [1],
+            "structure_level_ids": [1],
             "group_ids": [2]
         },
         "2": {
@@ -144,11 +144,11 @@
             "meeting_id": 1,
             "comment": "Test comment a",
             "number": "12345-67891",
-            "structure_level": "Test structure level a",
             "about_me": "What I want to say about me with a",
             "vote_weight": "1.000000",
             "speaker_ids": [2, 3, 7, 10, 11, 13],
             "assignment_candidate_ids": [3, 5],
+            "structure_level_ids": [2],
             "group_ids": [5]
         },
         "3": {
@@ -157,12 +157,12 @@
             "meeting_id": 1,
             "comment": "Test comment b as guest",
             "number": "12345-67892",
-            "structure_level": "Test structure level b",
             "about_me": "What I want to say about me. B",
             "vote_weight": "1.000000",
             "speaker_ids": [4, 8, 9],
             "supported_motion_ids": [3],
             "assignment_candidate_ids": [2, 4],
+            "structure_level_ids": [3],
             "group_ids": [5]
         }
     },
@@ -322,7 +322,6 @@
                 3
             ],
             "motion_poll_default_backend": "fast",
-            "meeting_user_ids": [1, 2, 3],
             "users_enable_presence_view": true,
             "users_enable_vote_weight": false,
             "users_enable_vote_delegations": true,
@@ -358,6 +357,7 @@
             ],
             "poll_default_backend": "fast",
             "poll_couple_countdown": true,
+            "meeting_user_ids": [1, 2, 3],
             "projector_ids": [
                 1,
                 2
@@ -556,6 +556,7 @@
             "organization_tag_ids": [
                 1
             ],
+            "structure_level_ids": [1, 2, 3],
             "present_user_ids": [
                 1
             ],
@@ -2506,6 +2507,32 @@
                 5
             ],
             "meeting_id": 1
+        }
+    },
+    "structure_level": {
+        "1": {
+            "id": 1,
+            "meeting_id": 1,
+            "name": "Test structure level",
+            "color": "#000000",
+            "default_time": 600,
+            "meeting_user_ids": [1]
+        },
+        "2": {
+            "id": 2,
+            "meeting_id": 1,
+            "name": "Test structure level a",
+            "color": "#000000",
+            "default_time": 600,
+            "meeting_user_ids": [2]
+        },
+        "3": {
+            "id": 3,
+            "meeting_id": 1,
+            "name": "Test structure level b",
+            "color": "#000000",
+            "default_time": 600,
+            "meeting_user_ids": [3]
         }
     }
 }

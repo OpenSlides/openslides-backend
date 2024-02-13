@@ -102,6 +102,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
     events: list[Event]
     results: ActionResults
     cascaded_actions_history: HistoryInformation
+    internal: bool
 
     def __init__(
         self,
