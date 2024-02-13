@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type, cast
+from typing import Any, cast
 
 from ...models.fields import BaseGenericRelationField, BaseRelationField
 from ...shared.exceptions import ActionException
@@ -15,12 +15,12 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
     relation_field_for_meeting: str
 
     def update_instance_with_meeting_id(
-        self, instance: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, instance: dict[str, Any]
+    ) -> dict[str, Any]:
         instance["meeting_id"] = self.get_meeting_id(instance)
         return instance
 
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+    def get_meeting_id(self, instance: dict[str, Any]) -> int:
         field = self.model.get_field(self.relation_field_for_meeting)
         assert isinstance(field, BaseRelationField)
         id = instance[self.relation_field_for_meeting]
@@ -44,13 +44,13 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
 class CreateActionWithInferredMeeting(
     CreateActionWithInferredMeetingMixin, CreateAction
 ):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         return self.update_instance_with_meeting_id(instance)
 
 
 def get_create_action_with_inferred_meeting(
     relation_field_for_meeting: str,
-) -> Type[CreateActionWithInferredMeeting]:
+) -> type[CreateActionWithInferredMeeting]:
     """
     Shortcut to get a CreateAction class with inferred meeting.
 

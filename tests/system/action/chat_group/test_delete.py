@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -8,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class ChatGroupDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {"enable_chat": True},
             "meeting/1": {"is_active_in_organization_id": 1},
             "chat_group/1": {"meeting_id": 1, "name": "redekreis1"},

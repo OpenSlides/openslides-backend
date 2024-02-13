@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
@@ -8,7 +8,7 @@ from ...action import Action
 
 
 class PermissionHelperMixin(Action):
-    def is_allowed_and_submitter(self, submitter_ids: List[int], state_id: int) -> bool:
+    def is_allowed_and_submitter(self, submitter_ids: list[int], state_id: int) -> bool:
         if not submitter_ids:
             return False
         state = self.datastore.get(
@@ -20,7 +20,7 @@ class PermissionHelperMixin(Action):
             return False
         return self.is_submitter(submitter_ids)
 
-    def is_submitter(self, submitter_ids: List[int]) -> bool:
+    def is_submitter(self, submitter_ids: list[int]) -> bool:
         user = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id), ["meeting_user_ids"]
         )
@@ -36,7 +36,7 @@ class PermissionHelperMixin(Action):
 
 
 class AmendmentParagraphHelper:
-    def validate_amendment_paragraphs(self, instance: Dict[str, Any]) -> None:
+    def validate_amendment_paragraphs(self, instance: dict[str, Any]) -> None:
         for key, html in instance["amendment_paragraphs"].items():
             instance["amendment_paragraphs"][key] = validate_html(
                 html, ALLOWED_HTML_TAGS_STRICT
@@ -44,7 +44,7 @@ class AmendmentParagraphHelper:
 
 
 def set_workflow_timestamp_helper(
-    datastore: DatastoreService, instance: Dict[str, Any], timestamp: int
+    datastore: DatastoreService, instance: dict[str, Any], timestamp: int
 ) -> None:
     state = datastore.get(
         fqid_from_collection_and_id("motion_state", instance["state_id"]),

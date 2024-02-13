@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union, cast
+from collections.abc import Iterable
+from typing import Any, Union, cast
 
 from datastore.shared.util import DeletedModelsBehaviour
 
@@ -43,7 +44,7 @@ class SingleRelationHandler:
         datastore: DatastoreService,
         field: BaseRelationField,
         field_name: str,
-        instance: Dict[str, Any],
+        instance: dict[str, Any],
     ) -> None:
         self.datastore = datastore
         self.model = model_registry[field.own_collection]
@@ -51,7 +52,7 @@ class SingleRelationHandler:
         self.field = field
         self.field_name = field_name
         self.instance = instance
-        self.chained_fqids: List[FullQualifiedId] = []
+        self.chained_fqids: list[FullQualifiedId] = []
 
     def get_reverse_field(self, collection: Collection) -> BaseRelationField:
         """
@@ -62,7 +63,7 @@ class SingleRelationHandler:
         assert isinstance(field, BaseRelationField)
         return field
 
-    def get_field_type(self, collection: Optional[Collection] = None) -> str:
+    def get_field_type(self, collection: Collection | None = None) -> str:
         """
         Returns one of the following types: 1:1, 1:m, m:1 or m:n
         """
@@ -127,7 +128,7 @@ class SingleRelationHandler:
             related_field = self.get_reverse_field(collection)
 
             # acquire all related models with the related fields
-            rels: Dict[FullQualifiedId, PartialModel] = defaultdict(dict)
+            rels: dict[FullQualifiedId, PartialModel] = defaultdict(dict)
             for fqid in changed_fqids_per_collection[collection]:
                 related_model = self.datastore.get(
                     fqid,
@@ -156,12 +157,12 @@ class SingleRelationHandler:
                         cast(FullQualifiedId, modified_element)
                     )
 
-                    fqids = cast(List[FullQualifiedId], rel_update["value"])
+                    fqids = cast(list[FullQualifiedId], rel_update["value"])
                     rel_update["value"] = [id_from_fqid(fqid) for fqid in fqids]
 
                 # remove arrays in *:1 cases which we artificially added
                 current_value = cast(
-                    Union[List[int], List[FullQualifiedId]], rel_update["value"]
+                    Union[list[int], list[FullQualifiedId]], rel_update["value"]
                 )
                 if self.get_field_type(collection) in ("1:1", "m:1"):
                     if len(current_value) == 0:
@@ -194,7 +195,7 @@ class SingleRelationHandler:
 
     def partition_by_collection(
         self, fqids: Iterable[FullQualifiedId]
-    ) -> Dict[Collection, List[FullQualifiedId]]:
+    ) -> dict[Collection, list[FullQualifiedId]]:
         """
         Takes the given FQIDs and partitions them by their collection.
         """
@@ -207,15 +208,15 @@ class SingleRelationHandler:
         return self.field.to[collection]
 
     def relation_diffs(
-        self, rel_fqids: List[FullQualifiedId]
-    ) -> Tuple[Set[FullQualifiedId], Set[FullQualifiedId]]:
+        self, rel_fqids: list[FullQualifiedId]
+    ) -> tuple[set[FullQualifiedId], set[FullQualifiedId]]:
         """
         Returns two sets of relation object ids. One with relation objects
         where object should be added and one with relation objects where it
         should be removed.
         """
-        add: Set[FullQualifiedId]
-        remove: Set[FullQualifiedId]
+        add: set[FullQualifiedId]
+        remove: set[FullQualifiedId]
         # We have to compare with the current datastore state.
         # Retrieve current object from datastore
         current_obj = self.datastore.get(
@@ -245,9 +246,9 @@ class SingleRelationHandler:
 
     def prepare_result(
         self,
-        add: List[FullQualifiedId],
-        remove: List[FullQualifiedId],
-        rels: Dict[FullQualifiedId, PartialModel],
+        add: list[FullQualifiedId],
+        remove: list[FullQualifiedId],
+        rels: dict[FullQualifiedId, PartialModel],
         related_name: str,
     ) -> RelationFieldUpdates:
         """
@@ -255,7 +256,7 @@ class SingleRelationHandler:
         """
         relations: RelationFieldUpdates = {}
         for fqid, rel in rels.items():
-            new_value: Any  # Union[FullQualifiedId, List[FullQualifiedId]]
+            new_value: Any  # Union[FullQualifiedId, list[FullQualifiedId]]
             own_fqid = fqid_from_collection_and_id(self.field.own_collection, self.id)
             if fqid in add:
                 if own_fqid in rel[related_name]:

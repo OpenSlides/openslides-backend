@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
@@ -9,10 +9,11 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .permission_mixin import AgendaItemPermissionMixin
 
 
 @register_action("agenda_item.create")
-class AgendaItemCreate(CreateActionWithInferredMeeting):
+class AgendaItemCreate(AgendaItemPermissionMixin, CreateActionWithInferredMeeting):
     """
     Action to create agenda items.
     """
@@ -28,13 +29,14 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
             "duration",
             "weight",
             "tag_ids",
+            "moderator_notes",
         ],
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     relation_field_for_meeting = "content_object_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         If parent_id is given, set weight to parent.weight + 1
         """

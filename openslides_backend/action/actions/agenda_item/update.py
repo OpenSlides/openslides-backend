@@ -1,5 +1,3 @@
-from typing import Optional
-
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -8,10 +6,11 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from .permission_mixin import AgendaItemPermissionMixin
 
 
 @register_action("agenda_item.update")
-class AgendaItemUpdate(UpdateAction):
+class AgendaItemUpdate(AgendaItemPermissionMixin, UpdateAction):
     """
     Action to update agenda items.
     """
@@ -26,18 +25,17 @@ class AgendaItemUpdate(UpdateAction):
             "weight",
             "tag_ids",
             "duration",
+            "moderator_notes",
         ]
     )
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     def calc_is_internal(
-        self, type_: Optional[int], parent_is_internal: Optional[bool]
+        self, type_: int | None, parent_is_internal: bool | None
     ) -> bool:
         return type_ == AgendaItem.INTERNAL_ITEM or bool(parent_is_internal)
 
-    def calc_is_hidden(
-        self, type_: Optional[int], parent_is_hidden: Optional[bool]
-    ) -> bool:
+    def calc_is_hidden(self, type_: int | None, parent_is_hidden: bool | None) -> bool:
         return type_ == AgendaItem.HIDDEN_ITEM or bool(parent_is_hidden)
 
     def handle_children(

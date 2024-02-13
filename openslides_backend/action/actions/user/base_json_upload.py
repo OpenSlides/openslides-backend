@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, cast
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -10,6 +10,7 @@ from ...mixins.import_mixins import (
     ResultType,
     SearchFieldType,
 )
+from ...mixins.send_email_mixin import EmailUtils
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from .user_mixins import UsernameMixin, check_gender_helper
@@ -24,7 +25,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         {"property": "is_active", "type": "boolean"},
         {"property": "is_physical_person", "type": "boolean"},
         {"property": "default_password", "type": "string", "is_object": True},
-        {"property": "email", "type": "string"},
+        {"property": "email", "type": "string", "is_object": True},
         {"property": "username", "type": "string", "is_object": True},
         {"property": "gender", "type": "string", "is_object": True},
         {"property": "pronoun", "type": "string"},
@@ -40,9 +41,9 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
     @classmethod
     def get_schema(
         cls,
-        additional_user_fields: Dict[str, Any],
-        additional_required_fields: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        additional_user_fields: dict[str, Any],
+        additional_required_fields: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         return DefaultSchema(User()).get_default_schema(
             additional_required_fields={
                 "data": {
@@ -73,10 +74,10 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             }
         )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         data = instance.pop("data")
         data = self.add_payload_index_to_action_data(data)
-        self.setup_lookups(data, instance.get("meeting_id"))
+        self.setup_lookups(data)
         self.distribute_found_value_to_data(data)
         self.create_usernames(data)
 
@@ -84,11 +85,11 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         self.generate_statistics()
         return {}
 
-    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        messages: List[str] = []
-        id_: Optional[int] = None
-        old_saml_id: Optional[str] = None
-        old_default_password: Optional[str] = None
+    def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
+        messages: list[str] = []
+        id_: int | None = None
+        old_saml_id: str | None = None
+        old_default_password: str | None = None
         if (username := entry.get("username")) and isinstance(username, str):
             check_result = self.username_lookup.check_duplicate(username)
             id_ = cast(int, self.username_lookup.get_field_by_name(username, "id"))
@@ -246,12 +247,20 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 entry["gender"] = {"info": ImportState.WARNING, "value": gender}
                 messages.append(f"Gender '{gender}' is not in the allowed gender list.")
 
+        if email := entry.get("email"):
+            if EmailUtils.check_email(email):
+                entry["email"] = {"info": ImportState.DONE, "value": email}
+            else:
+                entry["email"] = {"info": ImportState.ERROR, "value": email}
+                self.row_state = ImportState.ERROR
+                messages.append(f"Error: '{email}' is not a valid email address.")
+
         return {"state": self.row_state, "messages": messages, "data": entry}
 
-    def create_usernames(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        usernames: List[str] = []
-        fix_usernames: List[str] = []
-        payload_indices: List[int] = []
+    def create_usernames(self, data: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        usernames: list[str] = []
+        fix_usernames: list[str] = []
+        payload_indices: list[int] = []
 
         for entry in data:
             if "username" not in entry.keys():
@@ -274,7 +283,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             self.username_lookup.add_item(data[index])
         return data
 
-    def handle_default_password(self, entry: Dict[str, Any]) -> None:
+    def handle_default_password(self, entry: dict[str, Any]) -> None:
         if self.row_state == ImportState.NEW:
             if "default_password" in entry:
                 value = entry["default_password"]
@@ -291,16 +300,14 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 }
 
     @staticmethod
-    def _names_and_email(entry: Dict[str, Any]) -> Tuple[str, ...]:
+    def _names_and_email(entry: dict[str, Any]) -> tuple[str, ...]:
         return (
             entry.get("first_name", ""),
             entry.get("last_name", ""),
             entry.get("email", ""),
         )
 
-    def setup_lookups(
-        self, data: List[Dict[str, Any]], meeting_id: Optional[int] = None
-    ) -> None:
+    def setup_lookups(self, data: list[dict[str, Any]]) -> None:
         self.username_lookup = Lookup(
             self.datastore,
             "user",
@@ -350,7 +357,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             mapped_fields=["username", "saml_id"],
         )
 
-        self.all_id_mapping: Dict[int, List[SearchFieldType]] = defaultdict(list)
+        self.all_id_mapping: dict[int, list[SearchFieldType]] = defaultdict(list)
         for lookup in (
             self.username_lookup,
             self.saml_id_lookup,
@@ -359,7 +366,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             for id, values in lookup.id_to_name.items():
                 self.all_id_mapping[id].extend(values)
 
-    def distribute_found_value_to_data(self, data: List[Dict[str, Any]]) -> None:
+    def distribute_found_value_to_data(self, data: list[dict[str, Any]]) -> None:
         for entry in data:
             if "username" in entry:
                 continue

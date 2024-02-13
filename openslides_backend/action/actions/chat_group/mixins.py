@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -8,7 +8,7 @@ from ...action import Action
 
 
 class ChatEnabledMixin(Action):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         organization = self.datastore.get(
             ONE_ORGANIZATION_FQID,
             ["enable_chat"],
@@ -21,7 +21,7 @@ class ChatEnabledMixin(Action):
 
 
 class CheckUniqueNameMixin(Action):
-    def check_name_unique(self, instance: Dict[str, Any]) -> None:
+    def check_name_unique(self, instance: dict[str, Any]) -> None:
         meeting_id = self.get_meeting_id(instance)
         name_exists = self.datastore.exists(
             self.model.collection,

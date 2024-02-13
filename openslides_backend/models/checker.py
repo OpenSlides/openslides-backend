@@ -1,6 +1,7 @@
 import re
+from collections.abc import Callable, Iterable
 from decimal import InvalidOperation
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, cast
+from typing import Any, cast
 
 import fastjsonschema
 
@@ -124,7 +125,7 @@ def check_json(value: Any, root: bool = True) -> bool:
     return False
 
 
-checker_map: Dict[Type[Field], Callable[..., bool]] = {
+checker_map: dict[type[Field], Callable[..., bool]] = {
     CharField: check_string,
     HTMLStrictField: check_string,
     HTMLPermissiveField: check_string,
@@ -150,18 +151,18 @@ class Checker:
 
     def __init__(
         self,
-        data: Dict[str, Dict[str, Any]],
+        data: dict[str, dict[str, Any]],
         mode: str = "all",
         migration_mode: str = "strict",
         repair: bool = False,
-        fields_to_remove: Dict[str, List] = {},
+        fields_to_remove: dict[str, list] = {},
     ) -> None:
         """
         The checker checks the data without access to datastore.
         It differentiates between import data from the same organization instance,
         typically using the meeting.clone action, or from another organization,
         typically the meeting.import action with data from OS3.
-        To check all included collections, use 'all'. Typical usage is he check of
+        To check all included collections, use 'all'. Typical usage is the check of
         the example-data.json.
 
         Mode:
@@ -173,7 +174,7 @@ class Checker:
             The integrity of this kind of relations is not checked, because there
             is no database involved in command line version. Users are not included
             in data, because they exist in same database.
-        all: All collections are valid and has to be in the data
+        all: All collections are valid and have to be present in the data
 
         Repair: Set missing fields with default value automatically.
 
@@ -185,9 +186,9 @@ class Checker:
             A dict with collection as key and a list of fieldnames to remove from instance.
             Works only with repair set.
             First use case: meeting.clone and meeting.import need to remove the fields
-            origin_id and derived_motion_id, because they in the copy they are not forwarded.
+            origin_id and derived_motion_id, because in the copy they are not forwarded.
 
-        Not all collections must be given and missing fields are ignore, but
+        Not all collections must be given and missing fields are ignored, but
         required fields and fields with a default value must be present.
         """
         self.data = data
@@ -203,6 +204,7 @@ class Checker:
             "tag",
             "agenda_item",
             "list_of_speakers",
+            "structure_level_list_of_speakers",
             "speaker",
             "topic",
             "motion",
@@ -228,6 +230,7 @@ class Checker:
             "chat_group",
             "chat_message",
             "point_of_order_category",
+            "structure_level",
         ]
         if self.mode == "all":
             self.allowed_collections = [
@@ -244,7 +247,7 @@ class Checker:
             self.allowed_collections.append("user")
             self.allowed_collections.append("meeting_user")
 
-        self.errors: List[str] = []
+        self.errors: list[str] = []
 
     def check_migration_index(self) -> None:
         # Unfortunately, TypedDict does not support any kind of generic or pattern property to
@@ -291,18 +294,18 @@ class Checker:
             raise CheckException(f"JSON does not match schema: {str(e)}")
 
     def check_collections(self) -> None:
-        c1 = set(
+        c1 = {
             collection
             for collection in self.data.keys()
             if not collection.startswith("_")
-        )
+        }
         c2 = set(self.allowed_collections)
         err = "Collections in file do not match with models.py."
         if c1 - c2:
             err += f" Invalid collections: {', '.join(c1-c2)}."
             raise CheckException(err)
 
-    def check_model(self, collection: str, model: Dict[str, Any]) -> None:
+    def check_model(self, collection: str, model: dict[str, Any]) -> None:
         if self.repair and collection in self.fields_to_remove:
             [model.pop(field, None) for field in self.fields_to_remove[collection]]
 
@@ -314,16 +317,16 @@ class Checker:
             self.check_relations(model, collection)
             self.check_calculated_fields(model, collection)
 
-    def check_normal_fields(self, model: Dict[str, Any], collection: str) -> bool:
+    def check_normal_fields(self, model: dict[str, Any], collection: str) -> bool:
         model_fields = model.keys()
-        all_collection_fields = set(
+        all_collection_fields = {
             field.get_own_field_name() for field in self.get_fields(collection)
-        )
-        required_or_default_collection_fields = set(
+        }
+        required_or_default_collection_fields = {
             field.get_own_field_name()
             for field in self.get_fields(collection)
             if field.required or field.default is not None
-        )
+        }
 
         errors = False
         if diff := required_or_default_collection_fields - model_fields:
@@ -352,8 +355,8 @@ class Checker:
         return errors
 
     def fix_missing_default_values(
-        self, model: Dict[str, Any], collection: str, fieldnames: Set[str]
-    ) -> Set[str]:
+        self, model: dict[str, Any], collection: str, fieldnames: set[str]
+    ) -> set[str]:
         remaining_fields = set()
         for fieldname in fieldnames:
             field = self.get_model(collection).get_field(fieldname)
@@ -363,12 +366,12 @@ class Checker:
                 remaining_fields.add(fieldname)
         return remaining_fields
 
-    def check_types(self, model: Dict[str, Any], collection: str) -> None:
+    def check_types(self, model: dict[str, Any], collection: str) -> None:
         for field in model.keys():
             field_type = self.get_type_from_collection(field, collection)
             enum = self.get_enum_from_collection_field(field, collection)
 
-            checker: Optional[Callable[..., bool]] = None
+            checker: Callable[..., bool] | None = None
             for _type in type(field_type).mro():
                 if _type in checker_map:
                     checker = checker_map[_type]
@@ -404,11 +407,11 @@ class Checker:
 
     def get_enum_from_collection_field(
         self, field: str, collection: str
-    ) -> Optional[Set[str]]:
+    ) -> set[str] | None:
         field_type = self.get_model(collection).get_field(field)
         return field_type.constraints.get("enum")
 
-    def check_special_fields(self, model: Dict[str, Any], collection: str) -> None:
+    def check_special_fields(self, model: dict[str, Any], collection: str) -> None:
         if collection != "motion":
             return
         if "amendment_paragraphs" in model:
@@ -451,7 +454,7 @@ class Checker:
                         + f"Found {fqid_str} in recommendation_extension but not in models."
                     )
 
-    def check_relations(self, model: Dict[str, Any], collection: str) -> None:
+    def check_relations(self, model: dict[str, Any], collection: str) -> None:
         for field in model.keys():
             try:
                 self.check_relation(model, collection, field)
@@ -461,7 +464,7 @@ class Checker:
                 )
 
     def check_relation(
-        self, model: Dict[str, Any], collection: str, field: str
+        self, model: dict[str, Any], collection: str, field: str
     ) -> None:
         field_type = self.get_type_from_collection(field, collection)
         basemsg = f"{collection}/{model['id']}/{field}: Relation Error: "
@@ -572,7 +575,7 @@ class Checker:
                                 + f"Found {fqid} in {prefix}_extension but not in models."
                             )
 
-    def get_to(self, field: str, collection: str) -> Tuple[str, Optional[str]]:
+    def get_to(self, field: str, collection: str) -> tuple[str, str | None]:
         field_type = cast(
             BaseRelationField, self.get_model(collection).get_field(field)
         )
@@ -583,7 +586,7 @@ class Checker:
 
     def check_calculated_fields(
         self,
-        model: Dict[str, Any],
+        model: dict[str, Any],
         collection: str,
     ) -> None:
         if collection != "mediafile":
@@ -612,7 +615,7 @@ class Checker:
                 f"{collection}/{model['id']}: inherited_access_group_ids is wrong"
             )
 
-    def find_model(self, collection: str, id: int) -> Optional[Dict[str, Any]]:
+    def find_model(self, collection: str, id: int) -> dict[str, Any] | None:
         return self.data.get(collection, {}).get(str(id))
 
     def check_reverse_relation(
@@ -621,7 +624,7 @@ class Checker:
         id: int,
         foreign_collection: str,
         foreign_id: int,
-        foreign_field: Optional[str],
+        foreign_field: str | None,
         basemsg: str,
     ) -> None:
         if foreign_field is None:
@@ -655,7 +658,7 @@ class Checker:
                 " but the reverse relation for it is corrupt"
             )
 
-    def split_fqid(self, fqid: str) -> Tuple[str, int]:
+    def split_fqid(self, fqid: str) -> tuple[str, int]:
         try:
             collection, _id = fqid.split("/")
             id = int(_id)
@@ -665,7 +668,7 @@ class Checker:
         except (ValueError, AttributeError):
             raise CheckException(f"Fqid {fqid} is malformed")
 
-    def split_collectionfield(self, collectionfield: str) -> Tuple[str, str]:
+    def split_collectionfield(self, collectionfield: str) -> tuple[str, str]:
         collection, field = collectionfield.split("/")
         if collection not in self.allowed_collections:
             raise CheckException(

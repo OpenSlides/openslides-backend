@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import MotionCommentSection
 from ....permissions.permissions import Permissions
@@ -20,7 +20,7 @@ class MotionCommentSectionDeleteAction(DeleteAction):
     schema = DefaultSchema(MotionCommentSection()).get_delete_schema()
     permission = Permissions.Motion.CAN_MANAGE
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         try:
             return super().base_update_instance(instance)
         except ProtectedModelsException as e:
@@ -31,9 +31,7 @@ class MotionCommentSectionDeleteAction(DeleteAction):
             gm_result = self.datastore.get_many([get_many_request], lock_result=False)
             comments = gm_result.get("motion_comment", {})
 
-            motions = set(
-                f'"{instance["motion_id"]}"' for instance in comments.values()
-            )
+            motions = {f'"{instance["motion_id"]}"' for instance in comments.values()}
 
             count = len(motions)
             motions_verbose = ", ".join(list(motions)[:3])

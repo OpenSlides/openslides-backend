@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Text, Tuple
+from typing import Any
 
 import simplejson as json
 from werkzeug.exceptions import BadRequest as BaseBadRequest
@@ -14,13 +14,13 @@ from openslides_backend.shared.exceptions import ViewException
 
 class HTTPException(BaseHTTPException):
     def __init__(
-        self, view_exception: Optional[ViewException] = None, *args: Any, **kwargs: Any
+        self, view_exception: ViewException | None = None, *args: Any, **kwargs: Any
     ) -> None:
         super().__init__(*args, **kwargs)
         self.view_exception = view_exception
 
     def get_body(
-        self, environ: Optional[Dict[Text, Any]] = None, scope: Optional[dict] = None
+        self, environ: dict[str, Any] | None = None, scope: dict | None = None
     ) -> str:
         if hasattr(self, "view_exception") and self.view_exception:
             return json.dumps(self.view_exception.get_json())
@@ -34,9 +34,9 @@ class HTTPException(BaseHTTPException):
 
     def get_headers(
         self,
-        environ: Optional[Dict[Text, Any]] = None,
-        scope: Optional[dict] = None,
-    ) -> List[Tuple[str, str]]:
+        environ: dict[str, Any] | None = None,
+        scope: dict | None = None,
+    ) -> list[tuple[str, str]]:
         return [("Content-Type", "application/json")]
 
 

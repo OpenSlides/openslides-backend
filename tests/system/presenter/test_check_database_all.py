@@ -1,5 +1,5 @@
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
@@ -22,7 +22,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert "meeting/1: Missing fields" in data["errors"]
         assert "meeting/2: Missing fields" in data["errors"]
 
-    def get_meeting_defaults(self) -> Dict[str, Any]:
+    def get_meeting_defaults(self) -> dict[str, Any]:
         return {
             "motions_export_title": "Motions",
             "motions_preamble": "blablabla",
@@ -275,7 +275,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert data["ok"] is True
         assert "errors" not in data
 
-    def get_new_user(self, username: str, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def get_new_user(self, username: str, datapart: dict[str, Any]) -> dict[str, Any]:
         return {
             "username": username,
             "can_change_own_password": False,

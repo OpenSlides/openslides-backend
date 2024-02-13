@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
 import simplejson as json
@@ -15,10 +15,10 @@ class BaseVoteTestCase(BasePollTestCase):
     def request(
         self,
         action: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         anonymous: bool = False,
-        lang: Optional[str] = None,
-        internal: Optional[bool] = None,
+        lang: str | None = None,
+        internal: bool | None = None,
         start_poll_before_vote: bool = True,
         stop_poll_after_vote: bool = True,
     ) -> Response:
@@ -33,7 +33,7 @@ class BaseVoteTestCase(BasePollTestCase):
         else:
             return super().request(action, data, anonymous, lang, internal)
 
-    def anonymous_vote(self, payload: Dict[str, Any], id: int = 1) -> Response:
+    def anonymous_vote(self, payload: dict[str, Any], id: int = 1) -> Response:
         # make request manually to prevent sending of cookie & header
         payload_json = json.dumps(payload, separators=(",", ":"))
         response = requests.post(
