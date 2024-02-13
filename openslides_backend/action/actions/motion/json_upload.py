@@ -151,26 +151,7 @@ class MotionJsonUpload(
         self.rows = [self.validate_entry(entry) for entry in data]
 
         # generate statistics
-        itemCount = len(self.rows)
-        state_to_count = {state: 0 for state in ImportState}
-        for row in self.rows:
-            state_to_count[row["state"]] += 1
-            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
-                row.get("data", {}).values()
-            )
-            row["data"].pop("payload_index", None)
-
-        self.statistics = [
-            {"name": "total", "value": itemCount},
-            {"name": "created", "value": state_to_count[ImportState.NEW]},
-            {"name": "updated", "value": state_to_count[ImportState.DONE]},
-            {"name": "error", "value": state_to_count[ImportState.ERROR]},
-            {"name": "warning", "value": state_to_count[ImportState.WARNING]},
-        ]
-
-        self.set_state(
-            state_to_count[ImportState.ERROR], state_to_count[ImportState.WARNING]
-        )
+        self.generate_statistics()
         return {}
 
     def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
@@ -424,7 +405,10 @@ class MotionJsonUpload(
 
         for field in ["title", "text", "reason"]:
             if (date := entry.get(field)) and isinstance(date, str):
-                entry[field] = {"value": date, "info": ImportState.DONE}
+                if date == "":
+                    del entry[field]
+                else:
+                    entry[field] = {"value": date, "info": ImportState.DONE}
 
         # check via mixin
         payload = {
@@ -457,14 +441,6 @@ class MotionJsonUpload(
             errors = self.get_update_payload_integrity_error_message(
                 payload, meeting_id
             )
-            for field in [MotionErrorType.TITLE, MotionErrorType.TEXT]:
-                if not payload.get(field):
-                    errors.append(
-                        {
-                            "type": field,
-                            "message": f"{field[0].capitalize() + field[1:]} is required",
-                        }
-                    )
         else:
             payload = {"meeting_id": meeting_id, **payload}
             errors = self.get_create_payload_integrity_error_message(

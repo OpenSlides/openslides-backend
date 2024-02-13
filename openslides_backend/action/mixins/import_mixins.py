@@ -530,9 +530,8 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
         state_to_count: dict[ImportState, int] = defaultdict(int)
         for row in self.rows:
             state_to_count[row["state"]] += 1
-            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
-                row.get("data", {}).values()
-            )
+            if self.count_warnings_in_payload(row.get("data", {}).values()):
+                state_to_count[ImportState.WARNING] += 1
             row["data"].pop("payload_index", None)
 
         self.statistics = [

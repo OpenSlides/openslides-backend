@@ -1,8 +1,5 @@
-# from typing import Any
-
 from openslides_backend.action.mixins.import_mixins import ImportState
 
-# from .test_json_upload import MotionImportTestMixin
 from .test_json_upload import MotionJsonUploadForUseInImport
 
 
@@ -196,61 +193,61 @@ class MotionImport(MotionJsonUploadForUseInImport):
         response = self.request("motion.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion/42",
+            "motion/1",
             {
                 "title": "first",
                 "text": "<p>test my stuff</p>",
                 "reason": "motion",  # retained from before
                 "supporter_meeting_user_ids": [1],
-                "submitter_ids": [1],
+                "submitter_ids": [4],
             },
         )
-        self.assert_model_exists("motion_submitter/1", {"meeting_user_id": 2})
+        self.assert_model_exists("motion_submitter/4", {"meeting_user_id": 2})
         self.assert_model_exists("meeting_user/1", {"user_id": 2})
         self.assert_model_exists("meeting_user/2", {"user_id": 1})
         self.assert_model_exists(
-            "motion/4200",
+            "motion/100",
             {
                 "title": "then",
                 "text": "<p>nice little</p>",  # retained from before
                 "reason": "test my other stuff",
-                "submitter_ids": [2],
+                "submitter_ids": [5],
                 "category_id": 1000,
             },
         )
-        self.assert_model_exists("motion_submitter/2", {"meeting_user_id": 1})
+        self.assert_model_exists("motion_submitter/5", {"meeting_user_id": 1})
         self.assert_model_exists(
-            "motion/4201",
+            "motion/101",
             {
                 "number": "NUM03",
                 "title": "also",
                 "text": "<p>test the other peoples stuff</p>",
-                "submitter_ids": [3],
+                "submitter_ids": [1],
             },
         )
-        self.assert_model_exists("motion_submitter/3", {"meeting_user_id": 1})
+        self.assert_model_exists("motion_submitter/1", {"meeting_user_id": 2})
         self.assert_model_exists(
-            "motion/4202",
+            "motion/102",
             {
                 "number": "03",
                 "title": "after that",
                 "text": "<p>test even more stuff</p>",
-                "submitter_ids": [4],
+                "submitter_ids": [2],
                 "supporter_meeting_user_ids": [1, 2],
             },
         )
-        self.assert_model_exists("motion_submitter/4", {"meeting_user_id": 1})
+        self.assert_model_exists("motion_submitter/2", {"meeting_user_id": 2})
         self.assert_model_exists(
-            "motion/4203",
+            "motion/103",
             {
                 "number": "OTHER01",
                 "title": "finally",
                 "text": "<p>finish testing</p>",
-                "submitter_ids": [5],
+                "submitter_ids": [3],
                 "category_id": 100,
             },
         )
-        self.assert_model_exists("motion_submitter/5", {"meeting_user_id": 1})
+        self.assert_model_exists("motion_submitter/3", {"meeting_user_id": 2})
 
     def test_simple_create(self) -> None:
         self.json_upload_simple_create()

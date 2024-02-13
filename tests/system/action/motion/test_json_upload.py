@@ -69,27 +69,6 @@ class MotionJsonUpload(BaseMotionJsonUpload):
         self.assert_status_code(response, 400)
         assert "data.data must contain at least 1 items" in response.json["message"]
 
-    # TODO: Either reinstate this and add a text in the test above, or delete this and fix the action
-    # def test_json_upload_update_missing_text(self) -> None:
-    #     self.set_up_models({42: self.get_base_meeting_setting(223)})
-    #     response = self.request(
-    #         "motion.json_upload",
-    #         {
-    #             "data": [{"title": "test", "reason": "stuff", "number": "NUM01"}],
-    #             "meeting_id": 42,
-    #         },
-    #     )
-    #     self.assert_status_code(response, 200)
-    #     assert response.json["results"][0][0]["state"] == ImportState.ERROR
-    #     assert (
-    #         "Error: Text is required"
-    #         in response.json["results"][0][0]["rows"][0]["messages"]
-    #     )
-    #     assert response.json["results"][0][0]["rows"][0]["data"]["text"] == {
-    #         "value": "",
-    #         "info": ImportState.ERROR,
-    #     }
-
     def test_json_upload_create_missing_title(self) -> None:
         self.setup_meeting_with_settings(42)
         response = self.request(
@@ -141,16 +120,9 @@ class MotionJsonUpload(BaseMotionJsonUpload):
             },
         )
         self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == ImportState.ERROR
-        assert (
-            "Error: Title is required"
-            in response.json["results"][0][0]["rows"][0]["messages"]
-        )
-
-        assert response.json["results"][0][0]["rows"][0]["data"]["title"] == {
-            "value": "",
-            "info": ImportState.ERROR,
-        }
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert response.json["results"][0][0]["rows"][0]["messages"] == []
+        assert "title" not in response.json["results"][0][0]["rows"][0]["data"]
 
     def test_json_upload_create_missing_reason_although_required(self) -> None:
         self.setup_meeting_with_settings(42, is_reason_required=True)
@@ -172,7 +144,6 @@ class MotionJsonUpload(BaseMotionJsonUpload):
             "info": ImportState.ERROR,
         }
 
-    # TODO: Decide what should actually happen and possibly fix action
     def test_json_upload_update_missing_reason_although_required(self) -> None:
         self.setup_meeting_with_settings(42, is_reason_required=True)
         response = self.request(
@@ -185,19 +156,7 @@ class MotionJsonUpload(BaseMotionJsonUpload):
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["state"] == ImportState.DONE
         assert response.json["results"][0][0]["rows"][0]["messages"] == []
-        assert response.json["results"][0][0]["rows"][0]["data"]["reason"] == {
-            "value": "",
-            "info": ImportState.DONE,
-        }
-        # assert response.json["results"][0][0]["state"] == ImportState.ERROR
-        # assert (
-        #     "Error: Reason is required to update."
-        #     in response.json["results"][0][0]["rows"][0]["messages"]
-        # )
-        # assert response.json["results"][0][0]["rows"][0]["data"]["reason"] == {
-        #     "value": "",
-        #     "info": ImportState.ERROR,
-        # }
+        assert "reason" not in response.json["results"][0][0]["rows"][0]["data"]
 
     def assert_duplicate_numbers(self, number: str) -> None:
         self.setup_meeting_with_settings(22)
@@ -325,7 +284,7 @@ class MotionJsonUpload(BaseMotionJsonUpload):
             {"value": "admin", "info": ImportState.GENERATED, "id": 1}
         ]
         assert row["data"]["submitters_verbose"] == knights
-        assert row["data"]["supporters_username"] == []
+        assert "supporters_username" not in row["data"]
         assert row["data"]["supporters_verbose"] == knights
 
 
@@ -431,12 +390,12 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
             "category_name": {
                 "info": ImportState.DONE,
                 "value": "Other motion",
-                "id": 42000,
+                "id": 1000,
             },
             "submitters_username": [
                 {"id": 2, "info": ImportState.DONE, "value": "user1"}
             ],
-            "supporters_verbose": ["Lancelot the brave"],
+            "submitters_verbose": ["Lancelot the brave"],
         }
         row = rows[2]
         assert row["state"] == ImportState.NEW
@@ -474,7 +433,7 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
             "category_name": {
                 "info": ImportState.DONE,
                 "value": "Other motion",
-                "id": 4200,
+                "id": 100,
             },
             "category_prefix": "OTHER",
         }
