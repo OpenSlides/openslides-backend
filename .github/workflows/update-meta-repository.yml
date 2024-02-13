@@ -1,0 +1,35 @@
+name: Update meta repository
+on:
+  repository_dispatch:
+    types: [meta-update]
+
+jobs:
+  generate:
+    name: Update meta repository
+    runs-on: ubuntu-latest
+    steps:
+    - uses: tibdex/github-app-token@v2
+      id: generate-token
+      with:
+        app_id: ${{ secrets.AUTOMATION_APP_ID }}
+        private_key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Checkout new meta repository commit
+      run: cd global/meta && git fetch origin && git checkout ${{ github.event.client_payload.commit }}
+
+    - name: Create or update PR
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ steps.generate-token.outputs.token }}
+        commit-message: Update meta repository
+        branch: dep/meta-repo-${{ github.event.client_payload.commit }}
+        delete-branch: true
+        title: Update meta repository
+        body: "Triggered by commit [${{ github.event.client_payload.commit }}](https://github.com/OpenSlides/openslides-meta/commit/${{ github.sha }})"
+        reviewers: jsangmeister
+        assignees: jsangmeister
+        milestone: 4
