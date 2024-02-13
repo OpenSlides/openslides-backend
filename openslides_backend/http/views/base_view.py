@@ -1,6 +1,7 @@
 import inspect
 import re
 from collections.abc import Callable
+from pathlib import Path
 from re import Pattern
 from typing import Any, Optional
 
@@ -11,7 +12,7 @@ from ...shared.exceptions import View400Exception
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.services import Services
-from ...shared.interfaces.wsgi import Headers, ResponseBody, View
+from ...shared.interfaces.wsgi import Headers, ResponseBody, RouteResponse, View
 from ...shared.otel import make_span
 from ..http_exceptions import MethodNotAllowed, NotFound
 from ..request import Request
@@ -19,6 +20,9 @@ from ..request import Request
 ROUTE_OPTIONS_ATTR = "__route_options"
 
 RouteFunction = Callable[[Any, Request], tuple[ResponseBody, Optional[str]]]
+
+
+VERSION_PATH = Path(__file__).parent / ".." / ".." / "version.txt"
 
 
 def route(
@@ -66,7 +70,7 @@ class BaseView(View):
     During initialization we bind the dependencies to the instance.
     """
 
-    routes: dict[Pattern, Callable[[Request], tuple[ResponseBody, str | None]]]
+    routes: dict[Pattern, Callable[[Request], RouteResponse]]
 
     def __init__(self, env: Env, logging: LoggingModule, services: Services) -> None:
         self.services = services
@@ -88,7 +92,7 @@ class BaseView(View):
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
 
-    def dispatch(self, request: Request) -> tuple[ResponseBody, str | None]:
+    def dispatch(self, request: Request) -> RouteResponse:
         functions = inspect.getmembers(
             self,
             predicate=lambda attr: inspect.ismethod(attr)
@@ -120,3 +124,9 @@ class BaseView(View):
 
                         return func(request)
             raise NotFound()
+
+    @route("version", method="GET", json=False)
+    def version_route(self, _: Request) -> RouteResponse:
+        with open(VERSION_PATH) as file:
+            version = file.read().strip()
+            return {"version": version}, None

@@ -9,7 +9,7 @@ from ...migrations.migration_handler import MigrationHandler
 from ...services.auth.interface import AUTHENTICATION_HEADER, COOKIE_NAME
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import AuthenticationException, ServerError
-from ...shared.interfaces.wsgi import ResponseBody
+from ...shared.interfaces.wsgi import RouteResponse
 from ..http_exceptions import Unauthorized
 from ..request import Request
 from .base_view import BaseView, route
@@ -24,7 +24,7 @@ class ActionView(BaseView):
     """
 
     @route(["handle_request", "handle_separately"])
-    def action_route(self, request: Request) -> tuple[ResponseBody, str | None]:
+    def action_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start dispatching action request.")
 
         assert_migration_index()
@@ -49,9 +49,7 @@ class ActionView(BaseView):
         return response, access_token
 
     @route("handle_request", internal=True)
-    def internal_action_route(
-        self, request: Request
-    ) -> tuple[ResponseBody, str | None]:
+    def internal_action_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start dispatching internal action request.")
 
         assert_migration_index()
@@ -66,7 +64,7 @@ class ActionView(BaseView):
         return response, None
 
     @route("migrations", internal=True)
-    def migrations_route(self, request: Request) -> tuple[ResponseBody, str | None]:
+    def migrations_route(self, request: Request) -> RouteResponse:
         self.logger.debug("Start executing migrations request.")
         self.check_internal_auth_password(request)
         handler = MigrationHandler(self.env, self.services, self.logging)
@@ -75,11 +73,11 @@ class ActionView(BaseView):
         return {"success": True, **response}, None
 
     @route("health", method="GET", json=False)
-    def health_route(self, request: Request) -> tuple[ResponseBody, str | None]:
+    def health_route(self, request: Request) -> RouteResponse:
         return {"status": "running"}, None
 
     @route("info", method="GET", json=False)
-    def info_route(self, request: Request) -> tuple[ResponseBody, str | None]:
+    def info_route(self, request: Request) -> RouteResponse:
         return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}, None
 
     def check_internal_auth_password(self, request: Request) -> None:
