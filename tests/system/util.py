@@ -110,7 +110,7 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         encryptor.finalize()
         encrypted += encryptor.tag
         base64_encoded = base64.encodebytes(
-            b"".join([public_private_key, nonce, encrypted])
+            b"".join([bytes([pubKeySize]), public_private_key, nonce, encrypted])
         )
         data["value"] = base64_encoded
 
