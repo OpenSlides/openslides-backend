@@ -117,7 +117,8 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         for field in field_to_fail:
             if field in failing_fields:
                 if isinstance(entry[field], dict):
-                    entry[field]["info"] = ImportState.REMOVE
+                    if entry[field]["info"] != ImportState.ERROR:
+                        entry[field]["info"] = ImportState.REMOVE
                 else:
                     entry[field] = {"value": entry[field], "info": ImportState.REMOVE}
             else:

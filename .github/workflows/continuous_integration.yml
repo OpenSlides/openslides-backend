@@ -100,6 +100,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -137,6 +139,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -145,10 +149,6 @@ jobs:
 
     - name: Install requirements
       run: . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
-
-    - name: Validate models.yml
-      if: always()
-      run: make validate-models-yml
 
     - name: Check for up to date models.py
       if: always()

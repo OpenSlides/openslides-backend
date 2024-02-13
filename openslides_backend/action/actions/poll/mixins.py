@@ -155,9 +155,7 @@ class StopControl(CountdownControl, Action):
         instance["votesinvalid"] = "0.000000"
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_users(
-            {**poll, **instance}
-        )
+        instance["entitled_users_at_stop"] = self.get_entitled_users(poll | instance)
 
     def get_entitled_users(self, poll: dict[str, Any]) -> list[dict[str, Any]]:
         entitled_users = []
@@ -177,22 +175,24 @@ class StopControl(CountdownControl, Action):
             "meeting_user", list(meeting_user_ids), ["user_id", "vote_delegated_to_id"]
         )
         gm_result = self.datastore.get_many([gmr])
-        meeting_users = gm_result.get("meeting_user", {}).values()
-        delegated_to_mu_ids = list(
-            {id_ for mu in meeting_users if (id_ := mu.get("vote_delegated_to_id"))}
-        )
-        mu_to_user_id = {}
-        if delegated_to_mu_ids:
-            gmr = GetManyRequest("meeting_user", delegated_to_mu_ids, ["user_id"])
-            mu_to_user_id = self.datastore.get_many([gmr]).get("meeting_user", {})
+        meeting_users = gm_result.get("meeting_user", {})
 
-        for mu in meeting_users:
+        gmr = GetManyRequest(
+            "user",
+            [mu["user_id"] for mu in meeting_users.values()],
+            ["is_present_in_meeting_ids"],
+        )
+        users = self.datastore.get_many([gmr]).get("user", {})
+
+        for mu in meeting_users.values():
             entitled_users.append(
                 {
-                    "user_id": mu["user_id"],
                     "voted": mu["user_id"] in all_voted_users,
+                    "present": poll["meeting_id"]
+                    in users[mu["user_id"]].get("is_present_in_meeting_ids", []),
+                    "user_id": mu["user_id"],
                     "vote_delegated_to_user_id": (
-                        mu_to_user_id[vote_mu_id]["user_id"]
+                        meeting_users[vote_mu_id]["user_id"]
                         if (vote_mu_id := mu.get("vote_delegated_to_id"))
                         else None
                     ),
