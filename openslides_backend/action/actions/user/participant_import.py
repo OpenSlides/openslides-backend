@@ -25,54 +25,30 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         self.meeting_id = cast(int, self.result["meeting_id"])
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        groups_to_create: set[str] = {
-            level["value"]
-            for row in self.rows
-            for level in row["data"].get("groups", [])
-            if level.get("info") == ImportState.NEW
-        }
-        if len(groups_to_create):
-            self.newly_found_models["groups"] = self.datastore.filter(
-                "group",
-                And(
-                    FilterOperator("meeting_id", "=", self.meeting_id),
-                    Or(
-                        [
-                            FilterOperator("name", "=", level)
-                            for level in groups_to_create
-                        ]
-                    ),
-                ),
-                ["name", "id"],
-            )
-            for group in self.newly_found_models["groups"].values():
-                groups_to_create.discard(group["name"])
-            self.models_to_create["groups"] = list(groups_to_create)
-        structure_levels_to_create: set[str] = {
-            level["value"]
-            for row in self.rows
-            for level in row["data"].get("structure_level", [])
-            if level.get("info") == ImportState.NEW
-        }
-        if len(structure_levels_to_create):
-            self.newly_found_models["structure_level"] = self.datastore.filter(
-                "structure_level",
-                And(
-                    FilterOperator("meeting_id", "=", self.meeting_id),
-                    Or(
-                        [
-                            FilterOperator("name", "=", level)
-                            for level in structure_levels_to_create
-                        ]
-                    ),
-                ),
-                ["name", "id"],
-            )
-            for level in self.newly_found_models["structure_level"].values():
-                structure_levels_to_create.discard(level["name"])
-            self.models_to_create["structure_level"] = list(structure_levels_to_create)
+        self.update_models_to_create("group", "groups")
+        self.update_models_to_create("structure_level", "structure_level")
         instance = super().update_instance(instance)
         return instance
+
+    def update_models_to_create(self, model_name: str, field_name: str) -> None:
+        to_create: set[str] = {
+            entry["value"]
+            for row in self.rows
+            for entry in row["data"].get(field_name, [])
+            if entry.get("info") == ImportState.NEW
+        }
+        if len(to_create):
+            self.newly_found_models[field_name] = self.datastore.filter(
+                model_name,
+                And(
+                    FilterOperator("meeting_id", "=", self.meeting_id),
+                    Or([FilterOperator("name", "=", name) for name in to_create]),
+                ),
+                ["name", "id"],
+            )
+            for model in self.newly_found_models[field_name].values():
+                to_create.discard(model["name"])
+            self.models_to_create[field_name] = list(to_create)
 
     def handle_create_relations(self, instance: dict[str, Any]) -> None:
         if self.import_state != ImportState.ERROR:
