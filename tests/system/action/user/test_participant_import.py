@@ -988,3 +988,8 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": "warning", "value": "group4"},
             ],
         }
+
+    def test_json_upload_legacy_username(self) -> None:
+        self.json_upload_legacy_username()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)

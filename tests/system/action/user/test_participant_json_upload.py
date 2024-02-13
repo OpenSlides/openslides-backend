@@ -1200,3 +1200,43 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 {"value": "group4", "info": "warning"},
             ],
         }
+
+    def json_upload_legacy_username(self) -> None:
+        self.create_meeting(1)
+        user_id = self.create_user("test user", [3])
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test user",
+                        "first_name": "test",
+                        "groups": ["group3"],
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0] == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "id": user_id,
+                "username": {
+                    "id": user_id,
+                    "info": ImportState.DONE,
+                    "value": "test user",
+                },
+                "first_name": {"info": ImportState.DONE, "value": "test"},
+                "groups": [
+                    {
+                        "id": 3,
+                        "info": "done",
+                        "value": "group3",
+                    },
+                ],
+            },
+        }
