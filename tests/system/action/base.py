@@ -290,9 +290,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             "meeting_ids": list(partitioned_groups.keys()),
         }
 
-    def create_user_for_meeting(
-        self, meeting_id: int, username: str | None = None
-    ) -> int:
+    def create_user_for_meeting(self, meeting_id: int) -> int:
         meeting = self.get_model(f"meeting/{meeting_id}")
         if not meeting.get("default_group_id"):
             id = self.datastore.reserve_id("group")
