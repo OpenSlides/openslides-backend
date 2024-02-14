@@ -139,7 +139,6 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
 
-    # <<<<<< HEAD (Current change)
     def test_stop_correct_pseudoanonymous(self) -> None:
         self.set_models(
             {
@@ -181,14 +180,17 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.set_models(
             {
                 f"user/{user1}": {
-                    "vote_weight_$1": "2.000000",
                     "is_present_in_meeting_ids": [1],
                 },
+                "meeting_user/1": {"vote_weight": "2.000000"},
                 f"user/{user2}": {
-                    "vote_weight_$1": "3.000000",
                     "is_present_in_meeting_ids": [1],
                 },
-                f"user/{user3}": {"vote_delegated_$1_to_id": user2},
+                "meeting_user/2": {
+                    "vote_weight": "3.000000",
+                    "vote_delegations_from_ids": [3],
+                },
+                "meeting_user/3": {"vote_delegated_to_id": 2},
             }
         )
         self.start_poll(1)
@@ -208,9 +210,24 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         assert poll.get("votesinvalid") == "0.000000"
         assert poll.get("votesvalid") == "5.000000"
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": True, "user_id": user1, "vote_delegated_to_id": None},
-            {"voted": True, "user_id": user2, "vote_delegated_to_id": None},
-            {"voted": False, "user_id": user3, "vote_delegated_to_id": user2},
+            {
+                "voted": True,
+                "user_id": user1,
+                "vote_delegated_to_user_id": None,
+                "present": True,
+            },
+            {
+                "voted": True,
+                "user_id": user2,
+                "vote_delegated_to_user_id": None,
+                "present": True,
+            },
+            {
+                "voted": False,
+                "user_id": user3,
+                "vote_delegated_to_user_id": user2,
+                "present": False,
+            },
         ]
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
@@ -249,19 +266,19 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.set_models(
             {
                 f"user/{user1}": {
-                    "vote_weight_$1": "2.000000",
                     "is_present_in_meeting_ids": [1],
                 },
+                "meeting_user/1": {"vote_weight": "2.000000"},
                 f"user/{user2}": {
-                    "vote_weight_$1": "3.000000",
                     "is_present_in_meeting_ids": [1],
-                    "vote_delegations_$_from_ids": ["1"],
-                    "vote_delegations_$1_from_ids": [user3],
                 },
-                f"user/{user3}": {
-                    "vote_weight_$1": "4.000000",
-                    "vote_delegated_$1_to_id": user2,
-                    "vote_delegated_$_to_id": ["1"],
+                "meeting_user/2": {
+                    "vote_weight": "3.000000",
+                    "vote_delegations_from_ids": [3],
+                },
+                "meeting_user/3": {
+                    "vote_weight": "4.000000",
+                    "vote_delegated_to_id": 2,
                 },
             }
         )
@@ -290,9 +307,24 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             },
         )
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": True, "user_id": user1, "vote_delegated_to_id": None},
-            {"voted": True, "user_id": user2, "vote_delegated_to_id": None},
-            {"voted": True, "user_id": user3, "vote_delegated_to_id": user2},
+            {
+                "voted": True,
+                "user_id": user1,
+                "vote_delegated_to_user_id": None,
+                "present": True,
+            },
+            {
+                "voted": True,
+                "user_id": user2,
+                "vote_delegated_to_user_id": None,
+                "present": True,
+            },
+            {
+                "voted": True,
+                "user_id": user3,
+                "vote_delegated_to_user_id": user2,
+                "present": False,
+            },
         ]
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
@@ -309,11 +341,12 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                     "type": Poll.TYPE_NAMED,
                     "pollmethod": "YN",
                     "backend": "fast",
-                    "state": Poll.STATE_STARTED,
+                    "state": Poll.STATE_CREATED,
                     "meeting_id": 1,
                 },
             }
         )
+        self.start_poll(1)
         response = self.request("poll.stop", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_history_information("assignment/1", ["Ballot stopped"])

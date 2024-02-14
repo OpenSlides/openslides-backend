@@ -64,12 +64,11 @@ class PollVoteTest(BaseVoteTestCase):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
-                # TODO: remove comment, which was introduced by merging main into feature/vote-decrypt
-                # "group/1": {
-                #     "user_ids": [1, user_id],
-                #     "permissions": ["motion.can_manage_polls"],
-                # },
-                "group/1": {"meeting_user_ids": [11, 12], "poll_ids": [1]},
+                "group/1": {
+                    "meeting_user_ids": [11, 12],
+                    "poll_ids": [1],
+                    "permissions": ["motion.can_manage_polls"],
+                },
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -934,7 +933,7 @@ class PollVoteTest(BaseVoteTestCase):
         )
         self.assert_status_code(vote_response, 400)
         self.assertIn(
-            "User 1 is not in a group that is allowed to vote",
+            "User 1 is not allowed to vote. He is not in an entitled group",
             vote_response.json["message"],
         )
         self.assert_status_code(cast(Response, stop_response), 200)
@@ -1402,7 +1401,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         )
         self.assert_status_code(vote_response, 400)
         self.assertIn(
-            "Your vote has a wrong format for poll method YN or YNA",
+            "Your vote has a wrong format",
             vote_response.json["message"],
         )
         self.assert_status_code(cast(Response, stop_response), 200)
@@ -1772,7 +1771,7 @@ class VotePollNamedY(VotePollBaseTestClass):
         )
         self.assert_status_code(vote_response, 400)
         self.assertIn(
-            "Your vote has a wrong format for poll method Y or N",
+            "Your vote has a wrong format",
             vote_response.json["message"],
         )
         self.assert_status_code(cast(Response, stop_response), 200)
@@ -2201,7 +2200,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         )
         self.assert_status_code(vote_response, 400)
         self.assertIn(
-            "Your vote has a wrong format for poll method Y or N",
+            "Your vote has a wrong format",
             vote_response.json["message"],
         )
         self.assert_status_code(cast(Response, stop_response), 200)
@@ -2397,7 +2396,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         )
         self.assert_status_code(vote_response, 400)
         self.assertIn(
-            "Your vote has a wrong format for poll method YN or YNA",
+            "Your vote has a wrong format",
             vote_response.json["message"],
         )
         self.assert_status_code(cast(Response, stop_response), 200)
@@ -2646,7 +2645,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         )
         self.assert_status_code(vote_response, 400)
         self.assertIn(
-            "Your vote has a wrong format for poll method Y or N",
+            "Your vote has a wrong format",
             vote_response.json["message"],
         )
         self.assert_status_code(cast(Response, stop_response), 200)
@@ -3019,9 +3018,7 @@ class VotePollCryptographicYNA(VotePollBaseTestClass):
             "invalid_votes"
         ]
         for vote in invalid_votes:
-            self.assertIn(
-                "Your vote has a wrong format for poll method YN or YNA", vote["msg"]
-            )
+            self.assertIn("Your vote has a wrong format", vote["msg"])
         self.assert_model_not_exists("vote/1")
         self.assert_model_exists(
             "poll/1",
@@ -3283,9 +3280,7 @@ class VotePollCryptographicY(VotePollBaseTestClass):
             "invalid_votes"
         ]
         for vote in invalid_votes:
-            self.assertIn(
-                "Your vote has a wrong format for poll method Y or N", vote["msg"]
-            )
+            self.assertIn("Your vote has a wrong format", vote["msg"])
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_id_type_REPORT(self) -> None:
@@ -3388,7 +3383,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
         )
         self.assert_status_code(vote_response, 400)
         self.assertIn("Not the first vote", vote_response.json["message"])
-        self.assertIn("douple-vote", vote_response.json["error"])
+        self.assertIn("double-vote", vote_response.json["error"])
         self.assert_status_code(cast(Response, stop_response), 200)
         assert (
             cast(Response, stop_response).json["results"][0][0]["invalid_votes"] == []
@@ -3479,9 +3474,7 @@ class VotePollCryptographicN(VotePollBaseTestClass):
             "invalid_votes"
         ]
         for vote in invalid_votes:
-            self.assertIn(
-                "Your vote has a wrong format for poll method Y or N", vote["msg"]
-            )
+            self.assertIn("Your vote has a wrong format", vote["msg"])
 
     def test_wrong_option_id_type_REPORT(self) -> None:
         """
