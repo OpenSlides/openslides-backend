@@ -1,16 +1,19 @@
 # Code generated. DO NOT EDIT.
 
 from enum import Enum
+from typing import Dict, List
 
 from .base_classes import Permission
 
-PERMISSION_YML_CHECKSUM = "ae5496b33e65c38123eac203af69434b"
+PERMISSION_YML_CHECKSUM = "09f85128304dc0cba2fac48b85ab3a75"
 
 
 class _AgendaItem(str, Permission, Enum):
     CAN_MANAGE = "agenda_item.can_manage"
+    CAN_MANAGE_MODERATOR_NOTES = "agenda_item.can_manage_moderator_notes"
     CAN_SEE = "agenda_item.can_see"
     CAN_SEE_INTERNAL = "agenda_item.can_see_internal"
+    CAN_SEE_MODERATOR_NOTES = "agenda_item.can_see_moderator_notes"
 
 
 class _Assignment(str, Permission, Enum):
@@ -93,9 +96,14 @@ class Permissions:
 
 # Holds the corresponding parent for each permission.
 permission_parents: dict[Permission, list[Permission]] = {
-    _AgendaItem.CAN_SEE: [_AgendaItem.CAN_SEE_INTERNAL],
+    _AgendaItem.CAN_SEE: [
+        _AgendaItem.CAN_SEE_INTERNAL,
+        _AgendaItem.CAN_SEE_MODERATOR_NOTES,
+    ],
     _AgendaItem.CAN_SEE_INTERNAL: [_AgendaItem.CAN_MANAGE],
     _AgendaItem.CAN_MANAGE: [],
+    _AgendaItem.CAN_SEE_MODERATOR_NOTES: [_AgendaItem.CAN_MANAGE_MODERATOR_NOTES],
+    _AgendaItem.CAN_MANAGE_MODERATOR_NOTES: [],
     _Assignment.CAN_SEE: [
         _Assignment.CAN_NOMINATE_OTHER,
         _Assignment.CAN_NOMINATE_SELF,

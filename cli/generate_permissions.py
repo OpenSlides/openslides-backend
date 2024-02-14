@@ -3,6 +3,7 @@ import os
 import sys
 from collections import defaultdict
 from collections.abc import Iterable
+from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
@@ -62,44 +63,63 @@ def main() -> None:
     # calc checksum to assert the permissions.py is up-to-date
     checksum = hashlib.md5(permissions_yml).hexdigest()
 
+    # Load and parse permissions.yml
+    permissions = yaml.safe_load(permissions_yml)
+    all_parents: dict[str, list[str]] = {}
+    all_permissions: dict[str, set[str]] = defaultdict(set)
+    for collection, children in permissions.items():
+        parents = process_permission_level(collection, None, children)
+        for pair in parents:
+            collection, _ = get_permission_parts(pair[0])
+            all_permissions[collection].add(pair[0])
+            if not pair[0] in all_parents:
+                all_parents[pair[0]] = []
+            if pair[1] is not None:
+                all_parents[pair[0]] += [pair[1]]
+
     if len(sys.argv) > 1 and sys.argv[1] == "check":
         from openslides_backend.permissions.permissions import PERMISSION_YML_CHECKSUM
 
         assert checksum == PERMISSION_YML_CHECKSUM
         print("permissions.py is up to date (checksum-comparison)")
-        sys.exit(0)
 
-    # Load and parse permissions.yml
-    permissions = yaml.safe_load(permissions_yml)
-    with open(DESTINATION, "w") as dest:
-        dest.write(FILE_TEMPLATE.format(checksum))
-        all_parents: dict[str, list[str]] = {}
-        all_permissions: dict[str, set[str]] = defaultdict(set)
-        for collection, children in permissions.items():
-            parents = process_permission_level(collection, None, children)
-            for pair in parents:
-                collection, _ = get_permission_parts(pair[0])
-                all_permissions[collection].add(pair[0])
-                if not pair[0] in all_parents:
-                    all_parents[pair[0]] = []
-                if pair[1] is not None:
-                    all_parents[pair[0]] += [pair[1]]
+        # check group.permissions enum in models.yml, if possible
+        models_file = Path(file).parent / "models.yml"
+        if os.path.isfile(models_file):
+            with open(models_file, "rb") as f:
+                models = yaml.safe_load(f.read())
+            enum = set(models["group"]["permissions"]["items"]["enum"])
+            permissions = {
+                str(permission)
+                for permissions in all_permissions.values()
+                for permission in permissions
+            }
+            assert enum == permissions, (
+                "Missing permissions: "
+                + str(permissions - enum)
+                + "\nAdditional permissions: "
+                + str(enum - permissions)
+            )
+            print("models.yml field group/permissions enum contains all permissions")
+    else:
+        # Write permissions.py
+        with open(DESTINATION, "w") as dest:
+            dest.write(FILE_TEMPLATE.format(checksum))
+            for collection, permissions in all_permissions.items():
+                dest.write(f"\nclass _{collection}(str, Permission, Enum):\n")
+                for permission in sorted(permissions):
+                    _, perm_str = get_permission_parts(permission)
+                    dest.write(f"    {perm_str} = '{permission}'\n")
 
-        for collection, permissions in all_permissions.items():
-            dest.write(f"\nclass _{collection}(str, Permission, Enum):\n")
-            for permission in sorted(permissions):
-                _, perm_str = get_permission_parts(permission)
-                dest.write(f"    {perm_str} = '{permission}'\n")
+            dest.write("class Permissions:\n")
+            for collection in all_permissions.keys():
+                dest.write(f"    {collection} = _{collection}\n")
 
-        dest.write("class Permissions:\n")
-        for collection in all_permissions.keys():
-            dest.write(f"    {collection} = _{collection}\n")
+            dest.write("\n# Holds the corresponding parent for each permission.\n")
+            dest.write("permission_parents: dict[Permission, list[Permission]] = ")
+            dest.write(repr(all_parents))
 
-        dest.write("\n# Holds the corresponding parent for each permission.\n")
-        dest.write("permission_parents: Dict[Permission, List[Permission]] = ")
-        dest.write(repr(all_parents))
-
-    print(f"Permissions file {DESTINATION} successfully created.")
+        print(f"Permissions file {DESTINATION} successfully created.")
 
 
 def process_permission_level(

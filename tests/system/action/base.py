@@ -432,7 +432,10 @@ class BaseActionTestCase(BaseSystemTestCase):
         models: dict[str, dict[str, Any]],
         action: str,
         action_data: dict[str, Any],
-        permission: Permission | OrganizationManagementLevel | None = None,
+        permission: (
+            Permission | list[Permission] | OrganizationManagementLevel | None
+        ) = None,
+        fail: bool | None = None,
     ) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
@@ -442,20 +445,22 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.set_user_groups(self.user_id, [3])
         if permission:
             if isinstance(permission, OrganizationManagementLevel):
-                self.set_organization_management_level(
-                    cast(OrganizationManagementLevel, permission), self.user_id
-                )
+                self.set_organization_management_level(permission, self.user_id)
+            elif isinstance(permission, list):
+                self.set_group_permissions(3, permission)
             else:
-                self.set_group_permissions(3, [cast(Permission, permission)])
+                self.set_group_permissions(3, [permission])
         response = self.request(action, action_data)
-        if permission:
-            self.assert_status_code(response, 200)
-        else:
+        if fail is None:
+            fail = not permission
+        if fail:
             self.assert_status_code(response, 403)
             self.assertIn(
                 f"You are not allowed to perform action {action}",
                 response.json["message"],
             )
+        else:
+            self.assert_status_code(response, 200)
 
     @with_database_context
     def assert_history_information(

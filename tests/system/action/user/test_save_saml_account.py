@@ -105,19 +105,17 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
                     "saml_enabled": True,
                     "saml_attr_mapping": {
                         "saml_id": "username",
-                        "default_structure_level": "default_structure_level",
+                        "default_number": "default_number",
                     },
                 }
             }
         )
         response = self.request(
             "user.save_saml_account",
-            {"username": "Joe", "default_structure_level": "Cartwright"},
+            {"username": "Joe", "default_number": "Cartwright"},
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/2", {"username": "Joe", "default_structure_level": None}
-        )
+        self.assert_model_exists("user/2", {"username": "Joe", "default_number": None})
 
 
 class UserCreateSamlAccount(UserBaseSamlAccount):
