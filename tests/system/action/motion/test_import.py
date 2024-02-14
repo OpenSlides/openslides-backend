@@ -4,7 +4,6 @@ from .test_json_upload import MotionJsonUploadForUseInImport
 
 
 class MotionImport(MotionJsonUploadForUseInImport):
-
     def test_import_database_corrupt(self) -> None:
         self.create_meeting(42)
         self.set_models(
@@ -154,6 +153,313 @@ class MotionImport(MotionJsonUploadForUseInImport):
             "Wrong id doesn't point on motion import data." in response.json["message"]
         )
 
+    def test_import_non_existant_ids(self) -> None:
+        self.create_meeting(42)
+        preview_rows = [
+            {
+                "state": ImportState.DONE,
+                "messages": [],
+                "data": {
+                    "id": 1,
+                    "title": {
+                        "value": "Update",
+                        "info": ImportState.DONE,
+                    },
+                    "text": {
+                        "value": "<p>of non-existant motion</>",
+                        "info": ImportState.DONE,
+                    },
+                    "number": {
+                        "id": 1,
+                        "value": "NOMNOMNOM1",
+                        "info": ImportState.DONE,
+                    },
+                    "submitters_username": [
+                        {
+                            "value": "nonExistantUser",
+                            "info": ImportState.DONE,
+                            "id": 2,
+                        }
+                    ],
+                    "supporters_username": [
+                        {
+                            "value": "NoOne",
+                            "info": ImportState.DONE,
+                            "id": 3,
+                        }
+                    ],
+                    "category_name": {
+                        "id": 8,
+                        "value": "NonCategory",
+                        "info": ImportState.DONE,
+                    },
+                    "tags": [
+                        {
+                            "id": 9,
+                            "value": "NonTag",
+                            "info": ImportState.DONE,
+                        }
+                    ],
+                    "block": {"id": 9, "value": "NonBlock", "info": ImportState.DONE},
+                    "meeting_id": 42,
+                },
+            },
+            {
+                "state": ImportState.NEW,
+                "messages": [],
+                "data": {
+                    "title": {
+                        "value": "Create",
+                        "info": ImportState.DONE,
+                    },
+                    "text": {
+                        "value": "<p>a new motion</p>",
+                        "info": ImportState.DONE,
+                    },
+                    "number": {"value": "NEW", "info": ImportState.DONE},
+                    "submitters_username": [
+                        {
+                            "value": "nonUser",
+                            "info": ImportState.DONE,
+                            "id": 4,
+                        }
+                    ],
+                    "supporters_username": [
+                        {
+                            "value": "NoOne",
+                            "info": ImportState.DONE,
+                            "id": 5,
+                        }
+                    ],
+                    "category_name": {
+                        "id": 10,
+                        "value": "NonCategoryTwoElectricBoogaloo",
+                        "info": ImportState.DONE,
+                    },
+                    "tags": [
+                        {
+                            "id": 11,
+                            "value": "TagNot",
+                            "info": ImportState.DONE,
+                        }
+                    ],
+                    "block": {
+                        "id": 12,
+                        "value": "JustBlockIt",
+                        "info": ImportState.DONE,
+                    },
+                    "meeting_id": 42,
+                },
+            },
+        ]
+        self.set_models(
+            {
+                "import_preview/2": {
+                    "state": ImportState.DONE,
+                    "name": "motion",
+                    "result": {
+                        "rows": preview_rows,
+                    },
+                },
+            }
+        )
+        response = self.request("motion.import", {"id": 2, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("motion/1")
+        self.assert_model_not_exists("motion/2")
+        meeting = self.assert_model_exists("meeting/42")
+        assert "motion_ids" not in meeting
+        response_rows = response.json["results"][0][0]["rows"]
+        assert response_rows[0]["data"] == {
+            "id": 1,
+            "tags": [{"info": "error", "value": "NonTag"}],
+            "text": {"info": "done", "value": "<p>of non-existant motion</>"},
+            "block": {"value": "NonBlock", "info": "error"},
+            "title": {"info": "done", "value": "Update"},
+            "number": {"id": 1, "info": "error", "value": "NOMNOMNOM1"},
+            "meeting_id": 42,
+            "category_name": {"value": "NonCategory", "info": "error"},
+            "submitters_username": [{"info": "error", "value": "nonExistantUser"}],
+            "supporters_username": [{"info": "error", "value": "NoOne"}],
+        }
+        assert sorted(response_rows[0]["messages"]) == sorted(
+            [
+                "Error: Couldn't find motion block anymore",
+                "Error: Couldn't find supporter anymore: NoOne",
+                "Error: Couldn't find tag anymore: NonTag",
+                "Error: Category could not be found anymore",
+                "Error: Couldn't find submitter anymore: nonExistantUser",
+                "Error: Motion 1 not found anymore for updating motion 'NOMNOMNOM1'.",
+            ]
+        )
+        assert response_rows[1]["data"] == {
+            "tags": [{"info": "error", "value": "TagNot"}],
+            "text": {"info": "done", "value": "<p>a new motion</p>"},
+            "block": {"value": "JustBlockIt", "info": "error"},
+            "title": {"info": "done", "value": "Create"},
+            "number": {"info": "done", "value": "NEW"},
+            "meeting_id": 42,
+            "category_name": {
+                "value": "NonCategoryTwoElectricBoogaloo",
+                "info": "error",
+            },
+            "submitters_username": [{"info": "error", "value": "nonUser"}],
+            "supporters_username": [{"info": "error", "value": "NoOne"}],
+        }
+        assert sorted(response_rows[1]["messages"]) == sorted(
+            [
+                "Error: Couldn't find motion block anymore",
+                "Error: Couldn't find supporter anymore: NoOne",
+                "Error: Couldn't find tag anymore: TagNot",
+                "Error: Category could not be found anymore",
+                "Error: Couldn't find submitter anymore: nonUser",
+            ]
+        )
+
+    def test_import_with_deleted_references(self) -> None:
+        self.json_upload_multi_row()
+        self.request("motion.delete", {"id": 100})
+        self.request("user.delete", {"id": 2})
+        self.request("meeting_user.delete", {"id": 3})
+        self.request("motion_category.delete", {"id": 100})
+        self.request("motion_category.delete", {"id": 1000})
+        self.request("motion_block.delete", {"id": 1})
+        self.request("tag.delete", {"id": 1})
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/1",
+            {
+                "title": "A",
+                "text": "<p>nice little</p>",
+                "reason": "motion",
+            },
+        )
+        self.assert_model_exists("meeting/1", {"motion_ids": [1]})
+        self.assert_model_deleted("motion/100")
+        self.assert_model_not_exists("motion/101")
+        self.assert_model_not_exists("motion/102")
+        self.assert_model_not_exists("motion/103")
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 5
+        row = rows[0]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Couldn't find supporter anymore: user1"]
+        assert row["data"]["supporters_username"] == [
+            {"info": ImportState.ERROR, "value": "user1"}
+        ]
+        row = rows[1]
+        assert row["state"] == ImportState.ERROR
+        assert sorted(row["messages"]) == sorted(
+            [
+                "Error: Motion 100 not found anymore for updating motion 'NUM02'.",
+                "Error: Couldn't find submitter anymore: user1",
+                "Error: Category could not be found anymore",
+            ]
+        )
+        assert row["data"]["number"] == {
+            "id": 100,
+            "value": "NUM02",
+            "info": ImportState.ERROR,
+        }
+        assert row["data"]["category_name"] == {
+            "info": ImportState.ERROR,
+            "value": "Other motion",
+        }
+        assert row["data"]["submitters_username"] == [
+            {"info": ImportState.ERROR, "value": "user1"}
+        ]
+        row = rows[2]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Couldn't find tag anymore: Tag1"]
+        assert row["data"]["tags"] == [{"info": ImportState.ERROR, "value": "Tag1"}]
+        row = rows[3]
+        assert row["state"] == ImportState.ERROR
+        assert sorted(row["messages"]) == sorted(
+            [
+                "Error: Couldn't find supporter anymore: user1, anotherUser",
+                "Error: Couldn't find motion block anymore",
+            ]
+        )
+        assert row["data"]["supporters_username"] == [
+            {"info": ImportState.ERROR, "value": "user1"},
+            {"id": 1, "info": ImportState.DONE, "value": "admin"},
+            {"info": ImportState.ERROR, "value": "anotherUser"},
+        ]
+        assert row["data"]["block"] == {"info": ImportState.ERROR, "value": "Block1"}
+        row = rows[4]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Category could not be found anymore"]
+        assert row["data"]["category_name"] == {
+            "info": ImportState.ERROR,
+            "value": "Other motion",
+        }
+
+    def test_import_with_changed_references(self) -> None:
+        self.json_upload_multi_row()
+        self.set_models(
+            {
+                "user/2": {"username": "changedName"},
+                "user/3": {"username": "changedNameToo"},
+                "motion_category/100": {"name": "changedName"},
+                "motion_category/1000": {"prefix": "changedPREFIX"},
+                "motion_block/1": {"title": "changedTitle"},
+                "tag/1": {"name": "changedName"},
+            }
+        )
+        self.create_user("anotherUser", [1])
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        rows = response.json["results"][0][0]["rows"]
+        assert len(rows) == 5
+        row = rows[0]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Couldn't find supporter anymore: user1"]
+        assert row["data"]["supporters_username"] == [
+            {"info": ImportState.ERROR, "value": "user1"}
+        ]
+        row = rows[1]
+        assert row["state"] == ImportState.ERROR
+        assert sorted(row["messages"]) == sorted(
+            [
+                "Error: Couldn't find submitter anymore: user1",
+                "Error: Category could not be found anymore",
+            ]
+        )
+        assert row["data"]["category_name"] == {
+            "info": ImportState.ERROR,
+            "value": "Other motion",
+        }
+        assert row["data"]["submitters_username"] == [
+            {"info": ImportState.ERROR, "value": "user1"}
+        ]
+        row = rows[2]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Couldn't find tag anymore: Tag1"]
+        assert row["data"]["tags"] == [{"info": ImportState.ERROR, "value": "Tag1"}]
+        row = rows[3]
+        assert row["state"] == ImportState.ERROR
+        assert sorted(row["messages"]) == sorted(
+            [
+                "Error: Supporter search didn't deliver the same result as in the preview: anotherUser",
+                "Error: Couldn't find motion block anymore",
+                "Error: Couldn't find supporter anymore: user1",
+            ]
+        )
+        assert row["data"]["supporters_username"] == [
+            {"info": ImportState.ERROR, "value": "user1"},
+            {"id": 1, "info": ImportState.DONE, "value": "admin"},
+            {"info": ImportState.ERROR, "value": "anotherUser"},
+        ]
+        assert row["data"]["block"] == {"info": ImportState.ERROR, "value": "Block1"}
+        row = rows[4]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == ["Error: Category could not be found anymore"]
+        assert row["data"]["category_name"] == {
+            "info": ImportState.ERROR,
+            "value": "Other motion",
+        }
+
     def test_import_wrong_meeting_model_import_preview(self) -> None:
         self.create_meeting(42)
         self.set_models(
@@ -187,6 +493,26 @@ class MotionImport(MotionJsonUploadForUseInImport):
         response = self.request("motion.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["state"] == ImportState.DONE
+
+    def test_json_upload_with_errors(self) -> None:
+        self.json_upload_create_missing_title()
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 400)
+        assert "Error in import. Data will not be imported." in response.json["message"]
+
+    def test_json_upload_update_missing_title(self) -> None:
+        self.json_upload_update_missing_title()
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        self.assert_model_exists("motion/42", {"title": "A"})
+
+    def test_json_upload_update_missing_reason_although_required(self) -> None:
+        self.json_upload_update_missing_reason_although_required()
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        self.assert_model_exists("motion/42", {"reason": "motion"})
 
     def test_json_upload_multi_row(self) -> None:
         self.json_upload_multi_row()
@@ -223,6 +549,7 @@ class MotionImport(MotionJsonUploadForUseInImport):
                 "title": "also",
                 "text": "<p>test the other peoples stuff</p>",
                 "submitter_ids": [1],
+                "tag_ids": [1],
             },
         )
         self.assert_model_exists("motion_submitter/1", {"meeting_user_id": 2})
@@ -233,7 +560,8 @@ class MotionImport(MotionJsonUploadForUseInImport):
                 "title": "after that",
                 "text": "<p>test even more stuff</p>",
                 "submitter_ids": [2],
-                "supporter_meeting_user_ids": [1, 2],
+                "supporter_meeting_user_ids": [1, 2, 3],
+                "block_id": 1,
             },
         )
         self.assert_model_exists("motion_submitter/2", {"meeting_user_id": 2})
@@ -400,6 +728,39 @@ class MotionImport(MotionJsonUploadForUseInImport):
         self.assert_model_exists("motion_submitter/2", {"meeting_user_id": 2})
         assert len(motion["supporter_meeting_user_ids"]) == 0
 
+    def test_with_non_matching_verbose_users_okay(self) -> None:
+        self.json_upload_with_non_matching_verbose_users_okay()
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/123",
+            {
+                "number": "NUM01",
+                "title": "Up",
+                "text": "<p>date</p>",
+                "submitter_ids": [2, 3],
+                "supporter_meeting_user_ids": [1, 2],
+            },
+        )
+        newMotion = self.assert_model_exists(
+            "motion/12301",
+            {
+                "title": "Newer",
+                "text": "<p>motion</p>",
+                "submitter_ids": [1],
+            },
+        )
+        assert len(newMotion.get("supporter_meeting_user_ids", [])) == 0
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "motion_submitter_ids": [2]}
+        )
+        self.assert_model_exists(
+            "meeting_user/2", {"user_id": 3, "motion_submitter_ids": [3]}
+        )
+        self.assert_model_exists(
+            "meeting_user/3", {"user_id": 1, "motion_submitter_ids": [1]}
+        )
+
     def test_with_tags_and_blocks(self) -> None:
         self.json_upload_with_tags_and_blocks()
         response = self.request("motion.import", {"id": 1, "import": True})
@@ -417,3 +778,46 @@ class MotionImport(MotionJsonUploadForUseInImport):
         assert "block_id" not in mot3
         mot4 = self.assert_model_exists("motion/5503", {"tag_ids": []})
         assert "block_id" not in mot4
+
+    def test_with_new_duplicate_tags_and_blocks(self) -> None:
+        self.json_upload_with_tags_and_blocks()
+        self.set_models(
+            {
+                "tag/7": {"name": "Tag-liatelle", "meeting_id": 42},
+                "motion_block/7": {"title": "Blockolade", "meeting_id": 42},
+                "meeting/42": {
+                    "tag_ids": [1, 2, 3, 4, 7],
+                    "motion_block_ids": [1, 2, 3, 4, 7],
+                },
+            }
+        )
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/42",
+            {
+                "number": "NUM01",
+                "tag_ids": [1, 2],
+                "block_id": 1,
+            },
+        )
+        self.assert_model_exists("motion/5501", {"tag_ids": [1, 2], "block_id": 2})
+        mot3 = self.assert_model_exists("motion/5502", {"tag_ids": []})
+        assert "block_id" not in mot3
+        mot4 = self.assert_model_exists("motion/5503", {"tag_ids": []})
+        assert "block_id" not in mot4
+
+    def test_update_with_changed_number(self) -> None:
+        self.json_upload_simple_update()
+        self.set_models({"motion/42": {"number": "CHANGED01"}})
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        assert response.json["results"][0][0]["rows"][0]["data"]["number"] == {
+            "id": 42,
+            "info": ImportState.ERROR,
+            "value": "NUM01",
+        }
+        assert response.json["results"][0][0]["rows"][0]["messages"] == [
+            "Error: Motion 42 not found anymore for updating motion 'NUM01'."
+        ]

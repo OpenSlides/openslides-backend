@@ -347,9 +347,13 @@ class MotionImport(
                 for category in categories
                 if category.get("prefix") == category_prefix
             ]
-            if len(categories) == 1:
-                category = categories[0]
-                if category.get("id") != entry["category_name"].get("id"):
+            if len(categories) > 0:
+                if not any(
+                    [
+                        category.get("id") == entry["category_name"].get("id")
+                        for category in categories
+                    ]
+                ):
                     row["messages"].append(
                         "Error: Category search didn't deliver the same result as in the preview"
                     )
@@ -373,8 +377,10 @@ class MotionImport(
                     f"Invalid JsonUpload data: A block entry with state '{ImportState.DONE}' must have an 'id'"
                 )
             found_blocks = self.block_lookup.get(block, [])
-            if len(found_blocks) == 1:
-                if found_blocks[0].get("id") != entry["block"]["id"]:
+            if len(found_blocks) > 0:
+                if not any(
+                    [block.get("id") == entry["block"]["id"] for block in found_blocks]
+                ):
                     entry["block"] = {"value": block, "info": ImportState.ERROR}
                     row["messages"].append(
                         "Error: Motion block search didn't deliver the same result as in the preview"
@@ -399,8 +405,10 @@ class MotionImport(
                             f"Invalid JsonUpload data: A tag entry with state '{ImportState.DONE}' must have an 'id'"
                         )
                     found_tags = self.tags_lookup.get(tag, [])
-                    if len(found_tags) == 1:
-                        if found_tags[0].get("id") != tag_entry["id"]:
+                    if len(found_tags) > 0:
+                        if not any(
+                            [tag.get("id") == tag_entry["id"] for tag in found_tags]
+                        ):
                             tag_entry["info"] = ImportState.ERROR
                             tag_entry.pop("id")
                             different.append(tag)

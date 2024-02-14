@@ -519,7 +519,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
             )
             if not meeting:
                 raise ActionException(
-                    f"Participant import tries to use non-existent meeting {id_}"
+                    f"{self.import_name.capitalize()} import tries to use non-existent meeting {id_}"
                 )
 
     def generate_statistics(self) -> None:

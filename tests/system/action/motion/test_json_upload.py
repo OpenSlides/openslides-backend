@@ -17,7 +17,7 @@ class BaseMotionJsonUpload(BaseActionTestCase):
                     "motions_reason_required": is_reason_required,
                     "motions_number_type": "per_category",
                     "motions_number_min_digits": 2,
-                    "motion_ids": [id_, id_ * 10],
+                    "motion_ids": [id_, id_ * 100],
                     "motion_category_ids": [id_, id_ * 10, id_ * 100, id_ * 1000],
                 },
                 f"motion_state/{id_}": {"set_number": is_set_number},
@@ -69,26 +69,20 @@ class MotionJsonUpload(BaseMotionJsonUpload):
         self.assert_status_code(response, 400)
         assert "data.data must contain at least 1 items" in response.json["message"]
 
-    def test_json_upload_create_missing_title(self) -> None:
+    def test_json_upload_unknown_meeting_id(self) -> None:
         self.setup_meeting_with_settings(42)
         response = self.request(
             "motion.json_upload",
             {
-                "data": [{"text": "my", "reason": "stuff"}],
-                "meeting_id": 42,
+                "data": [{"title": "test", "reason": "stuff"}],
+                "meeting_id": 41,
             },
         )
-        self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        self.assert_status_code(response, 400)
         assert (
-            "Error: Title is required"
-            in response.json["results"][0][0]["rows"][0]["messages"]
+            "Motion import tries to use non-existent meeting 41"
+            in response.json["message"]
         )
-
-        assert response.json["results"][0][0]["rows"][0]["data"]["title"] == {
-            "value": "",
-            "info": ImportState.ERROR,
-        }
 
     def test_json_upload_create_missing_text(self) -> None:
         self.setup_meeting_with_settings(42)
@@ -110,20 +104,6 @@ class MotionJsonUpload(BaseMotionJsonUpload):
             "info": ImportState.ERROR,
         }
 
-    def test_json_upload_update_missing_title(self) -> None:
-        self.setup_meeting_with_settings(42)
-        response = self.request(
-            "motion.json_upload",
-            {
-                "data": [{"text": "my", "reason": "stuff", "number": "NUM01"}],
-                "meeting_id": 42,
-            },
-        )
-        self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == ImportState.DONE
-        assert response.json["results"][0][0]["rows"][0]["messages"] == []
-        assert "title" not in response.json["results"][0][0]["rows"][0]["data"]
-
     def test_json_upload_create_missing_reason_although_required(self) -> None:
         self.setup_meeting_with_settings(42, is_reason_required=True)
         response = self.request(
@@ -143,20 +123,6 @@ class MotionJsonUpload(BaseMotionJsonUpload):
             "value": "",
             "info": ImportState.ERROR,
         }
-
-    def test_json_upload_update_missing_reason_although_required(self) -> None:
-        self.setup_meeting_with_settings(42, is_reason_required=True)
-        response = self.request(
-            "motion.json_upload",
-            {
-                "data": [{"title": "test", "text": "my", "number": "NUM01"}],
-                "meeting_id": 42,
-            },
-        )
-        self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["state"] == ImportState.DONE
-        assert response.json["results"][0][0]["rows"][0]["messages"] == []
-        assert "reason" not in response.json["results"][0][0]["rows"][0]["data"]
 
     def assert_duplicate_numbers(self, number: str) -> None:
         self.setup_meeting_with_settings(22)
@@ -207,7 +173,7 @@ class MotionJsonUpload(BaseMotionJsonUpload):
                 "info": ImportState.ERROR,
             }
 
-    def test_with_non_matching_verbose_users(self) -> None:
+    def test_with_non_matching_verbose_users_with_errors(self) -> None:
         self.setup_meeting_with_settings(123)
         self.create_user("anotherOne", [123])
         knights = [
@@ -222,15 +188,6 @@ class MotionJsonUpload(BaseMotionJsonUpload):
             {
                 "data": [
                     {
-                        "number": "NUM01",
-                        "title": "Up",
-                        "text": "date",
-                        "submitters_username": ["user123", "anotherOne"],
-                        "submitters_verbose": [knights[0]],
-                        "supporters_username": ["user123", "anotherOne"],
-                        "supporters_verbose": [knights[0]],
-                    },
-                    {
                         "title": "New",
                         "text": "motion",
                         "submitters_username": ["user123", "anotherOne"],
@@ -238,32 +195,15 @@ class MotionJsonUpload(BaseMotionJsonUpload):
                         "supporters_username": ["user123", "anotherOne"],
                         "supporters_verbose": knights,
                     },
-                    {
-                        "title": "Newer",
-                        "text": "motion",
-                        "submitters_verbose": knights,
-                        "supporters_verbose": knights,
-                    },
                 ],
                 "meeting_id": 123,
             },
         )
         self.assert_status_code(response, 200)
-        assert len(response.json["results"][0][0]["rows"]) == 3
+        assert len(response.json["results"][0][0]["rows"]) == 1
         result = response.json["results"][0][0]
         assert result["state"] == ImportState.ERROR
         row = result["rows"][0]
-        assert row["state"] == ImportState.DONE
-        assert row["messages"] == []
-        assert row["data"]["submitters_username"] == [
-            {"id": 2, "info": ImportState.DONE, "value": "user123"},
-            {"id": 3, "info": ImportState.DONE, "value": "anotherOne"},
-        ]
-        assert row["data"]["supporters_username"] == [
-            {"id": 2, "info": ImportState.DONE, "value": "user123"},
-            {"id": 3, "info": ImportState.DONE, "value": "anotherOne"},
-        ]
-        row = result["rows"][1]
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Error: Verbose field is set and has more entries than the username field for submitters",
@@ -277,15 +217,6 @@ class MotionJsonUpload(BaseMotionJsonUpload):
             {"info": ImportState.ERROR, "value": "user123"},
             {"info": ImportState.ERROR, "value": "anotherOne"},
         ]
-        row = result["rows"][2]
-        assert row["state"] == ImportState.NEW
-        assert row["messages"] == []
-        assert row["data"]["submitters_username"] == [
-            {"value": "admin", "info": ImportState.GENERATED, "id": 1}
-        ]
-        assert row["data"]["submitters_verbose"] == knights
-        assert "supporters_username" not in row["data"]
-        assert row["data"]["supporters_verbose"] == knights
 
 
 class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
@@ -315,9 +246,66 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
         }
         assert response.json["results"][0][0]["rows"][0] == expected
 
+    def json_upload_create_missing_title(self) -> None:
+        self.setup_meeting_with_settings(42)
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [{"text": "my", "reason": "stuff"}],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.ERROR
+        assert (
+            "Error: Title is required"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+
+        assert response.json["results"][0][0]["rows"][0]["data"]["title"] == {
+            "value": "",
+            "info": ImportState.ERROR,
+        }
+
+    def json_upload_update_missing_title(self) -> None:
+        self.setup_meeting_with_settings(42)
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [{"text": "my", "reason": "stuff", "number": "NUM01"}],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert response.json["results"][0][0]["rows"][0]["messages"] == []
+        assert "title" not in response.json["results"][0][0]["rows"][0]["data"]
+
+    def json_upload_update_missing_reason_although_required(self) -> None:
+        self.setup_meeting_with_settings(42, is_reason_required=True)
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [{"title": "test", "text": "my", "number": "NUM01"}],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["state"] == ImportState.DONE
+        assert response.json["results"][0][0]["rows"][0]["messages"] == []
+        assert "reason" not in response.json["results"][0][0]["rows"][0]["data"]
+
     def json_upload_multi_row(self) -> None:
         self.setup_meeting_with_settings(1, is_set_number=True)
         self.set_user_groups(1, [1])
+        self.create_user("anotherUser", [1])
+        self.set_models(
+            {
+                "meeting/1": {"tag_ids": [1], "motion_block_ids": [1]},
+                "tag/1": {"meeting_id": 1, "name": "Tag1"},
+                "motion_block/1": {"meeting_id": 1, "title": "Block1"},
+            }
+        )
         response = self.request(
             "motion.json_upload",
             {
@@ -340,11 +328,13 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
                         "number": "NUM03",
                         "title": "also",
                         "text": "test the other peoples stuff",
+                        "tags": ["Tag1"],
                     },
                     {
                         "title": "after that",
                         "text": "test even more stuff",
-                        "supporters_username": ["user1", "admin"],
+                        "supporters_username": ["user1", "admin", "anotherUser"],
+                        "block": "Block1",
                     },
                     {
                         "title": "finally",
@@ -359,7 +349,7 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
         self.assert_status_code(response, 200)
         rows = response.json["results"][0][0]["rows"]
         simple_payload_addition = {
-            "meeting_id": 1,  # TODO: WHY???
+            "meeting_id": 1,
             "submitters_username": [
                 {"id": 1, "info": ImportState.GENERATED, "value": "admin"}
             ],
@@ -408,6 +398,7 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
                 "info": ImportState.DONE,
                 "value": "<p>test the other peoples stuff</p>",
             },
+            "tags": [{"id": 1, "info": ImportState.DONE, "value": "Tag1"}],
         }
         row = rows[3]
         assert row["state"] == ImportState.NEW
@@ -420,7 +411,9 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
             "supporters_username": [
                 {"id": 2, "info": ImportState.DONE, "value": "user1"},
                 {"id": 1, "info": ImportState.DONE, "value": "admin"},
+                {"id": 3, "info": ImportState.DONE, "value": "anotherUser"},
             ],
+            "block": {"id": 1, "info": ImportState.DONE, "value": "Block1"},
         }
         row = rows[4]
         assert row["state"] == ImportState.NEW
@@ -775,6 +768,64 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
                 {"value": "nonExistant", "info": ImportState.WARNING},
             ],
         }
+
+    def json_upload_with_non_matching_verbose_users_okay(self) -> None:
+        self.setup_meeting_with_settings(123)
+        self.create_user("anotherOne", [123])
+        knights = [
+            "Sir Lancelot the Brave",
+            "Sir Galahad the Pure",
+            "Sir Bedivere the Wise",
+            "Sir Robin the-not-quite-so-brave-as-Sir-Lancelot",
+            "Arthur, King of the Britons",
+        ]
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {
+                        "number": "NUM01",
+                        "title": "Up",
+                        "text": "date",
+                        "submitters_username": ["user123", "anotherOne"],
+                        "submitters_verbose": [knights[0]],
+                        "supporters_username": ["user123", "anotherOne"],
+                        "supporters_verbose": [knights[0]],
+                    },
+                    {
+                        "title": "Newer",
+                        "text": "motion",
+                        "submitters_verbose": knights,
+                        "supporters_verbose": knights,
+                    },
+                ],
+                "meeting_id": 123,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == 2
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.DONE
+        row = result["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == []
+        assert row["data"]["submitters_username"] == [
+            {"id": 2, "info": ImportState.DONE, "value": "user123"},
+            {"id": 3, "info": ImportState.DONE, "value": "anotherOne"},
+        ]
+        assert row["data"]["supporters_username"] == [
+            {"id": 2, "info": ImportState.DONE, "value": "user123"},
+            {"id": 3, "info": ImportState.DONE, "value": "anotherOne"},
+        ]
+        row = result["rows"][1]
+        assert row["state"] == ImportState.NEW
+        assert row["messages"] == []
+        assert row["data"]["submitters_username"] == [
+            {"value": "admin", "info": ImportState.GENERATED, "id": 1}
+        ]
+        assert row["data"]["submitters_verbose"] == knights
+        assert "supporters_username" not in row["data"]
+        assert row["data"]["supporters_verbose"] == knights
 
     def json_upload_with_tags_and_blocks(self) -> None:
         self.setup_meeting_with_settings(42)
