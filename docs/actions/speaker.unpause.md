@@ -14,7 +14,7 @@ If `speaker/structure_level_list_of_speakers_id` is set, update the `structure_l
 
 If `meeting/list_of_speakers_couple_countdown` is true, the countdown given by
 `meeting/list_of_speakers_countdown_id` must be *started* (see
-[[Countdowns#start-a-countdown]]).
+[[https://github.com/OpenSlides/OpenSlides/wiki/Countdowns#start-a-countdown]]).
 
 ## Permission
 The request user needs `list_of_speakers.can_manage`.

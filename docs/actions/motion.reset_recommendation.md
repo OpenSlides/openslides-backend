@@ -4,7 +4,7 @@
 ```
 
 ## Action
-See [[motions#motion-recommendation]].
+See [[https://github.com/OpenSlides/OpenSlides/wiki/Motions#motion-recommendation]].
 
 ## Permissions
 The request user needs `motion.can_manage_metadata`.

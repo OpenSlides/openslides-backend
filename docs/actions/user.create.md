@@ -77,7 +77,7 @@ Append a number starting at 1 to the username (append with a space). Check if th
 ```
 
 ## Permissions
-The request user needs the basic permissions, see [[users#Permissions-for-altering-a-user]].
+The request user needs the basic permissions, see [[https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user]].
 
 Group A:
 
@@ -107,7 +107,7 @@ The request user needs the OML equal or higher than that he wants to set. So the
 
 Group F:
 
-The request user needs the permissions under the rules of user_scope, see [[users#Permissions-for-altering-a-user]], but at minimum the OML-Level of the requested user.
+The request user needs the permissions under the rules of user_scope, see [[https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user]], but at minimum the OML-Level of the requested user.
 
 Group G:
 

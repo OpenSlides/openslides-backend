@@ -8,7 +8,7 @@
 ```
 
 ## Action
-This action sets the `meeting/logo_<place>_id` relation to the `mediafile_id`. It must be checked, that it is a file and the mimetype is a valid logo (see [[Mediafiles]]).
+This action sets the `meeting/logo_<place>_id` relation to the `mediafile_id`. It must be checked, that it is a file and the mimetype is a valid logo (see [Mediafiles](https://github.com/OpenSlides/OpenSlides/wiki/Mediafiles)).
 
 The logo can be unset via [[meeting.unset_logo]].
 

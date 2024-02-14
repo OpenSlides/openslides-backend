@@ -24,10 +24,10 @@
 It has to be checked whether the `organization.limit_of_meetings` is unlimited (=0) or lower than the amount of active meetings in `organization.active_meeting_ids`.
  
 When creating a meeting the following objects have to be created, too:
-- Groups: `Default`, `Admin`, `Delegates`, `Staff`, `Committees`. The first one is set as `meeting/default_group_id`, the second one as `meeting/admin_group_id`. The permissions can be found in the [initial-data.json](https://github.com/OpenSlides/openslides-backend/tree/main/gloal/data/initial-data.json)).
+- Groups: `Default`, `Admin`, `Delegates`, `Staff`, `Committees`. The first one is set as `meeting/default_group_id`, the second one as `meeting/admin_group_id`. The permissions can be found in the [initial-data.json](https://github.com/OpenSlides/openslides-backend/tree/main/global/data/initial-data.json)).
 - Projector: One projector named `"Default projector"` must be created and set as `meeting/reference_projector_id`.
 - All default projectors (`meeting/default_projector_*_ids`, see `models.yml`) must be set to the one projector
-- Motion workflow and states: Create one workflow `"simple workflow"` which is set as `meeting/motions_default_workflow_id`, `meeting/motions_default_amendment_workflow_id` and `meeting/motions_default_statute_amendment_workflow_id`. Create four states (analog as in the [initial-data.json](https://github.com/OpenSlides/openslides-backend/tree/main/gloal/data/initial-data.json)).
+- Motion workflow and states: Create one workflow `"simple workflow"` which is set as `meeting/motions_default_workflow_id`, `meeting/motions_default_amendment_workflow_id` and `meeting/motions_default_statute_amendment_workflow_id`. Create four states (analog as in the [initial-data.json](https://github.com/OpenSlides/openslides-backend/tree/main/global/data/initial-data.json)).
 - Two countdowns are created and set as `meeting/list_of_speakers_countdown` (name: "List of speakers countdown") and `meeting/voting_countdown` (name: "Voting countdown").
 
 If `user_ids` are given, it must be checked that it is a subset of `committee/user_ids`. Each user is added to the meeting by being added to the default group.

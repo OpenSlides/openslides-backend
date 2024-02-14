@@ -16,7 +16,7 @@
 ```
 
 ## Action
-Creates a new motion block. For the agenda fields see [[Agenda#additional-fields-during-creation-of-agenda-content-objects]].
+Creates a new motion block. For the agenda fields see [Agenda](https://github.com/OpenSlides/OpenSlides/wiki/Agenda#additional-fields-during-creation-of-agenda-content-objects).
 
 ## Permissions
 The request user needs `motion.can_manage`.

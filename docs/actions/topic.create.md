@@ -20,7 +20,7 @@
 ```
 
 ## Action
-Note: `attachment_ids` and `tag_ids` must be from the same meeting. For the agenda fields see [[Agenda#additional-fields-during-creation-of-agenda-content-objects]].
+Note: `attachment_ids` and `tag_ids` must be from the same meeting. For the agenda fields see [[https://github.com/OpenSlides/OpenSlides/wiki/Agenda#additional-fields-during-creation-of-agenda-content-objects]].
 
 ## Permissions
 The request user needs `agenda_item.can_manage`.

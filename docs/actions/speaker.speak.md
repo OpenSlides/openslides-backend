@@ -14,7 +14,7 @@ Starts the speech of the given speaker: Sets `begin_time` to the current system 
 
 If `meeting/list_of_speakers_couple_countdown` is true, the countdown given by
 `meeting/list_of_speakers_countdown_id` must be *restarted* (see
-[[Countdowns#restart-a-countdown]]).
+[[https://github.com/OpenSlides/OpenSlides/wiki/Countdowns#restart-a-countdown]]).
 If the given speaker has `speech_state == "intervention"`, the `countdown_time` of the countdown has to be set to `current_timestamp + meeting/list_of_speakers_intervention_time` first.
 If the given speaker has `speech_state == "interposed_question"`, the `countdown_time` of the countdown has to be set to `current_timestamp` first. 
 

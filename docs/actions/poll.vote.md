@@ -25,7 +25,7 @@ Notes for pollmethod in (Y, N):
  - amounts must be integer numbers >= 0 and <= `poll/max_votes_per_option`.
  - The sum of all amounts must be >= `poll/min_votes_amount` and <= `poll/max_votes_amount`
 
-For more details, see [[voting#cast-a-ballot]]
+For more details, see [[https://github.com/OpenSlides/OpenSlides/wiki/Voting#cast-a-ballot]]
 
 ## Permissions
-See [[voting#user-in-vote-objects]] especially for the definition of _entitled users_ and the vote delegation feature.
+See [[https://github.com/OpenSlides/OpenSlides/wiki/Voting#user-in-vote-objects]] especially for the definition of _entitled users_ and the vote delegation feature.

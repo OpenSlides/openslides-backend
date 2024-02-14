@@ -71,7 +71,7 @@ If the user to be updated has a `saml_id`, the fields `can_change_own_password` 
 
 Group A:
 
-See [[users#Permissions-for-altering-a-user]].
+See [[https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user]].
 
 Group B:
 
@@ -96,7 +96,7 @@ The request user needs the OML equal or higher than that he wants to set. So the
 
 Group F:
 
-The request user needs the permissions under the rules of user_scope, see [[users#Permissions-for-altering-a-user]], but at minimum the OML of the requested user.
+The request user needs the permissions under the rules of user_scope, see [[https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user]], but at minimum the OML of the requested user.
 
 Group G:
 

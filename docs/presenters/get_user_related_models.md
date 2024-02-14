@@ -34,6 +34,6 @@ Every committee is given by its name and id as well as the CML of the user (give
 
 ## Permissions
 
-The common usage of this presenter is the preview on deletion of users. Therefore the permissions are identical to that of the action [user.delete](https://github.com/OpenSlides/OpenSlides/wiki/user.delete):
+The common usage of this presenter is the preview on deletion of users. Therefore the permissions are identical to that of the action [[user.delete]]:
 
-See [[users#Permissions-for-altering-a-user]]. Additionally the OML-Level of the request user must be higher or equal than the requested user's one.
+See [[https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user]]. Additionally the OML-Level of the request user must be higher or equal than the requested user's one.

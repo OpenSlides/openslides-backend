@@ -63,7 +63,7 @@ If `lead_motion_id` and `statute_paragraph_id` is given, it must result in an er
 There are some fields that need special attention:
 - `workflow_id`: If it is given, the motion's state is set to the workflow's first state. The workflow must be from the same meeting. If the field is not given, one of the three default (`meeting/motions_default_workflow_id`, `meeting/motions_default_amendment_workflow_id` or `meeting/motions_default_statute_amendment_workflow_id`) workflows is used depending on the type of the motion to create.
 - `submitter_ids`: These are **user ids** and not ids of the `submitter` model. If nothing is given (`[]`), the request user's id is used. For each id in the list a `motion_submitter` model is created. The weight must be set to the order of the given list.
-- `agenda_*`: See [[Agenda#additional-fields-during-creation-of-agenda-content-objects]]
+- `agenda_*`: See [Agenda](https://github.com/OpenSlides/OpenSlides/wiki/Agenda#additional-fields-during-creation-of-agenda-content-objects).
 
 Another things to do when creating a motions:
 - Set the field `sequential_number`: It is the `max+1` of `sequential_number` of all motions in the same meeting. If there are no other motions in this meeting (e.g. this is the first one), it gets 1.

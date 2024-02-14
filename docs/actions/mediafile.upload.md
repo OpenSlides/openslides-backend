@@ -16,7 +16,7 @@
 
 ## Action
 
-The given `owner_id` determines whether a meeting-wide or an organization-wide mediafile is uploaded. See [[Mediafiles]] for more details.
+The given `owner_id` determines whether a meeting-wide or an organization-wide mediafile is uploaded. See [Mediafiles](https://github.com/OpenSlides/OpenSlides/wiki/Mediafiles) for more details.
 
 The `parent_id`, if given, must be a directory (flag `mediafile/is_directory`) and belong to the same `owner_id`. The combination of `title` and `parent_id` must be unique (a file with one title can only exist once in a directory). `access_group_ids` can only be given for meeting-wide mediafiles and must then belong to the meeting given in `owner_id`. `token` can only be given for organization-wide mediafiles and must be unique across all of them.
 
