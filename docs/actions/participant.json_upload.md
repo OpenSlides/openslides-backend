@@ -1,5 +1,3 @@
-### Includes changes of feature branch `los-extension`!
-
 ## Payload
 Because the data fields are all converted from CSV import file, **they are all of type `string`**. 
 The types noted below are the internal types after conversion in the backend. See [here](preface_special_imports.md#internal-types) for the representation of the types.

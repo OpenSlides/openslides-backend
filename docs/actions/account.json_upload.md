@@ -1,5 +1,3 @@
-### Includes changes of feature branch `los-extension`!
-
 ## Payload
 
 Because the data fields are all converted from CSV import file, **they are all of type `string`**. 

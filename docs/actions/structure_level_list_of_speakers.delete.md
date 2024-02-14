@@ -1,5 +1,3 @@
-### Includes changes of feature branch `los-extension`!
-
 Internal Action.
 
 ## Payload
