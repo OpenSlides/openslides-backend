@@ -13,11 +13,11 @@
 ```
 
 ## Action
-Creates a new motion. This action is very similar to [[motion.create]] but very restricted in it's inputs.
+Creates a new motion. This action is very similar to [motion.create](motion.create) but very restricted in it's inputs.
 
 `origin_id` is an id of another motion (potentially not from this meeting!) referred to as the _origin motion_. The given motion is forwarded from the meeting of the _origin motion_ (A) to the given meeting (by `meeting_id` in the payload) (B). It must be checked, that `B/committee_id` is included in `A/committee_id -> committee/forward_to_committee_ids`.
 
-The motion is created with all special rules for [[motion.create]]: The state/workflow and
+The motion is created with all special rules for [motion.create](motion.create): The state/workflow and
 timestamps must be set, a list of speakers must be created, and so on. There is one little catch: If
 the given meeting has `meeting/motions_reason_required` set, it is ok for `reason` to be empty.
 

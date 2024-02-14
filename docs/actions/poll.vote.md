@@ -13,7 +13,7 @@
 ```
 
 ## Action
-This action is not allowed for analog polls, use [[option.update]] to manipulate vote data per option.
+This action is not allowed for analog polls, use [option.update](option.update) to manipulate vote data per option.
 
  - Exactly one of the four options must be given (the object or `Y`/`N`/`A`)
  - 'Y' is only valid if `poll/global_yes` is true
@@ -25,7 +25,7 @@ Notes for pollmethod in (Y, N):
  - amounts must be integer numbers >= 0 and <= `poll/max_votes_per_option`.
  - The sum of all amounts must be >= `poll/min_votes_amount` and <= `poll/max_votes_amount`
 
-For more details, see [[https://github.com/OpenSlides/OpenSlides/wiki/Voting#cast-a-ballot]]
+For more details, see [Casting a ballot](https://github.com/OpenSlides/OpenSlides/wiki/Voting#cast-a-ballot).
 
 ## Permissions
-See [[https://github.com/OpenSlides/OpenSlides/wiki/Voting#user-in-vote-objects]] especially for the definition of _entitled users_ and the vote delegation feature.
+See [User in vote objects](https://github.com/OpenSlides/OpenSlides/wiki/Voting#user-in-vote-objects) especially for the definition of _entitled users_ and the vote delegation feature.

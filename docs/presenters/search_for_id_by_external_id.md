@@ -28,7 +28,7 @@ It should be search for an `external_id` in the given collection (`group`, `meet
 
 Following error cases could be encountered: "No item with 'external_id' was found" and "More then one item with 'external_id' were found".
 
-For searching a user by `saml_id` see [[search_users]].
+For searching a user by `saml_id` see [search_users](search_users).
 
 ## Permissions
 The request user needs OML `can_manage_organization`.

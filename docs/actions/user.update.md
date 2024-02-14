@@ -60,7 +60,7 @@ Updates a user.
 * Remove starting and trailing spaces from `username`, `first_name` and `last_name`
 * The given `gender` must be present in `organization/genders`
 
-Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [[user.set_present]].
+Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present).
 
 If the user is removed from all groups of the meeting, all his unstarted speakers in that meeting will be deleted.
 
@@ -71,7 +71,7 @@ If the user to be updated has a `saml_id`, the fields `can_change_own_password` 
 
 Group A:
 
-See [[https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user]].
+See [Permissions for altering a user](https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user).
 
 Group B:
 
@@ -96,7 +96,7 @@ The request user needs the OML equal or higher than that he wants to set. So the
 
 Group F:
 
-The request user needs the permissions under the rules of user_scope, see [[https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user]], but at minimum the OML of the requested user.
+The request user needs the permissions under the rules of user_scope, see [Permissions for altering a user](https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user), but at minimum the OML of the requested user.
 
 Group G:
 

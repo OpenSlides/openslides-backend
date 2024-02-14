@@ -54,7 +54,7 @@
 Creates a user. 
 * The field `organization_management_level` can only be set as high as the request users `organization_management_level` and defaults to `null`.
 * If no `default_password` is given a random one is generated. The default password is hashed via the auth service and the hash is saved within `password`. A given `default_password`is also stored as hashed password.
-* If `username` is given, it has to be unique within all users. If there already exists a user with the same username, an error must be returned. If the `username` is not given, 1. the saml_id will be used or 2. it has to be generated (see [[user.create#generate-a-username]] below). Also the username may not contain spaces.
+* If `username` is given, it has to be unique within all users. If there already exists a user with the same username, an error must be returned. If the `username` is not given, 1. the saml_id will be used or 2. it has to be generated (see [user.create#generate-a-username](user.create#generate-a-username) below). Also the username may not contain spaces.
 * The `organization_management_level` as restring can be taken from the enum of this user field.
 * Remove starting and trailing spaces from `username`, `first_name` and `last_name`
 * The given `gender` must be present in `organization/genders`
@@ -77,7 +77,7 @@ Append a number starting at 1 to the username (append with a space). Check if th
 ```
 
 ## Permissions
-The request user needs the basic permissions, see [[https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user]].
+The request user needs the basic permissions, see [Permissions for altering a user](https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user).
 
 Group A:
 
@@ -107,7 +107,7 @@ The request user needs the OML equal or higher than that he wants to set. So the
 
 Group F:
 
-The request user needs the permissions under the rules of user_scope, see [[https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user]], but at minimum the OML-Level of the requested user.
+The request user needs the permissions under the rules of user_scope, see [Permissions for altering a user](https://github.com/OpenSlides/OpenSlides/wiki/Users#Permissions-for-altering-a-user), but at minimum the OML-Level of the requested user.
 
 Group G:
 

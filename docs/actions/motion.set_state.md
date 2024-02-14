@@ -12,7 +12,7 @@ The `state_id` must be a next or previous state as the current motions state, ex
 The field `workflow_timestamp` must be set to the current timestamp if it is currently empty and the
 new state has the `set_workflow_timestamp` flag.
 
-The field `number` is potentially updated from the motion. This procedure diverges slightly from the [[motion.create]] one, but is essentially equal. Diverging steps are marked with CHANGED/NEW. This is the procedure to determine what to set for the field `number`:
+The field `number` is potentially updated from the motion. This procedure diverges slightly from the [motion.create](motion.create) one, but is essentially equal. Diverging steps are marked with CHANGED/NEW. This is the procedure to determine what to set for the field `number`:
   * If the motion already has a non-empty `number` or `meeting/motions_number_type` == `"manually"` or not `state.set_number`: Stop. We should not set the number automatically
   * A _prefix_ is created:
     * If the motion is an amendment (it has a lead motion), the prefix is:

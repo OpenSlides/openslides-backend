@@ -28,7 +28,7 @@ Includes workflow_timestamp from Issue2112
 ```
 
 ## Action
-The timestamp `last_modified` must be updated. If `workflow_id` is given, the state is reset to the first state of the workflow. The same logic as in [[motion.set_state]] is executed to maybe update the fields `number` or `created`.
+The timestamp `last_modified` must be updated. If `workflow_id` is given, the state is reset to the first state of the workflow. The same logic as in [motion.set_state](motion.set_state) is executed to maybe update the fields `number` or `created`.
 
 ## Permissions
 The request user must have `motion.can_manage` or `motion.can_manage_metadata` or be a submitter of this motion and the motion's state must have `allow_submitter_edit` set to true.

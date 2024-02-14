@@ -6,7 +6,7 @@
 ## Action
 Sets the state to *finished*. Only allowed for polls in the *started* state.
 
-If `meeting/poll_couple_countdown` is true, the countdown given by `meeting/poll_countdown_id` must be *reset* (see [[https://github.com/OpenSlides/OpenSlides/wiki/Countdowns#reset-a-countdown]]).
+If `meeting/poll_couple_countdown` is true, the countdown given by `meeting/poll_countdown_id` must be *reset* (see [Countdowns](https://github.com/OpenSlides/OpenSlides/wiki/Countdowns#reset-a-countdown)).
 
 Some fields have to be calculated upon stopping a poll:
 - The fields `votescast`, `votesvalid` and `votesinvalid` have to be filled (see [poll results](https://github.com/OpenSlides/OpenSlides/wiki/Voting#poll-results)). They are only filled once when the poll stops to prevent any changes e.g. from deleting users.

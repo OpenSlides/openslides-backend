@@ -24,7 +24,7 @@
 ```
 
 ## Action
-The action is some kind of [[user.create]]: It creates a user and puts him in the place of all given
+The action is some kind of [user.create](user.create): It creates a user and puts him in the place of all given
 users (= users in `user_ids`) and finally, all given users are deleted.
 
 TODO: If actually implemented, this needs to be updated to remove the template fields.

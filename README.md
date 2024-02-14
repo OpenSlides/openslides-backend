@@ -13,8 +13,8 @@ We recently updated the source language in the database from english to the user
 
 ## Development
 
-Documentation for the actions: [[docs/Actions-Overview.md]]
-Documentation for the presenters: [[docs/Presenter-Overview.md]]
+Documentation for the actions: [Action overview](docs/Actions-Overview.md)
+Documentation for the presenters: [Presenter overview](docs/Presenter-Overview.md)
 
 ### Development with Docker Compose
 
