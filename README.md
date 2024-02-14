@@ -13,6 +13,9 @@ We recently updated the source language in the database from english to the user
 
 ## Development
 
+Documentation for the actions: [Action overview](docs/Actions-Overview.md)
+Documentation for the presenters: [Presenter overview](docs/Presenter-Overview.md)
+
 ### Development with Docker Compose
 
 The setup is structured to do all development inside the docker containers. To start everything at once and get entered into a bash shell, run
