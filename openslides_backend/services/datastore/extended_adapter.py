@@ -128,13 +128,15 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter, DatastoreService):
                 mapped_fields = missing_fields_per_fqid[fqid]
                 # we only raise an exception now if the model is not present in the changed_models all
                 raise_exception = raise_exception and fqid not in self.changed_models
+        else:
+            changed_model = {}
 
         try:
             if self.is_new(fqid):
                 # if the model is new, we know it does not exist in the datastore and can directly throw
                 # an exception or return an empty result
                 if not raise_exception:
-                    return {}
+                    return changed_model
                 raise_datastore_error(
                     {"error": {"fqid": fqid}}, logger=self.logger, env=self.env
                 )
