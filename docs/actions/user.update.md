@@ -60,7 +60,7 @@ Updates a user.
 * Remove starting and trailing spaces from `username`, `first_name` and `last_name`
 * The given `gender` must be present in `organization/genders`
 
-Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present).
+Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present.md).
 
 If the user is removed from all groups of the meeting, all his unstarted speakers in that meeting will be deleted.
 

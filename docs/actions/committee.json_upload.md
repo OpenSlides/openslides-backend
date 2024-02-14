@@ -1,7 +1,7 @@
 ## Payload
 
 Because the data fields are all converted from CSV import file, **they are all of type `string`**. 
-The types noted below are the internal types after conversion in the backend. See [here](preface_special_imports#internal-types) for the representation of the types.
+The types noted below are the internal types after conversion in the backend. See [here](preface_special_imports.md#internal-types) for the representation of the types.
 ```js
 {
   // required
@@ -26,7 +26,7 @@ All meeting fields are prefixed with `meeting_`. The fields `meeting_{start|end}
 
 ## Return value
 
-Besides the usual headers as seen in the payload (`name`, `type`, `is_list`), the following fields are of type [object](preface_special_imports#the-special-type-object) and have a corresponding `info` field with different meanings:
+Besides the usual headers as seen in the payload (`name`, `type`, `is_list`), the following fields are of type [object](preface_special_imports.md#the-special-type-object) and have a corresponding `info` field with different meanings:
 - `forward_to_committees`:
   - `done`: The committee was found in the datastore.
   - `new`: The committee will be created as part of this import.
@@ -56,7 +56,7 @@ meetings_created: int
 meetings_cloned: int
 organization_tags_created: int
 ```
-See [common description](preface_special_imports#general-format-of-the-result-send-to-the-client-for-preview).
+See [common description](preface_special_imports.md#general-format-of-the-result-send-to-the-client-for-preview).
 
 ## Action
 

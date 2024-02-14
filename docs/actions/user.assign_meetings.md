@@ -27,5 +27,5 @@ Returns dictionary with `"succeeded": [meeting_ids], "standard_group": [meeting_
 The request user needs OML `can_manage_users`
 
 explanation: Usually the field `group_ids` can be changed also with committee- or meeting-rights for
-all related objects, see [user.update#permissions](user.update#permissions), field group C. Currently the client allows
+all related objects, see [user.update#permissions](user.update.md#permissions), field group C. Currently the client allows
 this functionality only for users with OML `can_manage_users`.

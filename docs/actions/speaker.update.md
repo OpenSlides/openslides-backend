@@ -20,7 +20,7 @@ the permission check since it sets the global frame for these checks.
 
 `meeting_user_id` is only allowed to be given if `speaker/meeting_user_id` is currently `None` and `speaker/speech_state` is `interposed_question`.
 
-`structure_level_id` is only allowed if the speaker is still waiting, i.e., `begin_time` is `None`. It is translated to a `structure_level_list_of_speakers_id` analogously to [speaker.create](speaker.create).
+`structure_level_id` is only allowed if the speaker is still waiting, i.e., `begin_time` is `None`. It is translated to a `structure_level_list_of_speakers_id` analogously to [speaker.create](speaker.create.md).
 
 
 | From         | To           | Conditions  |

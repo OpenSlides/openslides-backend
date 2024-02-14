@@ -17,7 +17,7 @@ In the case that an email-address is used by a user, an email is sent to that em
 The link redirects a user to `<domain>/login/forget-password-confirm?user_id=<user_id>&token=<token>`. 
 As you can see, the user_id of the user and a token are given as query-parameters. The token is a [jsonwebtoken](https://jwt.io/) (specified by [RFC7519](https://datatracker.ietf.org/doc/html/rfc7519)), which is self-contained and up to ten minutes valid. The user_id and the email-address (as `email`) are given as payload to the token. Furthermore, the token is signed. The secret to sign the token is the secret which is used to sign `access_token`s. The algorithm `HS256` will be used. The token is given as a base64-encoded string.
 
-To confirm the changing of the password, the action [user.forget_password_confirm](user.forget_password_confirm) has to be performed.
+To confirm the changing of the password, the action [user.forget_password_confirm](user.forget_password_confirm.md) has to be performed.
 
 ## Email text:
 

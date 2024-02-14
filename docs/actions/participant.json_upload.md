@@ -2,7 +2,7 @@
 
 ## Payload
 Because the data fields are all converted from CSV import file, **they are all of type `string`**. 
-The types noted below are the internal types after conversion in the backend. See [here](preface_special_imports#internal-types) for the representation of the types.
+The types noted below are the internal types after conversion in the backend. See [here](preface_special_imports.md#internal-types) for the representation of the types.
 ```js
 {
      // required
@@ -43,7 +43,7 @@ The types noted below are the internal types after conversion in the backend. Se
 
 ## Action
 
-Basically does the same as [account.json_upload](account.json_upload) with a few different and
+Basically does the same as [account.json_upload](account.json_upload.md) with a few different and
 meeting-specific fields, such as groups.
 
 **Important note**: The `groups` from the payload will override all current groups of the user in
@@ -57,7 +57,7 @@ Structure levels will be created during the later import phase if they aren't fo
 For this purpose the statistics row includes an extra point 'structure levels created'
 
 ### User matching
-Same as in [account.json_upload#user-matching](account.json_upload#user-matching)
+Same as in [account.json_upload#user-matching](account.json_upload.md#user-matching)
 
 ## Backend interna
 This action is the first part of the actions for the import of participants (mean: users in a meeting).

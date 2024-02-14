@@ -13,7 +13,7 @@
 ```
 
 ## Action
-This action is not allowed for analog polls, use [option.update](option.update) to manipulate vote data per option.
+This action is not allowed for analog polls, use [option.update](option.update.md) to manipulate vote data per option.
 
  - Exactly one of the four options must be given (the object or `Y`/`N`/`A`)
  - 'Y' is only valid if `poll/global_yes` is true

@@ -1,7 +1,7 @@
 ## Payload
 
 Because the data fields are all converted from CSV import file, **they are all of type `string`**. 
-The types noted below are the internal types after conversion in the backend. See [here](preface_special_imports#internal-types) for the representation of the types.
+The types noted below are the internal types after conversion in the backend. See [here](preface_special_imports.md#internal-types) for the representation of the types.
 ```js
 {
     // required for new motions
@@ -35,7 +35,7 @@ Besides the usual headers as seen in payload (name and type), there are these di
 
 The row state can be one of "new", "done" or "error". In case of an error, no import should be possible.
 
-See [common description](preface_special_imports#general-format-of-the-result-send-to-the-client-for-preview).
+See [common description](preface_special_imports.md#general-format-of-the-result-send-to-the-client-for-preview).
 
 Other than the validity check for the username-fields, `submitters_verbose` and `supporters_verbose` are NOT otherwise used or taken note of in the import. They are merely accepted in order to check that someone didn't accidentally edit the wrong column in a file that has both verbose and non-verbose columns.
 They are not included in the return value.
