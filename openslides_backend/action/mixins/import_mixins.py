@@ -321,7 +321,7 @@ class BaseImportAction(BaseImportJsonUploadAction):
         The requests response should be given with the unchanged self.rows.
         Parameter:
         hook_method:
-           Method to get an entry Dict[str,Any] and return it modified
+           Method to get an entry dict[str,Any] and return it modified
         """
         rows = copy.deepcopy(self.rows)
         for row in rows:
@@ -517,9 +517,7 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                 raise_exception=False,
             )
             if not meeting:
-                raise ActionException(
-                    f"Participant import tries to use non-existent meeting {id_}"
-                )
+                raise ActionException(f"Import tries to use non-existent meeting {id_}")
 
     def generate_statistics(self) -> None:
         """

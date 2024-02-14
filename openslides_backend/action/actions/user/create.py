@@ -45,7 +45,6 @@ class UserCreate(
             "gender",
             "email",
             "default_number",
-            "default_structure_level",
             "default_vote_weight",
             "organization_management_level",
             "is_present_in_meeting_ids",
