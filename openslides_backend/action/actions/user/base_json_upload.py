@@ -77,7 +77,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         data = instance.pop("data")
         data = self.add_payload_index_to_action_data(data)
-        self.setup_lookups(data, instance.get("meeting_id"))
+        self.setup_lookups(data)
         self.distribute_found_value_to_data(data)
         self.create_usernames(data)
 
@@ -307,9 +307,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             entry.get("email", ""),
         )
 
-    def setup_lookups(
-        self, data: list[dict[str, Any]], meeting_id: int | None = None
-    ) -> None:
+    def setup_lookups(self, data: list[dict[str, Any]]) -> None:
         self.username_lookup = Lookup(
             self.datastore,
             "user",
