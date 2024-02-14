@@ -1,5 +1,5 @@
 from time import time
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 from openslides_backend.action.action_worker import ActionWorkerState
@@ -1374,7 +1374,7 @@ class MeetingClone(BaseActionTestCase):
                 "agenda_duration": 60,
             },
         )
-        topic_fqid = f"topic/{cast(List[Dict[str, int]], result)[0]['id']}"
+        topic_fqid = f"topic/{cast(list[dict[str, int]], result)[0]['id']}"
         topic = self.get_model(topic_fqid)
         self.assertNotIn("agenda_type", topic)
         self.assertNotIn("agenda_duration", topic)

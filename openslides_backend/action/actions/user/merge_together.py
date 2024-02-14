@@ -31,7 +31,6 @@ class UserMergeTogether(CreateAction, CheckForArchivedMeetingMixin):
             "gender",
             "email",
             "default_number",
-            "default_structure_level",
             "default_vote_weight",
         ],
         additional_required_fields={

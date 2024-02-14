@@ -171,7 +171,7 @@ class Checker:
         It differentiates between import data from the same organization instance,
         typically using the meeting.clone action, or from another organization,
         typically the meeting.import action with data from OS3.
-        To check all included collections, use 'all'. Typical usage is he check of
+        To check all included collections, use 'all'. Typical usage is the check of
         the example-data.json.
 
         Mode:
@@ -183,7 +183,7 @@ class Checker:
             The integrity of this kind of relations is not checked, because there
             is no database involved in command line version. Users are not included
             in data, because they exist in same database.
-        all: All collections are valid and has to be in the data
+        all: All collections are valid and have to be present in the data
 
         Repair: Set missing fields with default value automatically.
 
@@ -195,9 +195,9 @@ class Checker:
             A dict with collection as key and a list of fieldnames to remove from instance.
             Works only with repair set.
             First use case: meeting.clone and meeting.import need to remove the fields
-            origin_id and derived_motion_id, because they in the copy they are not forwarded.
+            origin_id and derived_motion_id, because in the copy they are not forwarded.
 
-        Not all collections must be given and missing fields are ignore, but
+        Not all collections must be given and missing fields are ignored, but
         required fields and fields with a default value must be present.
         """
         self.data = data
