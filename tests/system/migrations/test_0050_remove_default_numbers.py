@@ -29,7 +29,7 @@ def test_migration(write, finalize, assert_model):
         },
     )
 
-    finalize("0049_remove_default_numbers")
+    finalize("0050_remove_default_numbers")
 
     assert_model(
         "user/1",

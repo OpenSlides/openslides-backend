@@ -8,7 +8,7 @@ class Migration(BaseModelMigration):
     This migration removes all default_number fields from user models
     """
 
-    target_migration_index = 50
+    target_migration_index = 51
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []
