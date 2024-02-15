@@ -79,10 +79,7 @@ class MotionJsonUpload(BaseMotionJsonUpload):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "Import tries to use non-existent meeting 41"
-            in response.json["message"]
-        )
+        assert "Import tries to use non-existent meeting 41" in response.json["message"]
 
     def test_json_upload_create_missing_text(self) -> None:
         self.setup_meeting_with_settings(42)
