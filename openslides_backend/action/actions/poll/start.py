@@ -10,7 +10,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..projector_countdown.mixins import CountdownControl
+from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 from .mixins import PollHistoryMixin, PollPermissionMixin
 
 
@@ -55,7 +55,9 @@ class PollStartAction(
             ],
         )
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
-            self.control_countdown(meeting["poll_countdown_id"], "restart")
+            self.control_countdown(
+                meeting["poll_countdown_id"], CountdownCommand.RESTART
+            )
 
         self.vote_service.start(instance["id"])
 
