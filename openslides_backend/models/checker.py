@@ -146,6 +146,15 @@ checker_map: dict[type[Field], Callable[..., bool]] = {
 }
 
 
+# All meeting internal collection have the field `meeting_id` except for meeting and mediafile.
+# Users are needed for working relations.
+MEETING_COLLECTIONS = {
+    collection
+    for collection, model in model_registry.items()
+    if model().has_field("meeting_id")
+} | {"meeting", "user", "mediafile"}
+
+
 class Checker:
     modes = ("internal", "external", "all")
 
@@ -162,7 +171,7 @@ class Checker:
         It differentiates between import data from the same organization instance,
         typically using the meeting.clone action, or from another organization,
         typically the meeting.import action with data from OS3.
-        To check all included collections, use 'all'. Typical usage is he check of
+        To check all included collections, use 'all'. Typical usage is the check of
         the example-data.json.
 
         Mode:
@@ -174,7 +183,7 @@ class Checker:
             The integrity of this kind of relations is not checked, because there
             is no database involved in command line version. Users are not included
             in data, because they exist in same database.
-        all: All collections are valid and has to be in the data
+        all: All collections are valid and have to be present in the data
 
         Repair: Set missing fields with default value automatically.
 
@@ -186,9 +195,9 @@ class Checker:
             A dict with collection as key and a list of fieldnames to remove from instance.
             Works only with repair set.
             First use case: meeting.clone and meeting.import need to remove the fields
-            origin_id and derived_motion_id, because they in the copy they are not forwarded.
+            origin_id and derived_motion_id, because in the copy they are not forwarded.
 
-        Not all collections must be given and missing fields are ignore, but
+        Not all collections must be given and missing fields are ignored, but
         required fields and fields with a default value must be present.
         """
         self.data = data
@@ -196,55 +205,10 @@ class Checker:
         self.migration_mode = migration_mode
         self.repair = repair
         self.fields_to_remove = fields_to_remove
-
-        meeting_collections = [
-            "meeting",
-            "group",
-            "personal_note",
-            "tag",
-            "agenda_item",
-            "list_of_speakers",
-            "speaker",
-            "topic",
-            "motion",
-            "motion_submitter",
-            "motion_comment",
-            "motion_comment_section",
-            "motion_category",
-            "motion_block",
-            "motion_change_recommendation",
-            "motion_state",
-            "motion_workflow",
-            "motion_statute_paragraph",
-            "poll",
-            "option",
-            "vote",
-            "assignment",
-            "assignment_candidate",
-            "mediafile",
-            "projector",
-            "projection",
-            "projector_message",
-            "projector_countdown",
-            "chat_group",
-            "chat_message",
-            "point_of_order_category",
-        ]
-        if self.mode == "all":
-            self.allowed_collections = [
-                "organization",
-                "user",
-                "meeting_user",
-                "organization_tag",
-                "theme",
-                "committee",
-            ] + meeting_collections
-        else:
-            self.allowed_collections = meeting_collections
-            # TODO: mediafile blob handling.
-            self.allowed_collections.append("user")
-            self.allowed_collections.append("meeting_user")
-
+        self.allowed_collections = (
+            set(model_registry.keys()) if self.mode == "all" else MEETING_COLLECTIONS
+        )
+        # TODO: mediafile blob handling.
         self.errors: list[str] = []
 
     def check_migration_index(self) -> None:
@@ -292,15 +256,13 @@ class Checker:
             raise CheckException(f"JSON does not match schema: {str(e)}")
 
     def check_collections(self) -> None:
-        c1 = {
+        given_collections = {
             collection
             for collection in self.data.keys()
             if not collection.startswith("_")
         }
-        c2 = set(self.allowed_collections)
-        err = "Collections in file do not match with models.py."
-        if c1 - c2:
-            err += f" Invalid collections: {', '.join(c1-c2)}."
+        if diff := given_collections - self.allowed_collections:
+            err = f"Collections in file do not match with models.py. Invalid collections: {', '.join(diff)}."
             raise CheckException(err)
 
     def check_model(self, collection: str, model: dict[str, Any]) -> None:

@@ -95,25 +95,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         assert counter.calls == 3
 
-    def test_update_editor_and_speaker(self) -> None:
-        self.set_models(self.permission_test_models)
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "editor_id": 1,
-                "working_group_speaker_id": 1,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "motion/111",
-            {
-                "editor_id": 1,
-                "working_group_speaker_id": 1,
-            },
-        )
-
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
@@ -654,8 +635,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "text": "test",
             "reason": "test",
             "modified_final_version": "test",
-            "editor_id": 1,
-            "working_group_speaker_id": 1,
             "attachment_ids": [1],
         }.items():
             response = self.request(

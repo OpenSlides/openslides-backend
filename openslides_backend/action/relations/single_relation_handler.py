@@ -256,7 +256,7 @@ class SingleRelationHandler:
         """
         relations: RelationFieldUpdates = {}
         for fqid, rel in rels.items():
-            new_value: Any  # Union[FullQualifiedId, List[FullQualifiedId]]
+            new_value: Any  # Union[FullQualifiedId, list[FullQualifiedId]]
             own_fqid = fqid_from_collection_and_id(self.field.own_collection, self.id)
             if fqid in add:
                 if own_fqid in rel[related_name]:

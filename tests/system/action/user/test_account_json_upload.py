@@ -23,7 +23,6 @@ class AccountJsonUpload(BaseActionTestCase):
                         "is_active": "1",
                         "is_physical_person": "F",
                         "default_number": "strange number",
-                        "default_structure_level": "CEO",
                         "default_vote_weight": "1.12",
                         "wrong": 15,
                         "gender": "female",
@@ -42,7 +41,6 @@ class AccountJsonUpload(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": False,
                 "default_number": "strange number",
-                "default_structure_level": "CEO",
                 "default_vote_weight": {"value": "1.120000", "info": ImportState.DONE},
                 "gender": {"value": "female", "info": ImportState.DONE},
             },
@@ -150,7 +148,6 @@ class AccountJsonUpload(BaseActionTestCase):
                 {"property": "pronoun", "type": "string"},
                 {"property": "saml_id", "type": "string", "is_object": True},
                 {"property": "default_number", "type": "string"},
-                {"property": "default_structure_level", "type": "string"},
                 {
                     "property": "default_vote_weight",
                     "type": "decimal",
@@ -1227,4 +1224,36 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "last_name": "Baez7",
             "first_name": "Joan",
             "default_vote_weight": {"value": "7.345678", "info": ImportState.DONE},
+        }
+
+    def json_upload_legacy_username(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "test user",
+                },
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test user",
+                        "first_name": "test",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0] == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "id": 2,
+                "username": {"id": 2, "info": ImportState.DONE, "value": "test user"},
+                "first_name": "test",
+            },
         }

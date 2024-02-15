@@ -15,10 +15,13 @@ EXPOSE 9002
 EXPOSE 9003
 ENV PYTHONPATH /app
 
-COPY scripts scripts
-COPY entrypoint.sh ./
-COPY openslides_backend openslides_backend
-COPY global global
+COPY --chown=appuser:appuser scripts scripts
+COPY --chown=appuser:appuser entrypoint.sh ./
+COPY --chown=appuser:appuser openslides_backend openslides_backend
+COPY --chown=appuser:appuser global global
+
+ARG VERSION=dev
+RUN echo "$VERSION" > openslides_backend/version.txt
 
 ENV EMAIL_HOST postfix
 ENV EMAIL_PORT 25

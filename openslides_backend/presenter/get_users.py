@@ -23,7 +23,6 @@ ALLOWED = {
     "last_email_send": 0,
     "is_demo_user": False,
     "number": "",
-    "structure_level": "",
     "vote_weight": "",
 }
 
