@@ -2,8 +2,8 @@ from tests.system.action.base_motion_meeting_user_sort_test import (
     build_motion_meeting_user_sort_test,
 )
 
-BaseClass: type = build_motion_meeting_user_sort_test("motion_submitter")
+BaseClass: type = build_motion_meeting_user_sort_test("motion_editor")
 
 
-class MotionSubmitterSortTest(BaseClass):
+class MotionEditorSortTest(BaseClass):
     __test__ = True
