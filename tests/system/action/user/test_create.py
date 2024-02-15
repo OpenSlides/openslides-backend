@@ -188,10 +188,15 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "committee/1": {"name": "C1", "meeting_ids": [1]},
                 "committee/2": {"name": "C2"},
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "meeting/1": {
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "structure_level_ids": [31],
+                },
                 "user/222": {"meeting_ids": [1], "meeting_user_ids": [1]},
                 "meeting_user/1": {"meeting_id": 1, "user_id": 222},
                 "group/11": {"meeting_id": 1},
+                "structure_level/31": {"meeting_id": 1},
             }
         )
         response = self.request(
@@ -203,7 +208,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "vote_delegations_from_ids": [1],
                 "comment": "comment<iframe></iframe>",
                 "number": "number1",
-                "structure_level": "level_1",
+                "structure_level_ids": [31],
                 "about_me": "<p>about</p><iframe></iframe>",
                 "vote_weight": "1.000000",
                 "committee_management_ids": [2],
@@ -228,7 +233,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "vote_delegations_from_ids": [1],
                 "comment": "comment&lt;iframe&gt;&lt;/iframe&gt;",
                 "number": "number1",
-                "structure_level": "level_1",
+                "structure_level_ids": [31],
                 "about_me": "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;",
                 "vote_weight": "1.000000",
             },
@@ -533,7 +538,6 @@ class UserCreateActionTest(BaseActionTestCase):
                             "default_password": "new default_password",
                             "gender": "female",
                             "email": "info@openslides.com",
-                            "default_structure_level": "new default_structure_level",
                             "default_vote_weight": "1.234000",
                             "can_change_own_password": False,
                             "meeting_id": 1,
@@ -567,7 +571,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_password": "new default_password",
                 "gender": "female",
                 "email": "info@openslides.com",
-                "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
                 "committee_ids": [60, 63],
@@ -693,6 +696,10 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "user/5": {"username": "user5"},
                 "user/6": {"username": "user6"},
+                "meeting/1": {
+                    "structure_level_ids": [31],
+                },
+                "structure_level/31": {"meeting_id": 1},
             }
         )
         self.set_user_groups(5, [1])
@@ -704,7 +711,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "username7",
                 "meeting_id": 1,
                 "number": "number1",
-                "structure_level": "structure_level 1",
+                "structure_level_ids": [31],
                 "vote_weight": "12.002345",
                 "about_me": "about me 1",
                 "comment": "comment for meeting/1",
@@ -729,67 +736,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "user_id": 7,
                 "number": "number1",
-                "structure_level": "structure_level 1",
-                "vote_weight": "12.002345",
-                "about_me": "about me 1",
-                "comment": "comment for meeting/1",
-                "vote_delegations_from_ids": [2, 3],
-                "group_ids": [1],
-            },
-        )
-        self.assert_model_exists(
-            "meeting_user/2",
-            {
-                "meeting_id": 1,
-                "user_id": 5,
-                "vote_delegated_to_id": 4,
-            },
-        )
-        self.assert_model_exists(
-            "meeting_user/3",
-            {
-                "meeting_id": 1,
-                "user_id": 6,
-                "vote_delegated_to_id": 4,
-            },
-        )
-        self.assert_model_exists(
-            "meeting_user/4",
-            {
-                "meeting_id": 1,
-                "user_id": 7,
-                "number": "number1",
-                "structure_level": "structure_level 1",
-                "vote_weight": "12.002345",
-                "about_me": "about me 1",
-                "comment": "comment for meeting/1",
-                "vote_delegations_from_ids": [2, 3],
-                "group_ids": [1],
-            },
-        )
-        self.assert_model_exists(
-            "meeting_user/2",
-            {
-                "meeting_id": 1,
-                "user_id": 5,
-                "vote_delegated_to_id": 4,
-            },
-        )
-        self.assert_model_exists(
-            "meeting_user/3",
-            {
-                "meeting_id": 1,
-                "user_id": 6,
-                "vote_delegated_to_id": 4,
-            },
-        )
-        self.assert_model_exists(
-            "meeting_user/4",
-            {
-                "meeting_id": 1,
-                "user_id": 7,
-                "number": "number1",
-                "structure_level": "structure_level 1",
+                "structure_level_ids": [31],
                 "vote_weight": "12.002345",
                 "about_me": "about me 1",
                 "comment": "comment for meeting/1",

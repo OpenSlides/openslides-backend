@@ -70,6 +70,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "user_ids": [23],
                     "meeting_user_ids": [223],
+                    "structure_level_ids": [31],
                 },
                 "meeting/2": {"committee_id": 2, "is_active_in_organization_id": 1},
                 "user/22": {
@@ -83,12 +84,13 @@ class UserUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_user/223": {"meeting_id": 1, "user_id": 23, "group_ids": [11]},
                 "group/11": {"meeting_id": 1, "meeting_user_ids": [223]},
+                "structure_level/31": {"meeting_id": 1},
             }
         )
         request_fields = {
             "group_ids": [11],
             "number": "number",
-            "structure_level": "level_1",
+            "structure_level_ids": [31],
             "vote_weight": "1.000000",
         }
         response = self.request(
@@ -702,7 +704,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": "new default_password",
                 "gender": "female",
                 "email": "info@openslides.com ",  # space intentionally, will be stripped
-                "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
             },
@@ -720,7 +721,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": "new default_password",
                 "gender": "female",
                 "email": "info@openslides.com",
-                "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
             },
@@ -895,6 +895,10 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user/5": {"username": "user5"},
                 "user/6": {"username": "user6"},
+                "meeting/1": {
+                    "structure_level_ids": [31],
+                },
+                "structure_level/31": {"meeting_id": 1},
             }
         )
         self.set_user_groups(
@@ -919,7 +923,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "meeting_id": 1,
                 "number": "number1",
-                "structure_level": "structure_level 1",
+                "structure_level_ids": [31],
                 "vote_weight": "12.002345",
                 "about_me": "about me 1",
                 "comment": "comment for meeting/1",
@@ -941,7 +945,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "vote_delegations_from_ids": [3, 5],
                 "number": "number1",
-                "structure_level": "structure_level 1",
+                "structure_level_ids": [31],
                 "vote_weight": "12.002345",
                 "about_me": "about me 1",
                 "comment": "comment for meeting/1",
@@ -1930,7 +1934,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting_user/11": {
                     "user_id": 111,
                     "meeting_id": 1,
-                    "structure_level": "level",
+                    "structure_level_ids": [31],
                     "group_ids": [1],
                 },
                 "group/1": {"meeting_user_ids": [11], "meeting_id": 1},
@@ -1938,6 +1942,10 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "group_ids": [1],
                     "is_active_in_organization_id": 1,
                     "committee_id": 78,
+                    "structure_level_ids": [31],
+                },
+                "structure_level/31": {
+                    "meeting_id": 1,
                 },
                 "committee/78": {"meeting_ids": [1]},
             }
@@ -1950,7 +1958,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "meeting_id": 1,
                 "group_ids": [1],
-                "structure_level": "level",
+                "structure_level_ids": [31],
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "committee_management_ids": [78],
             },
@@ -1986,7 +1994,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting_user/42": {
                     "user_id": 222,
                     "meeting_id": 1,
-                    "structure_level": "level",
+                    "vote_weight": "1.000000",
                 },
             }
         )
@@ -1995,7 +2003,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 222,
                 "meeting_id": 2,
-                "structure_level": "level2",
+                "vote_weight": "1.500000",
             },
         )
         self.assert_status_code(response, 200)
@@ -2020,7 +2028,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting_user/42": {
                     "user_id": 222,
                     "meeting_id": 1,
-                    "structure_level": "level",
+                    "vote_weight": "1.000000",
                 },
             }
         )
@@ -2030,7 +2038,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 {
                     "id": 222,
                     "meeting_id": 2,
-                    "structure_level": "level2",
+                    "vote_weight": "1.000000",
                 },
                 {
                     "id": 222,

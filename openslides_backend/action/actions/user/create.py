@@ -44,7 +44,6 @@ class UserCreate(
             "can_change_own_password",
             "gender",
             "email",
-            "default_structure_level",
             "default_vote_weight",
             "organization_management_level",
             "is_present_in_meeting_ids",

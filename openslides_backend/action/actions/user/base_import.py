@@ -19,6 +19,7 @@ class BaseUserImport(BaseImportAction):
         for row in self.rows:
             self.validate_entry(row)
 
+        self.handle_create_relations(instance)
         if self.import_state != ImportState.ERROR:
             rows = self.flatten_copied_object_fields(
                 self.handle_remove_and_group_fields
@@ -27,9 +28,16 @@ class BaseUserImport(BaseImportAction):
 
         return {}
 
+    def handle_create_relations(self, instance: dict[str, Any]) -> None:
+        pass
+
     def handle_remove_and_group_fields(self, entry: dict[str, Any]) -> dict[str, Any]:
-        if (groups := entry.pop("groups", None)) is not None:
-            entry["group_ids"] = [id_ for group in groups if (id_ := group.get("id"))]
+        for field in ("groups", "structure_level"):
+            if field in entry and (instances := entry.pop(field)):
+                relation_field = field.rstrip("s") + "_ids"
+                entry[relation_field] = [
+                    id_ for instance in instances if (id_ := instance.get("id"))
+                ]
 
         # set fields empty/False if saml_id will be set
         field_values = (
@@ -73,6 +81,7 @@ class BaseUserImport(BaseImportAction):
                 create_action_payload.append(row["data"])
                 index_to_is_create.append(True)
             else:
+                row["data"].pop("username", None)
                 update_action_payload.append(row["data"])
                 index_to_is_create.append(False)
         create_results: ActionResults | None = []

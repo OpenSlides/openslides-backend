@@ -46,7 +46,7 @@ class MotionStateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "name": "name_Xcdfgee",
-                "is_internal_recommendation": True,
+                "is_internal": True,
                 "allow_motion_forwarding": True,
                 "set_workflow_timestamp": True,
                 "submitter_withdraw_state_id": 112,
@@ -56,7 +56,7 @@ class MotionStateActionTest(BaseActionTestCase):
         self.assert_model_exists("motion_state/111")
         model = self.get_model("motion_state/111")
         assert model.get("name") == "name_Xcdfgee"
-        assert model.get("is_internal_recommendation") is True
+        assert model.get("is_internal") is True
         assert model.get("allow_motion_forwarding") is True
         assert model.get("set_workflow_timestamp") is True
         assert model.get("submitter_withdraw_state_id") == 112

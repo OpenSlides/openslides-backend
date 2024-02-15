@@ -80,9 +80,9 @@ class UserMixin(CheckForArchivedMeetingMixin):
     transfer_field_list = {
         "comment": {"type": "string"},
         "number": {"type": "string"},
-        "structure_level": {"type": "string"},
         "about_me": {"type": "string"},
         "vote_weight": decimal_schema,
+        "structure_level_ids": id_list_schema,
         "vote_delegated_to_id": optional_id_schema,
         "vote_delegations_from_ids": id_list_schema,
         "group_ids": id_list_schema,
@@ -187,7 +187,6 @@ class UpdateHistoryMixin(Action):
                 "last_name",
                 "email",
                 "username",
-                "default_structure_level",
                 "default_vote_weight",
             ]
             if any(field in instance for field in update_fields):
