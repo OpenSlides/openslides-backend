@@ -81,6 +81,7 @@ class BaseUserImport(BaseImportAction):
                 create_action_payload.append(row["data"])
                 index_to_is_create.append(True)
             else:
+                row["data"].pop("username", None)
                 update_action_payload.append(row["data"])
                 index_to_is_create.append(False)
         create_results: ActionResults | None = []
