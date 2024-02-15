@@ -1,6 +1,7 @@
 from hashlib import md5
 from typing import Any
 
+import simplejson as json
 from bs4 import BeautifulSoup
 
 from openslides_backend.shared.filters import And, FilterOperator
@@ -61,9 +62,7 @@ def set_workflow_timestamp_helper(
 
 class TextHashMixin(Action):
     def set_text_hash(self, instance: dict[str, Any]) -> None:
-        if html := instance.get("text"):
-            text = self.get_text_from_html(html)
-            hash = self.get_hash(text)
+        if hash := self.get_hash_for_motion(instance):
             instance["text_hash"] = hash
 
             # find identical motions
@@ -81,6 +80,20 @@ class TextHashMixin(Action):
             instance["identical_motion_ids"] = [
                 id for id in result.keys() if id != instance.get("id")
             ]
+
+    @staticmethod
+    def get_hash_for_motion(motion: dict[str, Any]) -> str | None:
+        if html := motion.get("text"):
+            text = TextHashMixin.get_text_from_html(html)
+        elif paragraphs := motion.get("amendment_paragraphs"):
+            paragraph_texts = {
+                key: TextHashMixin.get_text_from_html(html)
+                for key, html in paragraphs.items()
+            }
+            text = json.dumps(paragraph_texts, sort_keys=True)
+        else:
+            return None
+        return TextHashMixin.get_hash(text)
 
     @staticmethod
     def get_text_from_html(html: str) -> str:

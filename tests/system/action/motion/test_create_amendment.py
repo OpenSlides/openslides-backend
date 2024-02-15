@@ -233,6 +233,36 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             "motion/3", {"text_hash": hash, "identical_motion_ids": None}
         )
 
+    def test_create_identical_paragraph_based_amendment(self) -> None:
+        paragraphs = {
+            "1": "test",
+        }
+        amendment = {
+            "meeting_id": 1,
+            "lead_motion_id": 1,
+            "amendment_paragraphs": paragraphs,
+        }
+        hash = TextHashMixin.get_hash_for_motion(amendment)
+        amendment["text_hash"] = hash
+        self.set_models(
+            {
+                "motion/2": amendment,
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test",
+                "meeting_id": 1,
+                "lead_motion_id": 1,
+                "amendment_paragraphs": paragraphs,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/3", {"text_hash": hash, "identical_motion_ids": [2]}
+        )
+
     def setup_permissions(self, permissions: list[Permission]) -> None:
         self.user_id = self.create_user("user")
         self.login(self.user_id)

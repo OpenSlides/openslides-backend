@@ -22,9 +22,7 @@ class Migration(BaseModelMigration):
         motions = self.reader.get_all("motion")
         hash_map: dict[HashKey, list[int]] = defaultdict(list)
         for id, motion in motions.items():
-            if html := motion.get("text"):
-                text = TextHashMixin.get_text_from_html(html)
-                hash = TextHashMixin.get_hash(text)
+            if hash := TextHashMixin.get_hash_for_motion(motion):
                 key = HashKey(motion["meeting_id"], motion.get("lead_motion_id"), hash)
                 hash_map[key].append(id)
 
