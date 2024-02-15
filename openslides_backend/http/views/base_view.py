@@ -1,7 +1,6 @@
 import inspect
 import re
 from collections.abc import Callable
-from pathlib import Path
 from re import Pattern
 from typing import Any, Optional
 
@@ -20,9 +19,6 @@ from ..request import Request
 ROUTE_OPTIONS_ATTR = "__route_options"
 
 RouteFunction = Callable[[Any, Request], tuple[ResponseBody, Optional[str]]]
-
-
-VERSION_PATH = Path(__file__).parent / ".." / ".." / "version.txt"
 
 
 def route(
@@ -124,9 +120,3 @@ class BaseView(View):
 
                         return func(request)
             raise NotFound()
-
-    @route("version", method="GET", json=False)
-    def version_route(self, _: Request) -> RouteResponse:
-        with open(VERSION_PATH) as file:
-            version = file.read().strip()
-            return {"version": version}, None

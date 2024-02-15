@@ -1,5 +1,6 @@
 import binascii
 from base64 import b64decode
+from pathlib import Path
 
 from ...action.action_handler import ActionHandler
 from ...action.action_worker import handle_action_in_worker_thread
@@ -15,6 +16,9 @@ from ..request import Request
 from .base_view import BaseView, route
 
 INTERNAL_AUTHORIZATION_HEADER = "Authorization"
+
+
+VERSION_PATH = Path(__file__).parent / ".." / ".." / "version.txt"
 
 
 class ActionView(BaseView):
@@ -79,6 +83,12 @@ class ActionView(BaseView):
     @route("info", method="GET", json=False)
     def info_route(self, request: Request) -> RouteResponse:
         return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}, None
+
+    @route("version", method="GET", json=False)
+    def version_route(self, _: Request) -> RouteResponse:
+        with open(VERSION_PATH) as file:
+            version = file.read().strip()
+            return {"version": version}, None
 
     def check_internal_auth_password(self, request: Request) -> None:
         request_password = request.headers.get(INTERNAL_AUTHORIZATION_HEADER)
