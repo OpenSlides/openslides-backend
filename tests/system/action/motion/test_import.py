@@ -821,3 +821,101 @@ class MotionImport(MotionJsonUploadForUseInImport):
         assert response.json["results"][0][0]["rows"][0]["messages"] == [
             "Error: Motion 42 not found anymore for updating motion 'NUM01'."
         ]
+
+    def test_import_with_newly_duplicate_number(self) -> None:
+        self.setup_meeting_with_settings(5, True, True)
+        self.set_models(
+            {
+                "import_preview/55": {
+                    "state": ImportState.DONE,
+                    "name": "motion",
+                    "result": {
+                        "rows": [
+                            {
+                                "state": ImportState.NEW,
+                                "messages": [],
+                                "data": {
+                                    "title": {
+                                        "value": "New",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "text": {
+                                        "value": "Motion",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "number": {
+                                        "info": ImportState.DONE,
+                                        "value": "NUM01",
+                                    },
+                                    "submitters_username": [
+                                        {
+                                            "value": "admin",
+                                            "info": ImportState.GENERATED,
+                                            "id": 1,
+                                        }
+                                    ],
+                                    "meeting_id": 5,
+                                },
+                            }
+                        ],
+                    },
+                }
+            }
+        )
+        response = self.request("motion.import", {"id": 55, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        assert response.json["results"][0][0]["rows"][0]["messages"] == [
+            "Error: Row state expected to be 'done', but it is 'new'."
+        ]
+        assert (
+            response.json["results"][0][0]["rows"][0]["data"]["number"]["info"]
+            == ImportState.ERROR
+        )
+
+    def test_import_without_reason_when_required(self) -> None:
+        self.setup_meeting_with_settings(5, True, True)
+        self.set_models(
+            {
+                "import_preview/55": {
+                    "state": ImportState.DONE,
+                    "name": "motion",
+                    "result": {
+                        "rows": [
+                            {
+                                "state": ImportState.NEW,
+                                "messages": [],
+                                "data": {
+                                    "title": {
+                                        "value": "New",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "text": {
+                                        "value": "Motion",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "submitters_username": [
+                                        {
+                                            "value": "admin",
+                                            "info": ImportState.GENERATED,
+                                            "id": 1,
+                                        }
+                                    ],
+                                    "meeting_id": 5,
+                                },
+                            }
+                        ],
+                    },
+                }
+            }
+        )
+        response = self.request("motion.import", {"id": 55, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        assert response.json["results"][0][0]["rows"][0]["messages"] == [
+            "Error: Reason is required"
+        ]
+        assert response.json["results"][0][0]["rows"][0]["data"]["reason"] == {
+            "value": "",
+            "info": ImportState.ERROR,
+        }

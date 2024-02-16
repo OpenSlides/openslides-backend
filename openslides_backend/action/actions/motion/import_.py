@@ -193,29 +193,19 @@ class MotionImport(
                         payload, meeting_id
                     )
                 for err in errors:
-                    fieldname = ""
-                    match err["type"]:
-                        case MotionErrorType.UNIQUE_NUMBER:
-                            fieldname = "number"
-                        case MotionErrorType.TEXT:
-                            fieldname = "text"
-                        case MotionErrorType.REASON:
-                            fieldname = "reason"
-                        case MotionErrorType.TITLE:
-                            fieldname = "title"
-                        case _:
-                            raise ActionException("Error: " + err["message"])
+                    if err["type"] != MotionErrorType.REASON:
+                        raise ActionException("Error: " + err["message"])
                     if not (
-                        row["data"].get(fieldname)
-                        and isinstance(row["data"][fieldname], dict)
+                        row["data"].get("reason")
+                        and isinstance(row["data"]["reason"], dict)
                     ):
-                        row["data"][fieldname] = {
-                            "value": row["data"].get(fieldname, ""),
+                        row["data"]["reason"] = {
+                            "value": row["data"].get("reason", ""),
                             "info": ImportState.ERROR,
                         }
                     else:
-                        row["data"][fieldname]["info"] = ImportState.ERROR
-                        row["data"][fieldname].pop("id", 0)
+                        row["data"]["reason"]["info"] = ImportState.ERROR
+                        row["data"]["reason"].pop("id", 0)
                     row["messages"].append("Error: " + err["message"])
                     row["state"] = ImportState.ERROR
                     self.import_state = ImportState.ERROR

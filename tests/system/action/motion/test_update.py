@@ -417,6 +417,27 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "message", ""
         )
 
+    def test_only_motion_allowed_2(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 1,
+                "state_extension": "blablabla [assignment/1] blablabla",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Found assignment/1 but only motion is allowed." in response.json.get(
+            "message", ""
+        )
+
     def test_reset_recommendation_extension(self) -> None:
         self.set_models(
             {

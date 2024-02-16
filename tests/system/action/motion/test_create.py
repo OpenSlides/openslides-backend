@@ -501,3 +501,26 @@ class MotionCreateActionTest(BaseActionTestCase):
             response.json["message"]
             == "You are not allowed to perform action motion.create. Forbidden fields: attachment_ids"
         )
+
+    def test_create_check_not_unique_number(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_uZXBoHMp",
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {"meeting_id": 1, "number": "T001"},
+                "motion/2": {"meeting_id": 1, "number": "A001"},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "Title",
+                "text": "<p>of motion</p>",
+                "number": "A001",
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Number is not unique." in response.json["message"]
