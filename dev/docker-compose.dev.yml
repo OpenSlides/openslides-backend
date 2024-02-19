@@ -96,7 +96,7 @@ services:
             - redis
     vote:
         build:
-            context: "https://github.com/openslides/openslides-vote-service.git#vote-decrypt"
+            context: "https://github.com/openslides/openslides-vote-service.git#feature/vote-decrypt"
         image: openslides-vote-dev
         ports:
             - "9013:9013"
