@@ -919,3 +919,243 @@ class MotionImport(MotionJsonUploadForUseInImport):
             "value": "",
             "info": ImportState.ERROR,
         }
+
+    def test_update_with_replaced_number(self) -> None:
+        self.json_upload_simple_update()
+        self.set_models(
+            {
+                "motion/42": {"number": "CHANGED01"},
+                "motion/56": {
+                    "meeting_id": 42,
+                    "number": "NUM01",
+                    "title": "Impostor",
+                    "text": "<p>motion</p>",
+                },
+                "meeting/42": {"motion_ids": [42, 56, 4200]},
+            }
+        )
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        assert response.json["results"][0][0]["rows"][0]["data"]["number"] == {
+            "id": 42,
+            "info": ImportState.ERROR,
+            "value": "NUM01",
+        }
+        assert response.json["results"][0][0]["rows"][0]["messages"] == [
+            "Error: Number 'NUM01' found in different id (56 instead of 42)"
+        ]
+
+    def test_update_with_duplicated_number(self) -> None:
+        self.json_upload_simple_update()
+        self.set_models(
+            {
+                "motion/56": {
+                    "meeting_id": 42,
+                    "number": "NUM01",
+                    "title": "Impostor",
+                    "text": "<p>motion</p>",
+                },
+                "meeting/42": {"motion_ids": [42, 56, 4200]},
+            }
+        )
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        assert response.json["results"][0][0]["rows"][0]["data"]["number"] == {
+            "id": 42,
+            "info": ImportState.ERROR,
+            "value": "NUM01",
+        }
+        assert response.json["results"][0][0]["rows"][0]["messages"] == [
+            "Error: Number 'NUM01' is duplicated in import."
+        ]
+
+    def test_update_with_duplicated_number_2(self) -> None:
+        self.setup_meeting_with_settings(5, True, True)
+        row = {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "id": 5,
+                "title": {
+                    "value": "New",
+                    "info": ImportState.DONE,
+                },
+                "text": {
+                    "value": "Motion",
+                    "info": ImportState.DONE,
+                },
+                "number": {"value": "NUM01", "info": ImportState.DONE, "id": 5},
+                "submitters_username": [
+                    {
+                        "value": "admin",
+                        "info": ImportState.GENERATED,
+                        "id": 1,
+                    }
+                ],
+                "meeting_id": 5,
+            },
+        }
+        self.set_models(
+            {
+                "import_preview/123": {
+                    "state": ImportState.DONE,
+                    "name": "motion",
+                    "result": {
+                        "rows": [row, row.copy()],
+                    },
+                }
+            }
+        )
+        response = self.request("motion.import", {"id": 123, "import": True})
+        self.assert_status_code(response, 200)
+        for i in range(2):
+            assert (
+                response.json["results"][0][0]["rows"][i]["state"] == ImportState.ERROR
+            )
+            assert response.json["results"][0][0]["rows"][i]["data"]["number"] == {
+                "id": 5,
+                "info": ImportState.ERROR,
+                "value": "NUM01",
+            }
+            assert response.json["results"][0][0]["rows"][i]["messages"] == [
+                "Error: Number 'NUM01' is duplicated in import."
+            ]
+
+    def test_with_replaced_tags_and_blocks(self) -> None:
+        self.json_upload_with_tags_and_blocks()
+        self.set_models(
+            {
+                "tag/1": {"name": "Changed"},
+                "tag/7": {"name": "Tag-liatelle", "meeting_id": 42},
+                "motion_block/1": {"title": "Changed"},
+                "motion_block/7": {"title": "Blockolade", "meeting_id": 42},
+                "meeting/42": {
+                    "tag_ids": [1, 2, 3, 4, 7],
+                    "motion_block_ids": [1, 2, 3, 4, 7],
+                },
+            }
+        )
+        response = self.request("motion.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.ERROR
+        assert response.json["results"][0][0]["rows"][0]["data"]["tags"] == [
+            {
+                "info": ImportState.ERROR,
+                "value": "Tag-liatelle",
+            },
+            {"id": 2, "info": ImportState.DONE, "value": "Tag-you're-it"},
+            {"value": "Tag-ether", "info": "warning"},
+            {"value": "Price tag", "info": "warning"},
+            {"value": "Not a tag", "info": "warning"},
+        ]
+        assert response.json["results"][0][0]["rows"][0]["data"]["block"] == {
+            "info": ImportState.ERROR,
+            "value": "Blockolade",
+        }
+        assert (
+            "Error: Tag search didn't deliver the same result as in the preview: Tag-liatelle"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+        assert (
+            "Error: Motion block search didn't deliver the same result as in the preview"
+            in response.json["results"][0][0]["rows"][0]["messages"]
+        )
+
+    def test_update_with_broken_id_entries(self) -> None:
+        self.setup_meeting_with_settings(5, True, True)
+        self.set_models(
+            {
+                "import_preview/123": {
+                    "state": ImportState.DONE,
+                    "name": "motion",
+                    "result": {
+                        "rows": [
+                            {
+                                "id": 5,
+                                "state": ImportState.DONE,
+                                "messages": [],
+                                "data": {
+                                    "title": {
+                                        "value": "New",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "text": {
+                                        "value": "Motion",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "number": {
+                                        "value": "NUM01",
+                                        "info": ImportState.DONE,
+                                        "id": 5,
+                                    },
+                                    "submitters_username": [
+                                        {
+                                            "value": "admin",
+                                            "info": ImportState.GENERATED,
+                                            "id": 1,
+                                        }
+                                    ],
+                                    "meeting_id": 5,
+                                },
+                            },
+                        ],
+                    },
+                }
+            }
+        )
+        response = self.request("motion.import", {"id": 123, "import": True})
+        self.assert_status_code(response, 400)
+        assert (
+            "Invalid JsonUpload data: A data row with state 'done' must have an 'id'"
+            in response.json["message"]
+        )
+
+    def test_update_with_broken_id_entries_2(self) -> None:
+        self.setup_meeting_with_settings(5, True, True)
+        self.set_models(
+            {
+                "import_preview/123": {
+                    "state": ImportState.DONE,
+                    "name": "motion",
+                    "result": {
+                        "rows": [
+                            {
+                                "state": ImportState.DONE,
+                                "messages": [],
+                                "data": {
+                                    "id": 5,
+                                    "title": {
+                                        "value": "New",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "text": {
+                                        "value": "Motion",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "number": {
+                                        "value": "NUM01",
+                                        "info": ImportState.DONE,
+                                    },
+                                    "submitters_username": [
+                                        {
+                                            "value": "admin",
+                                            "info": ImportState.GENERATED,
+                                            "id": 1,
+                                        }
+                                    ],
+                                    "meeting_id": 5,
+                                },
+                            },
+                        ],
+                    },
+                }
+            }
+        )
+        response = self.request("motion.import", {"id": 123, "import": True})
+        self.assert_status_code(response, 400)
+        assert (
+            "Invalid JsonUpload data: A data row with state 'done' must have an 'id'"
+            in response.json["message"]
+        )

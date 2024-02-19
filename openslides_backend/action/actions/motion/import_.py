@@ -290,6 +290,11 @@ class MotionImport(
     def validate_entry(self, row: ImportRow) -> ImportRow:
         entry = row["data"]
 
+        if ("id" in entry) != ("id" in entry.get("number", {})):
+            raise ActionException(
+                f"Invalid JsonUpload data: A data row with state '{ImportState.DONE}' must have an 'id'"
+            )
+
         number = self.get_value_from_union_str_object(entry.get("number"))
         if number:
             check_result = self.number_lookup.check_duplicate(number)
@@ -302,10 +307,6 @@ class MotionImport(
                     )
                     row["state"] = ImportState.ERROR
                     entry["number"]["info"] = ImportState.ERROR
-                elif "id" not in entry:
-                    raise ActionException(
-                        f"Invalid JsonUpload data: A data row with state '{ImportState.DONE}' must have an 'id'"
-                    )
                 elif entry["id"] != id_:
                     row["state"] = ImportState.ERROR
                     entry["number"]["info"] = ImportState.ERROR

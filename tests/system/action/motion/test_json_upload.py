@@ -170,6 +170,49 @@ class MotionJsonUpload(BaseMotionJsonUpload):
                 "info": ImportState.ERROR,
             }
 
+    def test_duplicate_numbers_in_datastore(self) -> None:
+        self.setup_meeting_with_settings(22)
+        self.set_models(
+            {
+                "motion/23": {
+                    "meeting_id": 22,
+                    "number": "NUM01",
+                    "title": "Title",
+                    "text": "<p>Text</p>",
+                },
+                "meeting/22": {"motion_ids": [22, 23, 2200]},
+            }
+        )
+        response = self.request(
+            "motion.json_upload",
+            {
+                "data": [
+                    {
+                        "number": "NUM01",
+                        "title": "test",
+                        "text": "my",
+                        "reason": "stuff",
+                    },
+                ],
+                "meeting_id": 22,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert len(response.json["results"][0][0]["rows"]) == 1
+        result = response.json["results"][0][0]
+        assert result["state"] == ImportState.ERROR
+        assert result["rows"][0]["state"] == ImportState.ERROR
+        assert sorted(result["rows"][0]["messages"]) == sorted(
+            [
+                "Error: Found multiple motions with the same number",
+                "Error: Number is not unique.",
+            ]
+        )
+        assert result["rows"][0]["data"]["number"] == {
+            "value": "NUM01",
+            "info": ImportState.ERROR,
+        }
+
     def test_with_non_matching_verbose_users_with_errors(self) -> None:
         self.setup_meeting_with_settings(123)
         self.create_user("anotherOne", [123])
@@ -868,7 +911,12 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
                     {
                         "title": "New",
                         "text": "motion",
-                        "tags": ["Tag-liatelle", "Tag-you're-it"],
+                        "tags": [
+                            "Tag-liatelle",
+                            "Tag-liatelle",
+                            "Tag-you're-it",
+                            "Tag-you're-it",
+                        ],
                         "block": "Blockodile",
                     },
                     {"title": "Newer", "text": "motion", "block": "Block chain"},
@@ -897,10 +945,17 @@ class MotionJsonUploadForUseInImport(BaseMotionJsonUpload):
         assert row["data"]["block"] == {"value": "Blockolade", "info": "done", "id": 1}
         row = result["rows"][1]
         assert row["state"] == ImportState.NEW
-        assert row["messages"] == []
+        assert len(row["messages"]) == 1
+        assert row["messages"][0].startswith(
+            "At least one tag has been referenced multiple times:"
+        )
+        assert "Tag-liatelle" in row["messages"][0]
+        assert "Tag-you're-it" in row["messages"][0]
         assert row["data"]["tags"] == [
             {"value": "Tag-liatelle", "info": "done", "id": 1},
+            {"value": "Tag-liatelle", "info": ImportState.WARNING},
             {"value": "Tag-you're-it", "info": "done", "id": 2},
+            {"value": "Tag-you're-it", "info": ImportState.WARNING},
         ]
         assert row["data"]["block"] == {"value": "Blockodile", "info": "done", "id": 2}
         row = result["rows"][2]

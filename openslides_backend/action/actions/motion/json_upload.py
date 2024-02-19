@@ -564,14 +564,6 @@ class MotionJsonUpload(
             )
         return self._first_state_id
 
-    def _get_field_array(self, entry: dict[str, Any], fieldname: str) -> list[str]:
-        date = entry.get(fieldname)
-        if isinstance(date, list):
-            return date
-        elif date:
-            return [date]
-        return []
-
     def _get_field_ids(self, entry: dict[str, Any], fieldname: str) -> list[int]:
         value = entry.get(fieldname, [])
         if not isinstance(value, list):
