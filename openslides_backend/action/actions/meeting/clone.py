@@ -2,6 +2,7 @@ import time
 from decimal import Decimal
 from typing import Any, cast
 
+from openslides_backend.action.actions.meeting.mixins import MeetingPermissionMixin
 from openslides_backend.models.checker import (
     Checker,
     CheckException,
@@ -73,6 +74,9 @@ class MeetingClone(MeetingImport):
     def preprocess_data(self, instance: dict[str, Any]) -> dict[str, Any]:
         # overwrite method from meeting.import
         return instance
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        MeetingPermissionMixin.check_permissions(self, instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
