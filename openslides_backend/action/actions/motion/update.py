@@ -23,6 +23,7 @@ from ...util.typing import ActionData
 from .mixins import (
     AmendmentParagraphHelper,
     PermissionHelperMixin,
+    TextHashMixin,
     set_workflow_timestamp_helper,
 )
 from .set_number_mixin import SetNumberMixin
@@ -30,7 +31,11 @@ from .set_number_mixin import SetNumberMixin
 
 @register_action("motion.update")
 class MotionUpdate(
-    UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin, SetNumberMixin
+    AmendmentParagraphHelper,
+    PermissionHelperMixin,
+    SetNumberMixin,
+    TextHashMixin,
+    UpdateAction,
 ):
     """
     Action to update motions.
@@ -75,6 +80,8 @@ class MotionUpdate(
                     [
                         "meeting_id",
                         "id",
+                        "lead_motion_id",
+                        "identical_motion_ids",
                         "category_id",
                         "block_id",
                         "supporter_meeting_user_ids",
@@ -152,6 +159,7 @@ class MotionUpdate(
             ):
                 raise ActionException("Number is not unique.")
 
+        self.set_text_hash(instance)
         return instance
 
     def set_extension_reference_ids(

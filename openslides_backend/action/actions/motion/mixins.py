@@ -1,4 +1,10 @@
+from hashlib import md5
 from typing import Any
+
+import simplejson as json
+from bs4 import BeautifulSoup
+
+from openslides_backend.shared.filters import And, FilterOperator
 
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
@@ -52,3 +58,47 @@ def set_workflow_timestamp_helper(
     )
     if state.get("set_workflow_timestamp"):
         instance["workflow_timestamp"] = timestamp
+
+
+class TextHashMixin(Action):
+    def set_text_hash(self, instance: dict[str, Any]) -> None:
+        if hash := self.get_hash_for_motion(instance):
+            instance["text_hash"] = hash
+
+            # find identical motions
+            lead_motion_id = self.get_field_from_instance("lead_motion_id", instance)
+            filter = [
+                FilterOperator("text_hash", "=", hash),
+                FilterOperator("meeting_id", "=", self.get_meeting_id(instance)),
+                FilterOperator("lead_motion_id", "=", lead_motion_id),
+            ]
+            result = self.datastore.filter(
+                self.model.collection,
+                And(*filter),
+                ["id"],
+            )
+            instance["identical_motion_ids"] = [
+                id for id in result.keys() if id != instance.get("id")
+            ]
+
+    @staticmethod
+    def get_hash_for_motion(motion: dict[str, Any]) -> str | None:
+        if html := motion.get("text"):
+            text = TextHashMixin.get_text_from_html(html)
+        elif paragraphs := motion.get("amendment_paragraphs"):
+            paragraph_texts = {
+                key: TextHashMixin.get_text_from_html(html)
+                for key, html in paragraphs.items()
+            }
+            text = json.dumps(paragraph_texts, sort_keys=True)
+        else:
+            return None
+        return TextHashMixin.get_hash(text)
+
+    @staticmethod
+    def get_text_from_html(html: str) -> str:
+        return BeautifulSoup(html, features="html.parser").get_text()
+
+    @staticmethod
+    def get_hash(text: str) -> str:
+        return md5(text.encode()).hexdigest()
