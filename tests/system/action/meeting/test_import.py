@@ -1011,7 +1011,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 403)
         assert (
-            "Missing permission: CommitteeManagementLevel can_manage in committee 1"
+            "Missing OrganizationManagementLevel: superadmin"
             in response.json["message"]
         )
 

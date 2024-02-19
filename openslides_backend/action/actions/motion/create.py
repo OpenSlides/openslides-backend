@@ -17,13 +17,16 @@ from ...util.register import register_action
 from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create_base import MotionCreateBase
-from .mixins import AmendmentParagraphHelper
+from .mixins import AmendmentParagraphHelper, TextHashMixin
 from .payload_validation_mixin import MotionCreatePayloadValidationMixin
 
 
 @register_action("motion.create")
 class MotionCreate(
-    AmendmentParagraphHelper, MotionCreatePayloadValidationMixin, MotionCreateBase
+    AmendmentParagraphHelper,
+    MotionCreatePayloadValidationMixin,
+    TextHashMixin,
+    MotionCreateBase,
 ):
     """
     Create Action for motions.
@@ -124,6 +127,7 @@ class MotionCreate(
         self.create_submitters(instance)
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
+        self.set_text_hash(instance)
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

@@ -17,6 +17,8 @@ WSGIEnvironment = dict[str, Any]
 # TODO Use proper type here.
 ResponseBody = Any
 
+RouteResponse = tuple[ResponseBody, str | None]
+
 
 class View(Protocol):
     """
@@ -27,7 +29,7 @@ class View(Protocol):
     def __init__(self, logging: LoggingModule, services: Services) -> None: ...
 
     @abstractmethod
-    def dispatch(self, request: Request) -> tuple[ResponseBody, str | None]: ...
+    def dispatch(self, request: Request) -> RouteResponse: ...
 
 
 class WSGIApplication(Protocol):

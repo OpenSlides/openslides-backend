@@ -23,6 +23,7 @@ from ...util.typing import ActionData
 from .mixins import (
     AmendmentParagraphHelper,
     PermissionHelperMixin,
+    TextHashMixin,
     set_workflow_timestamp_helper,
 )
 from .payload_validation_mixin import MotionUpdatePayloadValidationMixin
@@ -31,11 +32,12 @@ from .set_number_mixin import SetNumberMixin
 
 @register_action("motion.update")
 class MotionUpdate(
-    UpdateAction,
-    AmendmentParagraphHelper,
     MotionUpdatePayloadValidationMixin,
+    AmendmentParagraphHelper,
     PermissionHelperMixin,
     SetNumberMixin,
+    TextHashMixin,
+    UpdateAction,
 ):
     """
     Action to update motions.
@@ -80,6 +82,8 @@ class MotionUpdate(
                     [
                         "meeting_id",
                         "id",
+                        "lead_motion_id",
+                        "identical_motion_ids",
                         "category_id",
                         "block_id",
                         "supporter_meeting_user_ids",
@@ -133,6 +137,7 @@ class MotionUpdate(
             if f"{prefix}_extension" in instance:
                 self.set_extension_reference_ids(prefix, instance)
 
+        self.set_text_hash(instance)
         return instance
 
     def set_extension_reference_ids(
