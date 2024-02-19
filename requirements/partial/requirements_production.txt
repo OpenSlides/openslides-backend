@@ -1,4 +1,5 @@
 Babel==2.14.0
+beautifulsoup4==4.12.3
 bleach[css]==6.1.0
 dependency_injector==4.41.0
 fastjsonschema==2.19.1
