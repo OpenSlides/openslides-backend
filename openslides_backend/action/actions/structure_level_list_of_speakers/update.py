@@ -3,7 +3,6 @@ from typing import Any
 from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.exceptions import ActionException
-from openslides_backend.shared.filters import And, FilterOperator
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 from ....models.models import StructureLevelListOfSpeakers
@@ -40,24 +39,12 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
                     raise ActionException(
                         f"Cannot set initial_time and {field} at the same time."
                     )
-            if db_instance["initial_time"] != db_instance[
-                "remaining_time"
-            ] or self.datastore.exists(
-                "speaker",
-                And(
-                    FilterOperator("begin_time", "!=", None),
-                    FilterOperator("meeting_id", "=", db_instance["meeting_id"]),
-                    FilterOperator(
-                        "list_of_speakers_id",
-                        "=",
-                        db_instance["list_of_speakers_id"],
-                    ),
-                ),
-            ):
-                raise ActionException(
-                    "initial_time can only be changed if no speaker has spoken yet."
-                )
-            instance["remaining_time"] = instance["initial_time"]
+            difference = db_instance.get("initial_time", 0) - instance.get(
+                "initial_time", 0
+            )
+            instance["remaining_time"] = (
+                db_instance.get("remaining_time", 0) - difference
+            )
 
         if spoken_time := instance.pop("spoken_time", None):
             instance["remaining_time"] = db_instance["remaining_time"] - spoken_time
