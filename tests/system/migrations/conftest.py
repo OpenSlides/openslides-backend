@@ -141,6 +141,18 @@ def read_model(clear_datastore):
 
 @pytest.fixture()
 def assert_model(read_model):
+    def compare_models(model, expected):
+        # fix order of lists
+        for key, value in expected.items():
+            if (
+                key in model
+                and isinstance(model[key], list)
+                and isinstance(value, list)
+                and sorted(model[key]) == sorted(value)
+            ):
+                expected[key] = model[key]
+        assert model == expected
+
     def _assert_model(fqid, _expected, position=None):
         # try to fetch model and assert correct existance
         try:
@@ -162,7 +174,7 @@ def assert_model(read_model):
 
         if position is None:
             # assert that current model is equal to expected
-            assert model == expected
+            compare_models(model, expected)
             # get max position
             read_database: ReadDatabase = injector.get(ReadDatabase)
             with read_database.get_context():
@@ -171,6 +183,6 @@ def assert_model(read_model):
             # additionally assert that the model at the max position is equal to expected
             model = read_model(fqid, position=position)
 
-        assert model == expected
+        compare_models(model, expected)
 
     yield _assert_model

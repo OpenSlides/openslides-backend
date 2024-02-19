@@ -165,11 +165,12 @@ class MeetingUser(Model):
     supported_motion_ids = fields.RelationListField(
         to={"motion": "supporter_meeting_user_ids"}, equal_fields="meeting_id"
     )
-    editor_for_motion_ids = fields.RelationListField(
-        to={"motion": "editor_id"}, equal_fields="meeting_id"
+    motion_editor_ids = fields.RelationListField(
+        to={"motion_editor": "meeting_user_id"}, equal_fields="meeting_id"
     )
-    working_group_speaker_for_motion_ids = fields.RelationListField(
-        to={"motion": "working_group_speaker_id"}, equal_fields="meeting_id"
+    motion_working_group_speaker_ids = fields.RelationListField(
+        to={"motion_working_group_speaker": "meeting_user_id"},
+        equal_fields="meeting_id",
     )
     motion_submitter_ids = fields.RelationListField(
         to={"motion_submitter": "meeting_user_id"},
@@ -704,6 +705,13 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_submitter_ids = fields.RelationListField(
         to={"motion_submitter": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    motion_editor_ids = fields.RelationListField(
+        to={"motion_editor": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    motion_working_group_speaker_ids = fields.RelationListField(
+        to={"motion_working_group_speaker": "meeting_id"},
+        on_delete=fields.OnDelete.CASCADE,
     )
     motion_change_recommendation_ids = fields.RelationListField(
         to={"motion_change_recommendation": "meeting_id"},
@@ -1321,6 +1329,7 @@ class Motion(Model):
     )
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
+    text_hash = fields.CharField()
     amendment_paragraphs = fields.JSONField()
     modified_final_version = fields.HTMLStrictField()
     reason = fields.HTMLStrictField()
@@ -1350,6 +1359,9 @@ class Motion(Model):
     derived_motion_ids = fields.RelationListField(to={"motion": "origin_id"})
     all_origin_ids = fields.RelationListField(to={"motion": "all_derived_motion_ids"})
     all_derived_motion_ids = fields.RelationListField(to={"motion": "all_origin_ids"})
+    identical_motion_ids = fields.RelationListField(
+        to={"motion": "identical_motion_ids"}, equal_fields="meeting_id"
+    )
     state_id = fields.RelationField(
         to={"motion_state": "motion_ids"}, required=True, equal_fields="meeting_id"
     )
@@ -1385,12 +1397,11 @@ class Motion(Model):
     supporter_meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "supported_motion_ids"}, equal_fields="meeting_id"
     )
-    editor_id = fields.RelationField(
-        to={"meeting_user": "editor_for_motion_ids"}, equal_fields="meeting_id"
+    editor_ids = fields.RelationListField(
+        to={"motion_editor": "motion_id"}, equal_fields="meeting_id"
     )
-    working_group_speaker_id = fields.RelationField(
-        to={"meeting_user": "working_group_speaker_for_motion_ids"},
-        equal_fields="meeting_id",
+    working_group_speaker_ids = fields.RelationListField(
+        to={"motion_working_group_speaker": "motion_id"}, equal_fields="meeting_id"
     )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},
@@ -1465,6 +1476,46 @@ class MotionSubmitter(Model):
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_submitter_ids"}, required=True, constant=True
+    )
+
+
+class MotionEditor(Model):
+    collection = "motion_editor"
+    verbose_name = "motion editor"
+
+    id = fields.IntegerField(constant=True)
+    weight = fields.IntegerField()
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "motion_editor_ids"}, required=True
+    )
+    motion_id = fields.RelationField(
+        to={"motion": "editor_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "motion_editor_ids"}, required=True, constant=True
+    )
+
+
+class MotionWorkingGroupSpeaker(Model):
+    collection = "motion_working_group_speaker"
+    verbose_name = "motion working group speaker"
+
+    id = fields.IntegerField(constant=True)
+    weight = fields.IntegerField()
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "motion_working_group_speaker_ids"}, required=True
+    )
+    motion_id = fields.RelationField(
+        to={"motion": "working_group_speaker_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "motion_working_group_speaker_ids"}, required=True, constant=True
     )
 
 
@@ -1630,7 +1681,7 @@ class MotionState(Model):
     name = fields.CharField(required=True)
     weight = fields.IntegerField(required=True)
     recommendation_label = fields.CharField()
-    is_internal_recommendation = fields.BooleanField()
+    is_internal = fields.BooleanField()
     css_class = fields.CharField(
         required=True,
         default="lightblue",

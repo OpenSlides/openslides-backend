@@ -1225,3 +1225,35 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "first_name": "Joan",
             "default_vote_weight": {"value": "7.345678", "info": ImportState.DONE},
         }
+
+    def json_upload_legacy_username(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "test user",
+                },
+            }
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "test user",
+                        "first_name": "test",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0] == {
+            "state": ImportState.DONE,
+            "messages": [],
+            "data": {
+                "id": 2,
+                "username": {"id": 2, "info": ImportState.DONE, "value": "test user"},
+                "first_name": "test",
+            },
+        }
