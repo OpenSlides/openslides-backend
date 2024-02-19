@@ -18,6 +18,10 @@ from openslides_backend.models.fields import (
     RelationListField,
 )
 from openslides_backend.models.models import Meeting
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permission_helper import (
+    has_organization_management_level,
+)
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, MissingPermission
 from openslides_backend.shared.filters import FilterOperator, Or
@@ -96,6 +100,12 @@ class MeetingImport(
         write_request = self.build_write_request()
         result = [self.create_action_result_element(instance)]
         return (write_request, result)
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        if not has_organization_management_level(
+            self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
+        ):
+            raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 
     def prefetch(self, action_data: ActionData) -> None:
         requests = [

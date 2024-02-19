@@ -2,6 +2,7 @@ import time
 from collections import defaultdict
 from typing import Any
 
+from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.shared.typing import HistoryInformation
 
 from ....models.models import Motion
@@ -14,14 +15,13 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..meeting_user.create import MeetingUserCreate
-from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..meeting_user.update import MeetingUserUpdate
 from ..user.create import UserCreate
 from .create_base import MotionCreateBase
 
 
 @register_action("motion.create_forwarded")
-class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
+class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
     """
     Create action for forwarded motions.
     """
@@ -160,6 +160,7 @@ class MotionCreateForwarded(MotionCreateBase, MeetingUserHelperMixin):
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         self.set_origin_ids(instance)
+        self.set_text_hash(instance)
         instance["forwarded"] = round(time.time())
         return instance
 

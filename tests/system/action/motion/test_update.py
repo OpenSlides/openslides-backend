@@ -2,6 +2,7 @@ from math import floor
 from time import time
 from typing import Any
 
+from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls
@@ -471,6 +472,43 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "The following models do not belong to meeting 1: ['meeting_user/1']",
             response.json["message"],
         )
+
+    def test_update_identical_motions(self) -> None:
+        text1 = "test1"
+        hash1 = TextHashMixin.get_hash(text1)
+        text2 = "test2"
+        hash2 = TextHashMixin.get_hash(text2)
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "motion/1": {
+                    "meeting_id": 1,
+                    "text": text1,
+                    "text_hash": hash1,
+                    "identical_motion_ids": [2],
+                },
+                "motion/2": {
+                    "meeting_id": 1,
+                    "text": text1,
+                    "text_hash": hash1,
+                    "identical_motion_ids": [1],
+                },
+                "motion/3": {"meeting_id": 1, "text": text2, "text_hash": hash2},
+            }
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 2,
+                "text": text2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/1", {"identical_motion_ids": []})
+        self.assert_model_exists(
+            "motion/2", {"text_hash": hash2, "identical_motion_ids": [3]}
+        )
+        self.assert_model_exists("motion/3", {"identical_motion_ids": [2]})
 
     def test_update_no_permissions(self) -> None:
         self.create_meeting()

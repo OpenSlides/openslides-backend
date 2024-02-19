@@ -11,7 +11,7 @@ from ...shared.exceptions import View400Exception
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.services import Services
-from ...shared.interfaces.wsgi import Headers, ResponseBody, View
+from ...shared.interfaces.wsgi import Headers, ResponseBody, RouteResponse, View
 from ...shared.otel import make_span
 from ..http_exceptions import MethodNotAllowed, NotFound
 from ..request import Request
@@ -66,7 +66,7 @@ class BaseView(View):
     During initialization we bind the dependencies to the instance.
     """
 
-    routes: dict[Pattern, Callable[[Request], tuple[ResponseBody, str | None]]]
+    routes: dict[Pattern, Callable[[Request], RouteResponse]]
 
     def __init__(self, env: Env, logging: LoggingModule, services: Services) -> None:
         self.services = services
@@ -88,7 +88,7 @@ class BaseView(View):
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
 
-    def dispatch(self, request: Request) -> tuple[ResponseBody, str | None]:
+    def dispatch(self, request: Request) -> RouteResponse:
         functions = inspect.getmembers(
             self,
             predicate=lambda attr: inspect.ismethod(attr)
