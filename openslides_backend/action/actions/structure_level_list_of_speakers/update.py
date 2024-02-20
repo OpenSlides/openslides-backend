@@ -29,23 +29,18 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
                     raise ActionException(field + " is not allowed to be set.")
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        db_instance = self.datastore.get(
-            fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["list_of_speakers_id", "meeting_id", "remaining_time", "initial_time"],
-        )
         if "initial_time" in instance:
             for field in ("current_start_time", "spoken_time"):
                 if field in instance:
                     raise ActionException(
                         f"Cannot set initial_time and {field} at the same time."
                     )
-            difference = db_instance.get("initial_time", 0) - instance.get(
-                "initial_time", 0
-            )
-            instance["remaining_time"] = (
-                db_instance.get("remaining_time", 0) - difference
-            )
+            instance["remaining_time"] = instance["initial_time"]
 
         if spoken_time := instance.pop("spoken_time", None):
+            db_instance = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                ["remaining_time"],
+            )
             instance["remaining_time"] = db_instance["remaining_time"] - spoken_time
         return instance

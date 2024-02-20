@@ -12,7 +12,7 @@
 
 ## Action
 
-If `initial_time` is changed, `remaining_time` will be changed in accordance with the difference between old and new `initial_time`
+If `initial_time` is changed, `remaining_time` will be set to the same value
 
 `spoken_time` and `current_start_time` can only be given if the action is executed internally.
 
