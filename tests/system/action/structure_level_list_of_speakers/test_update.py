@@ -94,16 +94,15 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
             {"initial_time": 100, "remaining_time": 100},
         )
 
-    def test_set_initial_time_error(self) -> None:
+    def test_set_initial_time_with_reduced_remaining_time(self) -> None:
         response = self.request(
             "structure_level_list_of_speakers.update",
             {"id": 3, "initial_time": 100},
         )
-        self.assert_status_code(response, 400)
-        assert response.json["message"]
-        self.assertIn(
-            "initial_time can only be changed if no speaker has spoken yet.",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/3",
+            {"initial_time": 100, "remaining_time": 100},
         )
 
     def test_set_initial_time_with_speakers(self) -> None:
@@ -121,16 +120,10 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
             "structure_level_list_of_speakers.update",
             {"id": 3, "initial_time": 100},
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "initial_time can only be changed if no speaker has spoken yet.",
-            response.json["message"],
-        )
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "structure_level_list_of_speakers/3",
-            {
-                "initial_time": 600,
-            },
+            {"initial_time": 100, "remaining_time": 100},
         )
 
     def test_set_initial_time_with_other_field(self) -> None:
