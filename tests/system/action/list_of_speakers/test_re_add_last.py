@@ -143,7 +143,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
             },
         )
 
-    def test_last_speaker_also_in_waiting_list(self) -> None:
+    def test_last_speaker_also_in_waiting_list_forbidden(self) -> None:
         self.set_models(
             {
                 "speaker/225": {
@@ -158,6 +158,22 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         self.assertTrue(
             "User 43 is already on the list of speakers." in response.json["message"]
         )
+
+    def test_last_speaker_also_in_waiting_list_allowed(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_allow_multiple_speakers": True,
+                },
+                "speaker/225": {
+                    "list_of_speakers_id": 111,
+                    "meeting_id": 1,
+                    "meeting_user_id": 43,
+                },
+            }
+        )
+        response = self.request("list_of_speakers.re_add_last", {"id": 111})
+        self.assert_status_code(response, 200)
 
     def test_last_speaker_also_in_waiting_list_but_poos(self) -> None:
         self.set_models(
