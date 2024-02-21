@@ -179,11 +179,9 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        motion = self.get_model("motion/1")
-        assert motion.get("state_id") == 34
+        motion = self.assert_model_exists("motion/1", {"state_id": 34, "number": "1"})
         assert motion.get("workflow_timestamp")
         assert motion.get("created")
-        assert motion.get("number")
 
     def test_create_workflow_id_from_meeting(self) -> None:
         response = self.request(
