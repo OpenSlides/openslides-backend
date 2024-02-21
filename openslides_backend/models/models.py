@@ -424,7 +424,7 @@ class Meeting(Model, MeetingModelMixin):
     list_of_speakers_allow_multiple_speakers = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
     list_of_speakers_can_create_point_of_order_for_others = fields.BooleanField(
-        default=True
+        default=False
     )
     list_of_speakers_enable_point_of_order_categories = fields.BooleanField(
         default=False
