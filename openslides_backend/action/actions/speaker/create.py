@@ -7,7 +7,7 @@ from ....models.models import Speaker
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission
-from ....shared.filters import And, FilterOperator, Or
+from ....shared.filters import And, Filter, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...mixins.create_action_with_inferred_meeting import (
@@ -245,14 +245,6 @@ class SpeakerCreateAction(
             meeting_user = {"user_id": None}
 
         if (
-            instance.get("point_of_order")
-            and meeting_user.get("user_id") != self.user_id
-        ):
-            raise ActionException(
-                f"The requesting user {self.user_id} is not the user {meeting_user['user_id']} the point-of-order is filed for."
-            )
-
-        if (
             "note" in instance or "point_of_order_category_id" in instance
         ) and not instance.get("point_of_order"):
             raise ActionException(
@@ -269,9 +261,11 @@ class SpeakerCreateAction(
             meeting_fqid,
             [
                 "list_of_speakers_enable_point_of_order_speakers",
+                "list_of_speakers_can_create_point_of_order_for_others",
                 "list_of_speakers_enable_point_of_order_categories",
                 "list_of_speakers_present_users_only",
                 "list_of_speakers_closing_disables_point_of_order",
+                "list_of_speakers_allow_multiple_speakers",
             ],
         )
         if instance.get("point_of_order") and not meeting.get(
@@ -280,6 +274,16 @@ class SpeakerCreateAction(
             raise ActionException(
                 "Point of order speakers are not enabled for this meeting."
             )
+
+        if (
+            instance.get("point_of_order")
+            and meeting_user.get("user_id") != self.user_id
+            and not meeting.get("list_of_speakers_can_create_point_of_order_for_others")
+        ):
+            raise ActionException(
+                f"The requesting user {self.user_id} is not the user {meeting_user['user_id']} the point-of-order is filed for."
+            )
+
         if instance.get("point_of_order_category_id") and not meeting.get(
             "list_of_speakers_enable_point_of_order_categories"
         ):
@@ -320,23 +324,25 @@ class SpeakerCreateAction(
                         "Only present users can be on the lists of speakers."
                     )
 
-            # Results are necessary, because of getting a lock_result
-            filter_obj = And(
-                FilterOperator(
-                    "list_of_speakers_id", "=", instance["list_of_speakers_id"]
-                ),
-                FilterOperator("begin_time", "=", None),
-                FilterOperator("meeting_id", "=", meeting_id),
-            )
-            speakers = self.datastore.filter(
-                collection="speaker",
-                filter=filter_obj,
-                mapped_fields=["meeting_user_id", "point_of_order"],
-            )
-            for speaker in speakers.values():
-                if speaker["meeting_user_id"] == instance["meeting_user_id"] and bool(
-                    speaker.get("point_of_order")
-                ) == bool(instance.get("point_of_order")):
+            if not meeting.get("list_of_speakers_allow_multiple_speakers"):
+                # Results are necessary, because of getting a lock_result
+                if instance.get("point_of_order"):
+                    poo_filter: Filter = FilterOperator("point_of_order", "=", True)
+                else:
+                    poo_filter = Or(
+                        FilterOperator("point_of_order", "=", False),
+                        FilterOperator("point_of_order", "=", None),
+                    )
+                filter_obj = And(
+                    FilterOperator(
+                        "list_of_speakers_id", "=", instance["list_of_speakers_id"]
+                    ),
+                    FilterOperator("begin_time", "=", None),
+                    FilterOperator("meeting_id", "=", meeting_id),
+                    FilterOperator("meeting_user_id", "=", instance["meeting_user_id"]),
+                    poo_filter,
+                )
+                if self.datastore.exists("speaker", filter_obj):
                     raise ActionException(
                         f"User {meeting_user['user_id']} is already on the list of speakers."
                     )

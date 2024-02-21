@@ -177,8 +177,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_create_already_exist(self) -> None:
+    def setup_multiple_speakers(self, allow: bool = False) -> None:
         self.test_models["list_of_speakers/23"]["speaker_ids"] = [42]
+        self.test_models["meeting/1"][
+            "list_of_speakers_allow_multiple_speakers"
+        ] = allow
         self.set_models(
             {
                 **self.test_models,
@@ -189,6 +192,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
             }
         )
+
+    def test_create_already_exists(self) -> None:
+        self.setup_multiple_speakers()
         response = self.request(
             "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
         )
@@ -199,6 +205,17 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         list_of_speakers = self.get_model("list_of_speakers/23")
         assert list_of_speakers.get("speaker_ids") == [42]
+
+    def test_create_multiple_speakers(self) -> None:
+        self.setup_multiple_speakers(True)
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/43",
+            {"meeting_user_id": 17, "list_of_speakers_id": 23},
+        )
 
     def test_create_add_2_speakers_in_1_action(self) -> None:
         self.set_models(
