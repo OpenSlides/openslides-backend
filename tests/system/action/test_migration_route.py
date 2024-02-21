@@ -69,6 +69,16 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
         assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert "output" not in response.json
 
+    def test_clear_collectionfield_tables(self) -> None:
+        response = self.migration_request("clear-collectionfield-tables")
+        self.assert_status_code(response, 200)
+        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
+        assert response.json["output"] == "Cleaning collectionfield helper tables...\n"
+
+    def test_unknown_command(self) -> None:
+        response = self.migration_request("unknown")
+        self.assert_status_code(response, 400)
+
 
 @patch(
     "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"

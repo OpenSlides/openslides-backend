@@ -28,6 +28,15 @@ class MigrationState(str, Enum):
     NO_MIGRATION_REQUIRED = DatastoreMigrationState.NO_MIGRATION_REQUIRED.value
 
 
+class MigrationCommand(str, Enum):
+    MIGRATE = "migrate"
+    FINALIZE = "finalize"
+    RESET = "reset"
+    CLEAR_COLLECTIONFIELD_TABLES = "clear-collectionfield-tables"
+    STATS = "stats"
+    PROGRESS = "progress"
+
+
 class MigrationHandler(BaseHandler):
     lock = Lock()
     migration_running = False
@@ -45,7 +54,7 @@ class MigrationHandler(BaseHandler):
         self.logger.info(f"Migration command: {command}")
 
         with MigrationHandler.lock:
-            if command == "progress":
+            if command == MigrationCommand.PROGRESS:
                 return self.handle_progress_command()
 
             if MigrationHandler.migration_running:
@@ -62,7 +71,12 @@ class MigrationHandler(BaseHandler):
                     self.close_migrate_thread_stream()
 
             verbose = payload.get("verbose", False)
-            if command in ("migrate", "finalize", "reset"):
+            if command == "stats":
+                stats = self.migration_wrapper.handler.get_stats()
+                return {
+                    "stats": stats,
+                }
+            elif command in iter(MigrationCommand):
                 MigrationHandler.migrate_thread_stream = StringIO()
                 thread = Thread(
                     target=self.execute_migrate_command, args=[command, verbose]
@@ -78,11 +92,6 @@ class MigrationHandler(BaseHandler):
                 else:
                     # Migration already finished/had nothing to do
                     return self.get_migration_result()
-            elif command == "stats":
-                stats = self.migration_wrapper.handler.get_stats()
-                return {
-                    "stats": stats,
-                }
             else:
                 raise View400Exception("Unknown command: " + command)
 
