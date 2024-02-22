@@ -62,22 +62,27 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             raise ActionException("There is no last speaker that can be re-added.")
         assert isinstance(lowest_weight, int)
 
-        for speaker in speakers.values():
-            if (
-                speaker.get("end_time") is None
-                and speaker["meeting_user_id"] == last_speaker["meeting_user_id"]
-                and bool(speaker.get("point_of_order"))
-                == bool(last_speaker.get("point_of_order"))
-            ):
-                meeting_user = self.datastore.get(
-                    fqid_from_collection_and_id(
-                        "meeting_user", last_speaker["meeting_user_id"]
-                    ),
-                    ["user_id"],
-                )
-                raise ActionException(
-                    f"User {meeting_user['user_id']} is already on the list of speakers."
-                )
+        meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", meeting_id),
+            ["list_of_speakers_allow_multiple_speakers"],
+        )
+        if not meeting.get("list_of_speakers_allow_multiple_speakers"):
+            for speaker in speakers.values():
+                if (
+                    speaker.get("end_time") is None
+                    and speaker["meeting_user_id"] == last_speaker["meeting_user_id"]
+                    and bool(speaker.get("point_of_order"))
+                    == bool(last_speaker.get("point_of_order"))
+                ):
+                    meeting_user = self.datastore.get(
+                        fqid_from_collection_and_id(
+                            "meeting_user", last_speaker["meeting_user_id"]
+                        ),
+                        ["user_id"],
+                    )
+                    raise ActionException(
+                        f"User {meeting_user['user_id']} is already on the list of speakers."
+                    )
 
         # Return new instance to the generic part of the UpdateAction.
         return {

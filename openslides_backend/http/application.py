@@ -69,7 +69,7 @@ class OpenSlidesBackendWSGIApplication:
         elif request.path == "/system/presenter/handle_request":
             status_code = Response.default_status
         else:
-            raise ViewException(f"Unknown type of response_body:{response_body}.")
+            raise ViewException(f"Unknown type of response_body: {response_body}.")
 
         self.logger.debug(
             f"All done. Application sends HTTP {status_code} with body {response_body}."

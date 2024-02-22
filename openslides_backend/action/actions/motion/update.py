@@ -23,14 +23,21 @@ from ...util.typing import ActionData
 from .mixins import (
     AmendmentParagraphHelper,
     PermissionHelperMixin,
+    TextHashMixin,
     set_workflow_timestamp_helper,
 )
+from .payload_validation_mixin import MotionUpdatePayloadValidationMixin
 from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.update")
 class MotionUpdate(
-    UpdateAction, AmendmentParagraphHelper, PermissionHelperMixin, SetNumberMixin
+    MotionUpdatePayloadValidationMixin,
+    AmendmentParagraphHelper,
+    PermissionHelperMixin,
+    SetNumberMixin,
+    TextHashMixin,
+    UpdateAction,
 ):
     """
     Action to update motions.
@@ -50,8 +57,6 @@ class MotionUpdate(
             "category_id",
             "block_id",
             "supporter_meeting_user_ids",
-            "editor_id",
-            "working_group_speaker_id",
             "tag_ids",
             "attachment_ids",
             "created",
@@ -77,6 +82,8 @@ class MotionUpdate(
                     [
                         "meeting_id",
                         "id",
+                        "lead_motion_id",
+                        "identical_motion_ids",
                         "category_id",
                         "block_id",
                         "supporter_meeting_user_ids",
@@ -95,34 +102,17 @@ class MotionUpdate(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
-        if (
-            instance.get("text")
-            or instance.get("amendment_paragraphs")
-            or instance.get("reason") == ""
-        ):
-            motion = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["text", "amendment_paragraphs", "meeting_id"],
-            )
-
-        if instance.get("text"):
-            if not motion.get("text"):
-                raise ActionException(
-                    "Cannot update text, because it was not set in the old values."
-                )
+        motion = self.datastore.get(
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            ["meeting_id"],
+        )
+        error_messages = self.get_update_payload_integrity_error_message(
+            instance, motion["meeting_id"]
+        )
+        if len(error_messages):
+            raise ActionException(error_messages[0]["message"])
         if instance.get("amendment_paragraphs"):
-            if not motion.get("amendment_paragraphs"):
-                raise ActionException(
-                    "Cannot update amendment_paragraphs, because it was not set in the old values."
-                )
             self.validate_amendment_paragraphs(instance)
-        if instance.get("reason") == "":
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", motion["meeting_id"]),
-                ["motions_reason_required"],
-            )
-            if meeting.get("motions_reason_required"):
-                raise ActionException("Reason is required to update.")
 
         if instance.get("workflow_id"):
             workflow_id = instance.pop("workflow_id")
@@ -147,13 +137,7 @@ class MotionUpdate(
             if f"{prefix}_extension" in instance:
                 self.set_extension_reference_ids(prefix, instance)
 
-        if instance.get("number"):
-            meeting_id = self.get_meeting_id(instance)
-            if not self._check_if_unique(
-                instance["number"], meeting_id, instance["id"]
-            ):
-                raise ActionException("Number is not unique.")
-
+        self.set_text_hash(instance)
         return instance
 
     def set_extension_reference_ids(
@@ -166,8 +150,6 @@ class MotionUpdate(
         motion_ids = []
         for fqid in possible_rerids:
             collection, id_ = collection_and_id_from_fqid(fqid)
-            if collection != "motion":
-                raise ActionException(f"Found {fqid} but only motion is allowed.")
             motion_ids.append(int(id_))
         if motion_ids:
             gm_request = GetManyRequest("motion", motion_ids, ["id"])

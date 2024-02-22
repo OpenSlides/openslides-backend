@@ -2,6 +2,7 @@ from math import floor
 from time import time
 from typing import Any
 
+from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls
@@ -89,25 +90,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("created") == 1687339000
         self.assert_history_information("motion/111", ["Motion updated"])
         assert counter.calls == 3
-
-    def test_update_editor_and_speaker(self) -> None:
-        self.set_models(self.permission_test_models)
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "editor_id": 1,
-                "working_group_speaker_id": 1,
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "motion/111",
-            {
-                "editor_id": 1,
-                "working_group_speaker_id": 1,
-            },
-        )
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
@@ -436,6 +418,27 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "message", ""
         )
 
+    def test_only_motion_allowed_2(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 1,
+                "state_extension": "blablabla [assignment/1] blablabla",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Found assignment/1 but only motion is allowed." in response.json.get(
+            "message", ""
+        )
+
     def test_reset_recommendation_extension(self) -> None:
         self.set_models(
             {
@@ -490,6 +493,43 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "The following models do not belong to meeting 1: ['meeting_user/1']",
             response.json["message"],
         )
+
+    def test_update_identical_motions(self) -> None:
+        text1 = "test1"
+        hash1 = TextHashMixin.get_hash(text1)
+        text2 = "test2"
+        hash2 = TextHashMixin.get_hash(text2)
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "motion/1": {
+                    "meeting_id": 1,
+                    "text": text1,
+                    "text_hash": hash1,
+                    "identical_motion_ids": [2],
+                },
+                "motion/2": {
+                    "meeting_id": 1,
+                    "text": text1,
+                    "text_hash": hash1,
+                    "identical_motion_ids": [1],
+                },
+                "motion/3": {"meeting_id": 1, "text": text2, "text_hash": hash2},
+            }
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 2,
+                "text": text2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/1", {"identical_motion_ids": []})
+        self.assert_model_exists(
+            "motion/2", {"text_hash": hash2, "identical_motion_ids": [3]}
+        )
+        self.assert_model_exists("motion/3", {"identical_motion_ids": [2]})
 
     def test_update_no_permissions(self) -> None:
         self.create_meeting()
@@ -562,8 +602,6 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "text": "test",
             "reason": "test",
             "modified_final_version": "test",
-            "editor_id": 1,
-            "working_group_speaker_id": 1,
             "attachment_ids": [1],
         }.items():
             response = self.request(

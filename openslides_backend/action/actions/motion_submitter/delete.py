@@ -1,18 +1,11 @@
 from ....models.models import MotionSubmitter
-from ....permissions.permissions import Permissions
-from ...generics.delete import DeleteAction
-from ...util.default_schema import DefaultSchema
+from ...mixins.motion_meeting_user_delete import build_motion_meeting_user_delete_action
 from ...util.register import register_action
+
+BaseClass: type = build_motion_meeting_user_delete_action(MotionSubmitter)
 
 
 @register_action("motion_submitter.delete")
-class MotionSubmitterDeleteAction(DeleteAction):
-    """
-    Action to delete a motion submitter.
-    """
-
-    model = MotionSubmitter()
-    schema = DefaultSchema(MotionSubmitter()).get_delete_schema()
+class MotionSubmitterDeleteAction(BaseClass):
     history_information = "Submitters changed"
     history_relation_field = "motion_id"
-    permission = Permissions.Motion.CAN_MANAGE_METADATA
