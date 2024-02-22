@@ -1,16 +1,16 @@
-import argparse
 import os
 import string
-import subprocess
 from collections import ChainMap
-from io import StringIO, TextIOBase
 from textwrap import dedent
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
-import requests
-import yaml
-from cli.util.util import ROOT, assert_equal, open_output, open_yml_file, parse_arguments
-
+from cli.util.util import (
+    ROOT,
+    assert_equal,
+    open_output,
+    open_yml_file,
+    parse_arguments,
+)
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
 from openslides_backend.models.mixins import (

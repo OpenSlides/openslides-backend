@@ -1,18 +1,13 @@
-import argparse
-import hashlib
-from io import TextIOBase
 import os
-import sys
 from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
-import requests
 import yaml
-from cli.util.util import assert_equal, open_output, open_yml_file, parse_arguments
 
+from cli.util.util import assert_equal, open_output, open_yml_file, parse_arguments
 from openslides_backend.permissions.get_permission_parts import get_permission_parts
 
 SOURCE = "./global/meta/permission.yml"
@@ -99,7 +94,9 @@ def main() -> None:
                     + "\nAdditional permissions: "
                     + str(enum - permissions)
                 )
-                print("models.yml field group/permissions enum contains all permissions")
+                print(
+                    "models.yml field group/permissions enum contains all permissions"
+                )
         else:
             print(f"Permissions file {DESTINATION} successfully created.")
 
