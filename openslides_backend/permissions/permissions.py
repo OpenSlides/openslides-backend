@@ -1,11 +1,8 @@
 # Code generated. DO NOT EDIT.
 
 from enum import Enum
-from typing import Dict, List
 
 from .base_classes import Permission
-
-PERMISSION_YML_CHECKSUM = "09f85128304dc0cba2fac48b85ab3a75"
 
 
 class _AgendaItem(str, Permission, Enum):

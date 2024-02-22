@@ -9,6 +9,7 @@ from typing import Any, Optional, cast
 
 import requests
 import yaml
+from cli.util.util import ROOT, assert_equal, open_output, open_yml_file, parse_arguments
 
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
@@ -20,11 +21,6 @@ from openslides_backend.models.mixins import (
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SOURCE = "./global/meta/models.yml"
-
-ROOT = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "..",
-)
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -97,30 +93,12 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("filename", nargs="?", default=SOURCE)
-    parser.add_argument("--check", action="store_true")
-    args = parser.parse_args()
-
-    # Retrieve models.yml from call-parameter for testing purposes, local file or GitHub
-    file = args.filename
-    if os.path.isfile(file):
-        with open(file, "rb") as x:
-            models_yml = x.read()
-    else:
-        models_yml = requests.get(file).content
-
-    # open output stream
-    dest: TextIOBase
-    if args.check:
-        dest = StringIO()
-    else:
-        dest = open(DESTINATION, "w")
+    args = parse_arguments(SOURCE)
+    global MODELS
+    MODELS = open_yml_file(args.filename)
 
     # Load and parse models.yml
-    global MODELS
-    MODELS = yaml.safe_load(models_yml)
-    with dest:
+    with open_output(DESTINATION, args.check) as dest:
         dest.write(FILE_TEMPLATE)
         dest.write(
             "from .mixins import "
@@ -134,15 +112,7 @@ def main() -> None:
             dest.write(model.get_code())
 
         if args.check:
-            result = subprocess.run(
-                ["black", "-c", cast(StringIO, dest).getvalue()],
-                capture_output=True,
-                text=True,
-                cwd=ROOT,
-            )
-            result.check_returncode()
-            with open(DESTINATION) as f:
-                assert f.read() == result.stdout
+            assert_equal(dest, DESTINATION)
             print("Models file up-to-date.")
         else:
             print(f"Models file {DESTINATION} successfully created.")

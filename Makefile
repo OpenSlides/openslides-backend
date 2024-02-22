@@ -54,7 +54,7 @@ generate-permissions:
 	black openslides_backend/permissions/permissions.py
 
 check-permissions:
-	python cli/generate_permissions.py check
+	python cli/generate_permissions.py --check
 
 check-initial-data-json:
 	python cli/check_json.py global/data/initial-data.json

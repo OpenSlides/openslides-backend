@@ -1,4 +1,6 @@
+import argparse
 import hashlib
+from io import TextIOBase
 import os
 import sys
 from collections import defaultdict
@@ -9,6 +11,7 @@ from typing import Any
 
 import requests
 import yaml
+from cli.util.util import assert_equal, open_output, open_yml_file, parse_arguments
 
 from openslides_backend.permissions.get_permission_parts import get_permission_parts
 
@@ -29,11 +32,8 @@ FILE_TEMPLATE = dedent(
     # Code generated. DO NOT EDIT.
 
     from enum import Enum
-    from typing import Dict, List
 
     from .base_classes import Permission
-
-    PERMISSION_YML_CHECKSUM = "{}"
     """
 )
 
@@ -48,23 +48,8 @@ def main() -> None:
     """
     Main entry point for this script to generate the permissions.py from permission.yml.
     """
-    # Retrieve models.yml from call-parameter for testing purposes, local file or GitHub
-    if len(sys.argv) > 1 and sys.argv[1] != "check":
-        file = sys.argv[1]
-    else:
-        file = SOURCE
-
-    if os.path.isfile(file):
-        with open(file, "rb") as x:
-            permissions_yml = x.read()
-    else:
-        permissions_yml = requests.get(file).content
-
-    # calc checksum to assert the permissions.py is up-to-date
-    checksum = hashlib.md5(permissions_yml).hexdigest()
-
-    # Load and parse permissions.yml
-    permissions = yaml.safe_load(permissions_yml)
+    args = parse_arguments(SOURCE)
+    permissions = open_yml_file(args.filename)
     all_parents: dict[str, list[str]] = {}
     all_permissions: dict[str, set[str]] = defaultdict(set)
     for collection, children in permissions.items():
@@ -77,49 +62,46 @@ def main() -> None:
             if pair[1] is not None:
                 all_parents[pair[0]] += [pair[1]]
 
-    if len(sys.argv) > 1 and sys.argv[1] == "check":
-        from openslides_backend.permissions.permissions import PERMISSION_YML_CHECKSUM
+    with open_output(DESTINATION, args.check) as dest:
+        dest.write(FILE_TEMPLATE)
+        for collection, permissions in all_permissions.items():
+            dest.write(f"\nclass _{collection}(str, Permission, Enum):\n")
+            for permission in sorted(permissions):
+                _, perm_str = get_permission_parts(permission)
+                dest.write(f"    {perm_str} = '{permission}'\n")
 
-        assert checksum == PERMISSION_YML_CHECKSUM
-        print("permissions.py is up to date (checksum-comparison)")
+        dest.write("class Permissions:\n")
+        for collection in all_permissions.keys():
+            dest.write(f"    {collection} = _{collection}\n")
 
-        # check group.permissions enum in models.yml, if possible
-        models_file = Path(file).parent / "models.yml"
-        if os.path.isfile(models_file):
-            with open(models_file, "rb") as f:
-                models = yaml.safe_load(f.read())
-            enum = set(models["group"]["permissions"]["items"]["enum"])
-            permissions = {
-                str(permission)
-                for permissions in all_permissions.values()
-                for permission in permissions
-            }
-            assert enum == permissions, (
-                "Missing permissions: "
-                + str(permissions - enum)
-                + "\nAdditional permissions: "
-                + str(enum - permissions)
-            )
-            print("models.yml field group/permissions enum contains all permissions")
-    else:
-        # Write permissions.py
-        with open(DESTINATION, "w") as dest:
-            dest.write(FILE_TEMPLATE.format(checksum))
-            for collection, permissions in all_permissions.items():
-                dest.write(f"\nclass _{collection}(str, Permission, Enum):\n")
-                for permission in sorted(permissions):
-                    _, perm_str = get_permission_parts(permission)
-                    dest.write(f"    {perm_str} = '{permission}'\n")
+        dest.write("\n# Holds the corresponding parent for each permission.\n")
+        dest.write("permission_parents: dict[Permission, list[Permission]] = ")
+        dest.write(repr(all_parents))
 
-            dest.write("class Permissions:\n")
-            for collection in all_permissions.keys():
-                dest.write(f"    {collection} = _{collection}\n")
+        if args.check:
+            assert_equal(dest, DESTINATION)
+            print("Permissions file up-to-date.")
 
-            dest.write("\n# Holds the corresponding parent for each permission.\n")
-            dest.write("permission_parents: dict[Permission, list[Permission]] = ")
-            dest.write(repr(all_parents))
-
-        print(f"Permissions file {DESTINATION} successfully created.")
+            # check group.permissions enum in models.yml, if possible
+            models_file = Path(args.filename).parent / "models.yml"
+            if os.path.isfile(models_file):
+                with open(models_file, "rb") as f:
+                    models = yaml.safe_load(f.read())
+                enum = set(models["group"]["permissions"]["items"]["enum"])
+                permissions = {
+                    str(permission)
+                    for permissions in all_permissions.values()
+                    for permission in permissions
+                }
+                assert enum == permissions, (
+                    "Missing permissions: "
+                    + str(permissions - enum)
+                    + "\nAdditional permissions: "
+                    + str(enum - permissions)
+                )
+                print("models.yml field group/permissions enum contains all permissions")
+        else:
+            print(f"Permissions file {DESTINATION} successfully created.")
 
 
 def process_permission_level(
