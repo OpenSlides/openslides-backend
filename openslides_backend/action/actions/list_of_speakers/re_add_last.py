@@ -35,7 +35,13 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 FilterOperator("meeting_id", "=", meeting_id),
             ),
-            mapped_fields=["end_time", "meeting_user_id", "weight", "point_of_order"],
+            mapped_fields=[
+                "end_time",
+                "meeting_user_id",
+                "weight",
+                "point_of_order",
+                "speech_state",
+            ],
         )
         if not speakers:
             raise ActionException(
@@ -45,6 +51,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
         # Get last speaker.
         last_speaker_id, last_speaker = None, None
         lowest_weight = None
+        has_non_finished = False
         for speaker_id, speaker in speakers.items():
             speaker_weight = speaker.get("weight") or 0
             if lowest_weight is None:
@@ -58,9 +65,17 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
                 else:
                     if last_speaker["end_time"] < speaker["end_time"]:
                         last_speaker_id, last_speaker = speaker_id, speaker
+            else:
+                has_non_finished = True
         if last_speaker is None:
             raise ActionException("There is no last speaker that can be re-added.")
         assert isinstance(lowest_weight, int)
+        if last_speaker.get("speech_state") != "interposed_question":
+            lowest_weight = lowest_weight - 1
+        elif not has_non_finished:
+            raise ActionException(
+                "Can't re-add interposed question when there's no remaining speaker"
+            )
 
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),
@@ -89,5 +104,5 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             "id": last_speaker_id,
             "begin_time": None,
             "end_time": None,
-            "weight": lowest_weight - 1,
+            "weight": lowest_weight,
         }

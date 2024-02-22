@@ -175,6 +175,75 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         response = self.request("list_of_speakers.re_add_last", {"id": 111})
         self.assert_status_code(response, 200)
 
+    def test_with_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_enable_interposed_question": True,
+                },
+                "list_of_speakers/222": {
+                    "meeting_id": 1,
+                    "speaker_ids": [333, 334, 335],
+                },
+                "speaker/333": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 42,
+                    "begin_time": 1000,
+                    "total_pause": 1000,
+                    "meeting_id": 1,
+                    "weight": 1,
+                },
+                "speaker/334": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 43,
+                    "meeting_id": 1,
+                    "weight": 2,
+                },
+                "speaker/335": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 44,
+                    "meeting_id": 1,
+                    "weight": 1,
+                    "begin_time": 1500,
+                    "end_time": 2500,
+                    "speech_state": "interposed_question",
+                },
+            }
+        )
+        response = self.request("list_of_speakers.re_add_last", {"id": 222})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/333", {"weight": 1})
+        self.assert_model_exists("speaker/334", {"weight": 2})
+        self.assert_model_exists("speaker/335", {"weight": 1})
+
+    def test_with_interposed_question_error(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_enable_interposed_question": True,
+                },
+                "list_of_speakers/222": {
+                    "meeting_id": 1,
+                    "speaker_ids": [333, 334, 335],
+                },
+                "speaker/335": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 44,
+                    "meeting_id": 1,
+                    "weight": 1,
+                    "begin_time": 1500,
+                    "end_time": 2500,
+                    "speech_state": "interposed_question",
+                },
+            }
+        )
+        response = self.request("list_of_speakers.re_add_last", {"id": 222})
+        self.assert_status_code(response, 400)
+        assert (
+            "Can't re-add interposed question when there's no remaining speaker"
+            in response.json["message"]
+        )
+
     def test_last_speaker_also_in_waiting_list_but_poos(self) -> None:
         self.set_models(
             {
