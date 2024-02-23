@@ -511,3 +511,110 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "structure_level_list_of_speakers/42", {"speaker_ids": []}
         )
+
+    def test_update_set_point_of_order_forbidden(self) -> None:
+        response = self.request("speaker.update", {"id": 890, "point_of_order": True})
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json["message"],
+            "Point of order speakers are not enabled for this meeting.",
+        )
+        self.assert_model_exists("speaker/890", {"point_of_order": None})
+
+    def test_update_set_point_of_order_self(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"list_of_speakers_enable_point_of_order_speakers": True},
+                "meeting_user/7": {"user_id": 1},
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "point_of_order": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"point_of_order": True})
+
+    def test_update_set_point_of_order_other_forbidden(self) -> None:
+        self.set_models(
+            {"meeting/1": {"list_of_speakers_enable_point_of_order_speakers": True}}
+        )
+        response = self.request("speaker.update", {"id": 890, "point_of_order": True})
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json["message"],
+            "The requesting user 1 is not the user 7 the point-of-order is filed for.",
+        )
+        self.assert_model_exists("speaker/890", {"point_of_order": None})
+
+    def test_update_set_point_of_order_other_allowed(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_enable_point_of_order_speakers": True,
+                    "list_of_speakers_can_create_point_of_order_for_others": True,
+                }
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "point_of_order": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/890", {"point_of_order": True})
+
+    def test_update_poo_fields_without_poo(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_enable_point_of_order_speakers": True,
+                    "list_of_speakers_enable_point_of_order_categories": True,
+                },
+                "point_of_order_category/1": {
+                    "meeting_id": 1,
+                },
+            }
+        )
+        for field, value in {"note": "test", "point_of_order_category_id": 1}.items():
+            response = self.request("speaker.update", {"id": 890, field: value})
+            self.assert_status_code(response, 400)
+            self.assertEqual(
+                response.json["message"],
+                "Not allowed to set note/category if not point of order.",
+            )
+            self.assert_model_exists("speaker/890", {field: None})
+
+    def test_update_missing_poo_category(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_enable_point_of_order_speakers": True,
+                    "list_of_speakers_enable_point_of_order_categories": True,
+                    "list_of_speakers_can_create_point_of_order_for_others": True,
+                },
+            }
+        )
+        response = self.request("speaker.update", {"id": 890, "point_of_order": True})
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json["message"],
+            "Point of order category is enabled, but category id is missing.",
+        )
+        self.assert_model_exists("speaker/890", {"point_of_order": None})
+
+    def test_update_forbidden_poo_category(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_enable_point_of_order_speakers": True,
+                    "list_of_speakers_can_create_point_of_order_for_others": True,
+                },
+                "point_of_order_category/1": {
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update",
+            {"id": 890, "point_of_order": True, "point_of_order_category_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assertEqual(
+            response.json["message"],
+            "Point of order categories are not enabled for this meeting.",
+        )
+        self.assert_model_exists("speaker/890", {"point_of_order": None})
