@@ -149,6 +149,15 @@ class TestSpeakerUnpause(BaseActionTestCase):
             "structure_level_list_of_speakers/2", {"current_start_time": None}
         )
 
+    def test_unpause_point_of_order_with_structure_level(self) -> None:
+        self.setup_structure_level()
+        self.set_models({"speaker/890": {"point_of_order": True}})
+        response = self.request("speaker.unpause", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/2", {"current_start_time": None}
+        )
+
     def test_unpause_interposed_question_with_structure_level(self) -> None:
         self.setup_structure_level()
         self.set_models(
