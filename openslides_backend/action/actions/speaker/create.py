@@ -15,7 +15,7 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import CheckSpeechState, StructureLevelMixin
+from .mixins import CheckSpeechState, PointOfOrderPermissionMixin, StructureLevelMixin
 from .sort import SpeakerSort
 from .speech_state import SpeechState
 
@@ -26,6 +26,7 @@ class SpeakerCreateAction(
     CheckSpeechState,
     CreateActionWithInferredMeeting,
     StructureLevelMixin,
+    PointOfOrderPermissionMixin,
 ):
     model = Speaker()
     relation_field_for_meeting = "list_of_speakers_id"
@@ -239,17 +240,11 @@ class SpeakerCreateAction(
                 ),
                 ["user_id"],
             )
+            user_id = meeting_user["user_id"]
         else:
             if instance.get("speech_state") != SpeechState.INTERPOSED_QUESTION:
                 raise ActionException("meeting_user_id is required.")
-            meeting_user = {"user_id": None}
-
-        if (
-            "note" in instance or "point_of_order_category_id" in instance
-        ) and not instance.get("point_of_order"):
-            raise ActionException(
-                "Not allowed to set note/category if not point of order."
-            )
+            user_id = None
 
         los_fqid = fqid_from_collection_and_id(
             "list_of_speakers", instance["list_of_speakers_id"]
@@ -268,36 +263,7 @@ class SpeakerCreateAction(
                 "list_of_speakers_allow_multiple_speakers",
             ],
         )
-        if instance.get("point_of_order") and not meeting.get(
-            "list_of_speakers_enable_point_of_order_speakers"
-        ):
-            raise ActionException(
-                "Point of order speakers are not enabled for this meeting."
-            )
-
-        if (
-            instance.get("point_of_order")
-            and meeting_user.get("user_id") != self.user_id
-            and not meeting.get("list_of_speakers_can_create_point_of_order_for_others")
-        ):
-            raise ActionException(
-                f"The requesting user {self.user_id} is not the user {meeting_user['user_id']} the point-of-order is filed for."
-            )
-
-        if instance.get("point_of_order_category_id") and not meeting.get(
-            "list_of_speakers_enable_point_of_order_categories"
-        ):
-            raise ActionException(
-                "Point of order categories are not enabled for this meeting."
-            )
-        if (
-            meeting.get("list_of_speakers_enable_point_of_order_categories")
-            and instance.get("point_of_order")
-            and not instance.get("point_of_order_category_id")
-        ):
-            raise ActionException(
-                "Point of order category is enabled, but category id is missing."
-            )
+        self.check_point_of_order_fields(instance, meeting, user_id)
 
         if (
             (
@@ -305,7 +271,7 @@ class SpeakerCreateAction(
                 or meeting.get("list_of_speakers_closing_disables_point_of_order")
             )
             and los.get("closed")
-            and meeting_user["user_id"] in (self.user_id, None)
+            and user_id in (self.user_id, None)
             and not has_perm(
                 self.datastore,
                 self.user_id,
@@ -317,7 +283,7 @@ class SpeakerCreateAction(
 
         if "meeting_user_id" in instance:
             if meeting.get("list_of_speakers_present_users_only"):
-                user_fqid = fqid_from_collection_and_id("user", meeting_user["user_id"])
+                user_fqid = fqid_from_collection_and_id("user", user_id)
                 user = self.datastore.get(user_fqid, ["is_present_in_meeting_ids"])
                 if meeting_id not in user.get("is_present_in_meeting_ids", ()):
                     raise ActionException(
@@ -344,7 +310,7 @@ class SpeakerCreateAction(
                 )
                 if self.datastore.exists("speaker", filter_obj):
                     raise ActionException(
-                        f"User {meeting_user['user_id']} is already on the list of speakers."
+                        f"User {user_id} is already on the list of speakers."
                     )
         return super().validate_fields(instance)
 

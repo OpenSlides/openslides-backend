@@ -26,17 +26,18 @@ Two types of operation:
   the request must be rejected due to a closed list. All other cases are allowed.
 
 - *adding another user* (`meeting_user_id` does *not* belong to the request user) is allowed with
-  conditions see under **Permissions**
+  conditions see under **Permissions**. If `point_of_order` is also `true`, it is only allowed if
+  `meeting.list_of_speakers_can_create_point_of_order_for_others` is `true` as well.
 
 `meeting_user_id` is _not_ required if `speech_state == "interposed_question"`.
 
 There are many things to watch out for:
-- Point of order speakers are only allowed, if `meeting/list_of_speakers_enable_point_of_order_speakers` is true.
-- `note` is only allowed, if it `point_of_order` is true.
-- `point_of_order_category_id` is only allowed and in this case required, if `point_of_order` is true and `meeting.point_of_order_category_enabled` is also true. This opens an alternative way to get the point-of-order-speakers sorted, see [Point of order](https://github.com/OpenSlides/OpenSlides/wiki/List-of-speakers#point-of-order).
+- Point of order speakers are only allowed if `meeting/list_of_speakers_enable_point_of_order_speakers` is true.
+- `note` is only allowed if it `point_of_order` is true.
+- `point_of_order_category_id` is only allowed and in this case required, if `point_of_order` is true and `meeting.list_of_speakers_enable_point_of_order_categories` is also true. This opens an alternative way to get the point-of-order-speakers sorted, see [Point of order](https://github.com/OpenSlides/OpenSlides/wiki/List-of-speakers#point-of-order).
 - If `meeting/list_of_speakers_present_users_only` is true, the user must be present (`user/present_in_meeting_ids`).
 - The `weight` must be calculated as described in [Point of order](https://github.com/OpenSlides/OpenSlides/wiki/List-of-speakers#point-of-order) with an eye to detail regarding point of order speakers.
-- The given user must not be already waiting. It is allowed to have the user once as a normal speaker and once as a point of order speaker, but not two speakers of the same type.
+- If `meeting.list_of_speakers_allow_multiple_speakers` is `False`, the given user must not be already waiting. It is allowed to have the user once as a normal speaker and once as a point of order speaker, but not two speakers of the same type.
 - The user must belong to the meeting.
 - `speech_state` can only be set to `pro` or `contra` if `meeting/list_of_speakers_enable_pro_contra_speech` is true
 - `speech_state` can only be set to `contribution` if `list_of_speakers.can_manage` or
