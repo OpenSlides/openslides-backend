@@ -234,6 +234,9 @@ class MotionDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("motion.delete", {"id": 110})
         self.assert_status_code(response, 200)
+        self.assert_model_deleted("motion_submitter/1")
+        self.assert_model_deleted("motion_editor/1")
+        self.assert_model_deleted("motion_working_group_speaker/1")
         self.assert_history_information("motion/110", ["Motion deleted"])
 
     def test_delete_no_permission(self) -> None:
