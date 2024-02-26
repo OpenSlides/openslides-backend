@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException
 
 from ....models.models import Speaker
@@ -10,15 +11,23 @@ from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import CheckSpeechState, StructureLevelMixin
+from .mixins import CheckSpeechState, PointOfOrderPermissionMixin, StructureLevelMixin
 from .speech_state import SpeechState
 
 
 @register_action("speaker.update")
-class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
+class SpeakerUpdate(
+    UpdateAction, CheckSpeechState, StructureLevelMixin, PointOfOrderPermissionMixin
+):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_update_schema(
-        optional_properties=["speech_state", "meeting_user_id"],
+        optional_properties=[
+            "speech_state",
+            "meeting_user_id",
+            "point_of_order",
+            "point_of_order_category_id",
+            "note",
+        ],
         additional_optional_fields={"structure_level_id": optional_id_schema},
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
@@ -32,6 +41,7 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [
                 "speech_state",
+                "point_of_order",
                 "meeting_id",
                 "meeting_user_id",
                 "begin_time",
@@ -57,6 +67,31 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState, StructureLevelMixin):
             raise ActionException(
                 "You can only update the structure level on a waiting speaker."
             )
+
+        requests = [
+            GetManyRequest(
+                "meeting",
+                [speaker["meeting_id"]],
+                [
+                    "list_of_speakers_enable_point_of_order_speakers",
+                    "list_of_speakers_can_create_point_of_order_for_others",
+                    "list_of_speakers_enable_point_of_order_categories",
+                ],
+            ),
+        ]
+        if meeting_user_id := speaker.get("meeting_user_id"):
+            requests.append(
+                GetManyRequest("meeting_user", [meeting_user_id], ["user_id"])
+            )
+        result = self.datastore.get_many(requests)
+        meeting = result["meeting"][speaker["meeting_id"]]
+        user_id = result.get("meeting_user", {}).get(meeting_user_id, {}).get("user_id")
+        self.check_point_of_order_fields(
+            instance, meeting, user_id, speaker.get("point_of_order")
+        )
+        if "point_of_order" in instance and not instance["point_of_order"]:
+            instance["point_of_order_category_id"] = None
+            instance["note"] = None
         self.handle_structure_level(instance, speaker["list_of_speakers_id"])
         self.check_speech_state(speaker, instance, meeting_id=speaker["meeting_id"])
         return instance
