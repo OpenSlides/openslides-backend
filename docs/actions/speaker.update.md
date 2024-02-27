@@ -8,6 +8,9 @@
     speech_state: string;
     meeting_user_id: Id;
     structure_level_id: Id;
+    point_of_order: bool;
+    point_of_order_category_id: Id;
+    note: string;
 }
 ```
 
@@ -31,6 +34,9 @@ the permission check since it sets the global frame for these checks.
 | X            | intervention | `meeting/list_of_speakers_intervention_time > 0` |
 | X            | interposed_question | forbidden |
 | interposed_question | X | forbidden |
+
+The point-of-order-related fields (`point_of_order`, `point_of_order_category_id` and `note`) follow
+the same rules as in [speaker.create](speaker.create.md).
 
 ## Permissions
 The request user needs either:

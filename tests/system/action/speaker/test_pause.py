@@ -171,6 +171,15 @@ class TestSpeakerPause(BaseActionTestCase):
     def test_pause_with_intervention(self) -> None:
         self.pause_with_speech_state(SpeechState.INTERVENTION)
 
+    def test_pause_with_point_of_order(self) -> None:
+        self.setup_structure_level()
+        self.set_models({"speaker/890": {"point_of_order": True}})
+        response = self.request("speaker.pause", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/2", {"remaining_time": 200}
+        )
+
     def test_pause_no_permissions(self) -> None:
         self.base_permission_test(self.models, "speaker.pause", {"id": 890})
 

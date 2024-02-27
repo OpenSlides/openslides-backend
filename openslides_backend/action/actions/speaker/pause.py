@@ -33,6 +33,7 @@ class SpeakerPause(SingularActionMixin, CountdownControl, UpdateAction):
                 "speech_state",
                 "meeting_id",
                 "structure_level_list_of_speakers_id",
+                "point_of_order",
             ],
         )
         if (

@@ -74,6 +74,7 @@ class SpeakerEndSpeach(SingularActionMixin, CountdownControl, UpdateAction):
                 "speech_state",
                 "meeting_id",
                 "structure_level_list_of_speakers_id",
+                "point_of_order",
             ],
         )
         if speaker.get("begin_time") is None or speaker.get("end_time") is not None:
