@@ -1342,6 +1342,7 @@ class Motion(Model):
     workflow_timestamp = fields.TimestampField(read_only=True)
     start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
+    additional_submitter = fields.CharField()
     lead_motion_id = fields.RelationField(
         to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )

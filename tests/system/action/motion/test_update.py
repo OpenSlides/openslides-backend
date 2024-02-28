@@ -73,6 +73,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                         4: "</><</>broken>",
                     },
                     "start_line_number": 13,
+                    "additional_submitter": "test",
                 },
             )
         self.assert_status_code(response, 200)
@@ -88,6 +89,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         }
         assert model.get("start_line_number") == 13
         assert model.get("created") == 1687339000
+        assert model.get("additional_submitter") == "test"
         self.assert_history_information("motion/111", ["Motion updated"])
         assert counter.calls == 3
 

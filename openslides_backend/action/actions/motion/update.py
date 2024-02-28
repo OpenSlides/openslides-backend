@@ -48,6 +48,7 @@ class MotionUpdate(
         optional_properties=[
             "title",
             "number",
+            "additional_submitter",
             "text",
             "reason",
             "modified_final_version",
