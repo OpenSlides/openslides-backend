@@ -352,7 +352,6 @@ class MeetingImport(BaseActionTestCase):
             "can_change_own_password": True,
             "gender": "male",
             "email": "",
-            "default_number": "",
             "default_vote_weight": "1.000000",
             "last_email_sent": None,
             "is_demo_user": False,

@@ -43,6 +43,7 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
                 "end_time",
                 "speech_state",
                 "structure_level_list_of_speakers_id",
+                "point_of_order",
             ],
         )
         # find current speaker, if exists, and end their speech

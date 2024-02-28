@@ -187,7 +187,6 @@ class UpdateHistoryMixin(Action):
                 "last_name",
                 "email",
                 "username",
-                "default_number",
                 "default_vote_weight",
             ]
             if any(field in instance for field in update_fields):

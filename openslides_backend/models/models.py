@@ -95,7 +95,6 @@ class User(Model):
     can_change_own_password = fields.BooleanField(default=True)
     gender = fields.CharField()
     email = fields.CharField()
-    default_number = fields.CharField()
     default_vote_weight = fields.DecimalField(
         default="1.000000", constraints={"minimum": "0.000001"}
     )

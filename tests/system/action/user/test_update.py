@@ -704,7 +704,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": "new default_password",
                 "gender": "female",
                 "email": "info@openslides.com ",  # space intentionally, will be stripped
-                "default_number": "new default_number",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
             },
@@ -722,7 +721,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": "new default_password",
                 "gender": "female",
                 "email": "info@openslides.com",
-                "default_number": "new default_number",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
             },

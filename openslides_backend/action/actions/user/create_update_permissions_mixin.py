@@ -179,7 +179,6 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             "gender",
             "pronoun",
             "email",
-            "default_number",
             "default_vote_weight",
         ],
         "B": [
