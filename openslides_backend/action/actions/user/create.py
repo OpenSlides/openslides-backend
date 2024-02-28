@@ -1,6 +1,8 @@
 import re
 from typing import Any
 
+from openslides_backend.permissions.permissions import Permissions
+
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.schema import optional_id_schema
@@ -57,6 +59,7 @@ class UserCreate(
             **UserMixin.transfer_field_list,
         },
     )
+    permission = Permissions.User.CAN_MANAGE
     check_email_field = "email"
     history_information = "Account created"
     own_history_information_first = True

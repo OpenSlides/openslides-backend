@@ -962,7 +962,9 @@ class Group(Model):
                 "tag.can_manage",
                 "user.can_manage",
                 "user.can_manage_presence",
+                "user.can_see_sensitive_data",
                 "user.can_see",
+                "user.can_update",
             ]
         }
     )

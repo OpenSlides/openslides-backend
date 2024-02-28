@@ -1,6 +1,8 @@
 import re
 from typing import Any
 
+from openslides_backend.permissions.permissions import Permissions
+
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
@@ -58,6 +60,7 @@ class UserUpdate(
             **UserMixin.transfer_field_list,
         },
     )
+    permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
