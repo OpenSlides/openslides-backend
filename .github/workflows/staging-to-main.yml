@@ -3,7 +3,7 @@ name: Copy staging commits to main
 on:
   push:
     branches:
-      - 'staging/**'
+      - 'staging/4*'
       
 
 jobs:
@@ -17,8 +17,10 @@ jobs:
       with:
         ref: main
 
-    - run: git config user.name openslides-automation
-    - run: git config user.email openslides-automation@users.noreply.github.com
+    - name: Set git credentials
+      run: |
+        git config --global user.name openslides-automation
+        git config --global user.email openslides-automation@users.noreply.github.com
     
     - name: Cherry-pick new commit
       id: cherry-pick
@@ -39,7 +41,6 @@ jobs:
 
     - name: Create or update PR
       uses: peter-evans/create-pull-request@v6
-      if: ${{ always() }}
       with:
         token: ${{ steps.generate-token.outputs.token }}
         commit-message: ${{ github.event.commits[0].message }}
