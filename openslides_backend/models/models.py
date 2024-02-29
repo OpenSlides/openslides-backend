@@ -95,7 +95,6 @@ class User(Model):
     can_change_own_password = fields.BooleanField(default=True)
     gender = fields.CharField()
     email = fields.CharField()
-    default_number = fields.CharField()
     default_vote_weight = fields.DecimalField(
         default="1.000000", constraints={"minimum": "0.000001"}
     )
@@ -963,7 +962,9 @@ class Group(Model):
                 "tag.can_manage",
                 "user.can_manage",
                 "user.can_manage_presence",
+                "user.can_see_sensitive_data",
                 "user.can_see",
+                "user.can_update",
             ]
         }
     )
