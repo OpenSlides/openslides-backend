@@ -214,7 +214,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("speaker/333", {"weight": 1})
         self.assert_model_exists("speaker/334", {"weight": 2})
-        self.assert_model_exists("speaker/335", {"weight": 1})
+        self.assert_model_exists("speaker/335", {"weight": 0})
 
     def test_with_interposed_question_error(self) -> None:
         self.set_models(
@@ -225,6 +225,20 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                 "list_of_speakers/222": {
                     "meeting_id": 1,
                     "speaker_ids": [333, 334, 335],
+                },
+                "speaker/333": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 42,
+                    "begin_time": 1000,
+                    "end_time": 1500,
+                    "meeting_id": 1,
+                    "weight": 1,
+                },
+                "speaker/334": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 43,
+                    "meeting_id": 1,
+                    "weight": 2,
                 },
                 "speaker/335": {
                     "list_of_speakers_id": 222,
@@ -240,7 +254,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         response = self.request("list_of_speakers.re_add_last", {"id": 222})
         self.assert_status_code(response, 400)
         assert (
-            "Can't re-add interposed question when there's no remaining speaker"
+            "Can't re-add interposed question when there's no current speaker"
             in response.json["message"]
         )
 

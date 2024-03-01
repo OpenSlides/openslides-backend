@@ -37,6 +37,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             ),
             mapped_fields=[
                 "end_time",
+                "begin_time",
                 "meeting_user_id",
                 "weight",
                 "point_of_order",
@@ -51,7 +52,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
         # Get last speaker.
         last_speaker_id, last_speaker = None, None
         lowest_weight = None
-        has_non_finished = False
+        has_current_speaker = False
         for speaker_id, speaker in speakers.items():
             speaker_weight = speaker.get("weight") or 0
             if lowest_weight is None:
@@ -65,16 +66,17 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
                 else:
                     if last_speaker["end_time"] < speaker["end_time"]:
                         last_speaker_id, last_speaker = speaker_id, speaker
-            else:
-                has_non_finished = True
+            elif speaker.get("begin_time") is not None:
+                has_current_speaker = True
         if last_speaker is None:
             raise ActionException("There is no last speaker that can be re-added.")
         assert isinstance(lowest_weight, int)
-        if last_speaker.get("speech_state") != "interposed_question":
-            lowest_weight = lowest_weight - 1
-        elif not has_non_finished:
+        if (
+            last_speaker.get("speech_state") == "interposed_question"
+            and not has_current_speaker
+        ):
             raise ActionException(
-                "Can't re-add interposed question when there's no remaining speaker"
+                "Can't re-add interposed question when there's no current speaker"
             )
 
         meeting = self.datastore.get(
@@ -104,5 +106,5 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             "id": last_speaker_id,
             "begin_time": None,
             "end_time": None,
-            "weight": lowest_weight,
+            "weight": lowest_weight - 1,
         }
