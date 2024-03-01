@@ -5,7 +5,7 @@ from openslides_backend.action.action import Action
 from openslides_backend.action.actions.speaker.end_speech import SpeakerEndSpeach
 from openslides_backend.action.actions.speaker.pause import SpeakerPause
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
-from openslides_backend.shared.filters import And, FilterOperator
+from openslides_backend.shared.filters import And, FilterOperator, Or
 
 from ....models.models import Speaker
 from ....permissions.permissions import Permissions
@@ -43,6 +43,7 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
                 "end_time",
                 "speech_state",
                 "structure_level_list_of_speakers_id",
+                "point_of_order",
             ],
         )
         # find current speaker, if exists, and end their speech
@@ -54,8 +55,11 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
                     "list_of_speakers_id", "=", db_instance["list_of_speakers_id"]
                 ),
                 FilterOperator("begin_time", "!=", None),
-                FilterOperator("pause_time", "=", None),
                 FilterOperator("end_time", "=", None),
+                Or(
+                    FilterOperator("point_of_order", "=", True),
+                    FilterOperator("pause_time", "=", None),
+                ),
             ),
             mapped_fields=["id", "pause_time"],
         )

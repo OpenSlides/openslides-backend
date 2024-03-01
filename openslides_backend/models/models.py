@@ -95,7 +95,6 @@ class User(Model):
     can_change_own_password = fields.BooleanField(default=True)
     gender = fields.CharField()
     email = fields.CharField()
-    default_number = fields.CharField()
     default_vote_weight = fields.DecimalField(
         default="1.000000", constraints={"minimum": "0.000001"}
     )
@@ -421,7 +420,11 @@ class Meeting(Model, MeetingModelMixin):
     )
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
+    list_of_speakers_allow_multiple_speakers = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
+    list_of_speakers_can_create_point_of_order_for_others = fields.BooleanField(
+        default=False
+    )
     list_of_speakers_enable_point_of_order_categories = fields.BooleanField(
         default=False
     )
@@ -959,7 +962,9 @@ class Group(Model):
                 "tag.can_manage",
                 "user.can_manage",
                 "user.can_manage_presence",
+                "user.can_see_sensitive_data",
                 "user.can_see",
+                "user.can_update",
             ]
         }
     )
@@ -1394,10 +1399,14 @@ class Motion(Model):
         to={"meeting_user": "supported_motion_ids"}, equal_fields="meeting_id"
     )
     editor_ids = fields.RelationListField(
-        to={"motion_editor": "motion_id"}, equal_fields="meeting_id"
+        to={"motion_editor": "motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     working_group_speaker_ids = fields.RelationListField(
-        to={"motion_working_group_speaker": "motion_id"}, equal_fields="meeting_id"
+        to={"motion_working_group_speaker": "motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},
@@ -2438,7 +2447,9 @@ class ImportPreview(Model):
     id = fields.IntegerField()
     name = fields.CharField(
         required=True,
-        constraints={"enum": ["account", "participant", "topic", "committee"]},
+        constraints={
+            "enum": ["account", "participant", "topic", "committee", "motion"]
+        },
     )
     state = fields.CharField(
         required=True, constraints={"enum": ["warning", "error", "done"]}
