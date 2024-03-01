@@ -66,6 +66,16 @@ class MotionDeleteActionTest(BaseActionTestCase):
         response = self.request("motion.delete", {"id": 222})
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/111")
+        self.assert_model_deleted("motion/222")
+        self.assert_history_information("motion/222", ["Motion deleted"])
+
+    def test_delete_motion_and_amendment(self) -> None:
+        self.set_models(self.permission_test_models)
+        response = self.request_multi("motion.delete", [{"id": 111}, {"id": 222}])
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("motion/111")
+        self.assert_model_deleted("motion/222")
+        self.assert_history_information("motion/111", ["Motion deleted"])
         self.assert_history_information("motion/222", ["Motion deleted"])
 
     def test_delete_wrong_id(self) -> None:
