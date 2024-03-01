@@ -1,3 +1,6 @@
+from time import time
+
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -215,6 +218,40 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         )
         response = self.request("list_of_speakers.re_add_last", {"id": 111})
         self.assert_status_code(response, 200)
+
+    def test_tie_breakers(self) -> None:
+        now = round(time())
+        self.set_models(
+            {
+                "speaker/222": {
+                    "begin_time": now - 200,
+                    "end_time": now - 50,
+                    "weight": 1,
+                },
+                "speaker/223": {
+                    "begin_time": now - 150,
+                    "end_time": now - 50,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "weight": 1,
+                },
+                "speaker/224": {
+                    "begin_time": now - 100,
+                    "end_time": now - 50,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "weight": 2,
+                },
+            }
+        )
+        for i in range(222, 225):
+            response = self.request("list_of_speakers.re_add_last", {"id": 111})
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                f"speaker/{i}",
+                {
+                    "begin_time": None,
+                    "end_time": None,
+                },
+            )
 
     def test_re_add_last_no_permissions(self) -> None:
         self.base_permission_test(
