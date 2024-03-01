@@ -60,6 +60,7 @@ class MotionUpdate(
             "tag_ids",
             "attachment_ids",
             "created",
+            "workflow_timestamp",
         ],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
@@ -131,7 +132,8 @@ class MotionUpdate(
                 )
                 instance["state_id"] = workflow["first_state_id"]
                 instance["recommendation_id"] = None
-                set_workflow_timestamp_helper(self.datastore, instance, timestamp)
+                if "workflow_timestamp" not in instance:
+                    set_workflow_timestamp_helper(self.datastore, instance, timestamp)
 
         for prefix in ("recommendation", "state"):
             if f"{prefix}_extension" in instance:
@@ -185,6 +187,7 @@ class MotionUpdate(
                 "tag_ids",
                 "state_extension",
                 "created",
+                "workflow_timestamp",
             ]
 
         # check for self submitter and whitelist
@@ -213,6 +216,13 @@ class MotionUpdate(
             if "supporter_meeting_user_ids" in instance:
                 instance.pop("supporter_meeting_user_ids")
                 instance_information.append("Supporters changed")
+
+            # supporters changed
+            if "workflow_timestamp" in instance:
+                timestamp = instance.pop("workflow_timestamp")
+                instance_information.extend(
+                    ["Workflow_timestamp set to {}", f"{timestamp}"]
+                )
 
             # category changed
             instance_information.extend(
