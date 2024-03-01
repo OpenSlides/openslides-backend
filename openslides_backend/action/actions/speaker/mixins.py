@@ -133,3 +133,48 @@ class StructureLevelMixin(Action):
             else:
                 sllos_id = None
             instance["structure_level_list_of_speakers_id"] = sllos_id
+
+
+class PointOfOrderPermissionMixin(Action):
+    def check_point_of_order_fields(
+        self,
+        instance: dict[str, Any],
+        meeting: dict[str, Any],
+        user_id: int | None,
+        db_point_of_order: bool | None = None,
+    ) -> None:
+        if instance.get("point_of_order") and not meeting.get(
+            "list_of_speakers_enable_point_of_order_speakers"
+        ):
+            raise ActionException(
+                "Point of order speakers are not enabled for this meeting."
+            )
+
+        if ("note" in instance or "point_of_order_category_id" in instance) and not (
+            instance.get("point_of_order") or db_point_of_order
+        ):
+            raise ActionException(
+                "Not allowed to set note/category if not point of order."
+            )
+
+        if (
+            instance.get("point_of_order")
+            and user_id != self.user_id
+            and not meeting.get("list_of_speakers_can_create_point_of_order_for_others")
+        ):
+            raise ActionException(
+                f"The requesting user {self.user_id} is not the user {user_id} the point-of-order is filed for."
+            )
+
+        if meeting.get("list_of_speakers_enable_point_of_order_categories"):
+            if instance.get("point_of_order") and not instance.get(
+                "point_of_order_category_id"
+            ):
+                raise ActionException(
+                    "Point of order category is enabled, but category id is missing."
+                )
+        else:
+            if instance.get("point_of_order_category_id"):
+                raise ActionException(
+                    "Point of order categories are not enabled for this meeting."
+                )
