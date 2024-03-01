@@ -105,7 +105,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
         3. Between multiple interposed questions, the weight decides.
         """
         return (
-            instance["end_time"],
+            -instance["end_time"],
             instance["speech_state"] == SpeechState.INTERPOSED_QUESTION,
             instance["weight"],
         )
