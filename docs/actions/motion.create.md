@@ -7,6 +7,7 @@
 
 // Optional
     number: string;
+    additional_submitter: string;
     sort_parent_id: Id;
     category_id: Id;
     block_id: Id;

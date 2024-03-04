@@ -73,6 +73,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                         4: "</><</>broken>",
                     },
                     "start_line_number": 13,
+                    "additional_submitter": "test",
                     "workflow_timestamp": 1234567890,
                 },
             )
@@ -89,6 +90,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         }
         assert model.get("start_line_number") == 13
         assert model.get("created") == 1687339000
+        assert model.get("additional_submitter") == "test"
         assert model.get("workflow_timestamp") == 1234567890
         self.assert_history_information(
             "motion/111",

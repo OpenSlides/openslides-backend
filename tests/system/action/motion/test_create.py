@@ -79,35 +79,24 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
+        motion = {
+            "title": "test_Xcdfgee",
+            "meeting_id": 1,
+            "number": "001",
+            "sort_parent_id": 1,
+            "category_id": 124,
+            "block_id": 78,
+            "supporter_meeting_user_ids": [1],
+            "tag_ids": [56],
+            "attachment_ids": [8],
+            "text": "test",
+            "reason": "test",
+            "additional_submitter": "test",
+        }
 
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "number": "001",
-                "sort_parent_id": 1,
-                "category_id": 124,
-                "block_id": 78,
-                "supporter_meeting_user_ids": [1],
-                "tag_ids": [56],
-                "attachment_ids": [8],
-                "text": "test",
-                "reason": "test",
-            },
-        )
+        response = self.request("motion.create", motion | {"workflow_id": 12})
         self.assert_status_code(response, 200)
-        model = self.get_model("motion/2")
-        assert model.get("title") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 1
-        assert model.get("number") == "001"
-        assert model.get("sort_parent_id") == 1
-        assert model.get("category_id") == 124
-        assert model.get("block_id") == 78
-        assert model.get("supporter_meeting_user_ids") == [1]
-        assert model.get("tag_ids") == [56]
-        assert model.get("attachment_ids") == [8]
+        self.assert_model_exists("motion/2", motion)
 
     def test_create_empty_data(self) -> None:
         response = self.request("motion.create", {})
