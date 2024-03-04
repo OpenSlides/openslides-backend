@@ -1348,7 +1348,9 @@ class Motion(Model):
         to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )
     amendment_ids = fields.RelationListField(
-        to={"motion": "lead_motion_id"}, equal_fields="meeting_id"
+        to={"motion": "lead_motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     sort_parent_id = fields.RelationField(
         to={"motion": "sort_child_ids"}, equal_fields="meeting_id"
