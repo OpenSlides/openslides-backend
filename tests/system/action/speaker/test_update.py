@@ -618,3 +618,59 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             "Point of order categories are not enabled for this meeting.",
         )
         self.assert_model_exists("speaker/890", {"point_of_order": None})
+
+    def test_update_with_point_of_order_and_speech_state(self) -> None:
+        response = self.request(
+            "speaker.update", {"id": 890, "point_of_order": True, "speech_state": SpeechState.CONTRIBUTION}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Speaker can't be point of order and another speech state at the same time."
+
+    def test_update_with_point_of_order_and_speech_state_2(self) -> None:
+        self.set_models({"speaker/890": {"speech_state": SpeechState.PRO}})
+        response = self.request(
+            "speaker.update", {"id": 890, "point_of_order": True}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Speaker can't be point of order and another speech state at the same time."
+
+    def test_update_with_point_of_order_and_speech_state_3(self) -> None:
+        self.set_models({"speaker/890": {"point_of_order": True}})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.CONTRIBUTION}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Speaker can't be point of order and another speech state at the same time."
+
+    def test_update_running_intervention_with_other_state(self) -> None:
+        self.set_models({"speaker/890": {"speech_state": SpeechState.INTERVENTION, "begin_time": 1234}})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.CONTRIBUTION}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "You can not change the speech_state of a started intervention."
+
+    def test_update_non_running_intervention_with_other_state(self) -> None:
+        self.set_models({"speaker/890": {"speech_state": SpeechState.INTERVENTION}})
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": SpeechState.CONTRIBUTION}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_running_intervention_with_point_of_order(self) -> None:
+        self.set_models({"speaker/890": {"speech_state": SpeechState.INTERVENTION, "begin_time": 1234}})
+        response = self.request(
+            "speaker.update", {"id": 890, "point_of_order": True}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "You can not change the speech_state of a started intervention."
+
+    def test_update_running_speaker_with_speech_state(self) -> None:
+    def test_update_running_point_of_order_with_speech_state(self) -> None: #delete P_o_O to make it work
+    def test_update_running_non_intervention_speech_state_with_point_of_order(self) -> None: #delete state to make it work
+    def test_update_running_structure_level_speaker_with_point_of_order(self) -> None:
+    def test_update_running_structure_level_speaker_with_pro(self) -> None:
+    def test_update_running_structure_level_speaker_with_contra(self) -> None:
+    def test_update_running_structure_level_speaker_with_contribution(self) -> None:
+    def test_update_running_structure_level_speaker_with_interposed_question(self) -> None:
+    def test_update_running_structure_level_speaker_with_intervention(self) -> None:

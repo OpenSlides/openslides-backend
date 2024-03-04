@@ -1027,3 +1027,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "weight": 4,
             },
         )
+
+    def test_create_with_point_of_order_and_speech_state(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23, "point_of_order": True, "speech_state": SpeechState.CONTRIBUTION}
+        )
+        self.assert_status_code(response, 400)
+        assert response.json["message"] == "Speaker can't be point of order and another speech state at the same time."
