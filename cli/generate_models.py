@@ -95,7 +95,7 @@ def main() -> None:
     """
     args = parse_arguments(SOURCE)
     global MODELS
-    MODELS = open_yml_file(args.filename)
+    MODELS = open_yml_file(args.filename)["models"]
 
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:

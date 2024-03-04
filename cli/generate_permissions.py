@@ -82,7 +82,7 @@ def main() -> None:
             if os.path.isfile(models_file):
                 with open(models_file, "rb") as f:
                     models = yaml.safe_load(f.read())
-                enum = set(models["group"]["permissions"]["items"]["enum"])
+                enum = set(models["models"]["group"]["permissions"]["items"]["enum"])
                 permissions = {
                     str(permission)
                     for permissions in all_permissions.values()
