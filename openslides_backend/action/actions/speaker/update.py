@@ -46,6 +46,7 @@ class SpeakerUpdate(
                 "meeting_user_id",
                 "begin_time",
                 "list_of_speakers_id",
+                "structure_level_list_of_speakers_id",
             ],
         )
         if (
@@ -88,7 +89,7 @@ class SpeakerUpdate(
             ):
                 if instance.get("point_of_order"):
                     raise ActionException(
-                        "You can not add change a started speaker to point_of_order if there is a structure_level."
+                        "You can not change a started speaker to point_of_order if there is a structure_level."
                     )
                 elif instance.get("speech_state") and instance.get(
                     "speech_state"
@@ -98,7 +99,7 @@ class SpeakerUpdate(
                     SpeechState.CONTRA,
                 ]:
                     raise ActionException(
-                        f"You can not add change a started speaker to {instance.get('speech_state')} if there is a structure_level."
+                        f"You can not change a started speaker to {instance.get('speech_state')} if there is a structure_level."
                     )
         if new_speech_state and new_point_of_order_value:
             raise ActionException(
