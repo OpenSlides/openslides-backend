@@ -8,6 +8,7 @@ Includes workflow_timestamp from Issue2112
 // Optional
     title: string;
     number: string;
+    additional_submitter: string;
     text: HTMLStrict;
     reason: HTMLStrict;
     amendment_paragraph: {
