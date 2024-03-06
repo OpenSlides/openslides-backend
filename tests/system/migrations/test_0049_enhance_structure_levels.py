@@ -1,3 +1,18 @@
+from datastore.shared.di import injector
+from datastore.shared.postgresql_backend import ConnectionHandler
+
+
+def get_structure_level_id(name: str, meeting_id: int) -> int:
+    connection = injector.get(ConnectionHandler)
+    with connection.get_connection_context():
+        ids = connection.query_list_of_single_values(
+            "select data->>'id' from models where data->>'name' = %s and (data->>'meeting_id')::int = %s",
+            [name, meeting_id],
+        )
+        assert len(ids) == 1
+        return int(ids[0])
+
+
 def test_migration(write, finalize, assert_model):
     write(
         # user with default_structure_level
@@ -75,6 +90,10 @@ def test_migration(write, finalize, assert_model):
     )
     finalize("0049_enhance_structure_levels")
 
+    slid1 = get_structure_level_id("level", 42)
+    slid2 = get_structure_level_id("level", 43)
+    slid3 = get_structure_level_id("default", 42)
+
     assert_model(
         "user/1",
         {
@@ -90,32 +109,32 @@ def test_migration(write, finalize, assert_model):
         },
     )
     assert_model(
-        "structure_level/1",
-        {"id": 1, "meeting_id": 42, "name": "level", "meeting_user_ids": [11, 21]},
+        f"structure_level/{slid1}",
+        {"id": slid1, "meeting_id": 42, "name": "level", "meeting_user_ids": [11, 21]},
     )
     assert_model(
-        "structure_level/2",
-        {"id": 2, "meeting_id": 43, "name": "level", "meeting_user_ids": [12]},
+        f"structure_level/{slid2}",
+        {"id": slid2, "meeting_id": 43, "name": "level", "meeting_user_ids": [12]},
     )
     assert_model(
-        "structure_level/3",
-        {"id": 3, "meeting_id": 42, "name": "default", "meeting_user_ids": [13]},
+        f"structure_level/{slid3}",
+        {"id": slid3, "meeting_id": 42, "name": "default", "meeting_user_ids": [13]},
     )
     assert_model(
         "meeting_user/11",
-        {"id": 11, "user_id": 1, "meeting_id": 42, "structure_level_ids": [1]},
+        {"id": 11, "user_id": 1, "meeting_id": 42, "structure_level_ids": [slid1]},
     )
     assert_model(
         "meeting_user/12",
-        {"id": 12, "user_id": 1, "meeting_id": 43, "structure_level_ids": [2]},
+        {"id": 12, "user_id": 1, "meeting_id": 43, "structure_level_ids": [slid2]},
     )
     assert_model(
         "meeting_user/13",
-        {"id": 13, "user_id": 1, "meeting_id": 42, "structure_level_ids": [3]},
+        {"id": 13, "user_id": 1, "meeting_id": 42, "structure_level_ids": [slid3]},
     )
     assert_model(
         "meeting_user/21",
-        {"id": 21, "user_id": 2, "meeting_id": 42, "structure_level_ids": [1]},
+        {"id": 21, "user_id": 2, "meeting_id": 42, "structure_level_ids": [slid1]},
     )
     assert_model(
         "meeting_user/22",
@@ -123,11 +142,15 @@ def test_migration(write, finalize, assert_model):
     )
     assert_model(
         "meeting/42",
-        {"id": 42, "meeting_user_ids": [11, 13, 21, 22], "structure_level_ids": [1, 3]},
+        {
+            "id": 42,
+            "meeting_user_ids": [11, 13, 21, 22],
+            "structure_level_ids": [slid1, slid3],
+        },
     )
     assert_model(
         "meeting/43",
-        {"id": 43, "meeting_user_ids": [12], "structure_level_ids": [2]},
+        {"id": 43, "meeting_user_ids": [12], "structure_level_ids": [slid2]},
     )
 
 
