@@ -36,6 +36,7 @@ class SpeakerUnpause(SingularActionMixin, CountdownControl, UpdateAction):
                 "meeting_id",
                 "list_of_speakers_id",
                 "structure_level_list_of_speakers_id",
+                "point_of_order",
             ],
         )
         if (

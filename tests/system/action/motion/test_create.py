@@ -79,35 +79,24 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting_user/1": {"meeting_id": 1, "user_id": 1},
             }
         )
+        motion = {
+            "title": "test_Xcdfgee",
+            "meeting_id": 1,
+            "number": "001",
+            "sort_parent_id": 1,
+            "category_id": 124,
+            "block_id": 78,
+            "supporter_meeting_user_ids": [1],
+            "tag_ids": [56],
+            "attachment_ids": [8],
+            "text": "test",
+            "reason": "test",
+            "additional_submitter": "test",
+        }
 
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "number": "001",
-                "sort_parent_id": 1,
-                "category_id": 124,
-                "block_id": 78,
-                "supporter_meeting_user_ids": [1],
-                "tag_ids": [56],
-                "attachment_ids": [8],
-                "text": "test",
-                "reason": "test",
-            },
-        )
+        response = self.request("motion.create", motion | {"workflow_id": 12})
         self.assert_status_code(response, 200)
-        model = self.get_model("motion/2")
-        assert model.get("title") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 1
-        assert model.get("number") == "001"
-        assert model.get("sort_parent_id") == 1
-        assert model.get("category_id") == 124
-        assert model.get("block_id") == 78
-        assert model.get("supporter_meeting_user_ids") == [1]
-        assert model.get("tag_ids") == [56]
-        assert model.get("attachment_ids") == [8]
+        self.assert_model_exists("motion/2", motion)
 
     def test_create_empty_data(self) -> None:
         response = self.request("motion.create", {})
@@ -146,6 +135,41 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         motion = self.get_model("motion/1")
         assert motion.get("state_id") == 34
+        assert motion.get("created")
+
+    def test_create_with_set_number(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                    "motions_default_workflow_id": 12,
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_workflow_timestamp": True,
+                    "set_number": True,
+                },
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "title_test1",
+                "meeting_id": 222,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+        motion = self.assert_model_exists("motion/1", {"state_id": 34, "number": "1"})
+        assert motion.get("workflow_timestamp")
         assert motion.get("created")
 
     def test_create_workflow_id_from_meeting(self) -> None:
@@ -489,4 +513,84 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert (
             response.json["message"]
             == "You are not allowed to perform action motion.create. Forbidden fields: attachment_ids"
+        )
+
+    def test_create_check_not_unique_number(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_uZXBoHMp",
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {"meeting_id": 1, "number": "T001"},
+                "motion/2": {"meeting_id": 1, "number": "A001"},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "Title",
+                "text": "<p>of motion</p>",
+                "number": "A001",
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Number is not unique." in response.json["message"]
+
+    def test_create_broken_motion_type(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_uZXBoHMp",
+                    "is_active_in_organization_id": 1,
+                    "motion_ids": [1],
+                    "motion_statute_paragraph_ids": [1],
+                },
+                "motion/1": {"meeting_id": 1, "number": "T001"},
+                "motion_statute_paragraph/1": {"meeting_id": 1, "title": "Paragraph"},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "Title",
+                "text": "<p>of motion</p>",
+                "number": "A001",
+                "lead_motion_id": 1,
+                "statute_paragraph_id": 1,
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "You can't give both of lead_motion_id and statute_paragraph_id."
+            in response.json["message"]
+        )
+
+    def test_create_amendment_paragraphs_where_not_allowed(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_uZXBoHMp",
+                    "is_active_in_organization_id": 1,
+                    "motion_ids": [1],
+                },
+                "motion/1": {"meeting_id": 1, "number": "T001"},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "Title",
+                "text": "<p>of motion</p>",
+                "number": "A001",
+                "amendment_paragraphs": {4: "text"},
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "You can't give amendment_paragraphs in this context"
+            in response.json["message"]
         )

@@ -374,6 +374,7 @@ class HeaderEntry(TypedDict):
     type: str
     is_object: NotRequired[bool]
     is_list: NotRequired[bool]
+    is_hidden: NotRequired[bool]
 
 
 class StatisticEntry(TypedDict):
@@ -477,7 +478,14 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                     elif type_ == "string":
                         continue
                     elif type_ == "decimal":
-                        entry[field] = str(Decimal("0.000000") + Decimal(entry[field]))
+                        try:
+                            entry[field] = str(
+                                Decimal("0.000000") + Decimal(entry[field])
+                            )
+                        except Exception:
+                            raise ActionException(
+                                f"Could not parse {entry[field]} expect decimal"
+                            )
                     elif type_ == "integer":
                         try:
                             entry[field] = int(entry[field])
@@ -527,9 +535,8 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
         state_to_count: dict[ImportState, int] = defaultdict(int)
         for row in self.rows:
             state_to_count[row["state"]] += 1
-            state_to_count[ImportState.WARNING] += self.count_warnings_in_payload(
-                row.get("data", {}).values()
-            )
+            if self.count_warnings_in_payload(row.get("data", {}).values()):
+                state_to_count[ImportState.WARNING] += 1
             row["data"].pop("payload_index", None)
 
         self.statistics = [

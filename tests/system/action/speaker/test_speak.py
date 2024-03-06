@@ -363,3 +363,77 @@ class SpeakerSpeakTester(BaseActionTestCase):
             {"id": 890},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
+
+    def test_speak_with_paused_point_of_order(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "speaker_ids": [890, 891, 892],
+                    "meeting_user_ids": [7, 8, 9],
+                },
+                "list_of_speakers/23": {"speaker_ids": [890, 891, 892]},
+                "speaker/890": {
+                    "point_of_order": True,
+                    "begin_time": 1000,
+                    "pause_time": 1500,
+                },
+                "speaker/891": {
+                    "point_of_order": True,
+                    "meeting_user_id": 8,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+                "speaker/892": {
+                    "meeting_user_id": 9,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+                "user/8": {"username": "test_username2", "meeting_user_ids": [8]},
+                "user/9": {"username": "test_username3", "meeting_user_ids": [9]},
+                "meeting_user/8": {"meeting_id": 1, "user_id": 8, "speaker_ids": [891]},
+                "meeting_user/9": {"meeting_id": 1, "user_id": 9, "speaker_ids": [892]},
+            }
+        )
+        response = self.request("speaker.speak", {"id": 891})
+        self.assert_status_code(response, 200)
+        point_of_order1 = self.assert_model_exists("speaker/890")
+        assert point_of_order1["total_pause"]
+        assert point_of_order1["end_time"]
+        assert not point_of_order1.get("pause_time")
+        normal_speaker = self.assert_model_exists("speaker/891", {})
+        assert normal_speaker["begin_time"]
+        point_of_order2 = self.assert_model_exists("speaker/892", {})
+        assert not point_of_order2.get("begin_time")
+        assert not point_of_order2.get("end_time")
+
+    def test_speak_with_structure_level_and_point_of_order(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "structure_level_ids": [1],
+                    "structure_level_list_of_speakers_ids": [2],
+                    "list_of_speakers_intervention_time": 100,
+                },
+                "structure_level/1": {
+                    "meeting_id": 1,
+                    "structure_level_list_of_speakers_ids": [2],
+                },
+                "structure_level_list_of_speakers/2": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "structure_level_id": 1,
+                    "speaker_ids": [890],
+                    "remaining_time": 100,
+                },
+                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [2]},
+                "speaker/890": {
+                    "structure_level_list_of_speakers_id": 2,
+                    "point_of_order": True,
+                },
+            }
+        )
+        response = self.request("speaker.speak", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/2", {"current_start_time": None}
+        )

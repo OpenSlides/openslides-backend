@@ -11,7 +11,7 @@ The types noted below are the internal types after conversion in the backend. Se
         text: string,              // info: done, error
         // all optional, but see rules below
         number: string,            // unique when set, info: done, generated or error
-        reason: string,            // required if the meeting has "motions_reason_required", info: done or error
+        reason: string,            // required for create if the meeting has "motions_reason_required", info: done or error
         submitters_verbose: string[],      
         submitters_username: string[], // info: done, generated, warning, error if len(submitters_verbose) > len(submitters_username) 
         supporters_verbose: string[],

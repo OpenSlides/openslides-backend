@@ -3,7 +3,7 @@
 Migrations are available via the internal route `/internal/migrations/` with the following payload:
 ```js
 {
-    "cmd": "migrate" | "finalize" | "reset" | "stats" | "progress",
+    "cmd": "migrate" | "finalize" | "reset" | "clear-collectionfield-tables" | "stats" | "progress",
     "verbose": bool
 }
 ```

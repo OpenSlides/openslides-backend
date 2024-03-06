@@ -18,10 +18,16 @@ from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
 from .create_base import MotionCreateBase
 from .mixins import AmendmentParagraphHelper, TextHashMixin
+from .payload_validation_mixin import MotionCreatePayloadValidationMixin
 
 
 @register_action("motion.create")
-class MotionCreate(AmendmentParagraphHelper, TextHashMixin, MotionCreateBase):
+class MotionCreate(
+    AmendmentParagraphHelper,
+    MotionCreatePayloadValidationMixin,
+    TextHashMixin,
+    MotionCreateBase,
+):
     """
     Create Action for motions.
     """
@@ -29,6 +35,7 @@ class MotionCreate(AmendmentParagraphHelper, TextHashMixin, MotionCreateBase):
     schema = DefaultSchema(Motion()).get_create_schema(
         optional_properties=[
             "number",
+            "additional_submitter",
             "sort_parent_id",
             "category_id",
             "block_id",
@@ -85,30 +92,16 @@ class MotionCreate(AmendmentParagraphHelper, TextHashMixin, MotionCreateBase):
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # special check logic
+        error_messages = self.get_create_payload_integrity_error_message(
+            instance, instance["meeting_id"]
+        )
+        if len(error_messages):
+            raise ActionException(error_messages[0]["message"])
         if instance.get("lead_motion_id"):
-            if instance.get("statute_paragraph_id"):
-                raise ActionException(
-                    "You can't give both of lead_motion_id and statute_paragraph_id."
-                )
-            if not instance.get("text") and not instance.get("amendment_paragraphs"):
-                raise ActionException(
-                    "Text or amendment_paragraphs is required in this context."
-                )
-            if instance.get("text") and instance.get("amendment_paragraphs"):
-                raise ActionException(
-                    "You can't give both of text and amendment_paragraphs"
-                )
             if instance.get("text") and "amendment_paragraphs" in instance:
                 del instance["amendment_paragraphs"]
             if instance.get("amendment_paragraphs") and "text" in instance:
                 del instance["text"]
-        else:
-            if not instance.get("text"):
-                raise ActionException("Text is required")
-            if instance.get("amendment_paragraphs"):
-                raise ActionException(
-                    "You can't give amendment_paragraphs in this context"
-                )
         if instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
         # if amendment and no category set, use category from the lead motion
@@ -128,11 +121,8 @@ class MotionCreate(AmendmentParagraphHelper, TextHashMixin, MotionCreateBase):
                 "motions_default_workflow_id",
                 "motions_default_amendment_workflow_id",
                 "motions_default_statute_amendment_workflow_id",
-                "motions_reason_required",
             ],
         )
-        if meeting.get("motions_reason_required") and not instance.get("reason"):
-            raise ActionException("Reason is required")
 
         self.set_state_from_workflow(instance, meeting)
         self.create_submitters(instance)
