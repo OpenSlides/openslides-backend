@@ -4,78 +4,83 @@ on:
     types: [created]
 
 jobs:
-  merge-meta-repo:
+  update-meta-repo:
     name: Recursively merge the main branch
     runs-on: ubuntu-latest
-    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '\merge')
+    if: |
+      github.event.issue.pull_request != '' && (
+        contains(github.event.comment.body, '\update-meta') ||
+        contains(github.event.comment.body, '\update_meta') ||
+        contains(github.event.comment.body, '\updatemeta')
+      )
 
     steps:
-        - uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
-        
-        - name: Generate access token
-          uses: tibdex/github-app-token@v2
-          id: generate-token
-          with:
-            app_id: ${{ secrets.AUTOMATION_APP_ID }}
-            private_key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
-        
-        - name: Checkout PR
-          env:
-            GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-          run: gh pr checkout ${{ github.event.issue.number }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Generate access token
+        uses: tibdex/github-app-token@v2
+        id: generate-token
+        with:
+          app_id: ${{ secrets.AUTOMATION_APP_ID }}
+          private_key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+      
+      - name: Checkout PR
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: gh pr checkout ${{ github.event.issue.number }}
 
-        - name: Update submodule
-          run: git submodule update --init --recursive
+      - name: Update submodule
+        run: git submodule update --init --recursive
 
-        - name: Set git credentials
-          run: |
-            git config --global user.name openslides-automation
-            git config --global user.email openslides-automation@users.noreply.github.com
-        
-        - name: Merge main branch
-          id: merge
-          run: git merge --no-edit main || echo "result=1" >> $GITHUB_OUTPUT
-        
-        - name: Push conflict-free merge
-          if: steps.merge.outputs.result == ''
-          run: git push
-        
-        - name: Get submodule path
-          id: path
-          if: steps.merge.outputs.result != ''
-          run: echo "path=$(git config --file .gitmodules --get submodule.openslides-meta.path)" >> $GITHUB_OUTPUT
-        
-        - name: Determine whether the conflicts are too complex to continue
-          id: conflicts
-          if: steps.merge.outputs.result != ''
-          run: |
-            [[ "$(git diff --name-only --diff-filter=U)" = "${{ steps.path.outputs.path }}" ]] || echo "result=1" >> $GITHUB_OUTPUT
-        
-        - name: Write failure comment
-          if: steps.merge.outputs.result != '' && steps.conflicts.outputs.result != ''
-          uses: actions/github-script@v6
-          with:
-            script: |
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: 'Merging failed since the conflicts are too complex to continue. Please resolve the conflicts manually.'
-              })
+      - name: Set git credentials
+        run: |
+          git config --global user.name openslides-automation
+          git config --global user.email openslides-automation@users.noreply.github.com
+      
+      - name: Merge main branch
+        id: merge
+        run: git merge --no-edit main || echo "result=1" >> $GITHUB_OUTPUT
+      
+      - name: Push conflict-free merge
+        if: steps.merge.outputs.result == ''
+        run: git push
+      
+      - name: Get submodule path
+        id: path
+        if: steps.merge.outputs.result != ''
+        run: echo "path=$(git config --file .gitmodules --get submodule.openslides-meta.path)" >> $GITHUB_OUTPUT
+      
+      - name: Determine whether the conflicts are too complex to continue
+        id: conflicts
+        if: steps.merge.outputs.result != ''
+        run: |
+          [[ "$(git diff --name-only --diff-filter=U)" = "${{ steps.path.outputs.path }}" ]] || echo "result=1" >> $GITHUB_OUTPUT
+      
+      - name: Write failure comment
+        if: steps.merge.outputs.result != '' && steps.conflicts.outputs.result != ''
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Merging failed since the conflicts are too complex to continue. Please resolve the conflicts manually.'
+            })
 
-        - name: Merge meta repo
-          if: steps.merge.outputs.result != '' && steps.conflicts.outputs.result == ''
-          working-directory: ${{ steps.path.outputs.path }}
-          env:
-            GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-          run: |
-            gh pr checkout $(gh pr list --search $(git rev-parse HEAD) --json number --jq ".[0].number")
-            git fetch origin main
-            git merge --no-edit origin/main
-            git push
-        
-        - name: Finish merge & push result
-          if: steps.merge.outputs.result != '' && steps.conflicts.outputs.result == ''
-          run: git add . && git merge --continue --no-edit && git push
+      - name: Merge meta repo
+        if: steps.merge.outputs.result != '' && steps.conflicts.outputs.result == ''
+        working-directory: ${{ steps.path.outputs.path }}
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          gh pr checkout $(gh pr list --search $(git rev-parse HEAD) --json number --jq ".[0].number")
+          git fetch origin main
+          git merge --no-edit origin/main
+          git push
+      
+      - name: Finish merge & push result
+        if: steps.merge.outputs.result != '' && steps.conflicts.outputs.result == ''
+        run: git add . && git merge --continue --no-edit && git push
