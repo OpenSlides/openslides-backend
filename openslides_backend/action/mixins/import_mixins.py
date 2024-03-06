@@ -478,7 +478,14 @@ class BaseJsonUploadAction(BaseImportJsonUploadAction):
                     elif type_ == "string":
                         continue
                     elif type_ == "decimal":
-                        entry[field] = str(Decimal("0.000000") + Decimal(entry[field]))
+                        try:
+                            entry[field] = str(
+                                Decimal("0.000000") + Decimal(entry[field])
+                            )
+                        except Exception:
+                            raise ActionException(
+                                f"Could not parse {entry[field]} expect decimal"
+                            )
                     elif type_ == "integer":
                         try:
                             entry[field] = int(entry[field])

@@ -539,6 +539,26 @@ class ParticipantJsonUpload(BaseActionTestCase):
             in row["messages"]
         )
 
+    def test_json_upload_with_illegal_decimal_value(self) -> None:
+        self.create_meeting(1)
+        self.create_user("test user", [3])
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test user",
+                        "first_name": "test",
+                        "groups": ["group3"],
+                        "vote_weight": "2/3",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Could not parse 2/3 expect decimal" in response.json["message"]
+
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
     def setUp(self) -> None:

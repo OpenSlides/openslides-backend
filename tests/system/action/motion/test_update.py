@@ -73,6 +73,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
                         4: "</><</>broken>",
                     },
                     "start_line_number": 13,
+                    "additional_submitter": "test",
+                    "workflow_timestamp": 1234567890,
                 },
             )
         self.assert_status_code(response, 200)
@@ -88,7 +90,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
         }
         assert model.get("start_line_number") == 13
         assert model.get("created") == 1687339000
-        self.assert_history_information("motion/111", ["Motion updated"])
+        assert model.get("additional_submitter") == "test"
+        assert model.get("workflow_timestamp") == 1234567890
+        self.assert_history_information(
+            "motion/111",
+            ["Workflow_timestamp set to {}", "1234567890", "Motion updated"],
+        )
         assert counter.calls == 3
 
     def test_update_wrong_id(self) -> None:
@@ -232,6 +239,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "supporter_meeting_user_ids": [],
                     "tag_ids": [],
                     "attachment_ids": [],
+                    "workflow_timestamp": 9876543210,
                 },
             )
         self.assert_status_code(response, 200)
@@ -246,10 +254,13 @@ class MotionUpdateActionTest(BaseActionTestCase):
         # motion/113 does not exist and should therefore not be present in the relations
         assert model.get("state_extension_reference_ids") == ["motion/112"]
         assert model.get("recommendation_extension_reference_ids") == ["motion/112"]
+        assert model.get("workflow_timestamp") == 9876543210
         self.assert_history_information(
             "motion/111",
             [
                 "Supporters changed",
+                "Workflow_timestamp set to {}",
+                "9876543210",
                 "Category set to {}",
                 "motion_category/4",
                 "Motion block set to {}",
@@ -299,6 +310,57 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model["state_id"] == 23
         assert model.get("recommendation_id") is None
         assert model["created"] < model["workflow_timestamp"]
+        self.assert_history_information_contains(
+            "motion/111", "Workflow_timestamp set to {}"
+        )
+
+    def test_update_workflow_timestamp_subsequent(self) -> None:
+        self.set_models(
+            {
+                "meeting/2538": {
+                    "name": "name_jkPIYjFz",
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/111": {
+                    "meeting_id": 2538,
+                    "state_id": 88,
+                    "recommendation_id": 88,
+                    "created": int(time()) - 1,
+                },
+                "motion_workflow/22": {"name": "name_workflow_22", "meeting_id": 2538},
+                "motion_state/88": {
+                    "name": "name_blaglup",
+                    "meeting_id": 2538,
+                    "workflow_id": 22,
+                    "motion_ids": [111],
+                    "motion_recommendation_ids": [111],
+                },
+                "motion_state/23": {
+                    "name": "name_state_23",
+                    "meeting_id": 2538,
+                    "motion_ids": [],
+                    "set_workflow_timestamp": True,
+                },
+                "motion_workflow/35": {
+                    "name": "name_workflow_35",
+                    "first_state_id": 23,
+                    "meeting_id": 2538,
+                },
+            }
+        )
+        response = self.request("motion.update", {"id": 111, "workflow_timestamp": 0})
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion/111")
+        assert model["workflow_timestamp"] == 0
+        response = self.request("motion.update", {"id": 111, "workflow_id": 35})
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion/111")
+        assert model["state_id"] == 23
+        assert model.get("recommendation_id") is None
+        assert model["created"] < model["workflow_timestamp"]
+        self.assert_history_information_contains(
+            "motion/111", "Workflow_timestamp set to {}"
+        )
 
     def test_update_workflow_id_no_change(self) -> None:
         self.set_models(
@@ -562,6 +624,38 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "created": 1686735327,
             },
             Permissions.Motion.CAN_MANAGE,
+        )
+
+    def test_update_workflow_timestamp_permission_1(self) -> None:
+        self.base_permission_test(
+            self.permission_test_models,
+            "motion.update",
+            {
+                "id": 111,
+                "workflow_timestamp": 1,
+            },
+            Permissions.Motion.CAN_MANAGE,
+        )
+
+    def test_update_workflow_timestamp_permission_2(self) -> None:
+        self.base_permission_test(
+            self.permission_test_models,
+            "motion.update",
+            {
+                "id": 111,
+                "workflow_timestamp": 1,
+            },
+            Permissions.Motion.CAN_MANAGE_METADATA,
+        )
+
+    def test_update_workflow_timestamp_permission_3(self) -> None:
+        self.base_permission_test(
+            self.permission_test_models,
+            "motion.update",
+            {
+                "id": 111,
+                "workflow_timestamp": 1,
+            },
         )
 
     def test_update_permission_created(self) -> None:

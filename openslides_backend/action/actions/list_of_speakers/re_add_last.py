@@ -1,5 +1,7 @@
 from typing import Any
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
+
 from ....models.models import ListOfSpeakers, Speaker
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
@@ -35,7 +37,14 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 FilterOperator("meeting_id", "=", meeting_id),
             ),
-            mapped_fields=["end_time", "meeting_user_id", "weight", "point_of_order"],
+            mapped_fields=[
+                "id",
+                "end_time",
+                "meeting_user_id",
+                "weight",
+                "point_of_order",
+                "speech_state",
+            ],
         )
         if not speakers:
             raise ActionException(
@@ -43,21 +52,17 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             )
 
         # Get last speaker.
-        last_speaker_id, last_speaker = None, None
-        lowest_weight = None
-        for speaker_id, speaker in speakers.items():
+        last_speaker, lowest_weight = None, None
+        for speaker in speakers.values():
             speaker_weight = speaker.get("weight") or 0
-            if lowest_weight is None:
+            if lowest_weight is None or speaker_weight < lowest_weight:
                 lowest_weight = speaker_weight
-            else:
-                lowest_weight = min(lowest_weight, speaker_weight)
 
             if speaker.get("end_time") is not None:
-                if last_speaker_id is None:
-                    last_speaker_id, last_speaker = speaker_id, speaker
-                else:
-                    if last_speaker["end_time"] < speaker["end_time"]:
-                        last_speaker_id, last_speaker = speaker_id, speaker
+                if last_speaker is None or self.get_order(speaker) < self.get_order(
+                    last_speaker
+                ):
+                    last_speaker = speaker
         if last_speaker is None:
             raise ActionException("There is no last speaker that can be re-added.")
         assert isinstance(lowest_weight, int)
@@ -86,8 +91,21 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
 
         # Return new instance to the generic part of the UpdateAction.
         return {
-            "id": last_speaker_id,
+            "id": last_speaker["id"],
             "begin_time": None,
             "end_time": None,
             "weight": lowest_weight - 1,
         }
+
+    def get_order(self, instance: dict[str, Any]) -> tuple[int, bool, int]:
+        """
+        Defines which speaker should be re-added first:
+        1. The speaker with the latest end_time.
+        2. If the speaker is an interposed question, it should be re-added after the parent item.
+        3. Between multiple interposed questions, the weight decides.
+        """
+        return (
+            -instance["end_time"],
+            instance["speech_state"] == SpeechState.INTERPOSED_QUESTION,
+            instance["weight"],
+        )
