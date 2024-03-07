@@ -4,19 +4,21 @@ from collections import ChainMap
 from textwrap import dedent, indent
 from typing import Any, Optional
 
-from cli.util.util import (ROOT, assert_equal, open_output, open_yml_file,
-                           parse_arguments)
+from cli.util.util import (
+    ROOT,
+    assert_equal,
+    open_output,
+    open_yml_file,
+    parse_arguments,
+)
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
-from openslides_backend.models.mixins import (AgendaItemModelMixin,
-                                              MeetingModelMixin,
-                                              PollModelMixin)
-from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
-
-ROOT = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "..",
+from openslides_backend.models.mixins import (
+    AgendaItemModelMixin,
+    MeetingModelMixin,
+    PollModelMixin,
 )
+from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SOURCE = os.path.abspath(
     os.path.join(
