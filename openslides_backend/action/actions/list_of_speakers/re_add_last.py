@@ -40,6 +40,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             mapped_fields=[
                 "id",
                 "end_time",
+                "begin_time",
                 "meeting_user_id",
                 "weight",
                 "point_of_order",
@@ -53,6 +54,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
 
         # Get last speaker.
         last_speaker, lowest_weight = None, None
+        has_current_speaker = False
         for speaker in speakers.values():
             speaker_weight = speaker.get("weight") or 0
             if lowest_weight is None or speaker_weight < lowest_weight:
@@ -63,9 +65,18 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
                     last_speaker
                 ):
                     last_speaker = speaker
+            elif speaker.get("begin_time") is not None:
+                has_current_speaker = True
         if last_speaker is None:
             raise ActionException("There is no last speaker that can be re-added.")
         assert isinstance(lowest_weight, int)
+        if (
+            last_speaker.get("speech_state") == "interposed_question"
+            and not has_current_speaker
+        ):
+            raise ActionException(
+                "Can't re-add interposed question when there's no current speaker"
+            )
 
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", meeting_id),
