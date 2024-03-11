@@ -148,6 +148,15 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
             "Cannot set remaining_time and spoken_time at the same time.",
             response.json["message"],
         )
+        response = self.request(
+            "structure_level_list_of_speakers.update",
+            {"id": 3, "remaining_time": 180, "initial_time": 190},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot set initial_time and remaining_time at the same time.",
+            response.json["message"],
+        )
 
     def test_set_remaining_time(self) -> None:
         response = self.request(
