@@ -162,7 +162,6 @@ class StructureLevelListOfSpeakersUpdateTest(BaseActionTestCase):
         response = self.request(
             "structure_level_list_of_speakers.update",
             {"id": 3, "remaining_time": 700},
-            internal=True,
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
