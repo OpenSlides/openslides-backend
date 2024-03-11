@@ -234,8 +234,20 @@ class MotionDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "submitter_ids": [1],
                     "change_recommendation_ids": [1],
+                    "editor_ids": [1],
+                    "working_group_speaker_ids": [1],
                 },
                 "motion_submitter/1": {
+                    "meeting_id": 1,
+                    "motion_id": 110,
+                    "meeting_user_id": 1,
+                },
+                "motion_editor/1": {
+                    "meeting_id": 1,
+                    "motion_id": 110,
+                    "meeting_user_id": 1,
+                },
+                "motion_working_group_speaker/1": {
                     "meeting_id": 1,
                     "motion_id": 110,
                     "meeting_user_id": 1,
@@ -244,6 +256,8 @@ class MotionDeleteActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "meeting_id": 1,
                     "motion_submitter_ids": [1],
+                    "motion_editor_ids": [1],
+                    "motion_working_group_speaker_ids": [1],
                 },
                 "user/1": {"meeting_user_ids": [1]},
                 "motion_change_recommendation/1": {"meeting_id": 1, "motion_id": 110},
@@ -251,6 +265,9 @@ class MotionDeleteActionTest(BaseActionTestCase):
         )
         response = self.request("motion.delete", {"id": 110})
         self.assert_status_code(response, 200)
+        self.assert_model_deleted("motion_submitter/1")
+        self.assert_model_deleted("motion_editor/1")
+        self.assert_model_deleted("motion_working_group_speaker/1")
         self.assert_history_information("motion/110", ["Motion deleted"])
 
     def test_delete_no_permission(self) -> None:
