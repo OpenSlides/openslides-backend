@@ -365,7 +365,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         EmailSettings.connection_security = "NONE"
         EmailSettings.port = 25
 
-        sender = Address("Name of sender", addr_spec=self.sender)
+        sender = str(Address("Name of sender", addr_spec=self.sender))
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             with EmailUtils.get_mail_connection() as mail_client:
