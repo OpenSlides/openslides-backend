@@ -1,5 +1,5 @@
 from time import time
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
@@ -22,7 +22,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert "meeting/1: Missing fields" in data["errors"]
         assert "meeting/2: Missing fields" in data["errors"]
 
-    def get_meeting_defaults(self) -> Dict[str, Any]:
+    def get_meeting_defaults(self) -> dict[str, Any]:
         return {
             "motions_export_title": "Motions",
             "motions_preamble": "blablabla",
@@ -63,7 +63,9 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "list_of_speakers_show_amount_of_speakers_on_slide": True,
             "list_of_speakers_present_users_only": True,
             "list_of_speakers_show_first_contribution": True,
+            "list_of_speakers_allow_multiple_speakers": False,
             "list_of_speakers_enable_point_of_order_speakers": True,
+            "list_of_speakers_can_create_point_of_order_for_others": False,
             "list_of_speakers_enable_point_of_order_categories": False,
             "list_of_speakers_closing_disables_point_of_order": False,
             "list_of_speakers_enable_pro_contra_speech": False,
@@ -226,6 +228,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -273,7 +277,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert data["ok"] is True
         assert "errors" not in data
 
-    def get_new_user(self, username: str, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def get_new_user(self, username: str, datapart: dict[str, Any]) -> dict[str, Any]:
         return {
             "username": username,
             "can_change_own_password": False,
@@ -471,6 +475,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -677,6 +683,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -763,6 +771,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",

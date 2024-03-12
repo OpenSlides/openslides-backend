@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.action.mixins.check_unique_name_mixin import (
     CheckUniqueInContextMixin,
@@ -74,13 +74,18 @@ meeting_settings_keys = [
     "list_of_speakers_show_amount_of_speakers_on_slide",
     "list_of_speakers_present_users_only",
     "list_of_speakers_show_first_contribution",
+    "list_of_speakers_allow_multiple_speakers",
     "list_of_speakers_enable_point_of_order_speakers",
+    "list_of_speakers_can_create_point_of_order_for_others",
     "list_of_speakers_enable_point_of_order_categories",
     "list_of_speakers_closing_disables_point_of_order",
     "list_of_speakers_enable_pro_contra_speech",
     "list_of_speakers_can_set_contribution_self",
     "list_of_speakers_speaker_note_for_everyone",
     "list_of_speakers_initially_closed",
+    "list_of_speakers_default_structure_level_time",
+    "list_of_speakers_enable_interposed_question",
+    "list_of_speakers_intervention_time",
     "motions_default_workflow_id",
     "motions_default_amendment_workflow_id",
     "motions_default_statute_amendment_workflow_id",
@@ -110,6 +115,8 @@ meeting_settings_keys = [
     "motions_amendments_text_mode",
     "motions_amendments_multiple_paragraphs",
     "motions_supporters_min_amount",
+    "motions_enable_editor",
+    "motions_enable_working_group_speaker",
     "motions_export_title",
     "motions_export_preamble",
     "motions_export_submitter_recommendation",
@@ -180,7 +187,7 @@ class MeetingUpdate(
     )
     check_email_field = "users_email_replyto"
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if instance.get("external_id"):
             self.check_unique_in_context(
@@ -192,7 +199,7 @@ class MeetingUpdate(
                 self.get_committee_id(instance["id"]),
             )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # handle set_as_template
         set_as_template = instance.pop("set_as_template", None)
         if set_as_template is True:
@@ -250,7 +257,7 @@ class MeetingUpdate(
         instance = super().update_instance(instance)
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         # group A check
         if any([field in instance for field in meeting_settings_keys]) and not has_perm(
             self.datastore,

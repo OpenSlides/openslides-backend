@@ -1,4 +1,5 @@
-from typing import Any, Iterable, Union
+from collections.abc import Iterable
+from typing import Any
 
 import simplejson as json
 from werkzeug.wrappers import Response
@@ -32,7 +33,7 @@ class OpenSlidesBackendWSGIApplication:
         self.view = view
         self.services = services
 
-    def dispatch_request(self, request: Request) -> Union[Response, HTTPException]:
+    def dispatch_request(self, request: Request) -> Response | HTTPException:
         """
         Dispatches request to route according to URL rules. Returns a Response
         object or a HTTPException (or a subclass of it). Both are WSGI
@@ -68,7 +69,7 @@ class OpenSlidesBackendWSGIApplication:
         elif request.path == "/system/presenter/handle_request":
             status_code = Response.default_status
         else:
-            raise ViewException(f"Unknown type of response_body:{response_body}.")
+            raise ViewException(f"Unknown type of response_body: {response_body}.")
 
         self.logger.debug(
             f"All done. Application sends HTTP {status_code} with body {response_body}."

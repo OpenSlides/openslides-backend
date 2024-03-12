@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
@@ -31,7 +31,6 @@ class UserMergeTogether(CreateAction, CheckForArchivedMeetingMixin):
             "gender",
             "email",
             "default_number",
-            "default_structure_level",
             "default_vote_weight",
         ],
         additional_required_fields={
@@ -49,7 +48,7 @@ class UserMergeTogether(CreateAction, CheckForArchivedMeetingMixin):
     )
     permission = permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         raise ActionException(
             "This action is still not implemented, but permission checked"
         )

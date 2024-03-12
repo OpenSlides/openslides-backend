@@ -4,14 +4,12 @@ from . import fields
 from .base import Model
 from .mixins import AgendaItemModelMixin, MeetingModelMixin, PollModelMixin
 
-MODELS_YML_CHECKSUM = "d72f341534e83d6f62b306f9c7de7dc8"
-
 
 class Organization(Model):
     collection = "organization"
     verbose_name = "organization"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField()
     description = fields.HTMLStrictField()
     legal_notice = fields.TextField()
@@ -36,7 +34,7 @@ class Organization(Model):
         },
     )
     default_language = fields.CharField(
-        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
+        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
@@ -78,7 +76,7 @@ class User(Model):
     collection = "user"
     verbose_name = "user"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     username = fields.CharField(required=True)
     saml_id = fields.CharField(
         constraints={
@@ -98,7 +96,6 @@ class User(Model):
     gender = fields.CharField()
     email = fields.CharField()
     default_number = fields.CharField()
-    default_structure_level = fields.CharField()
     default_vote_weight = fields.DecimalField(
         default="1.000000", constraints={"minimum": "0.000001"}
     )
@@ -138,7 +135,7 @@ class User(Model):
         },
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "user_ids"}, required=True
+        to={"organization": "user_ids"}, required=True, constant=True
     )
 
 
@@ -146,14 +143,17 @@ class MeetingUser(Model):
     collection = "meeting_user"
     verbose_name = "meeting user"
 
-    id = fields.IntegerField(required=True)
+    id = fields.IntegerField(required=True, constant=True)
     comment = fields.HTMLStrictField()
     number = fields.CharField()
-    structure_level = fields.CharField()
     about_me = fields.HTMLStrictField()
     vote_weight = fields.DecimalField(constraints={"minimum": "0.000001"})
-    user_id = fields.RelationField(to={"user": "meeting_user_ids"}, required=True)
-    meeting_id = fields.RelationField(to={"meeting": "meeting_user_ids"}, required=True)
+    user_id = fields.RelationField(
+        to={"user": "meeting_user_ids"}, required=True, constant=True
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "meeting_user_ids"}, required=True, constant=True
+    )
     personal_note_ids = fields.RelationListField(
         to={"personal_note": "meeting_user_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -164,6 +164,13 @@ class MeetingUser(Model):
     )
     supported_motion_ids = fields.RelationListField(
         to={"motion": "supporter_meeting_user_ids"}, equal_fields="meeting_id"
+    )
+    motion_editor_ids = fields.RelationListField(
+        to={"motion_editor": "meeting_user_id"}, equal_fields="meeting_id"
+    )
+    motion_working_group_speaker_ids = fields.RelationListField(
+        to={"motion_working_group_speaker": "meeting_user_id"},
+        equal_fields="meeting_id",
     )
     motion_submitter_ids = fields.RelationListField(
         to={"motion_submitter": "meeting_user_id"},
@@ -185,13 +192,16 @@ class MeetingUser(Model):
     group_ids = fields.RelationListField(
         to={"group": "meeting_user_ids"}, equal_fields="meeting_id"
     )
+    structure_level_ids = fields.RelationListField(
+        to={"structure_level": "meeting_user_ids"}, equal_fields="meeting_id"
+    )
 
 
 class OrganizationTag(Model):
     collection = "organization_tag"
     verbose_name = "organization tag"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField(required=True)
     color = fields.ColorField(required=True)
     tagged_ids = fields.GenericRelationListField(
@@ -206,7 +216,7 @@ class Theme(Model):
     collection = "theme"
     verbose_name = "theme"
 
-    id = fields.IntegerField(required=True)
+    id = fields.IntegerField(required=True, constant=True)
     name = fields.CharField(required=True)
     accent_100 = fields.ColorField()
     accent_200 = fields.ColorField()
@@ -256,7 +266,7 @@ class Theme(Model):
     abstain = fields.ColorField()
     theme_for_organization_id = fields.RelationField(to={"organization": "theme_id"})
     organization_id = fields.OrganizationField(
-        to={"organization": "theme_ids"}, required=True
+        to={"organization": "theme_ids"}, required=True, constant=True
     )
 
 
@@ -264,7 +274,7 @@ class Committee(Model):
     collection = "committee"
     verbose_name = "committee"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField(required=True)
     description = fields.HTMLStrictField()
     external_id = fields.CharField(constraints={"description": "unique"})
@@ -291,7 +301,7 @@ class Committee(Model):
         to={"organization_tag": "tagged_ids"}
     )
     organization_id = fields.OrganizationField(
-        to={"organization": "committee_ids"}, required=True
+        to={"organization": "committee_ids"}, required=True, constant=True
     )
 
 
@@ -299,7 +309,7 @@ class Meeting(Model, MeetingModelMixin):
     collection = "meeting"
     verbose_name = "meeting"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     external_id = fields.CharField(constraints={"description": "unique in committee"})
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
@@ -322,7 +332,9 @@ class Meeting(Model, MeetingModelMixin):
     end_time = fields.TimestampField()
     imported_at = fields.TimestampField()
     language = fields.CharField(
-        required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs"]}
+        required=True,
+        constant=True,
+        constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]},
     )
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
@@ -409,7 +421,11 @@ class Meeting(Model, MeetingModelMixin):
     )
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
+    list_of_speakers_allow_multiple_speakers = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
+    list_of_speakers_can_create_point_of_order_for_others = fields.BooleanField(
+        default=False
+    )
     list_of_speakers_enable_point_of_order_categories = fields.BooleanField(
         default=False
     )
@@ -420,6 +436,16 @@ class Meeting(Model, MeetingModelMixin):
     list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)
     list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
     list_of_speakers_initially_closed = fields.BooleanField(default=False)
+    list_of_speakers_default_structure_level_time = fields.IntegerField(
+        constraints={
+            "minimum": 0,
+            "description": "0 disables structure level countdowns.",
+        }
+    )
+    list_of_speakers_enable_interposed_question = fields.BooleanField()
+    list_of_speakers_intervention_time = fields.IntegerField(
+        constraints={"description": "0 disables intervention speakers."}
+    )
     motions_default_workflow_id = fields.RelationField(
         to={"motion_workflow": "default_workflow_meeting_id"}, required=True
     )
@@ -470,6 +496,8 @@ class Meeting(Model, MeetingModelMixin):
     motions_supporters_min_amount = fields.IntegerField(
         default=0, constraints={"minimum": 0}
     )
+    motions_enable_editor = fields.BooleanField()
+    motions_enable_working_group_speaker = fields.BooleanField()
     motions_export_title = fields.CharField(default="Motions")
     motions_export_preamble = fields.TextField()
     motions_export_submitter_recommendation = fields.BooleanField(default=True)
@@ -486,7 +514,22 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_poll_ballot_paper_number = fields.IntegerField(default=8)
     motion_poll_default_type = fields.CharField(default="pseudoanonymous")
-    motion_poll_default_onehundred_percent_base = fields.CharField(default="YNA")
+    motion_poll_default_onehundred_percent_base = fields.CharField(
+        default="YNA",
+        constraints={
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
+        },
+    )
     motion_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_motion_poll_default_id"}
     )
@@ -539,7 +582,22 @@ class Meeting(Model, MeetingModelMixin):
     assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
     assignment_poll_default_type = fields.CharField(default="pseudoanonymous")
     assignment_poll_default_method = fields.CharField(default="Y")
-    assignment_poll_default_onehundred_percent_base = fields.CharField(default="valid")
+    assignment_poll_default_onehundred_percent_base = fields.CharField(
+        default="valid",
+        constraints={
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
+        },
+    )
     assignment_poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_assignment_poll_default_id"}
     )
@@ -559,7 +617,22 @@ class Meeting(Model, MeetingModelMixin):
     poll_sort_poll_result_by_votes = fields.BooleanField()
     poll_default_type = fields.CharField(default="analog")
     poll_default_method = fields.CharField()
-    poll_default_onehundred_percent_base = fields.CharField(default="YNA")
+    poll_default_onehundred_percent_base = fields.CharField(
+        default="YNA",
+        constraints={
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
+        },
+    )
     poll_default_group_ids = fields.RelationListField(
         to={"group": "used_as_poll_default_id"}
     )
@@ -590,6 +663,10 @@ class Meeting(Model, MeetingModelMixin):
     )
     list_of_speakers_ids = fields.RelationListField(
         to={"list_of_speakers": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    structure_level_list_of_speakers_ids = fields.RelationListField(
+        to={"structure_level_list_of_speakers": "meeting_id"},
+        on_delete=fields.OnDelete.CASCADE,
     )
     point_of_order_category_ids = fields.RelationListField(
         to={"point_of_order_category": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
@@ -633,6 +710,13 @@ class Meeting(Model, MeetingModelMixin):
     motion_submitter_ids = fields.RelationListField(
         to={"motion_submitter": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
+    motion_editor_ids = fields.RelationListField(
+        to={"motion_editor": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    motion_working_group_speaker_ids = fields.RelationListField(
+        to={"motion_working_group_speaker": "meeting_id"},
+        on_delete=fields.OnDelete.CASCADE,
+    )
     motion_change_recommendation_ids = fields.RelationListField(
         to={"motion_change_recommendation": "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -663,6 +747,9 @@ class Meeting(Model, MeetingModelMixin):
     )
     chat_message_ids = fields.RelationListField(
         to={"chat_message": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    structure_level_ids = fields.RelationListField(
+        to={"structure_level": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     logo_projector_main_id = fields.RelationField(
         to={"mediafile": "used_as_logo_projector_main_in_meeting_id"}
@@ -712,7 +799,9 @@ class Meeting(Model, MeetingModelMixin):
     font_projector_h2_id = fields.RelationField(
         to={"mediafile": "used_as_font_projector_h2_in_meeting_id"}
     )
-    committee_id = fields.RelationField(to={"committee": "meeting_ids"}, required=True)
+    committee_id = fields.RelationField(
+        to={"committee": "meeting_ids"}, required=True, constant=True
+    )
     default_meeting_for_committee_id = fields.RelationField(
         to={"committee": "default_meeting_id"}
     )
@@ -808,11 +897,31 @@ class Meeting(Model, MeetingModelMixin):
     admin_group_id = fields.RelationField(to={"group": "admin_group_for_meeting_id"})
 
 
+class StructureLevel(Model):
+    collection = "structure_level"
+    verbose_name = "structure level"
+
+    id = fields.IntegerField(required=True)
+    name = fields.CharField(required=True)
+    color = fields.ColorField()
+    default_time = fields.IntegerField(constraints={"minimum": 0})
+    meeting_user_ids = fields.RelationListField(
+        to={"meeting_user": "structure_level_ids"}, equal_fields="meeting_id"
+    )
+    structure_level_list_of_speakers_ids = fields.RelationListField(
+        to={"structure_level_list_of_speakers": "structure_level_id"},
+        equal_fields="meeting_id",
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "structure_level_ids"}, required=True
+    )
+
+
 class Group(Model):
     collection = "group"
     verbose_name = "group"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     external_id = fields.CharField(constraints={"description": "unique in meeting"})
     name = fields.CharField(required=True)
     permissions = fields.CharArrayField(
@@ -821,6 +930,8 @@ class Group(Model):
                 "agenda_item.can_manage",
                 "agenda_item.can_see",
                 "agenda_item.can_see_internal",
+                "agenda_item.can_manage_moderator_notes",
+                "agenda_item.can_see_moderator_notes",
                 "assignment.can_manage",
                 "assignment.can_nominate_other",
                 "assignment.can_nominate_self",
@@ -901,26 +1012,29 @@ class Group(Model):
     used_as_poll_default_id = fields.RelationField(
         to={"meeting": "poll_default_group_ids"}
     )
-    meeting_id = fields.RelationField(to={"meeting": "group_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "group_ids"}, required=True, constant=True
+    )
 
 
 class PersonalNote(Model):
     collection = "personal_note"
     verbose_name = "personal note"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     note = fields.HTMLStrictField()
     star = fields.BooleanField()
     meeting_user_id = fields.RelationField(
         to={"meeting_user": "personal_note_ids"},
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     content_object_id = fields.GenericRelationField(
-        to={"motion": "personal_note_ids"}, equal_fields="meeting_id"
+        to={"motion": "personal_note_ids"}, constant=True, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "personal_note_ids"}, required=True
+        to={"meeting": "personal_note_ids"}, required=True, constant=True
     )
 
 
@@ -928,20 +1042,22 @@ class Tag(Model):
     collection = "tag"
     verbose_name = "tag"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField(required=True)
     tagged_ids = fields.GenericRelationListField(
         to={"agenda_item": "tag_ids", "assignment": "tag_ids", "motion": "tag_ids"},
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(to={"meeting": "tag_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "tag_ids"}, required=True, constant=True
+    )
 
 
 class AgendaItem(Model, AgendaItemModelMixin):
     collection = "agenda_item"
     verbose_name = "agenda item"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     item_number = fields.CharField()
     comment = fields.CharField()
     closed = fields.BooleanField(default=False)
@@ -951,6 +1067,7 @@ class AgendaItem(Model, AgendaItemModelMixin):
     duration = fields.IntegerField(
         constraints={"description": "Given in seconds", "minimum": 0}
     )
+    moderator_notes = fields.HTMLStrictField()
     is_internal = fields.BooleanField(
         read_only=True, constraints={"description": "Calculated by the server"}
     )
@@ -969,6 +1086,7 @@ class AgendaItem(Model, AgendaItemModelMixin):
             "topic": "agenda_item_id",
         },
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     parent_id = fields.RelationField(
@@ -985,18 +1103,21 @@ class AgendaItem(Model, AgendaItemModelMixin):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(to={"meeting": "agenda_item_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "agenda_item_ids"}, required=True, constant=True
+    )
 
 
 class ListOfSpeakers(Model):
     collection = "list_of_speakers"
     verbose_name = "list of speakers"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     closed = fields.BooleanField(default=False)
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1010,10 +1131,16 @@ class ListOfSpeakers(Model):
             "mediafile": "list_of_speakers_id",
         },
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     speaker_ids = fields.RelationListField(
         to={"speaker": "list_of_speakers_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
+    )
+    structure_level_list_of_speakers_ids = fields.RelationListField(
+        to={"structure_level_list_of_speakers": "list_of_speakers_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
@@ -1023,7 +1150,53 @@ class ListOfSpeakers(Model):
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "list_of_speakers_ids"}, required=True
+        to={"meeting": "list_of_speakers_ids"}, required=True, constant=True
+    )
+
+
+class StructureLevelListOfSpeakers(Model):
+    collection = "structure_level_list_of_speakers"
+    verbose_name = "structure level list of speakers"
+
+    id = fields.IntegerField(required=True)
+    structure_level_id = fields.RelationField(
+        to={"structure_level": "structure_level_list_of_speakers_ids"},
+        required=True,
+        equal_fields="meeting_id",
+    )
+    list_of_speakers_id = fields.RelationField(
+        to={"list_of_speakers": "structure_level_list_of_speakers_ids"},
+        required=True,
+        equal_fields="meeting_id",
+    )
+    speaker_ids = fields.RelationListField(
+        to={"speaker": "structure_level_list_of_speakers_id"}, equal_fields="meeting_id"
+    )
+    initial_time = fields.IntegerField(
+        required=True,
+        constraints={
+            "minimum": 1,
+            "description": "The initial time of this structure_level for this LoS",
+        },
+    )
+    additional_time = fields.FloatField(
+        constraints={
+            "description": "The summed added time of this structure_level for this LoS"
+        }
+    )
+    remaining_time = fields.FloatField(
+        required=True,
+        constraints={
+            "description": "The currently remaining time of this structure_level for this LoS"
+        },
+    )
+    current_start_time = fields.TimestampField(
+        constraints={
+            "description": "The current start time of a speaker for this structure_level. Is only set if a currently speaking speaker exists"
+        }
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "structure_level_list_of_speakers_ids"}, required=True
     )
 
 
@@ -1031,11 +1204,11 @@ class PointOfOrderCategory(Model):
     collection = "point_of_order_category"
     verbose_name = "point of order category"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     text = fields.CharField(required=True)
     rank = fields.IntegerField(required=True)
     meeting_id = fields.RelationField(
-        to={"meeting": "point_of_order_category_ids"}, required=True
+        to={"meeting": "point_of_order_category_ids"}, required=True, constant=True
     )
     speaker_ids = fields.RelationListField(
         to={"speaker": "point_of_order_category_id"}, equal_fields="meeting_id"
@@ -1046,17 +1219,35 @@ class Speaker(Model):
     collection = "speaker"
     verbose_name = "speaker"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     begin_time = fields.TimestampField(read_only=True)
     end_time = fields.TimestampField(read_only=True)
+    pause_time = fields.TimestampField(read_only=True)
+    unpause_time = fields.TimestampField(read_only=True)
+    total_pause = fields.IntegerField(read_only=True)
     weight = fields.IntegerField(default=10000)
     speech_state = fields.CharField(
-        constraints={"enum": ["contribution", "pro", "contra"]}
+        constraints={
+            "enum": [
+                "contribution",
+                "pro",
+                "contra",
+                "intervention",
+                "interposed_question",
+            ]
+        }
     )
     note = fields.CharField(constraints={"maxLength": 250})
-    point_of_order = fields.BooleanField()
+    point_of_order = fields.BooleanField(constant=True)
     list_of_speakers_id = fields.RelationField(
-        to={"list_of_speakers": "speaker_ids"}, required=True, equal_fields="meeting_id"
+        to={"list_of_speakers": "speaker_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
+    )
+    structure_level_list_of_speakers_id = fields.RelationField(
+        to={"structure_level_list_of_speakers": "speaker_ids"},
+        equal_fields="meeting_id",
     )
     meeting_user_id = fields.RelationField(
         to={"meeting_user": "speaker_ids"}, equal_fields="meeting_id"
@@ -1064,19 +1255,22 @@ class Speaker(Model):
     point_of_order_category_id = fields.RelationField(
         to={"point_of_order_category": "speaker_ids"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(to={"meeting": "speaker_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "speaker_ids"}, required=True, constant=True
+    )
 
 
 class Topic(Model):
     collection = "topic"
     verbose_name = "topic"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     title = fields.CharField(required=True)
     text = fields.HTMLPermissiveField()
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1088,12 +1282,14 @@ class Topic(Model):
         to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     poll_ids = fields.RelationListField(
@@ -1106,14 +1302,16 @@ class Topic(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(to={"meeting": "topic_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "topic_ids"}, required=True, constant=True
+    )
 
 
 class Motion(Model):
     collection = "motion"
     verbose_name = "motion"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     number = fields.CharField()
     number_value = fields.IntegerField(
         read_only=True,
@@ -1124,12 +1322,14 @@ class Motion(Model):
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
     )
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
+    text_hash = fields.CharField()
     amendment_paragraphs = fields.JSONField()
     modified_final_version = fields.HTMLStrictField()
     reason = fields.HTMLStrictField()
@@ -1146,7 +1346,9 @@ class Motion(Model):
         to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )
     amendment_ids = fields.RelationListField(
-        to={"motion": "lead_motion_id"}, equal_fields="meeting_id"
+        to={"motion": "lead_motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     sort_parent_id = fields.RelationField(
         to={"motion": "sort_child_ids"}, equal_fields="meeting_id"
@@ -1159,6 +1361,9 @@ class Motion(Model):
     derived_motion_ids = fields.RelationListField(to={"motion": "origin_id"})
     all_origin_ids = fields.RelationListField(to={"motion": "all_derived_motion_ids"})
     all_derived_motion_ids = fields.RelationListField(to={"motion": "all_origin_ids"})
+    identical_motion_ids = fields.RelationListField(
+        to={"motion": "identical_motion_ids"}, equal_fields="meeting_id"
+    )
     state_id = fields.RelationField(
         to={"motion_state": "motion_ids"}, required=True, equal_fields="meeting_id"
     )
@@ -1192,7 +1397,17 @@ class Motion(Model):
         equal_fields="meeting_id",
     )
     supporter_meeting_user_ids = fields.RelationListField(
-        to={"meeting_user": "supported_motion_ids"}
+        to={"meeting_user": "supported_motion_ids"}, equal_fields="meeting_id"
+    )
+    editor_ids = fields.RelationListField(
+        to={"motion_editor": "motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
+    )
+    working_group_speaker_ids = fields.RelationListField(
+        to={"motion_working_group_speaker": "motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     poll_ids = fields.RelationListField(
         to={"poll": "content_object_id"},
@@ -1226,6 +1441,7 @@ class Motion(Model):
         to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     tag_ids = fields.RelationListField(
@@ -1244,23 +1460,68 @@ class Motion(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(to={"meeting": "motion_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "motion_ids"}, required=True, constant=True
+    )
 
 
 class MotionSubmitter(Model):
     collection = "motion_submitter"
     verbose_name = "motion submitter"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     weight = fields.IntegerField()
     meeting_user_id = fields.RelationField(
         to={"meeting_user": "motion_submitter_ids"}, required=True
     )
     motion_id = fields.RelationField(
-        to={"motion": "submitter_ids"}, required=True, equal_fields="meeting_id"
+        to={"motion": "submitter_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "motion_submitter_ids"}, required=True
+        to={"meeting": "motion_submitter_ids"}, required=True, constant=True
+    )
+
+
+class MotionEditor(Model):
+    collection = "motion_editor"
+    verbose_name = "motion editor"
+
+    id = fields.IntegerField(constant=True)
+    weight = fields.IntegerField()
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "motion_editor_ids"}, required=True
+    )
+    motion_id = fields.RelationField(
+        to={"motion": "editor_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "motion_editor_ids"}, required=True, constant=True
+    )
+
+
+class MotionWorkingGroupSpeaker(Model):
+    collection = "motion_working_group_speaker"
+    verbose_name = "motion working group speaker"
+
+    id = fields.IntegerField(constant=True)
+    weight = fields.IntegerField()
+    meeting_user_id = fields.RelationField(
+        to={"meeting_user": "motion_working_group_speaker_ids"}, required=True
+    )
+    motion_id = fields.RelationField(
+        to={"motion": "working_group_speaker_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
+    )
+    meeting_id = fields.RelationField(
+        to={"meeting": "motion_working_group_speaker_ids"}, required=True, constant=True
     )
 
 
@@ -1268,18 +1529,22 @@ class MotionComment(Model):
     collection = "motion_comment"
     verbose_name = "motion comment"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     comment = fields.HTMLStrictField()
     motion_id = fields.RelationField(
-        to={"motion": "comment_ids"}, required=True, equal_fields="meeting_id"
+        to={"motion": "comment_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
     )
     section_id = fields.RelationField(
         to={"motion_comment_section": "comment_ids"},
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "motion_comment_ids"}, required=True
+        to={"meeting": "motion_comment_ids"}, required=True, constant=True
     )
 
 
@@ -1287,12 +1552,13 @@ class MotionCommentSection(Model):
     collection = "motion_comment_section"
     verbose_name = "motion comment section"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField(required=True)
     weight = fields.IntegerField(default=10000)
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1310,7 +1576,7 @@ class MotionCommentSection(Model):
         to={"group": "write_comment_section_ids"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "motion_comment_section_ids"}, required=True
+        to={"meeting": "motion_comment_section_ids"}, required=True, constant=True
     )
 
 
@@ -1318,7 +1584,7 @@ class MotionCategory(Model):
     collection = "motion_category"
     verbose_name = "motion category"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField(required=True)
     prefix = fields.CharField()
     weight = fields.IntegerField(default=10000)
@@ -1328,6 +1594,7 @@ class MotionCategory(Model):
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1342,7 +1609,7 @@ class MotionCategory(Model):
         to={"motion": "category_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "motion_category_ids"}, required=True
+        to={"meeting": "motion_category_ids"}, required=True, constant=True
     )
 
 
@@ -1350,12 +1617,13 @@ class MotionBlock(Model):
     collection = "motion_block"
     verbose_name = "motion block"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     title = fields.CharField(required=True)
     internal = fields.BooleanField()
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1379,14 +1647,16 @@ class MotionBlock(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(to={"meeting": "motion_block_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "motion_block_ids"}, required=True, constant=True
+    )
 
 
 class MotionChangeRecommendation(Model):
     collection = "motion_change_recommendation"
     verbose_name = "motion change recommendation"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     rejected = fields.BooleanField(default=False)
     internal = fields.BooleanField(default=False)
     type = fields.CharField(
@@ -1401,10 +1671,11 @@ class MotionChangeRecommendation(Model):
     motion_id = fields.RelationField(
         to={"motion": "change_recommendation_ids"},
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "motion_change_recommendation_ids"}, required=True
+        to={"meeting": "motion_change_recommendation_ids"}, required=True, constant=True
     )
 
 
@@ -1412,10 +1683,11 @@ class MotionState(Model):
     collection = "motion_state"
     verbose_name = "motion state"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField(required=True)
     weight = fields.IntegerField(required=True)
     recommendation_label = fields.CharField()
+    is_internal = fields.BooleanField()
     css_class = fields.CharField(
         required=True,
         default="lightblue",
@@ -1442,8 +1714,8 @@ class MotionState(Model):
         default="undefined",
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
-    allow_motion_forwarding = fields.BooleanField()
-    set_workflow_timestamp = fields.BooleanField()
+    allow_motion_forwarding = fields.BooleanField(default=False)
+    set_workflow_timestamp = fields.BooleanField(default=False)
     submitter_withdraw_state_id = fields.RelationField(
         to={"motion_state": "submitter_withdraw_back_ids"},
         equal_fields=["meeting_id", "workflow_id"],
@@ -1476,18 +1748,21 @@ class MotionState(Model):
         on_delete=fields.OnDelete.PROTECT,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(to={"meeting": "motion_state_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "motion_state_ids"}, required=True, constant=True
+    )
 
 
 class MotionWorkflow(Model):
     collection = "motion_workflow"
     verbose_name = "motion workflow"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField(required=True)
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1512,7 +1787,7 @@ class MotionWorkflow(Model):
         to={"meeting": "motions_default_statute_amendment_workflow_id"}
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "motion_workflow_ids"}, required=True
+        to={"meeting": "motion_workflow_ids"}, required=True, constant=True
     )
 
 
@@ -1520,13 +1795,14 @@ class MotionStatuteParagraph(Model):
     collection = "motion_statute_paragraph"
     verbose_name = "motion statute paragraph"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
     weight = fields.IntegerField(default=10000)
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1535,7 +1811,7 @@ class MotionStatuteParagraph(Model):
         to={"motion": "statute_paragraph_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "motion_statute_paragraph_ids"}, required=True
+        to={"meeting": "motion_statute_paragraph_ids"}, required=True, constant=True
     )
 
 
@@ -1543,7 +1819,7 @@ class Poll(Model, PollModelMixin):
     collection = "poll"
     verbose_name = "poll"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     description = fields.TextField()
     title = fields.CharField(required=True)
     type = fields.CharField(
@@ -1571,7 +1847,17 @@ class Poll(Model, PollModelMixin):
         required=True,
         default="disabled",
         constraints={
-            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+            "enum": [
+                "Y",
+                "YN",
+                "YNA",
+                "N",
+                "valid",
+                "cast",
+                "entitled",
+                "entitled_present",
+                "disabled",
+            ]
         },
     )
     votesvalid = fields.DecimalField()
@@ -1581,6 +1867,7 @@ class Poll(Model, PollModelMixin):
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1603,6 +1890,7 @@ class Poll(Model, PollModelMixin):
     content_object_id = fields.GenericRelationField(
         to={"motion": "poll_ids", "assignment": "poll_ids", "topic": "poll_ids"},
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     option_ids = fields.RelationListField(
@@ -1613,6 +1901,7 @@ class Poll(Model, PollModelMixin):
     global_option_id = fields.RelationField(
         to={"option": "used_as_global_option_in_poll_id"},
         on_delete=fields.OnDelete.CASCADE,
+        constant=True,
         equal_fields="meeting_id",
     )
     voted_ids = fields.RelationListField(to={"user": "poll_voted_ids"})
@@ -1624,22 +1913,26 @@ class Poll(Model, PollModelMixin):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(to={"meeting": "poll_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "poll_ids"}, required=True, constant=True
+    )
 
 
 class Option(Model):
     collection = "option"
     verbose_name = "option"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     weight = fields.IntegerField(default=10000)
     text = fields.HTMLStrictField()
     yes = fields.DecimalField()
     no = fields.DecimalField()
     abstain = fields.DecimalField()
-    poll_id = fields.RelationField(to={"poll": "option_ids"}, equal_fields="meeting_id")
+    poll_id = fields.RelationField(
+        to={"poll": "option_ids"}, constant=True, equal_fields="meeting_id"
+    )
     used_as_global_option_in_poll_id = fields.RelationField(
-        to={"poll": "global_option_id"}, equal_fields="meeting_id"
+        to={"poll": "global_option_id"}, constant=True, equal_fields="meeting_id"
     )
     vote_ids = fields.RelationListField(
         to={"vote": "option_id"},
@@ -1652,32 +1945,40 @@ class Option(Model):
             "user": "option_ids",
             "motion": "option_ids",
         },
+        constant=True,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(to={"meeting": "option_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "option_ids"}, required=True, constant=True
+    )
 
 
 class Vote(Model):
     collection = "vote"
     verbose_name = "vote"
 
-    id = fields.IntegerField()
-    weight = fields.DecimalField()
-    value = fields.CharField()
-    user_token = fields.CharField(required=True)
+    id = fields.IntegerField(constant=True)
+    weight = fields.DecimalField(constant=True)
+    value = fields.CharField(constant=True)
+    user_token = fields.CharField(required=True, constant=True)
     option_id = fields.RelationField(
-        to={"option": "vote_ids"}, required=True, equal_fields="meeting_id"
+        to={"option": "vote_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
     )
     user_id = fields.RelationField(to={"user": "vote_ids"})
     delegated_user_id = fields.RelationField(to={"user": "delegated_vote_ids"})
-    meeting_id = fields.RelationField(to={"meeting": "vote_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "vote_ids"}, required=True, constant=True
+    )
 
 
 class Assignment(Model):
     collection = "assignment"
     verbose_name = "assignment"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     title = fields.CharField(required=True)
     description = fields.HTMLStrictField()
     open_posts = fields.IntegerField(default=0, constraints={"minimum": 0})
@@ -1689,6 +1990,7 @@ class Assignment(Model):
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1712,6 +2014,7 @@ class Assignment(Model):
         to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     tag_ids = fields.RelationListField(
@@ -1725,23 +2028,28 @@ class Assignment(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(to={"meeting": "assignment_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "assignment_ids"}, required=True, constant=True
+    )
 
 
 class AssignmentCandidate(Model):
     collection = "assignment_candidate"
     verbose_name = "assignment candidate"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     weight = fields.IntegerField(default=10000)
     assignment_id = fields.RelationField(
-        to={"assignment": "candidate_ids"}, required=True, equal_fields="meeting_id"
+        to={"assignment": "candidate_ids"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
     )
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "assignment_candidate_ids"}
+        to={"meeting_user": "assignment_candidate_ids"}, constant=True
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "assignment_candidate_ids"}, required=True
+        to={"meeting": "assignment_candidate_ids"}, required=True, constant=True
     )
 
 
@@ -1749,17 +2057,20 @@ class PollCandidateList(Model):
     collection = "poll_candidate_list"
     verbose_name = "poll candidate list"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     poll_candidate_ids = fields.RelationListField(
         to={"poll_candidate": "poll_candidate_list_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "poll_candidate_list_ids"}, required=True
+        to={"meeting": "poll_candidate_list_ids"}, required=True, constant=True
     )
     option_id = fields.RelationField(
-        to={"option": "content_object_id"}, required=True, equal_fields="meeting_id"
+        to={"option": "content_object_id"},
+        required=True,
+        constant=True,
+        equal_fields="meeting_id",
     )
 
 
@@ -1767,16 +2078,17 @@ class PollCandidate(Model):
     collection = "poll_candidate"
     verbose_name = "poll candidate"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     poll_candidate_list_id = fields.RelationField(
         to={"poll_candidate_list": "poll_candidate_ids"},
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
-    user_id = fields.RelationField(to={"user": "poll_candidate_ids"})
+    user_id = fields.RelationField(to={"user": "poll_candidate_ids"}, constant=True)
     weight = fields.IntegerField(required=True)
     meeting_id = fields.RelationField(
-        to={"meeting": "poll_candidate_ids"}, required=True
+        to={"meeting": "poll_candidate_ids"}, required=True, constant=True
     )
 
 
@@ -1784,7 +2096,7 @@ class Mediafile(Model):
     collection = "mediafile"
     verbose_name = "mediafile"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     title = fields.CharField(
         constraints={"description": "Title and parent_id must be unique."}
     )
@@ -1837,7 +2149,9 @@ class Mediafile(Model):
         }
     )
     owner_id = fields.GenericRelationField(
-        to={"organization": "mediafile_ids", "meeting": "mediafile_ids"}, required=True
+        to={"organization": "mediafile_ids", "meeting": "mediafile_ids"},
+        required=True,
+        constant=True,
     )
     used_as_logo_projector_main_in_meeting_id = fields.RelationField(
         to={"meeting": "logo_projector_main_id"}
@@ -1893,7 +2207,7 @@ class Projector(Model):
     collection = "projector"
     verbose_name = "projector"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField()
     is_internal = fields.BooleanField(default=False)
     scale = fields.IntegerField(default=0)
@@ -1917,6 +2231,7 @@ class Projector(Model):
     sequential_number = fields.IntegerField(
         required=True,
         read_only=True,
+        constant=True,
         constraints={
             "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
         },
@@ -1983,14 +2298,16 @@ class Projector(Model):
     used_as_default_projector_for_poll_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_poll_ids"}
     )
-    meeting_id = fields.RelationField(to={"meeting": "projector_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "projector_ids"}, required=True, constant=True
+    )
 
 
 class Projection(Model):
     collection = "projection"
     verbose_name = "projection"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     options = fields.JSONField()
     stable = fields.BooleanField(default=False)
     weight = fields.IntegerField()
@@ -2019,10 +2336,11 @@ class Projection(Model):
             "meeting": "projection_ids",
         },
         required=True,
+        constant=True,
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "all_projection_ids"}, required=True
+        to={"meeting": "all_projection_ids"}, required=True, constant=True
     )
 
 
@@ -2030,7 +2348,7 @@ class ProjectorMessage(Model):
     collection = "projector_message"
     verbose_name = "projector message"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     message = fields.HTMLStrictField()
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
@@ -2038,7 +2356,7 @@ class ProjectorMessage(Model):
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "projector_message_ids"}, required=True
+        to={"meeting": "projector_message_ids"}, required=True, constant=True
     )
 
 
@@ -2046,7 +2364,7 @@ class ProjectorCountdown(Model):
     collection = "projector_countdown"
     verbose_name = "projector countdown"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     title = fields.CharField(required=True)
     description = fields.CharField(default="")
     default_time = fields.IntegerField()
@@ -2064,7 +2382,7 @@ class ProjectorCountdown(Model):
         to={"meeting": "poll_countdown_id"}
     )
     meeting_id = fields.RelationField(
-        to={"meeting": "projector_countdown_ids"}, required=True
+        to={"meeting": "projector_countdown_ids"}, required=True, constant=True
     )
 
 
@@ -2072,7 +2390,7 @@ class ChatGroup(Model):
     collection = "chat_group"
     verbose_name = "chat group"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     name = fields.CharField(required=True)
     weight = fields.IntegerField(default=10000)
     chat_message_ids = fields.RelationListField(
@@ -2086,23 +2404,27 @@ class ChatGroup(Model):
     write_group_ids = fields.RelationListField(
         to={"group": "write_chat_group_ids"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(to={"meeting": "chat_group_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "chat_group_ids"}, required=True, constant=True
+    )
 
 
 class ChatMessage(Model):
     collection = "chat_message"
     verbose_name = "chat message"
 
-    id = fields.IntegerField()
+    id = fields.IntegerField(constant=True)
     content = fields.HTMLStrictField(required=True)
     created = fields.TimestampField(required=True)
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "chat_message_ids"}, required=True
+        to={"meeting_user": "chat_message_ids"}, required=True, constant=True
     )
     chat_group_id = fields.RelationField(
-        to={"chat_group": "chat_message_ids"}, required=True
+        to={"chat_group": "chat_message_ids"}, required=True, constant=True
     )
-    meeting_id = fields.RelationField(to={"meeting": "chat_message_ids"}, required=True)
+    meeting_id = fields.RelationField(
+        to={"meeting": "chat_message_ids"}, required=True, constant=True
+    )
 
 
 class ActionWorker(Model):
@@ -2125,7 +2447,10 @@ class ImportPreview(Model):
 
     id = fields.IntegerField()
     name = fields.CharField(
-        required=True, constraints={"enum": ["account", "participant", "topic"]}
+        required=True,
+        constraints={
+            "enum": ["account", "participant", "topic", "committee", "motion"]
+        },
     )
     state = fields.CharField(
         required=True, constraints={"enum": ["warning", "error", "done"]}

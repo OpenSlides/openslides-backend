@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Option
 from ....shared.patterns import (
@@ -22,7 +22,7 @@ class OptionDelete(DeleteAction):
     model = Option()
     schema = DefaultSchema(Option()).get_delete_schema()
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         option = self.datastore.get(
             fqid_from_collection_and_id("option", instance["id"]), ["content_object_id"]
         )

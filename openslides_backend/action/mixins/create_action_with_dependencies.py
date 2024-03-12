@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any
 
 from ..action import Action
 from ..generics.create import CreateAction
@@ -9,12 +9,12 @@ class CreateActionWithDependencies(CreateAction):
     A CreateAction which has dependant actions which should be executed for each item.
     """
 
-    dependencies: List[Type[Action]]
+    dependencies: list[type[Action]]
     """
     A list of actions which should be executed together with this create action.
     """
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().base_update_instance(instance)
         self.apply_instance(instance)
         for ActionClass in self.dependencies:
@@ -39,7 +39,7 @@ class CreateActionWithDependencies(CreateAction):
         return instance
 
     def check_dependant_action_execution(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
     ) -> bool:
         """
         Check whether the dependency should be executed or not. Default is True.
@@ -48,8 +48,8 @@ class CreateActionWithDependencies(CreateAction):
         return True
 
     def get_dependent_action_data(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> List[Dict[str, Any]]:
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
+    ) -> list[dict[str, Any]]:
         """
         Override in subclass to provide the correct action data for the dependencies.
         """

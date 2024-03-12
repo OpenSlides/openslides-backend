@@ -1,6 +1,6 @@
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from datastore.shared.util import DeletedModelsBehaviour
 
@@ -21,7 +21,7 @@ from .interface import Engine, LockResult, MappedFieldsPerFqid, PartialModel
 
 class CacheDatastoreAdapter(DatastoreAdapter):
     cached_models: ModelMap
-    cached_missing_fields: Dict[FullQualifiedId, Set[str]]
+    cached_missing_fields: dict[FullQualifiedId, set[str]]
 
     def __init__(self, engine: Engine, logging: LoggingModule, env: Env) -> None:
         super().__init__(engine, logging, env)
@@ -31,8 +31,8 @@ class CacheDatastoreAdapter(DatastoreAdapter):
     def get(
         self,
         fqid: FullQualifiedId,
-        mapped_fields: List[str],
-        position: Optional[int] = None,
+        mapped_fields: list[str],
+        position: int | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
     ) -> PartialModel:
@@ -65,11 +65,11 @@ class CacheDatastoreAdapter(DatastoreAdapter):
 
     def get_many(
         self,
-        get_many_requests: List[GetManyRequest],
-        position: Optional[int] = None,
+        get_many_requests: list[GetManyRequest],
+        position: int | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
-    ) -> Dict[Collection, Dict[int, PartialModel]]:
+    ) -> dict[Collection, dict[int, PartialModel]]:
         if position or get_deleted_models != DeletedModelsBehaviour.NO_DELETED:
             return super().get_many(
                 get_many_requests,
@@ -108,12 +108,12 @@ class CacheDatastoreAdapter(DatastoreAdapter):
     def _get_many_from_cached_models(
         self,
         mapped_fields_per_fqid: MappedFieldsPerFqid,
-    ) -> Tuple[Dict[Collection, Dict[int, PartialModel]], MappedFieldsPerFqid]:
+    ) -> tuple[dict[Collection, dict[int, PartialModel]], MappedFieldsPerFqid]:
         """
         Returns a dictionary of the cached models for the given collections together with all
         missing fields.
         """
-        results: Dict[Collection, Dict[int, PartialModel]] = defaultdict(
+        results: dict[Collection, dict[int, PartialModel]] = defaultdict(
             lambda: defaultdict(dict)
         )
         missing_fields_per_fqid: MappedFieldsPerFqid = defaultdict(list)
@@ -145,7 +145,7 @@ class CacheDatastoreAdapter(DatastoreAdapter):
 
     def _fetch_missing_fields_from_datastore_for_cache(
         self, missing_fields_per_fqid: MappedFieldsPerFqid, lock_result: bool
-    ) -> Dict[Collection, Dict[int, PartialModel]]:
+    ) -> dict[Collection, dict[int, PartialModel]]:
         get_many_requests = [
             GetManyRequest(collection_from_fqid(fqid), [id_from_fqid(fqid)], fields)
             for fqid, fields in missing_fields_per_fqid.items()
@@ -154,7 +154,7 @@ class CacheDatastoreAdapter(DatastoreAdapter):
         return results
 
     def _update_cache(
-        self, fqid: FullQualifiedId, model: Dict[str, Any], missing_fields: List[str]
+        self, fqid: FullQualifiedId, model: dict[str, Any], missing_fields: list[str]
     ) -> None:
         for field in missing_fields:
             if field in model:

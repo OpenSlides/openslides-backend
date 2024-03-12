@@ -1,6 +1,6 @@
-from typing import Any, Dict
+from typing import Any
 
-from openslides_backend.action.mixins.import_mixins import BaseImportJsonUpload
+from openslides_backend.action.mixins.import_mixins import BaseImportJsonUploadAction
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -15,10 +15,10 @@ from ..user.create_update_permissions_mixin import (
 )
 
 
-class ParticipantCommon(BaseImportJsonUpload):
+class ParticipantCommon(BaseImportJsonUploadAction):
     meeting_id: int
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         permstore = PermissionVarStore(self.datastore, self.user_id)
         if (
             self.meeting_id not in permstore.user_meetings

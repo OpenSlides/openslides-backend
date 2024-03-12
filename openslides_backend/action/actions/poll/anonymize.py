@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
@@ -53,7 +53,7 @@ class PollAnonymize(
         if poll.get("type") != Poll.TYPE_NAMED:
             raise ActionException("You can only anonymize named polls.")
 
-    def _get_option_ids(self, poll_id: int) -> List[int]:
+    def _get_option_ids(self, poll_id: int) -> list[int]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, poll_id),
             ["option_ids", "global_option_id"],
@@ -63,13 +63,13 @@ class PollAnonymize(
             option_ids.append(poll["global_option_id"])
         return option_ids
 
-    def _get_options(self, option_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+    def _get_options(self, option_ids: list[int]) -> dict[int, dict[str, Any]]:
         get_many_request = GetManyRequest("option", option_ids, ["vote_ids"])
         gm_result = self.datastore.get_many([get_many_request])
-        options: Dict[int, Dict[str, Any]] = gm_result.get("option", {})
+        options: dict[int, dict[str, Any]] = gm_result.get("option", {})
         return options
 
-    def _remove_user_id_from(self, vote_ids: List[int]) -> None:
+    def _remove_user_id_from(self, vote_ids: list[int]) -> None:
         action_data = []
         for id_ in vote_ids:
             action_data.append({"id": id_})

@@ -1,19 +1,25 @@
 import time
+from typing import Any
+
+from openslides_backend.action.action import Action
+from openslides_backend.action.actions.speaker.end_speech import SpeakerEndSpeach
+from openslides_backend.action.actions.speaker.pause import SpeakerPause
+from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
+from openslides_backend.shared.filters import And, FilterOperator
 
 from ....models.models import Speaker
 from ....permissions.permissions import Permissions
-from ....services.datastore.interface import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionData
-from ..projector_countdown.mixins import CountdownControl
+from ..projector_countdown.mixins import CountdownCommand, CountdownControl
+from .speech_state import SpeechState
 
 
 @register_action("speaker.speak")
-class SpeakerSpeak(CountdownControl, UpdateAction):
+class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
     """
     Action to let speakers speak.
     """
@@ -26,57 +32,63 @@ class SpeakerSpeak(CountdownControl, UpdateAction):
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
-    def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        for instance in action_data:
-            this_speaker = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                mapped_fields=["list_of_speakers_id", "meeting_id"],
-            )
-            list_of_speakers = self.datastore.get(
-                fqid_from_collection_and_id(
-                    "list_of_speakers", this_speaker["list_of_speakers_id"]
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        instance = super().update_instance(instance)
+        db_instance = self.datastore.get(
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            [
+                "list_of_speakers_id",
+                "meeting_id",
+                "begin_time",
+                "end_time",
+                "speech_state",
+                "structure_level_list_of_speakers_id",
+                "point_of_order",
+            ],
+        )
+        # find current speaker, if exists, and end their speech
+        result = self.datastore.filter(
+            self.model.collection,
+            And(
+                FilterOperator("meeting_id", "=", db_instance["meeting_id"]),
+                FilterOperator(
+                    "list_of_speakers_id", "=", db_instance["list_of_speakers_id"]
                 ),
-                mapped_fields=["speaker_ids"],
-            )
-            gmr = GetManyRequest(
-                self.model.collection,
-                list_of_speakers["speaker_ids"],
-                ["begin_time", "end_time"],
-            )
-            speakers = self.datastore.get_many([gmr])
-            now = round(time.time())
-            current_speaker = None
-            for speaker_id, speaker in speakers[self.model.collection].items():
-                if speaker_id == instance["id"]:
-                    if speaker.get("begin_time") is not None:
-                        raise ActionException("Speaker has already started to speak.")
-                    assert speaker.get("end_time") is None
-                    instance["begin_time"] = now
-                    continue
-                if (
-                    speaker.get("begin_time") is not None
-                    and speaker.get("end_time") is None
-                ):
-                    assert current_speaker is None
-                    # stop current speaker
-                    yield {
-                        "id": speaker_id,
-                        "end_time": now,
-                    }
+                FilterOperator("begin_time", "!=", None),
+                FilterOperator("pause_time", "=", None),
+                FilterOperator("end_time", "=", None),
+            ),
+            mapped_fields=["id", "pause_time"],
+        )
+        if result:
+            current_speaker = next(iter(result.values()))
+            action: type[Action] | None = None
+            if db_instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
+                if current_speaker.get("pause_time") is None:
+                    action = SpeakerPause
+            else:
+                action = SpeakerEndSpeach
+            if action:
+                self.execute_other_action(action, [{"id": current_speaker["id"]}])
 
-            # reset projector countdown
+        now = round(time.time())
+        if db_instance.get("begin_time") is not None:
+            raise ActionException("Speaker has already started to speak.")
+        assert db_instance.get("end_time") is None
+        instance["begin_time"] = now
+
+        # update countdowns, differentiate by speaker type
+        countdown_time: int | None = None
+        if db_instance.get("speech_state") == SpeechState.INTERVENTION:
             meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", this_speaker["meeting_id"]),
-                [
-                    "list_of_speakers_couple_countdown",
-                    "list_of_speakers_countdown_id",
-                ],
-                lock_result=False,
+                fqid_from_collection_and_id("meeting", db_instance["meeting_id"]),
+                ["list_of_speakers_intervention_time"],
             )
-            if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
-                "list_of_speakers_countdown_id"
-            ):
-                self.control_countdown(
-                    meeting["list_of_speakers_countdown_id"], "restart"
-                )
-            yield instance
+            countdown_time = meeting["list_of_speakers_intervention_time"]
+        elif db_instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
+            countdown_time = 0
+        self.control_los_countdown(
+            db_instance["meeting_id"], CountdownCommand.RESTART, countdown_time
+        )
+        self.start_structure_level_countdown(now, db_instance)
+        return instance

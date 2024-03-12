@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 
@@ -21,8 +21,8 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         self.db_method_mock.side_effect = self._get_mock
 
     def _get_mock(
-        self, fqid: FullQualifiedId, mapped_fields: List[str], *args: Any, **kwargs: Any
-    ) -> Dict[str, Any]:
+        self, fqid: FullQualifiedId, mapped_fields: list[str], *args: Any, **kwargs: Any
+    ) -> dict[str, Any]:
         if id_from_fqid(fqid) in self.mock_datastore_content.get(
             collection_from_fqid(fqid), {}
         ):

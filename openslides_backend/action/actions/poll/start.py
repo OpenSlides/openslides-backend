@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
@@ -9,7 +10,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..projector_countdown.mixins import CountdownControl
+from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 from .mixins import PollHistoryMixin, PollPermissionMixin
 
 
@@ -30,7 +31,7 @@ class PollStartAction(
     poll_history_information = "started"
     extend_history_to = "content_object_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["state", "meeting_id", "type"],
@@ -54,7 +55,9 @@ class PollStartAction(
             ],
         )
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
-            self.control_countdown(meeting["poll_countdown_id"], "restart")
+            self.control_countdown(
+                meeting["poll_countdown_id"], CountdownCommand.RESTART
+            )
 
         self.vote_service.start(instance["id"])
 

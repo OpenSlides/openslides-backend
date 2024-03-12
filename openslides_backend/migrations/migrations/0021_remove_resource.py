@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from datastore.migrations import (
     BaseEvent,
     BaseEventMigration,
@@ -20,7 +18,7 @@ class Migration(BaseEventMigration):
     def migrate_event(
         self,
         event: BaseEvent,
-    ) -> Optional[List[BaseEvent]]:
+    ) -> list[BaseEvent] | None:
         collection = collection_from_fqid(event.fqid)
         if collection == "resource":
             return []

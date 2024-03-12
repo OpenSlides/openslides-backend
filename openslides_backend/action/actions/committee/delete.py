@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -20,7 +20,7 @@ class CommitteeDeleteAction(DeleteAction):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         try:
             return super().base_update_instance(instance)
         except ProtectedModelsException as e:

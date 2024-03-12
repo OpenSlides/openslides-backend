@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict
+from collections.abc import Callable
+from typing import Any
 from urllib.parse import unquote
 
 from authlib.exceptions import InvalidCredentialsException
@@ -31,7 +32,7 @@ class UserForgetPasswordConfirm(UpdateAction, ClearSessionsMixin):
     )
     skip_archived_meeting_check = True
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         user_id = instance.pop("user_id")
         user = self.datastore.get(f"user/{user_id}", ["saml_id"], lock_result=False)
         new_password = instance.pop("new_password")
@@ -52,7 +53,7 @@ class UserForgetPasswordConfirm(UpdateAction, ClearSessionsMixin):
         except InvalidCredentialsException:
             raise ActionException("Failed to verify token.")
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         pass
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None] | None:

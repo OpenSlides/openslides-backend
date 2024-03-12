@@ -1,5 +1,3 @@
-from typing import Optional
-
 from openslides_backend.action.action import Action
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.filters import And, Filter, FilterOperator
@@ -11,7 +9,7 @@ class CheckUniqueInContextMixin(Action):
         unique_name: str,
         unique_value: str,
         exception_message: str,
-        self_id: Optional[int] = None,
+        self_id: int | None = None,
         context_name: str = "",
         context_id: int = 0,
     ) -> None:

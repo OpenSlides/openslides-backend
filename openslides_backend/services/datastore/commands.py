@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Union
 
 import simplejson as json
 
@@ -13,13 +13,13 @@ class GetManyRequest:
     datastore.
     """
 
-    mapped_fields: Set[str]
+    mapped_fields: set[str]
 
     def __init__(
         self,
         collection: Collection,
-        ids: List[int],
-        mapped_fields: Optional[Union[Set[str], List[str]]] = None,
+        ids: list[int],
+        mapped_fields: set[str] | list[str] | None = None,
     ) -> None:
         self.collection = collection
         self.ids = ids
@@ -46,7 +46,7 @@ class GetManyRequest:
         )
 
 
-CommandData = Dict[str, Union[str, int, List[str]]]
+CommandData = dict[str, Union[str, int, list[str]]]
 
 
 class Command:
@@ -64,7 +64,7 @@ class Command:
         ).lstrip("_")
 
     @property
-    def data(self) -> Optional[str]:
+    def data(self) -> str | None:
         return json.dumps(self.get_raw_data())
 
     def get_raw_data(self) -> CommandData:
@@ -92,7 +92,7 @@ class Write(Command):
     Write command
     """
 
-    def __init__(self, write_requests: List[WriteRequest]) -> None:
+    def __init__(self, write_requests: list[WriteRequest]) -> None:
         self.write_requests = write_requests
 
     @property

@@ -1,6 +1,7 @@
+from collections.abc import Callable
 from threading import Lock
 from time import sleep
-from typing import Any, Callable, Optional
+from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 from datastore.migrations import MigrationException
@@ -42,7 +43,7 @@ class BaseMigrationRouteTest(BaseInternalRequestTest):
     def migration_request(
         self,
         cmd: str,
-        internal_auth_password: Optional[str] = DEV_PASSWORD,
+        internal_auth_password: str | None = DEV_PASSWORD,
     ) -> Response:
         return super().call_internal_route({"cmd": cmd}, internal_auth_password)
 
@@ -68,6 +69,16 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
         assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert "output" not in response.json
 
+    def test_clear_collectionfield_tables(self) -> None:
+        response = self.migration_request("clear-collectionfield-tables")
+        self.assert_status_code(response, 200)
+        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
+        assert response.json["output"] == "Cleaning collectionfield helper tables...\n"
+
+    def test_unknown_command(self) -> None:
+        response = self.migration_request("unknown")
+        self.assert_status_code(response, 400)
+
 
 @patch(
     "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"
@@ -76,7 +87,7 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
     def wait_for_lock(
         self,
         wait_lock: Lock,
-        indicator_lock: Optional[Lock] = None,
+        indicator_lock: Lock,
         error: bool = False,
     ) -> Callable[[], None]:
         """
@@ -84,13 +95,9 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         indicator_lock is used as an indicator that the thread is waiting for the wait_lock and must
         be in locked state.
         """
-        if not indicator_lock:
-            indicator_lock = Lock()
-            indicator_lock.acquire()
 
         def _wait_for_lock(*args: Any, **kwargs: Any) -> None:
             MigrationHandler.write_line(MagicMock(), "start")
-            assert indicator_lock
             indicator_lock.release()
             wait_lock.acquire()
             if error:
@@ -132,7 +139,9 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
     def test_double_migration(self, execute_command: Mock) -> None:
         lock = Lock()
         lock.acquire()
-        execute_command.side_effect = self.wait_for_lock(lock)
+        indicator_lock = Lock()
+        indicator_lock.acquire()
+        execute_command.side_effect = self.wait_for_lock(lock, indicator_lock)
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
         assert response.json["status"] == MigrationState.MIGRATION_RUNNING
@@ -149,7 +158,11 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
     def test_migration_with_error(self, execute_command: Mock) -> None:
         lock = Lock()
         lock.acquire()
-        execute_command.side_effect = self.wait_for_lock(lock, error=True)
+        indicator_lock = Lock()
+        indicator_lock.acquire()
+        execute_command.side_effect = self.wait_for_lock(
+            lock, indicator_lock, error=True
+        )
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
         assert response.json["success"] is True

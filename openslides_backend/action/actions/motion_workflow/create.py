@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any
 
 from ....i18n.translator import translate as _
 from ....models.models import MotionWorkflow
@@ -28,8 +28,8 @@ class MotionWorkflowCreateAction(SequentialNumbersMixin, CreateActionWithDepende
     dependencies = [MotionStateCreateAction]
 
     def get_dependent_action_data(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> List[Dict[str, Any]]:
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
+    ) -> list[dict[str, Any]]:
         return [
             {
                 "name": MOTION_STATE_DEFAULT_NAME,
@@ -59,7 +59,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
         ],
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         self.apply_instance(instance)
         action_data = [
@@ -130,7 +130,7 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
         ],
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         self.apply_instance(instance)
         action_data = [
@@ -217,7 +217,7 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
             MotionStateCreateAction,
             action_data,
         )
-        from_to: Tuple[Tuple[int, Tuple[int]]] = (  # type: ignore
+        from_to: tuple[tuple[int, tuple[int]]] = (  # type: ignore
             (0, (1, 5)),
             (1, (2, 5, 9)),
             (2, (3, 4, 5, 6, 7, 8)),

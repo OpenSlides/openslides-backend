@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Any, Dict
+from typing import Any
 
 DEV_PASSWORD = "openslides"
 
@@ -89,7 +89,7 @@ class Environment:
             return f"0.0.0.0:{self.PRESENTER_PORT}"
         raise ValueError(f"Invalid view {view}")
 
-    def get_service_url(self) -> Dict[str, str]:
+    def get_service_url(self) -> dict[str, str]:
         service_url = {}
         # Extend the vars attribute with the lower case properties for the service URLs.
         for service in ("datastore_reader", "datastore_writer", "media", "vote"):

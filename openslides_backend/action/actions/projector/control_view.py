@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Projector
 from ....permissions.permissions import Permissions
@@ -27,7 +27,7 @@ class ProjectorControlView(UpdateAction):
     )
     permission = Permissions.Projector.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         field = instance.pop("field")
         direction = instance.pop("direction")
         step = instance.pop("step", 1)

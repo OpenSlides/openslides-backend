@@ -13,6 +13,9 @@ We recently updated the source language in the database from english to the user
 
 ## Development
 
+Documentation for the actions: [Action overview](docs/Actions-Overview.md)
+Documentation for the presenters: [Presenter overview](docs/Presenter-Overview.md)
+
 ### Development with Docker Compose
 
 The setup is structured to do all development inside the docker containers. To start everything at once and get entered into a bash shell, run
@@ -185,9 +188,11 @@ General schema for internal routes: `/internal/<route>`
   and created write requests will have id -1.
 * `/system/action/health`: Return `{"status": "running"}` if successful. Useful for status checks against the backend.
 * `/system/action/info`: Returns a list of all possible actions with their respective JSON schema.
+* `/system/action/version`: Returns the current backend version.
 * `/internal/migrations`: Provides remote access to the migration tool. For more information, take a look at the [migration route docs](/docs/migration_route.md)
 
 ### Presenter Service
 
 * `/system/presenter/handle_request`: Main route of the service, is used to fetch presenter results.
 * `/system/presenter/health`: Return `{"status": "running"}` if successful. Useful for status checks against the backend.
+* `/system/presenter/version`: Returns the current backend version.

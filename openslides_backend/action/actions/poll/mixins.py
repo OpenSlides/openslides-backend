@@ -1,6 +1,6 @@
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -16,13 +16,13 @@ from ....shared.patterns import (
 )
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
-from ..projector_countdown.mixins import CountdownControl
+from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token
 
 
 class PollPermissionMixin(Action):
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         if "meeting_id" in instance:
             content_object_id = instance.get("content_object_id", "")
             meeting_id = instance["meeting_id"]
@@ -56,7 +56,7 @@ def check_poll_or_option_perms(
 
 
 class StopControl(CountdownControl, Action):
-    def on_stop(self, instance: Dict[str, Any]) -> None:
+    def on_stop(self, instance: dict[str, Any]) -> None:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [
@@ -77,20 +77,20 @@ class StopControl(CountdownControl, Action):
             ],
         )
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
-            self.control_countdown(meeting["poll_countdown_id"], "reset")
+            self.control_countdown(meeting["poll_countdown_id"], CountdownCommand.RESET)
 
         # stop poll in vote service and create vote objects
         results = self.vote_service.stop(instance["id"])
         action_data = []
         votesvalid = Decimal("0.000000")
-        option_results: Dict[int, Dict[str, Decimal]] = defaultdict(
+        option_results: dict[int, dict[str, Decimal]] = defaultdict(
             lambda: defaultdict(lambda: Decimal("0.000000"))
         )  # maps options to their respective YNA sums
         for ballot in results["votes"]:
             user_token = get_user_token()
             vote_weight = Decimal(ballot["weight"])
             votesvalid += vote_weight
-            vote_template: Dict[str, str | int] = {"user_token": user_token}
+            vote_template: dict[str, str | int] = {"user_token": user_token}
             if "vote_user_id" in ballot:
                 vote_template["user_id"] = ballot["vote_user_id"]
             if "request_user_id" in ballot:
@@ -155,11 +155,9 @@ class StopControl(CountdownControl, Action):
         instance["votesinvalid"] = "0.000000"
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_users(
-            {**poll, **instance}
-        )
+        instance["entitled_users_at_stop"] = self.get_entitled_users(poll | instance)
 
-    def get_entitled_users(self, poll: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_entitled_users(self, poll: dict[str, Any]) -> list[dict[str, Any]]:
         entitled_users = []
         all_voted_users = set(poll.get("voted_ids", []))
 
@@ -177,22 +175,24 @@ class StopControl(CountdownControl, Action):
             "meeting_user", list(meeting_user_ids), ["user_id", "vote_delegated_to_id"]
         )
         gm_result = self.datastore.get_many([gmr])
-        meeting_users = gm_result.get("meeting_user", {}).values()
-        delegated_to_mu_ids = list(
-            set(id_ for mu in meeting_users if (id_ := mu.get("vote_delegated_to_id")))
-        )
-        mu_to_user_id = {}
-        if delegated_to_mu_ids:
-            gmr = GetManyRequest("meeting_user", delegated_to_mu_ids, ["user_id"])
-            mu_to_user_id = self.datastore.get_many([gmr]).get("meeting_user", {})
+        meeting_users = gm_result.get("meeting_user", {})
 
-        for mu in meeting_users:
+        gmr = GetManyRequest(
+            "user",
+            [mu["user_id"] for mu in meeting_users.values()],
+            ["is_present_in_meeting_ids"],
+        )
+        users = self.datastore.get_many([gmr]).get("user", {})
+
+        for mu in meeting_users.values():
             entitled_users.append(
                 {
-                    "user_id": mu["user_id"],
                     "voted": mu["user_id"] in all_voted_users,
+                    "present": poll["meeting_id"]
+                    in users[mu["user_id"]].get("is_present_in_meeting_ids", []),
+                    "user_id": mu["user_id"],
                     "vote_delegated_to_user_id": (
-                        mu_to_user_id[vote_mu_id]["user_id"]
+                        meeting_users[vote_mu_id]["user_id"]
                         if (vote_mu_id := mu.get("vote_delegated_to_id"))
                         else None
                     ),
@@ -205,7 +205,7 @@ class StopControl(CountdownControl, Action):
 class PollHistoryMixin(Action):
     poll_history_information: str
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         # no datastore access necessary if information is in payload
         polls = self.get_instances_with_fields(["content_object_id"])
         return {
@@ -215,7 +215,7 @@ class PollHistoryMixin(Action):
             for poll in polls
         }
 
-    def get_history_title(self, poll: Dict[str, Any]) -> str:
+    def get_history_title(self, poll: dict[str, Any]) -> str:
         content_collection = collection_from_fqid(poll["content_object_id"])
         if content_collection == "assignment":
             return "Ballot"

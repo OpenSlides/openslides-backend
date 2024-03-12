@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
@@ -11,8 +11,8 @@ class TestCheckMediafileId(BasePresenterTestCase):
     def create_model_with_information(
         self,
         fqid: str,
-        data: Dict[str, Any],
-        information: Optional[List[str]] = None,
+        data: dict[str, Any],
+        information: list[str] | None = None,
         user_id: int = 1,
     ) -> None:
         data["id"] = id_from_fqid(fqid)
@@ -25,7 +25,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
         )
         self.datastore.write(request)
 
-    def remove_timestamps(self, information: List[Dict[str, Any]]) -> None:
+    def remove_timestamps(self, information: list[dict[str, Any]]) -> None:
         for position in information:
             del position["timestamp"]
 

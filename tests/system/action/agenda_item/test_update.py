@@ -1,41 +1,34 @@
-from typing import Dict, List
-
 from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class AgendaItemActionTest(BaseActionTestCase):
-    def test_update_correct(self) -> None:
+    def setUp(self) -> None:
+        super().setUp()
         self.set_models(
             {
-                "meeting/11": {"is_active_in_organization_id": 1},
-                "topic/102": {"meeting_id": 11},
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "topic/102": {"agenda_item_id": 1, "meeting_id": 1},
                 "agenda_item/111": {
                     "item_number": "101",
                     "duration": 600,
-                    "meeting_id": 11,
+                    "meeting_id": 1,
+                    "content_object_id": "topic/1",
                 },
             }
         )
-        response = self.request("agenda_item.update", {"id": 111, "duration": 1200})
-        self.assert_status_code(response, 200)
-        model = self.get_model("agenda_item/111")
-        assert model.get("duration") == 1200
 
     def test_update_all_fields(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
-                "topic/1": {"agenda_item_id": 1, "meeting_id": 1},
                 "tag/1": {"meeting_id": 1},
-                "agenda_item/1": {"meeting_id": 1, "content_object_id": "topic/1"},
             }
         )
         response = self.request(
             "agenda_item.update",
             {
-                "id": 1,
+                "id": 111,
                 "duration": 1200,
                 "item_number": "12",
                 "comment": "comment",
@@ -46,7 +39,7 @@ class AgendaItemActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("agenda_item/1")
+        model = self.get_model("agenda_item/111")
         assert model.get("duration") == 1200
         assert model.get("item_number") == "12"
         assert model.get("comment") == "comment"
@@ -58,18 +51,14 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_type_change_with_children(self) -> None:
         self.set_models(
             {
-                "meeting/11": {"is_active_in_organization_id": 1},
                 "agenda_item/111": {
-                    "item_number": "101",
-                    "duration": 600,
                     "child_ids": [222],
-                    "meeting_id": 11,
                 },
                 "agenda_item/222": {
                     "type": AgendaItem.AGENDA_ITEM,
                     "item_number": "102",
                     "parent_id": 111,
-                    "meeting_id": 11,
+                    "meeting_id": 1,
                 },
             }
         )
@@ -89,27 +78,24 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_tag_ids_add(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
-                "agenda_item/1": {"comment": "test", "meeting_id": 1},
                 "tag/1": {"name": "tag", "meeting_id": 1},
             }
         )
-        response = self.request("agenda_item.update", {"id": 1, "tag_ids": [1]})
+        response = self.request("agenda_item.update", {"id": 111, "tag_ids": [1]})
         self.assert_status_code(response, 200)
-        agenda_item = self.get_model("agenda_item/1")
+        agenda_item = self.get_model("agenda_item/111")
         self.assertEqual(agenda_item.get("tag_ids"), [1])
 
     def test_update_tag_ids_remove(self) -> None:
         self.test_update_tag_ids_add()
-        response = self.request("agenda_item.update", {"id": 1, "tag_ids": []})
+        response = self.request("agenda_item.update", {"id": 111, "tag_ids": []})
         self.assert_status_code(response, 200)
-        agenda_item = self.get_model("agenda_item/1")
+        agenda_item = self.get_model("agenda_item/111")
         self.assertEqual(agenda_item.get("tag_ids"), [])
 
     def test_update_multiple_with_tag(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "tag/1": {
                     "name": "tag",
                     "meeting_id": 1,
@@ -131,11 +117,10 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.assertEqual(tag.get("tagged_ids"), [])
 
     def update_multiple_with_type_variations(
-        self, variations: List[Dict[str, int | str]]
+        self, variations: list[dict[str, int | str]]
     ) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "agenda_item/1": {
                     "comment": "test1",
                     "meeting_id": 1,
@@ -222,29 +207,32 @@ class AgendaItemActionTest(BaseActionTestCase):
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "topic/102": {"meeting_id": 1},
-                "agenda_item/111": {
-                    "item_number": "101",
-                    "duration": 600,
-                    "meeting_id": 1,
-                },
-            },
+            {},
             "agenda_item.update",
             {"id": 111, "duration": 1200},
         )
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "topic/102": {"meeting_id": 1},
-                "agenda_item/111": {
-                    "item_number": "101",
-                    "duration": 600,
-                    "meeting_id": 1,
-                },
-            },
+            {},
             "agenda_item.update",
             {"id": 111, "duration": 1200},
             Permissions.AgendaItem.CAN_MANAGE,
+        )
+
+    def test_update_moderator_notes_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "agenda_item.update",
+            {"id": 111, "moderator_notes": "test"},
+            Permissions.AgendaItem.CAN_MANAGE,
+            fail=True,
+        )
+
+    def test_update_moderator_notes_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "agenda_item.update",
+            {"id": 111, "moderator_notes": "test"},
+            Permissions.AgendaItem.CAN_MANAGE_MODERATOR_NOTES,
         )

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
@@ -72,7 +72,7 @@ class OrganizationUpdate(
     )
     check_email_field = "users_email_replyto"
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         if any(
             [field in instance for field in OrganizationUpdate.group_A_fields]
         ) and not has_organization_management_level(
@@ -91,7 +91,7 @@ class OrganizationUpdate(
         ):
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         if limit_of_meetings := instance.get("limit_of_meetings"):
             organization = self.datastore.get(

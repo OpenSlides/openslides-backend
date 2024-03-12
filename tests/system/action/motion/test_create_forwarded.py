@@ -1,5 +1,6 @@
-from typing import Any, Dict
+from typing import Any
 
+from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -7,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCreateForwardedTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_model: Dict[str, Dict[str, Any]] = {
+        self.test_model: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "name": "name_XDAddEAW",
                 "committee_id": 53,
@@ -789,6 +790,34 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "State doesn't allow to forward motion." in response.json["message"]
+
+    def test_create_forwarded_with_identical_motion(self) -> None:
+        text = "test"
+        hash = TextHashMixin.get_hash(text)
+        self.set_models(
+            {
+                "motion/13": {
+                    "meeting_id": 2,
+                    "text": text,
+                    "text_hash": hash,
+                },
+                **self.test_model,
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": text,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/14", {"text_hash": hash, "identical_motion_ids": [13]}
+        )
+        self.assert_model_exists("motion/13", {"identical_motion_ids": [14]})
 
     def test_no_permissions(self) -> None:
         self.create_meeting()

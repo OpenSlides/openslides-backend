@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -15,20 +15,18 @@ class AccountJsonUpload(BaseUserJsonUpload):
 
     schema = BaseUserJsonUpload.get_schema(
         additional_user_fields=User().get_properties(
-            "default_structure_level",
             "default_number",
             "default_vote_weight",
         ),
     )
     headers = BaseUserJsonUpload.headers + [
         {"property": "default_number", "type": "string"},
-        {"property": "default_structure_level", "type": "string"},
         {"property": "default_vote_weight", "type": "decimal", "is_object": True},
     ]
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     import_name = "account"
 
-    def validate_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         results = super().validate_entry(entry)
 
         messages = results["messages"]
