@@ -3,7 +3,7 @@ from collections.abc import Callable, Iterable
 from typing import Any, Protocol
 
 from openslides_backend.http.request import Request
-from openslides_backend.shared.env import Environment
+from openslides_backend.shared.interfaces.env import Env
 
 from . import Headers  # noqa
 from .logging import LoggingModule
@@ -38,7 +38,7 @@ class WSGIApplication(Protocol):
     """
 
     services: Services
-    env: Environment
+    env: Env
 
     @abstractmethod
     def __init__(

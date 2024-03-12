@@ -1,25 +1,16 @@
-import os
 from unittest import TestCase
 from unittest.mock import MagicMock
 
 from openslides_backend.http.http_exceptions import MethodNotAllowed
-from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.wsgi import View, WSGIApplication
-from openslides_backend.wsgi import OpenSlidesBackendWSGI
+from tests.system.util import create_base_test_application
 
 from ..util import Client
 
 
 def create_test_application(view: type[View]) -> WSGIApplication:
-    application_factory = OpenSlidesBackendWSGI(
-        env=Environment(os.environ),
-        logging=MagicMock(),
-        view=view,
-        services=MagicMock(),
-    )
-    application = application_factory.setup()
-    return application
+    return create_base_test_application(view, MagicMock())
 
 
 class TestHttpExceptions(TestCase):

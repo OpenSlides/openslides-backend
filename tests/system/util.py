@@ -18,6 +18,7 @@ from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.env import Environment, is_truthy
 from openslides_backend.shared.exceptions import MediaServiceException
+from openslides_backend.shared.interfaces.services import Services
 from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 from tests.util import Response
@@ -59,6 +60,20 @@ def create_presenter_test_application() -> WSGIApplication:
     return create_test_application(PresenterView)
 
 
+def create_base_test_application(
+    view: type[View], services: Services, env: Environment | None = None
+) -> WSGIApplication:
+    if not env:
+        env = Environment(os.environ)
+    env.vars["OPENSLIDES_BACKEND_CREATE_INITIAL_DATA"] = "true"
+    application_factory = OpenSlidesBackendWSGI(
+        env=env, logging=MagicMock(), view=view, services=services
+    )
+    application = application_factory.setup()
+
+    return application
+
+
 def create_test_application(view: type[View]) -> WSGIApplication:
     env = Environment(os.environ)
     services = OpenSlidesBackendServices(
@@ -75,13 +90,7 @@ def create_test_application(view: type[View]) -> WSGIApplication:
     mock_media_service.upload_resource = Mock(side_effect=side_effect_for_upload_method)
     services.media = MagicMock(return_value=mock_media_service)
 
-    # Create WSGI application instance. Inject logging module, view class and services container.
-    application_factory = OpenSlidesBackendWSGI(
-        env=env, logging=MagicMock(), view=view, services=services
-    )
-    application = application_factory.setup()
-
-    return application
+    return create_base_test_application(view, services, env)
 
 
 def side_effect_for_upload_method(

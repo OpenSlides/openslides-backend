@@ -14,6 +14,7 @@ from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
+from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import ActionException, DatastoreException
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
@@ -56,6 +57,7 @@ class BaseSystemTestCase(TestCase):
     def setUp(self) -> None:
         self.app = self.get_application()
         self.services = self.app.services
+        self.env = cast(Environment, self.app.env)
         self.auth = self.services.authentication()
         self.media = self.services.media()
         self.vote_service = cast(TestVoteService, self.services.vote())
@@ -101,7 +103,7 @@ class BaseSystemTestCase(TestCase):
         timeout = -1: Waits indefinetly for the action to finish, does not start an action worker
         timeout = -2: Deacticates threading alltogether. The action is executed in the main thread.
         """
-        self.app.env.vars["OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT"] = str(timeout)
+        self.env.vars["OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT"] = str(timeout)
 
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
