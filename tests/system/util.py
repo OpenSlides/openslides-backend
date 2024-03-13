@@ -65,7 +65,6 @@ def create_base_test_application(
 ) -> WSGIApplication:
     if not env:
         env = Environment(os.environ)
-    env.vars["OPENSLIDES_BACKEND_CREATE_INITIAL_DATA"] = "true"
     application_factory = OpenSlidesBackendWSGI(
         env=env, logging=MagicMock(), view=view, services=services
     )
