@@ -111,6 +111,7 @@ class MeetingImport(BaseActionTestCase):
                         "list_of_speakers_show_amount_of_speakers_on_slide": True,
                         "list_of_speakers_present_users_only": False,
                         "list_of_speakers_show_first_contribution": False,
+                        "list_of_speakers_hide_secondary_contributions_count": False,
                         "list_of_speakers_enable_point_of_order_speakers": True,
                         "list_of_speakers_enable_pro_contra_speech": True,
                         "list_of_speakers_can_set_contribution_self": True,

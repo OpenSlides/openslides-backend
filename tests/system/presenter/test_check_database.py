@@ -77,6 +77,7 @@ class TestCheckDatabase(BasePresenterTestCase):
             "list_of_speakers_show_amount_of_speakers_on_slide": True,
             "list_of_speakers_present_users_only": True,
             "list_of_speakers_show_first_contribution": True,
+            "list_of_speakers_hide_secondary_contributions_count": True,
             "list_of_speakers_enable_point_of_order_speakers": True,
             "list_of_speakers_enable_pro_contra_speech": False,
             "list_of_speakers_can_set_contribution_self": False,
