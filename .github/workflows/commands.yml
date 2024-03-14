@@ -15,21 +15,20 @@ jobs:
       )
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: recursive
-      
       - name: Generate access token
         uses: tibdex/github-app-token@v2
         id: generate-token
         with:
           app_id: ${{ secrets.AUTOMATION_APP_ID }}
           private_key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ steps.generate-token.outputs.token }}
       
       - name: Checkout PR
-        env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           git config --global submodule.recurse true
           gh pr checkout ${{ github.event.issue.number }}
@@ -73,8 +72,6 @@ jobs:
       - name: Merge meta repo
         if: steps.merge.outputs.result != '' && steps.conflicts.outputs.result == ''
         working-directory: ${{ steps.path.outputs.path }}
-        env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           gh pr checkout $(gh pr list --search $(git rev-parse HEAD) --json number --jq ".[0].number")
           git fetch origin main
