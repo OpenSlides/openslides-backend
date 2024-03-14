@@ -84,4 +84,4 @@ jobs:
       
       - name: Finish merge & push result
         if: steps.merge.outputs.result != '' && steps.conflicts.outputs.result == ''
-        run: git add . && git merge --continue --no-edit && git push
+        run: git commit -a --no-edit && git push
