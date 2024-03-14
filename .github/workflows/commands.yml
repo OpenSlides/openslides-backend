@@ -19,9 +19,6 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-
-      - name: Update submodule
-        run: git submodule update --init --recursive
       
       - name: Generate access token
         uses: tibdex/github-app-token@v2
@@ -33,7 +30,9 @@ jobs:
       - name: Checkout PR
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: gh pr checkout ${{ github.event.issue.number }}
+        run: |
+          git config --global submodule.recurse true
+          gh pr checkout ${{ github.event.issue.number }}
 
       - name: Set git credentials
         run: |
