@@ -420,9 +420,7 @@ class Meeting(Model, MeetingModelMixin):
     )
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
-    list_of_speakers_hide_secondary_contributions_count = fields.BooleanField(
-        default=False
-    )
+    list_of_speakers_hide_contribution_count = fields.BooleanField(default=False)
     list_of_speakers_allow_multiple_speakers = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
     list_of_speakers_can_create_point_of_order_for_others = fields.BooleanField(
