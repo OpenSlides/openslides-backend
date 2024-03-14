@@ -29,6 +29,8 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
       
       - name: Checkout PR
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           git config --global submodule.recurse true
           gh pr checkout ${{ github.event.issue.number }}
@@ -72,6 +74,8 @@ jobs:
       - name: Merge meta repo
         if: steps.merge.outputs.result != '' && steps.conflicts.outputs.result == ''
         working-directory: ${{ steps.path.outputs.path }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           gh pr checkout $(gh pr list --search $(git rev-parse HEAD) --json number --jq ".[0].number")
           git fetch origin main
