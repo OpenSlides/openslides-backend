@@ -41,6 +41,8 @@ ALLOWED_HTML_TAGS_STRICT = {
     # tables
     "table",
     "caption",
+    "colgroup",
+    "col",
     "thead",
     "tbody",
     "th",
