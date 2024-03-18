@@ -246,6 +246,11 @@ class SpeakerCreateAction(
                 raise ActionException("meeting_user_id is required.")
             user_id = None
 
+        if instance.get("speech_state") and instance.get("point_of_order"):
+            raise ActionException(
+                "Speaker can't be point of order and another speech state at the same time."
+            )
+
         los_fqid = fqid_from_collection_and_id(
             "list_of_speakers", instance["list_of_speakers_id"]
         )
