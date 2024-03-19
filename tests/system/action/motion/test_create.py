@@ -266,7 +266,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         motion = self.get_model("motion/1")
-        self.assertCountEqual(motion.get("submitter_ids"), [1, 2])
+        self.assertCountEqual(motion["submitter_ids"], [1, 2])
         submitter_1 = self.get_model("motion_submitter/1")
         assert submitter_1.get("meeting_id") == 1
         assert submitter_1.get("meeting_user_id") == 13
