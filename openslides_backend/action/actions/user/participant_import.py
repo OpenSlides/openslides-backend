@@ -31,6 +31,7 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         return instance
 
     def update_models_to_create(self, model_name: str, field_name: str) -> None:
+        self.models_to_create[field_name] = []
         to_create: set[str] = {
             entry["value"]
             for row in self.rows
