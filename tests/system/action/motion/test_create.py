@@ -266,7 +266,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         motion = self.get_model("motion/1")
-        assert motion.get("submitter_ids") == [1, 2]
+        self.assertCountEqual(motion.get("submitter_ids"), [1, 2])
         submitter_1 = self.get_model("motion_submitter/1")
         assert submitter_1.get("meeting_id") == 1
         assert submitter_1.get("meeting_user_id") == 13
@@ -337,9 +337,8 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "motion/3", {"text_hash": self.hash, "identical_motion_ids": [1, 2]}
-        )
+        motion = self.assert_model_exists("motion/3", {"text_hash": self.hash})
+        self.assertCountEqual(motion["identical_motion_ids"], [1, 2])
 
     def test_create_identical_motion_with_tags(self) -> None:
         self.setup_hash_test()
