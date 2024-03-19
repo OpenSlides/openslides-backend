@@ -123,7 +123,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 if (structure_level_id := structure_level.get("id"))
             ]
 
-        failing_fields = self.permission_check.get_failing_fields(entry)
+        perm_check = (
+            self.permission_check_update
+            if entry.get("id")
+            else self.permission_check_create
+        )
+        failing_fields = perm_check.get_failing_fields(entry)
         failing_fields_jsonupload = {
             field
             for field in entry

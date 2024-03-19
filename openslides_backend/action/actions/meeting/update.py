@@ -269,9 +269,9 @@ class MeetingUpdate(
 
         # group B check
         if "present_user_ids" in instance and not has_perm(
-            self.datastore, self.user_id, Permissions.User.CAN_MANAGE, instance["id"]
+            self.datastore, self.user_id, Permissions.User.CAN_UPDATE, instance["id"]
         ):
-            raise MissingPermission(Permissions.User.CAN_MANAGE)
+            raise MissingPermission(Permissions.User.CAN_UPDATE)
 
         # group C check
         if (

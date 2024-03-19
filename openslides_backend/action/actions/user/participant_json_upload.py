@@ -100,7 +100,12 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         )
 
         payload_index = entry.pop("payload_index", None)
-        failing_fields = self.permission_check.get_failing_fields(entry)
+        perm_check = (
+            self.permission_check_update
+            if entry.get("id")
+            else self.permission_check_create
+        )
+        failing_fields = perm_check.get_failing_fields(entry)
         entry.pop("group_ids")
         entry.pop("structure_level_ids")
         entry.pop("meeting_id")
@@ -111,9 +116,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             messages.append(
                 f"Following fields were removed from payload, because the user has no permissions to change them: {', '.join(failing_fields)}"
             )
-        field_to_fail = (
-            set(entry.keys()) & self.permission_check.get_all_checked_fields()
-        )
+        field_to_fail = set(entry.keys()) & perm_check.get_all_checked_fields()
         for field in field_to_fail:
             if field in failing_fields:
                 if isinstance(entry[field], dict):

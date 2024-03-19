@@ -274,6 +274,14 @@ class ParticipantJsonUpload(BaseActionTestCase):
             Permissions.User.CAN_MANAGE,
         )
 
+    def test_json_upload_permission_2(self) -> None:
+        self.base_permission_test(
+            {},
+            "participant.json_upload",
+            {"meeting_id": 1, "data": [{"username": "test"}]},
+            Permissions.User.CAN_UPDATE,
+        )
+
     def test_json_upload_names_and_email_find_add_meeting_data(self) -> None:
         self.set_models(
             {

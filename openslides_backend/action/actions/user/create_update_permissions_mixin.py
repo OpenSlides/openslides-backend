@@ -557,3 +557,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
         for letter in "ABDEFGH":
             all_fields.update(self.field_rights[letter])
         return all_fields
+
+
+class UpdatePermissionsFailingFields(CreateUpdatePermissionsFailingFields):
+    permission = Permissions.User.CAN_UPDATE

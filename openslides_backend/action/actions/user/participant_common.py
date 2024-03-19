@@ -12,6 +12,7 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from ..user.create_update_permissions_mixin import (
     CreateUpdatePermissionsFailingFields,
     PermissionVarStore,
+    UpdatePermissionsFailingFields,
 )
 
 
@@ -19,7 +20,9 @@ class ParticipantCommon(BaseImportJsonUploadAction):
     meeting_id: int
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
-        permstore = PermissionVarStore(self.datastore, self.user_id)
+        permstore = PermissionVarStore(
+            self.datastore, self.user_id, Permissions.User.CAN_UPDATE
+        )
         if (
             self.meeting_id not in permstore.user_meetings
             and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS
@@ -38,7 +41,17 @@ class ParticipantCommon(BaseImportJsonUploadAction):
                 }
             )
 
-        self.permission_check = CreateUpdatePermissionsFailingFields(
+        self.permission_check_create = CreateUpdatePermissionsFailingFields(
+            permstore,
+            self.services,
+            self.datastore,
+            self.relation_manager,
+            self.logging,
+            self.env,
+            self.skip_archived_meeting_check,
+            self.use_meeting_ids_for_archived_meeting_check,
+        )
+        self.permission_check_update = UpdatePermissionsFailingFields(
             permstore,
             self.services,
             self.datastore,
