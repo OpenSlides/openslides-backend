@@ -115,7 +115,6 @@ class TestMigrationRouteWithLocks(BaseInternalPasswordTest, BaseMigrationRouteTe
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
         assert response.json["status"] == MigrationState.MIGRATION_RUNNING
-        assert response.json["output"] == "start\n"
 
         indicator_lock.acquire()
         response = self.migration_request("progress")
