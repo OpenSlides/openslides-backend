@@ -280,6 +280,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "participant.json_upload",
             {"meeting_id": 1, "data": [{"username": "test"}]},
             Permissions.User.CAN_UPDATE,
+            True,
         )
 
     def test_json_upload_names_and_email_find_add_meeting_data(self) -> None:

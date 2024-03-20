@@ -290,6 +290,7 @@ class ParticipantImport(BaseActionTestCase):
             "participant.import",
             {"id": 1, "import": True},
             Permissions.User.CAN_UPDATE,
+            True,
         )
 
 
