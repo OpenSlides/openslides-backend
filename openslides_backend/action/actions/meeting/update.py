@@ -208,19 +208,6 @@ class MeetingUpdate(
         elif set_as_template is False:
             instance["template_for_organization_id"] = None
 
-        # check point of order settings consistency
-        poo_setting = "list_of_speakers_enable_point_of_order_speakers"
-        categories_setting = "list_of_speakers_enable_point_of_order_categories"
-        _instance = self.datastore.get(
-            fqid_from_collection_and_id("meeting", instance["id"]),
-            [poo_setting, categories_setting],
-        )
-        _instance.update(instance)
-        if not _instance.get(poo_setting) and _instance.get(categories_setting):
-            raise ActionException(
-                "You cannot enable point of order categories without enabling point of order speakers."
-            )
-
         meeting_check = []
         if "reference_projector_id" in instance:
             if reference_projector_id := instance["reference_projector_id"]:
