@@ -3,6 +3,7 @@ from typing import Any
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ....shared.patterns import fqid_from_collection_and_id
@@ -48,4 +49,6 @@ class UserResetPasswordToDefaultAction(
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
-        self.check_permissions_for_scope(instance["id"])
+        self.check_permissions_for_scope(
+            instance["id"], meeting_permission=Permissions.User.CAN_UPDATE
+        )

@@ -2,6 +2,7 @@ from time import time
 
 from openslides_backend.action.actions.user.send_invitation_email import EmailErrorType
 from openslides_backend.action.mixins.send_email_mixin import EmailSettings
+from openslides_backend.permissions.permissions import Permission, Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.action.mail_base import (
@@ -524,7 +525,7 @@ class SendInvitationMail(BaseActionTestCase):
             response.json["results"][0][1]["type"], EmailErrorType.USER_ERROR
         )
         self.assertIn(
-            "Missing Permission: user.can_manage",
+            "Missing Permission: user.can_update",
             response.json["results"][0][1]["message"],
         )
 
@@ -705,4 +706,39 @@ class SendInvitationMail(BaseActionTestCase):
         self.assertEqual(
             response.json["results"][0][0]["message"],
             "Missing OrganizationManagementLevel: can_manage_users Mail 1 from 1",
+        )
+
+    def test_with_parent_meeting_permission(self) -> None:
+        self.assert_with_meeting_permission(Permissions.User.CAN_MANAGE)
+
+    def test_with_meeting_permission(self) -> None:
+        self.assert_with_meeting_permission(Permissions.User.CAN_UPDATE)
+
+    def assert_with_meeting_permission(self, perm: Permission) -> None:
+        self.base_permission_test(
+            {
+                "meeting/1": {
+                    "meeting_user_ids": [2],
+                },
+                "user/2": {
+                    "username": "Testuser 2",
+                    "first_name": "Jim",
+                    "last_name": "Beam",
+                    "default_password": "secret",
+                    "email": "recipient2@example.com",
+                    "meeting_user_ids": [2],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 2,
+                    "group_ids": [1],
+                },
+            },
+            "user.send_invitation_email",
+            {
+                "id": 2,
+                "meeting_id": 1,
+            },
+            perm,
         )

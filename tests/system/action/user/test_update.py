@@ -1,5 +1,5 @@
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
-from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.permissions.permissions import Permission, Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -812,6 +812,20 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_perm_group_A_meeting_manage_user_archived_meeting(self) -> None:
+        self.perm_group_A_meeting_manage_user_archived_meeting(
+            Permissions.User.CAN_UPDATE
+        )
+
+    def test_perm_group_A_meeting_manage_user_archived_meeting_with_parent_permission(
+        self,
+    ) -> None:
+        self.perm_group_A_meeting_manage_user_archived_meeting(
+            Permissions.User.CAN_MANAGE
+        )
+
+    def perm_group_A_meeting_manage_user_archived_meeting(
+        self, permission: Permission
+    ) -> None:
         """
         May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee
         User is member of an archived meeting in an other committee, but this doesn't may affect the result.
@@ -823,7 +837,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/4": {"is_active_in_organization_id": None},
-                "group/2": {"permissions": [Permissions.User.CAN_UPDATE]},
+                "group/2": {"permissions": [permission]},
             }
         )
         response = self.request(
