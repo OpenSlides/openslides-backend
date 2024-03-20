@@ -1051,3 +1051,44 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         self.json_upload_legacy_username()
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
+
+    def test_reupload_with_structure_level(self) -> None:
+        import_data = {
+            "username": "test",
+            "default_password": "secret",
+            "is_active": "1",
+            "is_physical_person": "F",
+            "number": "strange number",
+            "structure_level": ["testlevel", "notfound"],
+            "vote_weight": "1.12",
+            "comment": "my comment",
+            "is_present": "0",
+            "groups": ["testgroup", "notfound_group1", "notfound_group2"],
+            "wrong": 15,
+        }
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [import_data.copy()],
+            },
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "participant.import",
+            {"id": response.json["results"][0][0].get("id"), "import": True},
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [import_data],
+            },
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "participant.import",
+            {"id": response.json["results"][0][0].get("id"), "import": True},
+        )
+        self.assert_status_code(response, 200)

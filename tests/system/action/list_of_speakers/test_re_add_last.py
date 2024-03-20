@@ -1,3 +1,6 @@
+from time import time
+
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -61,8 +64,8 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         model = self.get_model("list_of_speakers/111")
         self.assertEqual(model.get("speaker_ids"), [222, 223, 224])
         model = self.get_model("speaker/223")
-        self.assertTrue(model.get("begin_time") is None)
-        self.assertTrue(model.get("end_time") is None)
+        self.assertIsNone(model.get("begin_time"))
+        self.assertIsNone(model.get("end_time"))
         self.assertEqual(model.get("meeting_user_id"), 43)
         self.assertEqual(model.get("weight"), -1)
         model = self.get_model("meeting_user/43")
@@ -175,6 +178,89 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         response = self.request("list_of_speakers.re_add_last", {"id": 111})
         self.assert_status_code(response, 200)
 
+    def test_with_interposed_question(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_enable_interposed_question": True,
+                },
+                "list_of_speakers/222": {
+                    "meeting_id": 1,
+                    "speaker_ids": [333, 334, 335],
+                },
+                "speaker/333": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 42,
+                    "begin_time": 1000,
+                    "total_pause": 1000,
+                    "meeting_id": 1,
+                    "weight": 1,
+                },
+                "speaker/334": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 43,
+                    "meeting_id": 1,
+                    "weight": 2,
+                },
+                "speaker/335": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 44,
+                    "meeting_id": 1,
+                    "weight": 1,
+                    "begin_time": 1500,
+                    "end_time": 2500,
+                    "speech_state": "interposed_question",
+                },
+            }
+        )
+        response = self.request("list_of_speakers.re_add_last", {"id": 222})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("speaker/333", {"weight": 1})
+        self.assert_model_exists("speaker/334", {"weight": 2})
+        self.assert_model_exists("speaker/335", {"weight": 0})
+
+    def test_with_interposed_question_error(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_enable_interposed_question": True,
+                },
+                "list_of_speakers/222": {
+                    "meeting_id": 1,
+                    "speaker_ids": [333, 334, 335],
+                },
+                "speaker/333": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 42,
+                    "begin_time": 1000,
+                    "end_time": 1500,
+                    "meeting_id": 1,
+                    "weight": 1,
+                },
+                "speaker/334": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 43,
+                    "meeting_id": 1,
+                    "weight": 2,
+                },
+                "speaker/335": {
+                    "list_of_speakers_id": 222,
+                    "meeting_user_id": 44,
+                    "meeting_id": 1,
+                    "weight": 1,
+                    "begin_time": 1500,
+                    "end_time": 2500,
+                    "speech_state": "interposed_question",
+                },
+            }
+        )
+        response = self.request("list_of_speakers.re_add_last", {"id": 222})
+        self.assert_status_code(response, 400)
+        assert (
+            "Can't re-add interposed question when there's no current speaker"
+            in response.json["message"]
+        )
+
     def test_last_speaker_also_in_waiting_list_but_poos(self) -> None:
         self.set_models(
             {
@@ -215,6 +301,42 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         )
         response = self.request("list_of_speakers.re_add_last", {"id": 111})
         self.assert_status_code(response, 200)
+
+    def test_tie_breakers(self) -> None:
+        now = round(time())
+        self.set_models(
+            {
+                "speaker/222": {
+                    "begin_time": now - 200,
+                    "end_time": now - 50,
+                    "weight": 1,
+                },
+                "speaker/223": {
+                    "begin_time": now - 150,
+                    "end_time": now - 50,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "weight": 1,
+                },
+                "speaker/224": {
+                    "begin_time": now - 100,
+                    "end_time": now - 50,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                    "weight": 2,
+                },
+            }
+        )
+        for i in range(222, 225):
+            response = self.request("list_of_speakers.re_add_last", {"id": 111})
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(
+                f"speaker/{i}",
+                {
+                    "begin_time": None,
+                    "end_time": None,
+                },
+            )
+            if i == 222:
+                self.request("speaker.speak", {"id": 222})
 
     def test_re_add_last_no_permissions(self) -> None:
         self.base_permission_test(

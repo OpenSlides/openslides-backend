@@ -481,6 +481,22 @@ class BaseActionTestCase(BaseSystemTestCase):
             assert informations
             self.assertEqual(last_information[fqid], information)
 
+    @with_database_context
+    def assert_history_information_contains(
+        self, fqid: FullQualifiedId, information: str
+    ) -> None:
+        """
+        Asserts that the last history information for the given model is the given information.
+        """
+        informations = self.datastore.history_information([fqid]).get(fqid)
+        last_information = (
+            cast(HistoryInformation, informations[-1]["information"])
+            if informations
+            else {}
+        )
+        assert informations
+        assert information in last_information[fqid]
+
     def assert_logged_in(self) -> None:
         self.auth.authenticate()  # assert that no exception is thrown
 

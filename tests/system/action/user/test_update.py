@@ -43,7 +43,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "pronoun": "Test",
                 "username": "username_Xcdfgee",
                 "default_vote_weight": "1.700000",
-                "organization_management_level": "can_manage_users",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "committee_management_ids": [78],
             },
         )
@@ -56,7 +56,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_vote_weight": "1.700000",
                 "committee_ids": [78],
                 "committee_management_ids": [78],
-                "organization_management_level": "can_manage_users",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
         )
 
@@ -568,7 +568,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 1",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
             response.json["message"],
         )
 
@@ -704,7 +704,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": "new default_password",
                 "gender": "female",
                 "email": "info@openslides.com ",  # space intentionally, will be stripped
-                "default_number": "new default_number",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
             },
@@ -722,7 +721,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": "new default_password",
                 "gender": "female",
                 "email": "info@openslides.com",
-                "default_number": "new default_number",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
             },
@@ -825,7 +823,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/4": {"is_active_in_organization_id": None},
-                "group/2": {"permissions": ["user.can_manage"]},
+                "group/2": {"permissions": [Permissions.User.CAN_UPDATE]},
             }
         )
         response = self.request(
@@ -847,7 +845,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
     def test_perm_group_A_no_permission(self) -> None:
-        """May not update group A fields on organsisation scope, although having both committee permissions"""
+        """May not update group A fields on organization scope, although having both committee permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_committee_management_level([60, 63], 111)
@@ -888,8 +886,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_perm_group_B_user_can_manage(self) -> None:
-        """update group B fields for 2 meetings with simple user.can_manage permissions"""
+    def test_perm_group_B_user_can_update(self) -> None:
+        """update group B fields for 2 meetings with simple user.can_update permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(None, self.user_id)
@@ -964,8 +962,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             "meeting_user/5", {"user_id": 6, "meeting_id": 1, "vote_delegated_to_id": 7}
         )
 
-    def test_perm_group_B_user_can_manage_no_permission(self) -> None:
-        """Group B fields needs explicit user.can_manage permission for meeting"""
+    def test_perm_group_B_user_can_update_no_permission(self) -> None:
+        """Group B fields needs explicit user.can_update permission for meeting"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(None, self.user_id)
@@ -973,7 +971,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             self.user_id, [3, 6]
         )  # Empty groups of meeting/1 and meeting/4
         self.set_user_groups(111, [1, 4])  # Default groups of meeting/1 and meeting/4
-        self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
 
         response = self.request(
             "user.update",
@@ -985,7 +983,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 4",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 4",
             response.json["message"],
         )
 
@@ -1029,8 +1027,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"group_ids": [1], "user_id": 111},
         )
 
-    def test_perm_group_C_user_can_manage(self) -> None:
-        """May update group C group_ids by user.can_manage permission with admin group of all related meetings"""
+    def test_perm_group_C_user_can_update(self) -> None:
+        """May update group C group_ids by user.can_update permission with admin group of all related meetings"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_user_groups(self.user_id, [2, 5])  # Admin-groups
@@ -1074,7 +1072,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 1",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
             response.json["message"],
         )
 
@@ -1135,7 +1133,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 4",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 4",
             response.json["message"],
         )
 

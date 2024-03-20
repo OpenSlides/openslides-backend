@@ -95,7 +95,6 @@ class User(Model):
     can_change_own_password = fields.BooleanField(default=True)
     gender = fields.CharField()
     email = fields.CharField()
-    default_number = fields.CharField()
     default_vote_weight = fields.DecimalField(
         default="1.000000", constraints={"minimum": "0.000001"}
     )
@@ -963,7 +962,9 @@ class Group(Model):
                 "tag.can_manage",
                 "user.can_manage",
                 "user.can_manage_presence",
+                "user.can_see_sensitive_data",
                 "user.can_see",
+                "user.can_update",
             ]
         }
     )
@@ -1339,9 +1340,10 @@ class Motion(Model):
     sort_weight = fields.IntegerField(default=10000)
     created = fields.TimestampField()
     last_modified = fields.TimestampField(read_only=True)
-    workflow_timestamp = fields.TimestampField(read_only=True)
+    workflow_timestamp = fields.TimestampField()
     start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
+    additional_submitter = fields.CharField()
     lead_motion_id = fields.RelationField(
         to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )

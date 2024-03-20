@@ -352,7 +352,6 @@ class MeetingImport(BaseActionTestCase):
             "can_change_own_password": True,
             "gender": "male",
             "email": "",
-            "default_number": "",
             "default_vote_weight": "1.000000",
             "last_email_sent": None,
             "is_demo_user": False,
@@ -820,6 +819,35 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("user/3")
+
+    def test_with_forwarding_committees(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "2": self.get_user_data(
+                        2,
+                        {
+                            "username": "user2",
+                            "last_name": "new user",
+                            "email": "tesT@email.de",
+                            "forwarding_committee_ids": [4],
+                        },
+                    )
+                }
+            }
+        )
+
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        user2 = self.assert_model_exists(
+            "user/3",
+            {
+                "username": "user2",
+                "last_name": "new user",
+                "email": "tesT@email.de",
+            },
+        )
+        assert not user2.get("forwarding_committee_ids")
 
     def test_check_negative_default_vote_weight(self) -> None:
         request_data = self.create_request_data({})

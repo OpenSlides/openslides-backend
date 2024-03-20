@@ -4,8 +4,6 @@ from enum import Enum
 
 from .base_classes import Permission
 
-PERMISSION_YML_CHECKSUM = "8ddd9f2bd7ac5added7cdee2bb376494"
-
 
 class _AgendaItem(str, Permission, Enum):
     CAN_MANAGE = "agenda_item.can_manage"
@@ -75,6 +73,8 @@ class _User(str, Permission, Enum):
     CAN_MANAGE = "user.can_manage"
     CAN_MANAGE_PRESENCE = "user.can_manage_presence"
     CAN_SEE = "user.can_see"
+    CAN_SEE_SENSITIVE_DATA = "user.can_see_sensitive_data"
+    CAN_UPDATE = "user.can_update"
 
 
 class Permissions:
@@ -141,7 +141,9 @@ permission_parents: dict[Permission, list[Permission]] = {
     _Projector.CAN_SEE: [_Projector.CAN_MANAGE],
     _Projector.CAN_MANAGE: [],
     _Tag.CAN_MANAGE: [],
-    _User.CAN_SEE: [_User.CAN_MANAGE_PRESENCE],
+    _User.CAN_SEE: [_User.CAN_MANAGE_PRESENCE, _User.CAN_SEE_SENSITIVE_DATA],
     _User.CAN_MANAGE_PRESENCE: [_User.CAN_MANAGE],
+    _User.CAN_SEE_SENSITIVE_DATA: [_User.CAN_UPDATE],
+    _User.CAN_UPDATE: [_User.CAN_MANAGE],
     _User.CAN_MANAGE: [],
 }

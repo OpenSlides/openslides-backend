@@ -5,7 +5,6 @@ import ssl
 from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
-from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
 from typing import Any
@@ -111,7 +110,7 @@ class EmailUtils:
     @staticmethod
     def send_email(
         client: smtplib.SMTP | smtplib.SMTP_SSL,
-        from_: str | Address,
+        from_: str,
         to: str | list[str],
         subject: str,
         content: str,
@@ -155,7 +154,7 @@ class EmailUtils:
             )
 
         message["From"] = from_
-        message["To"] = to
+        message["To"] = to if isinstance(to, str) else ", ".join(to)
         message.preamble = "You will not see this in a MIME-aware mail reader.\n"
         message.add_header("Subject", subject)
         message.add_header("Date", format_datetime(datetime.now()))
@@ -168,7 +167,7 @@ class EmailUtils:
     def send_email_safe(
         client: smtplib.SMTP | smtplib.SMTP_SSL,
         logger: Any,
-        from_: str | Address,
+        from_: str,
         to: str | list[str],
         subject: str,
         content: str,
