@@ -127,6 +127,23 @@ class StructureLevelListOfSpeakersCreateTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_structure_level_countdowns_deactivated_2(self) -> None:
+        self.set_models(
+            {"meeting/1": {"list_of_speakers_default_structure_level_time": None}}
+        )
+        response = self.request(
+            "structure_level_list_of_speakers.create",
+            {
+                "structure_level_id": 1,
+                "list_of_speakers_id": 2,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Structure level countdowns are deactivated",
+            response.json["message"],
+        )
+
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
             self.models,

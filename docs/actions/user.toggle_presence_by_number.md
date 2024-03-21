@@ -31,4 +31,4 @@ If the action is successful, it returns the id of the modified user. Thus the ac
 One of the following has to be true:
 * The request user has the OML `can_manage_users`
 * The request user has the CML `can_manage` in the given meeting's committee
-* The request user has `user.can_manage` in the given meeting
+* The request user has `user.can_update` in the given meeting
