@@ -74,6 +74,7 @@ meeting_settings_keys = [
     "list_of_speakers_show_amount_of_speakers_on_slide",
     "list_of_speakers_present_users_only",
     "list_of_speakers_show_first_contribution",
+    "list_of_speakers_hide_contribution_count",
     "list_of_speakers_allow_multiple_speakers",
     "list_of_speakers_enable_point_of_order_speakers",
     "list_of_speakers_can_create_point_of_order_for_others",
