@@ -280,6 +280,19 @@ class ParticipantImport(BaseActionTestCase):
             Permissions.User.CAN_MANAGE,
         )
 
+    def test_import_permission_2(self) -> None:
+        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
+            {"info": ImportState.DONE, "value": "group1", "id": 1}
+        ]
+        self.update_model("import_preview/1", self.import_preview1_data)
+        self.base_permission_test(
+            {},
+            "participant.import",
+            {"id": 1, "import": True},
+            Permissions.User.CAN_UPDATE,
+            True,
+        )
+
 
 class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInImport):
     def test_upload_import_invalid_vote_weight_with_remove(self) -> None:

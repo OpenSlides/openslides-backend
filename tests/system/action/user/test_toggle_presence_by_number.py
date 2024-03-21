@@ -185,3 +185,34 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
             "user.toggle_presence_by_number", {"meeting_id": 1, "number": "test"}
         )
         self.assert_status_code(response, 200)
+
+    def test_toggle_presence_by_number_meeting_can_update_permission(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "group_ids": [1],
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [34],
+                },
+                "group/1": {
+                    "meeting_user_ids": [1],
+                    "permissions": [Permissions.User.CAN_UPDATE],
+                },
+                "user/1": {
+                    "organization_management_level": None,
+                    "meeting_user_ids": [34],
+                },
+                "meeting_user/34": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "number": "test",
+                    "group_ids": [1],
+                },
+                "committee/1": {},
+            }
+        )
+        response = self.request(
+            "user.toggle_presence_by_number", {"meeting_id": 1, "number": "test"}
+        )
+        self.assert_status_code(response, 200)

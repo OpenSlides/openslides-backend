@@ -385,6 +385,14 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             Permissions.User.CAN_MANAGE,
         )
 
+    def test_update_group_b_permissions_2(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "present_user_ids": [2]},
+            Permissions.User.CAN_UPDATE,
+        )
+
     def test_update_group_c_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "reference_projector_id": 1}

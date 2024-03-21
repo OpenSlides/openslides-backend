@@ -1,4 +1,5 @@
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permissions import Permission, Permissions
 from tests.system.action.base import BaseActionTestCase
 
 from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
@@ -33,7 +34,7 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1 or Permission user.can_manage in meeting 1",
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1 or Permission user.can_update in meeting 1",
             response.json["message"],
         )
 
@@ -56,6 +57,15 @@ class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCa
         self.assert_logged_in()
 
     def test_scope_meeting_permission_in_meeting(self) -> None:
+        self.assert_scope_meeting_permission_in_meeting(Permissions.User.CAN_UPDATE)
+
+    def test_scope_meeting_permission_in_meeting_with_permission_parent(self) -> None:
+        self.assert_scope_meeting_permission_in_meeting(Permissions.User.CAN_MANAGE)
+
+    def assert_scope_meeting_permission_in_meeting(
+        self, permission: Permission
+    ) -> None:
+        self.setup_admin_scope_permissions(UserScope.Meeting, permission)
         self.setup_admin_scope_permissions(UserScope.Meeting)
         self.setup_scoped_user(UserScope.Meeting)
         response = self.request("user.reset_password_to_default", {"id": 111})
