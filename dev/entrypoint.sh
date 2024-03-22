@@ -9,4 +9,6 @@ printf "\nMigrations:\n"
 python openslides_backend/migrations/migrate.py finalize
 printf "\n"
 
+global/meta/dev/scripts/apply_db_schema.sh
+
 exec "$@"

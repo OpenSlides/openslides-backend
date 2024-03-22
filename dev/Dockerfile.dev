@@ -1,6 +1,7 @@
 FROM python:3.10.13-slim-bookworm
 
-RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support gcc libpq-dev libmagic1
+RUN apt-get update && apt-get install --yes \
+    make git curl ncat vim bash-completion mime-support gcc libpq-dev libmagic1 postgresql-client
 
 WORKDIR /app
 
