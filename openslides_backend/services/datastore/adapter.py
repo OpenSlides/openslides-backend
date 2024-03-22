@@ -53,6 +53,7 @@ MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
 class DatastoreAdapter(BaseDatastoreService):
     """
     Adapter to connect to readable and writeable datastore.
+    TODO: Use ReadAdapter instead of Reader
     """
 
     reader: Reader
