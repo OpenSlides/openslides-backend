@@ -1,0 +1,149 @@
+from collections import defaultdict
+from collections.abc import Iterable
+from typing import Any, ContextManager
+
+from datastore.reader.core.requests import GetManyRequest
+from datastore.shared.di import injector
+from datastore.shared.postgresql_backend.connection_handler import ConnectionHandler
+from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
+from datastore.shared.typing import Collection, Fqid, Id, Model
+from datastore.shared.util import MappedFields
+
+from openslides_backend.shared.patterns import collection_and_id_from_fqid
+
+
+class ReadAdapter:
+    connection: ConnectionHandler  # TODO use PgConnectionHandlerService from datastore
+    query_helper: SqlQueryHelper
+
+    def __init__(self) -> None:
+        self.connection = injector.get(ConnectionHandler)
+        self.query_helper = injector.get(SqlQueryHelper)
+
+    def get_database_context(self) -> ContextManager[None]:
+        """Returns the context manager of the underlying database."""
+        return self.connection.get_connection_context()
+
+    # def get(self, request: GetRequest) -> Model:
+    #     """Gets the specified model."""
+    #     return None
+
+    def get_many(self, request: GetManyRequest) -> dict[Collection, dict[Id, Model]]:
+        """Gets multiple models."""
+        mapped_fields = request.build_mapped_fields()
+        result = self._get_many_helper(
+            mapped_fields.fqids,
+            mapped_fields,
+        )
+
+        # change mapping fqid->model to collection->id->model
+        final: dict[Collection, dict[Id, Model]] = defaultdict(dict)
+        for fqid, model in result.items():
+            collection, id = collection_and_id_from_fqid(fqid)
+            final[collection][id] = model
+
+        # add back empty collections
+        for collection in mapped_fields.collections:
+            if not final[collection]:
+                final[collection] = {}
+        return final
+
+    def _get_many_helper(
+        self,
+        fqids: Iterable[Fqid],
+        mapped_fields: MappedFields | None = None,
+    ) -> dict[Fqid, Model]:
+        if not fqids:
+            return {}
+        if mapped_fields is None:
+            mapped_fields = MappedFields()
+
+        arguments: list[Any] = [tuple(fqids)]
+
+        (
+            mapped_fields_str,
+            mapped_field_args,
+        ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
+
+        query = f"""
+            select fqid, {mapped_fields_str} from models
+            where fqid in %s"""
+        with self.connection.get_connection_context():
+            result = self.connection.query(
+                query, mapped_field_args + arguments, mapped_fields.unique_fields
+            )
+
+            models = self._build_models_from_result(result, mapped_fields)
+        return models
+
+    def _build_models_from_result(
+        self, result: Any, mapped_fields: MappedFields
+    ) -> dict[str, Model]:
+        result_map = {}
+        for row in result:
+            fqid = row["fqid"]
+
+            if mapped_fields.needs_whole_model:
+                # at least one collection needs all fields, so we need to select data
+                row = row["data"]
+
+            if fqid in mapped_fields.per_fqid and len(mapped_fields.per_fqid[fqid]) > 0:
+                model = {}
+                for field in mapped_fields.per_fqid[fqid]:
+                    if row.get(field) is not None:
+                        model[field] = row[field]
+            else:
+                model = row
+            result_map[fqid] = model
+
+        return result_map
+
+    # def get_all(self, request: GetAllRequest) -> dict[Id, Model]:
+    #     """
+    #     Returns all (non-deleted) models of one collection. May return a huge amount
+    #     of data, so use with caution.
+    #     """
+    #     return None
+
+    # def get_everything(
+    #     self, request: GetEverythingRequest
+    # ) -> dict[Collection, dict[Id, Model]]:
+    #     """
+    #     Returns all models In the form of the example data: Collections mapped to
+    #     lists of models.
+    #     """
+    #     return None
+
+    # def filter(self, request: FilterRequest) -> FilterResult:
+    #     """Returns all models that satisfy the filter condition."""
+    #     return None
+
+    # def exists(self, request: AggregateRequest) -> ExistsResult:
+    #     """Determines whether at least one model satisfies the filter conditions."""
+    #     return None
+
+    # def count(self, request: AggregateRequest) -> CountResult:
+    #     """Returns the amount of models that satisfy the filter conditions."""
+    #     return None
+
+    # def min(self, request: MinMaxRequest) -> MinResult:
+    #     """
+    #     Returns the mininum value of the given field for all models that satisfy the
+    #     given filter.
+    #     """
+    #     return None
+
+    # def max(self, request: MinMaxRequest) -> MaxResult:
+    #     """
+    #     Returns the maximum value of the given field for all models that satisfy the
+    #     given filter.
+    #     """
+    #     return None
+
+    # def history_information(
+    #     self, request: HistoryInformationRequest
+    # ) -> dict[Fqid, list[HistoryInformation]]:
+    #     """
+    #     Returns history information for multiple models.
+    #     """
+    #     return None
