@@ -28,9 +28,12 @@ class ReadAdapter:
     #     """Gets the specified model."""
     #     return None
 
+    # TODO: I don't see a point in constantly calculating and then splitting fqids,
+    # this should all just use separate collection and id variables
     def get_many(self, request: GetManyRequest) -> dict[Collection, dict[Id, Model]]:
         """Gets multiple models."""
         mapped_fields = request.build_mapped_fields()
+
         result = self._get_many_helper(
             mapped_fields.fqids,
             mapped_fields,
@@ -65,6 +68,14 @@ class ReadAdapter:
             mapped_field_args,
         ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
 
+        # TODO: This is DEFINATELY the wrong query:
+        # - We need to select from the correct table/view
+        # - We need to select based on id
+        # Something like
+        # 'select id, {mapped_fields_str} from {view_name} where id in %s'
+        # Where:
+        # - view_name is the collection name (except for the user and group collection where a '_' should be appended)
+        # - the arguments are now the ids of the models, not the fqids
         query = f"""
             select fqid, {mapped_fields_str} from models
             where fqid in %s"""

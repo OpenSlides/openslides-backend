@@ -4,6 +4,7 @@ from openslides_backend.services.datastore.read_adapter import ReadAdapter
 
 
 def test_get_many(write) -> None:
+    # TODO: This probably writes the wrong data format.
     write(
         {
             "type": "create",
