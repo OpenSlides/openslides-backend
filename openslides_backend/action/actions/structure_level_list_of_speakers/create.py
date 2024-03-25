@@ -41,8 +41,8 @@ class StructureLevelListOfSpeakersCreateAction(CreateActionWithInferredMeeting):
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["list_of_speakers_default_structure_level_time"],
         )
-        default_time = meeting["list_of_speakers_default_structure_level_time"]
-        if default_time == 0:
+        default_time = meeting.get("list_of_speakers_default_structure_level_time")
+        if not default_time:
             raise ActionException("Structure level countdowns are deactivated")
         if "initial_time" not in instance:
             instance["initial_time"] = default_time
