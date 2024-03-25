@@ -35,7 +35,6 @@ allowed_user_fields = [
 
 @register_action("user.save_saml_account", action_type=ActionType.STACK_INTERNAL)
 class UserSaveSamlAccount(
-    # EmailCheckMixin, UsernameMixin, CreateAction, UpdateAction, SingularActionMixin
     EmailCheckMixin,
     UsernameMixin,
     SingularActionMixin,
@@ -147,6 +146,10 @@ class UserSaveSamlAccount(
                     if group_id not in old_group_ids:
                         instance["meeting_id"] = meeting_id
                         instance["group_ids"] = old_group_ids + [group_id]
+                else:
+                    instance["meeting_id"] = meeting_id
+                    instance["group_ids"] = [group_id]
+
             instance = {
                 k: v for k, v in instance.items() if k == "id" or v != self.user.get(k)
             }
@@ -186,9 +189,9 @@ class UserSaveSamlAccount(
 
     def check_for_group_add(self) -> tuple[int, int] | tuple[None, None]:
         NoneResult = (None, None)
-        if not (meeting_info := cast(dict, self.saml_attr_mapping.get("meeting"))) or not (
-            external_id := meeting_info.get("external_id")
-        ):
+        if not (
+            meeting_info := cast(dict, self.saml_attr_mapping.get("meeting"))
+        ) or not (external_id := meeting_info.get("external_id")):
             return NoneResult
 
         meetings = self.datastore.filter(
