@@ -5,7 +5,7 @@ from openslides_backend.action.action import Action
 from openslides_backend.action.actions.speaker.end_speech import SpeakerEndSpeach
 from openslides_backend.action.actions.speaker.pause import SpeakerPause
 from openslides_backend.action.mixins.singular_action_mixin import SingularActionMixin
-from openslides_backend.shared.filters import And, FilterOperator, Or
+from openslides_backend.shared.filters import And, FilterOperator
 
 from ....models.models import Speaker
 from ....permissions.permissions import Permissions
@@ -46,7 +46,7 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
                 "point_of_order",
             ],
         )
-        # find current speaker, if exists, and end their speech
+        # find current speaker(s), if they exists, and end their speech
         result = self.datastore.filter(
             self.model.collection,
             And(
@@ -56,23 +56,24 @@ class SpeakerSpeak(SingularActionMixin, CountdownControl, UpdateAction):
                 ),
                 FilterOperator("begin_time", "!=", None),
                 FilterOperator("end_time", "=", None),
-                Or(
-                    FilterOperator("point_of_order", "=", True),
-                    FilterOperator("pause_time", "=", None),
-                ),
             ),
             mapped_fields=["id", "pause_time"],
         )
-        if result:
-            current_speaker = next(iter(result.values()))
-            action: type[Action] | None = None
-            if db_instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
-                if current_speaker.get("pause_time") is None:
-                    action = SpeakerPause
-            else:
-                action = SpeakerEndSpeach
-            if action:
-                self.execute_other_action(action, [{"id": current_speaker["id"]}])
+        action: type[Action]
+        if db_instance.get("speech_state") == SpeechState.INTERPOSED_QUESTION:
+            # pause currently speaking speaker
+            action = SpeakerPause
+            action_data = [
+                {"id": speaker["id"]}
+                for speaker in result.values()
+                if speaker.get("pause_time") is None
+            ]
+        else:
+            # stop all paused or speaking speakers
+            action = SpeakerEndSpeach
+            action_data = [{"id": speaker["id"]} for speaker in result.values()]
+        if action_data:
+            self.execute_other_action(action, action_data)
 
         now = round(time.time())
         if db_instance.get("begin_time") is not None:
