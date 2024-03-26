@@ -86,7 +86,9 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             for speaker in speakers.values():
                 if (
                     speaker.get("end_time") is None
-                    and speaker["meeting_user_id"] == last_speaker["meeting_user_id"]
+                    and last_speaker.get("meeting_user_id")
+                    and speaker.get("meeting_user_id")
+                    == last_speaker.get("meeting_user_id")
                     and bool(speaker.get("point_of_order"))
                     == bool(last_speaker.get("point_of_order"))
                 ):
