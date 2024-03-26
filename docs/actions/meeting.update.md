@@ -154,7 +154,7 @@
     default_projector_agenda_item_list_ids: Ids;
     default_projector_topic_ids: Ids;
     default_projector_list_of_speakers_ids: Ids;
-    default_projector_current_list_of_speakers_ids: Ids;
+    default_projector_current_los_ids: Ids;
     default_projector_motion_ids: Ids;
     default_projector_amendment_ids: Ids;
     default_projector_motion_block_ids: Ids;
