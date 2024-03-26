@@ -199,7 +199,8 @@ class Attribute(Node):
     default: Any = None
     on_delete: OnDelete | None = None
     equal_fields: str | list[str] | None = None
-    contraints: dict[str, Any]
+    constraints: dict[str, Any]
+    is_view_field: bool = False
 
     FIELD_TEMPLATE = string.Template(
         "    ${field_name} = fields.${field_class}(${properties})\n"
@@ -210,38 +211,39 @@ class Attribute(Node):
             **COMMON_FIELD_CLASSES,
             **RELATION_FIELD_CLASSES,
         }
-        self.contraints = {}
+        self.constraints = {}
         self.in_array_constraints = {}
         if isinstance(value, str):
             self.type = value
         else:
-            self.type = value.get("type", "")
+            self.type = value.pop("type")
             if self.type in RELATION_FIELD_CLASSES.keys():
-                self.to = To(value.get("to", {}))
-                self.on_delete = value.get("on_delete")
+                self.to = To(value.pop("to"))
+                self.on_delete = value.pop("on_delete", None)
+                if self.type in ("relation-list", "generic-relation-list") or value.get(
+                    "sql"
+                ):
+                    self.is_view_field = True
             else:
                 assert self.type in COMMON_FIELD_CLASSES.keys(), (
                     "Invalid type: " + self.type
                 )
-            self.required = value.get("required", False)
-            self.read_only = value.get("read_only", False)
-            self.constant = value.get("constant", False)
-            self.default = value.get("default")
-            self.equal_fields = value.get("equal_fields")
+            self.required = value.pop("required", False)
+            self.read_only = value.pop("read_only", False)
+            self.constant = value.pop("constant", False)
+            self.default = value.pop("default", None)
+            self.equal_fields = value.pop("equal_fields", None)
             for k, v in value.items():
                 if k not in (
-                    "type",
-                    "to",
-                    "required",
-                    "read_only",
-                    "constant",
-                    "default",
-                    "on_delete",
-                    "equal_fields",
                     "items",
                     "restriction_mode",
+                    # database metadata
+                    "reference",
+                    "sql",
+                    "deferred",
+                    "unique",
                 ):
-                    self.contraints[k] = v
+                    self.constraints[k] = v
                 elif self.type in ("string[]", "number[]") and k == "items":
                     self.in_array_constraints.update(v)
 
@@ -256,6 +258,8 @@ class Attribute(Node):
         if self.on_delete:
             assert self.on_delete in [mode for mode in OnDelete]
             properties += f"on_delete=fields.OnDelete.{self.on_delete}, "
+        if self.is_view_field:
+            properties += "is_view_field=True, "
         if self.required:
             properties += "required=True, "
         if self.read_only:
@@ -266,8 +270,8 @@ class Attribute(Node):
             properties += f"default={repr(self.default)}, "
         if self.equal_fields is not None:
             properties += f"equal_fields={repr(self.equal_fields)}, "
-        if self.contraints:
-            properties += f"constraints={repr(self.contraints)}, "
+        if self.constraints:
+            properties += f"constraints={repr(self.constraints)}, "
         if self.in_array_constraints and self.type in ("string[]", "number[]"):
             properties += f"in_array_constraints={repr(self.in_array_constraints)}"
         return self.FIELD_TEMPLATE.substitute(
