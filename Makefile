@@ -74,6 +74,10 @@ coverage:
 extract-translations:
 	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
+db:
+	make -C global/meta/dev create-database-with-schema
+	python cli/create_schema.py
+
 
 # Build and run production docker container (not usable inside the docker container)
 
