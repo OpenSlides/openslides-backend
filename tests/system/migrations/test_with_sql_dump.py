@@ -34,6 +34,12 @@ def test_with_sql_dump():
                     cursor.execute("SET session_replication_role = 'origin'")
                 else:
                     cursor.execute(content, [])
+            # create dummy position if none is present
+            cursor.execute("SELECT COUNT(*) FROM positions")
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(
+                    "INSERT INTO positions (timestamp, user_id, migration_index) VALUES (NOW(), 0, 49)"
+                )
     migration_handler = injector.get(MigrationHandler)
     migration_handler.register_migrations(
         *MigrationWrapper.load_migrations("openslides_backend.migrations.migrations")

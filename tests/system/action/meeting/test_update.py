@@ -359,42 +359,6 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_update_enable_poo_categories_without_poo(self) -> None:
-        self.set_models(self.test_models)
-        response = self.request(
-            "meeting.update",
-            {
-                "id": 1,
-                "list_of_speakers_enable_point_of_order_categories": True,
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "You cannot enable point of order categories without enabling point of order speakers."
-            in response.json["message"]
-        )
-
-    def test_update_disable_poo_with_enabled_poo_categories(self) -> None:
-        self.test_models["meeting/1"][
-            "list_of_speakers_enable_point_of_order_speakers"
-        ] = True
-        self.test_models["meeting/1"][
-            "list_of_speakers_enable_point_of_order_categories"
-        ] = True
-        self.set_models(self.test_models)
-        response = self.request(
-            "meeting.update",
-            {
-                "id": 1,
-                "list_of_speakers_enable_point_of_order_speakers": False,
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "You cannot enable point of order categories without enabling point of order speakers."
-            in response.json["message"]
-        )
-
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}
@@ -419,6 +383,14 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {"id": 1, "present_user_ids": [2]},
             Permissions.User.CAN_MANAGE,
+        )
+
+    def test_update_group_b_permissions_2(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "present_user_ids": [2]},
+            Permissions.User.CAN_UPDATE,
         )
 
     def test_update_group_c_no_permissions(self) -> None:

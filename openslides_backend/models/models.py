@@ -420,6 +420,7 @@ class Meeting(Model, MeetingModelMixin):
     )
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
+    list_of_speakers_hide_contribution_count = fields.BooleanField(default=False)
     list_of_speakers_allow_multiple_speakers = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
     list_of_speakers_can_create_point_of_order_for_others = fields.BooleanField(
@@ -1348,7 +1349,9 @@ class Motion(Model):
         to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )
     amendment_ids = fields.RelationListField(
-        to={"motion": "lead_motion_id"}, equal_fields="meeting_id"
+        to={"motion": "lead_motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     sort_parent_id = fields.RelationField(
         to={"motion": "sort_child_ids"}, equal_fields="meeting_id"

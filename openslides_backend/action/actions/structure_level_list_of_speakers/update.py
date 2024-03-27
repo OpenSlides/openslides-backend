@@ -14,7 +14,7 @@ from ...util.register import register_action
 class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
     model = StructureLevelListOfSpeakers()
     schema = DefaultSchema(StructureLevelListOfSpeakers()).get_update_schema(
-        optional_properties=["initial_time", "current_start_time"],
+        optional_properties=["initial_time", "current_start_time", "remaining_time"],
         additional_optional_fields={
             "spoken_time": {"type": "integer", "minimum": 0},
         },
@@ -30,12 +30,16 @@ class StructureLevelListOfSpeakersUpdateAction(UpdateAction):
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if "initial_time" in instance:
-            for field in ("current_start_time", "spoken_time"):
+            for field in ("current_start_time", "spoken_time", "remaining_time"):
                 if field in instance:
                     raise ActionException(
                         f"Cannot set initial_time and {field} at the same time."
                     )
             instance["remaining_time"] = instance["initial_time"]
+        elif "remaining_time" in instance and "spoken_time" in instance:
+            raise ActionException(
+                "Cannot set remaining_time and spoken_time at the same time."
+            )
 
         if spoken_time := instance.pop("spoken_time", None):
             db_instance = self.datastore.get(

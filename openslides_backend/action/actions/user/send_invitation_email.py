@@ -296,7 +296,7 @@ class UserSendInvitationMail(UpdateAction):
         if instance.get("meeting_id") and has_perm(
             self.datastore,
             self.user_id,
-            Permissions.User.CAN_MANAGE,
+            Permissions.User.CAN_UPDATE,
             instance["meeting_id"],
         ):
             return
@@ -305,6 +305,6 @@ class UserSendInvitationMail(UpdateAction):
         ):
             return
         if instance.get("meeting_id"):
-            raise MissingPermission(Permissions.User.CAN_MANAGE)
+            raise MissingPermission(Permissions.User.CAN_UPDATE)
         else:
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
