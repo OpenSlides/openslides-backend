@@ -3,11 +3,13 @@ from collections.abc import Callable
 from copy import deepcopy
 from typing import Any, cast
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 import simplejson as json
 from datastore.shared.util import DeletedModelsBehaviour, is_reserved_field
 from fastjsonschema.exceptions import JsonSchemaException
 
+from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import DatastoreService
@@ -19,7 +21,6 @@ from openslides_backend.shared.exceptions import ActionException, DatastoreExcep
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
@@ -40,7 +41,7 @@ ADMIN_PASSWORD = "admin"
 
 
 class BaseSystemTestCase(TestCase):
-    app: WSGIApplication
+    app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
     datastore: DatastoreService
     vote_service: TestVoteService
@@ -56,6 +57,7 @@ class BaseSystemTestCase(TestCase):
 
     def setUp(self) -> None:
         self.app = self.get_application()
+        self.logger = cast(MagicMock, self.app.logger)
         self.services = self.app.services
         self.env = cast(Environment, self.app.env)
         self.auth = self.services.authentication()
@@ -163,7 +165,7 @@ class BaseSystemTestCase(TestCase):
             auth_data["access_token"], auth_data["refresh_id"]
         )
 
-    def get_application(self) -> WSGIApplication:
+    def get_application(self) -> OpenSlidesBackendWSGIApplication:
         raise NotImplementedError()
 
     def assert_status_code(self, response: Response, code: int) -> None:

@@ -51,30 +51,46 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
     def create_initial_data(self) -> None:
         if is_truthy(self.env.OPENSLIDES_BACKEND_CREATE_INITIAL_DATA):
             self.logger.info("Creating initial data...")
+            # use example data in dev mode and initial data in prod mode
+            file_prefix = "example" if self.env.is_dev_mode() else "initial"
             initial_data_path = (
                 Path(__file__).parent
                 / ".."
                 / ".."
                 / "global"
                 / "data"
-                / "initial-data.json"
+                / f"{file_prefix}-data.json"
             )
             with open(initial_data_path) as file:
                 initial_data = json.load(file)
             handler = ActionHandler(self.env, self.services, self.logging)
             try:
-                handler.handle_request(
-                    [
-                        {
-                            "action": "organization.initial_import",
-                            "data": [{"data": initial_data}],
-                        }
-                    ],
-                    -1,
-                    internal=True,
+                handler.execute_internal_action(
+                    "organization.initial_import",
+                    {"data": initial_data},
                 )
             except ActionException as e:
                 self.logger.error(f"Initial data creation failed: {e}")
+
+            # in prod mode, set superadmin password
+            if not self.env.is_dev_mode():
+                superadmin_password_file = (
+                    self.env.OPENSLIDES_BACKEND_SUPERADMIN_PASSWORD_FILE
+                )
+                if not Path(superadmin_password_file).exists():
+                    self.logger.error(
+                        f"Superadmin password file {superadmin_password_file} not found."
+                    )
+                    return
+                with open(superadmin_password_file) as file:
+                    superadmin_password = file.read()
+                try:
+                    handler.execute_internal_action(
+                        "user.set_password",
+                        {"id": 1, "password": superadmin_password},
+                    )
+                except ActionException as e:
+                    self.logger.error(f"Setting superadmin password failed: {e}")
 
     def dispatch_request(self, request: Request) -> Response | HTTPException:
         """

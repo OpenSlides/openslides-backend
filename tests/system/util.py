@@ -10,6 +10,7 @@ import pytest
 from dependency_injector import providers
 from requests.models import Response as RequestsResponse
 
+from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
@@ -19,7 +20,7 @@ from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.env import Environment, is_truthy
 from openslides_backend.shared.exceptions import MediaServiceException
 from openslides_backend.shared.interfaces.services import Services
-from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
+from openslides_backend.shared.interfaces.wsgi import Headers, View
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 from tests.util import Response
 
@@ -52,17 +53,17 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         return convert_to_test_response(response)
 
 
-def create_action_test_application() -> WSGIApplication:
+def create_action_test_application() -> OpenSlidesBackendWSGIApplication:
     return create_test_application(ActionView)
 
 
-def create_presenter_test_application() -> WSGIApplication:
+def create_presenter_test_application() -> OpenSlidesBackendWSGIApplication:
     return create_test_application(PresenterView)
 
 
 def create_base_test_application(
     view: type[View], services: Services, env: Environment | None = None
-) -> WSGIApplication:
+) -> OpenSlidesBackendWSGIApplication:
     if not env:
         env = Environment(os.environ)
     application_factory = OpenSlidesBackendWSGI(
@@ -73,7 +74,7 @@ def create_base_test_application(
     return application
 
 
-def create_test_application(view: type[View]) -> WSGIApplication:
+def create_test_application(view: type[View]) -> OpenSlidesBackendWSGIApplication:
     env = Environment(os.environ)
     services = OpenSlidesBackendServices(
         config=env.get_service_url(),
