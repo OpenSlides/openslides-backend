@@ -1,4 +1,5 @@
 import tempfile
+from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
 from openslides_backend.shared.exceptions import ActionException
@@ -9,7 +10,12 @@ class TestInitialDataCreation(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.datastore.truncate_db()
+        self.vars = deepcopy(self.env.vars)
         self.env.vars["OPENSLIDES_BACKEND_CREATE_INITIAL_DATA"] = "1"
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.env.vars.update(self.vars)
 
     def test_initial_data_dev_mode(self) -> None:
         self.app.create_initial_data()
