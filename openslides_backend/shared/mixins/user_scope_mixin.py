@@ -12,7 +12,7 @@ from ...permissions.permission_helper import (
     has_organization_management_level,
     has_perm,
 )
-from ...permissions.permissions import Permissions
+from ...permissions.permissions import Permission, Permissions
 from ...services.datastore.interface import GetManyRequest
 from ..exceptions import MissingPermission
 from ..patterns import fqid_from_collection_and_id
@@ -82,7 +82,10 @@ class UserScopeMixin(BaseServiceProvider):
         return UserScope.Organization, 1, oml_right
 
     def check_permissions_for_scope(
-        self, id: int, always_check_user_oml: bool = True
+        self,
+        id: int,
+        always_check_user_oml: bool = True,
+        meeting_permission: Permission = Permissions.User.CAN_MANAGE,
     ) -> None:
         """
         Checks the permissions for user-altering actions depending on the user scope.
@@ -132,13 +135,13 @@ class UserScopeMixin(BaseServiceProvider):
                 CommitteeManagementLevel.CAN_MANAGE,
                 meeting["committee_id"],
             ) and not has_perm(
-                self.datastore, self.user_id, Permissions.User.CAN_MANAGE, scope_id
+                self.datastore, self.user_id, meeting_permission, scope_id
             ):
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                         CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                        Permissions.User.CAN_MANAGE: scope_id,
+                        meeting_permission: scope_id,
                     }
                 )
         else:

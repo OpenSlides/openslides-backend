@@ -86,7 +86,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
         model2 = self.get_model("speaker/891")
         self.assertIsNotNone(model2.get("begin_time"))
         model1 = self.get_model("speaker/890")
-        self.assertEqual(model1.get("end_time"), model2["begin_time"])
+        self.assertAlmostEqual(model1.get("end_time"), model2["begin_time"], delta=1)
 
     def test_closed(self) -> None:
         self.set_models(

@@ -30,7 +30,7 @@ class ProjectorCountdownCreate(CreateAction):
         self.check_title_unique(instance)
 
         # set default_time if needed and countdown_time
-        if not instance.get("default_time"):
+        if instance.get("default_time") is None:
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
                 ["projector_countdown_default_time"],
