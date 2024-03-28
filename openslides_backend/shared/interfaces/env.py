@@ -19,3 +19,6 @@ class Env(Protocol):
 
     @abstractmethod
     def get_loglevel(self) -> str: ...
+
+    @abstractmethod
+    def get_service_url(self) -> dict[str, str]: ...

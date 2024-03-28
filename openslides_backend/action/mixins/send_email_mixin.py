@@ -12,6 +12,8 @@ from typing import Any
 from lxml import html as lxml_html  # type: ignore
 from lxml.html.clean import clean_html  # type: ignore
 
+from openslides_backend.shared.interfaces.logging import Logger
+
 from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
 from ..action import Action
@@ -166,7 +168,7 @@ class EmailUtils:
     @staticmethod
     def send_email_safe(
         client: smtplib.SMTP | smtplib.SMTP_SSL,
-        logger: Any,
+        logger: Logger,
         from_: str,
         to: str | list[str],
         subject: str,

@@ -50,11 +50,11 @@ class BaseInternalPasswordTest(BaseInternalRequestTest):
         self.secret_file = NamedTemporaryFile()
         self.secret_file.write(self.internal_auth_password.encode("ascii"))
         self.secret_file.seek(0)
-        self.app.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = self.secret_file.name
+        self.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = self.secret_file.name
 
     def tearDown(self) -> None:
         super().tearDown()
-        self.app.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = ""
+        self.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = ""
         self.secret_file.close()
 
 

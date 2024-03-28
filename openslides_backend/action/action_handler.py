@@ -145,6 +145,19 @@ class ActionHandler(BaseHandler):
                 results=results,
             )
 
+    def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
+        """Helper function to execute an internal action with user id -1."""
+        self.handle_request(
+            [
+                {
+                    "action": action,
+                    "data": [data],
+                }
+            ],
+            -1,
+            internal=True,
+        )
+
     def execute_write_requests(
         self,
         get_write_requests: Callable[..., tuple[list[WriteRequest], T]],
