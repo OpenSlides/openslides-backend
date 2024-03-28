@@ -11,6 +11,7 @@ from ....shared.filters import And, FilterOperator
 from ....shared.interfaces.event import Event
 from ....shared.schema import schema_version
 from ....shared.typing import Schema
+from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.action_type import ActionType
@@ -129,20 +130,13 @@ class UserSaveSamlAccount(
         )
         if len(users) == 1:
             self.user = next(iter(users.values()))
-            instance["id"] = self.user["id"]
-            if group_id:
-                meeting_users = self.datastore.filter(
-                    "meeting_user",
-                    And(
-                        [
-                            FilterOperator("user_id", "=", self.user["id"]),
-                            FilterOperator("meeting_id", "=", meeting_id),
-                        ]
-                    ),
-                    ["id", "group_ids"],
+            instance["id"] = (user_id := cast(int, self.user["id"]))
+            if meeting_id and group_id:
+                meeting_user = get_meeting_user(
+                    self.datastore, meeting_id, user_id, ["id", "group_ids"]
                 )
-                if len(meeting_users) == 1:
-                    old_group_ids = next(iter(meeting_users.values()))["group_ids"]
+                if meeting_user:
+                    old_group_ids = meeting_user["group_ids"]
                     if group_id not in old_group_ids:
                         instance["meeting_id"] = meeting_id
                         instance["group_ids"] = old_group_ids + [group_id]
@@ -204,7 +198,7 @@ class UserSaveSamlAccount(
             group_id = meeting["default_group_id"]
         else:
             self.logger.warning(
-                f"save_saml_account found {len(meetings)} meetings with external_id {external_id}"
+                f"save_saml_account found {len(meetings)} meetings with external_id '{external_id}'"
             )
             return NoneResult
         if external_group_id := meeting_info.get("external_group_id"):
@@ -219,10 +213,14 @@ class UserSaveSamlAccount(
                 mapped_fields=["id"],
             )
             if len(groups) == 1:
-                group_id = next(iter(groups.values()))["id"]
+                group_id = next(iter(groups.keys()))
+            else:
+                self.logger.warning(
+                    f"save_saml_account found no group in meeting '{external_id}' for '{external_group_id}', but use default_group of meeting"
+                )
         if not group_id:
             self.logger.warning(
-                f"save_saml_account found no group in meeting {external_id} for {external_group_id}"
+                f"save_saml_account found no group in meeting '{external_id}' for '{external_group_id}'"
             )
             return NoneResult
         return meeting.get("id"), group_id

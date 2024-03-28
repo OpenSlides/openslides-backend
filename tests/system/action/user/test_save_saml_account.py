@@ -453,31 +453,28 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
 class UserAddToGroup(UserBaseSamlAccount):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models(
-            {
-                "organization/1": {
-                    "saml_enabled": True,
-                    "saml_attr_mapping": {
-                        "saml_id": "username",
-                        "title": "title",
-                        "first_name": "firstName",
-                        "last_name": "lastName",
-                        "email": "email",
-                        "gender": "gender",
-                        "pronoun": "pronoun",
-                        "is_active": "is_active",
-                        "is_physical_person": "is_person",
-                        "meeting": {
-                            "external_id": "Landtag",
-                            "external_group_id": "Delegates",
-                        },
-                    },
+        self.organization = {
+            "saml_enabled": True,
+            "saml_attr_mapping": {
+                "saml_id": "username",
+                "title": "title",
+                "first_name": "firstName",
+                "last_name": "lastName",
+                "email": "email",
+                "gender": "gender",
+                "pronoun": "pronoun",
+                "is_active": "is_active",
+                "is_physical_person": "is_person",
+                "meeting": {
+                    "external_id": "Landtag",
+                    "external_group_id": "Delegates",
                 },
-            }
-        )
+            },
+        }
         self.create_meeting()
         self.set_models(
             {
+                "organization/1": self.organization,
                 "group/1": {"external_id": "Default"},
                 "group/2": {"external_id": "Delegates"},
                 "group/3": {"external_id": "Admin"},
@@ -526,13 +523,13 @@ class UserAddToGroup(UserBaseSamlAccount):
 
     def test_create_user_invalid_meeting(self) -> None:
         """silent fail, user created and logged in"""
-        organization = self.get_model("organization/1")
-        for key in ("meta_deleted", "meta_position"):
-            organization.pop(key, None)
-        organization["saml_attr_mapping"]["meeting"]["external_id"] = "Kreistag"
-        self.set_models({"organization/1": organization})
+        self.organization["saml_attr_mapping"]["meeting"]["external_id"] = "Kreistag"  # type: ignore
+        self.set_models({"organization/1": self.organization})
         response = self.request("user.save_saml_account", {"username": ["111"]})
         self.assert_status_code(response, 200)
+        self.app.logger.warning.assert_called_with(  # type: ignore
+            "save_saml_account found 0 meetings with external_id 'Kreistag'"
+        )
         self.assert_model_exists(
             "user/2", {"saml_id": "111", "username": "111", "meeting_user_ids": None}
         )
@@ -543,13 +540,15 @@ class UserAddToGroup(UserBaseSamlAccount):
 
     def test_create_user_invalid_group_but_default(self) -> None:
         """silent fail, but added to default group and logged in"""
-        organization = self.get_model("organization/1")
-        for key in ("meta_deleted", "meta_position"):
-            organization.pop(key, None)
-        organization["saml_attr_mapping"]["meeting"]["external_group_id"] = "Developers"
-        self.set_models({"organization/1": organization})
+        self.organization["saml_attr_mapping"]["meeting"][  # type: ignore
+            "external_group_id"
+        ] = "Developers"
+        self.set_models({"organization/1": self.organization})
         response = self.request("user.save_saml_account", {"username": ["111"]})
         self.assert_status_code(response, 200)
+        self.app.logger.warning.assert_called_with(  # type: ignore
+            "save_saml_account found no group in meeting 'Landtag' for 'Developers', but use default_group of meeting"
+        )
         self.assert_model_exists(
             "user/2", {"saml_id": "111", "meeting_user_ids": [1], "meeting_ids": [1]}
         )
@@ -567,11 +566,8 @@ class UserAddToGroup(UserBaseSamlAccount):
 
     def test_create_user_only_meeting_given(self) -> None:
         """silent fail, but added to default group and logged in"""
-        organization = self.get_model("organization/1")
-        for key in ("meta_deleted", "meta_position"):
-            organization.pop(key, None)
-        del organization["saml_attr_mapping"]["meeting"]["external_group_id"]
-        self.set_models({"organization/1": organization})
+        del self.organization["saml_attr_mapping"]["meeting"]["external_group_id"]  # type: ignore
+        self.set_models({"organization/1": self.organization})
         response = self.request("user.save_saml_account", {"username": ["111"]})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
