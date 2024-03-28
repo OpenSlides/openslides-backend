@@ -74,9 +74,7 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
 
             # in prod mode, set superadmin password
             if not self.env.is_dev_mode():
-                superadmin_password_file = (
-                    self.env.OPENSLIDES_BACKEND_SUPERADMIN_PASSWORD_FILE
-                )
+                superadmin_password_file = self.env.SUPERADMIN_PASSWORD_FILE
                 if not Path(superadmin_password_file).exists():
                     self.logger.error(
                         f"Superadmin password file {superadmin_password_file} not found."

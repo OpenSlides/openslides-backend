@@ -38,7 +38,7 @@ class TestInitialDataCreation(BaseActionTestCase):
         with tempfile.NamedTemporaryFile(delete=False) as fp:
             fp.write(b"password123")
         self.env.vars["OPENSLIDES_DEVELOPMENT"] = "false"
-        self.env.vars["OPENSLIDES_BACKEND_SUPERADMIN_PASSWORD_FILE"] = fp.name
+        self.env.vars["SUPERADMIN_PASSWORD_FILE"] = fp.name
         self.app.create_initial_data()
         self.logger.info.assert_any_call("Creating initial data...")
         self.logger.error.assert_not_called()
