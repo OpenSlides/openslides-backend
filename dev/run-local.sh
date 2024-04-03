@@ -2,7 +2,7 @@
 
 export COMPOSE_DOCKER_CLI_BUILD=0
 
-DC="docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml"
+DC="docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml"
 
 $DC up --build --detach
 $DC exec -T backend scripts/wait.sh datastore-writer 9011
