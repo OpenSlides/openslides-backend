@@ -1,15 +1,15 @@
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any, ContextManager
+from typing import Any, ContextManager, Dict, List, Set, Tuple, cast
 
-from datastore.reader.core.requests import GetManyRequest
+from datastore.reader.core.requests import GetManyRequest, GetManyRequestPart
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend.connection_handler import ConnectionHandler
 from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from datastore.shared.typing import Collection, Fqid, Id, Model
 from datastore.shared.util import MappedFields
 
-from openslides_backend.shared.patterns import collection_and_id_from_fqid
+from openslides_backend.shared.patterns import collection_and_id_from_fqid, collection_from_fqid, fqid_from_fqfield, field_from_fqfield, fqid_from_collection_and_id
 
 
 class ReadAdapter:
@@ -32,8 +32,38 @@ class ReadAdapter:
     # this should all just use separate collection and id variables
     def get_many(self, request: GetManyRequest) -> dict[Collection, dict[Id, Model]]:
         """Gets multiple models."""
-        mapped_fields = request.build_mapped_fields()
+        mapped_fields = MappedFields()
+        unique_fields_set = set()
+        collections_set = set()
+        if isinstance(request.requests[0], GetManyRequestPart):
+            unique_fields_set.update(request.mapped_fields)
+            requests = cast(List[GetManyRequestPart], request.requests)
+            for part in requests:
+                unique_fields_set.update(part.mapped_fields)
+                collections_set.add(part.collection)
+                for id in part.ids:
+                    fqid = fqid_from_collection_and_id(part.collection, str(id))
+                    mapped_fields.per_fqid[fqid].extend(
+                        part.mapped_fields + request.mapped_fields
+                    )
+        else:
+            fqfield_requests = cast(List[str], request.requests)
+            for fqfield in fqfield_requests:
+                fqid = fqid_from_fqfield(fqfield)
+                collections_set.add(collection_from_fqid(fqid))
+                field = field_from_fqfield(fqfield)
+                mapped_fields.per_fqid[fqid].append(field)
+                unique_fields_set.add(field)
+        mapped_fields.unique_fields = list(unique_fields_set)
+        mapped_fields.collections = list(collections_set)
+        mapped_fields.post_init()
 
+        ids_per_collection: Dict[str, List[int]] = { collection:[] for collection in mapped_fields.collections }
+        for fqid in mapped_fields.per_fqid:
+            col, id_ = collection_and_id_from_fqid(fqid)
+            ids_per_collection[col].append(id_)
+
+        # Use multiple calls of _collection_based_get_many_helper instead, put results in same format
         result = self._get_many_helper(
             mapped_fields.fqids,
             mapped_fields,
@@ -50,6 +80,59 @@ class ReadAdapter:
             if not final[collection]:
                 final[collection] = {}
         return final
+
+    def _collection_based_get_many_helper(
+        self,
+        collection: str,
+        ids: List[int],
+        mapped_fields: MappedFields | None = None,
+    ) -> dict[Fqid, Model]:
+        #TODO: Finish this and use it instead of _get_many_helper
+        # all this can probably be refactored too
+        if not ids:
+            return {}
+        if mapped_fields is None:
+            mapped_fields = MappedFields()
+
+        per_payload: List[Tuple[Set[str], List[int]]] = []
+        for id_ in ids:
+            fields: Set[str] = set(mapped_fields.per_fqid[fqid_from_collection_and_id(collection, id_)])
+            for index in range(len(per_payload) + 1):
+                if index == len(per_payload):
+                    per_payload.append((fields, [id_]))
+                elif not per_payload[index][0].symmetric_difference(fields):
+                    per_payload[index][1].append(id_)
+                    break
+
+        models: dict[str, Model] = {}
+
+        for date in per_payload:
+            arguments: list[Any] = [tuple(date[1])]
+
+            needs_whole_model = False # TODO: Somehow fill meaningfully based on request data
+            mapped_fields_str = self._build_select_from_mapped_fields(date[0], needs_whole_model)
+
+            query = f"""
+                select {mapped_fields_str} from {self._get_view_name_from_collection(collection)}
+                where id in %s"""
+            with self.connection.get_connection_context():
+                result = self.connection.query(
+                    query, arguments
+                )
+
+                #TODO: Build the models for the returned rows, put them into 'models' dict in a fqid:Model format
+        return models
+
+    def _build_select_from_mapped_fields(
+        self, fields: Set[str], needs_whole_model: bool = False
+    ) -> str:
+        if needs_whole_model:
+            # at least one collection needs all fields, so we just select all and
+            # calculate the mapped_fields later
+            return "*"
+        else:
+            fields.add("id")
+            return ", ".join(fields)
 
     def _get_many_helper(
         self,
@@ -86,6 +169,11 @@ class ReadAdapter:
 
             models = self._build_models_from_result(result, mapped_fields)
         return models
+
+    def _get_view_name_from_collection(self, collection: str) -> str:
+        if collection in ["group", "user"]:
+            return "_" + collection
+        return collection
 
     def _build_models_from_result(
         self, result: Any, mapped_fields: MappedFields
