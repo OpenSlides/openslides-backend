@@ -62,12 +62,16 @@ class ReadAdapter:
         for fqid in mapped_fields.per_fqid:
             col, id_ = collection_and_id_from_fqid(fqid)
             ids_per_collection[col].append(id_)
+        
+        result = {}
+        for collection in ids_per_collection:
+            result.update(self._collection_based_get_many_helper(collection, ids_per_collection[collection], mapped_fields))
 
         # Use multiple calls of _collection_based_get_many_helper instead, put results in same format
-        result = self._get_many_helper(
-            mapped_fields.fqids,
-            mapped_fields,
-        )
+        # result = self._get_many_helper(
+        #     mapped_fields.fqids,
+        #     mapped_fields,
+        # )
 
         # change mapping fqid->model to collection->id->model
         final: dict[Collection, dict[Id, Model]] = defaultdict(dict)
@@ -119,8 +123,17 @@ class ReadAdapter:
                 result = self.connection.query(
                     query, arguments
                 )
+                for row in result:
+                    id_ = row["id"]
 
-                #TODO: Build the models for the returned rows, put them into 'models' dict in a fqid:Model format
+                    if id_ in date[1] and len(date[0]) > 0:
+                        model = {}
+                        for field in date[0]:
+                            if row.get(field) is not None:
+                                model[field] = row[field]
+                    else:
+                        model = row
+                    models[fqid_from_collection_and_id(collection, id_)] = model
         return models
 
     def _build_select_from_mapped_fields(
@@ -134,68 +147,68 @@ class ReadAdapter:
             fields.add("id")
             return ", ".join(fields)
 
-    def _get_many_helper(
-        self,
-        fqids: Iterable[Fqid],
-        mapped_fields: MappedFields | None = None,
-    ) -> dict[Fqid, Model]:
-        if not fqids:
-            return {}
-        if mapped_fields is None:
-            mapped_fields = MappedFields()
+    # def _get_many_helper(
+    #     self,
+    #     fqids: Iterable[Fqid],
+    #     mapped_fields: MappedFields | None = None,
+    # ) -> dict[Fqid, Model]:
+    #     if not fqids:
+    #         return {}
+    #     if mapped_fields is None:
+    #         mapped_fields = MappedFields()
 
-        arguments: list[Any] = [tuple(fqids)]
+    #     arguments: list[Any] = [tuple(fqids)]
 
-        (
-            mapped_fields_str,
-            mapped_field_args,
-        ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
+    #     (
+    #         mapped_fields_str,
+    #         mapped_field_args,
+    #     ) = self.query_helper.build_select_from_mapped_fields(mapped_fields)
 
-        # TODO: This is DEFINATELY the wrong query:
-        # - We need to select from the correct table/view
-        # - We need to select based on id
-        # Something like
-        # 'select id, {mapped_fields_str} from {view_name} where id in %s'
-        # Where:
-        # - view_name is the collection name (except for the user and group collection where a '_' should be appended)
-        # - the arguments are now the ids of the models, not the fqids
-        query = f"""
-            select fqid, {mapped_fields_str} from models
-            where fqid in %s"""
-        with self.connection.get_connection_context():
-            result = self.connection.query(
-                query, mapped_field_args + arguments, mapped_fields.unique_fields
-            )
+    #     # TODO: This is DEFINATELY the wrong query:
+    #     # - We need to select from the correct table/view
+    #     # - We need to select based on id
+    #     # Something like
+    #     # 'select id, {mapped_fields_str} from {view_name} where id in %s'
+    #     # Where:
+    #     # - view_name is the collection name (except for the user and group collection where a '_' should be appended)
+    #     # - the arguments are now the ids of the models, not the fqids
+    #     query = f"""
+    #         select fqid, {mapped_fields_str} from models
+    #         where fqid in %s"""
+    #     with self.connection.get_connection_context():
+    #         result = self.connection.query(
+    #             query, mapped_field_args + arguments, mapped_fields.unique_fields
+    #         )
 
-            models = self._build_models_from_result(result, mapped_fields)
-        return models
+    #         models = self._build_models_from_result(result, mapped_fields)
+    #     return models
 
     def _get_view_name_from_collection(self, collection: str) -> str:
         if collection in ["group", "user"]:
             return "_" + collection
         return collection
 
-    def _build_models_from_result(
-        self, result: Any, mapped_fields: MappedFields
-    ) -> dict[str, Model]:
-        result_map = {}
-        for row in result:
-            fqid = row["fqid"]
+    # def _build_models_from_result(
+    #     self, result: Any, mapped_fields: MappedFields
+    # ) -> dict[str, Model]:
+    #     result_map = {}
+    #     for row in result:
+    #         fqid = row["fqid"]
 
-            if mapped_fields.needs_whole_model:
-                # at least one collection needs all fields, so we need to select data
-                row = row["data"]
+    #         if mapped_fields.needs_whole_model:
+    #             # at least one collection needs all fields, so we need to select data
+    #             row = row["data"]
 
-            if fqid in mapped_fields.per_fqid and len(mapped_fields.per_fqid[fqid]) > 0:
-                model = {}
-                for field in mapped_fields.per_fqid[fqid]:
-                    if row.get(field) is not None:
-                        model[field] = row[field]
-            else:
-                model = row
-            result_map[fqid] = model
+    #         if fqid in mapped_fields.per_fqid and len(mapped_fields.per_fqid[fqid]) > 0:
+    #             model = {}
+    #             for field in mapped_fields.per_fqid[fqid]:
+    #                 if row.get(field) is not None:
+    #                     model[field] = row[field]
+    #         else:
+    #             model = row
+    #         result_map[fqid] = model
 
-        return result_map
+    #     return result_map
 
     # def get_all(self, request: GetAllRequest) -> dict[Id, Model]:
     #     """

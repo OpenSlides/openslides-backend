@@ -1,5 +1,6 @@
 from importlib import import_module
-from typing import Any
+from typing import Any, List, Tuple
+import os
 
 import pytest
 from datastore.migrations import MigrationHandler
@@ -9,6 +10,10 @@ from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.writer.core import Writer
 from datastore.writer.flask_frontend.json_handlers import WriteHandler
+import psycopg2
+from psycopg2 import sql, connect
+from psycopg2.extras import DictCursor, Json, execute_values
+from psycopg2.pool import PoolError, ThreadedConnectionPool
 
 
 @pytest.fixture(autouse=True)
@@ -28,18 +33,36 @@ def clear_datastore(setup) -> None:
 
 @pytest.fixture()
 def write(clear_datastore) -> None:
-    def _write(*events: dict[str, Any]):
-        payload = {
-            "user_id": 1,
-            "information": {},
-            "locked_fields": {},
-            "events": events,
-        }
-        write_handler = WriteHandler()
-        write_handler.write(payload)
+    def _write(query: str, args: Any):
+        # payload = {
+        #     "user_id": 1,
+        #     "information": {},
+        #     "locked_fields": {},
+        #     "events": events,
+        # }
+        # write_handler = WriteHandler()
+        # write_handler.write(payload)
+        connection = injector.get(ConnectionHandler)
+        with connection.get_connection_context():
+            connection.execute(query, args)
 
     yield _write
 
+@pytest.fixture()
+def write_directly(clear_datastore) -> None:
+    def _write(queries: List[Tuple[str, Any]]):
+        env = os.environ
+        connect_data = f"dbname='postgres' user='{env['DATABASE_USER']}' host='{env['DATABASE_HOST']}' password='{env['PGPASSWORD']}'"
+        conn = connect(connect_data)
+
+        with conn:
+            with conn.cursor() as cursor:
+                for query, args in queries:
+                    cursor.execute(query, args)
+            conn.commit()
+        conn.close()
+
+    yield _write
 
 def setup_dummy_migration_handler(migration_module_name):
     migration_module = import_module(
