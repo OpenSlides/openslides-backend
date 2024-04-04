@@ -9,7 +9,7 @@ pypdf[crypto]==4.1.0
 requests==2.31.0
 roman==4.1
 simplejson==3.19.2
-Werkzeug==3.0.1
+Werkzeug==3.0.2
 python-magic==0.4.27
 pygments==2.17.2
 
