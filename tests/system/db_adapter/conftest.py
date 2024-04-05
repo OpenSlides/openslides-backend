@@ -1,20 +1,13 @@
-from importlib import import_module
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, TypedDict
 import os
 
 import pytest
-from datastore.migrations import MigrationHandler
 from datastore.migrations.core.setup import register_services
-from datastore.reader.core import GetRequest, Reader
 from datastore.shared.di import injector
-from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.writer.core import Writer
-from datastore.writer.flask_frontend.json_handlers import WriteHandler
-import psycopg2
-from psycopg2 import sql, connect
-from psycopg2.extras import DictCursor, Json, execute_values
-from psycopg2.pool import PoolError, ThreadedConnectionPool
+from psycopg2 import connect
 
+WritePayload = TypedDict('WritePayload', {'table': str, 'fields': List[str], 'rows': List[Tuple]})
 
 @pytest.fixture(autouse=True)
 def setup() -> None:
@@ -30,66 +23,37 @@ def clear_datastore(setup) -> None:
     _clear_datastore()
     return _clear_datastore
 
+@pytest.fixture()
+def cleanup() -> None:
+    def _cleanup(tables: List[str]) -> None:
+        def _cleanup_helper() -> None:
+            env = os.environ
+            connect_data = f"dbname='{env['DATABASE_NAME']}' user='{env['DATABASE_USER']}' host='{env['DATABASE_HOST']}' password='{env['PGPASSWORD']}'"
+            conn = connect(connect_data)
+
+            with conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(f"TRUNCATE {', '.join(tables)} CASCADE")
+                conn.commit()
+            conn.close()
+
+        return _cleanup_helper
+    return _cleanup
 
 @pytest.fixture()
-def write(clear_datastore) -> None:
-    def _write(query: str, args: Any):
-        # payload = {
-        #     "user_id": 1,
-        #     "information": {},
-        #     "locked_fields": {},
-        #     "events": events,
-        # }
-        # write_handler = WriteHandler()
-        # write_handler.write(payload)
-        connection = injector.get(ConnectionHandler)
-        with connection.get_connection_context():
-            connection.execute(query, args)
-
-    yield _write
-
-@pytest.fixture()
-def write_directly(clear_datastore) -> None:
-    def _write(queries: List[Tuple[str, Any]]):
+def write_directly(clear_datastore, cleanup) -> None:
+    def _write(payloads: List[WritePayload]):
         env = os.environ
-        connect_data = f"dbname='postgres' user='{env['DATABASE_USER']}' host='{env['DATABASE_HOST']}' password='{env['PGPASSWORD']}'"
+        connect_data = f"dbname='{env['DATABASE_NAME']}' user='{env['DATABASE_USER']}' host='{env['DATABASE_HOST']}' password='{env['PGPASSWORD']}'"
         conn = connect(connect_data)
 
         with conn:
             with conn.cursor() as cursor:
-                for query, args in queries:
-                    cursor.execute(query, args)
+                for payload in payloads:
+                    query = f"INSERT INTO {payload['table']} ({', '.join(payload['fields'])}) VALUES {', '.join(['%s' for i in range(len(payload['rows']))])}"
+                    cursor.execute(query, payload['rows'])
             conn.commit()
         conn.close()
+        return cleanup(list(set([payload['table'] for payload in payloads])))
 
     yield _write
-
-def setup_dummy_migration_handler(migration_module_name):
-    migration_module = import_module(
-        f"openslides_backend.migrations.migrations.{migration_module_name}"
-    )
-
-    class Migration(migration_module.Migration):
-        target_migration_index = 2
-
-    connection = injector.get(ConnectionHandler)
-    with connection.get_connection_context():
-        connection.execute("update positions set migration_index=%s", [1])
-
-    migration_handler = injector.get(MigrationHandler)
-    migration_handler.register_migrations(Migration)
-    return migration_handler
-
-
-@pytest.fixture()
-def read_model(clear_datastore):
-    def _read_model(fqid, position=None):
-        reader: Reader = injector.get(Reader)
-        with reader.get_database_context():
-            request = GetRequest(
-                fqid=fqid,
-                position=position,
-            )
-            return reader.get(request)
-
-    yield _read_model

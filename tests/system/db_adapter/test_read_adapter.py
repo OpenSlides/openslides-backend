@@ -5,28 +5,27 @@ from openslides_backend.services.datastore.read_adapter import ReadAdapter
 
 def test_get_many(write_directly) -> None:
     # TODO: This probably writes the wrong data format.
-    write_directly(
+    cleanup = write_directly(
         [
-            (
-                "INSERT INTO organizationT (id, name, default_language, theme_id) VALUES %s",
-                [
-                    (1, "Orga 1", "en", 1)
+            {
+                "table": "organizationT",
+                "fields": ["id", "name", "default_language", "theme_id"],
+                "rows": [(1, "Orga 1", "en", 1)]
+            },
+            {
+                "table": "themeT",
+                "fields": ["id", "name", "accent_500", "primary_500", "warn_500"],
+                "rows": [(1, "Theme 1", 255, 256*255, 256*256*255)]
+            },
+            {
+                "table": "committeeT",
+                "fields": ["id", "name"],
+                "rows": [
+                    (1, "Committee 1"),
+                    (2, "Committee 2"),
+                    (3, "Committee 3"),
                 ]
-            ),
-            (
-                "INSERT INTO themeT (id, name, accent_500, primary_500, warn_500, organization_id) VALUES %s",
-                [
-                    (1, "Theme 1", "#0000ff", "#00ff00", "#ff0000", 1),
-                ]
-            ),
-            (
-                "INSERT INTO committeeT (id, name, organization_id) VALUES %s, %s, %s",
-                [
-                    (1, "Committee 1", 1),
-                    (2, "Committee 2", 1),
-                    (3, "Committee 3", 1),
-                ]
-            )
+            }
         ]
     )
     # write(
@@ -78,3 +77,4 @@ def test_get_many(write_directly) -> None:
         2: {"id": 2, "name": "Committee 2"},
         3: {"id": 3, "name": "Committee 3"},
     }
+    cleanup()
