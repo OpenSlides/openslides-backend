@@ -92,12 +92,16 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "users_email_replyto": "  test2@example.com  ",
                 "users_email_subject": "blablabla",
                 "users_email_body": "testtesttest",
+                "users_forbid_delegator_as_submitter": True,
+                "users_forbid_delegator_in_list_of_speakers": False,
             }
         )
         assert meeting.get("users_email_sender") == "test@example.com"
         assert meeting.get("users_email_replyto") == "test2@example.com"
         assert meeting.get("users_email_subject") == "blablabla"
         assert meeting.get("users_email_body") == "testtesttest"
+        assert meeting.get("users_forbid_delegator_as_submitter") == True
+        assert meeting.get("users_forbid_delegator_in_list_of_speakers") == False
 
     def test_update_broken_email(self) -> None:
         meeting, response = self.basic_test({"users_email_replyto": "broken@@"}, False)

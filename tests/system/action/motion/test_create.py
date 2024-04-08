@@ -593,3 +593,132 @@ class MotionCreateActionTest(BaseActionTestCase):
             "You can't give amendment_paragraphs in this context"
             in response.json["message"]
         )
+
+    def test_create_delegator_setting(self) -> None:
+        self.add_workflow()
+        self.set_models({"meeting/1": {"users_forbid_delegator_as_submitter": True}})
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "agenda_create": True,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_delegator_setting_with_delegation_and_presence(self) -> None:
+        self.add_workflow()
+        self.set_models(
+            {
+                "user/1": {"meeting_user_ids": [1], "is_present_in_meeting_ids": [1]},
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
+                "meeting/1": {
+                    "meeting_user_ids": [1],
+                    "present_user_ids": [1],
+                    "users_forbid_delegator_as_submitter": True,
+                },
+            }
+        )
+        self.create_user("delegatee", [1])
+        self.set_models(
+            {
+                "meeting_user/1": {"vote_delegated_to_id": 2},
+                "meeting_user/2": {"vote_delegations_from_ids": [1]},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "agenda_create": True,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_delegator_setting_with_presence_no_delegation(self) -> None:
+        self.add_workflow()
+        self.set_models(
+            {
+                "user/1": {"meeting_user_ids": [1], "is_present_in_meeting_ids": [1]},
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
+                "meeting/1": {
+                    "meeting_user_ids": [1],
+                    "present_user_ids": [1],
+                    "users_forbid_delegator_as_submitter": True,
+                },
+            }
+        )
+        self.create_user("delegatee", [1])
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "agenda_create": True,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_delegator_setting_with_no_presence_or_delegation(self) -> None:
+        self.add_workflow()
+        self.set_models(
+            {
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
+                "meeting/1": {
+                    "meeting_user_ids": [1],
+                    "users_forbid_delegator_as_submitter": True,
+                },
+            }
+        )
+        self.create_user("delegatee", [1])
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "agenda_create": True,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_with_irrelevant_delegator_setting(self) -> None:
+        self.add_workflow()
+        self.set_models(
+            {
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
+                "meeting/1": {
+                    "meeting_user_ids": [1],
+                    "users_forbid_delegator_as_supporter": True,
+                },
+            }
+        )
+        self.create_user("delegatee", [1])
+        self.set_models(
+            {
+                "meeting_user/1": {"vote_delegated_to_id": 2},
+                "meeting_user/2": {"vote_delegations_from_ids": [1]},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "agenda_create": True,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)

@@ -16,6 +16,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
+from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from .create_base import MotionCreateBase
 from .mixins import AmendmentParagraphHelper, TextHashMixin
 from .payload_validation_mixin import MotionCreatePayloadValidationMixin
@@ -25,6 +26,7 @@ from .payload_validation_mixin import MotionCreatePayloadValidationMixin
 class MotionCreate(
     AmendmentParagraphHelper,
     MotionCreatePayloadValidationMixin,
+    DelegationBasedRestrictionMixin,
     TextHashMixin,
     MotionCreateBase,
 ):
@@ -177,3 +179,8 @@ class MotionCreate(
             msg = f"You are not allowed to perform action {self.name}. "
             msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
             raise PermissionDenied(msg)
+        self.check_delegator_restriction(
+            "users_forbid_delegator_as_submitter",
+            instance["meeting_id"],
+            "Users who have delegated their vote may not submit motions.",
+        )
