@@ -10,18 +10,7 @@ from openslides_backend.datastore.shared.postgresql_backend import (
     ConnectionHandler,
 )
 from openslides_backend.datastore.shared.services import ReadDatabase
-from openslides_backend.datastore.shared.typing import (
-    JSON,
-    Collection,
-    Field,
-    Fqid,
-    Id,
-    Model,
-    Position,
-)
 from openslides_backend.datastore.shared.util import (
-    META_DELETED,
-    META_POSITION,
     BadCodingError,
     DeletedModelsBehaviour,
     InvalidFormat,
@@ -30,9 +19,17 @@ from openslides_backend.datastore.shared.util import (
 )
 from openslides_backend.datastore.writer.core import BaseRequestEvent
 from openslides_backend.shared.patterns import (
+    META_DELETED,
+    META_POSITION,
+    Collection,
+    Field,
+    FullQualifiedId,
+    Id,
+    Position,
     collection_and_id_from_fqid,
     collectionfield_from_fqid_and_field,
 )
+from openslides_backend.shared.typing import JSON, Model
 
 from .db_events import BaseDbEvent, DbCreateEvent, apply_event_to_models
 from .event_translator import EventTranslator
@@ -47,7 +44,7 @@ FQID_MAX_LEN = 48  # collection + id
 COLLECTIONFIELD_MAX_LEN = 239  # collection + field
 
 
-EventData = tuple[Position, Fqid, EVENT_TYPE, JSON, int]
+EventData = tuple[Position, FullQualifiedId, EVENT_TYPE, JSON, int]
 
 
 @service_as_singleton
@@ -65,14 +62,14 @@ class SqlDatabaseBackendService:
         migration_index: int,
         information: JSON,
         user_id: int,
-    ) -> tuple[Position, dict[Fqid, dict[Field, JSON]]]:
+    ) -> tuple[Position, dict[FullQualifiedId, dict[Field, JSON]]]:
         if not events:
             raise BadCodingError()
 
         position = self.create_position(migration_index, information, user_id)
 
         # save all changes to all models to send them over redis
-        modified_models: dict[Fqid, dict[Field, JSON]] = defaultdict(dict)
+        modified_models: dict[FullQualifiedId, dict[Field, JSON]] = defaultdict(dict)
         # save max id per collection to update the id_sequences if needed
         max_id_per_collection: dict[Collection, int] = {}
         # save the raw data of the events to be inserted
@@ -150,7 +147,7 @@ class SqlDatabaseBackendService:
 
     def get_models_from_events(
         self, events: list[BaseRequestEvent]
-    ) -> dict[Fqid, Model]:
+    ) -> dict[FullQualifiedId, Model]:
         fqids = set()
         for event in events:
             if len(event.fqid) > FQID_MAX_LEN:
@@ -164,12 +161,15 @@ class SqlDatabaseBackendService:
         )
 
     def apply_event_to_models(
-        self, event: BaseDbEvent, models: dict[Fqid, Model], position: Position
+        self,
+        event: BaseDbEvent,
+        models: dict[FullQualifiedId, Model],
+        position: Position,
     ) -> None:
         apply_event_to_models(event, models)
         models[event.fqid][META_POSITION] = position
 
-    def write_model_updates(self, models: dict[Fqid, Model]) -> None:
+    def write_model_updates(self, models: dict[FullQualifiedId, Model]) -> None:
         statement = dedent(
             """\
             insert into models (fqid, data, deleted) values %s
@@ -184,7 +184,9 @@ class SqlDatabaseBackendService:
             use_execute_values=True,
         )
 
-    def write_model_updates_without_events(self, models: dict[Fqid, Model]) -> None:
+    def write_model_updates_without_events(
+        self, models: dict[FullQualifiedId, Model]
+    ) -> None:
         statement = dedent(
             """\
             insert into models (fqid, data, deleted) values %s
@@ -199,7 +201,7 @@ class SqlDatabaseBackendService:
             use_execute_values=True,
         )
 
-    def write_model_deletes_without_events(self, fqids: list[Fqid]) -> None:
+    def write_model_deletes_without_events(self, fqids: list[FullQualifiedId]) -> None:
         """Physically delete of action_workers or import_previews"""
         statement = "delete from models where fqid in %s;"
         self.connection.execute(statement, [fqids], use_execute_values=True)

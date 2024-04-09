@@ -7,7 +7,6 @@ from dacite.exceptions import MissingValueError, UnionMatchError
 
 from openslides_backend.datastore.shared.flask_frontend import InvalidRequest
 from openslides_backend.datastore.shared.postgresql_backend import ListUpdatesDict
-from openslides_backend.datastore.shared.typing import JSON
 from openslides_backend.datastore.shared.util import (
     KEY_TYPE,
     BadCodingError,
@@ -17,8 +16,9 @@ from openslides_backend.datastore.shared.util import (
     assert_is_field,
     assert_is_fqid,
     get_key_type,
-    is_reserved_field,
 )
+from openslides_backend.shared.patterns import is_reserved_field
+from openslides_backend.shared.typing import JSON
 
 
 class ListFieldsData(TypedDict, total=False):

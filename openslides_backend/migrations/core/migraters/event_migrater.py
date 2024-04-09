@@ -4,7 +4,8 @@ from datetime import datetime
 from openslides_backend.datastore.shared.di import service_as_factory
 from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from openslides_backend.datastore.shared.services import ReadDatabase
-from openslides_backend.datastore.shared.typing import JSON, Position
+from openslides_backend.shared.patterns import Position
+from openslides_backend.shared.typing import JSON
 
 from ..base_migrations import PositionData
 from ..events import BaseEvent, to_event

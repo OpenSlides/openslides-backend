@@ -1,4 +1,5 @@
-from openslides_backend.datastore.shared.typing import Fqid, Model
+from openslides_backend.shared.patterns import FullQualifiedId
+from openslides_backend.shared.typing import Model
 
 from .migrater import BaseMigrater
 
@@ -12,7 +13,7 @@ class MemoryMigrater(BaseMigrater):
     """
 
     start_migration_index: int
-    models: dict[Fqid, Model]
+    models: dict[FullQualifiedId, Model]
 
-    def get_migrated_models(self) -> dict[Fqid, Model]:
+    def get_migrated_models(self) -> dict[FullQualifiedId, Model]:
         raise NotImplementedError()

@@ -1,5 +1,5 @@
-from openslides_backend.datastore.shared.typing import JSON
 from openslides_backend.shared.patterns import collection_from_fqid
+from openslides_backend.shared.typing import JSON
 
 from .. import BaseEvent, BaseEventMigration, CreateEvent
 

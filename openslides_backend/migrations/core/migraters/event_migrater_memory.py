@@ -3,8 +3,12 @@ from datetime import datetime
 from openslides_backend.datastore.shared.di import service_as_factory
 from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from openslides_backend.datastore.shared.services import ReadDatabase
-from openslides_backend.datastore.shared.typing import Fqid, Model, Position
-from openslides_backend.datastore.shared.util import is_reserved_field
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    Position,
+    is_reserved_field,
+)
+from openslides_backend.shared.typing import Model
 
 from ..events import BaseEvent, CreateEvent
 from ..migration_keyframes import InitialMigrationKeyframeModifier
@@ -76,7 +80,7 @@ class EventMigraterImplementationMemory(EventMigrater, MemoryMigrater):
             )
             self.migrated_models = new_accessor.models
 
-    def get_migrated_models(self) -> dict[Fqid, Model]:
+    def get_migrated_models(self) -> dict[FullQualifiedId, Model]:
         return self.migrated_models
 
     def get_accessors(

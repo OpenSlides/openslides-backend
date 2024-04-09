@@ -8,13 +8,10 @@ from openslides_backend.datastore.shared.services import (
     EnvironmentService,
     ReadDatabase,
 )
-from openslides_backend.datastore.shared.typing import JSON, Field, Fqid
-from openslides_backend.datastore.shared.util import (
-    META_DELETED,
-    DatastoreNotEmpty,
-    logger,
-)
+from openslides_backend.datastore.shared.util import DatastoreNotEmpty, logger
 from openslides_backend.shared.otel import make_span
+from openslides_backend.shared.patterns import META_DELETED, Field, FullQualifiedId
+from openslides_backend.shared.typing import JSON
 
 from .database import Database
 from .write_request import BaseRequestEvent, RequestDeleteEvent, WriteRequest
@@ -68,7 +65,7 @@ class WriterService:
 
     def write_with_database_context(
         self, write_request: WriteRequest
-    ) -> tuple[int, dict[Fqid, dict[Field, JSON]]]:
+    ) -> tuple[int, dict[FullQualifiedId, dict[Field, JSON]]]:
         with make_span(self.env, "write with database context"):
             # get migration index
             if write_request.migration_index is None:
@@ -129,7 +126,7 @@ class WriterService:
 
         with make_span(self.env, "write action worker"):
             if isinstance(write_request.events[0], RequestDeleteEvent):
-                fqids_to_delete: list[Fqid] = []
+                fqids_to_delete: list[FullQualifiedId] = []
                 for event in write_request.events:
                     fqids_to_delete.append(event.fqid)
                 with self.database.get_context():

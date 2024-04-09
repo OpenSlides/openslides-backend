@@ -1,6 +1,7 @@
 from typing import Union
 
-from openslides_backend.datastore.shared.typing import Field, Model
+from openslides_backend.shared.patterns import Field
+from openslides_backend.shared.typing import Model
 
 ListUpdatesDict = dict[Field, list[Union[str, int]]]
 

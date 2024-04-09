@@ -5,7 +5,8 @@ from datetime import datetime
 from openslides_backend.datastore.shared.postgresql_backend.sql_event_types import (
     EVENT_TYPE,
 )
-from openslides_backend.datastore.shared.typing import JSON, Fqid
+from openslides_backend.shared.patterns import FullQualifiedId
+from openslides_backend.shared.typing import JSON
 
 from ..events import BaseEvent, DeleteFieldsEvent, ListUpdateEvent, UpdateEvent
 from ..migration_keyframes import MigrationKeyframeAccessor
@@ -39,7 +40,7 @@ class BaseEventMigration(BaseMigration):
     new_accessor: MigrationKeyframeAccessor
     position_data: PositionData
     # The status all models would have after the original events of this position were applied
-    model_status: dict[Fqid, EVENT_TYPE]
+    model_status: dict[FullQualifiedId, EVENT_TYPE]
 
     def migrate(
         self,
@@ -158,7 +159,7 @@ class BaseEventMigration(BaseMigration):
         """
         return None
 
-    def will_exist(self, fqid: Fqid) -> bool:
+    def will_exist(self, fqid: FullQualifiedId) -> bool:
         """
         Returns True iff the model would exist after this position without the migration.
         """

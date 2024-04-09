@@ -4,14 +4,6 @@ from typing import cast
 from openslides_backend.datastore.shared.postgresql_backend.sql_query_helper import (
     VALID_AGGREGATE_CAST_TARGETS,
 )
-from openslides_backend.datastore.shared.typing import (
-    Collection,
-    Field,
-    Fqfield,
-    Fqid,
-    Id,
-    Position,
-)
 from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
     Filter,
@@ -19,6 +11,12 @@ from openslides_backend.datastore.shared.util import (
     SelfValidatingDataclass,
 )
 from openslides_backend.shared.patterns import (
+    Collection,
+    Field,
+    FullQualifiedField,
+    FullQualifiedId,
+    Id,
+    Position,
     collection_from_fqid,
     field_from_fqfield,
     fqid_from_collection_and_id,
@@ -28,7 +26,7 @@ from openslides_backend.shared.patterns import (
 
 @dataclass
 class GetRequest(SelfValidatingDataclass):
-    fqid: Fqid
+    fqid: FullQualifiedId
     mapped_fields: list[Field] = field(default_factory=list)
     position: Position | None = None
     get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED
@@ -52,7 +50,7 @@ class GetManyRequestPart(SelfValidatingDataclass):
 
 @dataclass
 class GetManyRequest(SelfValidatingDataclass):
-    requests: list[GetManyRequestPart] | list[Fqfield]
+    requests: list[GetManyRequestPart] | list[FullQualifiedField]
     mapped_fields: list[Field] = field(default_factory=list)
     position: Position | None = None
     get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED
@@ -121,4 +119,4 @@ class MinMaxRequest(SelfValidatingDataclass):
 
 @dataclass
 class HistoryInformationRequest(SelfValidatingDataclass):
-    fqids: list[Fqid]
+    fqids: list[FullQualifiedId]

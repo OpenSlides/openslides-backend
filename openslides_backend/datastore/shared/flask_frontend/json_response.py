@@ -2,7 +2,7 @@ import json
 
 from flask import Response
 
-from openslides_backend.datastore.shared.typing import JSON
+from openslides_backend.shared.typing import JSON
 
 
 class JsonResponse(Response):

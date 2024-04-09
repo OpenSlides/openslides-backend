@@ -1,12 +1,12 @@
 from collections import defaultdict
 from typing import cast
 
-from openslides_backend.datastore.shared.typing import JSON
 from openslides_backend.migrations import BaseEvent, BaseEventMigration, CreateEvent
 from openslides_backend.shared.patterns import (
     collection_from_fqid,
     fqid_from_collection_and_id,
 )
+from openslides_backend.shared.typing import JSON
 
 
 class Migration(BaseEventMigration):

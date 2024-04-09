@@ -2,9 +2,13 @@ import re
 from copy import deepcopy
 from typing import Any
 
-from openslides_backend.shared.patterns import collection_from_fqid
+from openslides_backend.shared.patterns import (
+    Collection,
+    FullQualifiedId,
+    collection_from_fqid,
+)
+from openslides_backend.shared.typing import Model
 
-from ..typing import Collection, Fqid, Model
 from ..util import Filter
 from .sql_query_helper import SqlQueryHelper
 
@@ -26,7 +30,7 @@ def is_comparable(a: Any, b: Any) -> bool:
 
 
 def filter_models(
-    models: dict[Fqid, Model],
+    models: dict[FullQualifiedId, Model],
     collection: Collection,
     filter: Filter,
     mapped_fields: list[str] | None = None,

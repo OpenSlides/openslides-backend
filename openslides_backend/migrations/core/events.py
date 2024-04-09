@@ -5,13 +5,13 @@ from openslides_backend.datastore.shared.postgresql_backend import (
     EVENT_TYPE,
     ListUpdatesDict,
 )
-from openslides_backend.datastore.shared.typing import Field, Fqid, Model
 from openslides_backend.datastore.shared.util import (
     InvalidKeyFormat,
     assert_is_field,
     assert_is_fqid,
-    is_reserved_field,
 )
+from openslides_backend.shared.patterns import Field, FullQualifiedId, is_reserved_field
+from openslides_backend.shared.typing import Model
 
 
 class BadEventException(Exception):
@@ -25,10 +25,10 @@ def assert_no_special_field(field: Any) -> None:
 
 class BaseEvent:
     type: EVENT_TYPE
-    fqid: Fqid
+    fqid: FullQualifiedId
     data: Any
 
-    def __init__(self, fqid: Fqid, data: Any) -> None:
+    def __init__(self, fqid: FullQualifiedId, data: Any) -> None:
         self.fqid = fqid
         self.data = data
         try:
@@ -50,7 +50,7 @@ class BaseEvent:
 class _ModelEvent(BaseEvent):
     data: Model
 
-    def __init__(self, fqid: Fqid, data: Model) -> None:
+    def __init__(self, fqid: FullQualifiedId, data: Model) -> None:
         super().__init__(fqid, data)
 
     def check(self) -> None:
@@ -75,7 +75,7 @@ class DeleteFieldsEvent(BaseEvent):
 
     data: list[Field]
 
-    def __init__(self, fqid: Fqid, data: list[Field]) -> None:
+    def __init__(self, fqid: FullQualifiedId, data: list[Field]) -> None:
         super().__init__(fqid, data)
 
     def check(self) -> None:
@@ -91,7 +91,7 @@ class ListUpdateEvent(BaseEvent):
     add: ListUpdatesDict
     remove: ListUpdatesDict
 
-    def __init__(self, fqid: Fqid, data: dict[str, ListUpdatesDict]) -> None:
+    def __init__(self, fqid: FullQualifiedId, data: dict[str, ListUpdatesDict]) -> None:
         self.add = data.pop("add", {})
         self.remove = data.pop("remove", {})
         super().__init__(fqid, data)
@@ -112,14 +112,14 @@ class ListUpdateEvent(BaseEvent):
 class DeleteEvent(BaseEvent):
     type = EVENT_TYPE.DELETE
 
-    def __init__(self, fqid: Fqid, data: Any = None) -> None:
+    def __init__(self, fqid: FullQualifiedId, data: Any = None) -> None:
         super().__init__(fqid, None)
 
 
 class RestoreEvent(BaseEvent):
     type = EVENT_TYPE.RESTORE
 
-    def __init__(self, fqid: Fqid, data: Any = None) -> None:
+    def __init__(self, fqid: FullQualifiedId, data: Any = None) -> None:
         super().__init__(fqid, None)
 
 

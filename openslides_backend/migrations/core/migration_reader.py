@@ -15,19 +15,17 @@ from openslides_backend.datastore.reader.core.requests import GetManyRequestPart
 from openslides_backend.datastore.shared.di import service_as_factory, service_interface
 from openslides_backend.datastore.shared.postgresql_backend import filter_models
 from openslides_backend.datastore.shared.services.read_database import ReadDatabase
-from openslides_backend.datastore.shared.typing import (
-    Collection,
-    Field,
-    Fqid,
-    Id,
-    Model,
-)
 from openslides_backend.datastore.shared.util import ModelDoesNotExist
 from openslides_backend.datastore.shared.util.filter import Filter
 from openslides_backend.shared.patterns import (
+    Collection,
+    Field,
+    FullQualifiedId,
+    Id,
     collection_from_fqid,
     fqid_from_collection_and_id,
 )
+from openslides_backend.shared.typing import Model
 
 
 @service_interface
@@ -37,7 +35,7 @@ class MigrationReader(Protocol):
     models which are not deleted.
     """
 
-    def get(self, fqid: Fqid, mapped_fields: list[Field] = []) -> Model: ...
+    def get(self, fqid: FullQualifiedId, mapped_fields: list[Field] = []) -> Model: ...
 
     def get_many(
         self, requests: list[GetManyRequestPart]
@@ -63,13 +61,13 @@ class MigrationReader(Protocol):
         self, collection: Collection, filter: Filter, field: Field
     ) -> int | None: ...
 
-    def is_alive(self, fqid: Fqid) -> bool:
+    def is_alive(self, fqid: FullQualifiedId) -> bool:
         """Returns true iff the model exists and is not deleted."""
 
-    def is_deleted(self, fqid: Fqid) -> bool:
+    def is_deleted(self, fqid: FullQualifiedId) -> bool:
         """Returns true iff the model exists and is deleted."""
 
-    def model_exists(self, fqid: Fqid) -> bool:
+    def model_exists(self, fqid: FullQualifiedId) -> bool:
         """Returns true iff the model exists, regardless of deletion status."""
 
 
@@ -78,7 +76,7 @@ class MigrationReaderImplementation(MigrationReader):
     reader: Reader
     read_database: ReadDatabase
 
-    def get(self, fqid: Fqid, mapped_fields: list[Field] = []) -> Model:
+    def get(self, fqid: FullQualifiedId, mapped_fields: list[Field] = []) -> Model:
         return self.reader.get(GetRequest(fqid, mapped_fields))
 
     def get_many(
@@ -113,15 +111,15 @@ class MigrationReaderImplementation(MigrationReader):
         result = self.reader.max(MinMaxRequest(collection, filter, field))
         return result["max"]
 
-    def is_alive(self, fqid: Fqid) -> bool:
+    def is_alive(self, fqid: FullQualifiedId) -> bool:
         status = self.read_database.get_deleted_status([fqid])
         return status.get(fqid) is False
 
-    def is_deleted(self, fqid: Fqid) -> bool:
+    def is_deleted(self, fqid: FullQualifiedId) -> bool:
         status = self.read_database.get_deleted_status([fqid])
         return status.get(fqid) is True
 
-    def model_exists(self, fqid: Fqid) -> bool:
+    def model_exists(self, fqid: FullQualifiedId) -> bool:
         status = self.read_database.get_deleted_status([fqid])
         return fqid in status
 
@@ -133,9 +131,9 @@ class MigrationReaderImplementationMemory(MigrationReader):
     always returned.
     """
 
-    models: dict[Fqid, Model]
+    models: dict[FullQualifiedId, Model]
 
-    def get(self, fqid: Fqid, mapped_fields: list[Field] = []) -> Model:
+    def get(self, fqid: FullQualifiedId, mapped_fields: list[Field] = []) -> Model:
         if fqid not in self.models:
             raise ModelDoesNotExist(fqid)
         return self.models[fqid]
@@ -193,13 +191,13 @@ class MigrationReaderImplementationMemory(MigrationReader):
             return func(values)
         return None
 
-    def is_alive(self, fqid: Fqid) -> bool:
+    def is_alive(self, fqid: FullQualifiedId) -> bool:
         # the in-memory implementation does not support deletion
         return self.model_exists(fqid)
 
-    def is_deleted(self, fqid: Fqid) -> bool:
+    def is_deleted(self, fqid: FullQualifiedId) -> bool:
         # the in-memory implementation does not support deletion
         return False
 
-    def model_exists(self, fqid: Fqid) -> bool:
+    def model_exists(self, fqid: FullQualifiedId) -> bool:
         return fqid in self.models

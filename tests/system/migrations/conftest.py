@@ -16,7 +16,6 @@ from openslides_backend.datastore.shared.services import ReadDatabase
 from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
     ModelDoesNotExist,
-    strip_reserved_fields,
 )
 from openslides_backend.datastore.writer.core import Writer
 from openslides_backend.datastore.writer.flask_frontend.json_handlers import (
@@ -26,6 +25,7 @@ from openslides_backend.migrations import MigrationHandler, get_backend_migratio
 from openslides_backend.migrations.core.setup import register_services
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker
+from openslides_backend.shared.patterns import strip_reserved_fields
 
 
 class DoesNotExist:

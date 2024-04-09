@@ -5,9 +5,7 @@ from openslides_backend.datastore.shared.di import (
     service_interface,
 )
 from openslides_backend.datastore.shared.services import ReadDatabase
-from openslides_backend.datastore.shared.typing import JSON, Fqid, Model
 from openslides_backend.datastore.shared.util import (
-    META_DELETED,
     BadCodingError,
     ModelDoesNotExist,
     ModelExists,
@@ -20,6 +18,8 @@ from openslides_backend.datastore.writer.core import (
     RequestRestoreEvent,
     RequestUpdateEvent,
 )
+from openslides_backend.shared.patterns import META_DELETED, FullQualifiedId
+from openslides_backend.shared.typing import JSON, Model
 
 from .db_events import (
     BaseDbEvent,
@@ -35,7 +35,7 @@ from .db_events import (
 @service_interface
 class EventTranslator(Protocol):
     def translate(
-        self, request_event: BaseRequestEvent, models: dict[Fqid, Model]
+        self, request_event: BaseRequestEvent, models: dict[FullQualifiedId, Model]
     ) -> list[BaseDbEvent]:
         """
         Translates request events into db events
@@ -47,7 +47,7 @@ class EventTranslatorService:
     read_database: ReadDatabase
 
     def translate(
-        self, request_event: BaseRequestEvent, models: dict[Fqid, Model]
+        self, request_event: BaseRequestEvent, models: dict[FullQualifiedId, Model]
     ) -> list[BaseDbEvent]:
         if isinstance(request_event, RequestCreateEvent):
             self.assert_model_does_not_exist(request_event.fqid, models)
@@ -70,21 +70,27 @@ class EventTranslatorService:
         raise BadCodingError()
 
     def assert_model_does_not_exist(
-        self, fqid: Fqid, models: dict[Fqid, Model]
+        self, fqid: FullQualifiedId, models: dict[FullQualifiedId, Model]
     ) -> None:
         if fqid in models:
             raise ModelExists(fqid)
 
-    def assert_model_exists(self, fqid: Fqid, models: dict[Fqid, Model]) -> None:
+    def assert_model_exists(
+        self, fqid: FullQualifiedId, models: dict[FullQualifiedId, Model]
+    ) -> None:
         if fqid not in models or models[fqid][META_DELETED] is True:
             raise ModelDoesNotExist(fqid)
 
-    def assert_model_is_deleted(self, fqid: Fqid, models: dict[Fqid, Model]) -> None:
+    def assert_model_is_deleted(
+        self, fqid: FullQualifiedId, models: dict[FullQualifiedId, Model]
+    ) -> None:
         if fqid not in models or models[fqid][META_DELETED] is False:
             raise ModelNotDeleted(fqid)
 
     def create_update_events(
-        self, request_update_event: RequestUpdateEvent, models: dict[Fqid, Model]
+        self,
+        request_update_event: RequestUpdateEvent,
+        models: dict[FullQualifiedId, Model],
     ) -> list[BaseDbEvent]:
         db_events: list[BaseDbEvent] = []
         updated_fields: dict[str, JSON] = {

@@ -3,20 +3,19 @@ from dataclasses import dataclass
 from typing import Any, ContextManager, Protocol, TypedDict
 
 from openslides_backend.datastore.shared.di import service_interface
-from openslides_backend.datastore.shared.typing import (
-    JSON,
-    Collection,
-    Field,
-    Fqid,
-    Id,
-    Model,
-    Position,
-)
 from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
     Filter,
     MappedFields,
 )
+from openslides_backend.shared.patterns import (
+    Collection,
+    Field,
+    FullQualifiedId,
+    Id,
+    Position,
+)
+from openslides_backend.shared.typing import JSON, Model
 
 
 class HistoryInformation(TypedDict):
@@ -65,7 +64,7 @@ class ReadDatabase(Protocol):
 
     def get(
         self,
-        fqid: Fqid,
+        fqid: FullQualifiedId,
         mapped_fields: MappedFields | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
@@ -76,10 +75,10 @@ class ReadDatabase(Protocol):
 
     def get_many(
         self,
-        fqids: Iterable[Fqid],
+        fqids: Iterable[FullQualifiedId],
         mapped_fields: MappedFields | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> dict[Fqid, Model]:
+    ) -> dict[FullQualifiedId, Model]:
         """
         Returns all requested models in a lookup-able fashion mapped the
         fqid <-> model from the read-DB. If a fqid could not be found, the
@@ -125,7 +124,7 @@ class ReadDatabase(Protocol):
         """
 
     def build_model_ignore_deleted(
-        self, fqid: Fqid, position: Position | None = None
+        self, fqid: FullQualifiedId, position: Position | None = None
     ) -> Model:
         """
         Calls `build_models_ignore_deleted` to build a single model.
@@ -133,30 +132,32 @@ class ReadDatabase(Protocol):
         """
 
     def build_models_ignore_deleted(
-        self, fqids: list[Fqid], position: Position | None = None
-    ) -> dict[Fqid, Model]:
+        self, fqids: list[FullQualifiedId], position: Position | None = None
+    ) -> dict[FullQualifiedId, Model]:
         """
         Builds the given models, optionally only up to the given position.
         It does not append META_POSITION to the model.
         """
 
-    def is_deleted(self, fqid: Fqid, position: Position | None = None) -> bool:
+    def is_deleted(
+        self, fqid: FullQualifiedId, position: Position | None = None
+    ) -> bool:
         """
         Calls `get_deleted_status` to retrieve the deleted state of a single model.
         Raises ModelDoesNotExist if the model does not exist.
         """
 
     def get_deleted_status(
-        self, fqids: list[Fqid], position: Position | None = None
-    ) -> dict[Fqid, bool]:
+        self, fqids: list[FullQualifiedId], position: Position | None = None
+    ) -> dict[FullQualifiedId, bool]:
         """
         Returns a map indicating if the models with the given fqids are deleted. If
         position is given, the result refers to the state at the position.
         """
 
     def get_history_information(
-        self, fqids: list[Fqid]
-    ) -> dict[Fqid, list[HistoryInformation]]:
+        self, fqids: list[FullQualifiedId]
+    ) -> dict[FullQualifiedId, list[HistoryInformation]]:
         """
         Returns a list of position data for all fqids.
         """

@@ -2,14 +2,13 @@ from dataclasses import dataclass
 from textwrap import dedent
 from typing import Any, Optional, TypeAlias, Union, get_args, get_origin, get_type_hints
 
-from openslides_backend.datastore.shared.typing import (
+from openslides_backend.shared.patterns import (
     Collection,
     Field,
-    Fqfield,
-    Fqid,
+    FullQualifiedField,
+    FullQualifiedId,
     Id,
     Position,
-    custom_types,
 )
 
 from .exceptions import BadCodingError, InvalidFormat
@@ -20,6 +19,15 @@ from .key_types import (
     assert_is_fqid,
     assert_is_id,
 )
+
+custom_types: list[TypeAlias] = [
+    Collection,
+    Field,
+    Id,
+    FullQualifiedId,
+    FullQualifiedField,
+    Position,
+]
 
 optional_custom_types: dict[TypeAlias, TypeAlias] = {
     t: Optional[t] for t in custom_types
@@ -97,9 +105,9 @@ class SelfValidatingDataclass:
             assert_is_field(value)
         elif type == Id:
             assert_is_id(str(value))
-        elif type == Fqid:
+        elif type == FullQualifiedId:
             assert_is_fqid(value)
-        elif type == Fqfield:
+        elif type == FullQualifiedField:
             assert_is_fqfield(value)
         elif type == Position:
             if value <= 0:

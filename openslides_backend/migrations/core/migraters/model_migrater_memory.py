@@ -1,5 +1,4 @@
 from openslides_backend.datastore.shared.di import service_as_factory
-from openslides_backend.datastore.shared.typing import Fqid, Model
 from openslides_backend.datastore.writer.postgresql_backend import (
     EventTranslator,
     apply_event_to_models,
@@ -8,6 +7,8 @@ from openslides_backend.migrations.core.migration_reader import (
     MigrationReader,
     MigrationReaderImplementationMemory,
 )
+from openslides_backend.shared.patterns import FullQualifiedId
+from openslides_backend.shared.typing import Model
 
 from ..migration_logger import MigrationLogger
 from .memory_migrater import MemoryMigrater
@@ -44,5 +45,5 @@ class ModelMigraterImplementationMemory(_ModelMigraterImplementationMemory):
                     for db_event in db_events:
                         apply_event_to_models(db_event, self.models)
 
-    def get_migrated_models(self) -> dict[Fqid, Model]:
+    def get_migrated_models(self) -> dict[FullQualifiedId, Model]:
         return self.models

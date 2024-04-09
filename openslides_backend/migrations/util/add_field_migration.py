@@ -1,4 +1,4 @@
-from openslides_backend.datastore.shared.typing import JSON
+from openslides_backend.shared.typing import JSON
 
 from .. import BaseEvent
 from .add_fields_migration import AddFieldsMigration, Calculated

@@ -7,8 +7,8 @@ from dacite.exceptions import MissingValueError
 from openslides_backend.datastore.reader.core import Reader
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.flask_frontend import InvalidRequest
-from openslides_backend.datastore.shared.typing import JSON
 from openslides_backend.datastore.shared.util import BadCodingError, logger
+from openslides_backend.shared.typing import JSON
 
 from .routes import Route, route_configurations
 

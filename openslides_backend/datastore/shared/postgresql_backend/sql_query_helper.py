@@ -6,17 +6,17 @@ from openslides_backend.datastore.shared.services.read_database import (
     MappedFieldsFilterQueryFieldsParameters,
 )
 from openslides_backend.datastore.shared.util import (
-    KEYSEPARATOR,
     And,
     BadCodingError,
     DeletedModelsBehaviour,
     Filter,
     FilterOperator,
     InvalidFormat,
+    MappedFields,
     Not,
     Or,
 )
-from openslides_backend.datastore.shared.util.mapped_fields import MappedFields
+from openslides_backend.shared.patterns import KEYSEPARATOR
 
 # extend if neccessary. first is always the default (should be int)
 # min/max functions support the following:

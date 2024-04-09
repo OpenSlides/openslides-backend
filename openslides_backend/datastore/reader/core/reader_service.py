@@ -23,7 +23,6 @@ from openslides_backend.datastore.shared.services.read_database import (
     BaseAggregateFilterQueryFieldsParameters,
     CountFilterQueryFieldsParameters,
 )
-from openslides_backend.datastore.shared.typing import Collection, Fqid, Id, Model
 from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
     Filter,
@@ -31,7 +30,13 @@ from openslides_backend.datastore.shared.util import (
     get_exception_for_deleted_models_behaviour,
 )
 from openslides_backend.shared.otel import make_span
-from openslides_backend.shared.patterns import collection_and_id_from_fqid
+from openslides_backend.shared.patterns import (
+    Collection,
+    FullQualifiedId,
+    Id,
+    collection_and_id_from_fqid,
+)
+from openslides_backend.shared.typing import Model
 
 from .requests import (
     AggregateRequest,
@@ -228,5 +233,5 @@ class ReaderService:
     @retry_on_db_failure
     def history_information(
         self, request: HistoryInformationRequest
-    ) -> dict[Fqid, list[HistoryInformation]]:
+    ) -> dict[FullQualifiedId, list[HistoryInformation]]:
         return self.database.get_history_information(request.fqids)

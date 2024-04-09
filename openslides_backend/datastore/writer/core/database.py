@@ -1,15 +1,9 @@
 from typing import ContextManager, Protocol
 
 from openslides_backend.datastore.shared.di import service_interface
-from openslides_backend.datastore.shared.typing import (
-    JSON,
-    Field,
-    Fqid,
-    Id,
-    Model,
-    Position,
-)
 from openslides_backend.datastore.writer.core.write_request import BaseRequestEvent
+from openslides_backend.shared.patterns import Field, FullQualifiedId, Id, Position
+from openslides_backend.shared.typing import JSON, Model
 
 
 @service_interface
@@ -25,7 +19,7 @@ class Database(Protocol):
         migration_index: int,
         information: JSON,
         user_id: int,
-    ) -> tuple[Position, dict[Fqid, dict[Field, JSON]]]:
+    ) -> tuple[Position, dict[FullQualifiedId, dict[Field, JSON]]]:
         """
         Inserts the given events. This may raise ModelExists,
         ModelDoesNotExist or ModelNotDeleted. Returns the generated position and
@@ -44,8 +38,10 @@ class Database(Protocol):
     def truncate_db(self) -> None:
         """Truncate all tables. Only for dev purposes!"""
 
-    def write_model_updates_without_events(self, models: dict[Fqid, Model]) -> None:
+    def write_model_updates_without_events(
+        self, models: dict[FullQualifiedId, Model]
+    ) -> None:
         """For writing directly to models-table used for action_workers and import_previews"""
 
-    def write_model_deletes_without_events(self, fqids: list[Fqid]) -> None:
+    def write_model_deletes_without_events(self, fqids: list[FullQualifiedId]) -> None:
         """For deleting directly to models-table used for action_workers and import_previews"""

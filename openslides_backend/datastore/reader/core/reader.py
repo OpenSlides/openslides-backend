@@ -2,7 +2,8 @@ from typing import Any, ContextManager, Protocol, TypedDict
 
 from openslides_backend.datastore.shared.di import service_interface
 from openslides_backend.datastore.shared.services import HistoryInformation
-from openslides_backend.datastore.shared.typing import Collection, Fqid, Id, Model
+from openslides_backend.shared.patterns import Collection, FullQualifiedId, Id
+from openslides_backend.shared.typing import Model
 
 from .requests import (
     AggregateRequest,
@@ -91,7 +92,7 @@ class Reader(Protocol):
 
     def history_information(
         self, request: HistoryInformationRequest
-    ) -> dict[Fqid, list[HistoryInformation]]:
+    ) -> dict[FullQualifiedId, list[HistoryInformation]]:
         """
         Returns history information for multiple models.
         """

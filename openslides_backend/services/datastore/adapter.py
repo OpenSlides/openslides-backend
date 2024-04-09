@@ -20,10 +20,8 @@ from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.services.read_database import (
     HistoryInformation,
 )
-from openslides_backend.datastore.shared.util import (
-    DeletedModelsBehaviour,
-    is_reserved_field,
-)
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.shared.patterns import is_reserved_field
 
 from ...models.base import model_registry
 from ...shared.exceptions import DatastoreException

@@ -13,17 +13,7 @@ from openslides_backend.datastore.shared.services.read_database import (
     HistoryInformation,
     MappedFieldsFilterQueryFieldsParameters,
 )
-from openslides_backend.datastore.shared.typing import (
-    Collection,
-    Field,
-    Fqid,
-    Id,
-    Model,
-    Position,
-)
 from openslides_backend.datastore.shared.util import (
-    META_DELETED,
-    META_POSITION,
     BadCodingError,
     DeletedModelsBehaviour,
     Filter,
@@ -33,10 +23,18 @@ from openslides_backend.datastore.shared.util import (
 )
 from openslides_backend.datastore.shared.util.mapped_fields import MappedFields
 from openslides_backend.shared.patterns import (
+    META_DELETED,
+    META_POSITION,
+    Collection,
+    Field,
+    FullQualifiedId,
+    Id,
+    Position,
     collection_and_id_from_fqid,
     fqid_from_collection_and_id,
     id_from_fqid,
 )
+from openslides_backend.shared.typing import Model
 
 from .connection_handler import ConnectionHandler
 from .sql_event_types import EVENT_TYPE
@@ -52,7 +50,7 @@ class SqlReadDatabaseBackendService:
 
     def get(
         self,
-        fqid: Fqid,
+        fqid: FullQualifiedId,
         mapped_fields: MappedFields | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> Model:
@@ -64,10 +62,10 @@ class SqlReadDatabaseBackendService:
 
     def get_many(
         self,
-        fqids: Iterable[Fqid],
+        fqids: Iterable[FullQualifiedId],
         mapped_fields: MappedFields | None = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-    ) -> dict[Fqid, Model]:
+    ) -> dict[FullQualifiedId, Model]:
         if not fqids:
             return {}
         if mapped_fields is None:
@@ -202,7 +200,7 @@ class SqlReadDatabaseBackendService:
         return result_map
 
     def build_model_ignore_deleted(
-        self, fqid: Fqid, position: Position | None = None
+        self, fqid: FullQualifiedId, position: Position | None = None
     ) -> Model:
         models = self.build_models_ignore_deleted([fqid], position)
         try:
@@ -211,8 +209,8 @@ class SqlReadDatabaseBackendService:
             raise ModelDoesNotExist(fqid)
 
     def build_models_ignore_deleted(
-        self, fqids: list[Fqid], position: Position | None = None
-    ) -> dict[Fqid, Model]:
+        self, fqids: list[FullQualifiedId], position: Position | None = None
+    ) -> dict[FullQualifiedId, Model]:
         # Optionally only builds the models up to the specified position.
         # TODO: There might be a speedup: Get the model from the readdb first.
         # If the model exists there, read the position from it, use the model
@@ -235,7 +233,7 @@ class SqlReadDatabaseBackendService:
         args: list[Any] = [tuple(fqids)]
         db_events = self.connection.query(query, args + pos_args)
 
-        events_per_fqid: dict[Fqid, list[dict[str, Any]]] = defaultdict(list)
+        events_per_fqid: dict[FullQualifiedId, list[dict[str, Any]]] = defaultdict(list)
         for event in db_events:
             events_per_fqid[event["fqid"]].append(event)
 
@@ -276,7 +274,9 @@ class SqlReadDatabaseBackendService:
         model[META_POSITION] = events[-1]["position"]
         return model
 
-    def is_deleted(self, fqid: Fqid, position: Position | None = None) -> bool:
+    def is_deleted(
+        self, fqid: FullQualifiedId, position: Position | None = None
+    ) -> bool:
         result = self.get_deleted_status([fqid], position)
         try:
             return result[fqid]
@@ -284,21 +284,23 @@ class SqlReadDatabaseBackendService:
             raise ModelDoesNotExist(fqid)
 
     def get_deleted_status(
-        self, fqids: list[Fqid], position: Position | None = None
-    ) -> dict[Fqid, bool]:
+        self, fqids: list[FullQualifiedId], position: Position | None = None
+    ) -> dict[FullQualifiedId, bool]:
         if not position:
             return self.get_deleted_status_from_read_db(fqids)
         else:
             return self.get_deleted_status_from_events(fqids, position)
 
-    def get_deleted_status_from_read_db(self, fqids: list[Fqid]) -> dict[Fqid, bool]:
+    def get_deleted_status_from_read_db(
+        self, fqids: list[FullQualifiedId]
+    ) -> dict[FullQualifiedId, bool]:
         query = "select fqid, deleted from models where fqid in %s"
         result = self.connection.query(query, [tuple(fqids)])
         return {row["fqid"]: row["deleted"] for row in result}
 
     def get_deleted_status_from_events(
-        self, fqids: list[Fqid], position: Position
-    ) -> dict[Fqid, bool]:
+        self, fqids: list[FullQualifiedId], position: Position
+    ) -> dict[FullQualifiedId, bool]:
         included_types = dedent(
             f"""\
             ('{EVENT_TYPE.CREATE}',
@@ -316,8 +318,8 @@ class SqlReadDatabaseBackendService:
         return {row["fqid"]: row["type"] == EVENT_TYPE.DELETE for row in result}
 
     def get_history_information(
-        self, fqids: list[Fqid]
-    ) -> dict[Fqid, list[HistoryInformation]]:
+        self, fqids: list[FullQualifiedId]
+    ) -> dict[FullQualifiedId, list[HistoryInformation]]:
         positions = self.connection.query(
             """select fqid, position, timestamp, user_id, information from positions natural join events
             where fqid in %s and information::text<>%s::text order by position asc""",

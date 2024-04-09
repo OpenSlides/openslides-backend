@@ -5,12 +5,7 @@ from typing import Any, Protocol
 from openslides_backend.datastore.shared.di import service_as_factory, service_interface
 from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from openslides_backend.datastore.shared.services import ReadDatabase
-from openslides_backend.datastore.shared.typing import Fqid, Model
-from openslides_backend.datastore.shared.util import KEYSEPARATOR, InvalidDatastoreState
-from openslides_backend.datastore.shared.util.key_strings import (
-    META_DELETED,
-    strip_reserved_fields,
-)
+from openslides_backend.datastore.shared.util import InvalidDatastoreState
 from openslides_backend.migrations.core.base_migrations.base_event_migration import (
     BaseEventMigration,
 )
@@ -18,6 +13,13 @@ from openslides_backend.migrations.core.migraters import (
     EventMigraterImplementationMemory,
     ModelMigraterImplementationMemory,
 )
+from openslides_backend.shared.patterns import (
+    KEYSEPARATOR,
+    META_DELETED,
+    FullQualifiedId,
+    strip_reserved_fields,
+)
+from openslides_backend.shared.typing import Model
 
 from .base_migrations.base_migration import BaseMigration
 from .exceptions import MigrationSetupException, MismatchingMigrationIndicesException
@@ -444,7 +446,7 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
     model_migrater: ModelMigraterImplementationMemory
 
     def set_import_data(
-        self, models: dict[Fqid, Model], start_migration_index: int
+        self, models: dict[FullQualifiedId, Model], start_migration_index: int
     ) -> None:
         for model in models.values():
             model[META_DELETED] = False
@@ -472,7 +474,7 @@ class MigrationHandlerImplementationMemory(MigrationHandlerImplementation):
                 self.models = migrater.get_migrated_models()
         self.logger.info("Finalize in memory migrations ready.")
 
-    def get_migrated_models(self) -> dict[Fqid, Model]:
+    def get_migrated_models(self) -> dict[FullQualifiedId, Model]:
         for model in self.models.values():
             strip_reserved_fields(model)
         return self.models

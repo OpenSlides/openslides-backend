@@ -1,10 +1,11 @@
-from openslides_backend.datastore.shared.util.key_types import (
-    _collection_regex,
-    _field_regex,
-    _id_regex,
+from .patterns import (
+    COLLECTION_REGEX,
+    DECIMAL_REGEX,
+    FIELD_REGEX,
+    FQID_REGEX,
+    ID_REGEX,
+    POSITIVE_NUMBER_REGEX,
 )
-
-from .patterns import DECIMAL_REGEX, FQID_REGEX, POSITIVE_NUMBER_REGEX
 from .typing import Schema
 
 schema_version = "http://json-schema.org/draft-07/schema#"
@@ -54,13 +55,13 @@ models_map_object: Schema = {
         "_migration_index": {"type": "integer", "minimum": 1},
     },
     "patternProperties": {
-        rf"^{_collection_regex}$": {
+        COLLECTION_REGEX: {
             "type": "object",
             "patternProperties": {
-                rf"^{_id_regex}$": {
+                ID_REGEX: {
                     "type": "object",
                     "properties": {"id": {"type": "number"}},
-                    "propertyNames": {"pattern": rf"^{_field_regex}$"},
+                    "propertyNames": {"pattern": FIELD_REGEX},
                     "required": ["id"],
                     "additionalProperties": True,
                 }

@@ -2,8 +2,8 @@ from typing import Any
 
 import fastjsonschema
 
-from openslides_backend.datastore.shared.util import is_reserved_field
 from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.shared.patterns import is_reserved_field
 
 from ..models.checker import Checker, CheckException
 from ..permissions.management_levels import OrganizationManagementLevel

@@ -1,4 +1,4 @@
-from openslides_backend.datastore.shared.util import KEYSEPARATOR
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 COLLECTIONS = (
     "assignment",
@@ -24,7 +24,7 @@ def test_migration_all(clear_datastore, write, finalize, assert_model):
             },
             {
                 "type": "create",
-                "fqid": collection + KEYSEPARATOR + "1",
+                "fqid": fqid_from_collection_and_id(collection, "1"),
                 "fields": {"id": 1, "meeting_id": 1},
             },
         )
@@ -36,7 +36,7 @@ def test_migration_all(clear_datastore, write, finalize, assert_model):
             },
             {
                 "type": "create",
-                "fqid": collection + KEYSEPARATOR + "2",
+                "fqid": fqid_from_collection_and_id(collection, "2"),
                 "fields": {"id": 2, "meeting_id": 1},
             },
         )
@@ -44,7 +44,7 @@ def test_migration_all(clear_datastore, write, finalize, assert_model):
         finalize("0010_add_sequential_numbers")
 
         assert_model(
-            collection + KEYSEPARATOR + "1",
+            fqid_from_collection_and_id(collection, "1"),
             {
                 "id": 1,
                 "sequential_number": 1,
@@ -54,7 +54,7 @@ def test_migration_all(clear_datastore, write, finalize, assert_model):
             },
         )
         assert_model(
-            collection + KEYSEPARATOR + "2",
+            fqid_from_collection_and_id(collection, "2"),
             {
                 "id": 2,
                 "sequential_number": 2,
@@ -78,7 +78,7 @@ def test_migration_motion_block_more_objects(
             },
             {
                 "type": "create",
-                "fqid": collection + KEYSEPARATOR + "1",
+                "fqid": fqid_from_collection_and_id(collection, "1"),
                 "fields": {"id": 1, "meeting_id": 1},
             },
         )
@@ -90,7 +90,7 @@ def test_migration_motion_block_more_objects(
             },
             {
                 "type": "create",
-                "fqid": collection + KEYSEPARATOR + "2",
+                "fqid": fqid_from_collection_and_id(collection, "2"),
                 "fields": {"id": 2, "meeting_id": 1},
             },
         )
@@ -102,7 +102,7 @@ def test_migration_motion_block_more_objects(
             },
             {
                 "type": "create",
-                "fqid": collection + KEYSEPARATOR + "3",
+                "fqid": fqid_from_collection_and_id(collection, "3"),
                 "fields": {"id": 3, "meeting_id": 2},
             },
         )
@@ -114,7 +114,7 @@ def test_migration_motion_block_more_objects(
             },
             {
                 "type": "create",
-                "fqid": collection + KEYSEPARATOR + "4",
+                "fqid": fqid_from_collection_and_id(collection, "4"),
                 "fields": {"id": 4, "meeting_id": 2},
             },
         )
@@ -122,7 +122,7 @@ def test_migration_motion_block_more_objects(
         finalize("0010_add_sequential_numbers")
 
         assert_model(
-            collection + KEYSEPARATOR + "1",
+            fqid_from_collection_and_id(collection, "1"),
             {
                 "id": 1,
                 "sequential_number": 1,
@@ -132,7 +132,7 @@ def test_migration_motion_block_more_objects(
             },
         )
         assert_model(
-            collection + KEYSEPARATOR + "2",
+            fqid_from_collection_and_id(collection, "2"),
             {
                 "id": 2,
                 "sequential_number": 2,
@@ -142,7 +142,7 @@ def test_migration_motion_block_more_objects(
             },
         )
         assert_model(
-            collection + KEYSEPARATOR + "3",
+            fqid_from_collection_and_id(collection, "3"),
             {
                 "id": 3,
                 "sequential_number": 1,
@@ -153,7 +153,7 @@ def test_migration_motion_block_more_objects(
         )
 
         assert_model(
-            collection + KEYSEPARATOR + "4",
+            fqid_from_collection_and_id(collection, "4"),
             {
                 "id": 4,
                 "sequential_number": 2,
@@ -176,7 +176,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "1",
+            "fqid": fqid_from_collection_and_id("assignment", "1"),
             "fields": {"id": 1, "meeting_id": 1},
         },
     )
@@ -188,7 +188,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "2",
+            "fqid": fqid_from_collection_and_id("assignment", "2"),
             "fields": {"id": 2, "meeting_id": 1},
         },
     )
@@ -201,7 +201,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "3",
+            "fqid": fqid_from_collection_and_id("assignment", "3"),
             "fields": {"id": 3, "meeting_id": 1},
         },
     )
@@ -213,7 +213,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "4",
+            "fqid": fqid_from_collection_and_id("assignment", "4"),
             "fields": {"id": 4, "meeting_id": 1},
         },
     )
@@ -221,7 +221,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
     finalize("0010_add_sequential_numbers")
 
     assert_model(
-        "assignment" + KEYSEPARATOR + "1",
+        fqid_from_collection_and_id("assignment", "1"),
         {
             "id": 1,
             "sequential_number": 1,
@@ -231,7 +231,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
         },
     )
     assert_model(
-        "assignment" + KEYSEPARATOR + "2",
+        fqid_from_collection_and_id("assignment", "2"),
         {
             "id": 2,
             "sequential_number": 2,
@@ -241,7 +241,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
         },
     )
     assert_model(
-        "assignment" + KEYSEPARATOR + "3",
+        fqid_from_collection_and_id("assignment", "3"),
         {
             "id": 3,
             "sequential_number": 3,
@@ -252,7 +252,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
     )
 
     assert_model(
-        "assignment" + KEYSEPARATOR + "4",
+        fqid_from_collection_and_id("assignment", "4"),
         {
             "id": 4,
             "sequential_number": 4,
@@ -277,17 +277,17 @@ def test_assignment_only_2_position(migrate, write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "1",
+            "fqid": fqid_from_collection_and_id("assignment", "1"),
             "fields": {"id": 1, "meeting_id": 1},
         },
         {
             "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "2",
+            "fqid": fqid_from_collection_and_id("assignment", "2"),
             "fields": {"id": 2, "meeting_id": 2},
         },
         {
             "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "3",
+            "fqid": fqid_from_collection_and_id("assignment", "3"),
             "fields": {"id": 3, "meeting_id": 2},
         },
     )
@@ -299,12 +299,12 @@ def test_assignment_only_2_position(migrate, write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "4",
+            "fqid": fqid_from_collection_and_id("assignment", "4"),
             "fields": {"id": 4, "meeting_id": 1},
         },
         {
             "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "5",
+            "fqid": fqid_from_collection_and_id("assignment", "5"),
             "fields": {"id": 5, "meeting_id": 1},
         },
     )
@@ -312,7 +312,7 @@ def test_assignment_only_2_position(migrate, write, finalize, assert_model):
     finalize("0010_add_sequential_numbers")
 
     assert_model(
-        "assignment" + KEYSEPARATOR + "1",
+        fqid_from_collection_and_id("assignment", "1"),
         {
             "id": 1,
             "sequential_number": 1,
@@ -322,7 +322,7 @@ def test_assignment_only_2_position(migrate, write, finalize, assert_model):
         },
     )
     assert_model(
-        "assignment" + KEYSEPARATOR + "2",
+        fqid_from_collection_and_id("assignment", "2"),
         {
             "id": 2,
             "sequential_number": 1,
@@ -332,7 +332,7 @@ def test_assignment_only_2_position(migrate, write, finalize, assert_model):
         },
     )
     assert_model(
-        "assignment" + KEYSEPARATOR + "3",
+        fqid_from_collection_and_id("assignment", "3"),
         {
             "id": 3,
             "sequential_number": 2,
@@ -343,7 +343,7 @@ def test_assignment_only_2_position(migrate, write, finalize, assert_model):
     )
 
     assert_model(
-        "assignment" + KEYSEPARATOR + "4",
+        fqid_from_collection_and_id("assignment", "4"),
         {
             "id": 4,
             "sequential_number": 2,
@@ -354,7 +354,7 @@ def test_assignment_only_2_position(migrate, write, finalize, assert_model):
     )
 
     assert_model(
-        "assignment" + KEYSEPARATOR + "5",
+        fqid_from_collection_and_id("assignment", "5"),
         {
             "id": 5,
             "sequential_number": 3,

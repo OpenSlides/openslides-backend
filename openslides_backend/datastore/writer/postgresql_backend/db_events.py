@@ -5,12 +5,9 @@ from openslides_backend.datastore.shared.postgresql_backend import (
     ListUpdatesDict,
     apply_fields,
 )
-from openslides_backend.datastore.shared.typing import JSON, Fqid, Model
-from openslides_backend.datastore.shared.util import (
-    META_DELETED,
-    BadCodingError,
-    InvalidFormat,
-)
+from openslides_backend.datastore.shared.util import BadCodingError, InvalidFormat
+from openslides_backend.shared.patterns import META_DELETED, FullQualifiedId
+from openslides_backend.shared.typing import JSON, Model
 
 
 class BaseDbEvent:
@@ -121,7 +118,9 @@ class DbRestoreEvent(BaseDbEventWithoutValues, DeletionStateChangeMixin):
         return None
 
 
-def apply_event_to_models(event: BaseDbEvent, models: dict[Fqid, Model]) -> None:
+def apply_event_to_models(
+    event: BaseDbEvent, models: dict[FullQualifiedId, Model]
+) -> None:
     """Utility function to apply an event to a model dict."""
     if isinstance(event, DbCreateEvent):
         models[event.fqid] = {**event.field_data, META_DELETED: False}

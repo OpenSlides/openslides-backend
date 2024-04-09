@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Literal, Union
 
-from openslides_backend.datastore.shared.typing import Field
+from openslides_backend.shared.patterns import Field
 
 from .self_validating_dataclass import SelfValidatingDataclass
 
