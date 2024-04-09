@@ -2,10 +2,12 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any, Union
 
-from datastore.shared.util import And as BaseAnd
-from datastore.shared.util import FilterOperator as BaseFilterOperator
-from datastore.shared.util import Not as BaseNot
-from datastore.shared.util import Or as BaseOr
+from openslides_backend.datastore.shared.util import And as BaseAnd
+from openslides_backend.datastore.shared.util import (
+    FilterOperator as BaseFilterOperator,
+)
+from openslides_backend.datastore.shared.util import Not as BaseNot
+from openslides_backend.datastore.shared.util import Or as BaseOr
 
 FilterData = dict[str, Any]
 

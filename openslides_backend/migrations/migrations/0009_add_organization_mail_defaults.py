@@ -1,5 +1,5 @@
-from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
-from datastore.shared.util import collection_from_fqid
+from openslides_backend.migrations import BaseEvent, BaseEventMigration, CreateEvent
+from openslides_backend.shared.patterns import collection_from_fqid
 
 
 class Migration(BaseEventMigration):

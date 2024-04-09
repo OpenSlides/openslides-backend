@@ -1,5 +1,7 @@
-from datastore.shared.postgresql_backend.create_schema import create_schema
-from datastore.writer.app import register_services
+from openslides_backend.datastore.shared.postgresql_backend.create_schema import (
+    create_schema,
+)
+from openslides_backend.datastore.writer.services import register_services
 
 
 def main() -> None:

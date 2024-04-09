@@ -2,9 +2,11 @@ from collections.abc import Callable, Iterable
 from functools import wraps
 from typing import Any, cast
 
-from datastore.shared.flask_frontend import handle_internal_errors
-from datastore.shared.postgresql_backend import DatabaseError
-from datastore.shared.util import DatastoreException as ReaderDatastoreException
+from openslides_backend.datastore.shared.flask_frontend import handle_internal_errors
+from openslides_backend.datastore.shared.postgresql_backend import DatabaseError
+from openslides_backend.datastore.shared.util import (
+    DatastoreException as ReaderDatastoreException,
+)
 
 from ...shared.exceptions import DatastoreException, DatastoreLockedException
 from ...shared.interfaces.env import Env

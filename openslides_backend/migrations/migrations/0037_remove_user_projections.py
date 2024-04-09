@@ -1,13 +1,16 @@
 from collections.abc import Iterable
 
-from datastore.migrations import (
+from openslides_backend.migrations import (
     BaseEvent,
     BaseEventMigration,
     CreateEvent,
     DeleteFieldsEvent,
     UpdateEvent,
 )
-from datastore.shared.util import collection_from_fqid, fqid_from_collection_and_id
+from openslides_backend.shared.patterns import (
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+)
 
 
 class Migration(BaseEventMigration):

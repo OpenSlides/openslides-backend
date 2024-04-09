@@ -1,5 +1,5 @@
-from datastore.migrations import AddFieldMigration, BaseEvent
-from datastore.shared.typing import JSON
+from openslides_backend.datastore.shared.typing import JSON
+from openslides_backend.migrations import AddFieldMigration, BaseEvent
 
 
 class Migration(AddFieldMigration):

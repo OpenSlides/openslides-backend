@@ -1,6 +1,6 @@
 from typing import Any
 
-from datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 
 from ...models.models import Model
 from ...services.datastore.interface import DatastoreService

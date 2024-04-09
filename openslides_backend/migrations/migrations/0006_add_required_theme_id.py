@@ -1,4 +1,9 @@
-from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent, UpdateEvent
+from openslides_backend.migrations import (
+    BaseEvent,
+    BaseEventMigration,
+    CreateEvent,
+    UpdateEvent,
+)
 
 ONE_ORGANIZATION_FQID = "organization/1"
 

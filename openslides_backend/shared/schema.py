@@ -1,4 +1,8 @@
-from datastore.shared.util.key_types import _collection_regex, _field_regex, _id_regex
+from openslides_backend.datastore.shared.util.key_types import (
+    _collection_regex,
+    _field_regex,
+    _id_regex,
+)
 
 from .patterns import DECIMAL_REGEX, FQID_REGEX, POSITIVE_NUMBER_REGEX
 from .typing import Schema

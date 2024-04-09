@@ -1,6 +1,6 @@
 from typing import Any
 
-from datastore.migrations import (
+from openslides_backend.migrations import (
     BaseEvent,
     BaseEventMigration,
     CreateEvent,
@@ -10,7 +10,7 @@ from datastore.migrations import (
     RestoreEvent,
     UpdateEvent,
 )
-from datastore.shared.util import collection_and_id_from_fqid
+from openslides_backend.shared.patterns import collection_and_id_from_fqid
 
 ONE_ORGANIZATION_FQID = "organization/1"
 ONE_ORGANIZATION_ID = 1

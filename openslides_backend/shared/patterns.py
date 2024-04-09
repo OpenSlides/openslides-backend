@@ -2,7 +2,11 @@ import re
 from collections.abc import Sequence
 from typing import NewType, Union, cast
 
-from datastore.shared.util.key_types import _collection_regex, _field_regex, _id_regex
+from openslides_backend.datastore.shared.util.key_types import (
+    _collection_regex,
+    _field_regex,
+    _id_regex,
+)
 
 KEYSEPARATOR = "/"
 
@@ -59,7 +63,7 @@ def transform_to_fqids(
     """
     id_list: IdentifierList
     if value is None:
-        id_list = []  # type: ignore  # see https://github.com/python/mypy/issues/2164
+        id_list = []
     elif not isinstance(value, list):
         value_arr = cast(IdentifierList, [value])
         id_list = value_arr

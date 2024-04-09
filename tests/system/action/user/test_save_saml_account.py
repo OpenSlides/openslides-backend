@@ -1,6 +1,5 @@
-from datastore.shared.di import injector
-from datastore.shared.postgresql_backend import ConnectionHandler
-
+from openslides_backend.datastore.shared.di import injector
+from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from tests.system.action.base import BaseActionTestCase
 
 

@@ -2,7 +2,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any, Union, cast
 
-from datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 
 from ...models.base import model_registry
 from ...models.fields import (

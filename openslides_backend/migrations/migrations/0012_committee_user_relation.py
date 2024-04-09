@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, cast
 
-from datastore.migrations import (
+from openslides_backend.migrations import (
     BaseEvent,
     BaseEventMigration,
     CreateEvent,
@@ -10,7 +10,7 @@ from datastore.migrations import (
     RestoreEvent,
     UpdateEvent,
 )
-from datastore.shared.util import collection_and_id_from_fqid, id_from_fqid
+from openslides_backend.shared.patterns import collection_and_id_from_fqid, id_from_fqid
 
 cml_permission = "can_manage"  # the only cml-permission
 user_cml_permission_field = f"committee_${cml_permission}_management_level"

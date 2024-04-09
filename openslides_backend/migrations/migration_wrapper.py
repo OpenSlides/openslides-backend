@@ -2,7 +2,8 @@ import pkgutil
 from importlib import import_module
 from typing import Any
 
-from datastore.migrations import (
+from openslides_backend.datastore.shared.typing import Fqid, Model
+from openslides_backend.migrations import (
     BaseMigration,
     MigrationException,
     MigrationHandler,
@@ -10,7 +11,6 @@ from datastore.migrations import (
     PrintFunction,
     setup,
 )
-from datastore.shared.typing import Fqid, Model
 
 
 class BadMigrationModule(MigrationException):

@@ -5,9 +5,12 @@ from typing import Any, cast
 from unittest import TestCase
 
 import simplejson as json
-from datastore.shared.util import DeletedModelsBehaviour, is_reserved_field
 from fastjsonschema.exceptions import JsonSchemaException
 
+from openslides_backend.datastore.shared.util import (
+    DeletedModelsBehaviour,
+    is_reserved_field,
+)
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import DatastoreService

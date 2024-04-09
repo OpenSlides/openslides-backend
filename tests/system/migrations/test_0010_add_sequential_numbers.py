@@ -1,4 +1,4 @@
-from datastore.shared.util import KEYSEPARATOR
+from openslides_backend.datastore.shared.util import KEYSEPARATOR
 
 COLLECTIONS = (
     "assignment",

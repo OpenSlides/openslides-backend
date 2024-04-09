@@ -1,6 +1,8 @@
 from enum import Enum, auto
 from typing import Any
 
+from openslides_backend.shared.interfaces.env import Env
+
 DEV_PASSWORD = "openslides"
 
 
@@ -18,7 +20,7 @@ def is_truthy(value: str) -> bool:
     return value.lower() in truthy
 
 
-class Environment:
+class Environment(Env):
     """
     Contains all environment variables. See the vars attribute for all defaults.
     """

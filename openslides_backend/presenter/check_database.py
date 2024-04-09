@@ -1,7 +1,8 @@
 from typing import Any
 
 import fastjsonschema
-from datastore.shared.util import DeletedModelsBehaviour
+
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 
 from ..models.checker import Checker, CheckException, external_motion_fields
 from ..permissions.management_levels import OrganizationManagementLevel

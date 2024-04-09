@@ -1,9 +1,9 @@
 from collections import defaultdict
 from typing import cast
 
-from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
-from datastore.shared.typing import JSON
-from datastore.shared.util import KEYSEPARATOR, collection_from_fqid
+from openslides_backend.datastore.shared.typing import JSON
+from openslides_backend.migrations import BaseEvent, BaseEventMigration, CreateEvent
+from openslides_backend.shared.patterns import KEYSEPARATOR, collection_from_fqid
 
 
 class Migration(BaseEventMigration):
