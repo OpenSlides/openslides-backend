@@ -156,7 +156,12 @@ class MotionCreate(
             forbidden_fields.add("attachment_ids")
 
         perm = Permissions.Motion.CAN_MANAGE
-        if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+        if (
+            self.check_perm_and_delegator_restriction(
+                perm, "users_forbid_delegator_as_submitter", [instance["meeting_id"]]
+            )
+            == []
+        ):
             whitelist += [
                 "title",
                 "text",
@@ -179,8 +184,3 @@ class MotionCreate(
             msg = f"You are not allowed to perform action {self.name}. "
             msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
             raise PermissionDenied(msg)
-        self.check_delegator_restriction(
-            "users_forbid_delegator_as_submitter",
-            instance["meeting_id"],
-            "Users who have delegated their vote may not submit motions.",
-        )
