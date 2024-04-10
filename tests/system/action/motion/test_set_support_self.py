@@ -207,24 +207,11 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
 
     def create_delegator_test_data(
         self,
-        is_present: bool = False,
         is_delegator: bool = False,
         perm: Permission = Permissions.Motion.CAN_SUPPORT,
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_supporter",
     ) -> None:
         self.create_meeting(1)
-        user_data = {"meeting_user_ids": [1]}
-        meeting_data = {
-            "name": "name_meeting_1",
-            "motion_ids": [1],
-            "motions_supporters_min_amount": 1,
-            "is_active_in_organization_id": 1,
-            "meeting_user_ids": [1],
-            delegator_setting: True,
-        }
-        if is_present:
-            user_data["is_present_in_meeting_ids"] = [1]
-            meeting_data["present_user_ids"] = [1]
         self.set_models(
             {
                 "motion/1": {
@@ -239,9 +226,16 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "motion_ids": [1],
                     "meeting_id": 1,
                 },
-                "user/1": user_data,
+                "user/1": {"meeting_user_ids": [1]},
                 "meeting_user/1": {"user_id": 1, "meeting_id": 1},
-                "meeting/1": meeting_data,
+                "meeting/1": {
+                    "name": "name_meeting_1",
+                    "motion_ids": [1],
+                    "motions_supporters_min_amount": 1,
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [1],
+                    delegator_setting: True,
+                },
             }
         )
         if is_delegator:
@@ -285,28 +279,14 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_delegator_setting_with_delegation_and_presence(self) -> None:
-        self.create_delegator_test_data(is_present=True, is_delegator=True)
-        response = self.request(
-            "motion.set_support_self", {"motion_id": 1, "support": True}
-        )
-        self.assert_status_code(response, 200)
-
-    def test_delegator_setting_with_presence_no_delegation(self) -> None:
-        self.create_delegator_test_data(is_present=True)
-        response = self.request(
-            "motion.set_support_self", {"motion_id": 1, "support": True}
-        )
-        self.assert_status_code(response, 200)
-
-    def test_delegator_setting_with_no_presence_or_delegation(self) -> None:
+    def test_delegator_setting_with_no_delegation(self) -> None:
         self.create_delegator_test_data()
         response = self.request(
             "motion.set_support_self", {"motion_id": 1, "support": True}
         )
         self.assert_status_code(response, 200)
 
-    def test_delegator_setting_with_delegation_and_no_presence(self) -> None:
+    def test_delegator_setting_with_delegation(self) -> None:
         self.create_delegator_test_data(is_delegator=True)
         response = self.request(
             "motion.set_support_self", {"motion_id": 1, "support": True}
@@ -317,7 +297,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
             == "You are not allowed to perform action motion.set_support_self. Missing Permission: motion.can_manage"
         )
 
-    def test_delegator_setting_with_motion_manager_delegation_and_no_presence(
+    def test_delegator_setting_with_motion_manager_delegation(
         self,
     ) -> None:
         self.create_delegator_test_data(

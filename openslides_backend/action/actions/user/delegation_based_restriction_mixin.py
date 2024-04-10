@@ -56,7 +56,7 @@ class DelegationBasedRestrictionMixin(Action):
                 GetManyRequest(
                     "user",
                     [self.user_id],
-                    ["is_present_in_meeting_ids", "meeting_user_ids"],
+                    ["meeting_user_ids"],
                 ),
                 GetManyRequest("meeting", meeting_ids, [restriction]),
             ]
@@ -78,13 +78,11 @@ class DelegationBasedRestrictionMixin(Action):
                 ["vote_delegated_to_id", "meeting_id"],
             )
             broken_meetings: list[int] = []
-            for id_, meeting_user in meeting_users.items():
+            for meeting_user in meeting_users.values():
                 meeting_id = meeting_user["meeting_id"]
-                if (
-                    meeting_id in operator.get("is_present_in_meeting_ids", [])
-                ) or not data["meeting"][meeting_id].get(restriction):
-                    continue
-                if meeting_user.get("vote_delegated_to_id"):
+                if data["meeting"][meeting_id].get(restriction) and meeting_user.get(
+                    "vote_delegated_to_id"
+                ):
                     broken_meetings.append(meeting_id)
             return broken_meetings
         return []

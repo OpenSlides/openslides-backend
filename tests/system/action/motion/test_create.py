@@ -599,25 +599,19 @@ class MotionCreateActionTest(BaseActionTestCase):
 
     def create_delegator_test_data(
         self,
-        is_present: bool = False,
         is_delegator: bool = False,
         perm: Permission = Permissions.Motion.CAN_CREATE,
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_submitter",
     ) -> None:
         self.add_workflow()
-        user_data = {"meeting_user_ids": [1]}
-        meeting_data = {
-            "meeting_user_ids": [1],
-            delegator_setting: True,
-        }
-        if is_present:
-            user_data["is_present_in_meeting_ids"] = [1]
-            meeting_data["present_user_ids"] = [1]
         self.set_models(
             {
-                "user/1": user_data,
+                "user/1": {"meeting_user_ids": [1]},
                 "meeting_user/1": {"user_id": 1, "meeting_id": 1},
-                "meeting/1": meeting_data,
+                "meeting/1": {
+                    "meeting_user_ids": [1],
+                    delegator_setting: True,
+                },
             }
         )
         if is_delegator:
@@ -646,33 +640,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_create_delegator_setting_with_delegation_and_presence(self) -> None:
-        self.create_delegator_test_data(is_present=True, is_delegator=True)
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "text": "test",
-            },
-        )
-        self.assert_status_code(response, 200)
-
-    def test_create_delegator_setting_with_presence_no_delegation(self) -> None:
-        self.create_delegator_test_data(is_present=True)
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "workflow_id": 12,
-                "text": "test",
-            },
-        )
-        self.assert_status_code(response, 200)
-
-    def test_create_delegator_setting_with_no_presence_or_delegation(self) -> None:
+    def test_create_delegator_setting_with_no_delegation(self) -> None:
         self.create_delegator_test_data()
         response = self.request(
             "motion.create",
@@ -685,7 +653,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_create_delegator_setting_with_delegation_and_no_presence(self) -> None:
+    def test_create_delegator_setting_with_delegation(self) -> None:
         self.create_delegator_test_data(is_delegator=True)
         response = self.request(
             "motion.create",
@@ -702,7 +670,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             == "You are not allowed to perform action motion.create. Missing Permission: motion.can_manage"
         )
 
-    def test_create_delegator_setting_with_motion_manager_delegation_and_no_presence(
+    def test_create_delegator_setting_with_motion_manager_delegation(
         self,
     ) -> None:
         self.create_delegator_test_data(

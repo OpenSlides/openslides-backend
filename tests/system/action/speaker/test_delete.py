@@ -201,19 +201,13 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.user_id = 7
         self.set_models(self.permission_test_models)
         self.login(self.user_id)
-        user_data = {}
-        meeting_data = {
-            "meeting_user_ids": [7],
-            delegator_setting: True,
-        }
-        if is_present:
-            user_data["user/7"] = {"is_present_in_meeting_ids": [1]}
-            meeting_data["present_user_ids"] = [7]
         self.set_models(
             {
-                **user_data,
                 "meeting_user/7": {"group_ids": [1]},
-                "meeting/1": meeting_data,
+                "meeting/1": {
+                    "meeting_user_ids": [7],
+                    delegator_setting: True,
+                },
                 "group/1": {"meeting_user_ids": [7]},
             }
         )
@@ -229,25 +223,13 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.set_group_permissions(1, [perm])
         self.set_user_groups(7, [1])
 
-    def test_delegator_setting_with_delegation_and_presence(self) -> None:
-        self.create_delegator_test_data(is_present=True, is_delegator=True)
-        response = self.request("speaker.delete", {"id": 890})
-        self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
-
-    def test_delegator_setting_with_presence_no_delegation(self) -> None:
-        self.create_delegator_test_data(is_present=True)
-        response = self.request("speaker.delete", {"id": 890})
-        self.assert_status_code(response, 200)
-        self.assert_model_deleted("speaker/890")
-
-    def test_delegator_setting_with_no_presence_or_delegation(self) -> None:
+    def test_delegator_setting_with_no_delegation(self) -> None:
         self.create_delegator_test_data()
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("speaker/890")
 
-    def test_delegator_setting_with_delegation_and_no_presence(self) -> None:
+    def test_delegator_setting_with_delegation(self) -> None:
         self.create_delegator_test_data(is_delegator=True)
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 403)
@@ -256,7 +238,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
             == "You are not allowed to perform action speaker.delete. Missing Permission: list_of_speakers.can_manage"
         )
 
-    def test_delegator_setting_with_motion_manager_delegation_and_no_presence(
+    def test_delegator_setting_with_motion_manager_delegation(
         self,
     ) -> None:
         self.create_delegator_test_data(

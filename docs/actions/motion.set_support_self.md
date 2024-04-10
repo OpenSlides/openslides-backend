@@ -12,4 +12,4 @@ This adds (support=True) or removes (support=False) the request user from `motio
 ## Permissions
 The request user generally needs `motion.can_support`.
 
-However, if the meeting has `users_forbid_delegator_as_supporter` and the request user has his vote delegated while not being present in the meeting, he needs `motion.can_manage` instead.
+However, if the meeting has `users_forbid_delegator_as_supporter` and the request user has his vote delegated in the meeting, he needs `motion.can_manage` instead.

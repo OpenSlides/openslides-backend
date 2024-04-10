@@ -27,7 +27,7 @@ Two types of operation:
 
   Or if:
   - the meeting has `users_forbid_delegator_in_list_of_speakers` set to true and
-  - the request user is absent and has his voting rights delegated and
+  - the request user has his voting rights delegated and
   - the request user does not have `list_of_speakers.can_manage`
 
   the request must be rejected as well.
