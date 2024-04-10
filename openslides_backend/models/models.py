@@ -408,6 +408,7 @@ class Meeting(Model, MeetingModelMixin):
         default="internal", constraints={"enum": ["common", "internal", "hidden"]}
     )
     agenda_show_internal_items_on_projector = fields.BooleanField(default=False)
+    agenda_show_topic_navigation_on_detail_view = fields.BooleanField(default=False)
     list_of_speakers_amount_last_on_projector = fields.IntegerField(
         default=0, constraints={"minimum": -1}
     )
