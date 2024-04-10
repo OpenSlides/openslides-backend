@@ -55,9 +55,6 @@ class MotionSetSupportSelfAction(
         for key in motions:
             if not motions[key]["meeting_id"] in meeting_ids:
                 meeting_ids.append(motions[key]["meeting_id"])
-        self.check_delegator_restriction(
-            "users_forbid_delegator_as_submitter", meeting_ids
-        )
         state_ids = []
         for key in motions:
             if not motions[key]["state_id"] in state_ids:

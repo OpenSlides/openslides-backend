@@ -67,16 +67,12 @@ class DelegationBasedRestrictionMixin(Action):
                 "meeting_user",
                 And(
                     Or(
-                        *[
-                            FilterOperator("meeting_id", "=", meeting_id)
-                            for meeting_id in meeting_ids
-                        ]
+                        FilterOperator("meeting_id", "=", meeting_id)
+                        for meeting_id in meeting_ids
                     ),
                     Or(
-                        *[
-                            FilterOperator("id", "=", meeting_user_id)
-                            for meeting_user_id in operator["meeting_user_ids"]
-                        ]
+                        FilterOperator("id", "=", meeting_user_id)
+                        for meeting_user_id in operator["meeting_user_ids"]
                     ),
                 ),
                 ["vote_delegated_to_id", "meeting_id"],
