@@ -2,9 +2,6 @@ import os
 from typing import List, Tuple, TypedDict
 
 import pytest
-from datastore.migrations.core.setup import register_services
-from datastore.shared.di import injector
-from datastore.writer.core import Writer
 from psycopg2 import connect
 
 
@@ -12,21 +9,6 @@ class WritePayload(TypedDict):
     table: str
     fields: List[str]
     rows: List[Tuple]
-
-
-@pytest.fixture(autouse=True)
-def setup() -> None:
-    register_services()
-
-
-@pytest.fixture(autouse=True)
-def clear_datastore(setup) -> None:
-    def _clear_datastore() -> None:
-        writer: Writer = injector.get(Writer)
-        writer.truncate_db()
-
-    _clear_datastore()
-    return _clear_datastore
 
 
 @pytest.fixture()
@@ -49,7 +31,7 @@ def cleanup() -> None:
 
 
 @pytest.fixture()
-def write_directly(clear_datastore, cleanup) -> None:
+def write_directly(cleanup) -> None:
     def _write(payloads: list[WritePayload]):
         env = os.environ
         connect_data = f"dbname='{env['DATABASE_NAME']}' user='{env['DATABASE_USER']}' host='{env['DATABASE_HOST']}' password='{env['PGPASSWORD']}'"
