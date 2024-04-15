@@ -133,11 +133,6 @@ def collection_and_field_from_fqfield(fqfield: str) -> tuple[str, str]:
     return parts[0], parts[2]
 
 
-def collection_id_and_field_from_fqfield(fqfield: str) -> tuple[str, int, str]:
-    parts = fqfield.split(KEYSEPARATOR)
-    return parts[0], int(parts[1]), parts[2]
-
-
 def fqid_from_fqfield(fqfield: str) -> str:
     return collectionfield_and_fqid_from_fqfield(fqfield)[1]
 
