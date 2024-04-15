@@ -1,37 +1,24 @@
 import os
-from typing import List, Tuple, TypedDict
+from typing import TypedDict
 from unittest import TestCase
 
 from psycopg2 import connect
 
+
 class WritePayload(TypedDict):
     table: str
-    fields: List[str]
-    rows: List[Tuple]
+    fields: list[str]
+    rows: list[tuple]
 
 
 class BaseRelationalDBTestCase(TestCase):
     def setUp(self) -> None:
-        self._filled_tables_cache: List[str] = []
+        self._filled_tables_cache: list[str] = []
 
     def tearDown(self) -> None:
         self._clearDB()
         return super().tearDown()
-    
-    def _clearDB(self) -> None:
-        if self._filled_tables_cache:
-            env = os.environ
-            connect_data = f"dbname='{env['DATABASE_NAME']}' user='{env['DATABASE_USER']}' host='{env['DATABASE_HOST']}' password='{env['PGPASSWORD']}'"
-            conn = connect(connect_data)
 
-            with conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(f"TRUNCATE {', '.join(self._filled_tables_cache)} CASCADE")
-                conn.commit()
-            conn.close()
-            self._filled_tables_cache: List[str] = []
-
-    
     def write_data(self, payloads: list[WritePayload]) -> None:
         env = os.environ
         connect_data = f"dbname='{env['DATABASE_NAME']}' user='{env['DATABASE_USER']}' host='{env['DATABASE_HOST']}' password='{env['PGPASSWORD']}'"
@@ -45,3 +32,18 @@ class BaseRelationalDBTestCase(TestCase):
             conn.commit()
         conn.close()
         self._filled_tables_cache = list({payload["table"] for payload in payloads})
+
+    def _clearDB(self) -> None:
+        if self._filled_tables_cache:
+            env = os.environ
+            connect_data = f"dbname='{env['DATABASE_NAME']}' user='{env['DATABASE_USER']}' host='{env['DATABASE_HOST']}' password='{env['PGPASSWORD']}'"
+            conn = connect(connect_data)
+
+            with conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        f"TRUNCATE {', '.join(self._filled_tables_cache)} CASCADE"
+                    )
+                conn.commit()
+            conn.close()
+            self._filled_tables_cache = []

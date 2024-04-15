@@ -5,7 +5,9 @@ from datastore.reader.core.requests import GetManyRequest, GetManyRequestPart
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend.connection_handler import ConnectionHandler
 from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
-from datastore.shared.typing import Collection, Id, Model
+from datastore.shared.typing import Collection, Id
+
+Model = dict[str, Any]
 
 
 class ReadAdapter:
@@ -68,7 +70,7 @@ class ReadAdapter:
         models: dict[str, Model] = {}
 
         for fields, ids in ids_by_fields.items():
-            arguments: list[Any] = [tuple(ids)]
+            arguments: list[Any] = [tuple([0, *ids])]
 
             mapped_fields_str = self._build_select_from_mapped_fields(fields)
 
@@ -76,9 +78,8 @@ class ReadAdapter:
                 select {mapped_fields_str} from {self._get_view_name_from_collection(collection)}
                 where id in %s"""
             with self.connection.get_connection_context():
-                result = self.connection.query(query, arguments)
+                result = self.connection.query(query, (arguments))
                 for row in result:
-                    # TODO: Account for an id being requested multiple times?
                     id_ = row["id"]
 
                     if id_ in ids and len(fields) > 0:
@@ -87,13 +88,22 @@ class ReadAdapter:
                             if row.get(field) is not None:
                                 model[field] = row[field]
                     else:
+                        # TODO: This is the needs_whole_model code
+                        # it won't work since the data now isn't wrapped
+                        # in a dict anymore.
+                        # Therefore the actual list fields need to be
+                        # found and the dict be constructed the same
+                        # way as above.
+                        # This functionality is at least used in export_meeting
+                        # so this is absolutely necessary
                         model = row
-                    models[id_] = model
+                    if models.get(id_):
+                        models[id_].update(model)
+                    else:
+                        models[id_] = model
         return models
 
-    def _build_select_from_mapped_fields(
-        self, fields: tuple[str, ...], needs_whole_model: bool = False
-    ) -> str:
+    def _build_select_from_mapped_fields(self, fields: tuple[str, ...]) -> str:
         if not len(fields):
             # at least one collection needs all fields, so we just select all and
             # calculate the mapped_fields later
