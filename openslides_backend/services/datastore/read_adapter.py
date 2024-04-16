@@ -30,7 +30,18 @@ class ReadAdapter:
 
     def get_many(self, request: GetManyRequest) -> dict[Collection, dict[Id, Model]]:
         """Gets multiple models."""
+        request_data = self._get_get_many_request_data(request)
 
+        final: dict[Collection, dict[Id, Model]] = defaultdict(dict)
+        for collection, ids_by_fields in request_data.items():
+            final[collection].update(
+                self._collection_based_get_many_helper(collection, ids_by_fields)
+            )
+        return final
+
+    def _get_get_many_request_data(
+        self, request: GetManyRequest
+    ) -> dict[str, dict[tuple[str, ...], list[int]]]:  #
         universal_fields: list[str] = request.mapped_fields or []
         request_data: dict[str, dict[tuple[str, ...], list[int]]] = {}
         for req in request.requests:
@@ -52,13 +63,7 @@ class ReadAdapter:
                 request_data[coll][t_fields] = ids
             else:
                 request_data[coll][t_fields].extend(ids)
-
-        final: dict[Collection, dict[Id, Model]] = defaultdict(dict)
-        for collection, ids_by_fields in request_data.items():
-            final[collection].update(
-                self._collection_based_get_many_helper(collection, ids_by_fields)
-            )
-        return final
+        return request_data
 
     def _collection_based_get_many_helper(
         self, collection: str, ids_by_fields: dict[tuple[str, ...], list[int]]
