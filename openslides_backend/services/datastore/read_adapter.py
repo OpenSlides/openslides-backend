@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, ContextManager
 
-from datastore.reader.core.requests import GetManyRequest, GetManyRequestPart
+from datastore.reader.core import GetManyRequest, GetManyRequestPart
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend.connection_handler import ConnectionHandler
 from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
@@ -33,26 +33,25 @@ class ReadAdapter:
 
         universal_fields: list[str] = request.mapped_fields or []
         request_data: dict[str, dict[tuple[str, ...], list[int]]] = {}
-        if isinstance(request.requests[0], GetManyRequestPart):
-            for request in request.requests:
-                coll = request.collection
-                fields: list[str] = (
-                    list({*request.mapped_fields, *universal_fields, "id"})
-                    if request.mapped_fields
-                    else []
-                )
-                fields.sort()
-                ids: list[int] = request.ids
-                t_fields = tuple(fields)
-                if not request_data.get(coll):
-                    request_data[coll] = {t_fields: ids}
-                elif not request_data[coll].get(t_fields):
-                    request_data[coll][t_fields] = ids
-                else:
-                    request_data[coll][t_fields].extend(ids)
-        else:
-            # TODO: Is this even used anywhere in the backend?
-            raise Exception("Fqfield-based get_many request not supported")
+        for req in request.requests:
+            if not isinstance(req, GetManyRequestPart):
+                # TODO: Is this even used anywhere in the backend?
+                raise Exception("Fqfield-based get_many request not supported")
+            coll = req.collection
+            fields: list[str] = (
+                list({*req.mapped_fields, *universal_fields, "id"})
+                if req.mapped_fields
+                else []
+            )
+            fields.sort()
+            ids: list[int] = req.ids
+            t_fields = tuple(fields)
+            if not request_data.get(coll):
+                request_data[coll] = {t_fields: ids}
+            elif not request_data[coll].get(t_fields):
+                request_data[coll][t_fields] = ids
+            else:
+                request_data[coll][t_fields].extend(ids)
 
         final: dict[Collection, dict[Id, Model]] = defaultdict(dict)
         for collection, ids_by_fields in request_data.items():
@@ -67,7 +66,7 @@ class ReadAdapter:
         if not any((len(ids) > 0) for ids in ids_by_fields.values()):
             return {}
 
-        models: dict[str, Model] = {}
+        models: dict[Id, Model] = {}
 
         for fields, ids in ids_by_fields.items():
             arguments: list[Any] = [tuple([0, *ids])]
@@ -80,23 +79,12 @@ class ReadAdapter:
             with self.connection.get_connection_context():
                 result = self.connection.query(query, (arguments))
                 for row in result:
-                    id_ = row["id"]
+                    id_: int = row["id"]
 
-                    if id_ in ids and len(fields) > 0:
-                        model = {}
-                        for field in fields:
-                            if row.get(field) is not None:
-                                model[field] = row[field]
-                    else:
-                        # TODO: This is the needs_whole_model code
-                        # it won't work since the data now isn't wrapped
-                        # in a dict anymore.
-                        # Therefore the actual list fields need to be
-                        # found and the dict be constructed the same
-                        # way as above.
-                        # This functionality is at least used in export_meeting
-                        # so this is absolutely necessary
-                        model = row
+                    model = {}
+                    for field in fields or row.keys():
+                        if row.get(field) is not None:
+                            model[field] = row[field]
                     if models.get(id_):
                         models[id_].update(model)
                     else:

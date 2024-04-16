@@ -8,17 +8,17 @@ from .base_relational_db_test import BaseRelationalDBTestCase, WritePayload
 class TestReadAdapter(BaseRelationalDBTestCase):
     basic_data: list[WritePayload] = [
         {
-            "table": "organizationT",
+            "table": "organization_t",
             "fields": ["id", "name", "default_language", "theme_id"],
             "rows": [(1, "Orga 1", "en", 1)],
         },
         {
-            "table": "themeT",
+            "table": "theme_t",
             "fields": ["id", "name", "accent_500", "primary_500", "warn_500"],
-            "rows": [(1, "Theme 1", 255, 256 * 255, 256 * 256 * 255)],
+            "rows": [(1, "Theme 1", "#0000ff", "#00ff00", "#ff0000")],
         },
         {
-            "table": "committeeT",
+            "table": "committee_t",
             "fields": ["id", "name", "description"],
             "rows": [
                 (1, "Committee 1", "a"),
@@ -58,7 +58,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
             3: {"id": 3, "name": "Committee 3"},
         }
         assert result["theme"] == {
-            1: {"id": 1, "accent_500": 255},
+            1: {"id": 1, "accent_500": "#0000ff"},
         }
 
     def test_get_many_complex(self) -> None:
@@ -92,7 +92,17 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         assert len(result) == 1
         assert result["committee"] == {
             1: {"id": 1, "description": "a"},
-            2: {"id": 2, "name": "Committee 2", "description": "b"},
-            3: {"id": 3, "name": "Committee 3", "description": "c"},
+            2: {
+                "id": 2,
+                "name": "Committee 2",
+                "description": "b",
+                "organization_id": 1,
+            },
+            3: {
+                "id": 3,
+                "name": "Committee 3",
+                "description": "c",
+                "organization_id": 1,
+            },
             4: {"id": 4},
         }
