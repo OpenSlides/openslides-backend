@@ -106,7 +106,7 @@ class ReadAdapter:
 
     def _get_view_name_from_collection(self, collection: str) -> str:
         if collection in ["group", "user"]:
-            return "_" + collection
+            return collection + "_"
         return collection
 
     # def get_all(self, request: GetAllRequest) -> dict[Id, Model]:
