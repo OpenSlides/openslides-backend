@@ -119,10 +119,12 @@ class FilterOperator(_FilterBase, SelfValidatingDataclass):
     def __hash__(self) -> int:
         return hash((self.field, self.operator, self.value))
 
+
 # We need to explicitly repeat the __hash__ method in the And and Or filter since the dataclass
 # wrapper will set them to None otherwise (see dataclass docs). This could be prevented by setting
 # frozen=True on all dataclasses, but this leads to the custom constructor in _ListFilterBase no
 # longer working.
+
 
 @dataclass(init=False)
 class And(_ListFilterBase):
