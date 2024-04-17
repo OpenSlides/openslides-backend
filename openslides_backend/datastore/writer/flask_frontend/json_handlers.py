@@ -8,7 +8,6 @@ from openslides_backend.datastore.shared.flask_frontend import InvalidRequest
 from openslides_backend.datastore.shared.util import (
     BadCodingError,
     SelfValidatingDataclass,
-    filter_definitions_schema,
 )
 from openslides_backend.datastore.writer.core import (
     BaseRequestEvent,
@@ -20,6 +19,7 @@ from openslides_backend.datastore.writer.core import (
     WriteRequest,
 )
 from openslides_backend.datastore.writer.core.write_request import LockedFieldsJSON
+from openslides_backend.shared.filters import filter_definitions_schema
 from openslides_backend.shared.patterns import Collection
 from openslides_backend.shared.typing import JSON
 

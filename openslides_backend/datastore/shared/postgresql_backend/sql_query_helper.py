@@ -6,16 +6,12 @@ from openslides_backend.datastore.shared.services.read_database import (
     MappedFieldsFilterQueryFieldsParameters,
 )
 from openslides_backend.datastore.shared.util import (
-    And,
     BadCodingError,
     DeletedModelsBehaviour,
-    Filter,
-    FilterOperator,
     InvalidFormat,
     MappedFields,
-    Not,
-    Or,
 )
+from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
 from openslides_backend.shared.patterns import KEYSEPARATOR
 
 # extend if neccessary. first is always the default (should be int)

@@ -10,13 +10,13 @@ from openslides_backend.datastore.shared.postgresql_backend import ListUpdatesDi
 from openslides_backend.datastore.shared.util import (
     KEY_TYPE,
     BadCodingError,
-    Filter,
     InvalidFormat,
     SelfValidatingDataclass,
     assert_is_field,
     assert_is_fqid,
     get_key_type,
 )
+from openslides_backend.shared.filters import Filter
 from openslides_backend.shared.patterns import is_reserved_field
 from openslides_backend.shared.typing import JSON
 

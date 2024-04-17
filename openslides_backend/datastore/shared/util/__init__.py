@@ -13,7 +13,6 @@ from .exceptions import (
     ModelLocked,
     ModelNotDeleted,
 )
-from .filter import And, Filter, FilterOperator, Not, Or, filter_definitions_schema
 from .key_types import (
     KEY_TYPE,
     InvalidKeyFormat,

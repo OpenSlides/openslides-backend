@@ -1,4 +1,3 @@
-
 from openslides_backend.shared.patterns import (
     COLLECTION_PATTERN,
     COLLECTIONFIELD_PATTERN,

@@ -7,6 +7,7 @@ from unittest import TestCase
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
 
+from openslides_backend.datastore.reader.services import register_services
 from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
@@ -55,6 +56,7 @@ class BaseSystemTestCase(TestCase):
     created_fqids: set[str]
 
     def setUp(self) -> None:
+        register_services()
         self.app = self.get_application()
         self.services = self.app.services
         self.auth = self.services.authentication()

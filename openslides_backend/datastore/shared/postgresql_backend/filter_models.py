@@ -2,6 +2,7 @@ import re
 from copy import deepcopy
 from typing import Any
 
+from openslides_backend.shared.filters import Filter
 from openslides_backend.shared.patterns import (
     Collection,
     FullQualifiedId,
@@ -9,7 +10,6 @@ from openslides_backend.shared.patterns import (
 )
 from openslides_backend.shared.typing import Model
 
-from ..util import Filter
 from .sql_query_helper import SqlQueryHelper
 
 MODEL_FIELD_SQL = "data->>%s"

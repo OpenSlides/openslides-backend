@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from textwrap import dedent
+from types import UnionType
 from typing import Any, Optional, TypeAlias, Union, get_args, get_origin, get_type_hints
 
 from openslides_backend.shared.patterns import (
@@ -51,7 +52,7 @@ class SelfValidatingDataclass:
     def validate_nested_types(self, type_hint: type, value: Any) -> None:
         origin = get_origin(type_hint)
         type_hint = self.normalize_type_hint(type_hint)
-        if origin == Union:
+        if origin in (Union, UnionType):
             if type_hint in custom_types:
                 self.validate(value, type_hint)
             else:

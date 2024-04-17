@@ -1,15 +1,74 @@
+import typing
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Iterable, Sequence
-from typing import Any, Union
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
+from typing import Any, Literal, TypeAlias, Union
 
-from openslides_backend.datastore.shared.util import And as BaseAnd
-from openslides_backend.datastore.shared.util import (
-    FilterOperator as BaseFilterOperator,
+from openslides_backend.datastore.shared.util.self_validating_dataclass import (
+    SelfValidatingDataclass,
 )
-from openslides_backend.datastore.shared.util import Not as BaseNot
-from openslides_backend.datastore.shared.util import Or as BaseOr
+from openslides_backend.shared.patterns import Field
+
+filter_definitions_schema = {
+    "filter": {
+        "anyOf": [
+            {"$ref": "#/$defs/filter_operator"},
+            {"$ref": "#/$defs/not_filter"},
+            {"$ref": "#/$defs/and_filter"},
+            {"$ref": "#/$defs/or_filter"},
+        ],
+    },
+    "filter_operator": {
+        "type": "object",
+        "properties": {
+            "field": {"type": "string"},
+            "value": {},
+            "operator": {
+                "type": "string",
+                "enum": ["=", "!=", "<", ">", ">=", "<=", "~=", "%="],
+            },
+        },
+        "required": ["field", "value", "operator"],
+    },
+    "not_filter": {
+        "type": "object",
+        "properties": {"not_filter": {"$ref": "#/$defs/filter"}},
+        "required": ["not_filter"],
+    },
+    "and_filter": {
+        "type": "object",
+        "properties": {
+            "and_filter": {
+                "type": "array",
+                "items": {"$ref": "#/$defs/filter"},
+            },
+        },
+        "required": ["and_filter"],
+    },
+    "or_filter": {
+        "type": "object",
+        "properties": {
+            "or_filter": {
+                "type": "array",
+                "items": {"$ref": "#/$defs/filter"},
+            },
+        },
+        "required": ["or_filter"],
+    },
+}
+
 
 FilterData = dict[str, Any]
+
+
+# Whoof, that's an ugly workaround... A bit of background:
+# - The `dacite` package cannot handle `collections.abc.Sequence` (the replacement for the
+#   deprecated `typing.Sequence`) correctly in python 3.10, therefore we need to use
+#   `typing.Sequence` here. (With python 3.11, this bug seems to be fixed.)
+# - On the other hand, `pyupgrade` automatically replaces `typing.Sequence` with
+#   `collections.abc.Sequence` and provides no way to exclude single lines. Therefore, we have to
+#   use this hack to be able to use `typing.Sequence` here.
+Sequence: TypeAlias = getattr(typing, "Sequence")  # type: ignore
 
 
 class _FilterBase(ABC):
@@ -20,10 +79,15 @@ class _FilterBase(ABC):
 
 class _ListFilterBase(_FilterBase, ABC):
     def __init__(
-        self, arg: Union["Filter", Iterable["Filter"]], *more_filters: "Filter"
+        self,
+        arg: Union["Filter", Iterable["Filter"]] = [],
+        *more_filters: "Filter",
+        **kwargs: Iterable["Filter"],
     ) -> None:
         self._set_filters(
-            (list(arg) if isinstance(arg, Iterable) else [arg]) + list(more_filters)
+            (list(arg) if isinstance(arg, Iterable) else [arg])
+            + list(more_filters)
+            + list(kwargs.get(self._get_field_name(), []))
         )
 
     def to_dict(self) -> FilterData:
@@ -43,23 +107,41 @@ class _ListFilterBase(_FilterBase, ABC):
         return hash((self._get_field_name(),) + tuple(self._get_filters()))
 
 
-class FilterOperator(_FilterBase, BaseFilterOperator):
+@dataclass
+class FilterOperator(_FilterBase, SelfValidatingDataclass):
+    field: Field
+    operator: Literal["=", "!=", "<", ">", ">=", "<=", "~=", "%="]
+    value: Any
+
     def to_dict(self) -> FilterData:
         return {"field": self.field, "operator": self.operator, "value": self.value}
 
     def __hash__(self) -> int:
         return hash((self.field, self.operator, self.value))
 
+# We need to explicitly repeat the __hash__ method in the And and Or filter since the dataclass
+# wrapper will set them to None otherwise (see dataclass docs). This could be prevented by setting
+# frozen=True on all dataclasses, but this leads to the custom constructor in _ListFilterBase no
+# longer working.
 
-class And(_ListFilterBase, BaseAnd):
+@dataclass(init=False)
+class And(_ListFilterBase):
     and_filter: Sequence["Filter"]
 
+    def __hash__(self) -> int:
+        return super().__hash__()
 
-class Or(_ListFilterBase, BaseOr):
+
+@dataclass(init=False)
+class Or(_ListFilterBase):
     or_filter: Sequence["Filter"]
 
+    def __hash__(self) -> int:
+        return super().__hash__()
 
-class Not(_FilterBase, BaseNot):
+
+@dataclass
+class Not(_FilterBase):
     not_filter: "Filter"
 
     def to_dict(self) -> FilterData:

@@ -25,10 +25,10 @@ from openslides_backend.datastore.shared.services.read_database import (
 )
 from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
-    Filter,
     MappedFields,
     get_exception_for_deleted_models_behaviour,
 )
+from openslides_backend.shared.filters import Filter
 from openslides_backend.shared.otel import make_span
 from openslides_backend.shared.patterns import (
     Collection,

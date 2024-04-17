@@ -16,12 +16,12 @@ from openslides_backend.datastore.shared.services.read_database import (
 from openslides_backend.datastore.shared.util import (
     BadCodingError,
     DeletedModelsBehaviour,
-    Filter,
     InvalidDatastoreState,
     ModelDoesNotExist,
     get_exception_for_deleted_models_behaviour,
 )
 from openslides_backend.datastore.shared.util.mapped_fields import MappedFields
+from openslides_backend.shared.filters import Filter
 from openslides_backend.shared.patterns import (
     META_DELETED,
     META_POSITION,

@@ -22,10 +22,8 @@ from openslides_backend.datastore.shared.flask_frontend import (
 from openslides_backend.datastore.shared.postgresql_backend.sql_query_helper import (
     VALID_AGGREGATE_CAST_TARGETS,
 )
-from openslides_backend.datastore.shared.util import (
-    DeletedModelsBehaviour,
-    filter_definitions_schema,
-)
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.shared.filters import filter_definitions_schema
 
 URL_PREFIX = build_url_prefix("reader")
 

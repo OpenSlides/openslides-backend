@@ -16,7 +16,7 @@ from openslides_backend.datastore.shared.di import service_as_factory, service_i
 from openslides_backend.datastore.shared.postgresql_backend import filter_models
 from openslides_backend.datastore.shared.services.read_database import ReadDatabase
 from openslides_backend.datastore.shared.util import ModelDoesNotExist
-from openslides_backend.datastore.shared.util.filter import Filter
+from openslides_backend.shared.filters import Filter
 from openslides_backend.shared.patterns import (
     Collection,
     Field,

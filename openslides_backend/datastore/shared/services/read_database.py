@@ -5,9 +5,9 @@ from typing import Any, ContextManager, Protocol, TypedDict
 from openslides_backend.datastore.shared.di import service_interface
 from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
-    Filter,
     MappedFields,
 )
+from openslides_backend.shared.filters import Filter
 from openslides_backend.shared.patterns import (
     Collection,
     Field,

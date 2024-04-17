@@ -6,10 +6,10 @@ from openslides_backend.datastore.shared.postgresql_backend.sql_query_helper imp
 )
 from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
-    Filter,
     MappedFields,
     SelfValidatingDataclass,
 )
+from openslides_backend.shared.filters import Filter
 from openslides_backend.shared.patterns import (
     Collection,
     Field,
