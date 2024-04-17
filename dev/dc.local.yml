@@ -11,26 +11,6 @@ services:
         environment:
             - PYTHONPATH=/app:/datastore-service:/authlib
             - MYPYPATH=/app:/datastore-service:/authlib
-    datastore-writer:
-        build:
-            context: ../../openslides-datastore-service/
-            dockerfile: Dockerfile.dev
-            args:
-                MODULE: "writer"
-                PORT: "9011"
-        image: openslides-datastore-writer-dev
-        ports:
-            - "9011:9011"
-            - "5679:5678"
-        environment:
-            - OPENSLIDES_DEVELOPMENT=1
-            - DATABASE_NAME=openslides
-            - DATABASE_USER=openslides
-            - DATABASE_HOST=postgres
-            - MESSAGE_BUS_HOST=redis
-        volumes:
-            - ../../openslides-datastore-service/datastore:/app/datastore
-            - ../../openslides-datastore-service/cli:/app/cli
     vote:
         build:
             context: ../../openslides-vote-service

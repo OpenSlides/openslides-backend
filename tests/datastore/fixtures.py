@@ -46,6 +46,7 @@ def setup_db_connection():
         database=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.NAME),
         user=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.USER),
         password=DEV_SECRET,
+        application_name="openslides_backend_tests",
     )
     _db_connection.autocommit = False
     yield _db_connection

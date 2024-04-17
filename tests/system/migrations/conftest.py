@@ -13,6 +13,9 @@ from openslides_backend.datastore.reader.core import (
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
 from openslides_backend.datastore.shared.services import ReadDatabase
+from openslides_backend.datastore.shared.services.shutdown_service import (
+    ShutdownService,
+)
 from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
     ModelDoesNotExist,
@@ -57,6 +60,9 @@ class MigrationChecker(Checker):
 @pytest.fixture(autouse=True)
 def setup() -> None:
     register_services()
+    yield
+    shutdown_service = injector.get(ShutdownService)
+    shutdown_service.shutdown()
 
 
 @pytest.fixture(autouse=True)
