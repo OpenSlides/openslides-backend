@@ -5,10 +5,12 @@ from unittest import TestCase
 from psycopg2 import connect
 
 
-class WritePayload(TypedDict):
-    table: str
+class WriteCollectionPayload(TypedDict):
     fields: list[str]
     rows: list[tuple]
+
+
+WritePayload = dict[str, WriteCollectionPayload]
 
 
 class BaseRelationalDBTestCase(TestCase):
@@ -19,19 +21,20 @@ class BaseRelationalDBTestCase(TestCase):
         self._clearDB()
         return super().tearDown()
 
-    def write_data(self, payloads: list[WritePayload]) -> None:
+    def write_data(self, payloads: WritePayload) -> None:
         env = os.environ
         connect_data = f"dbname='{env['DATABASE_NAME']}' user='{env['DATABASE_USER']}' host='{env['DATABASE_HOST']}' password='{env['PGPASSWORD']}'"
         conn = connect(connect_data)
 
         with conn:
             with conn.cursor() as cursor:
-                for payload in payloads:
-                    query = f"INSERT INTO {payload['table']} ({', '.join(payload['fields'])}) VALUES {', '.join(['%s' for i in range(len(payload['rows']))])}"
+                for collection, payload in payloads.items():
+                    payload = payloads[collection]
+                    query = f"INSERT INTO {collection}_t ({', '.join(payload['fields'])}) VALUES {', '.join(['%s' for i in range(len(payload['rows']))])}"
                     cursor.execute(query, payload["rows"])
             conn.commit()
         conn.close()
-        self._filled_tables_cache = list({payload["table"] for payload in payloads})
+        self._filled_tables_cache = list({collection for collection in payloads})
 
     def _clearDB(self) -> None:
         if self._filled_tables_cache:
@@ -42,7 +45,7 @@ class BaseRelationalDBTestCase(TestCase):
             with conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
-                        f"TRUNCATE {', '.join(self._filled_tables_cache)} CASCADE"
+                        f"TRUNCATE {'_t, '.join(self._filled_tables_cache)}_t CASCADE"
                     )
                 conn.commit()
             conn.close()

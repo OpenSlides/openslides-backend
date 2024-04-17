@@ -1,11 +1,18 @@
 from collections import defaultdict
 from typing import Any, ContextManager
 
-from datastore.reader.core import GetManyRequest, GetManyRequestPart
+from datastore.reader.core import (
+    GetAllRequest,
+    GetManyRequest,
+    GetManyRequestPart,
+    GetRequest,
+)
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend.connection_handler import ConnectionHandler
 from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from datastore.shared.typing import Collection, Id
+
+from ...shared.patterns import collection_and_id_from_fqid
 
 Model = dict[str, Any]
 
@@ -19,14 +26,34 @@ class ReadAdapter:
     def __init__(self) -> None:
         self.connection = injector.get(ConnectionHandler)
         self.query_helper = injector.get(SqlQueryHelper)
+        self._collections_with_views = self._get_view_names()
 
     def get_database_context(self) -> ContextManager[None]:
         """Returns the context manager of the underlying database."""
         return self.connection.get_connection_context()
 
-    # def get(self, request: GetRequest) -> Model:
-    #     """Gets the specified model."""
-    #     return None
+    def get(self, request: GetRequest) -> Model | None:
+        """Gets the specified model."""
+        collection, id_ = collection_and_id_from_fqid(request.fqid)
+        arguments: list[Any] = [id_]
+
+        mapped_fields_str = self._build_select_from_mapped_fields(
+            tuple(request.mapped_fields)
+        )
+
+        query = f"""
+            select {mapped_fields_str} from {self._get_view_name_from_collection(collection)}
+            where id = %s"""
+        with self.connection.get_connection_context():
+            result = self.connection.query(query, (arguments))
+            if len(result) == 0:
+                return None
+            row = result[0]
+            model = {}
+            for field in request.mapped_fields or row.keys():
+                if row.get(field) is not None:
+                    model[field] = row[field]
+            return model
 
     def get_many(self, request: GetManyRequest) -> dict[Collection, dict[Id, Model]]:
         """Gets multiple models."""
@@ -38,6 +65,79 @@ class ReadAdapter:
                 self._collection_based_get_many_helper(collection, ids_by_fields)
             )
         return final
+
+    def get_all(self, request: GetAllRequest) -> dict[Id, Model]:
+        """
+        Returns all (non-deleted) models of one collection. May return a huge amount
+        of data, so use with caution.
+        """
+
+        mapped_fields_str = self._build_select_from_mapped_fields(
+            tuple(request.mapped_fields)
+        )
+
+        models: dict[Id, Model] = {}
+
+        query = f"""
+            select {mapped_fields_str} from {self._get_view_name_from_collection(request.collection)}"""
+        with self.connection.get_connection_context():
+            result = self.connection.query(query, ())
+            for row in result:
+                id_: int = row["id"]
+
+                model = {}
+                for field in request.mapped_fields or row.keys():
+                    if row.get(field) is not None:
+                        model[field] = row[field]
+                models[id_] = model
+        return models
+
+    def get_everything(self) -> dict[Collection, dict[Id, Model]]:
+        """
+        Returns all models In the form of the example data: Collections mapped to
+        lists of models.
+        """
+        final: dict[Collection, dict[Id, Model]] = {}
+        collection_list: list[str] = []  # TODO: Fill somehow
+        for collection in collection_list:
+            result = self.get_all(GetAllRequest(collection=collection))
+            if result:
+                final[collection] = result
+        return final
+
+    # def filter(self, request: FilterRequest) -> FilterResult:
+    #     """Returns all models that satisfy the filter condition."""
+    #     return None
+
+    # def exists(self, request: AggregateRequest) -> ExistsResult:
+    #     """Determines whether at least one model satisfies the filter conditions."""
+    #     return None
+
+    # def count(self, request: AggregateRequest) -> CountResult:
+    #     """Returns the amount of models that satisfy the filter conditions."""
+    #     return None
+
+    # def min(self, request: MinMaxRequest) -> MinResult:
+    #     """
+    #     Returns the mininum value of the given field for all models that satisfy the
+    #     given filter.
+    #     """
+    #     return None
+
+    # def max(self, request: MinMaxRequest) -> MaxResult:
+    #     """
+    #     Returns the maximum value of the given field for all models that satisfy the
+    #     given filter.
+    #     """
+    #     return None
+
+    # def history_information(
+    #     self, request: HistoryInformationRequest
+    # ) -> dict[Fqid, list[HistoryInformation]]:
+    #     """
+    #     Returns history information for multiple models.
+    #     """
+    #     return None
 
     def _get_get_many_request_data(
         self, request: GetManyRequest
@@ -105,56 +205,19 @@ class ReadAdapter:
             return ", ".join(fields)
 
     def _get_view_name_from_collection(self, collection: str) -> str:
-        if collection in ["group", "user"]:
-            return collection + "_"
-        return collection
+        if view_name := self._collections_with_views.get(collection):
+            return view_name
+        return collection + "_t"
 
-    # def get_all(self, request: GetAllRequest) -> dict[Id, Model]:
-    #     """
-    #     Returns all (non-deleted) models of one collection. May return a huge amount
-    #     of data, so use with caution.
-    #     """
-    #     return None
-
-    # def get_everything(
-    #     self, request: GetEverythingRequest
-    # ) -> dict[Collection, dict[Id, Model]]:
-    #     """
-    #     Returns all models In the form of the example data: Collections mapped to
-    #     lists of models.
-    #     """
-    #     return None
-
-    # def filter(self, request: FilterRequest) -> FilterResult:
-    #     """Returns all models that satisfy the filter condition."""
-    #     return None
-
-    # def exists(self, request: AggregateRequest) -> ExistsResult:
-    #     """Determines whether at least one model satisfies the filter conditions."""
-    #     return None
-
-    # def count(self, request: AggregateRequest) -> CountResult:
-    #     """Returns the amount of models that satisfy the filter conditions."""
-    #     return None
-
-    # def min(self, request: MinMaxRequest) -> MinResult:
-    #     """
-    #     Returns the mininum value of the given field for all models that satisfy the
-    #     given filter.
-    #     """
-    #     return None
-
-    # def max(self, request: MinMaxRequest) -> MaxResult:
-    #     """
-    #     Returns the maximum value of the given field for all models that satisfy the
-    #     given filter.
-    #     """
-    #     return None
-
-    # def history_information(
-    #     self, request: HistoryInformationRequest
-    # ) -> dict[Fqid, list[HistoryInformation]]:
-    #     """
-    #     Returns history information for multiple models.
-    #     """
-    #     return None
+    def _get_view_names(self) -> dict[str, str]:
+        """Gets names of all views."""
+        query = """
+            select table_name from information_schema.tables
+            WHERE table_schema='public' and table_type='VIEW'"""
+        with self.connection.get_connection_context():
+            result = self.connection.query(query, ())
+            return {
+                collection.strip("_"): collection
+                for date in result
+                for collection in date
+            }
