@@ -150,9 +150,7 @@ class User(Model):
     poll_candidate_ids = fields.RelationListField(
         to={"poll_candidate": "user_id"}, is_view_field=True
     )
-    meeting_ids = fields.RelationListField(
-        to={"meeting": "user_ids"},
-        is_view_field=True,
+    meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
             "description": "Calculated. All ids from meetings calculated via meeting_user and group_ids as integers."
@@ -924,9 +922,7 @@ class Meeting(Model, MeetingModelMixin):
     present_user_ids = fields.RelationListField(
         to={"user": "is_present_in_meeting_ids"}, is_view_field=True
     )
-    user_ids = fields.RelationListField(
-        to={"user": "meeting_ids"},
-        is_view_field=True,
+    user_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
             "description": "Calculated. All user ids from all users assigned to groups of this meeting."
