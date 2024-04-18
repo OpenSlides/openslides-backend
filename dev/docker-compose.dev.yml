@@ -120,6 +120,7 @@ services:
             - postgres
     postgres:
         image: postgres:15
+        command: ["postgres", "-c", "log_statement=all"]
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides

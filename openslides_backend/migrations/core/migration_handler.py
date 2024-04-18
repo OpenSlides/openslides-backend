@@ -367,9 +367,9 @@ class MigrationHandlerImplementation(MigrationHandler):
             insert into id_sequences (collection, id)
             select split_part(fqid, %s, 1) as collection,
             max((split_part(fqid, %s, 2))::int) + 1 as id
-            from models group by split_part(fqid, %s, 1)
+            from models group by collection
             """,
-            [KEYSEPARATOR] * 3,
+            [KEYSEPARATOR] * 2,
         )
 
     def get_stats(self) -> dict[str, Any]:  # pragma: no cover

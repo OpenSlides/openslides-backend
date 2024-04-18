@@ -6,6 +6,7 @@ from openslides_backend.datastore.reader.flask_frontend import (
 from openslides_backend.datastore.reader.flask_frontend.routes import Route
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
+from openslides_backend.datastore.shared.services import ShutdownService
 from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.datastore.writer.flask_frontend import (
     FlaskFrontend as WriterFlaskFrontend,
@@ -31,6 +32,9 @@ from tests.datastore.util import assert_response_code, assert_success_response
 @pytest.fixture(autouse=True)
 def setup(reset_di):  # noqa
     migration_setup()
+    yield
+    shutdown_service = injector.get(ShutdownService)
+    shutdown_service.shutdown()
 
 
 @pytest.fixture()

@@ -1,13 +1,13 @@
 import pytest
 
 from openslides_backend.datastore.shared.di import injector
-from openslides_backend.datastore.shared.postgresql_backend import ALL_TABLES
 from openslides_backend.datastore.shared.services import EnvironmentService
 from openslides_backend.datastore.shared.services.environment_service import (
     DATASTORE_DEV_MODE_ENVIRONMENT_VAR,
 )
 from openslides_backend.datastore.writer.flask_frontend.routes import TRUNCATE_DB_URL
 from tests.datastore.util import assert_response_code
+from tests.datastore.writer.system.util import assert_no_db_entry
 
 
 def test_truncate_db(db_connection, db_cur, json_client):
@@ -27,9 +27,7 @@ def test_truncate_db(db_connection, db_cur, json_client):
     assert_response_code(response, 204)
 
     with db_connection.cursor() as cursor:
-        for table in ALL_TABLES:
-            cursor.execute(f"select * from {table}")
-            assert cursor.fetchone() is None
+        assert_no_db_entry(cursor)
 
 
 GLOB = {}
