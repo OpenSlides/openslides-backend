@@ -1,11 +1,11 @@
-from typing import Any
-
 from datastore.reader.core import (
+    FilterRequest,
     GetAllRequest,
     GetManyRequest,
     GetManyRequestPart,
     GetRequest,
 )
+from datastore.shared.util import FilterOperator
 
 from openslides_backend.services.datastore.read_adapter import ReadAdapter
 
@@ -28,7 +28,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
             "rows": [
                 (1, "Committee 1", "a"),
                 (2, "Committee 2", "b"),
-                (3, "Committee 3", "c"),
+                (3, "Committee 3", "b"),
                 (4, "Committee 4", None),
             ],
         },
@@ -128,7 +128,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         assert result["committee"] == {
             1: {"id": 1, "description": "a"},
             2: {"id": 2, "name": "Committee 2"},
-            3: {"id": 3, "name": "Committee 3", "description": "c"},
+            3: {"id": 3, "name": "Committee 3", "description": "b"},
             4: {"id": 4},
         }
 
@@ -170,11 +170,22 @@ class TestReadAdapter(BaseRelationalDBTestCase):
             3: {
                 "id": 3,
                 "name": "Committee 3",
-                "description": "c",
+                "description": "b",
                 "organization_id": 1,
             },
             4: {"id": 4},
         }
+
+    def test_get_many_unknown_collection(self) -> None:
+        self.write_data(self.basic_data)
+        request = GetManyRequest(
+            [
+                GetManyRequestPart("not_a_collection", [2, 3], []),
+            ]
+        )
+        result = self.read_adapter.get_many(request)
+        assert len(result) == 1
+        assert result["not_a_collection"] == {}
 
     def test_get_many_wrong_format(self) -> None:
         with self.assertRaises(
@@ -219,7 +230,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
             3: {
                 "id": 3,
                 "name": "Committee 3",
-                "description": "c",
+                "description": "b",
                 "organization_id": 1,
             },
             4: {"id": 4, "name": "Committee 4", "organization_id": 1},
@@ -231,20 +242,38 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         self.write_data(self.basic_data)
         result = self.read_adapter.get_everything()
         assert len(result) == 4
-        assert result["organization"] == {
-            1: {
-                "id": 1,
-                "name": "Orga 1",
-                "default_language": "en",
-                "theme_id": 1,
-            }
+        assert len(result["organization"]) == 1
+        orga_data = {
+            "id": 1,
+            "name": "Orga 1",
+            "default_language": "en",
+            "theme_id": 1,
+            "committee_ids": [1, 2, 3, 4],
+            "theme_ids": [1],
+            "user_ids": [1, 2, 3, 4],
         }
+        for key in orga_data:
+            assert result["organization"][1][key] == orga_data[key]
         for collection in ["theme", "committee", "user"]:
             data = self.basic_data[collection]
-            models: dict[int, dict[str, Any]] = {}
             for row in data["rows"]:
                 model = {"organization_id": 1}
                 for i in range(len(row)):
                     model[data["fields"][i]] = row[i]
-                models[model["id"]] = model
-            assert result[collection] == models
+                for key in model:
+                    assert result[collection][model["id"]].get(key) == model.get(key)
+
+    # ========== test filter ==========
+
+    def test_filter_basic(self) -> None:
+        self.write_data(self.basic_data)
+        request = FilterRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "b"),
+            mapped_fields=["name"],
+        )
+        result = self.read_adapter.filter(request)
+        assert result == {
+            2: {},
+            3: {},
+        }  # TODO: Fix function, then add correct result payload

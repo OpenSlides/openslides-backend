@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import Any, ContextManager
 
 from datastore.reader.core import (
+    FilterRequest,
     GetAllRequest,
     GetManyRequest,
     GetManyRequestPart,
@@ -11,6 +12,15 @@ from datastore.shared.di import injector
 from datastore.shared.postgresql_backend.connection_handler import ConnectionHandler
 from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
 from datastore.shared.typing import Collection, Id
+from datastore.shared.util import (
+    And,
+    BadCodingError,
+    Filter,
+    FilterOperator,
+    InvalidFormat,
+    Not,
+    Or,
+)
 
 from ...shared.patterns import collection_and_id_from_fqid
 
@@ -26,7 +36,7 @@ class ReadAdapter:
     def __init__(self) -> None:
         self.connection = injector.get(ConnectionHandler)
         self.query_helper = injector.get(SqlQueryHelper)
-        self._collections_with_views = self._get_view_names()
+        self._load_view_names()
 
     def get_database_context(self) -> ContextManager[None]:
         """Returns the context manager of the underlying database."""
@@ -41,19 +51,21 @@ class ReadAdapter:
             tuple(request.mapped_fields)
         )
 
-        query = f"""
-            select {mapped_fields_str} from {self._get_view_name_from_collection(collection)}
-            where id = %s"""
-        with self.connection.get_connection_context():
-            result = self.connection.query(query, (arguments))
-            if len(result) == 0:
-                return None
-            row = result[0]
-            model = {}
-            for field in request.mapped_fields or row.keys():
-                if row.get(field) is not None:
-                    model[field] = row[field]
-            return model
+        if view_name := self._get_view_name_from_collection(collection):
+            query = f"""
+                select {mapped_fields_str} from {view_name}
+                where id = %s"""
+            with self.connection.get_connection_context():
+                result = self.connection.query(query, (arguments))
+                if len(result) == 0:
+                    return None
+                row = result[0]
+                model = {}
+                for field in request.mapped_fields or row.keys():
+                    if row.get(field) is not None:
+                        model[field] = row[field]
+                return model
+        return None
 
     def get_many(self, request: GetManyRequest) -> dict[Collection, dict[Id, Model]]:
         """Gets multiple models."""
@@ -78,18 +90,19 @@ class ReadAdapter:
 
         models: dict[Id, Model] = {}
 
-        query = f"""
-            select {mapped_fields_str} from {self._get_view_name_from_collection(request.collection)}"""
-        with self.connection.get_connection_context():
-            result = self.connection.query(query, ())
-            for row in result:
-                id_: int = row["id"]
+        if view_name := self._get_view_name_from_collection(request.collection):
+            query = f"""
+                select {mapped_fields_str} from {view_name}"""
+            with self.connection.get_connection_context():
+                result = self.connection.query(query, ())
+                for row in result:
+                    id_: int = row["id"]
 
-                model = {}
-                for field in request.mapped_fields or row.keys():
-                    if row.get(field) is not None:
-                        model[field] = row[field]
-                models[id_] = model
+                    model = {}
+                    for field in request.mapped_fields or row.keys():
+                        if row.get(field) is not None:
+                            model[field] = row[field]
+                    models[id_] = model
         return models
 
     def get_everything(self) -> dict[Collection, dict[Id, Model]]:
@@ -98,16 +111,73 @@ class ReadAdapter:
         lists of models.
         """
         final: dict[Collection, dict[Id, Model]] = {}
-        collection_list: list[str] = []  # TODO: Fill somehow
-        for collection in collection_list:
+        for collection in self._collections_with_tables.keys():
             result = self.get_all(GetAllRequest(collection=collection))
             if result:
                 final[collection] = result
         return final
 
-    # def filter(self, request: FilterRequest) -> FilterResult:
-    #     """Returns all models that satisfy the filter condition."""
-    #     return None
+    def filter(self, request: FilterRequest) -> dict[Id, Model]:
+        """Returns all models that satisfy the filter condition."""
+        arguments: list[str] = []
+        mapped_fields_str = self._build_select_from_mapped_fields(
+            tuple(request.mapped_fields)
+        )
+        filter_str = self._filter_helper(request.filter, arguments)
+        if view_name := self._get_view_name_from_collection(request.collection):
+            query = f"""
+                select {mapped_fields_str} from {view_name}
+                where {filter_str}"""
+            with self.connection.get_connection_context():
+                # TODO: Should include id, doesn't
+                result = self.connection.query(query, arguments)
+                # TODO: Calculate result
+
+        return None
+
+    def _filter_helper(
+        self, filter_segment: Filter, arguments: list[str]
+    ) -> str | None:
+        if isinstance(filter_segment, FilterOperator):
+            if filter_segment.value is None:
+                if filter_segment.operator not in ("=", "!="):
+                    raise InvalidFormat("You can only compare to None with = or !=")
+                operator = (
+                    filter_segment.operator[::-1]
+                    .replace("=", "IS")
+                    .replace("!", " NOT")
+                )
+                condition = f"{filter_segment.field} {operator} NULL"
+            else:
+                if filter_segment.operator == "~=":
+                    condition = f"LOWER({filter_segment.field}) = LOWER(%s::text)"
+                elif filter_segment.operator == "%=":
+                    condition = f"{filter_segment.field} ILIKE %s::text"
+                elif filter_segment.operator in ("=", "!="):
+                    condition = (
+                        f"{filter_segment.field} {filter_segment.operator} %s::text"
+                    )
+                else:
+                    condition = (
+                        f"{filter_segment.field}::numeric {filter_segment.operator} %s"
+                    )
+                arguments += [filter_segment.value]
+            return condition
+        elif isinstance(filter_segment, Not):
+            filter_str = self._filter_helper(filter_segment.not_filter, arguments)
+            return f"NOT ({filter_str})"
+        elif isinstance(filter_segment, And):
+            return " AND ".join(
+                f"({self._filter_helper(part, arguments)})"
+                for part in filter_segment.and_filter
+            )
+        elif isinstance(filter_segment, Or):
+            return " OR ".join(
+                f"({self._filter_helper(part, arguments)})"
+                for part in filter_segment.or_filter
+            )
+        else:
+            raise BadCodingError("Invalid filter type")
 
     # def exists(self, request: AggregateRequest) -> ExistsResult:
     #     """Determines whether at least one model satisfies the filter conditions."""
@@ -178,22 +248,23 @@ class ReadAdapter:
 
             mapped_fields_str = self._build_select_from_mapped_fields(fields)
 
-            query = f"""
-                select {mapped_fields_str} from {self._get_view_name_from_collection(collection)}
-                where id in %s"""
-            with self.connection.get_connection_context():
-                result = self.connection.query(query, (arguments))
-                for row in result:
-                    id_: int = row["id"]
+            if view_name := self._get_view_name_from_collection(collection):
+                query = f"""
+                    select {mapped_fields_str} from {view_name}
+                    where id in %s"""
+                with self.connection.get_connection_context():
+                    result = self.connection.query(query, (arguments))
+                    for row in result:
+                        id_: int = row["id"]
 
-                    model = {}
-                    for field in fields or row.keys():
-                        if row.get(field) is not None:
-                            model[field] = row[field]
-                    if models.get(id_):
-                        models[id_].update(model)
-                    else:
-                        models[id_] = model
+                        model = {}
+                        for field in fields or row.keys():
+                            if row.get(field) is not None:
+                                model[field] = row[field]
+                        if models.get(id_):
+                            models[id_].update(model)
+                        else:
+                            models[id_] = model
         return models
 
     def _build_select_from_mapped_fields(self, fields: tuple[str, ...]) -> str:
@@ -204,20 +275,29 @@ class ReadAdapter:
         else:
             return ", ".join(fields)
 
-    def _get_view_name_from_collection(self, collection: str) -> str:
+    def _get_view_name_from_collection(self, collection: str) -> str | None:
         if view_name := self._collections_with_views.get(collection):
             return view_name
-        return collection + "_t"
+        elif table_name := self._collections_with_tables.get(collection):
+            return table_name
+        return None
 
-    def _get_view_names(self) -> dict[str, str]:
+    def _load_view_names(self) -> None:
         """Gets names of all views."""
         query = """
-            select table_name from information_schema.tables
-            WHERE table_schema='public' and table_type='VIEW'"""
+            select table_name, table_type from information_schema.tables
+            WHERE table_schema='public' and table_catalog='openslides'"""
         with self.connection.get_connection_context():
             result = self.connection.query(query, ())
-            return {
-                collection.strip("_"): collection
+            views: list[str] = [
+                date["table_name"] for date in result if date["table_type"] == "VIEW"
+            ]
+            tables: list[str] = [
+                date["table_name"]
                 for date in result
-                for collection in date
-            }
+                if date["table_name"].endswith("_t")
+                and not date["table_name"].startswith("nm")
+                and not date["table_name"].startswith("gm")
+            ]
+            self._collections_with_views = {view.strip("_"): view for view in views}
+            self._collections_with_tables = {table[0:-2]: table for table in tables}
