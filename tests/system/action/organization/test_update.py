@@ -6,7 +6,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class OrganizationUpdateActionTest(BaseActionTestCase):
-    saml_attr_mapping = {
+    saml_attr_mapping: dict[str, str | dict[str, str]] = {
         "saml_id": "username",
         "title": "title",
         "first_name": "firstName",
@@ -58,6 +58,48 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "description": "blablabla",
                 "saml_attr_mapping": self.saml_attr_mapping,
             },
+        )
+
+    def test_update_with_meeting(self) -> None:
+        self.saml_attr_mapping.update(
+            {"meeting": {"external_id": "Landtag", "external_group_id": "Delegated"}}
+        ),
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            ONE_ORGANIZATION_FQID,
+            {
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+
+    def test_update_with_meeting_error(self) -> None:
+        self.saml_attr_mapping.update(
+            {"meeting": {"external_idx": "Landtag", "external_group_id": "Delegated"}}
+        ),
+        response = self.request(
+            "organization.update",
+            {
+                "id": 1,
+                "name": "testtest",
+                "description": "blablabla",
+                "saml_attr_mapping": self.saml_attr_mapping,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.saml_attr_mapping.meeting must not contain {'external_idx'} properties"
+            in response.json["message"]
         )
 
     def test_update_some_more_fields(self) -> None:

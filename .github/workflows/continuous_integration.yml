@@ -29,17 +29,17 @@ jobs:
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
 
     - name: Run docker production image
-      run: docker-compose -f docker-compose.prod.yml up --build -d
+      run: docker compose -f docker-compose.prod.yml up --build -d
 
     - name: Wait for action service
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
-      run: docker-compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
+      run: docker compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
 
     - name: Wait for presenter service
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
-      run: docker-compose -f docker-compose.prod.yml exec -T backend-presenter scripts/wait.sh backend-presenter 9003
+      run: docker compose -f docker-compose.prod.yml exec -T backend-presenter scripts/wait.sh backend-presenter 9003
 
     - name: Fire a test request to actions component
       run: curl localhost:9002/system/action/health
