@@ -68,6 +68,7 @@ meeting_settings_keys = [
     "agenda_item_creation",
     "agenda_new_items_default_visibility",
     "agenda_show_internal_items_on_projector",
+    "agenda_show_topic_navigation_on_detail_view",
     "list_of_speakers_amount_last_on_projector",
     "list_of_speakers_amount_next_on_projector",
     "list_of_speakers_couple_countdown",

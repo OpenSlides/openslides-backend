@@ -363,6 +363,12 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_update_new_meeting_setting(self) -> None:
+        meeting, _ = self.basic_test(
+            {"agenda_show_topic_navigation_on_detail_view": True}
+        )
+        assert meeting.get("agenda_show_topic_navigation_on_detail_view") is True
+
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}
