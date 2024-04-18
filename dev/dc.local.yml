@@ -1,4 +1,4 @@
-# Use local datastore instead of pip package
+# Use local auth and vote service
 version: "3"
 services:
     backend:
@@ -6,11 +6,10 @@ services:
             args:
                 - REQUIREMENTS_FILE=requirements_development_local.txt
         volumes:
-            - ../../openslides-datastore-service/:/datastore-service
             - ../../openslides-auth-service/auth/libraries/pip-auth/:/authlib
         environment:
-            - PYTHONPATH=/app:/datastore-service:/authlib
-            - MYPYPATH=/app:/datastore-service:/authlib
+            - PYTHONPATH=/app:/authlib
+            - MYPYPATH=/app:/authlib
     vote:
         build:
             context: ../../openslides-vote-service
