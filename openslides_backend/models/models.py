@@ -118,11 +118,12 @@ class User(Model):
     is_present_in_meeting_ids = fields.RelationListField(
         to={"meeting": "present_user_ids"}, is_view_field=True
     )
-    committee_ids = fields.NumberArrayField(
+    committee_ids = fields.RelationListField(
+        to={"committee": "user_ids"},
+        is_view_field=True,
         read_only=True,
         constraints={
-            "to": "committee/user_ids",
-            "description": "Calculated field: Returns committee_ids, where the user is manager or member in a meeting",
+            "description": "Calculated field: Returns committee_ids, where the user is manager or member in a meeting"
         },
     )
     committee_management_ids = fields.RelationListField(
@@ -323,11 +324,12 @@ class Committee(Model):
     default_meeting_id = fields.RelationField(
         to={"meeting": "default_meeting_for_committee_id"}
     )
-    user_ids = fields.NumberArrayField(
+    user_ids = fields.RelationListField(
+        to={"user": "committee_ids"},
+        is_view_field=True,
         read_only=True,
         constraints={
-            "to": "user/committee_ids",
-            "description": "Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee",
+            "description": "Calculated field: All users which are in a group of a meeting, belonging to the committee or beeing manager of the committee"
         },
     )
     manager_ids = fields.RelationListField(
@@ -417,7 +419,7 @@ class Meeting(Model, MeetingModelMixin):
     export_pdf_pagenumber_alignment = fields.CharField(
         default="center", constraints={"enum": ["left", "right", "center"]}
     )
-    export_pdf_fontsize = fields.CharField(
+    export_pdf_fontsize = fields.IntegerField(
         default=10, constraints={"enum": [10, 11, 12]}
     )
     export_pdf_line_height = fields.FloatField(
@@ -876,10 +878,10 @@ class Meeting(Model, MeetingModelMixin):
         to={"mediafile": "used_as_logo_pdf_header_r_in_meeting_id"}
     )
     logo_pdf_footer_l_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_pdf_header_l_in_meeting_id"}
+        to={"mediafile": "used_as_logo_pdf_footer_l_in_meeting_id"}
     )
     logo_pdf_footer_r_id = fields.RelationField(
-        to={"mediafile": "used_as_logo_pdf_header_l_in_meeting_id"}
+        to={"mediafile": "used_as_logo_pdf_footer_r_in_meeting_id"}
     )
     logo_pdf_ballot_paper_id = fields.RelationField(
         to={"mediafile": "used_as_logo_pdf_ballot_paper_in_meeting_id"}
@@ -1523,7 +1525,7 @@ class Motion(Model):
     )
     identical_motion_ids = fields.NumberArrayField(
         constraints={
-            "description": "Changed from relation-list to number[], because it still can't be generated"
+            "description": "with psycopg 3.2.0 we could use the as_string method without cursor and change dummy to number. Changed from relation-list to number[], because it still can''t be generated."
         }
     )
     state_id = fields.RelationField(

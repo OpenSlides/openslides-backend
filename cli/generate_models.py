@@ -220,9 +220,7 @@ class Attribute(Node):
             if self.type in RELATION_FIELD_CLASSES.keys():
                 self.to = To(value.pop("to"))
                 self.on_delete = value.pop("on_delete", None)
-                if self.type in ("relation-list", "generic-relation-list") or value.get(
-                    "sql"
-                ):
+                if self.type.endswith("relation-list") or value.get("sql") or (value.get("to") and not value.get("reference")):
                     self.is_view_field = True
             else:
                 assert self.type in COMMON_FIELD_CLASSES.keys(), (
