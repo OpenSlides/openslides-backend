@@ -1,9 +1,11 @@
 from datastore.reader.core import (
+    AggregateRequest,
     FilterRequest,
     GetAllRequest,
     GetManyRequest,
     GetManyRequestPart,
     GetRequest,
+    MinMaxRequest,
 )
 from datastore.shared.util import FilterOperator
 
@@ -292,6 +294,104 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         )
         result = self.read_adapter.filter(request)
         assert result == {
-            2: {"id": 2, "name": "Committee 2", "organization_id": 1, "description": "b"},
-            3: {"id": 3, "name": "Committee 3", "organization_id": 1, "description": "b"},
+            2: {
+                "id": 2,
+                "name": "Committee 2",
+                "organization_id": 1,
+                "description": "b",
+            },
+            3: {
+                "id": 3,
+                "name": "Committee 3",
+                "organization_id": 1,
+                "description": "b",
+            },
         }
+
+    # ========== test exists ==========
+
+    def test_exists(self) -> None:
+        self.write_data(self.basic_data)
+        request = AggregateRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "b"),
+        )
+        result = self.read_adapter.exists(request)
+        assert result is True
+
+    def test_exists_not(self) -> None:
+        self.write_data(self.basic_data)
+        request = AggregateRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "d"),
+        )
+        result = self.read_adapter.exists(request)
+        assert result is False
+
+    # ========== test count ==========
+
+    def test_count(self) -> None:
+        self.write_data(self.basic_data)
+        request = AggregateRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "b"),
+        )
+        result = self.read_adapter.count(request)
+        assert result == 2
+
+    def test_count_not(self) -> None:
+        self.write_data(self.basic_data)
+        request = AggregateRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "d"),
+        )
+        result = self.read_adapter.count(request)
+        assert result == 0
+
+    # ========== test min ==========
+
+    def test_min(self) -> None:
+        self.write_data(self.basic_data)
+        request = MinMaxRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "b"),
+            field="name",
+            type="text",
+        )
+        result = self.read_adapter.min(request)
+        assert result == "Committee 2"
+
+    def test_min_not(self) -> None:
+        self.write_data(self.basic_data)
+        request = MinMaxRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "d"),
+            field="name",
+            type="text",
+        )
+        result = self.read_adapter.min(request)
+        assert result is None
+
+    # ========== test max ==========
+
+    def test_max(self) -> None:
+        self.write_data(self.basic_data)
+        request = MinMaxRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "b"),
+            field="name",
+            type="text",
+        )
+        result = self.read_adapter.max(request)
+        assert result == "Committee 3"
+
+    def test_max_not(self) -> None:
+        self.write_data(self.basic_data)
+        request = MinMaxRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "d"),
+            field="name",
+            type="text",
+        )
+        result = self.read_adapter.max(request)
+        assert result is None

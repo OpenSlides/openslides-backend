@@ -2,11 +2,13 @@ from collections import defaultdict
 from typing import Any, ContextManager
 
 from datastore.reader.core import (
+    AggregateRequest,
     FilterRequest,
     GetAllRequest,
     GetManyRequest,
     GetManyRequestPart,
     GetRequest,
+    MinMaxRequest,
 )
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend.connection_handler import ConnectionHandler
@@ -119,10 +121,10 @@ class ReadAdapter:
 
     def filter(self, request: FilterRequest) -> dict[Id, Model]:
         """Returns all models that satisfy the filter condition."""
-        arguments: list[str] = []
         mapped_fields_str = self._build_select_from_mapped_fields(
             tuple(request.mapped_fields)
         )
+        arguments: list[str] = []
         filter_str = self._filter_helper(request.filter, arguments)
         final: dict[Id, Model] = {}
         if view_name := self._get_view_name_from_collection(request.collection):
@@ -140,27 +142,55 @@ class ReadAdapter:
 
         return final
 
-    # def exists(self, request: AggregateRequest) -> ExistsResult:
-    #     """Determines whether at least one model satisfies the filter conditions."""
-    #     return None
+    def exists(self, request: AggregateRequest) -> bool:
+        """Determines whether at least one model satisfies the filter conditions."""
+        count = self.count(request)
+        return count > 0
 
-    # def count(self, request: AggregateRequest) -> CountResult:
-    #     """Returns the amount of models that satisfy the filter conditions."""
-    #     return None
+    def count(self, request: AggregateRequest) -> int:
+        """Returns the amount of models that satisfy the filter conditions."""
+        arguments: list[str] = []
+        filter_str = self._filter_helper(request.filter, arguments)
+        if view_name := self._get_view_name_from_collection(request.collection):
+            query = f"""
+                select count(*) from {view_name}
+                where {filter_str}"""
+            with self.connection.get_connection_context():
+                result = self.connection.query(query, arguments)
+                return result[0][0]
+        return 0
 
-    # def min(self, request: MinMaxRequest) -> MinResult:
-    #     """
-    #     Returns the mininum value of the given field for all models that satisfy the
-    #     given filter.
-    #     """
-    #     return None
+    def min(self, request: MinMaxRequest) -> Any:
+        """
+        Returns the mininum value of the given field for all models that satisfy the
+        given filter.
+        """
+        arguments: list[str] = []
+        filter_str = self._filter_helper(request.filter, arguments)
+        if view_name := self._get_view_name_from_collection(request.collection):
+            query = f"""
+                select min({request.field}::{request.type}) from {view_name}
+                where {filter_str}"""
+            with self.connection.get_connection_context():
+                result = self.connection.query(query, arguments)
+                return result[0][0]
+        return None
 
-    # def max(self, request: MinMaxRequest) -> MaxResult:
-    #     """
-    #     Returns the maximum value of the given field for all models that satisfy the
-    #     given filter.
-    #     """
-    #     return None
+    def max(self, request: MinMaxRequest) -> Any:
+        """
+        Returns the maximum value of the given field for all models that satisfy the
+        given filter.
+        """
+        arguments: list[str] = []
+        filter_str = self._filter_helper(request.filter, arguments)
+        if view_name := self._get_view_name_from_collection(request.collection):
+            query = f"""
+                select max({request.field}::{request.type}) from {view_name}
+                where {filter_str}"""
+            with self.connection.get_connection_context():
+                result = self.connection.query(query, arguments)
+                return result[0][0]
+        return None
 
     # def history_information(
     #     self, request: HistoryInformationRequest
@@ -302,8 +332,8 @@ class ReadAdapter:
                 date["table_name"]
                 for date in result
                 if date["table_name"].endswith("_t")
-                and not date["table_name"].startswith("nm")
-                and not date["table_name"].startswith("gm")
+                and not date["table_name"].startswith("nm_")
+                and not date["table_name"].startswith("gm_")
             ]
             self._collections_with_views = {view.strip("_"): view for view in views}
             self._collections_with_tables = {table[0:-2]: table for table in tables}
