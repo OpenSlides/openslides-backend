@@ -2,8 +2,11 @@ import builtins
 from collections import defaultdict
 from typing import Literal
 
-from datastore.shared.postgresql_backend import filter_models, is_comparable
-from datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.datastore.shared.postgresql_backend import (
+    filter_models,
+    is_comparable,
+)
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 
 from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator

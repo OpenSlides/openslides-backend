@@ -15,6 +15,7 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from .mixins import CheckSpeechState, PointOfOrderPermissionMixin, StructureLevelMixin
 from .sort import SpeakerSort
 from .speech_state import SpeechState
@@ -23,6 +24,7 @@ from .speech_state import SpeechState
 @register_action("speaker.create")
 class SpeakerCreateAction(
     SingularActionMixin,
+    DelegationBasedRestrictionMixin,
     CheckSpeechState,
     CreateActionWithInferredMeeting,
     StructureLevelMixin,
@@ -320,6 +322,7 @@ class SpeakerCreateAction(
         return super().validate_fields(instance)
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
+        meeting_id = self.get_meeting_id(instance)
         permission = Permissions.ListOfSpeakers.CAN_MANAGE
         if "meeting_user_id" in instance:
             meeting_user = self.datastore.get(
@@ -328,10 +331,12 @@ class SpeakerCreateAction(
                 ),
                 ["user_id"],
             )
-            if meeting_user.get("user_id") == self.user_id:
+            restricted = self.check_delegator_restriction(
+                "users_forbid_delegator_in_list_of_speakers", [meeting_id]
+            )
+            if meeting_user.get("user_id") == self.user_id and not len(restricted):
                 permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER
 
-        meeting_id = self.get_meeting_id(instance)
         if has_perm(self.datastore, self.user_id, permission, meeting_id):
             return
         raise MissingPermission(permission)

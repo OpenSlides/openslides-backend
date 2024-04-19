@@ -4,13 +4,12 @@ from time import sleep
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
-from datastore.migrations import MigrationException
-
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.migrations import (
     get_backend_migration_index,
     get_datastore_migration_index,
 )
+from openslides_backend.migrations.core.exceptions import MigrationException
 from openslides_backend.migrations.migration_handler import (
     MigrationHandler,
     MigrationState,

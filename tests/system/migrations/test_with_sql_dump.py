@@ -2,10 +2,10 @@ import os
 from io import StringIO
 
 import pytest
-from datastore.migrations.core.migration_handler import MigrationHandler
-from datastore.shared.di import injector
-from datastore.shared.postgresql_backend import ConnectionHandler
 
+from openslides_backend.datastore.shared.di import injector
+from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
+from openslides_backend.migrations.core.migration_handler import MigrationHandler
 from openslides_backend.migrations.migrate import MigrationWrapper
 
 SQL_FILE = "tests/dump.sql"

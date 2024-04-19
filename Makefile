@@ -92,16 +92,16 @@ run-prod: | build-prod
 # Build and run development docker container setup with docker compose (not usable inside docker container)
 
 start-dev:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build --detach
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml up --build --detach
 
 start-dev-attach start-dev-interactive:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml up --build
 
 stop-dev:
-	docker-compose -f dev/docker-compose.dev.yml down --volumes
+	docker compose -f dev/docker-compose.dev.yml down --volumes
 
 run-dev-attach:
-	docker-compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
+	docker compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
 run-dev run-bash: | start-dev run-dev-attach
 
@@ -112,16 +112,16 @@ run-tests:
 # Build and run development container with local datastore in use
 
 start-dev-local:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build --detach
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build --detach
 
 start-dev-attach-local start-dev-interactive-local:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml up --build
 
 stop-dev-local:
-	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml down --volumes
+	docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml down --volumes
 
 run-dev-attach-local:
-	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
+	docker compose -f dev/docker-compose.dev.yml -f dev/dc.local.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
 run-dev-local run-bash-local: | start-dev-local run-dev-attach-local
 

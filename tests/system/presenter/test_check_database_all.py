@@ -58,6 +58,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "agenda_item_creation": "default_no",
             "agenda_new_items_default_visibility": "internal",
             "agenda_show_internal_items_on_projector": False,
+            "agenda_show_topic_navigation_on_detail_view": False,
             "list_of_speakers_amount_next_on_projector": -1,
             "list_of_speakers_couple_countdown": True,
             "list_of_speakers_show_amount_of_speakers_on_slide": True,

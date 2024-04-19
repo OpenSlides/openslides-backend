@@ -6,8 +6,9 @@ import sys
 import time
 from typing import Any
 
-from datastore.reader.app import register_services
 from gunicorn.app.base import BaseApplication
+
+from openslides_backend.datastore.reader.services import register_services
 
 from .action.action_worker import gunicorn_post_request, gunicorn_worker_abort
 from .shared.env import Environment

@@ -6,10 +6,11 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 
 
 @register_action("speaker.delete")
-class SpeakerDeleteAction(DeleteAction):
+class SpeakerDeleteAction(DeleteAction, DelegationBasedRestrictionMixin):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_delete_schema()
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
@@ -26,6 +27,10 @@ class SpeakerDeleteAction(DeleteAction):
                 ["user_id"],
             )
 
-            if meeting_user.get("user_id") == self.user_id:
+            restricted = self.check_delegator_restriction(
+                "users_forbid_delegator_in_list_of_speakers",
+                [self.get_meeting_id(instance)],
+            )
+            if meeting_user.get("user_id") == self.user_id and not len(restricted):
                 return
         super().check_permissions(instance)

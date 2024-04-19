@@ -1,11 +1,11 @@
-from datastore.migrations import (
+from openslides_backend.migrations import (
     BaseEvent,
     BaseEventMigration,
     CreateEvent,
     DeleteEvent,
     ListUpdateEvent,
 )
-from datastore.shared.util import collection_from_fqid, id_from_fqid
+from openslides_backend.shared.patterns import collection_from_fqid, id_from_fqid
 
 ONE_ORGANIZATION_ID = 1
 ONE_ORGANIZATION_FQID = "organization/1"

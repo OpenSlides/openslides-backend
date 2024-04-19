@@ -1,5 +1,5 @@
-from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
-from datastore.shared.util import collection_and_id_from_fqid
+from openslides_backend.migrations import BaseEvent, BaseEventMigration, CreateEvent
+from openslides_backend.shared.patterns import collection_from_fqid
 
 
 class Migration(BaseEventMigration):
@@ -14,7 +14,7 @@ class Migration(BaseEventMigration):
         self,
         event: BaseEvent,
     ) -> list[BaseEvent] | None:
-        collection, id = collection_and_id_from_fqid(event.fqid)
+        collection = collection_from_fqid(event.fqid)
 
         if collection != "motion_change_recommendation":
             return None

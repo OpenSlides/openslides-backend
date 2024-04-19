@@ -268,6 +268,7 @@
             "agenda_show_internal_items_on_projector": false,
             "agenda_show_subtitles": false,
             "agenda_number_prefix": "TOP",
+            "agenda_show_topic_navigation_on_detail_view": false,
             "list_of_speakers_amount_last_on_projector": 0,
             "list_of_speakers_amount_next_on_projector": -1,
             "list_of_speakers_couple_countdown": true,
@@ -574,7 +575,7 @@
             "default_projector_agenda_item_list_ids": [1],
             "default_projector_topic_ids": [1],
             "default_projector_list_of_speakers_ids": [2],
-            "default_projector_current_list_of_speakers_ids": [2],
+            "default_projector_current_los_ids": [2],
             "default_projector_motion_ids": [1],
             "default_projector_amendment_ids": [1],
             "default_projector_motion_block_ids": [1],
@@ -2409,7 +2410,7 @@
             "show_clock": true,
             "sequential_number": 2,
             "used_as_default_projector_for_list_of_speakers_in_meeting_id": 1,
-            "used_as_default_projector_for_current_list_of_speakers_in_meeting_id": 1,
+            "used_as_default_projector_for_current_los_in_meeting_id": 1,
             "meeting_id": 1
         }
     },

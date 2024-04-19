@@ -1,7 +1,7 @@
 from typing import Any
 
-from datastore.migrations import RenameFieldMigration
-from datastore.shared.util import fqid_from_collection_and_id
+from openslides_backend.migrations import RenameFieldMigration
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 
 class Migration(RenameFieldMigration):

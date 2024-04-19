@@ -1,11 +1,13 @@
 from collections import defaultdict
 from typing import NamedTuple
 
-from datastore.migrations import BaseModelMigration
-from datastore.shared.util import fqid_from_collection_and_id
-from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
-
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
+from openslides_backend.datastore.writer.core import (
+    BaseRequestEvent,
+    RequestUpdateEvent,
+)
+from openslides_backend.migrations import BaseModelMigration
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 
 class HashKey(NamedTuple):

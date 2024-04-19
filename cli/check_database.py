@@ -2,8 +2,7 @@ import logging
 import os
 import sys
 
-from datastore.reader.app import register_services
-
+from openslides_backend.datastore.reader.services import register_services
 from openslides_backend.presenter.check_database import check_meetings
 from openslides_backend.presenter.check_database_all import check_everything
 from openslides_backend.shared.env import Environment

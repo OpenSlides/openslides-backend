@@ -56,15 +56,24 @@ class OrganizationUpdate(
     )
 
     model = Organization()
+    saml_props = {
+        field: {**optional_str_schema, "max_length": 256}
+        for field in allowed_user_fields
+    }
+    saml_props["meeting"] = {
+        "type": ["object", "null"],
+        "properties": {
+            field: {**optional_str_schema, "max_length": 256}
+            for field in ("external_id", "external_group_id")
+        },
+        "additionalProperties": False,
+    }
     schema = DefaultSchema(Organization()).get_update_schema(
         optional_properties=group_A_fields + group_B_fields,
         additional_optional_fields={
             "saml_attr_mapping": {
                 "type": ["object", "null"],
-                "properties": {
-                    field: {**optional_str_schema, "max_length": 256}
-                    for field in allowed_user_fields
-                },
+                "properties": saml_props,
                 "required": ["saml_id"],
                 "additionalProperties": False,
             },

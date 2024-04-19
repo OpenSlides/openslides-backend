@@ -2,7 +2,7 @@ import pkgutil
 from importlib import import_module
 from typing import Any
 
-from datastore.migrations import (
+from openslides_backend.migrations import (
     BaseMigration,
     MigrationException,
     MigrationHandler,
@@ -10,7 +10,8 @@ from datastore.migrations import (
     PrintFunction,
     setup,
 )
-from datastore.shared.typing import Fqid, Model
+from openslides_backend.shared.patterns import FullQualifiedId
+from openslides_backend.shared.typing import Model
 
 
 class BadMigrationModule(MigrationException):
@@ -92,10 +93,10 @@ class MigrationWrapperMemory(MigrationWrapper):
 
     def set_import_data(
         self,
-        models: dict[Fqid, Model],
+        models: dict[FullQualifiedId, Model],
         start_migration_index: int,
     ) -> None:
         self.handler.set_import_data(models, start_migration_index)
 
-    def get_migrated_models(self) -> dict[Fqid, Model]:
+    def get_migrated_models(self) -> dict[FullQualifiedId, Model]:
         return self.handler.get_migrated_models()

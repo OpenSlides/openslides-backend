@@ -2,7 +2,7 @@ from collections import defaultdict
 from copy import deepcopy
 from typing import Any
 
-from datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule

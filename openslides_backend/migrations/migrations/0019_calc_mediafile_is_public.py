@@ -1,14 +1,14 @@
 from collections import defaultdict
 from typing import Any, cast
 
-from datastore.migrations import (
+from openslides_backend.migrations import (
     BaseEvent,
     BaseEventMigration,
     CreateEvent,
     ListUpdateEvent,
     UpdateEvent,
 )
-from datastore.shared.util import collection_and_id_from_fqid
+from openslides_backend.shared.patterns import collection_and_id_from_fqid
 
 
 class Migration(BaseEventMigration):

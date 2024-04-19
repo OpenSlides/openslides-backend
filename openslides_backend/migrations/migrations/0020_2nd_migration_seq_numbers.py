@@ -1,9 +1,12 @@
 from collections import defaultdict
 from typing import cast
 
-from datastore.migrations import BaseEvent, BaseEventMigration, CreateEvent
-from datastore.shared.typing import JSON
-from datastore.shared.util import KEYSEPARATOR, collection_from_fqid
+from openslides_backend.migrations import BaseEvent, BaseEventMigration, CreateEvent
+from openslides_backend.shared.patterns import (
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+)
+from openslides_backend.shared.typing import JSON
 
 
 class Migration(BaseEventMigration):
@@ -59,7 +62,7 @@ class Migration(BaseEventMigration):
             self.sequential_numbers_map[collection] = defaultdict(int)
             ids = self.new_accessor.get_all_ids_for_collection(collection)
             for id_ in ids:
-                fqid = collection + KEYSEPARATOR + str(id_)
+                fqid = fqid_from_collection_and_id(collection, id_)
                 data, _ = self.new_accessor.get_model_ignore_deleted(fqid)
                 if self.sequential_numbers_map[collection][
                     cast(int, data["meeting_id"])

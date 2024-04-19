@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
-from datastore.shared.util import DeletedModelsBehaviour
-
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.typing import DeletedModel
 

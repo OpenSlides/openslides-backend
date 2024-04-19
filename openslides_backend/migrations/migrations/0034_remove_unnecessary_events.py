@@ -1,4 +1,4 @@
-from datastore.migrations import (
+from openslides_backend.migrations import (
     BaseEvent,
     BaseEventMigration,
     DeleteFieldsEvent,

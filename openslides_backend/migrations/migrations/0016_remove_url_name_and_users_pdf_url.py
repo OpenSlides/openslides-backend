@@ -1,4 +1,4 @@
-from datastore.migrations import RemoveFieldsMigration
+from openslides_backend.migrations import RemoveFieldsMigration
 
 
 class Migration(RemoveFieldsMigration):

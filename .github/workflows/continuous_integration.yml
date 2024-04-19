@@ -11,7 +11,6 @@ on:
 
 env:
   PYTHON_VERSION: 3.10.x
-  DATASTORE_COMMIT_HASH: main  # will be set during job
   AUTH_COMMIT_HASH: main  # will be set during job
 
 jobs:
@@ -29,17 +28,17 @@ jobs:
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
 
     - name: Run docker production image
-      run: docker-compose -f docker-compose.prod.yml up --build -d
+      run: docker compose -f docker-compose.prod.yml up --build -d
 
     - name: Wait for action service
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
-      run: docker-compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
+      run: docker compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
 
     - name: Wait for presenter service
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
-      run: docker-compose -f docker-compose.prod.yml exec -T backend-presenter scripts/wait.sh backend-presenter 9003
+      run: docker compose -f docker-compose.prod.yml exec -T backend-presenter scripts/wait.sh backend-presenter 9003
 
     - name: Fire a test request to actions component
       run: curl localhost:9002/system/action/health
@@ -70,15 +69,7 @@ jobs:
       working-directory: openslides-backend/requirements
       run: |
         . export_service_commits.sh
-        echo "DATASTORE_COMMIT_HASH=$(echo $DATASTORE_COMMIT_HASH)" >> $GITHUB_ENV
         echo "AUTH_COMMIT_HASH=$(echo $AUTH_COMMIT_HASH)" >> $GITHUB_ENV
-
-    - name: Clone datastore
-      uses: actions/checkout@v4
-      with:
-        repository: OpenSlides/openslides-datastore-service
-        ref: ${{ env.DATASTORE_COMMIT_HASH }}
-        path: openslides-datastore-service
 
     - name: Clone auth service
       uses: actions/checkout@v4
@@ -153,9 +144,9 @@ jobs:
     - name: Install requirements
       run: . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
 
-    # - name: Check for up to date models.py
-    #   if: always()
-    #   run: make check-models
+    - name: Check for up to date models.py
+      if: always()
+      run: make check-models
 
     - name: Check for up to date permissions.py
       if: always()
