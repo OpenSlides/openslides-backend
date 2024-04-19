@@ -55,6 +55,12 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         result = self.read_adapter.get(request)
         assert result == {"id": 2, "name": "Committee 2"}
 
+    def test_get_without_requesting_id(self) -> None:
+        self.write_data(self.basic_data)
+        request = GetRequest(fqid="committee/2", mapped_fields=["name"])
+        result = self.read_adapter.get(request)
+        assert result == {"name": "Committee 2"}
+
     def test_get_non_existant(self) -> None:
         self.write_data(self.basic_data)
         request = GetRequest(fqid="committee/5", mapped_fields=["id", "name"])
@@ -109,10 +115,10 @@ class TestReadAdapter(BaseRelationalDBTestCase):
             3: {"id": 3, "name": "Committee 3"},
         }
         assert result["theme"] == {
-            1: {"id": 1, "accent_500": "#0000ff"},
+            1: {"accent_500": "#0000ff"},
         }
         assert result["user"] == {
-            4: {"id": 4, "username": "alice"},
+            4: {"username": "alice"},
         }
 
     def test_get_many_complex(self) -> None:
@@ -126,10 +132,10 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         result = self.read_adapter.get_many(request)
         assert len(result) == 1
         assert result["committee"] == {
-            1: {"id": 1, "description": "a"},
-            2: {"id": 2, "name": "Committee 2"},
-            3: {"id": 3, "name": "Committee 3", "description": "b"},
-            4: {"id": 4},
+            1: {"description": "a"},
+            2: {"name": "Committee 2"},
+            3: {"name": "Committee 3", "description": "b"},
+            4: {},
         }
 
     def test_get_many_two_parts_same_fields(self) -> None:
@@ -143,10 +149,10 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         result = self.read_adapter.get_many(request)
         assert len(result) == 1
         assert result["committee"] == {
-            1: {"id": 1, "name": "Committee 1"},
-            2: {"id": 2, "name": "Committee 2"},
-            3: {"id": 3, "name": "Committee 3"},
-            4: {"id": 4, "name": "Committee 4"},
+            1: {"name": "Committee 1"},
+            2: {"name": "Committee 2"},
+            3: {"name": "Committee 3"},
+            4: {"name": "Committee 4"},
         }
 
     def test_get_many_all_fields(self) -> None:
@@ -160,7 +166,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         result = self.read_adapter.get_many(request)
         assert len(result) == 1
         assert result["committee"] == {
-            1: {"id": 1, "description": "a"},
+            1: {"description": "a"},
             2: {
                 "id": 2,
                 "name": "Committee 2",
@@ -173,7 +179,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
                 "description": "b",
                 "organization_id": 1,
             },
-            4: {"id": 4},
+            4: {},
         }
 
     def test_get_many_unknown_collection(self) -> None:
@@ -199,14 +205,14 @@ class TestReadAdapter(BaseRelationalDBTestCase):
 
     def test_get_all_basic(self) -> None:
         self.write_data(self.basic_data)
-        request = GetAllRequest(collection="committee", mapped_fields=["id", "name"])
+        request = GetAllRequest(collection="committee", mapped_fields=["name"])
         result = self.read_adapter.get_all(request)
         assert len(result) == 4
         assert result == {
-            1: {"id": 1, "name": "Committee 1"},
-            2: {"id": 2, "name": "Committee 2"},
-            3: {"id": 3, "name": "Committee 3"},
-            4: {"id": 4, "name": "Committee 4"},
+            1: {"name": "Committee 1"},
+            2: {"name": "Committee 2"},
+            3: {"name": "Committee 3"},
+            4: {"name": "Committee 4"},
         }
 
     def test_get_all_with_all_fields(self) -> None:
@@ -274,6 +280,18 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         )
         result = self.read_adapter.filter(request)
         assert result == {
-            2: {},
-            3: {},
-        }  # TODO: Fix function, then add correct result payload
+            2: {"name": "Committee 2"},
+            3: {"name": "Committee 3"},
+        }
+
+    def test_filter_with_all_fields(self) -> None:
+        self.write_data(self.basic_data)
+        request = FilterRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", "b"),
+        )
+        result = self.read_adapter.filter(request)
+        assert result == {
+            2: {"id": 2, "name": "Committee 2", "organization_id": 1, "description": "b"},
+            3: {"id": 3, "name": "Committee 3", "organization_id": 1, "description": "b"},
+        }

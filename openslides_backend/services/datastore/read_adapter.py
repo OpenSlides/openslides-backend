@@ -124,60 +124,21 @@ class ReadAdapter:
             tuple(request.mapped_fields)
         )
         filter_str = self._filter_helper(request.filter, arguments)
+        final: dict[Id, Model] = {}
         if view_name := self._get_view_name_from_collection(request.collection):
             query = f"""
                 select {mapped_fields_str} from {view_name}
                 where {filter_str}"""
             with self.connection.get_connection_context():
-                # TODO: Should include id, doesn't
                 result = self.connection.query(query, arguments)
-                # TODO: Calculate result
+                for row in result:
+                    model = {}
+                    for field in request.mapped_fields or row.keys():
+                        if row.get(field) is not None:
+                            model[field] = row[field]
+                    final[row["id"]] = model
 
-        return None
-
-    def _filter_helper(
-        self, filter_segment: Filter, arguments: list[str]
-    ) -> str | None:
-        if isinstance(filter_segment, FilterOperator):
-            if filter_segment.value is None:
-                if filter_segment.operator not in ("=", "!="):
-                    raise InvalidFormat("You can only compare to None with = or !=")
-                operator = (
-                    filter_segment.operator[::-1]
-                    .replace("=", "IS")
-                    .replace("!", " NOT")
-                )
-                condition = f"{filter_segment.field} {operator} NULL"
-            else:
-                if filter_segment.operator == "~=":
-                    condition = f"LOWER({filter_segment.field}) = LOWER(%s::text)"
-                elif filter_segment.operator == "%=":
-                    condition = f"{filter_segment.field} ILIKE %s::text"
-                elif filter_segment.operator in ("=", "!="):
-                    condition = (
-                        f"{filter_segment.field} {filter_segment.operator} %s::text"
-                    )
-                else:
-                    condition = (
-                        f"{filter_segment.field}::numeric {filter_segment.operator} %s"
-                    )
-                arguments += [filter_segment.value]
-            return condition
-        elif isinstance(filter_segment, Not):
-            filter_str = self._filter_helper(filter_segment.not_filter, arguments)
-            return f"NOT ({filter_str})"
-        elif isinstance(filter_segment, And):
-            return " AND ".join(
-                f"({self._filter_helper(part, arguments)})"
-                for part in filter_segment.and_filter
-            )
-        elif isinstance(filter_segment, Or):
-            return " OR ".join(
-                f"({self._filter_helper(part, arguments)})"
-                for part in filter_segment.or_filter
-            )
-        else:
-            raise BadCodingError("Invalid filter type")
+        return final
 
     # def exists(self, request: AggregateRequest) -> ExistsResult:
     #     """Determines whether at least one model satisfies the filter conditions."""
@@ -216,11 +177,12 @@ class ReadAdapter:
         request_data: dict[str, dict[tuple[str, ...], list[int]]] = {}
         for req in request.requests:
             if not isinstance(req, GetManyRequestPart):
-                # TODO: Is this even used anywhere in the backend?
+                # TODO: This isn't used anywhere in the backend
+                # Remove FqField request format from GetManyRequest type
                 raise Exception("Fqfield-based get_many request not supported")
             coll = req.collection
             fields: list[str] = (
-                list({*req.mapped_fields, *universal_fields, "id"})
+                list({*req.mapped_fields, *universal_fields})
                 if req.mapped_fields
                 else []
             )
@@ -267,13 +229,57 @@ class ReadAdapter:
                             models[id_] = model
         return models
 
+    def _filter_helper(
+        self, filter_segment: Filter, arguments: list[str]
+    ) -> str | None:
+        if isinstance(filter_segment, FilterOperator):
+            if filter_segment.value is None:
+                if filter_segment.operator not in ("=", "!="):
+                    raise InvalidFormat("You can only compare to None with = or !=")
+                operator = (
+                    filter_segment.operator[::-1]
+                    .replace("=", "IS")
+                    .replace("!", " NOT")
+                )
+                condition = f"{filter_segment.field} {operator} NULL"
+            else:
+                if filter_segment.operator == "~=":
+                    condition = f"LOWER({filter_segment.field}) = LOWER(%s::text)"
+                elif filter_segment.operator == "%=":
+                    condition = f"{filter_segment.field} ILIKE %s::text"
+                elif filter_segment.operator in ("=", "!="):
+                    condition = (
+                        f"{filter_segment.field} {filter_segment.operator} %s::text"
+                    )
+                else:
+                    condition = (
+                        f"{filter_segment.field}::numeric {filter_segment.operator} %s"
+                    )
+                arguments += [filter_segment.value]
+            return condition
+        elif isinstance(filter_segment, Not):
+            filter_str = self._filter_helper(filter_segment.not_filter, arguments)
+            return f"NOT ({filter_str})"
+        elif isinstance(filter_segment, And):
+            return " AND ".join(
+                f"({self._filter_helper(part, arguments)})"
+                for part in filter_segment.and_filter
+            )
+        elif isinstance(filter_segment, Or):
+            return " OR ".join(
+                f"({self._filter_helper(part, arguments)})"
+                for part in filter_segment.or_filter
+            )
+        else:
+            raise BadCodingError("Invalid filter type")
+
     def _build_select_from_mapped_fields(self, fields: tuple[str, ...]) -> str:
         if not len(fields):
             # at least one collection needs all fields, so we just select all and
             # calculate the mapped_fields later
             return "*"
         else:
-            return ", ".join(fields)
+            return ", ".join({*fields, "id"})
 
     def _get_view_name_from_collection(self, collection: str) -> str | None:
         if view_name := self._collections_with_views.get(collection):
