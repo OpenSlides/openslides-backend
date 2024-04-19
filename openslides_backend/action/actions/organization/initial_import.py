@@ -1,8 +1,7 @@
 from collections.abc import Iterable
 from typing import Any
 
-from datastore.shared.util import DeletedModelsBehaviour
-
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.migrations import get_backend_migration_index
 
 from ....i18n.translator import Translator

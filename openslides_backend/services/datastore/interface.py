@@ -2,8 +2,10 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Any, ContextManager, Protocol, Union
 
-from datastore.shared.services.read_database import HistoryInformation
-from datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.datastore.shared.services.read_database import (
+    HistoryInformation,
+)
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 
 from ...shared.filters import Filter
 from ...shared.interfaces.collection_field_lock import CollectionFieldLock

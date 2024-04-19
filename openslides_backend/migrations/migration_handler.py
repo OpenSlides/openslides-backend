@@ -3,7 +3,7 @@ from io import StringIO
 from threading import Lock, Thread
 from typing import Any
 
-from datastore.migrations import MigrationState as DatastoreMigrationState
+from openslides_backend.migrations import MigrationState as DatastoreMigrationState
 
 from ..shared.exceptions import View400Exception
 from ..shared.handlers.base_handler import BaseHandler

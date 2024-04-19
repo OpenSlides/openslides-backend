@@ -4,23 +4,31 @@ from importlib import import_module
 from typing import Any
 
 import pytest
-from datastore.migrations import MigrationHandler
-from datastore.migrations.core.setup import register_services
-from datastore.reader.core import GetEverythingRequest, GetRequest, Reader
-from datastore.shared.di import injector
-from datastore.shared.postgresql_backend import ConnectionHandler
-from datastore.shared.services import ReadDatabase
-from datastore.shared.util import (
+
+from openslides_backend.datastore.reader.core import (
+    GetEverythingRequest,
+    GetRequest,
+    Reader,
+)
+from openslides_backend.datastore.shared.di import injector
+from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
+from openslides_backend.datastore.shared.services import ReadDatabase
+from openslides_backend.datastore.shared.services.shutdown_service import (
+    ShutdownService,
+)
+from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
     ModelDoesNotExist,
-    strip_reserved_fields,
 )
-from datastore.writer.core import Writer
-from datastore.writer.flask_frontend.json_handlers import WriteHandler
-
-from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.datastore.writer.core import Writer
+from openslides_backend.datastore.writer.flask_frontend.json_handlers import (
+    WriteHandler,
+)
+from openslides_backend.migrations import MigrationHandler, get_backend_migration_index
+from openslides_backend.migrations.core.setup import register_services
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker
+from openslides_backend.shared.patterns import strip_reserved_fields
 
 
 class DoesNotExist:
@@ -52,6 +60,9 @@ class MigrationChecker(Checker):
 @pytest.fixture(autouse=True)
 def setup() -> None:
     register_services()
+    yield
+    shutdown_service = injector.get(ShutdownService)
+    shutdown_service.shutdown()
 
 
 @pytest.fixture(autouse=True)

@@ -11,7 +11,6 @@ on:
 
 env:
   PYTHON_VERSION: 3.10.x
-  DATASTORE_COMMIT_HASH: main  # will be set during job
   AUTH_COMMIT_HASH: main  # will be set during job
 
 jobs:
@@ -70,15 +69,7 @@ jobs:
       working-directory: openslides-backend/requirements
       run: |
         . export_service_commits.sh
-        echo "DATASTORE_COMMIT_HASH=$(echo $DATASTORE_COMMIT_HASH)" >> $GITHUB_ENV
         echo "AUTH_COMMIT_HASH=$(echo $AUTH_COMMIT_HASH)" >> $GITHUB_ENV
-
-    - name: Clone datastore
-      uses: actions/checkout@v4
-      with:
-        repository: OpenSlides/openslides-datastore-service
-        ref: ${{ env.DATASTORE_COMMIT_HASH }}
-        path: openslides-datastore-service
 
     - name: Clone auth service
       uses: actions/checkout@v4

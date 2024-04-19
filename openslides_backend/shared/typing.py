@@ -1,12 +1,15 @@
-from typing import Any
+from typing import Any, Union
 
 from .patterns import FullQualifiedId
 
-ModelMap = dict[FullQualifiedId, dict[str, Any]]
+Model = dict[str, Any]
+ModelMap = dict[FullQualifiedId, Model]
 
 Schema = dict[str, Any]
 
 HistoryInformation = dict[str, list[str]]
+
+JSON = Union[str, int, float, bool, None, dict[str, Any], list[Any]]
 
 
 class DeletedModel(dict):

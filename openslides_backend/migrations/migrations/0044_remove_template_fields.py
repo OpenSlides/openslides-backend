@@ -3,13 +3,12 @@ from collections.abc import Callable
 from enum import Enum, auto
 from typing import Any, NamedTuple, TypedDict
 
-from datastore.migrations import BaseModelMigration, MigrationException
-from datastore.writer.core import (
+from openslides_backend.datastore.writer.core import (
     BaseRequestEvent,
     RequestCreateEvent,
     RequestUpdateEvent,
 )
-
+from openslides_backend.migrations import BaseModelMigration, MigrationException
 from openslides_backend.shared.patterns import (
     Collection,
     FullQualifiedId,

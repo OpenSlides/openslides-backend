@@ -1,6 +1,6 @@
 from typing import Any
 
-from datastore.migrations import RenameFieldMigration
+from openslides_backend.migrations import RenameFieldMigration
 
 
 class Migration(RenameFieldMigration):

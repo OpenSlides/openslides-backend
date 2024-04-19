@@ -3,7 +3,9 @@ from collections.abc import Sequence
 from typing import Any, ContextManager
 
 import simplejson as json
-from datastore.reader.core import (
+from simplejson.errors import JSONDecodeError
+
+from openslides_backend.datastore.reader.core import (
     AggregateRequest,
     FilterRequest,
     GetAllRequest,
@@ -14,10 +16,12 @@ from datastore.reader.core import (
     MinMaxRequest,
     Reader,
 )
-from datastore.shared.di import injector
-from datastore.shared.services.read_database import HistoryInformation
-from datastore.shared.util import DeletedModelsBehaviour, is_reserved_field
-from simplejson.errors import JSONDecodeError
+from openslides_backend.datastore.shared.di import injector
+from openslides_backend.datastore.shared.services.read_database import (
+    HistoryInformation,
+)
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.shared.patterns import is_reserved_field
 
 from ...models.base import model_registry
 from ...shared.exceptions import DatastoreException

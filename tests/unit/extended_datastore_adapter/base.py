@@ -3,8 +3,7 @@ from typing import Any
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from datastore.shared.postgresql_backend import filter_models
-
+from openslides_backend.datastore.shared.postgresql_backend import filter_models
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.extended_adapter import (
     ExtendedDatastoreAdapter,

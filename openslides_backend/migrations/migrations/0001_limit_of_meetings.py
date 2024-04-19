@@ -1,4 +1,4 @@
-from datastore.migrations import AddFieldMigration
+from openslides_backend.migrations import AddFieldMigration
 
 
 class Migration(AddFieldMigration):

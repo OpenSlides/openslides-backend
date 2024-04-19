@@ -1,15 +1,23 @@
 import sys
 from typing import Any
 
-from datastore.reader.core import GetAllRequest, GetRequest, Reader
-from datastore.reader.services import register_services as register_reader_services
-from datastore.shared.di import injector
-from datastore.shared.util import DeletedModelsBehaviour, fqid_from_collection_and_id
-from datastore.writer.core import RequestUpdateEvent, Writer, WriteRequest
-from datastore.writer.services import register_services as register_writer_services
-
+from openslides_backend.datastore.reader.core import GetAllRequest, GetRequest, Reader
+from openslides_backend.datastore.reader.services import (
+    register_services as register_reader_services,
+)
+from openslides_backend.datastore.shared.di import injector
+from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.datastore.writer.core import (
+    RequestUpdateEvent,
+    Writer,
+    WriteRequest,
+)
+from openslides_backend.datastore.writer.services import (
+    register_services as register_writer_services,
+)
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.models.models import Organization
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 collection_to_fields_map = {
@@ -115,7 +123,7 @@ def main() -> None:
     if events:
         write_request = WriteRequest(events, None, 0, {})  # type: ignore
         writer: Writer = injector.get(Writer)
-        writer.write([write_request], log_all_modified_fields=False)
+        writer.write([write_request])
 
 
 if __name__ == "__main__":

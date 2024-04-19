@@ -1,13 +1,12 @@
 from collections import defaultdict
 from typing import Any, TypedDict
 
-from datastore.migrations import BaseModelMigration
-from datastore.writer.core import (
+from openslides_backend.datastore.writer.core import (
     BaseRequestEvent,
     RequestCreateEvent,
     RequestUpdateEvent,
 )
-
+from openslides_backend.migrations import BaseModelMigration
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 
 

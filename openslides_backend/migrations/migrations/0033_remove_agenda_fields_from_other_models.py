@@ -1,4 +1,4 @@
-from datastore.migrations import RemoveFieldsMigration
+from openslides_backend.migrations import RemoveFieldsMigration
 
 # Extracted from openslides_backend/action/actions/agenda_item/agenda_creation.py
 agenda_creation_properties = [
