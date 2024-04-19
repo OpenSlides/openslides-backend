@@ -1,4 +1,4 @@
-from datastore.reader.core import (
+from openslides_backend.datastore.reader.core import (
     AggregateRequest,
     FilterRequest,
     GetAllRequest,
@@ -7,9 +7,9 @@ from datastore.reader.core import (
     GetRequest,
     MinMaxRequest,
 )
-from datastore.shared.util import FilterOperator
-
+from openslides_backend.datastore.shared.util import InvalidFormat
 from openslides_backend.services.datastore.read_adapter import ReadAdapter
+from openslides_backend.shared.filters import And, FilterOperator, Not, Or
 
 from .base_relational_db_test import BaseRelationalDBTestCase, WritePayload
 
@@ -23,7 +23,17 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         },
         "theme": {
             "fields": ["id", "name", "accent_500", "primary_500", "warn_500"],
-            "rows": [(1, "Theme 1", "#0000ff", "#00ff00", "#ff0000")],
+            "rows": [
+                (1, "bgr", "#0000ff", "#00ff00", "#ff0000"),
+                (2, "brg", "#0000ff", "#ff0000", "#00ff00"),
+                (3, "gbr", "#00ff00", "#0000ff", "#ff0000"),
+                (4, "grb", "#00ff00", "#ff0000", "#0000ff"),
+                (5, "rbg", "#ff0000", "#0000ff", "#00ff00"),
+                (6, "rgb", "#ff0000", "#00ff00", "#0000ff"),
+                (7, "cyangr", "#00ffff", "#00ff00", "#ff0000"),
+                (8, "byellowg", "#0000ff", "#ffff00", "#00ff00"),
+                (9, "gbyellow", "#00ff00", "#0000ff", "#ffff00"),
+            ],
         },
         "committee": {
             "fields": ["id", "name", "description"],
@@ -32,6 +42,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
                 (2, "Committee 2", "b"),
                 (3, "Committee 3", "b"),
                 (4, "Committee 4", None),
+                (5, "Committee 5", "B"),
             ],
         },
         "user": {
@@ -57,6 +68,12 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         result = self.read_adapter.get(request)
         assert result == {"id": 2, "name": "Committee 2"}
 
+    def test_get_unknown_collection(self) -> None:
+        self.write_data(self.basic_data)
+        request = GetRequest(fqid="not_a_collection/2", mapped_fields=["id", "name"])
+        result = self.read_adapter.get(request)
+        assert result is None
+
     def test_get_without_requesting_id(self) -> None:
         self.write_data(self.basic_data)
         request = GetRequest(fqid="committee/2", mapped_fields=["name"])
@@ -65,7 +82,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
 
     def test_get_non_existant(self) -> None:
         self.write_data(self.basic_data)
-        request = GetRequest(fqid="committee/5", mapped_fields=["id", "name"])
+        request = GetRequest(fqid="committee/6", mapped_fields=["id", "name"])
         result = self.read_adapter.get(request)
         assert result is None
 
@@ -196,11 +213,11 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         assert result["not_a_collection"] == {}
 
     def test_get_many_wrong_format(self) -> None:
+        self.write_data(self.basic_data)
+        request = GetManyRequest(["committee/2/id"])
         with self.assertRaises(
             Exception, msg="Fqfield-based get_many request not supported"
         ):
-            self.write_data(self.basic_data)
-            request = GetManyRequest(["committee/2/id"])
             self.read_adapter.get_many(request)
 
     # ========== test get_all ==========
@@ -209,19 +226,20 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         self.write_data(self.basic_data)
         request = GetAllRequest(collection="committee", mapped_fields=["name"])
         result = self.read_adapter.get_all(request)
-        assert len(result) == 4
+        assert len(result) == 5
         assert result == {
             1: {"name": "Committee 1"},
             2: {"name": "Committee 2"},
             3: {"name": "Committee 3"},
             4: {"name": "Committee 4"},
+            5: {"name": "Committee 5"},
         }
 
     def test_get_all_with_all_fields(self) -> None:
         self.write_data(self.basic_data)
         request = GetAllRequest(collection="committee")
         result = self.read_adapter.get_all(request)
-        assert len(result) == 4
+        assert len(result) == 5
         assert result == {
             1: {
                 "id": 1,
@@ -242,6 +260,12 @@ class TestReadAdapter(BaseRelationalDBTestCase):
                 "organization_id": 1,
             },
             4: {"id": 4, "name": "Committee 4", "organization_id": 1},
+            5: {
+                "id": 5,
+                "name": "Committee 5",
+                "description": "B",
+                "organization_id": 1,
+            },
         }
 
     # ========== test get_everything ==========
@@ -256,8 +280,8 @@ class TestReadAdapter(BaseRelationalDBTestCase):
             "name": "Orga 1",
             "default_language": "en",
             "theme_id": 1,
-            "committee_ids": [1, 2, 3, 4],
-            "theme_ids": [1],
+            "committee_ids": [1, 2, 3, 4, 5],
+            "theme_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9],
             "user_ids": [1, 2, 3, 4],
         }
         for key in orga_data:
@@ -284,6 +308,76 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         assert result == {
             2: {"name": "Committee 2"},
             3: {"name": "Committee 3"},
+        }
+
+    def test_filter_equals_none(self) -> None:
+        self.write_data(self.basic_data)
+        request = FilterRequest(
+            collection="committee",
+            filter=FilterOperator("description", "=", None),
+            mapped_fields=["name"],
+        )
+        result = self.read_adapter.filter(request)
+        assert result == {
+            4: {"name": "Committee 4"},
+        }
+
+    def test_filter_ilike_none(self) -> None:
+        self.write_data(self.basic_data)
+        request = FilterRequest(
+            collection="committee",
+            filter=FilterOperator("description", "%=", None),
+            mapped_fields=["name"],
+        )
+        with self.assertRaises(
+            InvalidFormat, msg="You can only compare to None with = or !="
+        ):
+            self.read_adapter.filter(request)
+
+    def test_filter_ignore_case(self) -> None:
+        self.write_data(self.basic_data)
+        request = FilterRequest(
+            collection="committee",
+            filter=FilterOperator("description", "~=", "b"),
+            mapped_fields=["name"],
+        )
+        result = self.read_adapter.filter(request)
+        assert result == {
+            2: {"name": "Committee 2"},
+            3: {"name": "Committee 3"},
+            5: {"name": "Committee 5"},
+        }
+
+    def test_filter_ilike(self) -> None:
+        self.write_data(self.basic_data)
+        request = FilterRequest(
+            collection="theme",
+            filter=FilterOperator("name", "%=", "%yellow%"),
+            mapped_fields=["name"],
+        )
+        result = self.read_adapter.filter(request)
+        assert result == {
+            8: {"name": "byellowg"},
+            9: {"name": "gbyellow"},
+        }
+
+    def test_filter_complex(self) -> None:
+        self.write_data(self.basic_data)
+        request = FilterRequest(
+            collection="theme",
+            filter=Or(
+                FilterOperator("accent_500", "=", "#00ffff"),
+                And(
+                    FilterOperator("accent_500", "=", "#00ff00"),
+                    Not(FilterOperator("warn_500", "!=", "#0000ff")),
+                ),
+            ),
+            mapped_fields=["name"],
+        )
+        result = self.read_adapter.filter(request)
+        assert result == {
+            4: {"name": "grb"},
+            7: {"name": "cyangr"},
         }
 
     def test_filter_with_all_fields(self) -> None:
@@ -328,6 +422,21 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         result = self.read_adapter.exists(request)
         assert result is False
 
+    def test_exists_complex(self) -> None:
+        self.write_data(self.basic_data)
+        request = AggregateRequest(
+            collection="theme",
+            filter=Or(
+                FilterOperator("accent_500", "=", "#00ffff"),
+                And(
+                    FilterOperator("accent_500", "=", "#00ff00"),
+                    Not(FilterOperator("warn_500", "!=", "#0000ff")),
+                ),
+            ),
+        )
+        result = self.read_adapter.exists(request)
+        assert result is True
+
     # ========== test count ==========
 
     def test_count(self) -> None:
@@ -344,6 +453,30 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         request = AggregateRequest(
             collection="committee",
             filter=FilterOperator("description", "=", "d"),
+        )
+        result = self.read_adapter.count(request)
+        assert result == 0
+
+    def test_count_complex(self) -> None:
+        self.write_data(self.basic_data)
+        request = AggregateRequest(
+            collection="theme",
+            filter=Or(
+                FilterOperator("accent_500", "=", "#00ffff"),
+                And(
+                    FilterOperator("accent_500", "=", "#00ff00"),
+                    Not(FilterOperator("warn_500", "!=", "#0000ff")),
+                ),
+            ),
+        )
+        result = self.read_adapter.count(request)
+        assert result == 2
+
+    def test_count_unknown_collection(self) -> None:
+        self.write_data(self.basic_data)
+        request = AggregateRequest(
+            collection="not_a_collection",
+            filter=FilterOperator("description", "=", "b"),
         )
         result = self.read_adapter.count(request)
         assert result == 0
@@ -372,6 +505,34 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         result = self.read_adapter.min(request)
         assert result is None
 
+    def test_min_complex(self) -> None:
+        self.write_data(self.basic_data)
+        request = MinMaxRequest(
+            collection="theme",
+            filter=Or(
+                FilterOperator("accent_500", "=", "#00ffff"),
+                And(
+                    FilterOperator("accent_500", "=", "#00ff00"),
+                    Not(FilterOperator("warn_500", "!=", "#0000ff")),
+                ),
+            ),
+            field="id",
+            type="int",
+        )
+        result = self.read_adapter.min(request)
+        assert result == 4
+
+    def test_min_unknown_collection(self) -> None:
+        self.write_data(self.basic_data)
+        request = MinMaxRequest(
+            collection="not_a_collection",
+            filter=FilterOperator("description", "=", "b"),
+            field="name",
+            type="text",
+        )
+        result = self.read_adapter.min(request)
+        assert result is None
+
     # ========== test max ==========
 
     def test_max(self) -> None:
@@ -385,6 +546,17 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         result = self.read_adapter.max(request)
         assert result == "Committee 3"
 
+    def test_max_unknown_collection(self) -> None:
+        self.write_data(self.basic_data)
+        request = MinMaxRequest(
+            collection="not_a_collection",
+            filter=FilterOperator("description", "=", "b"),
+            field="name",
+            type="text",
+        )
+        result = self.read_adapter.max(request)
+        assert result is None
+
     def test_max_not(self) -> None:
         self.write_data(self.basic_data)
         request = MinMaxRequest(
@@ -395,3 +567,20 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         )
         result = self.read_adapter.max(request)
         assert result is None
+
+    def test_max_complex(self) -> None:
+        self.write_data(self.basic_data)
+        request = MinMaxRequest(
+            collection="theme",
+            filter=Or(
+                FilterOperator("accent_500", "=", "#00ffff"),
+                And(
+                    FilterOperator("accent_500", "=", "#00ff00"),
+                    Not(FilterOperator("warn_500", "!=", "#0000ff")),
+                ),
+            ),
+            field="id",
+            type="int",
+        )
+        result = self.read_adapter.max(request)
+        assert result == 7

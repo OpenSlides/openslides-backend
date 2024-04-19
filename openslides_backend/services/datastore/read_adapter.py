@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, ContextManager
 
-from datastore.reader.core import (
+from openslides_backend.datastore.reader.core import (
     AggregateRequest,
     FilterRequest,
     GetAllRequest,
@@ -10,19 +10,19 @@ from datastore.reader.core import (
     GetRequest,
     MinMaxRequest,
 )
-from datastore.shared.di import injector
-from datastore.shared.postgresql_backend.connection_handler import ConnectionHandler
-from datastore.shared.postgresql_backend.sql_query_helper import SqlQueryHelper
-from datastore.shared.typing import Collection, Id
-from datastore.shared.util import (
-    And,
-    BadCodingError,
-    Filter,
-    FilterOperator,
-    InvalidFormat,
-    Not,
-    Or,
+from openslides_backend.datastore.shared.di import injector
+from openslides_backend.datastore.shared.postgresql_backend.connection_handler import (
+    ConnectionHandler,
 )
+from openslides_backend.datastore.shared.postgresql_backend.pg_connection_handler import (
+    PgConnectionHandlerService,
+)
+from openslides_backend.datastore.shared.postgresql_backend.sql_query_helper import (
+    SqlQueryHelper,
+)
+from openslides_backend.datastore.shared.util import BadCodingError, InvalidFormat
+from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
+from openslides_backend.shared.patterns import Collection, Id
 
 from ...shared.patterns import collection_and_id_from_fqid
 
@@ -30,17 +30,15 @@ Model = dict[str, Any]
 
 
 class ReadAdapter:
-    connection: (
-        ConnectionHandler  # TODO use PgConnectionHandlerService from datastore ?
-    )
+    connection: PgConnectionHandlerService
     query_helper: SqlQueryHelper
 
     def __init__(self) -> None:
-        self.connection = injector.get(ConnectionHandler)
+        self.connection: PgConnectionHandlerService = injector.get(ConnectionHandler)
         self.query_helper = injector.get(SqlQueryHelper)
         self._load_view_names()
 
-    def get_database_context(self) -> ContextManager[None]:
+    def get_database_context(self) -> ContextManager:
         """Returns the context manager of the underlying database."""
         return self.connection.get_connection_context()
 
