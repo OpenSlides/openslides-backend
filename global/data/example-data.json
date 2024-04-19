@@ -268,6 +268,7 @@
             "agenda_show_internal_items_on_projector": false,
             "agenda_show_subtitles": false,
             "agenda_number_prefix": "TOP",
+            "agenda_show_topic_navigation_on_detail_view": false,
             "list_of_speakers_amount_last_on_projector": 0,
             "list_of_speakers_amount_next_on_projector": -1,
             "list_of_speakers_couple_countdown": true,

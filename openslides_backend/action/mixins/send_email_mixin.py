@@ -9,11 +9,9 @@ from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
 from typing import Any
 
-from lxml import html as lxml_html  # type: ignore
-from lxml.html.clean import clean_html  # type: ignore
-
 from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
+from ...shared.html import get_text_from_html
 from ..action import Action
 
 SendErrors = dict[str, tuple[int, bytes]]
@@ -141,8 +139,7 @@ class EmailUtils:
         message = EmailMessage()
         if html:
             if contentplain == "":
-                tree = lxml_html.fromstring(content)
-                contentplain = clean_html(tree).text_content().strip()
+                contentplain = get_text_from_html(content)
             if contentplain:
                 message.set_content(contentplain)
             message.add_alternative(content, subtype="html")

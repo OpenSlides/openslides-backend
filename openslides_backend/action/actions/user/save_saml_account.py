@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 import fastjsonschema
 
@@ -7,18 +7,18 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
-from ....shared.filters import FilterOperator
+from ....shared.filters import And, FilterOperator
 from ....shared.interfaces.event import Event
 from ....shared.schema import schema_version
 from ....shared.typing import Schema
-from ....shared.util import ONE_ORGANIZATION_ID
-from ...generics.create import CreateAction
-from ...generics.update import UpdateAction
+from ...mixins.meeting_user_helper import get_meeting_user
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.action_type import ActionType
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement
+from .create import UserCreate
+from .update import UserUpdate
 from .user_mixins import UsernameMixin
 
 allowed_user_fields = [
@@ -36,7 +36,9 @@ allowed_user_fields = [
 
 @register_action("user.save_saml_account", action_type=ActionType.STACK_INTERNAL)
 class UserSaveSamlAccount(
-    EmailCheckMixin, UsernameMixin, CreateAction, UpdateAction, SingularActionMixin
+    EmailCheckMixin,
+    UsernameMixin,
+    SingularActionMixin,
 ):
     """
     Internal action to save (create or update) a saml account.
@@ -97,7 +99,11 @@ class UserSaveSamlAccount(
         """
         instance: dict[str, Any] = dict()
         for model_field, payload_field in self.saml_attr_mapping.items():
-            if payload_field in instance_old and model_field in allowed_user_fields:
+            if (
+                isinstance(payload_field, str)
+                and payload_field in instance_old
+                and model_field in allowed_user_fields
+            ):
                 value = (
                     tx[0]
                     if isinstance((tx := instance_old[payload_field]), list) and len(tx)
@@ -116,6 +122,7 @@ class UserSaveSamlAccount(
         pass
 
     def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        meeting_id, group_id = self.check_for_group_add()
         users = self.datastore.filter(
             "user",
             FilterOperator("saml_id", "=", instance["saml_id"]),
@@ -123,28 +130,42 @@ class UserSaveSamlAccount(
         )
         if len(users) == 1:
             self.user = next(iter(users.values()))
-            instance["id"] = self.user["id"]
+            instance["id"] = (user_id := cast(int, self.user["id"]))
+            if meeting_id and group_id:
+                meeting_user = get_meeting_user(
+                    self.datastore, meeting_id, user_id, ["id", "group_ids"]
+                )
+                if meeting_user:
+                    old_group_ids = meeting_user["group_ids"]
+                    if group_id not in old_group_ids:
+                        instance["meeting_id"] = meeting_id
+                        instance["group_ids"] = old_group_ids + [group_id]
+                else:
+                    instance["meeting_id"] = meeting_id
+                    instance["group_ids"] = [group_id]
+
+            instance = {
+                k: v for k, v in instance.items() if k == "id" or v != self.user.get(k)
+            }
+            if len(instance) > 1:
+                self.execute_other_action(UserUpdate, [instance])
         elif len(users) == 0:
-            instance["id"] = self.datastore.reserve_ids(self.model.collection, 1)[0]
             instance = self.set_defaults(instance)
+            if group_id:
+                instance["meeting_id"] = meeting_id
+                instance["group_ids"] = [group_id]
+            self.execute_other_action(UserCreate, [instance])
         else:
             ActionException(
                 f"More than one existing user found in database with saml_id {instance['saml_id']}"
             )
-
-        return UpdateAction.base_update_instance(self, instance)
+        return instance
 
     def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         """
-        Handles create and update
+        delegated to execute_other_actions
         """
-        if "meta_new" in instance:
-            yield from CreateAction.create_events(self, instance)
-        else:
-            fields = {
-                k: v for k, v in instance.items() if k == "id" or v != self.user.get(k)
-            }
-            yield from UpdateAction.create_events(self, fields)
+        return []
 
     def create_action_result_element(
         self, instance: dict[str, Any]
@@ -157,7 +178,49 @@ class UserSaveSamlAccount(
         if "is_physical_person" not in instance:
             instance["is_physical_person"] = True
         instance["can_change_own_password"] = False
-        instance["organization_id"] = ONE_ORGANIZATION_ID
         instance["username"] = self.generate_usernames([instance.get("saml_id", "")])[0]
-        instance["meta_new"] = True
-        return super().set_defaults(instance)
+        return instance
+
+    def check_for_group_add(self) -> tuple[int, int] | tuple[None, None]:
+        NoneResult = (None, None)
+        if not (
+            meeting_info := cast(dict, self.saml_attr_mapping.get("meeting"))
+        ) or not (external_id := meeting_info.get("external_id")):
+            return NoneResult
+
+        meetings = self.datastore.filter(
+            collection="meeting",
+            filter=FilterOperator("external_id", "=", external_id),
+            mapped_fields=["id", "default_group_id"],
+        )
+        if len(meetings) == 1:
+            meeting = next(iter(meetings.values()))
+            group_id = meeting["default_group_id"]
+        else:
+            self.logger.warning(
+                f"save_saml_account found {len(meetings)} meetings with external_id '{external_id}'"
+            )
+            return NoneResult
+        if external_group_id := meeting_info.get("external_group_id"):
+            groups = self.datastore.filter(
+                collection="group",
+                filter=And(
+                    [
+                        FilterOperator("external_id", "=", external_group_id),
+                        FilterOperator("meeting_id", "=", meeting.get("id")),
+                    ]
+                ),
+                mapped_fields=["id"],
+            )
+            if len(groups) == 1:
+                group_id = next(iter(groups.keys()))
+            else:
+                self.logger.warning(
+                    f"save_saml_account found no group in meeting '{external_id}' for '{external_group_id}', but use default_group of meeting"
+                )
+        if not group_id:
+            self.logger.warning(
+                f"save_saml_account found no group in meeting '{external_id}' for '{external_group_id}'"
+            )
+            return NoneResult
+        return meeting.get("id"), group_id

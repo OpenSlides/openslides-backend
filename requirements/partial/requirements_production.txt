@@ -5,20 +5,20 @@ dacite==1.7.0
 dependency_injector==4.41.0
 fastjsonschema==2.19.1
 Flask==3.0.3
-gunicorn==21.2.0
+gunicorn==22.0.0
 lxml==5.1.0
 psycopg==3.1.18
 psycopg2==2.9.9
 pygments==2.17.2
-pypdf[crypto]==4.1.0
+pypdf[crypto]==4.2.0
 python-magic==0.4.27
 requests==2.31.0
 roman==4.1
 simplejson==3.19.2
-Werkzeug==3.0.1
+Werkzeug==3.0.2
 
 # opentelemetry
-opentelemetry-api==1.23.0
-opentelemetry-sdk==1.23.0
-opentelemetry-exporter-otlp==1.23.0
-opentelemetry-instrumentation-requests==0.44b0
+opentelemetry-api==1.24.0
+opentelemetry-sdk==1.24.0
+opentelemetry-exporter-otlp==1.24.0
+opentelemetry-instrumentation-requests==0.45b0

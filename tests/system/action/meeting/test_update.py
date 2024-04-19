@@ -92,12 +92,16 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "users_email_replyto": "  test2@example.com  ",
                 "users_email_subject": "blablabla",
                 "users_email_body": "testtesttest",
+                "users_forbid_delegator_as_submitter": True,
+                "users_forbid_delegator_in_list_of_speakers": False,
             }
         )
         assert meeting.get("users_email_sender") == "test@example.com"
         assert meeting.get("users_email_replyto") == "test2@example.com"
         assert meeting.get("users_email_subject") == "blablabla"
         assert meeting.get("users_email_body") == "testtesttest"
+        assert meeting.get("users_forbid_delegator_as_submitter")
+        assert not meeting.get("users_forbid_delegator_in_list_of_speakers")
 
     def test_update_broken_email(self) -> None:
         meeting, response = self.basic_test({"users_email_replyto": "broken@@"}, False)
@@ -358,6 +362,12 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "Only one of start_time and end_time is not allowed."
             in response.json["message"]
         )
+
+    def test_update_new_meeting_setting(self) -> None:
+        meeting, _ = self.basic_test(
+            {"agenda_show_topic_navigation_on_detail_view": True}
+        )
+        assert meeting.get("agenda_show_topic_navigation_on_detail_view") is True
 
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
