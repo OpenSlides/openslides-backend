@@ -1523,10 +1523,8 @@ class Motion(Model):
     all_derived_motion_ids = fields.RelationListField(
         to={"motion": "all_origin_ids"}, is_view_field=True
     )
-    identical_motion_ids = fields.NumberArrayField(
-        constraints={
-            "description": "with psycopg 3.2.0 we could use the as_string method without cursor and change dummy to number. Changed from relation-list to number[], because it still can''t be generated."
-        }
+    identical_motion_ids = fields.RelationListField(
+        to={"motion": "identical_motion_ids"}, is_view_field=True
     )
     state_id = fields.RelationField(
         to={"motion_state": "motion_ids"}, required=True, equal_fields="meeting_id"
