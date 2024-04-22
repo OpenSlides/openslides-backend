@@ -1,5 +1,6 @@
 import multiprocessing
 import threading
+from collections import defaultdict
 from functools import wraps
 from time import monotonic, sleep
 from typing import Any, cast
@@ -283,6 +284,23 @@ class PgConnectionHandlerService:
                 cursor.execute(prepared_query, arguments)
                 result = cursor.fetchall()
             return result
+
+    def query_multiple(
+        self,
+        queries: dict[str, str],
+        arguments: dict[str, Any],
+        sql_parameters=defaultdict(list),
+    ) -> dict[str, Any]:
+        prepared_queries = {
+            key: self.prepare_query(query, sql_parameters[key])
+            for key, query in queries.items()
+        }
+        with self.get_current_connection().cursor() as cursor:
+            results: dict[str, Any] = {}
+            for key, query in prepared_queries.items():
+                cursor.execute(query, arguments.get(key, ()))
+                results[key] = cursor.fetchall()
+            return results
 
     def query_single_value(self, query, arguments, sql_parameters=[]):
         prepared_query = self.prepare_query(query, sql_parameters)

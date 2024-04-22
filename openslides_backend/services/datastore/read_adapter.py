@@ -1,5 +1,5 @@
-from collections import defaultdict
-from typing import Any, ContextManager
+from collections.abc import Callable, Iterable
+from typing import Any, ContextManager, TypedDict
 
 from openslides_backend.datastore.reader.core import (
     AggregateRequest,
@@ -27,6 +27,12 @@ from openslides_backend.shared.patterns import Collection, Id
 from ...shared.patterns import collection_and_id_from_fqid
 
 Model = dict[str, Any]
+
+
+class IndexBasedQueryData(TypedDict):
+    queries_by_index: dict[str, str]
+    arguments_by_index: dict[str, list[Any]]
+    fields_by_index: dict[str, tuple[str, ...]]
 
 
 class ReadAdapter:
@@ -71,51 +77,63 @@ class ReadAdapter:
         """Gets multiple models."""
         request_data = self._get_get_many_request_data(request)
 
-        final: dict[Collection, dict[Id, Model]] = defaultdict(dict)
+        query_data: IndexBasedQueryData = {
+            "queries_by_index": {},
+            "arguments_by_index": {},
+            "fields_by_index": {},
+        }
+        collections: list[str] = []
         for collection, ids_by_fields in request_data.items():
-            final[collection].update(
-                self._collection_based_get_many_helper(collection, ids_by_fields)
+            collections.append(collection)
+            collection_query_data = self._collection_based_get_many_helper(
+                collection, ids_by_fields, "#"
             )
-        return final
+            query_data["queries_by_index"].update(
+                collection_query_data["queries_by_index"]
+            )
+            query_data["arguments_by_index"].update(
+                collection_query_data["arguments_by_index"]
+            )
+            query_data["fields_by_index"].update(
+                collection_query_data["fields_by_index"]
+            )
+
+        def collection_by_index(index: str) -> Collection:
+            return index.split("#")[0]
+
+        return self._call_multiple_queries(query_data, collection_by_index, collections)
 
     def get_all(self, request: GetAllRequest) -> dict[Id, Model]:
         """
         Returns all (non-deleted) models of one collection. May return a huge amount
         of data, so use with caution.
         """
-
-        mapped_fields_str = self._build_select_from_mapped_fields(
-            tuple(request.mapped_fields)
-        )
-
-        models: dict[Id, Model] = {}
-
-        if view_name := self._get_view_name_from_collection(request.collection):
-            query = f"""
-                select {mapped_fields_str} from {view_name}"""
+        if query := self._calculate_get_all_query(request):
             with self.connection.get_connection_context():
                 result = self.connection.query(query, ())
-                for row in result:
-                    id_: int = row["id"]
-
-                    model = {}
-                    for field in request.mapped_fields or row.keys():
-                        if row.get(field) is not None:
-                            model[field] = row[field]
-                    models[id_] = model
-        return models
+                return self._build_models_from_single_query_result(
+                    result, request.mapped_fields
+                )
+        return {}
 
     def get_everything(self) -> dict[Collection, dict[Id, Model]]:
         """
         Returns all models In the form of the example data: Collections mapped to
         lists of models.
         """
-        final: dict[Collection, dict[Id, Model]] = {}
+        query_data: IndexBasedQueryData = {
+            "queries_by_index": {},
+            "arguments_by_index": {},
+            "fields_by_index": {},
+        }
+
         for collection in self._collections_with_tables.keys():
-            result = self.get_all(GetAllRequest(collection=collection))
-            if result:
-                final[collection] = result
-        return final
+            if query := self._calculate_get_all_query(
+                GetAllRequest(collection=collection)
+            ):
+                query_data["queries_by_index"][collection] = query
+        result = self._call_multiple_queries(query_data)
+        return {key: value for key, value in result.items() if value}
 
     def filter(self, request: FilterRequest) -> dict[Id, Model]:
         """Returns all models that satisfy the filter condition."""
@@ -131,13 +149,9 @@ class ReadAdapter:
                 where {filter_str}"""
             with self.connection.get_connection_context():
                 result = self.connection.query(query, arguments)
-                for row in result:
-                    model = {}
-                    for field in request.mapped_fields or row.keys():
-                        if row.get(field) is not None:
-                            model[field] = row[field]
-                    final[row["id"]] = model
-
+                return self._build_models_from_single_query_result(
+                    result, request.mapped_fields
+                )
         return final
 
     def exists(self, request: AggregateRequest) -> bool:
@@ -190,72 +204,99 @@ class ReadAdapter:
                 return result[0][0]
         return None
 
-    # def history_information(
-    #     self, request: HistoryInformationRequest
-    # ) -> dict[Fqid, list[HistoryInformation]]:
-    #     """
-    #     Returns history information for multiple models.
-    #     """
-    #     return None
+    def _build_models_from_single_query_result(
+        self,
+        result: Any,
+        fields: Iterable[str] | None = None,
+        previous_models: dict[Id, Model] | None = {},
+    ) -> dict[Id, Model]:
+        models = previous_models or {}
+        for row in result:
+            id_: int = row["id"]
 
-    def _get_get_many_request_data(
-        self, request: GetManyRequest
-    ) -> dict[str, dict[tuple[str, ...], list[int]]]:  #
-        universal_fields: list[str] = request.mapped_fields or []
-        request_data: dict[str, dict[tuple[str, ...], list[int]]] = {}
-        for req in request.requests:
-            if not isinstance(req, GetManyRequestPart):
-                # TODO: This isn't used anywhere in the backend
-                # Remove FqField request format from GetManyRequest type
-                raise Exception("Fqfield-based get_many request not supported")
-            coll = req.collection
-            fields: list[str] = (
-                list({*req.mapped_fields, *universal_fields})
-                if req.mapped_fields
-                else []
-            )
-            fields.sort()
-            ids: list[int] = req.ids
-            t_fields = tuple(fields)
-            if not request_data.get(coll):
-                request_data[coll] = {t_fields: ids}
-            elif not request_data[coll].get(t_fields):
-                request_data[coll][t_fields] = ids
+            model = {}
+            for field in fields or row.keys():
+                if row.get(field) is not None:
+                    model[field] = row[field]
+            if models.get(id_):
+                models[id_].update(model)
             else:
-                request_data[coll][t_fields].extend(ids)
-        return request_data
+                models[id_] = model
+        return models
+
+    def _build_select_from_mapped_fields(self, fields: tuple[str, ...]) -> str:
+        if not len(fields):
+            # at least one collection needs all fields, so we just select all and
+            # calculate the mapped_fields later
+            return "*"
+        else:
+            return ", ".join({*fields, "id"})
+
+    def _calculate_get_all_query(self, request: GetAllRequest) -> str | None:
+        mapped_fields_str = self._build_select_from_mapped_fields(
+            tuple(request.mapped_fields)
+        )
+
+        if view_name := self._get_view_name_from_collection(request.collection):
+            return f"""
+                select {mapped_fields_str} from {view_name}"""
+        return None
+
+    def _call_multiple_queries(
+        self,
+        query_data: IndexBasedQueryData,
+        collection_from_index: Callable[[str], str] | None = None,
+        collections: list[Collection] = [],
+    ) -> dict[Collection, dict[Id, Model]]:
+        models: dict[str, dict[Id, Model]] = {
+            collection: {} for collection in collections
+        }
+        if len(query_data["queries_by_index"]):
+            with self.connection.get_connection_context():
+                results = self.connection.query_multiple(
+                    query_data["queries_by_index"], query_data["arguments_by_index"]
+                )
+                for index, result in results.items():
+                    collection = (
+                        collection_from_index(index) if collection_from_index else index
+                    )
+                    models[collection] = self._build_models_from_single_query_result(
+                        result,
+                        query_data["fields_by_index"].get(index),
+                        models.get(collection),
+                    )
+        return models
 
     def _collection_based_get_many_helper(
-        self, collection: str, ids_by_fields: dict[tuple[str, ...], list[int]]
-    ) -> dict[Id, Model]:
-        if not any((len(ids) > 0) for ids in ids_by_fields.values()):
-            return {}
+        self,
+        collection: str,
+        ids_by_fields: dict[tuple[str, ...], list[int]],
+        separator: str,
+    ) -> IndexBasedQueryData:
+        query_data: IndexBasedQueryData = {
+            "queries_by_index": {},
+            "arguments_by_index": {},
+            "fields_by_index": {},
+        }
+        if any((len(ids) > 0) for ids in ids_by_fields.values()):
+            index = 0
 
-        models: dict[Id, Model] = {}
+            for fields, ids in ids_by_fields.items():
+                arguments: list[Any] = [tuple([0, *ids])]
 
-        for fields, ids in ids_by_fields.items():
-            arguments: list[Any] = [tuple([0, *ids])]
+                mapped_fields_str = self._build_select_from_mapped_fields(fields)
 
-            mapped_fields_str = self._build_select_from_mapped_fields(fields)
-
-            if view_name := self._get_view_name_from_collection(collection):
-                query = f"""
-                    select {mapped_fields_str} from {view_name}
-                    where id in %s"""
-                with self.connection.get_connection_context():
-                    result = self.connection.query(query, (arguments))
-                    for row in result:
-                        id_: int = row["id"]
-
-                        model = {}
-                        for field in fields or row.keys():
-                            if row.get(field) is not None:
-                                model[field] = row[field]
-                        if models.get(id_):
-                            models[id_].update(model)
-                        else:
-                            models[id_] = model
-        return models
+                if view_name := self._get_view_name_from_collection(collection):
+                    key = collection + separator + str(index)
+                    query_data["queries_by_index"][
+                        key
+                    ] = f"""
+                        select {mapped_fields_str} from {view_name}
+                        where id in %s"""
+                    query_data["arguments_by_index"][key] = arguments
+                    query_data["fields_by_index"][key] = fields
+                    index += 1
+        return query_data
 
     def _filter_helper(
         self, filter_segment: Filter, arguments: list[str]
@@ -301,13 +342,32 @@ class ReadAdapter:
         else:
             raise BadCodingError("Invalid filter type")
 
-    def _build_select_from_mapped_fields(self, fields: tuple[str, ...]) -> str:
-        if not len(fields):
-            # at least one collection needs all fields, so we just select all and
-            # calculate the mapped_fields later
-            return "*"
-        else:
-            return ", ".join({*fields, "id"})
+    def _get_get_many_request_data(
+        self, request: GetManyRequest
+    ) -> dict[str, dict[tuple[str, ...], list[int]]]:  #
+        universal_fields: list[str] = request.mapped_fields or []
+        request_data: dict[str, dict[tuple[str, ...], list[int]]] = {}
+        for req in request.requests:
+            if not isinstance(req, GetManyRequestPart):
+                # TODO: This isn't used anywhere in the backend
+                # Remove FqField request format from GetManyRequest type
+                raise BadCodingError("Fqfield-based get_many request not supported")
+            coll = req.collection
+            fields: list[str] = (
+                list({*req.mapped_fields, *universal_fields})
+                if req.mapped_fields
+                else []
+            )
+            fields.sort()
+            ids: list[int] = req.ids
+            t_fields = tuple(fields)
+            if not request_data.get(coll):
+                request_data[coll] = {t_fields: ids}
+            elif not request_data[coll].get(t_fields):
+                request_data[coll][t_fields] = ids
+            else:
+                request_data[coll][t_fields].extend(ids)
+        return request_data
 
     def _get_view_name_from_collection(self, collection: str) -> str | None:
         if view_name := self._collections_with_views.get(collection):
