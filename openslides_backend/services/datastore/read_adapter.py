@@ -50,7 +50,7 @@ class ReadAdapter:
         return self.connection.get_connection_context()
 
     @retry_on_db_failure
-    def get(self, request: GetRequest) -> Model | None:
+    def get(self, request: GetRequest, lock: bool = True) -> Model | None:
         """Gets the specified model."""
         collection, id_ = collection_and_id_from_fqid(request.fqid)
         arguments: list[Any] = [id_]
@@ -63,6 +63,8 @@ class ReadAdapter:
             query = f"""
                 select {mapped_fields_str} from {view_name}
                 where id = %s"""
+            if lock:
+                query += " for update"
             with self.connection.get_connection_context():
                 result = self.connection.query(query, (arguments))
                 if len(result) == 0:
@@ -76,7 +78,9 @@ class ReadAdapter:
         return None
 
     @retry_on_db_failure
-    def get_many(self, request: GetManyRequest) -> dict[Collection, dict[Id, Model]]:
+    def get_many(
+        self, request: GetManyRequest, lock: bool = True
+    ) -> dict[Collection, dict[Id, Model]]:
         """Gets multiple models."""
         request_data = self._get_get_many_request_data(request)
 
@@ -89,7 +93,7 @@ class ReadAdapter:
         for collection, ids_by_fields in request_data.items():
             collections.append(collection)
             collection_query_data = self._collection_based_get_many_helper(
-                collection, ids_by_fields, "#"
+                collection, ids_by_fields, "#", lock
             )
             query_data["queries_by_index"].update(
                 collection_query_data["queries_by_index"]
@@ -107,12 +111,12 @@ class ReadAdapter:
         return self._call_multiple_queries(query_data, collection_by_index, collections)
 
     @retry_on_db_failure
-    def get_all(self, request: GetAllRequest) -> dict[Id, Model]:
+    def get_all(self, request: GetAllRequest, lock: bool = True) -> dict[Id, Model]:
         """
         Returns all (non-deleted) models of one collection. May return a huge amount
         of data, so use with caution.
         """
-        if query := self._calculate_get_all_query(request):
+        if query := self._calculate_get_all_query(request, lock):
             with self.connection.get_connection_context():
                 result = self.connection.query(query, ())
                 return self._build_models_from_single_query_result(
@@ -134,14 +138,14 @@ class ReadAdapter:
 
         for collection in self._collections_with_tables.keys():
             if query := self._calculate_get_all_query(
-                GetAllRequest(collection=collection)
+                GetAllRequest(collection=collection), False
             ):
                 query_data["queries_by_index"][collection] = query
         result = self._call_multiple_queries(query_data)
         return {key: value for key, value in result.items() if value}
 
     @retry_on_db_failure
-    def filter(self, request: FilterRequest) -> dict[Id, Model]:
+    def filter(self, request: FilterRequest, lock: bool = True) -> dict[Id, Model]:
         """Returns all models that satisfy the filter condition."""
         mapped_fields_str = self._build_select_from_mapped_fields(
             tuple(request.mapped_fields)
@@ -153,6 +157,8 @@ class ReadAdapter:
             query = f"""
                 select {mapped_fields_str} from {view_name}
                 where {filter_str}"""
+            if lock:
+                query += " for update"
             with self.connection.get_connection_context():
                 result = self.connection.query(query, arguments)
                 return self._build_models_from_single_query_result(
@@ -241,14 +247,19 @@ class ReadAdapter:
         else:
             return ", ".join({*fields, "id"})
 
-    def _calculate_get_all_query(self, request: GetAllRequest) -> str | None:
+    def _calculate_get_all_query(
+        self, request: GetAllRequest, lock: bool
+    ) -> str | None:
         mapped_fields_str = self._build_select_from_mapped_fields(
             tuple(request.mapped_fields)
         )
 
         if view_name := self._get_view_name_from_collection(request.collection):
-            return f"""
+            query = f"""
                 select {mapped_fields_str} from {view_name}"""
+            if lock:
+                query += " for update"
+            return query
         return None
 
     def _call_multiple_queries(
@@ -281,6 +292,7 @@ class ReadAdapter:
         collection: str,
         ids_by_fields: dict[tuple[str, ...], list[int]],
         separator: str,
+        lock: bool,
     ) -> IndexBasedQueryData:
         query_data: IndexBasedQueryData = {
             "queries_by_index": {},
@@ -297,11 +309,12 @@ class ReadAdapter:
 
                 if view_name := self._get_view_name_from_collection(collection):
                     key = collection + separator + str(index)
-                    query_data["queries_by_index"][
-                        key
-                    ] = f"""
+                    query = f"""
                         select {mapped_fields_str} from {view_name}
                         where id in %s"""
+                    if lock:
+                        query += " for update"
+                    query_data["queries_by_index"][key] = query
                     query_data["arguments_by_index"][key] = arguments
                     query_data["fields_by_index"][key] = fields
                     index += 1

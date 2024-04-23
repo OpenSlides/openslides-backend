@@ -71,7 +71,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
     def test_get_unknown_collection(self) -> None:
         self.write_data(self.basic_data)
         request = GetRequest(fqid="not_a_collection/2", mapped_fields=["id", "name"])
-        result = self.read_adapter.get(request)
+        result = self.read_adapter.get(request, False)
         assert result is None
 
     def test_get_without_requesting_id(self) -> None:
@@ -83,7 +83,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
     def test_get_non_existant(self) -> None:
         self.write_data(self.basic_data)
         request = GetRequest(fqid="committee/6", mapped_fields=["id", "name"])
-        result = self.read_adapter.get(request)
+        result = self.read_adapter.get(request, False)
         assert result is None
 
     def test_get_with_all_fields(self) -> None:
@@ -104,7 +104,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
         request = GetManyRequest(
             [GetManyRequestPart("committee", [2, 3], ["id", "name"])]
         )
-        result = self.read_adapter.get_many(request)
+        result = self.read_adapter.get_many(request, False)
         assert len(result) == 1
         assert result["committee"] == {
             2: {"id": 2, "name": "Committee 2"},
@@ -127,7 +127,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
                 GetManyRequestPart("user", [4], ["username"]),
             ]
         )
-        result = self.read_adapter.get_many(request)
+        result = self.read_adapter.get_many(request, False)
         assert len(result) == 3
         assert result["committee"] == {
             2: {"id": 2, "name": "Committee 2"},
@@ -165,7 +165,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
                 GetManyRequestPart("committee", [1, 3, 4], ["name"]),
             ]
         )
-        result = self.read_adapter.get_many(request)
+        result = self.read_adapter.get_many(request, False)
         assert len(result) == 1
         assert result["committee"] == {
             1: {"name": "Committee 1"},
@@ -208,7 +208,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
                 GetManyRequestPart("not_a_collection", [2, 3], []),
             ]
         )
-        result = self.read_adapter.get_many(request)
+        result = self.read_adapter.get_many(request, False)
         assert len(result) == 1
         assert result["not_a_collection"] == {}
 
@@ -225,7 +225,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
     def test_get_all_basic(self) -> None:
         self.write_data(self.basic_data)
         request = GetAllRequest(collection="committee", mapped_fields=["name"])
-        result = self.read_adapter.get_all(request)
+        result = self.read_adapter.get_all(request, False)
         assert len(result) == 5
         assert result == {
             1: {"name": "Committee 1"},
@@ -317,7 +317,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
             filter=FilterOperator("description", "=", None),
             mapped_fields=["name"],
         )
-        result = self.read_adapter.filter(request)
+        result = self.read_adapter.filter(request, False)
         assert result == {
             4: {"name": "Committee 4"},
         }
@@ -341,7 +341,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
             filter=FilterOperator("description", "~=", "b"),
             mapped_fields=["name"],
         )
-        result = self.read_adapter.filter(request)
+        result = self.read_adapter.filter(request, False)
         assert result == {
             2: {"name": "Committee 2"},
             3: {"name": "Committee 3"},
@@ -374,7 +374,7 @@ class TestReadAdapter(BaseRelationalDBTestCase):
             ),
             mapped_fields=["name"],
         )
-        result = self.read_adapter.filter(request)
+        result = self.read_adapter.filter(request, False)
         assert result == {
             4: {"name": "grb"},
             7: {"name": "cyangr"},
