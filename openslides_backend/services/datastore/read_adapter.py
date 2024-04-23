@@ -16,6 +16,7 @@ from openslides_backend.datastore.shared.postgresql_backend.connection_handler i
 )
 from openslides_backend.datastore.shared.postgresql_backend.pg_connection_handler import (
     PgConnectionHandlerService,
+    retry_on_db_failure,
 )
 from openslides_backend.datastore.shared.postgresql_backend.sql_query_helper import (
     SqlQueryHelper,
@@ -48,6 +49,7 @@ class ReadAdapter:
         """Returns the context manager of the underlying database."""
         return self.connection.get_connection_context()
 
+    @retry_on_db_failure
     def get(self, request: GetRequest) -> Model | None:
         """Gets the specified model."""
         collection, id_ = collection_and_id_from_fqid(request.fqid)
@@ -73,6 +75,7 @@ class ReadAdapter:
                 return model
         return None
 
+    @retry_on_db_failure
     def get_many(self, request: GetManyRequest) -> dict[Collection, dict[Id, Model]]:
         """Gets multiple models."""
         request_data = self._get_get_many_request_data(request)
@@ -103,6 +106,7 @@ class ReadAdapter:
 
         return self._call_multiple_queries(query_data, collection_by_index, collections)
 
+    @retry_on_db_failure
     def get_all(self, request: GetAllRequest) -> dict[Id, Model]:
         """
         Returns all (non-deleted) models of one collection. May return a huge amount
@@ -116,6 +120,7 @@ class ReadAdapter:
                 )
         return {}
 
+    @retry_on_db_failure
     def get_everything(self) -> dict[Collection, dict[Id, Model]]:
         """
         Returns all models In the form of the example data: Collections mapped to
@@ -135,6 +140,7 @@ class ReadAdapter:
         result = self._call_multiple_queries(query_data)
         return {key: value for key, value in result.items() if value}
 
+    @retry_on_db_failure
     def filter(self, request: FilterRequest) -> dict[Id, Model]:
         """Returns all models that satisfy the filter condition."""
         mapped_fields_str = self._build_select_from_mapped_fields(
@@ -159,6 +165,7 @@ class ReadAdapter:
         count = self.count(request)
         return count > 0
 
+    @retry_on_db_failure
     def count(self, request: AggregateRequest) -> int:
         """Returns the amount of models that satisfy the filter conditions."""
         arguments: list[str] = []
@@ -172,6 +179,7 @@ class ReadAdapter:
                 return result[0][0]
         return 0
 
+    @retry_on_db_failure
     def min(self, request: MinMaxRequest) -> Any:
         """
         Returns the mininum value of the given field for all models that satisfy the
@@ -188,6 +196,7 @@ class ReadAdapter:
                 return result[0][0]
         return None
 
+    @retry_on_db_failure
     def max(self, request: MinMaxRequest) -> Any:
         """
         Returns the maximum value of the given field for all models that satisfy the
