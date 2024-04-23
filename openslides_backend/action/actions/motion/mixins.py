@@ -2,12 +2,11 @@ from hashlib import md5
 from typing import Any
 
 import simplejson as json
-from bs4 import BeautifulSoup
-
-from openslides_backend.shared.filters import And, FilterOperator
 
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
+from ....shared.filters import And, FilterOperator
+from ....shared.html import get_text_from_html
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import ALLOWED_HTML_TAGS_STRICT, validate_html
 from ...action import Action
@@ -84,20 +83,15 @@ class TextHashMixin(Action):
     @staticmethod
     def get_hash_for_motion(motion: dict[str, Any]) -> str | None:
         if html := motion.get("text"):
-            text = TextHashMixin.get_text_from_html(html)
+            text = get_text_from_html(html)
         elif paragraphs := motion.get("amendment_paragraphs"):
             paragraph_texts = {
-                key: TextHashMixin.get_text_from_html(html)
-                for key, html in paragraphs.items()
+                key: get_text_from_html(html) for key, html in paragraphs.items()
             }
             text = json.dumps(paragraph_texts, sort_keys=True)
         else:
             return None
         return TextHashMixin.get_hash(text)
-
-    @staticmethod
-    def get_text_from_html(html: str) -> str:
-        return BeautifulSoup(html, features="html.parser").get_text()
 
     @staticmethod
     def get_hash(text: str) -> str:

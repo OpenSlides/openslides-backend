@@ -16,6 +16,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
+from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from .create_base import MotionCreateBase
 from .mixins import AmendmentParagraphHelper, TextHashMixin
 from .payload_validation_mixin import MotionCreatePayloadValidationMixin
@@ -25,6 +26,7 @@ from .payload_validation_mixin import MotionCreatePayloadValidationMixin
 class MotionCreate(
     AmendmentParagraphHelper,
     MotionCreatePayloadValidationMixin,
+    DelegationBasedRestrictionMixin,
     TextHashMixin,
     MotionCreateBase,
 ):
@@ -154,7 +156,12 @@ class MotionCreate(
             forbidden_fields.add("attachment_ids")
 
         perm = Permissions.Motion.CAN_MANAGE
-        if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+        if (
+            self.check_perm_and_delegator_restriction(
+                perm, "users_forbid_delegator_as_submitter", [instance["meeting_id"]]
+            )
+            == []
+        ):
             whitelist += [
                 "title",
                 "text",

@@ -130,6 +130,7 @@ Repeat an autonumbering task from above, but set the states `set_number=false`. 
 
 ## Permissions
 The request user needs:
+- `motion.can_manage` if he has his vote delegated and the meeting has `users_forbid_delegator_as_submitter`
 - `motion.can_create_amendments` if `lead_motion_id` is given
 - `motion.can_create` else
 

@@ -21,9 +21,18 @@ Two types of operation:
   If it is:
   - (not a point of order or `meeting/list_of_speakers_closing_disables_point_of_order` is set) and
   - the list of speakers is closed and
-  - the request user has not `list_of_speakers.can_manage`
+  - the request user does not have `list_of_speakers.can_manage`
 
-  the request must be rejected due to a closed list. All other cases are allowed.
+  the request must be rejected due to a closed list.
+
+  Or if:
+  - the meeting has `users_forbid_delegator_in_list_of_speakers` set to true and
+  - the request user has his voting rights delegated and
+  - the request user does not have `list_of_speakers.can_manage`
+
+  the request must be rejected as well.
+  
+  All other cases are allowed.
 
 - *adding another user* (`meeting_user_id` does *not* belong to the request user) is allowed with
   conditions see under **Permissions**. If `point_of_order` is also `true`, it is only allowed if
