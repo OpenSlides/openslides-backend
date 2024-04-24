@@ -855,3 +855,189 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+
+    def test_forward_multiple_to_meeting_with_set_number(self) -> None:
+        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "motion_ids": [12, 13],
+                },
+                "motion/13": {
+                    "title": "title_FcnPUXJB2",
+                    "meeting_id": 1,
+                    "state_id": 30,
+                },
+                "motion_state/30": {"motion_ids": [12, 13]},
+                "motion_state/34": {"set_number": True},
+            }
+        )
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "title_12",
+                    "meeting_id": 2,
+                    "origin_id": 12,
+                    "text": "test2",
+                    "reason": "reason_jLvcgAMx2",
+                },
+                {
+                    "title": "title_13",
+                    "meeting_id": 2,
+                    "origin_id": 13,
+                    "text": "test3",
+                    "reason": "reason_jLvcgAMx3",
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        created = [date["id"] for date in response.json["results"][0]]
+        for i in range(2):
+            self.assert_model_exists(f"motion/{created[i]}", {"number": f"{i+1}"})
+
+    def test_forward_multiple_to_meeting_with_set_number_and_use_original_number(
+        self,
+    ) -> None:
+        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "motion_ids": [12, 13],
+                },
+                "motion/13": {
+                    "title": "title_FcnPUXJB2",
+                    "meeting_id": 1,
+                    "state_id": 30,
+                    "number": "1",
+                },
+                "motion_state/30": {"motion_ids": [12, 13]},
+                "motion_state/34": {"set_number": True},
+            }
+        )
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "title_12",
+                    "meeting_id": 2,
+                    "origin_id": 12,
+                    "text": "test2",
+                    "reason": "reason_jLvcgAMx2",
+                },
+                {
+                    "title": "title_13",
+                    "meeting_id": 2,
+                    "origin_id": 13,
+                    "text": "test3",
+                    "reason": "reason_jLvcgAMx3",
+                    "use_original_number": True,
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        created = [date["id"] for date in response.json["results"][0]]
+        self.assert_model_exists(f"motion/{created[0]}", {"number": "1"})
+        self.assert_model_exists(f"motion/{created[1]}", {"number": "1-1"})
+
+    def test_forward_multiple_to_meeting_with_set_number_and_use_original_number_2(
+        self,
+    ) -> None:
+        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "motion_ids": [12, 13],
+                },
+                "motion/12": {"number": "1"},
+                "motion/13": {
+                    "title": "title_FcnPUXJB2",
+                    "meeting_id": 1,
+                    "state_id": 30,
+                },
+                "motion_state/30": {"motion_ids": [12, 13]},
+                "motion_state/34": {"set_number": True},
+            }
+        )
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "title_12",
+                    "meeting_id": 2,
+                    "origin_id": 12,
+                    "text": "test2",
+                    "reason": "reason_jLvcgAMx2",
+                    "use_original_number": True,
+                },
+                {
+                    "title": "title_13",
+                    "meeting_id": 2,
+                    "origin_id": 13,
+                    "text": "test3",
+                    "reason": "reason_jLvcgAMx3",
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        created = [date["id"] for date in response.json["results"][0]]
+        self.assert_model_exists(f"motion/{created[0]}", {"number": "1"})
+        self.assert_model_exists(f"motion/{created[1]}", {"number": "2"})
+
+    def test_forward_multiple_to_meeting_with_set_number_and_use_original_number_3(
+        self,
+    ) -> None:
+        """Forwarding of 1 motion to 2 meetings in 1 transaction"""
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "motion_ids": [12, 13],
+                },
+                "meeting/2": {
+                    "motion_ids": [14],
+                },
+                "motion/12": {"number": "1"},
+                "motion/13": {
+                    "title": "title_FcnPUXJB2",
+                    "meeting_id": 1,
+                    "state_id": 30,
+                    "number": "1",
+                },
+                "motion/14": {
+                    "title": "title_FcnPUXJB2",
+                    "meeting_id": 2,
+                    "state_id": 30,
+                    "number": "1",
+                },
+                "motion_state/30": {"motion_ids": [12, 13]},
+            }
+        )
+        response = self.request_multi(
+            "motion.create_forwarded",
+            [
+                {
+                    "title": "title_12",
+                    "meeting_id": 2,
+                    "origin_id": 12,
+                    "text": "test2",
+                    "reason": "reason_jLvcgAMx2",
+                    "use_original_number": True,
+                },
+                {
+                    "title": "title_13",
+                    "meeting_id": 2,
+                    "origin_id": 13,
+                    "text": "test3",
+                    "reason": "reason_jLvcgAMx3",
+                    "use_original_number": True,
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        created = [date["id"] for date in response.json["results"][0]]
+        self.assert_model_exists(f"motion/{created[0]}", {"number": "1-1"})
+        self.assert_model_exists(f"motion/{created[1]}", {"number": "1-2"})
