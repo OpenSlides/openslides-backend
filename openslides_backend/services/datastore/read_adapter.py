@@ -21,13 +21,16 @@ from openslides_backend.datastore.shared.postgresql_backend.pg_connection_handle
 from openslides_backend.datastore.shared.postgresql_backend.sql_query_helper import (
     SqlQueryHelper,
 )
-from openslides_backend.datastore.shared.util import BadCodingError, InvalidFormat
+from openslides_backend.datastore.shared.util import (
+    BadCodingError,
+    InvalidFormat,
+    ModelDoesNotExist,
+)
 from openslides_backend.shared.filters import And, Filter, FilterOperator, Not, Or
 from openslides_backend.shared.patterns import Collection, Id
 
 from ...shared.patterns import collection_and_id_from_fqid
-
-Model = dict[str, Any]
+from .interface import PartialModel
 
 
 class IndexBasedQueryData(TypedDict):
@@ -50,7 +53,7 @@ class ReadAdapter:
         return self.connection.get_connection_context()
 
     @retry_on_db_failure
-    def get(self, request: GetRequest, lock: bool = True) -> Model | None:
+    def get(self, request: GetRequest, lock: bool = True) -> PartialModel:
         """Gets the specified model."""
         collection, id_ = collection_and_id_from_fqid(request.fqid)
         arguments: list[Any] = [id_]
@@ -67,20 +70,19 @@ class ReadAdapter:
                 query += " for update"
             with self.connection.get_connection_context():
                 result = self.connection.query(query, (arguments))
-                if len(result) == 0:
-                    return None
-                row = result[0]
-                model = {}
-                for field in request.mapped_fields or row.keys():
-                    if row.get(field) is not None:
-                        model[field] = row[field]
-                return model
-        return None
+                if len(result) != 0:
+                    row = result[0]
+                    model = {}
+                    for field in request.mapped_fields or row.keys():
+                        if row.get(field) is not None:
+                            model[field] = row[field]
+                    return model
+        raise ModelDoesNotExist(request.fqid)
 
     @retry_on_db_failure
     def get_many(
         self, request: GetManyRequest, lock: bool = True
-    ) -> dict[Collection, dict[Id, Model]]:
+    ) -> dict[Collection, dict[Id, PartialModel]]:
         """Gets multiple models."""
         request_data = self._get_get_many_request_data(request)
 
@@ -111,7 +113,9 @@ class ReadAdapter:
         return self._call_multiple_queries(query_data, collection_by_index, collections)
 
     @retry_on_db_failure
-    def get_all(self, request: GetAllRequest, lock: bool = True) -> dict[Id, Model]:
+    def get_all(
+        self, request: GetAllRequest, lock: bool = True
+    ) -> dict[Id, PartialModel]:
         """
         Returns all (non-deleted) models of one collection. May return a huge amount
         of data, so use with caution.
@@ -125,7 +129,7 @@ class ReadAdapter:
         return {}
 
     @retry_on_db_failure
-    def get_everything(self) -> dict[Collection, dict[Id, Model]]:
+    def get_everything(self) -> dict[Collection, dict[Id, PartialModel]]:
         """
         Returns all models In the form of the example data: Collections mapped to
         lists of models.
@@ -145,14 +149,16 @@ class ReadAdapter:
         return {key: value for key, value in result.items() if value}
 
     @retry_on_db_failure
-    def filter(self, request: FilterRequest, lock: bool = True) -> dict[Id, Model]:
+    def filter(
+        self, request: FilterRequest, lock: bool = True
+    ) -> dict[Id, PartialModel]:
         """Returns all models that satisfy the filter condition."""
         mapped_fields_str = self._build_select_from_mapped_fields(
             tuple(request.mapped_fields)
         )
         arguments: list[str] = []
         filter_str = self._filter_helper(request.filter, arguments)
-        final: dict[Id, Model] = {}
+        final: dict[Id, PartialModel] = {}
         if view_name := self._get_view_name_from_collection(request.collection):
             query = f"""
                 select {mapped_fields_str} from {view_name}
@@ -223,8 +229,8 @@ class ReadAdapter:
         self,
         result: Any,
         fields: Iterable[str] | None = None,
-        previous_models: dict[Id, Model] | None = {},
-    ) -> dict[Id, Model]:
+        previous_models: dict[Id, PartialModel] | None = {},
+    ) -> dict[Id, PartialModel]:
         models = previous_models or {}
         for row in result:
             id_: int = row["id"]
@@ -267,8 +273,8 @@ class ReadAdapter:
         query_data: IndexBasedQueryData,
         collection_from_index: Callable[[str], str] | None = None,
         collections: list[Collection] = [],
-    ) -> dict[Collection, dict[Id, Model]]:
-        models: dict[str, dict[Id, Model]] = {
+    ) -> dict[Collection, dict[Id, PartialModel]]:
+        models: dict[str, dict[Id, PartialModel]] = {
             collection: {} for collection in collections
         }
         if len(query_data["queries_by_index"]):

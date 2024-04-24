@@ -43,13 +43,13 @@ from ...shared.patterns import (
     collection_and_field_from_fqfield,
     collectionfield_from_collection_and_field,
     fqfield_from_fqid_and_field,
-    fqid_from_collection_and_id,
     is_collectionfield,
     is_fqfield,
 )
 from . import commands
 from .handle_datastore_errors import handle_datastore_errors, raise_datastore_error
 from .interface import BaseDatastoreService, Engine, LockResult, PartialModel
+from .read_adapter import ReadAdapter
 
 MappedFieldsPerFqid = dict[FullQualifiedId, list[str]]
 
@@ -61,6 +61,7 @@ class DatastoreAdapter(BaseDatastoreService):
     """
 
     reader: Reader
+    read_adapter: ReadAdapter
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField or CollectionField
     locked_fields: dict[str, CollectionFieldLock]
@@ -71,6 +72,7 @@ class DatastoreAdapter(BaseDatastoreService):
         self.reader = injector.get(Reader)
         self.locked_fields = {}
         self.env = env
+        self.read_adapter = ReadAdapter()
 
     def retrieve(self, command: commands.Command) -> Any:
         """
@@ -99,7 +101,7 @@ class DatastoreAdapter(BaseDatastoreService):
         return payload
 
     def get_database_context(self) -> ContextManager[None]:
-        return self.reader.get_database_context()
+        return self.read_adapter.get_database_context()
 
     @handle_datastore_errors
     def get(
@@ -115,26 +117,12 @@ class DatastoreAdapter(BaseDatastoreService):
         request = GetRequest(
             fqid=str(fqid),
             mapped_fields=mapped_fields,
-            position=position,
-            get_deleted_models=get_deleted_models,
         )
         self.logger.debug(
             f"Start GET request to datastore with the following data: {request}"
         )
-        response = self.reader.get(request)
-        if lock_result:
-            instance_position = response.get("meta_position")
-            if not isinstance(instance_position, int):
-                raise DatastoreException(
-                    "Response from datastore contains invalid 'meta_position'."
-                )
-            if isinstance(lock_result, list):
-                mapped_fields_set = set(lock_result)
-            else:
-                mapped_fields_set = set(mapped_fields)
-            self.update_locked_fields_from_mapped_fields(
-                fqid, instance_position, mapped_fields_set
-            )
+        # TODO: properly handle lock_result?
+        response = self.read_adapter.get(request, bool(lock_result))
         return response
 
     @handle_datastore_errors
@@ -156,11 +144,11 @@ class DatastoreAdapter(BaseDatastoreService):
             )
             for gmr in get_many_requests
         ]
-        request = GetManyRequest(request_parts, [], position, get_deleted_models)
+        request = GetManyRequest(request_parts, [])
         self.logger.debug(
             f"Start GET_MANY request to datastore with the following data: {request}"
         )
-        response = self.reader.get_many(request)
+        response = self.read_adapter.get_many(request, lock_result)
         result: dict[Collection, dict[int, PartialModel]] = defaultdict(dict)
         for get_many_request in get_many_requests:
             collection = get_many_request.collection
@@ -171,16 +159,6 @@ class DatastoreAdapter(BaseDatastoreService):
                 if instance_id not in response[collection]:
                     continue
                 value = response[collection][instance_id]
-                if lock_result:
-                    instance_position = value.get("meta_position")
-                    if not isinstance(instance_position, int):
-                        raise DatastoreException(
-                            "Response from datastore contains invalid 'meta_position'."
-                        )
-                    fqid = fqid_from_collection_and_id(collection, instance_id)
-                    self.update_locked_fields_from_mapped_fields(
-                        fqid, instance_position, get_many_request.mapped_fields
-                    )
                 result[collection][instance_id] = value
         return result
 
@@ -198,28 +176,11 @@ class DatastoreAdapter(BaseDatastoreService):
         request = GetAllRequest(
             collection=str(collection),
             mapped_fields=list(mapped_fields_set),
-            get_deleted_models=get_deleted_models,
         )
         self.logger.debug(
             f"Start GET_ALL request to datastore with the following data: {request}"
         )
-        response = self.reader.get_all(request)
-        if lock_result and len(response) > 0:
-            if not mapped_fields:
-                raise DatastoreException(
-                    "You cannot lock in get_all without mapped_fields"
-                )
-            for field in mapped_fields_set:
-                # just take the first position, new positions will always be higher anyway
-                instance_position = list(response.values())[0].get("meta_position")
-                if not isinstance(instance_position, int):
-                    raise DatastoreException(
-                        "Response from datastore contains invalid 'meta_position'."
-                    )
-                collection_field = collectionfield_from_collection_and_field(
-                    collection, field
-                )
-                self.update_locked_fields(collection_field, instance_position)
+        response = self.read_adapter.get_all(request, lock_result)
         return response
 
     @handle_datastore_errors
@@ -231,21 +192,14 @@ class DatastoreAdapter(BaseDatastoreService):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> dict[int, PartialModel]:
-        full_filter = self.apply_deleted_models_behaviour_to_filter(
-            filter, get_deleted_models
-        )
         request = FilterRequest(
-            collection=str(collection), filter=full_filter, mapped_fields=mapped_fields
+            collection=str(collection), filter=filter, mapped_fields=mapped_fields
         )
         self.logger.debug(
             f"Start FILTER request to datastore with the following data: {request}"
         )
-        response = self.reader.filter(request)
-        if lock_result:
-            self.lock_collection_fields_from_filter(
-                collection, filter, response.get("position")
-            )
-        return response["data"]
+        response = self.read_adapter.filter(request, lock_result)
+        return response
 
     def exists(
         self,
@@ -278,18 +232,12 @@ class DatastoreAdapter(BaseDatastoreService):
         get_deleted_models: DeletedModelsBehaviour,
         lock_result: bool,
     ) -> Any:
-        full_filter = self.apply_deleted_models_behaviour_to_filter(
-            filter, get_deleted_models
-        )
-        request = AggregateRequest(collection=str(collection), filter=full_filter)
+        request = AggregateRequest(collection=str(collection), filter=filter)
         self.logger.debug(
             f"Start {route.upper()} request to datastore with the following data: {request}"
         )
-        response = getattr(self.reader, route)(request)
-        if lock_result:
-            self.lock_collection_fields_from_filter(
-                collection, filter, response.get("position")
-            )
+        response = getattr(self.read_adapter, route)(request)
+        # TODO: Reimplement logging somehow
         return response[route]
 
     def min(
@@ -326,20 +274,14 @@ class DatastoreAdapter(BaseDatastoreService):
         get_deleted_models: DeletedModelsBehaviour,
         lock_result: bool,
     ) -> int | None:
-        full_filter = self.apply_deleted_models_behaviour_to_filter(
-            filter, get_deleted_models
-        )
         request = MinMaxRequest(
-            collection=str(collection), filter=full_filter, field=field
+            collection=str(collection), filter=filter, field=field
         )
         self.logger.debug(
             f"Start {route.upper()} request to datastore with the following data: {request}"
         )
-        response = getattr(self.reader, route)(request)
-        if lock_result:
-            self.lock_collection_fields_from_filter(
-                collection, filter, response.get("position"), field
-            )
+        response = getattr(self.read_adapter, route)(request)
+        # TODO: Reimplement logging somehow
         return response[route]
 
     def history_information(
