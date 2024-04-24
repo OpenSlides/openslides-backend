@@ -10,12 +10,14 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..meeting_user.create import MeetingUserCreate
 from ..meeting_user.update import MeetingUserUpdate
+from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..user.create import UserCreate
 from .create_base import MotionCreateBase
 
@@ -29,6 +31,10 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
     schema = DefaultSchema(Motion()).get_create_schema(
         required_properties=["meeting_id", "title", "text", "origin_id"],
         optional_properties=["reason"],
+        additional_optional_fields={
+            "use_original_submitter": {"type": "boolean"},
+            "use_original_number": {"type": "boolean"},
+        },
     )
 
     def prefetch(self, action_data: ActionData) -> None:
@@ -76,6 +82,7 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "all_origin_ids",
                         "derived_motion_ids",
                         "all_derived_motion_ids",
+                        "number",
                     ],
                 ),
             ]
@@ -97,72 +104,118 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["id", "default_group_id"],
         )
-        if committee.get("forwarding_user_id"):
-            forwarding_user_id = committee["forwarding_user_id"]
-            meeting_id = instance["meeting_id"]
-            forwarding_user_groups = self.get_groups_from_meeting_user(
-                meeting_id, forwarding_user_id
-            )
-            if target_meeting["default_group_id"] not in forwarding_user_groups:
-                meeting_user = self.get_meeting_user(
-                    meeting_id, forwarding_user_id, ["id", "group_ids"]
-                )
-                if not meeting_user:
-                    self.execute_other_action(
-                        MeetingUserCreate,
-                        [
-                            {
-                                "meeting_id": meeting_id,
-                                "user_id": forwarding_user_id,
-                                "group_ids": [target_meeting["default_group_id"]],
-                            }
-                        ],
-                    )
-                else:
-                    self.execute_other_action(
-                        MeetingUserUpdate,
-                        [
-                            {
-                                "id": meeting_user["id"],
-                                "group_ids": (meeting_user.get("group_ids") or [])
-                                + [target_meeting["default_group_id"]],
-                            }
-                        ],
-                    )
 
-        else:
-            username = committee.get("name", "Committee User")
-            meeting_id = instance["meeting_id"]
-            committee_user_create_payload = {
-                "last_name": username,
-                "is_physical_person": False,
-                "is_active": False,
-                "forwarding_committee_ids": [committee["id"]],
-            }
-            action_result = self.execute_other_action(
-                UserCreate, [committee_user_create_payload], skip_history=True
+        if instance.pop("use_original_submitter", None):
+            submitters = self.datastore.filter(
+                "motion_submitter",
+                FilterOperator("motion_id", "=", instance["origin_id"]),
+                ["meeting_user_id"],
             )
-            assert action_result and action_result[0]
-            forwarding_user_id = action_result[0]["id"]
-            self.execute_other_action(
-                MeetingUserCreate,
-                [
-                    {
-                        "user_id": forwarding_user_id,
-                        "meeting_id": meeting_id,
-                        "group_ids": [target_meeting["default_group_id"]],
+            if submitters:
+                self.apply_instance(instance)
+                weight = 1
+                for submitter in submitters.values():
+                    meeting_user_id = submitter["meeting_user_id"]
+                    data = {
+                        "motion_id": instance["id"],
+                        "meeting_user_id": meeting_user_id,
+                        "weight": weight,
                     }
-                ],
-            )
-        instance["submitter_ids"] = [forwarding_user_id]
+                    weight += 1
+                    self.execute_other_action(
+                        MotionSubmitterCreateAction, [data], skip_history=True
+                    )
+            else:
+                # TODO: Was wenn die motion keine submitter hat
+                pass
+        else:
+            if committee.get("forwarding_user_id"):
+                forwarding_user_id = committee["forwarding_user_id"]
+                meeting_id = instance["meeting_id"]
+                forwarding_user_groups = self.get_groups_from_meeting_user(
+                    meeting_id, forwarding_user_id
+                )
+                if target_meeting["default_group_id"] not in forwarding_user_groups:
+                    meeting_user = self.get_meeting_user(
+                        meeting_id, forwarding_user_id, ["id", "group_ids"]
+                    )
+                    if not meeting_user:
+                        self.execute_other_action(
+                            MeetingUserCreate,
+                            [
+                                {
+                                    "meeting_id": meeting_id,
+                                    "user_id": forwarding_user_id,
+                                    "group_ids": [target_meeting["default_group_id"]],
+                                }
+                            ],
+                        )
+                    else:
+                        self.execute_other_action(
+                            MeetingUserUpdate,
+                            [
+                                {
+                                    "id": meeting_user["id"],
+                                    "group_ids": (meeting_user.get("group_ids") or [])
+                                    + [target_meeting["default_group_id"]],
+                                }
+                            ],
+                        )
 
-        self.create_submitters(instance)
+            else:
+                username = committee.get("name", "Committee User")
+                meeting_id = instance["meeting_id"]
+                committee_user_create_payload = {
+                    "last_name": username,
+                    "is_physical_person": False,
+                    "is_active": False,
+                    "forwarding_committee_ids": [committee["id"]],
+                }
+                action_result = self.execute_other_action(
+                    UserCreate, [committee_user_create_payload], skip_history=True
+                )
+                assert action_result and action_result[0]
+                forwarding_user_id = action_result[0]["id"]
+                self.execute_other_action(
+                    MeetingUserCreate,
+                    [
+                        {
+                            "user_id": forwarding_user_id,
+                            "meeting_id": meeting_id,
+                            "group_ids": [target_meeting["default_group_id"]],
+                        }
+                    ],
+                )
+            instance["submitter_ids"] = [forwarding_user_id]
+
+            self.create_submitters(instance)
+
         self.set_sequential_number(instance)
-        self.set_created_last_modified_and_number(instance)
+        self.handle_number(instance)
         self.set_origin_ids(instance)
         self.set_text_hash(instance)
         instance["forwarded"] = round(time.time())
         return instance
+
+    def handle_number(self, instance: dict[str, Any]) -> dict[str, Any]:
+        origin = self.datastore.get(
+            fqid_from_collection_and_id("motion", instance["origin_id"]), ["number"]
+        )
+        if instance.pop("use_original_number", None) and (num := origin.get("number")):
+            number = self.get_clean_number(num, instance["meeting_id"])
+            self.set_created_last_modified(instance)
+            instance["number"] = number
+        else:
+            self.set_created_last_modified_and_number(instance)
+        return instance
+
+    def get_clean_number(self, number: str, meeting_id: int) -> str:
+        new_number = number
+        next_identifier = 1
+        while not self._check_if_unique(new_number, meeting_id, None):
+            new_number = f"{number}-{next_identifier}"
+            next_identifier += 1
+        return new_number
 
     def check_for_origin_id(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting = self.datastore.get(
