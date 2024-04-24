@@ -105,6 +105,87 @@ class TestConcurrentRequests:
         assert not thread1.is_alive()
         assert not self.indicator_map[Route.GET]
 
+    @pytest.mark.skip("Needs to be adapted to backend test setup")
+    def test_3_concurrent_requests(self):
+        """
+        L_i = lock form lock_map
+        I_i = indicator variable from indicator_map
+        T_x = thread_x
+        +-------------------+-----------------------+--------------------------+--------------------------+
+        |       main        |          T1           |            T2            |            T3            |
+        +-------------------+-----------------------+--------------------------+--------------------------+
+        | L1 locked         |                       |                          |                          |
+        | T1 started        |                       |                          |                          |
+        |                   | request sent          |                          |                          |
+        |                   | connection acquired   |                          |                          |
+        |                   | set I1=True           |                          |                          |
+        |                   | waiting for L1        |                          |                          |
+        | assert I1 is True |                       |                          |                          |
+        | L2 locked         |                       |                          |                          |
+        | T2 started        |                       |                          |                          |
+        |                   |                       | request sent             |                          |
+        |                   |                       | connection acquired      |                          |
+        |                   |                       | set I2=True              |                          |
+        |                   |                       | waiting for L2           |                          |
+        | assert I2 is True |                       |                          |                          |
+        | L3 locked         |                       |                          |                          |
+        | T3 started        |                       |                          |                          |
+        |                   |                       |                          | request sent             |
+        |                   |                       |                          | waiting for connection   |
+        | L1 released       |                       |                          |                          |
+        |                   | L1 locked             |                          |                          |
+        |                   | L1 released           |                          |                          |
+        |                   | set I1=False          |                          |                          |
+        |                   | connection put back   |                          |                          |
+        |                   | --------------------- |                          |                          |
+        |                   |                       |                          | connection acquired      |
+        |                   |                       |                          | set I3=True              |
+        |                   |                       |                          | waiting for L3           |
+        | assert I3 is True |                       |                          |                          |
+        | L3 released       |                       |                          |                          |
+        |                   |                       |                          | L3 locked                |
+        |                   |                       |                          | L3 released              |
+        |                   |                       |                          | set I3=False             |
+        |                   |                       |                          | connection put back      |
+        |                   |                       |                          | ------------------------ |
+        | L2 released       |                       |                          |                          |
+        |                   |                       | L2 locked                |                          |
+        |                   |                       | L2 released              |                          |
+        |                   |                       | set I2=False             |                          |
+        |                   |                       | connection put back      |                          |
+        |                   |                       | ------------------------ |                          |
+        """
+
+        thread1 = self.start_locked_thread(Route.GET, {"fqid": "a/1"})
+        self.assert_thread_is_locked(thread1, Route.GET)
+
+        thread2 = self.start_locked_thread(Route.GET_MANY, {"requests": ["a/1/f"]})
+        self.assert_thread_is_locked(thread2, Route.GET_MANY)
+
+        thread3 = self.start_locked_thread(Route.GET_ALL, {"collection": "a"})
+
+        thread3.join(0.1)
+        assert thread3.is_alive()
+        assert not self.indicator_map[Route.GET_ALL]
+
+        self.lock_map[Route.GET].release()
+        thread1.join(0.1)
+        assert not thread1.is_alive()
+        assert not self.indicator_map[Route.GET]
+
+        thread3.join(0.1)
+        assert thread3.is_alive()
+        assert self.indicator_map[Route.GET_ALL]
+
+        self.lock_map[Route.GET_ALL].release()
+        thread3.join(0.1)
+        assert not thread3.is_alive()
+        assert not self.indicator_map[Route.GET_ALL]
+
+        self.lock_map[Route.GET_MANY].release()
+        thread2.join(0.1)
+        assert not thread2.is_alive()
+
     def patch_database_method(self, route):
         def wait_for_lock_wrapper(route):
             def wait_for_lock(*args, **kwargs):

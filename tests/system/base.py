@@ -8,6 +8,8 @@ import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
 
 from openslides_backend.datastore.reader.services import register_services
+from openslides_backend.datastore.shared.di import injector
+from openslides_backend.datastore.shared.services import ShutdownService
 from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
@@ -109,6 +111,7 @@ class BaseSystemTestCase(TestCase):
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
             thread.join()
+        injector.get(ShutdownService).shutdown()
         super().tearDown()
 
     @staticmethod
