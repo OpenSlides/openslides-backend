@@ -1,6 +1,6 @@
 aiosmtpd==1.4.5
 autoflake==2.3.1
-black==24.4.0
+black==24.4.1
 debugpy==1.8.1
 flake8==7.0.0
 isort==5.13.2
