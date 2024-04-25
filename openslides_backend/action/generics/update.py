@@ -29,5 +29,5 @@ class UpdateAction(Action):
             k: v for k, v in instance.items() if k != "id" and not k.startswith("meta_")
         }
         if not fields:
-            return [] # type: ignore # since mypy 1.10.0 appears: error: No return value expected  [return-value]
+            return []  # type: ignore # since mypy 1.10.0 appears: error: No return value expected  [return-value]
         yield self.build_event(EventType.Update, fqid, fields)
