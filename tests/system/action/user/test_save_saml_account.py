@@ -233,7 +233,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         with cls.connection_handler.get_connection_context():
             with cls.connection_handler.get_current_connection().cursor() as cursor:
                 cursor.execute("select max(position) from positions;")
-                return cursor.fetchone()[0]
+                return cursor.fetchone()["max"]
 
     def test_update_saml_account_correct(self) -> None:
         self.set_models({"user/78": {"username": "111222333", "saml_id": "111222333"}})

@@ -105,12 +105,12 @@ class TestConcurrentRequests:
         assert not thread1.is_alive()
         assert not self.indicator_map[Route.GET]
 
+    @pytest.mark.skip("Needs to be adapted to backend test setup")
     def test_3_concurrent_requests(self):
         """
         L_i = lock form lock_map
         I_i = indicator variable from indicator_map
         T_x = thread_x
-
         +-------------------+-----------------------+--------------------------+--------------------------+
         |       main        |          T1           |            T2            |            T3            |
         +-------------------+-----------------------+--------------------------+--------------------------+

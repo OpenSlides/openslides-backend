@@ -1,7 +1,6 @@
 import os
-from typing import Any
 
-import psycopg2
+import psycopg
 import pytest
 
 from openslides_backend.datastore.shared.di import injector
@@ -17,7 +16,7 @@ def get_env(name):
 
 
 def drop_db_definitions(cur):
-    for table in ALL_TABLES:
+    for table in ALL_TABLES + ("events_swap",):
         cur.execute(f"DROP TABLE IF EXISTS {table} CASCADE")
     cur.execute("DROP TYPE IF EXISTS event_type CASCADE")
 
@@ -34,23 +33,22 @@ def reset_di():
 
 # Postgresql
 
-_db_connection: Any = None
+_db_connection: psycopg.Connection
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db_connection():
     global _db_connection
-    _db_connection = psycopg2.connect(
+    _db_connection = psycopg.connect(
         host=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.HOST),
         port=int(get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.PORT) or 5432),
-        database=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.NAME),
+        dbname=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.NAME),
         user=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.USER),
         password=DEV_SECRET,
-        application_name="openslides_backend_tests",
     )
     _db_connection.autocommit = False
-    yield _db_connection
-    _db_connection.close()
+    with _db_connection:
+        yield _db_connection
 
 
 @pytest.fixture()
@@ -61,37 +59,35 @@ def db_connection():
 
 @pytest.fixture(autouse=True)
 def reset_db_data(db_connection):
-    with db_connection:
-        with db_connection.cursor() as cur:
-            for table in ALL_TABLES:
-                cur.execute(f"DELETE FROM {table}")
+    with db_connection.cursor() as cur:
+        for table in ALL_TABLES:
+            cur.execute(f"DELETE FROM {table}")
 
-            # Reset all sequences.
-            cur.execute(
-                """
-                SELECT SETVAL(c.oid, 1, false)
-                from pg_class c JOIN pg_namespace n on n.oid = c.relnamespace
-                where c.relkind = 'S' and n.nspname = 'public'
+        # Reset all sequences.
+        cur.execute(
             """
-            )
+            SELECT SETVAL(c.oid, 1, false)
+            from pg_class c JOIN pg_namespace n on n.oid = c.relnamespace
+            where c.relkind = 'S' and n.nspname = 'public'
+        """
+        )
+    db_connection.commit()
     yield
 
 
 @pytest.fixture()
 def db_cur(db_connection):
-    with db_connection:
-        with db_connection.cursor() as cur:
-            yield cur
+    with db_connection.cursor() as cur:
+        yield cur
 
 
 @pytest.fixture(scope="session", autouse=True)
 def reset_db_schema(setup_db_connection):
     conn = setup_db_connection
-    with conn:
-        with conn.cursor() as cur:
-            drop_db_definitions(cur)
-            schema = get_db_schema_definition()
-            cur.execute(schema)
+    with conn.cursor() as cur:
+        drop_db_definitions(cur)
+        schema = get_db_schema_definition()
+        cur.execute(schema)
 
 
 # Flask

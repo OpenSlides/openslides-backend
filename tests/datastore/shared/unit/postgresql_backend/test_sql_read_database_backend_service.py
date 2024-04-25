@@ -105,7 +105,7 @@ def test_get_many(
     q_fqid2 = MagicMock()
     models = read_database.get_many([q_fqid1, q_fqid2])
 
-    assert q.call_args.args[1] == [(q_fqid1, q_fqid2)]
+    assert q.call_args.args[1] == [[q_fqid1, q_fqid2]]
     assert models == {fqid1: model1, fqid2: model2}
 
 
@@ -220,7 +220,7 @@ def test_build_model_ignore_deleted(
 
     result = read_database.build_model_ignore_deleted(fqid)
 
-    assert q.call_args.args[1] == [(fqid,)]
+    assert q.call_args.args[1] == [[fqid]]
     bmfe.assert_called_with(events)
     assert result == model
 
@@ -237,7 +237,7 @@ def test_build_model_ignore_deleted_invalid_fqid(
     with pytest.raises(ModelDoesNotExist):
         read_database.build_model_ignore_deleted(fqid)
 
-    assert q.call_args.args[1] == [(fqid,)]
+    assert q.call_args.args[1] == [[fqid]]
     bmfe.assert_called_with(events)
 
 
@@ -254,7 +254,7 @@ def test_build_model_ignore_deleted_position(
     result = read_database.build_model_ignore_deleted(fqid, pos)
 
     assert "position <= %s" in q.call_args.args[0]
-    assert q.call_args.args[1] == [(fqid,), pos]
+    assert q.call_args.args[1] == [[fqid], pos]
     bmfe.assert_called_with(events)
     assert result == model
 
@@ -326,7 +326,7 @@ def test_get_deleted_status(read_database: ReadDatabase, connection: ConnectionH
 
     assert read_database.get_deleted_status([fqid]) == {fqid: deleted}
     assert "from models " in q.call_args.args[0]
-    assert q.call_args.args[1] == [(fqid,)]
+    assert q.call_args.args[1] == [[fqid]]
 
 
 def test_get_deleted_status_position(
@@ -338,7 +338,7 @@ def test_get_deleted_status_position(
 
     assert read_database.get_deleted_status([fqid], 42) == {fqid: True}
     assert "from events" in q.call_args.args[0]
-    assert q.call_args.args[1] == [(fqid,)]
+    assert q.call_args.args[1] == [[fqid]]
 
 
 def test_get_position(read_database: ReadDatabase, connection: ConnectionHandler):

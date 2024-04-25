@@ -84,7 +84,6 @@ DROP TRIGGER IF EXISTS models_updated_trigger ON models;
 CREATE TRIGGER models_updated_trigger
     BEFORE INSERT OR UPDATE ON models
     FOR EACH ROW EXECUTE FUNCTION models_updated();
-    END;
 
 -- Migrations
 CREATE TABLE IF NOT EXISTS migration_keyframes (

@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from psycopg import OperationalError, ProgrammingError
 
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import ConnectionHandler
@@ -30,7 +31,7 @@ def handler(provide_di):
 
 
 def test_connection_error(handler: PgConnectionHandlerService):
-    with pytest.raises(DatabaseError):
+    with pytest.raises(ProgrammingError):
         with handler.get_connection_context():
             handler.query("ERROR", [])
 
@@ -40,9 +41,9 @@ def test_connection_error(handler: PgConnectionHandlerService):
 
 def test_forceful_connection_end(handler: PgConnectionHandlerService):
     context = handler.get_connection_context()
-    with pytest.raises(DatabaseError):
+    with pytest.raises(OperationalError):
         with context:
-            os.close(context.connection.fileno())
+            os.close(context.connection_handler.get_current_connection().fileno())
             handler.query("SELECT 1", [])
 
     with handler.get_connection_context():

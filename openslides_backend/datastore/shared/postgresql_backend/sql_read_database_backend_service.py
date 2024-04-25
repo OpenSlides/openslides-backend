@@ -71,7 +71,7 @@ class SqlReadDatabaseBackendService:
         if mapped_fields is None:
             mapped_fields = MappedFields()
 
-        arguments: list[Any] = [tuple(fqids)]
+        arguments: list[Any] = [list(fqids)]
         del_cond = self.query_helper.get_deleted_condition(get_deleted_models)
 
         (
@@ -81,7 +81,7 @@ class SqlReadDatabaseBackendService:
 
         query = f"""
             select fqid, {mapped_fields_str} from models
-            where fqid in %s {del_cond}"""
+            where fqid = any(%s) {del_cond}"""
         result = self.connection.query(
             query, mapped_field_args + arguments, mapped_fields.unique_fields
         )
@@ -226,11 +226,11 @@ class SqlReadDatabaseBackendService:
         query = dedent(
             f"""\
             select fqid, type, data, position from events e
-            where fqid in %s {pos_cond}
+            where fqid = any(%s) {pos_cond}
             order by position asc, weight asc"""
         )
 
-        args: list[Any] = [tuple(fqids)]
+        args: list[Any] = [fqids]
         db_events = self.connection.query(query, args + pos_args)
 
         events_per_fqid: dict[FullQualifiedId, list[dict[str, Any]]] = defaultdict(list)
@@ -294,8 +294,8 @@ class SqlReadDatabaseBackendService:
     def get_deleted_status_from_read_db(
         self, fqids: list[FullQualifiedId]
     ) -> dict[FullQualifiedId, bool]:
-        query = "select fqid, deleted from models where fqid in %s"
-        result = self.connection.query(query, [tuple(fqids)])
+        query = "select fqid, deleted from models where fqid = any(%s)"
+        result = self.connection.query(query, [fqids])
         return {row["fqid"]: row["deleted"] for row in result}
 
     def get_deleted_status_from_events(
@@ -311,10 +311,10 @@ class SqlReadDatabaseBackendService:
                 select fqid, type from (
                     select fqid, max(position) as position from events
                     where type in {included_types} and position <= {position}
-                    and fqid in %s group by fqid
+                    and fqid = any(%s) group by fqid
                 ) t natural join events order by position asc, weight asc
                 """
-        result = self.connection.query(query, [tuple(fqids)])
+        result = self.connection.query(query, [fqids])
         return {row["fqid"]: row["type"] == EVENT_TYPE.DELETE for row in result}
 
     def get_history_information(
@@ -322,8 +322,8 @@ class SqlReadDatabaseBackendService:
     ) -> dict[FullQualifiedId, list[HistoryInformation]]:
         positions = self.connection.query(
             """select fqid, position, timestamp, user_id, information from positions natural join events
-            where fqid in %s and information::text<>%s::text order by position asc""",
-            [tuple(fqids), self.json(None)],
+            where fqid = any(%s) and information::text <> %s::text order by position asc""",
+            [fqids, self.json(None)],
         )
         history_information = defaultdict(list)
         for position in positions:
@@ -348,9 +348,11 @@ class SqlReadDatabaseBackendService:
         )
 
     def get_current_migration_index(self) -> int:
-        [(min_migration_index, max_migration_index)] = self.connection.query(
+        result = self.connection.query(
             "select min(migration_index), max(migration_index) from positions", []
         )
+        min_migration_index = result[0]["min"] if result else None
+        max_migration_index = result[0]["max"] if result else None
         if min_migration_index != max_migration_index:
             raise InvalidDatastoreState(
                 "The datastore has inconsistent migration indices: "

@@ -122,14 +122,15 @@ class SqlDatabaseBackendService:
         event_ids = self.write_events(events_data)
 
         # update collectionfield tables
-        collectionfield_ids = self.insert_modified_collectionfields_into_db(
-            event_indices_per_modified_collectionfield.keys(), position
-        )
-        self.connect_events_and_collection_fields(
-            event_ids,
-            collectionfield_ids,
-            event_indices_per_modified_collectionfield.values(),
-        )
+        if event_indices_per_modified_collectionfield:
+            collectionfield_ids = self.insert_modified_collectionfields_into_db(
+                event_indices_per_modified_collectionfield.keys(), position
+            )
+            self.connect_events_and_collection_fields(
+                event_ids,
+                collectionfield_ids,
+                event_indices_per_modified_collectionfield.values(),
+            )
         return position, modified_models
 
     def create_position(
@@ -172,7 +173,7 @@ class SqlDatabaseBackendService:
     def write_model_updates(self, models: dict[FullQualifiedId, Model]) -> None:
         statement = dedent(
             """\
-            insert into models (fqid, data, deleted) values %s
+            insert into models (fqid, data, deleted) values (%s, %s, %s)
             on conflict(fqid) do update set data=excluded.data, deleted=excluded.deleted;"""
         )
         self.connection.execute(
@@ -189,7 +190,7 @@ class SqlDatabaseBackendService:
     ) -> None:
         statement = dedent(
             """\
-            insert into models (fqid, data, deleted) values %s
+            insert into models (fqid, data, deleted) values (%s, %s, %s)
             on conflict(fqid) do update set data=models.data || excluded.data, deleted=excluded.deleted;"""
         )
         self.connection.execute(
@@ -203,13 +204,13 @@ class SqlDatabaseBackendService:
 
     def write_model_deletes_without_events(self, fqids: list[FullQualifiedId]) -> None:
         """Physically delete of action_workers or import_previews"""
-        statement = "delete from models where fqid in %s;"
-        self.connection.execute(statement, [fqids], use_execute_values=True)
+        statement = "delete from models where fqid = any(%s);"
+        self.connection.execute(statement, [fqids])
 
     def update_id_sequences(self, max_id_per_collection: dict[Collection, int]) -> None:
         statement = dedent(
             """\
-            insert into id_sequences (collection, id) values %s
+            insert into id_sequences (collection, id) values (%s, %s)
             on conflict(collection) do update
             set id=greatest(id_sequences.id, excluded.id);"""
         )
@@ -218,7 +219,7 @@ class SqlDatabaseBackendService:
 
     def write_events(self, events_data: list[EventData]) -> list[int]:
         return self.connection.query_list_of_single_values(
-            "insert into events (position, fqid, type, data, weight) values %s returning id",
+            "insert into events (position, fqid, type, data, weight) values (%s, %s, %s, %s, %s) returning id",
             events_data,
             use_execute_values=True,
         )
@@ -248,7 +249,7 @@ class SqlDatabaseBackendService:
 
         statement = dedent(
             """\
-            insert into collectionfields (collectionfield, position) values %s
+            insert into collectionfields (collectionfield, position) values (%s, %s)
             on conflict(collectionfield) do update set position=excluded.position
             returning id"""
         )
@@ -274,7 +275,7 @@ class SqlDatabaseBackendService:
                 for event_index in event_indices
             )
 
-        statement = "insert into events_to_collectionfields (event_id, collectionfield_id) values %s"
+        statement = "insert into events_to_collectionfields (event_id, collectionfield_id) values (%s, %s)"
         self.connection.execute(statement, arguments, use_execute_values=True)
 
     def json(self, data):

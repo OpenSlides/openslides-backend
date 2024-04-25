@@ -2,9 +2,11 @@ import pytest
 
 from openslides_backend.datastore.reader import setup_di as reader_setup_di
 from openslides_backend.datastore.reader.flask_frontend import FlaskFrontend
+from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import (
     setup_di as postgresql_setup_di,
 )
+from openslides_backend.datastore.shared.services import ShutdownService
 from openslides_backend.datastore.shared.services import setup_di as util_setup_di
 from tests.datastore import (  # noqa
     client,
@@ -23,6 +25,9 @@ def setup_di(reset_di):  # noqa
     util_setup_di()
     postgresql_setup_di()
     reader_setup_di()
+    yield
+    shutdown_service = injector.get(ShutdownService)
+    shutdown_service.shutdown()
 
 
 @pytest.fixture()

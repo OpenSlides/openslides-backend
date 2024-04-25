@@ -261,8 +261,8 @@ class EventMigraterImplementation(EventMigrater):
 
         if len(old_event_ids) > len(new_events):
             # delete all ids from old_event_ids[len(new_events):] in the database
-            statement = "delete from migration_events where id in %s"
-            argument = tuple(old_event_ids[len(new_events) :])
+            statement = "delete from migration_events where id = any(%s)"
+            argument = old_event_ids[len(new_events) :]
             self.connection.execute(statement, [argument])
 
         if len(new_events) > len(old_event_ids):
