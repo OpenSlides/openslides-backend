@@ -2,6 +2,7 @@ from typing import Any
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -1000,12 +1001,13 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "meeting/2": {
                     "motion_ids": [14],
                 },
-                "motion/12": {"number": "1"},
+                "motion/12": {"number": "1", "submitter_ids": [12]},
                 "motion/13": {
                     "title": "title_FcnPUXJB2",
                     "meeting_id": 1,
                     "state_id": 30,
                     "number": "1",
+                    "submitter_ids": [13],
                 },
                 "motion/14": {
                     "title": "title_FcnPUXJB2",
@@ -1014,6 +1016,16 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "number": "1",
                 },
                 "motion_state/30": {"motion_ids": [12, 13]},
+                "motion_submitter/12": {
+                    "meeting_user_id": 1,
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                },
+                "motion_submitter/13": {
+                    "meeting_user_id": 1,
+                    "motion_id": 13,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request_multi(
@@ -1026,6 +1038,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "text": "test2",
                     "reason": "reason_jLvcgAMx2",
                     "use_original_number": True,
+                    "use_original_submitter": True,
                 },
                 {
                     "title": "title_13",
@@ -1039,5 +1052,95 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         created = [date["id"] for date in response.json["results"][0]]
-        self.assert_model_exists(f"motion/{created[0]}", {"number": "1-1"})
-        self.assert_model_exists(f"motion/{created[1]}", {"number": "1-2"})
+        motion1 = self.assert_model_exists(f"motion/{created[0]}", {"number": "1-1"})
+        motion2 = self.assert_model_exists(f"motion/{created[1]}", {"number": "1-2"})
+        self.assert_model_exists(
+            fqid_from_collection_and_id(
+                "motion_submitter", motion1["submitter_ids"][0]
+            ),
+            {"meeting_user_id": 1, "meeting_id": 2},
+        )
+        submitter = self.assert_model_exists(
+            fqid_from_collection_and_id("motion_submitter", motion2["submitter_ids"][0])
+        )
+        mUser = self.assert_model_exists(
+            fqid_from_collection_and_id("meeting_user", submitter["meeting_user_id"])
+        )
+        self.assert_model_exists(
+            fqid_from_collection_and_id("user", mUser["user_id"]),
+            {"username": "committee_forwarder"},
+        )
+
+    def test_use_original_submitter_empty(self) -> None:
+        self.set_models(self.test_model)
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+                "use_original_submitter": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        created_id = response.json["results"][0][0]["id"]
+        self.assert_model_exists(
+            f"motion/{created_id}", {"number": None, "submitter_ids": None}
+        )
+
+    def test_use_original_submitter_multiple(self) -> None:
+        self.set_models(self.test_model)
+        extra_user_id = self.create_user("user", [111])
+        self.set_models(
+            {
+                "motion/12": {"submitter_ids": [12, 13]},
+                "motion_submitter/12": {
+                    "meeting_user_id": 1,
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                },
+                "motion_submitter/13": {
+                    "meeting_user_id": 3,
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                },
+                "meeting_user/3": {
+                    "motion_submitter_ids": [13],
+                },
+                "meeting/1": {
+                    "meeting_user_ids": [1, 3],
+                    "motion_submitter_ids": [12, 13],
+                    "user_ids": [1, extra_user_id],
+                },
+                f"user/{extra_user_id}": {"meeting_user_ids": [3], "meeting_ids": [1]},
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+                "use_original_submitter": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        created_id = response.json["results"][0][0]["id"]
+        motion = self.assert_model_exists(f"motion/{created_id}")
+        assert len(motion["submitter_ids"]) == 2
+        submitter1 = self.assert_model_exists(
+            fqid_from_collection_and_id("motion_submitter", motion["submitter_ids"][0])
+        )["meeting_user_id"]
+        submitter2 = self.assert_model_exists(
+            fqid_from_collection_and_id("motion_submitter", motion["submitter_ids"][1])
+        )["meeting_user_id"]
+        expected_meeting_user_ids = [1, 3]
+        assert (
+            submitter1 in expected_meeting_user_ids
+            and submitter2 in expected_meeting_user_ids
+            and submitter1 != submitter2
+        )

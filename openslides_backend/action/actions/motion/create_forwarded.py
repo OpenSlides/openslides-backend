@@ -125,9 +125,6 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
                     self.execute_other_action(
                         MotionSubmitterCreateAction, [data], skip_history=True
                     )
-            else:
-                # TODO: Was wenn die motion keine submitter hat
-                pass
         else:
             if committee.get("forwarding_user_id"):
                 forwarding_user_id = committee["forwarding_user_id"]
