@@ -9,6 +9,8 @@
 
 // Optional
     reason: HTML;
+    use_original_submitter: boolean;
+    use_original_number: boolean;
 }
 ```
 
@@ -24,6 +26,8 @@ the given meeting has `meeting/motions_reason_required` set, it is ok for `reaso
 The original motion must be updated as well (this is done by the automatic relation handling):
 * The unique `id` of the newly created motion has to be linked to the _origin motion_s `derived_motion_ids` field.
   * Deleting the newly created motion has to ensure that the corresponding entry was removed from the _origin motion_s `derived_motion_ids` field
+
+The optional flags `use_original_submitter` and `use_original_number` will cause the original submitters and original numbers to be used in the new motion respectively. In case of the submitters, the action will use the origin meetings meeting_user for the `meeting_user_id` field of the new submitter instance in the target meeting.
 
 ### Forwarding tree fields
 
