@@ -566,6 +566,7 @@ class Meeting(Model, MeetingModelMixin):
     users_forbid_delegator_in_list_of_speakers = fields.BooleanField()
     users_forbid_delegator_as_submitter = fields.BooleanField()
     users_forbid_delegator_as_supporter = fields.BooleanField()
+    users_forbid_delegator_to_vote = fields.BooleanField()
     assignments_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.TextField()
     assignment_poll_ballot_paper_selection = fields.CharField(
