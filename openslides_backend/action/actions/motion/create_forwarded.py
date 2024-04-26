@@ -82,7 +82,6 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "all_origin_ids",
                         "derived_motion_ids",
                         "all_derived_motion_ids",
-                        "number",
                     ],
                 ),
             ]
@@ -125,6 +124,13 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
                     self.execute_other_action(
                         MotionSubmitterCreateAction, [data], skip_history=True
                     )
+            text_submitter = self.datastore.get(
+                fqid_from_collection_and_id("motion", instance["origin_id"]),
+                ["additional_submitter"],
+            ).get("additional_submitter")
+            if text_submitter:
+                instance["additional_submitter"] = text_submitter
+
         else:
             if committee.get("forwarding_user_id"):
                 forwarding_user_id = committee["forwarding_user_id"]

@@ -1095,7 +1095,10 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         extra_user_id = self.create_user("user", [111])
         self.set_models(
             {
-                "motion/12": {"submitter_ids": [12, 13]},
+                "motion/12": {
+                    "submitter_ids": [12, 13],
+                    "additional_submitter": "Sue B. Mid-Edit",
+                },
                 "motion_submitter/12": {
                     "meeting_user_id": 1,
                     "motion_id": 12,
@@ -1130,7 +1133,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         created_id = response.json["results"][0][0]["id"]
-        motion = self.assert_model_exists(f"motion/{created_id}")
+        motion = self.assert_model_exists(
+            f"motion/{created_id}", {"additional_submitter": "Sue B. Mid-Edit"}
+        )
         assert len(motion["submitter_ids"]) == 2
         submitter1 = self.assert_model_exists(
             fqid_from_collection_and_id("motion_submitter", motion["submitter_ids"][0])
