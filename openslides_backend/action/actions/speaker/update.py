@@ -46,6 +46,7 @@ class SpeakerUpdate(
                 "meeting_user_id",
                 "begin_time",
                 "list_of_speakers_id",
+                "structure_level_list_of_speakers_id",
             ],
         )
         if (
@@ -66,6 +67,43 @@ class SpeakerUpdate(
         elif "structure_level_id" in instance and speaker.get("begin_time"):
             raise ActionException(
                 "You can only update the structure level on a waiting speaker."
+            )
+        new_speech_state = (
+            instance["speech_state"]
+            if "speech_state" in instance
+            else speaker.get("speech_state")
+        )
+        new_point_of_order_value = (
+            instance["point_of_order"]
+            if "point_of_order" in instance
+            else speaker.get("point_of_order")
+        )
+        if speaker.get("begin_time"):
+            if speaker.get("speech_state") == SpeechState.INTERVENTION:
+                raise ActionException(
+                    "You can not change the speech_state of a started intervention."
+                )
+            if instance.get("structure_level_id") or (
+                speaker.get("structure_level_list_of_speakers_id")
+                and "structure_level_id" not in instance
+            ):
+                if instance.get("point_of_order"):
+                    raise ActionException(
+                        "You can not change a started speaker to point_of_order if there is a structure_level."
+                    )
+                elif instance.get("speech_state") and instance.get(
+                    "speech_state"
+                ) not in [
+                    SpeechState.CONTRIBUTION,
+                    SpeechState.PRO,
+                    SpeechState.CONTRA,
+                ]:
+                    raise ActionException(
+                        f"You can not change a started speaker to {instance.get('speech_state')} if there is a structure_level."
+                    )
+        if new_speech_state and new_point_of_order_value:
+            raise ActionException(
+                "Speaker can't be point of order and another speech state at the same time."
             )
 
         requests = [

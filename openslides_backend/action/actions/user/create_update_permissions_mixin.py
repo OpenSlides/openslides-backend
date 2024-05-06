@@ -10,7 +10,7 @@ from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
-from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.permissions.permissions import Permissions, permission_parents
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.shared.exceptions import (
@@ -39,6 +39,7 @@ class PermissionVarStore:
         self.datastore = datastore
         self.user_id = user_id
         self.permission = manage_permission
+        self.all_permissions = [self.permission, *permission_parents[self.permission]]
         self.user = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id),
             [
@@ -154,9 +155,12 @@ class PermissionVarStore:
 
             # use permissions to add the meetings to user_meeting
             for group in groups:
-                if self.permission in group.get("permissions", []) or group.get(
-                    "admin_group_for_meeting_id"
-                ):
+                if any(
+                    [
+                        permission in group.get("permissions", [])
+                        for permission in self.all_permissions
+                    ]
+                ) or group.get("admin_group_for_meeting_id"):
                     if group.get("meeting_id"):
                         user_meetings.add(group["meeting_id"])
 

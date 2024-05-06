@@ -180,7 +180,6 @@ class UserSendInvitationMail(UpdateAction):
             return instance
 
         mail_data = self.get_data_from_meeting_or_organization(meeting_id)
-        from_email: str | Address
         if users_email_sender := mail_data.get("users_email_sender", "").strip():
             if any(
                 x in users_email_sender for x in EmailUtils.SENDER_NAME_FORBIDDEN_CHARS
@@ -192,8 +191,8 @@ class UserSendInvitationMail(UpdateAction):
                 )
                 result["type"] = EmailErrorType.SETTINGS_ERROR
                 return instance
-            from_email = Address(
-                users_email_sender, addr_spec=EmailSettings.default_from_email
+            from_email = str(
+                Address(users_email_sender, addr_spec=EmailSettings.default_from_email)
             )
         else:
             from_email = EmailSettings.default_from_email
@@ -297,7 +296,7 @@ class UserSendInvitationMail(UpdateAction):
         if instance.get("meeting_id") and has_perm(
             self.datastore,
             self.user_id,
-            Permissions.User.CAN_MANAGE,
+            Permissions.User.CAN_UPDATE,
             instance["meeting_id"],
         ):
             return
@@ -306,6 +305,6 @@ class UserSendInvitationMail(UpdateAction):
         ):
             return
         if instance.get("meeting_id"):
-            raise MissingPermission(Permissions.User.CAN_MANAGE)
+            raise MissingPermission(Permissions.User.CAN_UPDATE)
         else:
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)

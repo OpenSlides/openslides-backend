@@ -108,6 +108,14 @@ The action component listens to port 9002. The presenter component listens to po
 
   Seconds after which an action is delegated to an action worker. `-1` represents an infinite timeout. `-2` deactivates action workers and local threading alltogether. Default: `1`
 
+* `OPENSLIDES_BACKEND_CREATE_INITIAL_DATA`
+
+  Whether or not to create initial data. Uses the `initial-data.json` in productive mode and the `example-data.json` in dev mode. Can only be set for the action service. Default: `0`
+
+* `SUPERADMIN_PASSWORD_FILE`
+
+  If `OPENSLIDES_BACKEND_CREATE_INITIAL_DATA` is true, use the password in the given file as the password for the user with id `1`. Only applicable in productive mode. Default: `/run/secrets/superadmin`
+
 ### Development
 
 * `OPENSLIDES_DEVELOPMENT`

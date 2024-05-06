@@ -408,6 +408,7 @@ class Meeting(Model, MeetingModelMixin):
         default="internal", constraints={"enum": ["common", "internal", "hidden"]}
     )
     agenda_show_internal_items_on_projector = fields.BooleanField(default=False)
+    agenda_show_topic_navigation_on_detail_view = fields.BooleanField(default=False)
     list_of_speakers_amount_last_on_projector = fields.IntegerField(
         default=0, constraints={"minimum": -1}
     )
@@ -420,6 +421,7 @@ class Meeting(Model, MeetingModelMixin):
     )
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
+    list_of_speakers_hide_contribution_count = fields.BooleanField(default=False)
     list_of_speakers_allow_multiple_speakers = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
     list_of_speakers_can_create_point_of_order_for_others = fields.BooleanField(
@@ -561,6 +563,10 @@ class Meeting(Model, MeetingModelMixin):
         default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
     )
     users_enable_vote_delegations = fields.BooleanField()
+    users_forbid_delegator_in_list_of_speakers = fields.BooleanField()
+    users_forbid_delegator_as_submitter = fields.BooleanField()
+    users_forbid_delegator_as_supporter = fields.BooleanField()
+    users_forbid_delegator_to_vote = fields.BooleanField()
     assignments_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.TextField()
     assignment_poll_ballot_paper_selection = fields.CharField(
@@ -1352,7 +1358,9 @@ class Motion(Model):
         to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )
     amendment_ids = fields.RelationListField(
-        to={"motion": "lead_motion_id"}, equal_fields="meeting_id"
+        to={"motion": "lead_motion_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     sort_parent_id = fields.RelationField(
         to={"motion": "sort_child_ids"}, equal_fields="meeting_id"

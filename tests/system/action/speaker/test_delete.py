@@ -1,5 +1,9 @@
 from typing import Any
 
+from openslides_backend.action.actions.user.delegation_based_restriction_mixin import (
+    DelegationBasedRestriction,
+)
+from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -181,6 +185,72 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                     "meeting_id": 111,
                 },
             }
+        )
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("speaker/890")
+
+    def create_delegator_test_data(
+        self,
+        is_present: bool = False,
+        is_delegator: bool = False,
+        perm: Permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+        delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_in_list_of_speakers",
+    ) -> None:
+        self.create_meeting(1)
+        self.user_id = 7
+        self.set_models(self.permission_test_models)
+        self.login(self.user_id)
+        self.set_models(
+            {
+                "meeting_user/7": {"group_ids": [1]},
+                "meeting/1": {
+                    "meeting_user_ids": [7],
+                    delegator_setting: True,
+                },
+                "group/1": {"meeting_user_ids": [7]},
+            }
+        )
+        if is_delegator:
+            self.create_user("delegatee", [1])
+            self.set_models(
+                {
+                    "meeting_user/7": {"vote_delegated_to_id": 1},
+                    "meeting_user/1": {"vote_delegations_from_ids": [7]},
+                }
+            )
+        self.set_organization_management_level(None)
+        self.set_group_permissions(1, [perm])
+        self.set_user_groups(7, [1])
+
+    def test_delegator_setting_with_no_delegation(self) -> None:
+        self.create_delegator_test_data()
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("speaker/890")
+
+    def test_delegator_setting_with_delegation(self) -> None:
+        self.create_delegator_test_data(is_delegator=True)
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action speaker.delete. Missing Permission: list_of_speakers.can_manage"
+        )
+
+    def test_delegator_setting_with_motion_manager_delegation(
+        self,
+    ) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True, perm=Permissions.ListOfSpeakers.CAN_MANAGE
+        )
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("speaker/890")
+
+    def test_with_irrelevant_delegator_setting(self) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True, delegator_setting="users_forbid_delegator_as_submitter"
         )
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)

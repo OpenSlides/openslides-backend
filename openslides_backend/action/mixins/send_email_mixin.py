@@ -5,16 +5,15 @@ import ssl
 from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
-from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
 from typing import Any
 
-from lxml import html as lxml_html  # type: ignore
-from lxml.html.clean import clean_html  # type: ignore
+from openslides_backend.shared.interfaces.logging import Logger
 
 from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
+from ...shared.html import get_text_from_html
 from ..action import Action
 
 SendErrors = dict[str, tuple[int, bytes]]
@@ -111,7 +110,7 @@ class EmailUtils:
     @staticmethod
     def send_email(
         client: smtplib.SMTP | smtplib.SMTP_SSL,
-        from_: str | Address,
+        from_: str,
         to: str | list[str],
         subject: str,
         content: str,
@@ -142,8 +141,7 @@ class EmailUtils:
         message = EmailMessage()
         if html:
             if contentplain == "":
-                tree = lxml_html.fromstring(content)
-                contentplain = clean_html(tree).text_content().strip()
+                contentplain = get_text_from_html(content)
             if contentplain:
                 message.set_content(contentplain)
             message.add_alternative(content, subtype="html")
@@ -155,7 +153,7 @@ class EmailUtils:
             )
 
         message["From"] = from_
-        message["To"] = to
+        message["To"] = to if isinstance(to, str) else ", ".join(to)
         message.preamble = "You will not see this in a MIME-aware mail reader.\n"
         message.add_header("Subject", subject)
         message.add_header("Date", format_datetime(datetime.now()))
@@ -167,8 +165,8 @@ class EmailUtils:
     @staticmethod
     def send_email_safe(
         client: smtplib.SMTP | smtplib.SMTP_SSL,
-        logger: Any,
-        from_: str | Address,
+        logger: Logger,
+        from_: str,
         to: str | list[str],
         subject: str,
         content: str,
