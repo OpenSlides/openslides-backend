@@ -68,12 +68,14 @@ meeting_settings_keys = [
     "agenda_item_creation",
     "agenda_new_items_default_visibility",
     "agenda_show_internal_items_on_projector",
+    "agenda_show_topic_navigation_on_detail_view",
     "list_of_speakers_amount_last_on_projector",
     "list_of_speakers_amount_next_on_projector",
     "list_of_speakers_couple_countdown",
     "list_of_speakers_show_amount_of_speakers_on_slide",
     "list_of_speakers_present_users_only",
     "list_of_speakers_show_first_contribution",
+    "list_of_speakers_hide_contribution_count",
     "list_of_speakers_allow_multiple_speakers",
     "list_of_speakers_enable_point_of_order_speakers",
     "list_of_speakers_can_create_point_of_order_for_others",
@@ -140,6 +142,10 @@ meeting_settings_keys = [
     "users_email_replyto",
     "users_email_subject",
     "users_email_body",
+    "users_forbid_delegator_in_list_of_speakers",
+    "users_forbid_delegator_as_submitter",
+    "users_forbid_delegator_as_supporter",
+    "users_forbid_delegator_to_vote",
     "assignments_export_title",
     "assignments_export_preamble",
     "assignment_poll_ballot_paper_selection",
@@ -207,19 +213,6 @@ class MeetingUpdate(
         elif set_as_template is False:
             instance["template_for_organization_id"] = None
 
-        # check point of order settings consistency
-        poo_setting = "list_of_speakers_enable_point_of_order_speakers"
-        categories_setting = "list_of_speakers_enable_point_of_order_categories"
-        _instance = self.datastore.get(
-            fqid_from_collection_and_id("meeting", instance["id"]),
-            [poo_setting, categories_setting],
-        )
-        _instance.update(instance)
-        if not _instance.get(poo_setting) and _instance.get(categories_setting):
-            raise ActionException(
-                "You cannot enable point of order categories without enabling point of order speakers."
-            )
-
         meeting_check = []
         if "reference_projector_id" in instance:
             if reference_projector_id := instance["reference_projector_id"]:
@@ -269,9 +262,9 @@ class MeetingUpdate(
 
         # group B check
         if "present_user_ids" in instance and not has_perm(
-            self.datastore, self.user_id, Permissions.User.CAN_MANAGE, instance["id"]
+            self.datastore, self.user_id, Permissions.User.CAN_UPDATE, instance["id"]
         ):
-            raise MissingPermission(Permissions.User.CAN_MANAGE)
+            raise MissingPermission(Permissions.User.CAN_UPDATE)
 
         # group C check
         if (

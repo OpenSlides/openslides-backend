@@ -280,6 +280,19 @@ class ParticipantImport(BaseActionTestCase):
             Permissions.User.CAN_MANAGE,
         )
 
+    def test_import_permission_2(self) -> None:
+        self.import_preview1_data["result"]["rows"][0]["data"]["groups"] = [
+            {"info": ImportState.DONE, "value": "group1", "id": 1}
+        ]
+        self.update_model("import_preview/1", self.import_preview1_data)
+        self.base_permission_test(
+            {},
+            "participant.import",
+            {"id": 1, "import": True},
+            Permissions.User.CAN_UPDATE,
+            True,
+        )
+
 
 class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInImport):
     def test_upload_import_invalid_vote_weight_with_remove(self) -> None:
@@ -1050,4 +1063,45 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
     def test_json_upload_legacy_username(self) -> None:
         self.json_upload_legacy_username()
         response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+
+    def test_reupload_with_structure_level(self) -> None:
+        import_data = {
+            "username": "test",
+            "default_password": "secret",
+            "is_active": "1",
+            "is_physical_person": "F",
+            "number": "strange number",
+            "structure_level": ["testlevel", "notfound"],
+            "vote_weight": "1.12",
+            "comment": "my comment",
+            "is_present": "0",
+            "groups": ["testgroup", "notfound_group1", "notfound_group2"],
+            "wrong": 15,
+        }
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [import_data.copy()],
+            },
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "participant.import",
+            {"id": response.json["results"][0][0].get("id"), "import": True},
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [import_data],
+            },
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "participant.import",
+            {"id": response.json["results"][0][0].get("id"), "import": True},
+        )
         self.assert_status_code(response, 200)

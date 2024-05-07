@@ -2,6 +2,10 @@ from time import time
 from typing import Any
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
+from openslides_backend.action.actions.user.delegation_based_restriction_mixin import (
+    DelegationBasedRestriction,
+)
+from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -1027,3 +1031,99 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "weight": 4,
             },
         )
+
+    def test_create_with_point_of_order_and_speech_state(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "point_of_order": True,
+                "speech_state": SpeechState.CONTRIBUTION,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Speaker can't be point of order and another speech state at the same time."
+        )
+
+    def create_delegator_test_data(
+        self,
+        is_delegator: bool = False,
+        perm: Permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+        delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_in_list_of_speakers",
+    ) -> None:
+        self.create_meeting(1)
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
+                "meeting/1": {
+                    "meeting_user_ids": [1, 17],
+                    delegator_setting: True,
+                },
+            }
+        )
+        if is_delegator:
+            self.create_user("delegatee", [1])
+            self.set_models(
+                {
+                    "meeting_user/1": {"vote_delegated_to_id": 2},
+                    "meeting_user/2": {"vote_delegations_from_ids": [1]},
+                }
+            )
+        self.set_organization_management_level(None)
+        self.set_group_permissions(1, [perm])
+        self.set_user_groups(1, [1])
+
+    def test_delegator_setting_with_no_delegation(self) -> None:
+        self.create_delegator_test_data()
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_delegator_setting_with_no_delegation_set_others(self) -> None:
+        self.create_delegator_test_data()
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action speaker.create. Missing Permission: list_of_speakers.can_manage"
+        )
+
+    def test_delegator_setting_with_delegation(self) -> None:
+        self.create_delegator_test_data(is_delegator=True)
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action speaker.create. Missing Permission: list_of_speakers.can_manage"
+        )
+
+    def test_delegator_setting_with_motion_manager_delegation(
+        self,
+    ) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True, perm=Permissions.ListOfSpeakers.CAN_MANAGE
+        )
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_with_irrelevant_delegator_setting(self) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True, delegator_setting="users_forbid_delegator_as_submitter"
+        )
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)

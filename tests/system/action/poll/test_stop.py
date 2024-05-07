@@ -329,7 +329,92 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
 
-    def test_stop_assignment_poll(self) -> None:
+    def test_stop_empty_cryptographic(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
+                "motion/1": {
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "content_object_id": "motion/1",
+                    "type": Poll.TYPE_CRYPTOGRAPHIC,
+                    "pollmethod": "YN",
+                    "state": Poll.STATE_CREATED,
+                    "backend": Poll.BACKEND_LONG,
+                    "option_ids": [1],
+                    "meeting_id": 1,
+                    "entitled_group_ids": [1],
+                },
+                "option/1": {"meeting_id": 1, "poll_id": 1},
+                "group/1": {"meeting_id": 1},
+                "meeting/1": {
+                    "users_enable_vote_delegations": True,
+                    "users_enable_vote_weight": True,
+                    "default_group_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "group_ids": [1],
+                },
+            }
+        )
+        user1 = self.create_user_for_meeting(1)
+        user2 = self.create_user_for_meeting(1)
+        user3 = self.create_user_for_meeting(1)
+        self.set_models(
+            {
+                f"user/{user1}": {
+                    "is_present_in_meeting_ids": [1],
+                },
+                "meeting_user/1": {"vote_weight": "2.000000"},
+                f"user/{user2}": {
+                    "is_present_in_meeting_ids": [1],
+                },
+                "meeting_user/2": {
+                    "vote_weight": "3.000000",
+                    "vote_delegations_from_ids": [3],
+                },
+                "meeting_user/3": {
+                    "vote_weight": "4.000000",
+                    "vote_delegated_to_id": 2,
+                },
+            }
+        )
+        self.start_poll(1)
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.assert_model_exists(
+            "poll/1",
+            {
+                "state": Poll.STATE_FINISHED,
+                "votescast": "0.000000",
+                "votesinvalid": "0.000000",
+                "votesvalid": "0.000000",
+            },
+        )
+        assert poll.get("entitled_users_at_stop") == [
+            {
+                "voted": False,
+                "user_id": user1,
+                "vote_delegated_to_user_id": None,
+                "present": True,
+            },
+            {
+                "voted": False,
+                "user_id": user2,
+                "vote_delegated_to_user_id": None,
+                "present": True,
+            },
+            {
+                "voted": False,
+                "user_id": user3,
+                "vote_delegated_to_user_id": user2,
+                "present": False,
+            },
+        ]
+        # test history
+        self.assert_history_information("motion/1", ["Voting stopped"])
+
+    def test_stop_empty_assignment_poll(self) -> None:
         self.set_models(
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
@@ -442,6 +527,64 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
                 "present": False,
                 "user_id": 2,
                 "vote_delegated_to_user_id": None,
+            },
+        ]
+
+    def test_stop_entitled_users_with_delegations(self) -> None:
+        self.set_models(
+            {
+                "motion/1": {
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "type": "named",
+                    "pollmethod": "Y",
+                    "backend": "fast",
+                    "content_object_id": "motion/1",
+                    "state": Poll.STATE_CREATED,
+                    "meeting_id": 1,
+                    "entitled_group_ids": [3],
+                },
+                "user/2": {
+                    "meeting_user_ids": [12],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/12": {
+                    "user_id": 2,
+                    "meeting_id": 1,
+                    "group_ids": [3],
+                    "vote_delegated_to_id": 13,
+                },
+                "user/3": {
+                    "meeting_user_ids": [13],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/13": {
+                    "user_id": 3,
+                    "meeting_id": 1,
+                    "group_ids": [4],
+                    "vote_delegations_from_ids": [12],
+                },
+                "group/3": {"meeting_user_ids": [12], "meeting_id": 1},
+                "group/4": {"meeting_user_ids": [13], "meeting_id": 1},
+                "meeting/1": {
+                    "user_ids": [2, 3],
+                    "group_ids": [3, 4],
+                    "meeting_user_ids": [12, 13],
+                    "is_active_in_organization_id": 1,
+                },
+            }
+        )
+        self.start_poll(1)
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("entitled_users_at_stop") == [
+            {
+                "voted": False,
+                "present": False,
+                "user_id": 2,
+                "vote_delegated_to_user_id": 3,
             },
         ]
 

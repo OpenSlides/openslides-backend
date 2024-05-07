@@ -85,7 +85,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         if has_perm(
             self.datastore,
             self.user_id,
-            Permissions.User.CAN_MANAGE,
+            Permissions.User.CAN_UPDATE,
             instance["meeting_id"],
         ):
             return

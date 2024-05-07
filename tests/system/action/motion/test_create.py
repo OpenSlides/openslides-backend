@@ -1,6 +1,9 @@
 from typing import Any
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
+from openslides_backend.action.actions.user.delegation_based_restriction_mixin import (
+    DelegationBasedRestriction,
+)
 from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -266,7 +269,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         motion = self.get_model("motion/1")
-        assert motion.get("submitter_ids") == [1, 2]
+        self.assertCountEqual(motion["submitter_ids"], [1, 2])
         submitter_1 = self.get_model("motion_submitter/1")
         assert submitter_1.get("meeting_id") == 1
         assert submitter_1.get("meeting_user_id") == 13
@@ -337,9 +340,8 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "motion/3", {"text_hash": self.hash, "identical_motion_ids": [1, 2]}
-        )
+        motion = self.assert_model_exists("motion/3", {"text_hash": self.hash})
+        self.assertCountEqual(motion["identical_motion_ids"], [1, 2])
 
     def test_create_identical_motion_with_tags(self) -> None:
         self.setup_hash_test()
@@ -594,3 +596,108 @@ class MotionCreateActionTest(BaseActionTestCase):
             "You can't give amendment_paragraphs in this context"
             in response.json["message"]
         )
+
+    def create_delegator_test_data(
+        self,
+        is_delegator: bool = False,
+        perm: Permission = Permissions.Motion.CAN_CREATE,
+        delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_submitter",
+    ) -> None:
+        self.add_workflow()
+        self.set_models(
+            {
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
+                "meeting/1": {
+                    "meeting_user_ids": [1],
+                    delegator_setting: True,
+                },
+            }
+        )
+        if is_delegator:
+            self.create_user("delegatee", [1])
+            self.set_models(
+                {
+                    "meeting_user/1": {"vote_delegated_to_id": 2},
+                    "meeting_user/2": {"vote_delegations_from_ids": [1]},
+                }
+            )
+        self.set_organization_management_level(None)
+        self.set_group_permissions(1, [perm])
+        self.set_user_groups(1, [1])
+
+    def test_create_delegator_setting(self) -> None:
+        self.add_workflow()
+        self.set_models({"meeting/1": {"users_forbid_delegator_as_submitter": True}})
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_delegator_setting_with_no_delegation(self) -> None:
+        self.create_delegator_test_data()
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_delegator_setting_with_delegation(self) -> None:
+        self.create_delegator_test_data(is_delegator=True)
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action motion.create. Missing Permission: motion.can_manage"
+        )
+
+    def test_create_delegator_setting_with_motion_manager_delegation(
+        self,
+    ) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True, perm=Permissions.Motion.CAN_MANAGE
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_with_irrelevant_delegator_setting(self) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True, delegator_setting="users_forbid_delegator_as_supporter"
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)

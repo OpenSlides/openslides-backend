@@ -220,6 +220,7 @@ class StopControl(CountdownControl, Action):
         gm_result = self.datastore.get_many([gmr])
         groups = gm_result.get("group", {}).values()
 
+        # fetch presence status
         meeting_user_ids = set()
         for group in groups:
             meeting_user_ids.update(group.get("meeting_user_ids", []))
@@ -227,16 +228,25 @@ class StopControl(CountdownControl, Action):
             "meeting_user", list(meeting_user_ids), ["user_id", "vote_delegated_to_id"]
         )
         gm_result = self.datastore.get_many([gmr])
-        meeting_users = gm_result.get("meeting_user", {})
+        meeting_users = gm_result.get("meeting_user", {}).values()
+
+        # fetch vote delegations
+        delegated_to_mu_ids = list(
+            {id_ for mu in meeting_users if (id_ := mu.get("vote_delegated_to_id"))}
+        )
+        mu_to_user_id = {}
+        if delegated_to_mu_ids:
+            gmr = GetManyRequest("meeting_user", delegated_to_mu_ids, ["user_id"])
+            mu_to_user_id = self.datastore.get_many([gmr]).get("meeting_user", {})
 
         gmr = GetManyRequest(
             "user",
-            [mu["user_id"] for mu in meeting_users.values()],
+            [mu["user_id"] for mu in meeting_users],
             ["is_present_in_meeting_ids"],
         )
         users = self.datastore.get_many([gmr]).get("user", {})
 
-        for mu in meeting_users.values():
+        for mu in meeting_users:
             entitled_users.append(
                 {
                     "voted": mu["user_id"] in all_voted_users,
@@ -244,7 +254,7 @@ class StopControl(CountdownControl, Action):
                     in users[mu["user_id"]].get("is_present_in_meeting_ids", []),
                     "user_id": mu["user_id"],
                     "vote_delegated_to_user_id": (
-                        meeting_users[vote_mu_id]["user_id"]
+                        mu_to_user_id[vote_mu_id]["user_id"]
                         if (vote_mu_id := mu.get("vote_delegated_to_id"))
                         else None
                     ),

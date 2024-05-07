@@ -73,13 +73,13 @@ See [Permissions for altering a user](https://github.com/OpenSlides/OpenSlides/w
 
 Group B:
 
-The request user needs `user.can_manage` in each referenced meeting.
+The request user needs `user.can_update` in each referenced meeting.
 
 Group C:
 
 The request user must satisfy at least one of:
 - the OML `can_manage_users`
-- `user.can_manage` for the meeting, OR
+- `user.can_update` for the meeting, OR
 - The CML `can_manage` for the committee of the meeting
 
 Group D:

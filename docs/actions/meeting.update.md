@@ -122,6 +122,10 @@
     users_email_replyto: string;
     users_email_subject: string;
     users_email_body: string;
+    users_forbid_delegator_in_list_of_speakers: boolean;
+    users_forbid_delegator_as_submitter: boolean;
+    users_forbid_delegator_as_supporter: boolean;
+    users_forbid_delegator_to_vote: boolean;
 
     assignments_export_title: string;
     assignments_export_preamble: string;
@@ -191,7 +195,7 @@ If `set_as_template` is `True`, `template_for_organization_id` has to be set to 
 
 ## Permissions
 - Users with `meeting.can_manage_settings` can modify group A
-- Users with `user.can_manage` can modify group B
+- Users with `user.can_update` can modify group B
 - Users with `projector.can_manage` can modify group C
 - Admins of the meeting can modify group D
 - Users with CML `can_manage` or users with a OML of `can_manage_organization` can modify group E

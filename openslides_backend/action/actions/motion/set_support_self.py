@@ -1,3 +1,5 @@
+from typing import Any
+
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -8,10 +10,13 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..meeting_user.helper_mixin import MeetingUserHelperMixin
+from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 
 
 @register_action("motion.set_support_self")
-class MotionSetSupportSelfAction(MeetingUserHelperMixin, UpdateAction):
+class MotionSetSupportSelfAction(
+    MeetingUserHelperMixin, DelegationBasedRestrictionMixin, UpdateAction
+):
     """
     Action to add the user to the support of a motion.
     """
@@ -27,6 +32,16 @@ class MotionSetSupportSelfAction(MeetingUserHelperMixin, UpdateAction):
     )
     permission_id = "motion_id"
     permission = Permissions.Motion.CAN_SUPPORT
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        if not len(
+            self.check_perm_and_delegator_restriction(
+                Permissions.Motion.CAN_MANAGE,
+                "users_forbid_delegator_as_supporter",
+                [self.get_meeting_id(instance)],
+            )
+        ):
+            return super().check_permissions(instance)
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         motion_get_many_request = GetManyRequest(

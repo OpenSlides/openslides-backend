@@ -448,3 +448,181 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
         )
         self.assert_status_code(response, 400)
         self.assertIn("Could not parse 2, expect boolean", response.json["message"])
+
+
+class UserAddToGroup(UserBaseSamlAccount):
+    def setUp(self) -> None:
+        super().setUp()
+        self.organization = {
+            "saml_enabled": True,
+            "saml_attr_mapping": {
+                "saml_id": "username",
+                "title": "title",
+                "first_name": "firstName",
+                "last_name": "lastName",
+                "email": "email",
+                "gender": "gender",
+                "pronoun": "pronoun",
+                "is_active": "is_active",
+                "is_physical_person": "is_person",
+                "meeting": {
+                    "external_id": "Landtag",
+                    "external_group_id": "Delegates",
+                },
+            },
+        }
+        self.create_meeting()
+        self.set_models(
+            {
+                "organization/1": self.organization,
+                "group/1": {"external_id": "Default"},
+                "group/2": {"external_id": "Delegates"},
+                "group/3": {"external_id": "Admin"},
+                "meeting/1": {"external_id": "Landtag", "default_group_id": 1},
+                "user/1": {"saml_id": "admin_saml"},
+            }
+        )
+
+    def test_create_user_with_membership(self) -> None:
+        response = self.request("user.save_saml_account", {"username": ["111"]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "saml_id": "111",
+                "username": "111",
+                "meeting_user_ids": [1],
+                "meeting_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "group_ids": [2], "meeting_id": 1}
+        )
+        self.assert_model_exists(
+            "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
+        )
+
+    def test_update_user_with_membership(self) -> None:
+        response = self.request("user.save_saml_account", {"username": ["admin_saml"]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "saml_id": "admin_saml",
+                "username": "admin",
+                "meeting_user_ids": [1],
+                "meeting_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 1, "group_ids": [2], "meeting_id": 1}
+        )
+        self.assert_model_exists(
+            "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
+        )
+
+    def test_create_user_invalid_meeting(self) -> None:
+        """silent fail, user created and logged in"""
+        self.organization["saml_attr_mapping"]["meeting"]["external_id"] = "Kreistag"  # type: ignore
+        self.set_models({"organization/1": self.organization})
+        response = self.request("user.save_saml_account", {"username": ["111"]})
+        self.assert_status_code(response, 200)
+        self.app.logger.warning.assert_called_with(  # type: ignore
+            "save_saml_account found 0 meetings with external_id 'Kreistag'"
+        )
+        self.assert_model_exists(
+            "user/2", {"saml_id": "111", "username": "111", "meeting_user_ids": None}
+        )
+        self.assert_model_not_exists("meeting_user/1")
+        self.assert_model_exists(
+            "group/2", {"meeting_user_ids": None, "external_id": "Delegates"}
+        )
+
+    def test_create_user_invalid_group_but_default(self) -> None:
+        """silent fail, but added to default group and logged in"""
+        self.organization["saml_attr_mapping"]["meeting"][  # type: ignore
+            "external_group_id"
+        ] = "Developers"
+        self.set_models({"organization/1": self.organization})
+        response = self.request("user.save_saml_account", {"username": ["111"]})
+        self.assert_status_code(response, 200)
+        self.app.logger.warning.assert_called_with(  # type: ignore
+            "save_saml_account found no group in meeting 'Landtag' for 'Developers', but use default_group of meeting"
+        )
+        self.assert_model_exists(
+            "user/2", {"saml_id": "111", "meeting_user_ids": [1], "meeting_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "group_ids": [1], "meeting_id": 1}
+        )
+        self.assert_model_exists(
+            "group/1",
+            {
+                "meeting_user_ids": [1],
+                "external_id": "Default",
+                "default_group_for_meeting_id": 1,
+            },
+        )
+
+    def test_create_user_only_meeting_given(self) -> None:
+        """silent fail, but added to default group and logged in"""
+        del self.organization["saml_attr_mapping"]["meeting"]["external_group_id"]  # type: ignore
+        self.set_models({"organization/1": self.organization})
+        response = self.request("user.save_saml_account", {"username": ["111"]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2", {"saml_id": "111", "meeting_user_ids": [1], "meeting_ids": [1]}
+        )
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "group_ids": [1], "meeting_id": 1}
+        )
+        self.assert_model_exists(
+            "group/1",
+            {
+                "meeting_user_ids": [1],
+                "external_id": "Default",
+                "default_group_for_meeting_id": 1,
+            },
+        )
+
+    def test_update_user_existing_member_in_group(self) -> None:
+        """user created and logged in"""
+        self.set_user_groups(1, [2])
+        response = self.request("user.save_saml_account", {"username": ["admin_saml"]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "saml_id": "admin_saml",
+                "username": "admin",
+                "meeting_user_ids": [1],
+                "meeting_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 1, "group_ids": [2], "meeting_id": 1}
+        )
+        self.assert_model_exists(
+            "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
+        )
+
+    def test_update_user_add_group_to_existing_groups(self) -> None:
+        """group added, user created and logged in"""
+        self.set_user_groups(1, [1, 3])
+        response = self.request("user.save_saml_account", {"username": ["admin_saml"]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "saml_id": "admin_saml",
+                "username": "admin",
+                "meeting_user_ids": [1],
+                "meeting_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 1, "group_ids": [1, 3, 2], "meeting_id": 1}
+        )
+        self.assert_model_exists(
+            "group/2", {"meeting_user_ids": [1], "external_id": "Delegates"}
+        )

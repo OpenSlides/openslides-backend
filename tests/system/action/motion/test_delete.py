@@ -19,11 +19,18 @@ class MotionDeleteActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "state_id": 78,
                 "submitter_ids": [12],
+                "amendment_ids": [222],
             },
             "motion/112": {
                 "title": "title_fgehemn",
                 "meeting_id": 1,
                 "state_id": 78,
+            },
+            "motion/222": {
+                "title": "amendment to 111",
+                "meeting_id": 1,
+                "state_id": 78,
+                "lead_motion_id": 111,
             },
             "motion_state/78": {
                 "meeting_id": 1,
@@ -54,6 +61,23 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("motion/111")
         self.assert_history_information("motion/111", ["Motion deleted"])
 
+    def test_delete_amendment(self) -> None:
+        self.set_models(self.permission_test_models)
+        response = self.request("motion.delete", {"id": 222})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/111")
+        self.assert_model_deleted("motion/222")
+        self.assert_history_information("motion/222", ["Motion deleted"])
+
+    def test_delete_motion_and_amendment(self) -> None:
+        self.set_models(self.permission_test_models)
+        response = self.request_multi("motion.delete", [{"id": 111}, {"id": 222}])
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("motion/111")
+        self.assert_model_deleted("motion/222")
+        self.assert_history_information("motion/111", ["Motion deleted"])
+        self.assert_history_information("motion/222", ["Motion deleted"])
+
     def test_delete_wrong_id(self) -> None:
         self.create_model("motion/112", {"title": "title_srtgb123"})
         response = self.request("motion.delete", {"id": 111})
@@ -74,6 +98,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
                     "agenda_item_id": 333,
                     "projection_ids": [1],
                     "meeting_id": 98,
+                    "amendment_ids": [112],
                 },
                 "list_of_speakers/222": {
                     "closed": False,
@@ -94,6 +119,11 @@ class MotionDeleteActionTest(BaseActionTestCase):
                     "current_projection_ids": [1],
                     "meeting_id": 98,
                 },
+                "motion/112": {
+                    "title": "amendment to 111",
+                    "meeting_id": 98,
+                    "lead_motion_id": 111,
+                },
             }
         )
         response = self.request("motion.delete", {"id": 111})
@@ -102,6 +132,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("agenda_item/333")
         self.assert_model_deleted("list_of_speakers/222")
         self.assert_model_deleted("projection/1")
+        self.assert_model_deleted("motion/112")
         self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_delete_with_forwardings_all_origin_ids(self) -> None:
