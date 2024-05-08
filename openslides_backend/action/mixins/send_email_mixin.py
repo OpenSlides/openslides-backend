@@ -9,6 +9,8 @@ from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
 from typing import Any
 
+from openslides_backend.shared.interfaces.logging import Logger
+
 from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
 from ...shared.html import get_text_from_html
@@ -163,7 +165,7 @@ class EmailUtils:
     @staticmethod
     def send_email_safe(
         client: smtplib.SMTP | smtplib.SMTP_SSL,
-        logger: Any,
+        logger: Logger,
         from_: str,
         to: str | list[str],
         subject: str,

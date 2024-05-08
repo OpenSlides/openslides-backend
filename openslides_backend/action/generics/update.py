@@ -29,5 +29,5 @@ class UpdateAction(Action):
             k: v for k, v in instance.items() if k != "id" and not k.startswith("meta_")
         }
         if not fields:
-            return []
+            return
         yield self.build_event(EventType.Update, fqid, fields)
