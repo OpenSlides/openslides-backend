@@ -81,7 +81,8 @@ class BaseUserImport(BaseImportAction):
                 create_action_payload.append(row["data"])
                 index_to_is_create.append(True)
             else:
-                row["data"].pop("username", None)
+                if " " in row["data"].get("username", ""):
+                    row["data"].pop("username", None)
                 update_action_payload.append(row["data"])
                 index_to_is_create.append(False)
         create_results: ActionResults | None = []
@@ -104,6 +105,7 @@ class BaseUserImport(BaseImportAction):
         return ids
 
     def validate_entry(self, row: ImportRow) -> None:
+        # TODO: member_number validation via lookup
         id = self.validate_with_lookup(row, self.username_lookup, "username")
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
@@ -135,4 +137,14 @@ class BaseUserImport(BaseImportAction):
                 if "saml_id" in (entry := row["data"])
             ],
             field="saml_id",
+        )
+        self.member_number_lookup = Lookup(
+            self.datastore,
+            "user",
+            [
+                (entry["member_number"]["value"], entry)
+                for row in self.rows
+                if "member_number" in (entry := row["data"])
+            ],
+            field="member_number",
         )
