@@ -12,6 +12,7 @@ from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import ActionResults, Payload
+from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
@@ -21,7 +22,6 @@ from openslides_backend.services.datastore.with_database_context import (
 )
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.filters import FilterOperator
-from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import FullQualifiedId
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -56,7 +56,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             if key.decode().startswith(prefix):
                 redis.delete(key)
 
-    def get_application(self) -> WSGIApplication:
+    def get_application(self) -> OpenSlidesBackendWSGIApplication:
         return create_action_test_application()
 
     def request(
