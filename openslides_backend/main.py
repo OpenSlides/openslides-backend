@@ -7,6 +7,7 @@ import time
 from typing import Any
 
 from gunicorn.app.base import BaseApplication
+
 from openslides_backend.datastore.reader.services import register_services
 from openslides_backend.shared.interfaces.env import Env
 
