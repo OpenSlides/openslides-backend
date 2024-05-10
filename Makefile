@@ -78,6 +78,8 @@ db:
 	make -C global/meta/dev create-database-with-schema
 	python cli/create_schema.py
 
+run-psql:
+	psql -h ${DATABASE_HOST} -p ${DATABASE_PORT} -U ${DATABASE_USER} -d ${DATABASE_NAME}
 
 # Build and run production docker container (not usable inside the docker container)
 
