@@ -3,6 +3,7 @@ from collections.abc import Callable
 from copy import deepcopy
 from typing import Any, cast
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
@@ -11,17 +12,18 @@ from openslides_backend.datastore.reader.services import register_services
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.services import ShutdownService
 from openslides_backend.datastore.shared.util import DeletedModelsBehaviour
+from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
+from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import ActionException, DatastoreException
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
@@ -43,7 +45,7 @@ ADMIN_PASSWORD = "admin"
 
 
 class BaseSystemTestCase(TestCase):
-    app: WSGIApplication
+    app: OpenSlidesBackendWSGIApplication
     auth: AuthenticationService
     datastore: DatastoreService
     vote_service: TestVoteService
@@ -60,7 +62,9 @@ class BaseSystemTestCase(TestCase):
     def setUp(self) -> None:
         register_services()
         self.app = self.get_application()
+        self.logger = cast(MagicMock, self.app.logger)
         self.services = self.app.services
+        self.env = cast(Environment, self.app.env)
         self.auth = self.services.authentication()
         self.media = self.services.media()
         self.vote_service = cast(TestVoteService, self.services.vote())
@@ -106,7 +110,7 @@ class BaseSystemTestCase(TestCase):
         timeout = -1: Waits indefinetly for the action to finish, does not start an action worker
         timeout = -2: Deacticates threading alltogether. The action is executed in the main thread.
         """
-        self.app.env.vars["OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT"] = str(timeout)
+        self.env.vars["OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT"] = str(timeout)
 
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
@@ -167,7 +171,7 @@ class BaseSystemTestCase(TestCase):
             auth_data["access_token"], auth_data["refresh_id"]
         )
 
-    def get_application(self) -> WSGIApplication:
+    def get_application(self) -> OpenSlidesBackendWSGIApplication:
         raise NotImplementedError()
 
     def assert_status_code(self, response: Response, code: int) -> None:
