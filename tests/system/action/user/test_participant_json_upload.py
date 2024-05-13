@@ -210,6 +210,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                 {"property": "gender", "type": "string", "is_object": True},
                 {"property": "pronoun", "type": "string", "is_object": True},
                 {"property": "saml_id", "type": "string", "is_object": True},
+                {"property": "member_number", "type": "string", "is_object": True},
                 {
                     "property": "structure_level",
                     "type": "string",
@@ -567,6 +568,246 @@ class ParticipantJsonUpload(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Could not parse 2/3 expect decimal" in response.json["message"]
+
+    def test_json_upload_update_member_number_in_existing_participant_error(
+        self,
+    ) -> None:
+        self.create_meeting(1)
+        self.create_user("test", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "default_vote_weight": "2.300000",
+                    "member_number": "old_one",
+                }
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test",
+                        "member_number": "new_one",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.ERROR
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.ERROR
+        assert import_preview["result"]["rows"][0]["messages"] == [
+            "Error: Member numbers can't be updated via import"
+        ]
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "member_number": {"info": ImportState.ERROR, "value": "new_one"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+
+    def test_json_upload_update_duplicate_member_numbers(self) -> None:
+        self.create_meeting(1)
+        self.create_user("test1", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "default_vote_weight": "2.300000",
+                },
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test1",
+                        "member_number": "new_one",
+                    },
+                    {
+                        "username": "test2",
+                        "member_number": "new_one",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.ERROR
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.ERROR
+        assert import_preview["result"]["rows"][0]["messages"] == [
+            "Error: Found more users with the same member number"
+        ]
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "member_number": {"info": ImportState.ERROR, "value": "new_one"},
+            "username": {"info": "done", "value": "test1", "id": 2},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+        assert import_preview["result"]["rows"][1]["state"] == ImportState.ERROR
+        assert import_preview["result"]["rows"][1]["messages"] == [
+            "Error: Found more users with the same member number"
+        ]
+        data = import_preview["result"]["rows"][1]["data"]
+        assert data == {
+            "member_number": {"info": ImportState.ERROR, "value": "new_one"},
+            "username": {"info": "done", "value": "test2"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+
+    def test_json_upload_set_other_persons_member_number_in_existing_participant(
+        self,
+    ) -> None:
+        self.create_meeting(1)
+        self.create_user("test", [3])
+        self.create_user("test2", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "default_vote_weight": "2.300000",
+                },
+                "user/3": {
+                    "member_number": "new_one",
+                    "default_vote_weight": "2.300000",
+                },
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test",
+                        "member_number": "new_one",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.ERROR
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.ERROR
+        assert import_preview["result"]["rows"][0]["messages"] == [
+            "Error: Member number doesn't match detected user"
+        ]
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "member_number": {"info": ImportState.ERROR, "value": "new_one"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+
+    def test_json_upload_set_other_persons_member_number_in_existing_participant_2(
+        self,
+    ) -> None:
+        self.create_meeting(1)
+        self.create_user("test", [3])
+        self.create_user("test2", [3])
+        self.set_models(
+            {
+                "user/2": {"default_vote_weight": "2.300000", "saml_id": "tessst"},
+                "user/3": {
+                    "member_number": "new_one",
+                    "default_vote_weight": "2.300000",
+                },
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "saml_id": "tessst",
+                        "member_number": "new_one",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.ERROR
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.ERROR
+        assert sorted(import_preview["result"]["rows"][0]["messages"]) == [
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Error: Member number doesn't match detected user",
+        ]
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "default_password": {
+                "info": "warning",
+                "value": "",
+            },
+            "member_number": {"info": ImportState.ERROR, "value": "new_one"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "saml_id": {"info": "done", "value": "tessst"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+
+    def test_json_upload_set_other_persons_member_number_in_existing_participant_3(
+        self,
+    ) -> None:
+        self.create_meeting(1)
+        self.create_user("test", [3])
+        self.create_user("test2", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "default_vote_weight": "2.300000",
+                    "first_name": "Fritz",
+                    "last_name": "Chen",
+                    "email": "fritz.chen@scho.ol",
+                },
+                "user/3": {
+                    "member_number": "new_one",
+                    "default_vote_weight": "2.300000",
+                },
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "member_number": "new_one",
+                        "first_name": "Fritz",
+                        "last_name": "Chen",
+                        "email": "fritz.chen@scho.ol",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.ERROR
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.ERROR
+        assert import_preview["result"]["rows"][0]["messages"] == [
+            "Error: Member number doesn't match detected user"
+        ]
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "member_number": {"info": ImportState.ERROR, "value": "new_one"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "first_name": {"info": "done", "value": "Fritz"},
+            "last_name": {"info": "done", "value": "Chen"},
+            "email": {"info": "done", "value": "fritz.chen@scho.ol"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
 
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
@@ -1262,4 +1503,243 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     },
                 ],
             },
+        }
+
+    def json_upload_update_reference_via_two_attributes(self) -> None:
+        self.create_meeting(1)
+        self.create_user("test", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "default_vote_weight": "2.300000",
+                    "saml_id": "old_one",
+                }
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test",
+                        "saml_id": "old_one",
+                        "default_vote_weight": "4.500000",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "saml_id": {"info": "done", "value": "old_one"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "default_vote_weight": {"info": "done", "value": "4.500000"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+
+    def json_upload_set_member_number_in_existing_participants(self) -> None:
+        self.create_meeting(1)
+        self.create_user("test1", [3])
+        self.create_user("test2", [3])
+        self.create_user("test3", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "default_vote_weight": "2.300000",
+                },
+                "user/3": {"saml_id": "samLidman"},
+                "user/4": {
+                    "first_name": "Hasan",
+                    "last_name": "Ame",
+                    "email": "hasaN.ame@nd.email",
+                },
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test1",
+                        "member_number": "new_one",
+                    },
+                    {
+                        "saml_id": "samLidman",
+                        "member_number": "another_new_1",
+                    },
+                    {
+                        "first_name": "Hasan",
+                        "last_name": "Ame",
+                        "email": "hasaN.ame@nd.email",
+                        "member_number": "UGuessedIt",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.WARNING
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        row = import_preview["result"]["rows"][0]["data"]
+        assert row == {
+            "id": 2,
+            "username": {"info": "done", "value": "test1", "id": 2},
+            "member_number": {"info": "new", "value": "new_one"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+        row = import_preview["result"]["rows"][1]["data"]
+        assert row == {
+            "id": 3,
+            "username": {"info": "done", "value": "test2", "id": 3},
+            "saml_id": {"info": "done", "value": "samLidman"},
+            "default_password": {"info": "warning", "value": ""},
+            "member_number": {"info": "new", "value": "another_new_1"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+        row = import_preview["result"]["rows"][2]["data"]
+        assert row == {
+            "id": 4,
+            "username": {"info": "done", "value": "test3", "id": 4},
+            "first_name": {"info": "done", "value": "Hasan"},
+            "last_name": {"info": "done", "value": "Ame"},
+            "email": {"info": "done", "value": "hasaN.ame@nd.email"},
+            "member_number": {"info": "new", "value": "UGuessedIt"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+
+    def json_upload_set_other_matching_criteria_in_existing_participant_via_member_number(
+        self,
+    ) -> None:
+        self.create_meeting(1)
+        self.create_user("test", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "saml_id": "some_saml",
+                    "first_name": "first",
+                    "last_name": "last",
+                    "default_vote_weight": "2.300000",
+                    "member_number": "M3MNUM",
+                    "default_password": "passworddd",
+                    "password": "pass",
+                }
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "newname",
+                        "saml_id": "some_other_saml",
+                        "first_name": "second",
+                        "last_name": "second_to_last",
+                        "member_number": "M3MNUM",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.WARNING
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == [
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
+        ]
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "default_password": {"value": "", "info": "warning"},
+            "username": {"info": "new", "value": "newname", "id": 2},
+            "saml_id": {"info": "new", "value": "some_other_saml"},
+            "first_name": {"info": "done", "value": "second"},
+            "last_name": {"info": "done", "value": "second_to_last"},
+            "member_number": {"info": "done", "value": "M3MNUM"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+
+    def json_upload_add_member_number(self) -> None:
+        self.create_meeting(1)
+        self.create_user("test", [3])
+        self.set_models(
+            {
+                "user/2": {
+                    "default_vote_weight": "2.300000",
+                    "member_number": "old_one",
+                }
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test",
+                        "member_number": "old_one",
+                        "vote_weight": "4.345678",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "id": 2,
+            "member_number": {"info": "done", "value": "old_one"},
+            "username": {"info": "done", "value": "test", "id": 2},
+            "vote_weight": {"info": "done", "value": "4.345678"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+
+    def json_upload_new_participant_with_member_number(self) -> None:
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "newname",
+                        "saml_id": "some_other_saml",
+                        "first_name": "second",
+                        "last_name": "second_to_last",
+                        "member_number": "M3MNUM",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.WARNING
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
+        assert import_preview["result"]["rows"][0]["messages"] == [
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
+        ]
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data == {
+            "default_password": {"value": "", "info": "warning"},
+            "username": {"info": "done", "value": "newname"},
+            "saml_id": {"info": "new", "value": "some_other_saml"},
+            "first_name": {"info": "done", "value": "second"},
+            "last_name": {"info": "done", "value": "second_to_last"},
+            "member_number": {"info": "done", "value": "M3MNUM"},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }

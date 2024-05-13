@@ -882,16 +882,36 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
             },
         )
 
-    def test_json_upload_set_member_number_in_existing_account(self) -> None:
-        self.json_upload_set_member_number_in_existing_account()
+    def test_json_upload_set_member_number_in_existing_accounts(self) -> None:
+        self.json_upload_set_member_number_in_existing_accounts()
         response = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
             {
                 "id": 2,
-                "username": "test",
+                "username": "test1",
                 "member_number": "new_one",
+            },
+        )
+        self.assert_model_exists(
+            "user/3",
+            {
+                "id": 3,
+                "username": "test2",
+                "saml_id": "samLidman",
+                "member_number": "another_new_1",
+            },
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "username": "test3",
+                "first_name": "Hasan",
+                "last_name": "Ame",
+                "email": "hasaN.ame@nd.email",
+                "member_number": "UGuessedIt",
             },
         )
 

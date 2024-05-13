@@ -1105,3 +1105,93 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             {"id": response.json["results"][0][0].get("id"), "import": True},
         )
         self.assert_status_code(response, 200)
+
+    def test_json_upload_set_member_number_in_existing_participants(self) -> None:
+        self.json_upload_set_member_number_in_existing_participants()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test1",
+                "member_number": "new_one",
+            },
+        )
+        self.assert_model_exists(
+            "user/3",
+            {
+                "id": 3,
+                "username": "test2",
+                "saml_id": "samLidman",
+                "member_number": "another_new_1",
+            },
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "username": "test3",
+                "first_name": "Hasan",
+                "last_name": "Ame",
+                "email": "hasaN.ame@nd.email",
+                "member_number": "UGuessedIt",
+            },
+        )
+
+    def test_json_upload_set_other_matching_criteria_in_existing_participant_via_member_number(
+        self,
+    ) -> None:
+        self.json_upload_set_other_matching_criteria_in_existing_participant_via_member_number()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "newname",
+                "saml_id": "some_other_saml",
+                "first_name": "second",
+                "last_name": "second_to_last",
+                "member_number": "M3MNUM",
+                "default_password": "",
+                "password": "",
+            },
+        )
+
+    def test_json_upload_add_member_number(self) -> None:
+        self.json_upload_add_member_number()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test",
+                "member_number": "old_one",
+                "default_vote_weight": "2.300000",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "vote_weight": "4.345678",
+            },
+        )
+
+    def test_json_upload_new_participant_with_member_number(self) -> None:
+        self.json_upload_new_participant_with_member_number()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "newname",
+                "saml_id": "some_other_saml",
+                "first_name": "second",
+                "last_name": "second_to_last",
+                "member_number": "M3MNUM",
+            },
+        )

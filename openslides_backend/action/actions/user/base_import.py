@@ -109,12 +109,14 @@ class BaseUserImport(BaseImportAction):
         return ids
 
     def validate_entry(self, row: ImportRow) -> None:
-        # TODO: member_number validation via lookup
         if not (
             row["state"] == ImportState.DONE
             and row["data"].get("username", {}).get("info") == ImportState.NEW
         ):
             id = self.validate_with_lookup(row, self.username_lookup, "username")
+            self.validate_with_lookup(
+                row, self.member_number_lookup, "member_number", False, id
+            )
         else:
             id = self.validate_with_lookup(
                 row, self.member_number_lookup, "member_number"
