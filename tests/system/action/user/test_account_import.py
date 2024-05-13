@@ -910,7 +910,8 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "first_name": "second",
                 "last_name": "second_to_last",
                 "member_number": "M3MNUM",
-                "default_password": "passworddd",
+                "default_password": "",
+                "password": "",
             },
         )
 

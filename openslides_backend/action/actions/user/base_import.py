@@ -45,15 +45,19 @@ class BaseUserImport(BaseImportAction):
             ("default_password", ""),
         )
         username = cast(str, self.get_value_from_union_str_object(entry["username"]))
+        member_number = self.get_value_from_union_str_object(entry.get("member_number"))
         if (
             (obj := entry.get("saml_id"))
             and obj["value"]
             and obj["info"] != ImportState.REMOVE
         ):
             for field, value in field_values:
-                if self.username_lookup.get_field_by_name(username, field) or entry.get(
-                    field
-                ):
+                field_data = self.username_lookup.get_field_by_name(username, field)
+                if member_number and not field_data:
+                    field_data = self.member_number_lookup.get_field_by_name(
+                        member_number, field
+                    )
+                if field_data or entry.get(field):
                     entry[field] = value
 
         if (
@@ -106,7 +110,15 @@ class BaseUserImport(BaseImportAction):
 
     def validate_entry(self, row: ImportRow) -> None:
         # TODO: member_number validation via lookup
-        id = self.validate_with_lookup(row, self.username_lookup, "username")
+        if not (
+            row["state"] == ImportState.DONE
+            and row["data"].get("username", {}).get("info") == ImportState.NEW
+        ):
+            id = self.validate_with_lookup(row, self.username_lookup, "username")
+        else:
+            id = self.validate_with_lookup(
+                row, self.member_number_lookup, "member_number"
+            )
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
@@ -119,6 +131,10 @@ class BaseUserImport(BaseImportAction):
                 (entry["username"]["value"], entry)
                 for row in self.rows
                 if "username" in (entry := row["data"])
+                and (
+                    row["state"] != ImportState.DONE
+                    or row["data"]["username"]["info"] != ImportState.NEW
+                )
             ],
             field="username",
             mapped_fields=[
@@ -147,4 +163,8 @@ class BaseUserImport(BaseImportAction):
                 if "member_number" in (entry := row["data"])
             ],
             field="member_number",
+            mapped_fields=[
+                "default_password",
+                "can_change_own_password",
+            ],
         )

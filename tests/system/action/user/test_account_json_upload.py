@@ -1460,6 +1460,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
                     "default_vote_weight": "2.300000",
                     "member_number": "M3MNUM",
                     "default_password": "passworddd",
+                    "password": "",
                 }
             }
         )
