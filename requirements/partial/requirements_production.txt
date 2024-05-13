@@ -1,4 +1,4 @@
-Babel==2.14.0
+Babel==2.15.0
 beautifulsoup4==4.12.3
 bleach[css]==6.1.0
 dacite==1.7.0
@@ -9,13 +9,13 @@ gunicorn==22.0.0
 lxml==5.1.0
 psycopg[c]==3.1.18
 psycopg-pool==3.2.1
-pygments==2.17.2
+pygments==2.18.0
 pypdf[crypto]==4.2.0
 python-magic==0.4.27
 requests==2.31.0
 roman==4.2
 simplejson==3.19.2
-Werkzeug==3.0.2
+Werkzeug==3.0.3
 
 # opentelemetry
 opentelemetry-api==1.24.0
