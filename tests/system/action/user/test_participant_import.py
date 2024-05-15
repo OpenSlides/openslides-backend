@@ -1042,7 +1042,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["data"] == {
             "id": 2,
             "saml_id": {"info": "remove", "value": "saml_id1"},
-            "username": {"id": 2, "info": "remove", "value": "user2"},
+            "username": {"info": "remove", "value": "user2"},
             "first_name": {"info": "remove", "value": "Jim"},
             "email": {"info": "remove", "value": "Jim.Knopf@Lummer.land"},
             "vote_weight": {"info": "done", "value": "1.234560"},
@@ -1053,7 +1053,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"id": 3, "info": "done", "value": "group3"},
                 {"id": 7, "info": "new", "value": "group4"},
             ],
-            "member_number": {"value": "M3MNUM", "info": "remove"},
+            "member_number": {"id": 2, "value": "M3MNUM", "info": "remove"},
         }
         self.assert_model_exists(
             "user/2",
@@ -1221,15 +1221,16 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Error: username 'newname' found in different id (3 instead of 2)",
         ]
         assert row["data"] == {
             "id": 2,
             "default_password": {"value": "", "info": "warning"},
-            "username": {"info": "new", "value": "newname", "id": 2},
+            "username": {"info": "error", "value": "newname"},
             "saml_id": {"info": "new", "value": "some_other_saml"},
             "first_name": {"info": "done", "value": "second"},
             "last_name": {"info": "done", "value": "second_to_last"},
-            "member_number": {"info": "done", "value": "M3MNUM"},
+            "member_number": {"info": "done", "value": "M3MNUM", "id": 2},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 

@@ -964,3 +964,16 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "member_number": "M3MNUM",
             },
         )
+
+    def test_json_upload_new_account_with_only_member_number(self) -> None:
+        self.json_upload_new_account_with_only_member_number()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "M3MNUM",
+                "member_number": "M3MNUM",
+            },
+        )

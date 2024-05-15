@@ -53,9 +53,12 @@ class BaseUserImport(BaseImportAction):
         ):
             for field, value in field_values:
                 field_data = self.username_lookup.get_field_by_name(username, field)
-                if member_number and not field_data:
-                    field_data = self.member_number_lookup.get_field_by_name(
-                        member_number, field
+                if member_number:
+                    field_data = (
+                        self.member_number_lookup.get_field_by_name(
+                            member_number, field
+                        )
+                        or field_data
                     )
                 if field_data or entry.get(field):
                     entry[field] = value
@@ -121,6 +124,7 @@ class BaseUserImport(BaseImportAction):
             id = self.validate_with_lookup(
                 row, self.member_number_lookup, "member_number"
             )
+            self.validate_with_lookup(row, self.username_lookup, "username", False, id)
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
@@ -133,10 +137,6 @@ class BaseUserImport(BaseImportAction):
                 (entry["username"]["value"], entry)
                 for row in self.rows
                 if "username" in (entry := row["data"])
-                and (
-                    row["state"] != ImportState.DONE
-                    or row["data"]["username"]["info"] != ImportState.NEW
-                )
             ],
             field="username",
             mapped_fields=[

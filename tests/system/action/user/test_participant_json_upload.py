@@ -128,7 +128,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.ERROR,
             "messages": [
-                "Cannot generate username. Missing one of first_name, last_name."
+                "Cannot generate username. Missing one of first_name, last_name or a unique member_number."
             ],
             "data": {
                 "username": {"value": "", "info": ImportState.GENERATED},
@@ -1480,8 +1480,8 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         ]
         assert row["data"] == {
             "id": 2,
-            "username": {"value": "user2", "info": "remove", "id": 2},
-            "member_number": {"value": "M3MNUM", "info": "remove"},
+            "username": {"value": "user2", "info": "remove"},
+            "member_number": {"value": "M3MNUM", "info": "remove", "id": 2},
             "first_name": {"value": "Jim", "info": "remove"},
             "email": {"value": "Jim.Knopf@Lummer.land", "info": "remove"},
             "vote_weight": {"value": "1.234560", "info": "done"},
@@ -1737,11 +1737,11 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert data == {
             "id": 2,
             "default_password": {"value": "", "info": "warning"},
-            "username": {"info": "new", "value": "newname", "id": 2},
+            "username": {"info": "new", "value": "newname"},
             "saml_id": {"info": "new", "value": "some_other_saml"},
             "first_name": {"info": "done", "value": "second"},
             "last_name": {"info": "done", "value": "second_to_last"},
-            "member_number": {"info": "done", "value": "M3MNUM"},
+            "member_number": {"info": "done", "value": "M3MNUM", "id": 2},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
 
@@ -1778,8 +1778,8 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
-            "member_number": {"info": "done", "value": "old_one"},
-            "username": {"info": "done", "value": "test", "id": 2},
+            "member_number": {"info": "done", "value": "old_one", "id": 2},
+            "username": {"info": "done", "value": "test"},
             "vote_weight": {"info": "done", "value": "4.345678"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }

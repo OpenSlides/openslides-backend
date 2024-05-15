@@ -87,7 +87,7 @@ class AccountJsonUpload(BaseActionTestCase):
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.ERROR,
             "messages": [
-                "Cannot generate username. Missing one of first_name, last_name."
+                "Cannot generate username. Missing one of first_name, last_name or a unique member_number."
             ],
             "data": {
                 "username": {"value": "", "info": ImportState.GENERATED},
@@ -934,6 +934,32 @@ class AccountJsonUpload(BaseActionTestCase):
             "email": {"info": "done", "value": "fritz.chen@scho.ol"},
         }
 
+    def test_json_upload_new_account_with_only_member_number_and_incompatible_username_generation_error(
+        self,
+    ) -> None:
+        self.create_user("M3MNUM")
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "member_number": "M3MNUM",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.ERROR
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.ERROR
+        assert import_preview["result"]["rows"][0]["messages"] == [
+            "Cannot generate username. Missing one of first_name, last_name or a unique member_number."
+        ]
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data["username"] == {"info": "generated", "value": ""}
+        assert data["member_number"] == {"info": "done", "value": "M3MNUM"}
+
 
 class AccountJsonUploadForUseInImport(BaseActionTestCase):
     def json_upload_saml_id_new(self) -> None:
@@ -1616,11 +1642,11 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         assert data == {
             "id": 2,
             "default_password": {"value": "", "info": "warning"},
-            "username": {"info": "new", "value": "newname", "id": 2},
+            "username": {"info": "new", "value": "newname"},
             "saml_id": {"info": "new", "value": "some_other_saml"},
             "first_name": "second",
             "last_name": "second_to_last",
-            "member_number": {"info": "done", "value": "M3MNUM"},
+            "member_number": {"info": "done", "value": "M3MNUM", "id": 2},
         }
 
     def json_upload_add_member_number(self) -> None:
@@ -1654,8 +1680,8 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
         data = import_preview["result"]["rows"][0]["data"]
         assert data == {
             "id": 2,
-            "member_number": {"info": "done", "value": "old_one"},
-            "username": {"info": "done", "value": "test", "id": 2},
+            "member_number": {"info": "done", "value": "old_one", "id": 2},
+            "username": {"info": "done", "value": "test"},
             "default_vote_weight": {"info": "done", "value": "4.345678"},
         }
 
@@ -1691,3 +1717,24 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "last_name": "second_to_last",
             "member_number": {"info": "done", "value": "M3MNUM"},
         }
+
+    def json_upload_new_account_with_only_member_number(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "member_number": "M3MNUM",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.NEW
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data["username"] == {"info": "generated", "value": "M3MNUM"}
+        assert data["member_number"] == {"info": "done", "value": "M3MNUM"}
