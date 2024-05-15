@@ -142,11 +142,12 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
 
                 self.row_state = ImportState.DONE
                 entry["id"] = id_
-                entry["username"] = {
-                    "value": username,
-                    "info": ImportState.DONE,
-                    "id": id_,
-                }
+                if isinstance(username, str):
+                    entry["username"] = {
+                        "value": username,
+                        "info": ImportState.DONE,
+                        "id": id_,
+                    }
             elif check_result == ResultType.NOT_FOUND or id_ == 0:
                 self.row_state = ImportState.NEW
         else:
@@ -466,14 +467,22 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     entry.get("email", ""),
                 )
                 lookup_result = self.names_email_lookup.name_to_ids[key][0]
+            if "member_number" in entry:
+                lookup_result = (
+                    self.member_number_lookup.name_to_ids[entry["member_number"]][0]
+                    or lookup_result
+                )
             if not (id_ := lookup_result.get("id")):
                 continue
             if "id" not in entry:
                 entry["id"] = id_
             if "username" not in entry:
+                username = lookup_result["username"]
                 entry["username"] = {
                     "id": id_,
-                    "value": lookup_result["username"],
+                    "value": (
+                        username if isinstance(username, str) else username["value"]
+                    ),
                     "info": ImportState.DONE,
                 }
                 self.username_lookup.add_item(entry)
