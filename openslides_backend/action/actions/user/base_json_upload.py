@@ -186,7 +186,11 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     self.row_state = ImportState.DONE
                     entry["id"] = id_
                     entry["username"] = {
-                        "value": username,
+                        "value": (
+                            cast(dict, username).get("value")
+                            if isinstance(username, dict)
+                            else username
+                        ),
                         "info": ImportState.DONE,
                         "id": id_,
                     }

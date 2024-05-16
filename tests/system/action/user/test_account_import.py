@@ -978,3 +978,31 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "member_number": "M3MNUM",
             },
         )
+
+    def test_json_upload_match_via_member_number_no_username(self) -> None:
+        self.json_upload_match_via_member_number_no_username()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test",
+                "member_number": "M3MNUM",
+            },
+        )
+
+    def test_json_upload_match_via_member_number_no_username_or_other_data(
+        self,
+    ) -> None:
+        self.json_upload_match_via_member_number_no_username_or_other_data()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test",
+                "member_number": "M3MNUM",
+            },
+        )
