@@ -7,6 +7,7 @@
     first_name: string;
     last_name: string;
     username: string;
+    member_number: string;
     is_active: boolean;
     is_physical_person: boolean;
     can_change_own_password: boolean;
@@ -57,6 +58,7 @@ Creates a user.
 * Remove starting and trailing spaces from `username`, `first_name` and `last_name`
 * The given `gender` must be present in `organization/genders`
 * If `saml_id` is set in payload, there may be no `password` or `default_password` set or generated and `set_change_own_password` will be set to False.
+* The `member_number` must be unique within all users.
 
 ### Generate a username
 If no username is given, it will be set from a given `saml_id`. Otherwise it is generated from `first_name` and `last_name`. Join all non-empty values from these two fields in the given order. If both fields are empty, raise an error, that one of the fields is required (see [OS3](https://github.com/OpenSlides/OpenSlides/blob/main/server/openslides/users/serializers.py#L90)). Remove all spaces from a generated username.

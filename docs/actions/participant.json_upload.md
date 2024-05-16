@@ -7,10 +7,11 @@ The types noted below are the internal types after conversion in the backend. Se
      meeting_id: Id,
      data: {
           // all optional, but see rules below
-          username: string,  // unique username, info: generated, done or error (first-/last-name), done (used the given username), remove(missed field permission)
+          username: string,  // unique username, info: generated, new (changed via member_number matching), done or error (first-/last-name), done (used the given username), remove(missed field permission)
           first_name: string,  // info: done or remove (missing field permission)
           last_name: string,  // info: done or remove (missing field permission)
-          email: string,  // info: done or remove (missing field permission)
+          email: string,  // info: done, error or remove (missing field permission)
+          member_number: string, // unique member_number, info: done, error, new (newly added) or remove (missing field permission)
           title: string,  // info: done or remove (missing field permission)
           pronoun: string,  // info: done or remove (missing field permission)
           gender: string, // as defined in organization/genders, info: done, warning (undefined gender) or remove (missing field permission)
@@ -38,6 +39,8 @@ The types noted below are the internal types after conversion in the backend. Se
   fields.
 - `vote_weight` doesn't allow 0 values
 - `structure_level` will return `new` if it is not found, in such cases the structure level will be created in the import
+- `email` must be a valid email
+- `member_number`: object with info "done", depending on whether the username was generated or not. The member_number may be overwritten when it is not yet set on a referenced user, then the info will be "new". "error" will be used if the member_number is not unique, already set on the matched user or the member_number matches a different user than the other matching criteria
 
 ## Action
 

@@ -1626,6 +1626,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
                         "first_name": "second",
                         "last_name": "second_to_last",
                         "member_number": "M3MNUM",
+                        "email": "a.new@ma.il",
                     }
                 ],
             },
@@ -1647,6 +1648,7 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
             "first_name": "second",
             "last_name": "second_to_last",
             "member_number": {"info": "done", "value": "M3MNUM", "id": 2},
+            "email": {"info": "done", "value": "a.new@ma.il"},
         }
 
     def json_upload_add_member_number(self) -> None:

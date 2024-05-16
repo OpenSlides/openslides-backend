@@ -932,6 +932,7 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
                 "member_number": "M3MNUM",
                 "default_password": "",
                 "password": "",
+                "email": "a.new@ma.il",
             },
         )
 

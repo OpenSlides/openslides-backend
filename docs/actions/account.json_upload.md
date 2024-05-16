@@ -7,10 +7,11 @@ The types noted below are the internal types after conversion in the backend. Se
     // required
     data: {
         // all optional, but see rules below
-        username: object,  // unique username, info: generated, done or error
+        username: object,  // unique username, info: generated, new (changed via member_number matching), done or error
         first_name: string,
         last_name: string,
-        email: string,
+        email: string, // info: done or error
+        member_number: string, // unique member_number, info: done (used as matching field), new (newly added) or error
         title: string,
         pronoun: string,
         gender: string, // as defined in organization/genders, info: done or warning
@@ -26,10 +27,12 @@ The types noted below are the internal types after conversion in the backend. Se
 
 Besides the usual headers as seen in payload (name and type), there are these differences:
 
-- `username`: object with info "generated" or "done", depending on whether the username was generated or not.
+- `username`: object with info "generated" or "done", depending on whether the username was generated or not. The username may be overwritten when matching via the `member_nubmer`, then the info will be "new"
 - `saml_id`: object with info "new" if set for the first time or "done" if changed. "error" will be reported on duplicate "saml_ids.
 - `default_password`: object with info "generated" or "done", depending on whether the default_password was generated or not. The info "warning" signalizes, that `default_password`, `password` and `can_change_own_password` will be removed by setting `saml_id`, because local login will not be possible anymore.
 - `default_vote_weight` doesn't allow 0 values
+- `email` must be a valid email
+- `member_number`: object with info "done", depending on whether the username was generated or not. The member_number may be overwritten when it is not yet set on a referenced user, then the info will be "new". "error" will be used if the member_number is not unique, already set on the matched user or the member_number matches a different user than the other matching criteria
 
 The row state can be one of "new", "done" or "error". In case of an error, no import should be possible.
 
@@ -44,6 +47,7 @@ The data, enriched with building some field values and a first new column "state
 ### User matching
 
 To decide whether to update an existing user with a row or to create a new one, the data is tried to match to the existing users analogously to the [`search_users` presenter](search_users.md#logic):
+- `member_number`, if given, is the preferred matching field. If there is a member_number and it fits a user, that user will be selected, otherwise:
 - If `username` is provided, it is only matched by username. All other data is ignored for the matching. If the username does not exist yet, a new user is created. If found add a new column with the Id to the data.
 - If `saml_id` is provided, it is only matched by saml_id. All other data is ignored for the matching. If the saml_id does not exist yet, a new user is created. If found add a new column with the Id to the data.
 - If `username` and `saml_id` are not provided, all of `first_name`, `last_name` and `email` must be provided instead. A user matches the row if all three fields are equal. In this case fill the `username` in data from db and a also add a column with the Id to data. If no user is found which matches the data, a new user is created and a username generated.
