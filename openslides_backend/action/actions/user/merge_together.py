@@ -8,6 +8,8 @@ from ....shared.schema import id_list_schema, optional_id_schema
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
+from ....services.datastore.commands import GetManyRequest
 
 
 @register_action("user.merge_together")
@@ -46,6 +48,39 @@ class UserMergeTogether(CreateAction, CheckForArchivedMeetingMixin):
         },
     )
     permission = permission = OrganizationManagementLevel.CAN_MANAGE_USERS
+
+    def prefetch(self, action_data: ActionData) -> None:
+        user_ids = [
+            id_
+            for instance in action_data
+            for id_ in set(instance.get("user_ids", []))
+        ]
+        if len(user_ids) != len(set(user_ids)):
+            raise ActionException("Cannot merge one user into multiple final users")
+        users = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "user",
+                    user_ids,
+                    [],
+                )
+            ]
+        )["user"]
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user",
+                    list(
+                        {
+                            id_
+                            for user in users.values()
+                            for id_ in user.get("meeting_user_ids", [])
+                        }
+                    ),
+                    [],
+                )
+            ]
+        )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         raise ActionException(

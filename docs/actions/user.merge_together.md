@@ -16,7 +16,6 @@
     default_password: string;
     gender: string;
     email: string;
-    default_structure_level: string;
     default_vote_weight: decimal(6);
 
     password_from_user_id: number;
