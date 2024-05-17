@@ -1,4 +1,4 @@
-import os
+import os, sys
 import string
 from collections import ChainMap
 from textwrap import dedent
@@ -19,6 +19,10 @@ from openslides_backend.models.mixins import (
     PollModelMixin,
 )
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
+
+sys.path.append("global")
+
+from meta.dev.src.helper_get_names import InternalHelper
 
 SOURCE = "./global/meta/models.yml"
 
@@ -97,6 +101,8 @@ def main() -> None:
     global MODELS
     MODELS = open_yml_file(args.filename)
 
+    InternalHelper.MODELS = MODELS
+
     # Load and parse models.yml
     with open_output(DESTINATION, args.check) as dest:
         dest.write(FILE_TEMPLATE)
@@ -163,7 +169,7 @@ class Model(Node):
         for field_name, field in fields.items():
             if field.get("calculated"):
                 continue
-            self.attributes[field_name] = Attribute(field)
+            self.attributes[field_name] = Attribute(field, collection, field_name)
 
     def get_code(self) -> str:
         verbose_name = " ".join(self.collection.split("_"))
@@ -206,7 +212,7 @@ class Attribute(Node):
         "    ${field_name} = fields.${field_class}(${properties})\n"
     )
 
-    def __init__(self, value: str | dict) -> None:
+    def __init__(self, value: str | dict, collection_name: str, field_name: str) -> None:
         self.FIELD_CLASSES = {
             **COMMON_FIELD_CLASSES,
             **RELATION_FIELD_CLASSES,
@@ -216,20 +222,16 @@ class Attribute(Node):
         if isinstance(value, str):
             self.type = value
         else:
-            self.type = value.pop("type")
+            self.type = value.get("type")
             if self.type in RELATION_FIELD_CLASSES.keys():
+                self.is_view_field = InternalHelper.get_view_field_decision(collection_name, field_name, value)
                 self.to = To(value.pop("to"))
                 self.on_delete = value.pop("on_delete", None)
-                if (
-                    self.type.endswith("relation-list")
-                    or value.get("sql")
-                    or (value.get("to") and not value.get("reference"))
-                ):
-                    self.is_view_field = True
             else:
                 assert self.type in COMMON_FIELD_CLASSES.keys(), (
                     "Invalid type: " + self.type
                 )
+            value.pop("type")
             self.required = value.pop("required", False)
             self.read_only = value.pop("read_only", False)
             self.constant = value.pop("constant", False)
