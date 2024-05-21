@@ -234,7 +234,7 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
             if self.use_meeting_ids_for_archived_meeting_check:
                 meeting_ids = instance["meeting_ids"]
             else:
-                meeting_ids = [self.get_meeting_id(instance)]
+                meeting_ids = self.get_meeting_ids(instance)
         except AttributeError:
             raise ActionException(
                 f"get meeting failed Action: {self.name}. Perhaps you want to use skip_archived_meeting_checks = True attribute"
@@ -255,6 +255,13 @@ class Action(BaseServiceProvider, metaclass=SchemaProvider):
         """
         if self.auth.is_anonymous(self.user_id):
             raise AnonymousNotAllowed(self.name)
+
+    def get_meeting_ids(self, instance: dict[str, Any]) -> list[int]:
+        """
+        Returns the meeting_id, either directly from the instance or from the datastore.
+        Must be overwritten if there are multiple meetings to be checked!
+        """
+        return [self.get_meeting_id(instance)]
 
     def get_meeting_id(self, instance: dict[str, Any]) -> int:
         """

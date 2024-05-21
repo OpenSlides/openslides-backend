@@ -184,12 +184,11 @@ class UserMergeTogether(BaseActionTestCase):
         )
 
     def test_not_implemented_with_superadmin(self) -> None:
+        user = self.assert_model_exists("user/2")
+        user.pop("meta_position")
         response = self.request("user.merge_together", {"id": 2, "user_ids": []})
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "This action is still not implemented, but permission checked",
-            response.json["message"],
-        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", user)
 
     def test_empty_payload_fields(self) -> None:
         response = self.request("user.merge_together", {})
@@ -200,17 +199,16 @@ class UserMergeTogether(BaseActionTestCase):
         )
 
     def test_correct_permission(self) -> None:
+        user = self.assert_model_exists("user/1")
+        user.pop("meta_position")
         self.user_id = self.create_user(
             "test",
             organization_management_level=OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
         self.login(self.user_id)
         response = self.request("user.merge_together", {"id": 1, "user_ids": []})
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "This action is still not implemented, but permission checked",
-            response.json["message"],
-        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/1", user)
 
     def test_missing_permission(self) -> None:
         self.user_id = self.create_user("test")
@@ -221,3 +219,53 @@ class UserMergeTogether(BaseActionTestCase):
             "You are not allowed to perform action user.merge_together. Missing OrganizationManagementLevel: can_manage_users",
             response.json["message"],
         )
+
+    def test_merge_into_self(self) -> None:
+        response = self.request("user.merge_together", {"id": 1, "user_ids": [2]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {"meeting_ids": [1, 2], "meeting_user_ids": [12, 22], "committee_ids": [1]},
+        )
+        self.assert_model_deleted("user/2")
+
+    def test_merge_self_into_other_error(self) -> None:
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [1]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Operator may not merge himself into others.",
+            response.json["message"],
+        )
+
+    def test_merge_normal(self) -> None:
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "meeting_ids": [1, 2, 3],
+                "committee_ids": [1, 2],
+                "organization_id": 1,
+                "default_password": "user2",
+                "meeting_user_ids": [12, 22, 33],
+            },
+        )
+        self.assert_model_deleted("user/3")
+
+    def test_merge_with_archived_meeting(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "active_meeting_ids": [2, 3, 4],
+                    "archived_meeting_ids": [1],
+                },
+                "meeting/1": {
+                    "is_active_in_organization_id": None,
+                    "is_archived_in_organization_id": 1,
+                },
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3]})
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("user/2")
+        self.assert_model_exists("user/3")
