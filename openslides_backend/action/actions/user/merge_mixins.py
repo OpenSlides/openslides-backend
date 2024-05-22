@@ -2,9 +2,6 @@ from openslides_backend.services.datastore.interface import PartialModel
 
 from ....models.models import MeetingUser
 from ....shared.patterns import Collection
-from ..meeting_user.create import MeetingUserCreate
-from ..meeting_user.delete import MeetingUserDelete
-from ..meeting_user.update import MeetingUserUpdate
 from .base_merge_mixin import BaseMergeMixin
 
 
@@ -13,11 +10,11 @@ class MeetingUserMergeMixin(BaseMergeMixin):
         super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
             MeetingUser,
-            {
-                "create": MeetingUserCreate,
-                "update": MeetingUserUpdate,
-                "delete": MeetingUserDelete,
-            },
+            # {
+            #     "create": MeetingUserCreate,
+            #     "update": MeetingUserUpdate,
+            #     "delete": MeetingUserDelete,
+            # },
             {
                 "ignore": [
                     "user_id",  # will be overwritten from user-side

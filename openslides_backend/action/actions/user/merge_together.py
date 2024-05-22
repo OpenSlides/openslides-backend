@@ -4,23 +4,27 @@ from openslides_backend.services.datastore.interface import PartialModel
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
-from ....shared.exceptions import ActionException
+from ....shared.exceptions import ActionException, BadCodingException
 from ....shared.filters import FilterOperator, Or
 from ....shared.interfaces.env import Env
 from ....shared.interfaces.logging import LoggingModule
 from ....shared.interfaces.services import Services
-from ....shared.patterns import Collection, fqid_from_collection_and_id
+from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...relations.relation_manager import RelationManager
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .create import UserCreate
+from ..meeting_user.delete import MeetingUserDelete
+from ..meeting_user.update import MeetingUserUpdate
+from .base_merge_mixin import MergeUpdateOperations
 from .delete import UserDelete
 from .merge_mixins import MeetingUserMergeMixin
 from .update import UserUpdate
+from .user_mixins import UserMixin
 
 
 @register_action("user.merge_together")
@@ -76,19 +80,21 @@ class UserMergeTogether(
         )
         self.add_collection_field_groups(
             User,
-            {"create": UserCreate, "update": UserUpdate, "delete": UserDelete},
+            # {"create": UserCreate, "update": UserUpdate, "delete": UserDelete},
             {
                 "ignore": [
                     "password",
                     "default_password",
                     "organization_id",
+                    "last_email_sent",
+                    "last_login",
+                    "committee_ids",
+                    "meeting_ids",
                 ],
                 "highest": [
                     "is_active",
                     "is_physical_person",
                     "can_change_own_password",
-                    "last_email_sent",
-                    "last_login",
                 ],
                 "error": [
                     "is_demo_user",
@@ -96,7 +102,6 @@ class UserMergeTogether(
                 ],
                 "priority": [
                     "username",
-                    "saml_id",
                     "pronoun",
                     "title",
                     "first_name",
@@ -107,9 +112,11 @@ class UserMergeTogether(
                 ],
                 "merge": [
                     "is_present_in_meeting_ids",
-                    "committee_ids",
                     "committee_management_ids",
-                    "meeting_ids",
+                    "option_ids",  # throw error if conflict on same poll
+                    "poll_voted_ids",  # throw error if conflict on same poll
+                    "vote_ids",  # throw error if conflict on same poll
+                    "delegated_vote_ids",  # throw error if conflict on same poll
                 ],
                 "deep_merge": {
                     "meeting_user_ids": "meeting_user",
@@ -117,11 +124,9 @@ class UserMergeTogether(
                 },
                 "special_function": [
                     "organization_management_level",
-                    "option_ids",  # throw error if conflict on same poll, else merge
-                    "poll_voted_ids",  # throw error if conflict on same poll, else merge
-                    "vote_ids",  # throw error if conflict on same poll, else merge
-                    "delegated_vote_ids",  # throw error if conflict on same poll, else merge
+                    "saml_id",  # error if set on secondary users, otherwise ignore the field
                 ],
+                "require_equality": ["member_number"],
             },
         )
         self.check_collection_field_groups()
@@ -150,6 +155,10 @@ class UserMergeTogether(
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # TODO: Is this stuff necessary
+        update_operations: dict[Collection, MergeUpdateOperations] = {
+            coll: {"create": [], "update": [], "delete": []}
+            for coll in self._collection_field_groups
+        }
         user_data, meeting_users = self._get_user_data(instance["id"])
         meeting_user_data_by_meeting_id: dict[int, PartialModel] = {}
         for meeting_user in meeting_users.values():
@@ -169,8 +178,143 @@ class UserMergeTogether(
         into, other_models = self.split_merge_by_rank_models(
             instance["id"], instance["user_ids"], models
         )
-        result = self.merge_by_rank("user", into, other_models, instance)
-        return result
+
+        self.check_polls(into, other_models)
+
+        update_operations["user"]["update"].append(
+            self.merge_by_rank("user", into, other_models, instance, update_operations)
+        )
+        self.call_other_actions(update_operations)
+        return {"id": into["id"]}
+
+    def call_other_actions(
+        self, update_operations: dict[Collection, MergeUpdateOperations]
+    ) -> None:
+        if len(update_operations["user"]["update"]) != 1:
+            raise BadCodingException("Calculated wrong amount of user payloads")
+        main_user_payload = update_operations["user"]["update"][0]
+        for meeting_user_id in main_user_payload.pop("meeting_user_ids", []):
+            if not any(
+                payload["id"] == meeting_user_id
+                for payload in update_operations["meeting_user"]["update"]
+            ):
+                update_operations["meeting_user"]["update"].append(
+                    {"id": meeting_user_id}
+                )
+        user_id = main_user_payload["id"]
+        if len(delete_ids := update_operations["meeting_user"]["delete"]):
+            self.execute_other_action(
+                MeetingUserDelete,
+                [{"id": id_} for id_ in delete_ids],
+                MeetingUserDelete.skip_archived_meeting_check,
+            )
+        if len(update_payloads := update_operations["meeting_user"]["update"]):
+            main_user_payload.update(
+                {
+                    **self.datastore.get(
+                        fqid_from_collection_and_id(
+                            "meeting_user", update_payloads[0]["id"]
+                        ),
+                        ["meeting_id"],
+                    ),
+                    **{
+                        field: update_payloads[0].pop(field)
+                        for field in UserMixin.transfer_field_list
+                        if field in update_payloads[0]
+                    },
+                }
+            )
+            for payload_index in range(1, len(update_payloads)):
+                current = update_payloads[payload_index]
+                update_operations["user"]["update"].append(
+                    {
+                        "id": user_id,
+                        **self.datastore.get(
+                            fqid_from_collection_and_id("meeting_user", current["id"]),
+                            ["meeting_id"],
+                        ),
+                        **{
+                            field: current.pop(field)
+                            for field in UserMixin.transfer_field_list
+                            if field in current
+                        },
+                    }
+                )
+            # update_payloads = [
+            #     payload for payload in update_payloads if len(payload) > 1
+            # ]
+            self.execute_other_action(
+                MeetingUserUpdate,
+                [{**payload, "user_id": user_id} for payload in update_payloads],
+                MeetingUserUpdate.skip_archived_meeting_check,
+            )
+            update_operations["user"]["update"].reverse()
+            self.execute_other_action(UserUpdate, update_operations["user"]["update"])
+            if len(update_operations["user"]["delete"]):
+                self.execute_other_action(
+                    UserDelete,
+                    [{"id": id_} for id_ in update_operations["user"]["delete"]],
+                    UserDelete.skip_archived_meeting_check,
+                )
+
+    def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
+        poll_ids_per_user_id: dict[int, set[int]] = {}
+        for model in [into, *other_models]:
+            vote_data = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "vote",
+                        list(
+                            {
+                                id_
+                                for id_ in [
+                                    *model.get("vote_ids", []),
+                                    *model.get("delegated_vote_ids", []),
+                                ]
+                            }
+                        ),
+                        ["option_id"],
+                    )
+                ]
+            )["vote"]
+            poll_ids_per_user_id[model["id"]] = {
+                option["poll_id"]
+                for option in self.datastore.get_many(
+                    [
+                        GetManyRequest(
+                            "option",
+                            list(
+                                {
+                                    id_
+                                    for id_ in [
+                                        *model.get("option_ids", []),
+                                        *[
+                                            vote["option_id"]
+                                            for vote in vote_data.values()
+                                            if vote.get("option_id")
+                                        ],
+                                    ]
+                                }
+                            ),
+                            ["poll_id"],
+                        )
+                    ]
+                )["option"].values()
+                if option.get("poll_id")
+            }
+            poll_conflicts = {
+                poll_id
+                for id1 in poll_ids_per_user_id
+                for id2 in poll_ids_per_user_id
+                for poll_id in poll_ids_per_user_id[id1].intersection(
+                    poll_ids_per_user_id[id2]
+                )
+                if id1 != id2
+            }
+            if len(poll_conflicts):
+                raise ActionException(
+                    f"Cannot carry out merge into user/{into['id']}, because among the selected users multiple voted in poll(s) {', '.join([str(id_) for id_ in poll_conflicts])}"
+                )
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel
@@ -208,3 +352,30 @@ class UserMergeTogether(
             ["meeting_id"],
         ).values()
         return list({m["meeting_id"] for m in meeting_users})
+
+    def handle_special_field(
+        self,
+        collection: Collection,
+        field: CollectionField,
+        into_: PartialModel,
+        ranked_others: list[PartialModel],
+    ) -> Any | None:
+        if collection == "user":
+            match field:
+                case "organization_management_level":
+                    all_omls = [
+                        OrganizationManagementLevel(oml)
+                        for model in [into_, *ranked_others]
+                        if (oml := model.get(field))
+                    ]
+                    if len(all_omls) == 0:
+                        return None
+                    return max(all_omls)
+                case "saml_id":
+                    # error if set on secondary users, otherwise ignore the field
+                    if any([field in model for model in ranked_others]):
+                        raise ActionException(
+                            f"Merge of user/{into_['id']}: Saml_id may not exist on any user except target."
+                        )
+                    return None
+        return super().handle_special_field(collection, field, into_, ranked_others)

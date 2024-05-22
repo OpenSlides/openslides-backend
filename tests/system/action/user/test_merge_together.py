@@ -225,7 +225,10 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/1",
-            {"meeting_ids": [1, 2], "meeting_user_ids": [12, 22], "committee_ids": [1]},
+            {
+                "meeting_ids": [1, 2],
+                "meeting_user_ids": [12, 22],
+                "committee_ids": [1]},
         )
         self.assert_model_deleted("user/2")
 
@@ -238,19 +241,120 @@ class UserMergeTogether(BaseActionTestCase):
         )
 
     def test_merge_normal(self) -> None:
+        password = self.assert_model_exists("user/2")["password"]
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3]})
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2",
             {
+                "is_active": True,
+                "username": "user2",
                 "meeting_ids": [1, 2, 3],
                 "committee_ids": [1, 2],
                 "organization_id": 1,
                 "default_password": "user2",
                 "meeting_user_ids": [12, 22, 33],
+                "password": password,
             },
         )
         self.assert_model_deleted("user/3")
+
+    def test_merge_with_saml_id(self) -> None:
+        self.set_models(
+            {
+                "user/2": {
+                    "password": None,
+                    "saml_id": "user2",
+                },
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "is_active": True,
+                "username": "user2",
+                "meeting_ids": [1, 2, 3],
+                "committee_ids": [1, 2],
+                "organization_id": 1,
+                "default_password": "user2",
+                "meeting_user_ids": [12, 22, 33],
+                "password": None,
+                "saml_id": "user2",
+            },
+        )
+        self.assert_model_deleted("user/3")
+        self.assert_model_deleted("user/4")
+
+    def test_merge_with_saml_id_error(self) -> None:
+        self.set_models(
+            {
+                "user/3": {
+                    "password": None,
+                    "saml_id": "user3",
+                },
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Merge of user/2: Saml_id may not exist on any user except target.",
+            response.json["message"],
+        )
+
+    def test_merge_with_omls(self) -> None:
+        password = self.assert_model_exists("user/2")["password"]
+        self.set_models(
+            {
+                "user/2": {
+                    "organization_management_level": "can_manage_organization",
+                },
+                "user/3": {
+                    "organization_management_level": "can_manage_users",
+                },
+                "user/4": {
+                    "organization_management_level": "superadmin",
+                },
+                "user/5": {
+                    "organization_management_level": "can_manage_users",
+                },
+            }
+        )
+        response = self.request(
+            "user.merge_together", {"id": 2, "user_ids": [3, 4, 5, 6]}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "organization_management_level": "superadmin",
+                "is_active": True,
+                "username": "user2",
+                "meeting_ids": [1, 2, 3, 4],
+                "committee_ids": [1, 2, 3],
+                "organization_id": 1,
+                "default_password": "user2",
+                "meeting_user_ids": [12, 22, 33, 45],
+                "password": password,
+            },
+        )
+        for id_ in range(3, 7):
+            self.assert_model_deleted(f"user/{id_}")
+        for id_ in [23, 14, 24, 34, 15]:
+            self.assert_model_deleted(f"meeting_user/{id_}")
+        self.assert_model_deleted(
+            "meeting/1", {"meeting_user_ids": [12], "user_ids": [2]}
+        )
+        self.assert_model_deleted(
+            "meeting/2", {"meeting_user_ids": [22], "user_ids": [2]}
+        )
+        self.assert_model_deleted(
+            "meeting/3", {"meeting_user_ids": [33], "user_ids": [2]}
+        )
+        self.assert_model_deleted(
+            "meeting/4", {"meeting_user_ids": [45], "user_ids": [2]}
+        )
 
     def test_merge_with_archived_meeting(self) -> None:
         self.set_models(

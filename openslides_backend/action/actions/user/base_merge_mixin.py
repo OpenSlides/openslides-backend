@@ -12,10 +12,13 @@ from ...action import Action
 
 class MergeModeDict(TypedDict, total=False):
     ignore: list[CollectionField]
-    # use highest value among users
-    highest: list[CollectionField]
     # raise exception if set on any user
     error: list[CollectionField]
+    # error if all examples of the field that are set aren't the same,
+    # otherwise use that value
+    require_equality: list[CollectionField]
+    # use highest value among users
+    highest: list[CollectionField]
     # use value of highest ranking user
     priority: list[CollectionField]
     # merge the lists together, filter out duplicates
@@ -28,10 +31,10 @@ class MergeModeDict(TypedDict, total=False):
     special_function: list[CollectionField]
 
 
-class MergeOperations(TypedDict):
-    create: type[Action]
-    update: type[Action]
-    delete: type[Action]
+class MergeUpdateOperations(TypedDict):
+    create: list[dict[str, Any]]
+    update: list[dict[str, Any]]
+    delete: list[int]
 
 
 class BaseMergeMixin(Action):
@@ -39,7 +42,7 @@ class BaseMergeMixin(Action):
         super().__init__(*args, **kwargs)
         self._collection_field_groups: dict[Collection, MergeModeDict] = {}
         self._all_collection_fields: dict[Collection, list[CollectionField]] = {}
-        self._collection_operations: dict[Collection, MergeOperations] = {}
+        # self._collection_operations: dict[Collection, MergeOperations] = {}
 
     def mass_prefetch_for_merge(
         self, collection_to_ids: dict[Collection, list[int]]
@@ -72,7 +75,7 @@ class BaseMergeMixin(Action):
     def add_collection_field_groups(
         self,
         Class: type[Model],
-        operations: MergeOperations,
+        # operations: MergeOperations,
         field_groups: MergeModeDict,
     ) -> None:
         """Should be called once in __init__ of every sub-class"""
@@ -83,7 +86,7 @@ class BaseMergeMixin(Action):
             for i in Class.__dict__.keys()
             if i[:1] != "_" and i not in ["collection", "verbose_name", "id"]
         ]
-        self._collection_operations[collection] = operations
+        # self._collection_operations[collection] = operations
 
     def check_collection_field_groups(self) -> None:
         """Should be called once in __init__ of final action class"""
@@ -141,6 +144,7 @@ class BaseMergeMixin(Action):
         field: CollectionField,
         into: PartialModel,
         ranked_others: list[PartialModel],
+        update_operations: dict[Collection, MergeUpdateOperations],
     ) -> list[int] | None:
         if field_collection not in self._collection_field_groups:
             return self.execute_merge_on_reference_fields(field, into, ranked_others)
@@ -160,7 +164,7 @@ class BaseMergeMixin(Action):
             else:
                 merge_lists[hash_val] = [id_]
         new_reference_ids: list[int] = []
-        payloads: list[dict[str, Any]] = []
+        # payloads: list[dict[str, Any]] = []
         for to_merge in merge_lists.values():
             if len(to_merge) > 1:
                 to_merge_into, to_merge_others = self.split_merge_by_rank_models(
@@ -169,15 +173,20 @@ class BaseMergeMixin(Action):
                     field_models,
                 )
                 result = self.merge_by_rank(
-                    field_collection, to_merge_into, to_merge_others, {}
+                    field_collection,
+                    to_merge_into,
+                    to_merge_others,
+                    {},
+                    update_operations,
                 )
                 result["id"] = to_merge[0]
-                payloads.append(result)
+                update_operations[field_collection]["update"].append(result)
+                # payloads.append(result)
             new_reference_ids.append(to_merge[0])
-        if len(payloads):
-            self.execute_other_action(
-                self._collection_operations[field_collection]["update"], payloads
-            )
+        # if len(payloads):
+        #     self.execute_other_action(
+        #         self._collection_operations[field_collection]["update"], payloads
+        #     )
         if len(new_reference_ids):
             return new_reference_ids
         return None
@@ -188,6 +197,7 @@ class BaseMergeMixin(Action):
         into: PartialModel,
         ranked_others: list[PartialModel],
         instance: dict[str, Any],
+        update_operations: dict[Collection, MergeUpdateOperations],
         should_create: bool = False,
     ) -> dict[str, Any]:
         merge_modes = self._collection_field_groups[collection]
@@ -211,6 +221,18 @@ class BaseMergeMixin(Action):
             ]
             if len(data):
                 changes[field] = max(data)
+        for field in merge_modes.get("require_equality", []):
+            data = {
+                date
+                for model in [into, *ranked_others]
+                if (date := model.get(field)) is not None
+            }
+            if (length := len(data)) == 1:
+                changes[field] = data.pop()
+            elif length > 1:
+                raise ActionException(
+                    f"Differing values in field {field} when merging into {collection}/{into['id']}"
+                )
         for field in merge_modes.get("merge", []):
             if change := self.execute_merge_on_reference_fields(
                 field, into, ranked_others
@@ -222,18 +244,28 @@ class BaseMergeMixin(Action):
                 changes[field] = result
         for field, field_collection in merge_modes.get("deep_merge", {}).items():
             if change := self.execute_deep_merge_on_reference_fields(
-                field_collection, field, into, ranked_others
+                field_collection, field, into, ranked_others, update_operations
             ):
                 changes[field] = change
-        self.execute_other_action(
-            self._collection_operations[collection]["delete"],
+        update_operations[collection]["delete"].extend(
             [
-                {"id": model["id"]}
+                model["id"]
                 for model in (
                     [into, *ranked_others] if should_create else ranked_others
                 )
-            ],
+            ]
         )
+        # delete_action = self._collection_operations[collection]["delete"]
+        # self.execute_other_action(
+        #     delete_action,
+        #     [
+        #         {"id": model["id"]}
+        #         for model in (
+        #             [into, *ranked_others] if should_create else ranked_others
+        #         )
+        #     ],
+        #     delete_action.skip_archived_meeting_check,
+        # )
         changes.update(
             {key: value for key, value in instance.items() if key != "user_ids"}
         )
