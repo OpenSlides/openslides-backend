@@ -64,6 +64,6 @@ def make_span(env: Env, name: str, attributes: dict[str, str] | None = None) -> 
     # ), "backend:Opentelemetry span to be set before having set a TRACER_PROVIDER"
 
     tracer = trace.get_tracer_provider().get_tracer(__name__)
-    span = tracer.start_as_current_span(name, attributes=attributes)
+    span = tracer.start_as_current_span("backend:" + name, attributes=attributes)
 
     return span
