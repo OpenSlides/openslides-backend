@@ -98,7 +98,7 @@ class CheckMediafileId(BasePresenter):
 
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", owner_id),
-            ["enable_anonymous", "user_ids", "committee_id"],
+            ["enable_anonymous", "user_ids", "committee_id", "default_group_id"],
         )
         # The user is admin of the meeting.
         if is_admin(self.datastore, self.user_id, owner_id):
@@ -138,9 +138,13 @@ class CheckMediafileId(BasePresenter):
             inherited_access_group_ids = set(
                 mediafile.get("inherited_access_group_ids", [])
             )
-            user_groups = set(
-                get_groups_from_meeting_user(self.datastore, owner_id, self.user_id)
-            )
+            if self.user_id == 0 and meeting["enable_anonymous"]:
+                user_groups = set([meeting["default_group_id"]])
+            else:
+                user_groups = set(
+                    get_groups_from_meeting_user(self.datastore, owner_id, self.user_id)
+                )
+
             if inherited_access_group_ids & user_groups:
                 return
         raise PermissionDenied("You are not allowed to see this mediafile.")
