@@ -867,3 +867,142 @@ class AccountJsonImportWithIncludedJsonUpload(AccountJsonUploadForUseInImport):
         self.json_upload_legacy_username()
         response = self.request("account.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
+
+    def test_json_upload_update_reference_via_two_attributes(self) -> None:
+        self.json_upload_update_reference_via_two_attributes()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test",
+                "saml_id": "old_one",
+                "default_vote_weight": "4.500000",
+            },
+        )
+
+    def test_json_upload_set_member_number_in_existing_accounts(self) -> None:
+        self.json_upload_set_member_number_in_existing_accounts()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test1",
+                "member_number": "new_one",
+            },
+        )
+        self.assert_model_exists(
+            "user/3",
+            {
+                "id": 3,
+                "username": "test2",
+                "saml_id": "samLidman",
+                "member_number": "another_new_1",
+            },
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "username": "test3",
+                "first_name": "Hasan",
+                "last_name": "Ame",
+                "email": "hasaN.ame@nd.email",
+                "member_number": "UGuessedIt",
+            },
+        )
+
+    def test_json_upload_set_other_matching_criteria_in_existing_account_via_member_number(
+        self,
+    ) -> None:
+        self.json_upload_set_other_matching_criteria_in_existing_account_via_member_number()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "newname",
+                "saml_id": "some_other_saml",
+                "first_name": "second",
+                "last_name": "second_to_last",
+                "member_number": "M3MNUM",
+                "default_password": "",
+                "password": "",
+                "email": "a.new@ma.il",
+            },
+        )
+
+    def test_json_upload_add_member_number(self) -> None:
+        self.json_upload_add_member_number()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test",
+                "member_number": "old_one",
+                "default_vote_weight": "4.345678",
+            },
+        )
+
+    def test_json_upload_new_account_with_member_number(self) -> None:
+        self.json_upload_new_account_with_member_number()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "newname",
+                "saml_id": "some_other_saml",
+                "first_name": "second",
+                "last_name": "second_to_last",
+                "member_number": "M3MNUM",
+            },
+        )
+
+    def test_json_upload_new_account_with_only_member_number(self) -> None:
+        self.json_upload_new_account_with_only_member_number()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "M3MNUM",
+                "member_number": "M3MNUM",
+            },
+        )
+
+    def test_json_upload_match_via_member_number_no_username(self) -> None:
+        self.json_upload_match_via_member_number_no_username()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test",
+                "member_number": "M3MNUM",
+            },
+        )
+
+    def test_json_upload_match_via_member_number_no_username_or_other_data(
+        self,
+    ) -> None:
+        self.json_upload_match_via_member_number_no_username_or_other_data()
+        response = self.request("account.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test",
+                "member_number": "M3MNUM",
+            },
+        )
