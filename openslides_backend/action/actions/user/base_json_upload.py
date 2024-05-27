@@ -128,6 +128,10 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     "info": ImportState.ERROR,
                 }
                 messages.append("Found more users with the same username")
+            if self.row_state != ImportState.DONE and " " in username:
+                self.row_state = ImportState.ERROR
+                entry["username"] = {"value": username, "info": ImportState.ERROR}
+                messages.append("Error: Empty spaces not allowed in new usernames")
         elif saml_id := entry.get("saml_id"):
             check_result = self.saml_id_lookup.check_duplicate(saml_id)
             id_ = cast(int, self.saml_id_lookup.get_field_by_name(saml_id, "id"))

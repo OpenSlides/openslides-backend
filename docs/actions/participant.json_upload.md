@@ -30,17 +30,13 @@ The types noted below are the internal types after conversion in the backend. Se
 ```
 ## Objects (fields with additional info) in the resulting preview-data
 
-- `username`: object with info "generated" or "done", depending on whether the username was generated or not.
-- `saml_id`: object with info "new" if set for the first time or "done" if changed. "error" will be reported on duplicate "saml_ids.
-- `default_password`: object with info "generated" or "done", depending on whether the default_password was generated or not. The info "warning" signalizes, that `default_password`, `password` and `can_change_own_password` will be removed by setting `saml_id`, because local login will not be possible anymore.
+See general user fields in [account.json_upload#user-matching](account.json_upload.md#user-matching) with some additions:
 - `groups`: object with info "warning" for not found groups, "done" for a found group. If there is no group found at all, the default group will added automatically with state "generated".
+- `vote_weight` doesn't allow 0 values
+- `structure_level` will return `new` if it is not found, in such cases the structure level will be created in the import
 - All fields that could be removed by missing permission could have the state "remove" (will be
   removed on import) or "done" (will be imported). See `info` note in payload above for affected
   fields.
-- `vote_weight` doesn't allow 0 values
-- `structure_level` will return `new` if it is not found, in such cases the structure level will be created in the import
-- `email` must be a valid email
-- `member_number`: object with info "done", depending on whether the username was generated or not. The member_number may be overwritten when it is not yet set on a referenced user, then the info will be "new". "error" will be used if the member_number is not unique, already set on the matched user or the member_number matches a different user than the other matching criteria
 
 ## Action
 

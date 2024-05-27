@@ -408,6 +408,80 @@ class AccountJsonUpload(BaseActionTestCase):
         ]
         assert result["state"] == ImportState.ERROR
 
+    def test_json_upload_create_broken_username_error(self) -> None:
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "has space",
+                        "default_password": "ilikespace",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"] == [
+            {
+                "state": ImportState.ERROR,
+                "messages": ["Error: Empty spaces not allowed in new usernames"],
+                "data": {
+                    "username": {"value": "has space", "info": ImportState.ERROR},
+                    "default_password": {
+                        "value": "ilikespace",
+                        "info": ImportState.DONE,
+                    },
+                },
+            }
+        ]
+
+    def test_json_upload_create_legacy_username_matching(self) -> None:
+        self.set_models(
+            {
+                "user/3": {
+                    "username": "has space",
+                    "first_name": "Max",
+                    "last_name": "Mustermann",
+                    "email": "max@mustermann.org",
+                    "default_password": "test1",
+                    "password": "secret",
+                    "can_change_own_password": True,
+                },
+            },
+        )
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "username": "has space",
+                        "default_password": "ilikespace",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        result = response.json["results"][0][0]
+        assert result["rows"] == [
+            {
+                "state": ImportState.DONE,
+                "messages": [],
+                "data": {
+                    "id": 3,
+                    "username": {
+                        "value": "has space",
+                        "info": ImportState.DONE,
+                        "id": 3,
+                    },
+                    "default_password": {
+                        "value": "ilikespace",
+                        "info": ImportState.DONE,
+                    },
+                },
+            }
+        ]
+
     def test_json_upload_duplicated_two_new_saml_ids1(self) -> None:
         response = self.request(
             "account.json_upload",
