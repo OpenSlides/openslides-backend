@@ -19,6 +19,8 @@ class MergeModeDict(TypedDict, total=False):
     require_equality: list[CollectionField]
     # use highest value among users
     highest: list[CollectionField]
+    # use lowest value among users
+    lowest: list[CollectionField]
     # use value of highest ranking user
     priority: list[CollectionField]
     # merge the lists together, filter out duplicates
@@ -243,6 +245,14 @@ class BaseMergeMixin(Action):
             ]
             if len(comp_data):
                 changes[field] = max(comp_data)
+        for field in merge_modes.get("lowest", []):
+            comp_data = [
+                date
+                for model in [into, *ranked_others]
+                if (date := model.get(field)) is not None
+            ]
+            if len(comp_data):
+                changes[field] = min(comp_data)
         for field in merge_modes.get("require_equality", []):
             eq_data = {
                 date

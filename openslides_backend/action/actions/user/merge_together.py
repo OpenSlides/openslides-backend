@@ -115,10 +115,8 @@ class UserMergeTogether(
                     "poll_voted_ids",  # throw error if conflict on same poll
                     "vote_ids",  # throw error if conflict on same poll
                     "delegated_vote_ids",  # throw error if conflict on same poll
+                    "poll_candidate_ids",  # error if multiple of the users are on the same list, else merge
                 ],
-                "deep_merge": {
-                    "poll_candidate_ids": "poll_candidate",
-                },
                 "deep_create_merge": {
                     "meeting_user_ids": "meeting_user",
                 },
@@ -262,6 +260,8 @@ class UserMergeTogether(
                     MeetingUserUpdate, meeting_user_update_payloads
                 )
 
+            # TODO: Handle updates and deletes on meeting_user sub-models
+
             if len(update_operations["user"]["delete"]):
                 self.execute_other_action(
                     UserDelete,
@@ -270,8 +270,39 @@ class UserMergeTogether(
                 )
 
     def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
-        poll_ids_per_user_id: dict[int, set[int]] = {}
-        for model in [into, *other_models]:
+        all_models = [into, *other_models]
+        vote_poll_ids_per_user_id: dict[int, set[int]] = {}
+        option_poll_ids_per_user_id: dict[int, set[int]] = {}
+        candidate_list_ids_per_user_id: dict[int, set[int]] = {}
+        for model in all_models:
+            if poll_candidate_ids := model.get("poll_candidate_ids", []):
+                candidate_list_ids_per_user_id[model["id"]] = {
+                    poll_candidate["poll_candidate_list_id"]
+                    for poll_candidate in self.datastore.get_many(
+                        [
+                            GetManyRequest(
+                                "poll_candidate",
+                                poll_candidate_ids,
+                                ["poll_candidate_list_id"],
+                            )
+                        ]
+                    )["poll_candidate"].values()
+                    if poll_candidate.get("poll_candidate_list_id")
+                }
+            if option_ids := model.get("option_ids", []):
+                option_poll_ids_per_user_id[model["id"]] = {
+                    option["poll_id"]
+                    for option in self.datastore.get_many(
+                        [
+                            GetManyRequest(
+                                "option",
+                                option_ids,
+                                ["poll_id"],
+                            )
+                        ]
+                    )["option"].values()
+                    if option.get("poll_id")
+                }
             vote_data = self.datastore.get_many(
                 [
                     GetManyRequest(
@@ -289,7 +320,7 @@ class UserMergeTogether(
                     )
                 ]
             )["vote"]
-            poll_ids_per_user_id[model["id"]] = {
+            vote_poll_ids_per_user_id[model["id"]] = {
                 option["poll_id"]
                 for option in self.datastore.get_many(
                     [
@@ -299,12 +330,9 @@ class UserMergeTogether(
                                 {
                                     id_
                                     for id_ in [
-                                        *model.get("option_ids", []),
-                                        *[
-                                            vote["option_id"]
-                                            for vote in vote_data.values()
-                                            if vote.get("option_id")
-                                        ],
+                                        vote["option_id"]
+                                        for vote in vote_data.values()
+                                        if vote.get("option_id")
                                     ]
                                 }
                             ),
@@ -314,19 +342,60 @@ class UserMergeTogether(
                 )["option"].values()
                 if option.get("poll_id")
             }
-            poll_conflicts = {
-                poll_id
-                for id1 in poll_ids_per_user_id
-                for id2 in poll_ids_per_user_id
-                for poll_id in poll_ids_per_user_id[id1].intersection(
-                    poll_ids_per_user_id[id2]
-                )
-                if id1 != id2
-            }
-            if len(poll_conflicts):
-                raise ActionException(
-                    f"Cannot carry out merge into user/{into['id']}, because among the selected users multiple voted in poll(s) {', '.join([str(id_) for id_ in poll_conflicts])}"
-                )
+        voting_conflicts = {
+            poll_id
+            for id1, poll_ids1 in vote_poll_ids_per_user_id.items()
+            for id2, poll_ids2 in vote_poll_ids_per_user_id.items()
+            for poll_id in poll_ids1.intersection(poll_ids2)
+            if id1 != id2
+        }
+        option_conflicts = {
+            poll_id
+            for id1, poll_ids1 in option_poll_ids_per_user_id.items()
+            for id2, poll_ids2 in option_poll_ids_per_user_id.items()
+            for poll_id in poll_ids1.intersection(poll_ids2)
+            if id1 != id2
+        }
+        candidate_list_conflicts = {
+            list_id
+            for id1, list_ids1 in candidate_list_ids_per_user_id.items()
+            for id2, list_ids2 in candidate_list_ids_per_user_id.items()
+            for list_id in list_ids1.intersection(list_ids2)
+            if id1 != id2
+        }
+        messages: list[str] = []
+        if len(voting_conflicts):
+            messages.append(
+                f"among the selected users multiple voted in poll(s) {', '.join([str(id_) for id_ in voting_conflicts])}"
+            )
+        if len(option_conflicts):
+            messages.append(
+                f"multiple of the selected users are among the options in poll(s) {', '.join([str(id_) for id_ in option_conflicts])}"
+            )
+        if len(candidate_list_conflicts):
+            lists = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "poll_candidate_list",
+                        list(candidate_list_conflicts),
+                        ["option_id"],
+                    )
+                ],
+                lock_result=False,
+            )["poll_candidate_list"]
+            option_ids = {c_list["option_id"] for c_list in lists.values()}
+            options = self.datastore.get_many(
+                [GetManyRequest("option", list(option_ids), ["poll_id"])],
+                lock_result=False,
+            )["option"]
+            poll_ids = {option["poll_id"] for option in options.values()}
+            messages.append(
+                f"multiple of the selected users are in the same candidate list in poll(s) {', '.join([str(id_) for id_ in poll_ids])}"
+            )
+        if len(messages):
+            raise ActionException(
+                f"Cannot carry out merge into user/{into['id']}, because {'and '.join(messages)}"
+            )
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel
@@ -335,7 +404,6 @@ class UserMergeTogether(
             case "meeting_user":
                 return model["meeting_id"]
             case _:
-                # TODO: Add other merge model fields
                 return super().get_merge_comparison_hash(collection, model)
 
     def _get_user_data(

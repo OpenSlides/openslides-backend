@@ -4,6 +4,13 @@ from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
+# TODO:
+# Test merge on poll_candidates
+# Test error when trying to merge users who are on the same candidate list
+# Test merging and deep merging of assignment_candidates, motion_submitters,
+#   personal_notes, motion_editors and motion_working_group_speakers
+# Check all possible poll related errors (check_poll) method
+
 
 class UserMergeTogether(BaseActionTestCase):
     def setUp(self) -> None:

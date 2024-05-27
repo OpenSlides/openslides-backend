@@ -2,12 +2,87 @@ from typing import Any
 
 from openslides_backend.services.datastore.interface import PartialModel
 
-from ....models.models import MeetingUser
+from ....models.models import (
+    AssignmentCandidate,
+    MeetingUser,
+    MotionEditor,
+    MotionSubmitter,
+    MotionWorkingGroupSpeaker,
+    PersonalNote,
+)
 from ....shared.patterns import Collection
-from .base_merge_mixin import BaseMergeMixin
+from .base_merge_mixin import BaseMergeMixin, MergeModeDict
 
 
-class MeetingUserMergeMixin(BaseMergeMixin):
+class AssignmentCandidateMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            AssignmentCandidate,
+            {
+                "ignore": ["meeting_user_id", "meeting_id", "assignment_id"],
+                "lowest": [
+                    "weight",
+                ],
+            },
+        )
+
+
+motion_meeting_user_list_item_groups: MergeModeDict = {
+    "ignore": ["meeting_user_id", "meeting_id", "motion_id"],
+    "lowest": [
+        "weight",
+    ],
+}
+
+
+class MotionSubmitterMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            MotionSubmitter,
+            motion_meeting_user_list_item_groups,
+        )
+
+
+class MotionEditorMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            MotionEditor,
+            motion_meeting_user_list_item_groups,
+        )
+
+
+class MotionWorkingGroupSpeakerMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            MotionWorkingGroupSpeaker,
+            motion_meeting_user_list_item_groups,
+        )
+
+
+class PersonalNoteMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            PersonalNote,
+            {
+                "ignore": ["meeting_user_id", "content_object_id", "meeting_id"],
+                "priority": ["note"],
+                "highest": ["star"],
+            },
+        )
+
+
+class MeetingUserMergeMixin(
+    PersonalNoteMergeMixin,
+    MotionWorkingGroupSpeakerMergeMixin,
+    MotionEditorMergeMixin,
+    MotionSubmitterMergeMixin,
+    AssignmentCandidateMergeMixin,
+):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
@@ -15,8 +90,6 @@ class MeetingUserMergeMixin(BaseMergeMixin):
             {
                 "ignore": [
                     "user_id",
-                    "motion_editor_ids",  # TODO: Should be merged
-                    "motion_working_group_speaker_ids",  # TODO: Should be merged
                 ],
                 "priority": [
                     "comment",
@@ -37,9 +110,11 @@ class MeetingUserMergeMixin(BaseMergeMixin):
                     "motion_submitter_ids": "motion_submitter",
                     "assignment_candidate_ids": "assignment_candidate",
                     "personal_note_ids": "personal_note",
+                    "motion_editor_ids": "motion_editor",
+                    "motion_working_group_speaker_ids": "motion_working_group_speaker",
                 },
                 "special_function": [
-                    "speaker_ids",
+                    "speaker_ids",  # TODO: what should happen here?
                 ],
             },
         )
@@ -47,4 +122,16 @@ class MeetingUserMergeMixin(BaseMergeMixin):
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel
     ) -> int | str:
-        return super().get_merge_comparison_hash(collection, model)
+        match collection:
+            case "motion_submitter":
+                return model["motion_id"]
+            case "assignment_candidate":
+                return model["assignment_id"]
+            case "personal_note":
+                return model["content_object_id"]
+            case "motion_editor":
+                return model["motion_id"]
+            case "motion_working_group_speaker":
+                return model["motion_id"]
+            case _:
+                return super().get_merge_comparison_hash(collection, model)
