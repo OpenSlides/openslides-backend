@@ -59,136 +59,139 @@ class UserMergeTogether(BaseActionTestCase):
             ]
             for id_ in range(1, num_meetings * 3 + 1)
         }
-        self.set_models(
-            {
-                ONE_ORGANIZATION_FQID: {
-                    "limit_of_meetings": 0,
-                    "active_meeting_ids": [
-                        meeting_id for meeting_id in committee_id_by_meeting_id
+        data = {
+            ONE_ORGANIZATION_FQID: {
+                "limit_of_meetings": 0,
+                "active_meeting_ids": [
+                    meeting_id for meeting_id in committee_id_by_meeting_id
+                ],
+                "enable_electronic_voting": True,
+                "committee_ids": list(range(1, num_committees + 1)),
+                "user_ids": list(meeting_data_by_user_id.keys()),
+            },
+            **{
+                fqid_from_collection_and_id("committee", id_): {
+                    "organization_id": ONE_ORGANIZATION_ID,
+                    "name": f"Committee {id_}",
+                    "meeting_ids": meeting_ids_by_committee_id[id_],
+                    "user_ids": list(
+                        {
+                            user_id
+                            for meeting_id in meeting_ids_by_committee_id[id_]
+                            for user_id in user_ids_by_meeting_id[meeting_id]
+                        }
+                    ),
+                }
+                for id_ in range(1, num_committees + 1)
+            },
+            **{
+                fqid_from_collection_and_id("meeting", id_): {
+                    "name": f"Meeting {id_}",
+                    "is_active_in_organization_id": ONE_ORGANIZATION_ID,
+                    "language": "en",
+                    "projector_countdown_default_time": 60,
+                    "projector_countdown_warning_time": 0,
+                    "motions_default_workflow_id": id_,
+                    "motions_default_amendment_workflow_id": id_,
+                    "motions_default_statute_amendment_workflow_id": id_,
+                    "committee_id": committee_id_by_meeting_id[id_],
+                    **{
+                        f"default_projector_{option}_ids": [id_]
+                        for option in DEFAULT_PROJECTOR_OPTIONS
+                    },
+                    "group_ids": list(range(1 + (id_ - 1) * 3, 1 + id_ * 3)),
+                    "admin_group_id": 1 + (id_ - 1) * 3,
+                    "meeting_user_ids": [
+                        id_ * 10 + user_id for user_id in user_ids_by_meeting_id[id_]
                     ],
-                    "enable_electronic_voting": True,
-                    "committee_ids": list(range(1, num_committees + 1)),
-                    "user_ids": list(meeting_data_by_user_id.keys()),
-                },
-                **{
-                    fqid_from_collection_and_id("committee", id_): {
-                        "organization_id": ONE_ORGANIZATION_ID,
-                        "name": f"Committee {id_}",
-                        "meeting_ids": meeting_ids_by_committee_id[id_],
-                        "user_ids": list(
-                            {
-                                user_id
-                                for meeting_id in meeting_ids_by_committee_id[id_]
-                                for user_id in user_ids_by_meeting_id[meeting_id]
-                            }
-                        ),
-                    }
-                    for id_ in range(1, num_committees + 1)
-                },
-                **{
-                    fqid_from_collection_and_id("meeting", id_): {
-                        "name": f"Meeting {id_}",
-                        "is_active_in_organization_id": ONE_ORGANIZATION_ID,
-                        "language": "en",
-                        "projector_countdown_default_time": 60,
-                        "projector_countdown_warning_time": 0,
-                        "motions_default_workflow_id": id_,
-                        "motions_default_amendment_workflow_id": id_,
-                        "motions_default_statute_amendment_workflow_id": id_,
-                        "committee_id": committee_id_by_meeting_id[id_],
-                        **{
-                            f"default_projector_{option}_ids": [id_]
-                            for option in DEFAULT_PROJECTOR_OPTIONS
-                        },
-                        "group_ids": list(range(1 + (id_ - 1) * 3, 1 + id_ * 3)),
-                        "admin_group_id": 1 + (id_ - 1) * 3,
-                        "meeting_user_ids": [
-                            id_ * 10 + user_id
-                            for user_id in user_ids_by_meeting_id[id_]
-                        ],
-                        "user_ids": [
-                            user_id for user_id in user_ids_by_meeting_id[id_]
-                        ],
-                    }
-                    for id_ in range(1, num_meetings + 1)
-                },
-                **{
-                    fqid_from_collection_and_id("group", id_): {
-                        "meeting_id": id_ // 3 + 1,
-                        "name": f"Group {id_}",
-                        "admin_group_for_meeting_id": (
-                            id_ // 3 + 1 if id_ % 3 == 1 else None
-                        ),
-                        "default_group_for_meeting_id": (
-                            id_ // 3 + 1 if id_ % 3 == 0 else None
-                        ),
-                        "meeting_user_ids": [
-                            (id_ // 3 + 1) * 10 + user_id
-                            for user_id in user_ids_by_group_id
-                        ],
-                    }
-                    for id_ in range(1, num_meetings * 3 + 1)
-                },
-                **{
-                    fqid_from_collection_and_id("motion_workflow", id_): {
-                        "name": f"Workflow {id_}",
-                        "sequential_number": 1,
-                        "state_ids": [id_],
-                        "first_state_id": id_,
-                        "meeting_id": id_,
-                    }
-                    for id_ in range(1, num_meetings + 1)
-                },
-                **{
-                    fqid_from_collection_and_id("motion_state", id_): {
-                        "name": f"State {id_}",
-                        "weight": 1,
-                        "css_class": "lightblue",
-                        "workflow_id": id_,
-                        "meeting_id": id_,
-                    }
-                    for id_ in range(1, num_meetings + 1)
-                },
-                **{
-                    fqid_from_collection_and_id("user", id_): {
-                        "username": f"user{id_}",
-                        "is_active": True,
-                        "default_password": f"user{id_}",
-                        "password": self.auth.hash(f"user{id_}"),
-                        "meeting_ids": meeting_ids_by_user_id[id_],
-                        "meeting_user_ids": [
-                            meeting_id * 10 + id_
+                    "user_ids": [user_id for user_id in user_ids_by_meeting_id[id_]],
+                }
+                for id_ in range(1, num_meetings + 1)
+            },
+            **{
+                fqid_from_collection_and_id("group", id_): {
+                    "meeting_id": (id_ - 1) // 3 + 1,
+                    "name": f"Group {id_}",
+                    "admin_group_for_meeting_id": (
+                        (id_ - 1) // 3 + 1 if id_ % 3 == 1 else None
+                    ),
+                    "default_group_for_meeting_id": (
+                        (id_ - 1) // 3 + 1 if id_ % 3 == 0 else None
+                    ),
+                    "meeting_user_ids": [
+                        ((id_ - 1) // 3 + 1) * 10 + user_id
+                        for user_id in user_ids_by_group_id[id_]
+                    ],
+                }
+                for id_ in range(1, num_meetings * 3 + 1)
+            },
+            **{
+                fqid_from_collection_and_id("motion_workflow", id_): {
+                    "name": f"Workflow {id_}",
+                    "sequential_number": 1,
+                    "state_ids": [id_],
+                    "first_state_id": id_,
+                    "meeting_id": id_,
+                }
+                for id_ in range(1, num_meetings + 1)
+            },
+            **{
+                fqid_from_collection_and_id("motion_state", id_): {
+                    "name": f"State {id_}",
+                    "weight": 1,
+                    "css_class": "lightblue",
+                    "workflow_id": id_,
+                    "meeting_id": id_,
+                }
+                for id_ in range(1, num_meetings + 1)
+            },
+            **{
+                fqid_from_collection_and_id("user", id_): {
+                    "username": f"user{id_}",
+                    "is_active": True,
+                    "default_password": f"user{id_}",
+                    "password": self.auth.hash(f"user{id_}"),
+                    "meeting_ids": meeting_ids_by_user_id[id_],
+                    "meeting_user_ids": [
+                        meeting_id * 10 + id_
+                        for meeting_id in meeting_ids_by_user_id[id_]
+                    ],
+                    "committee_ids": list(
+                        {
+                            committee_id_by_meeting_id[meeting_id]
                             for meeting_id in meeting_ids_by_user_id[id_]
-                        ],
-                        "committee_ids": list(
-                            {
-                                committee_id_by_meeting_id[meeting_id]
-                                for meeting_id in meeting_ids_by_user_id[id_]
-                            }
-                        ),
-                        "organization_id": ONE_ORGANIZATION_ID,
-                    }
-                    for id_ in range(2, num_users + 2)
-                },
-                **{
-                    fqid_from_collection_and_id(
-                        "meeting_user", meeting_id * 10 + user_id
-                    ): {
-                        "user_id": user_id,
-                        "meeting_id": meeting_id,
-                    }
-                    for user_id in range(2, num_users + 2)
-                    for meeting_id in range(1, num_meetings + 1)
-                },
-            }
-        )
+                        }
+                    ),
+                    "organization_id": ONE_ORGANIZATION_ID,
+                }
+                for id_ in range(2, num_users + 2)
+            },
+            **{
+                fqid_from_collection_and_id(
+                    "meeting_user", meeting_id * 10 + user_id
+                ): {
+                    "user_id": user_id,
+                    "meeting_id": meeting_id,
+                    "group_ids": [
+                        group_id
+                        for group_id in group_ids_by_user_id[user_id]
+                        if group_id
+                        in range(1 + (meeting_id - 1) * 3, 1 + meeting_id * 3)
+                    ],
+                }
+                for user_id in range(2, num_users + 2)
+                for meeting_id in range(1, num_meetings + 1)
+                if user_id in user_ids_by_meeting_id[meeting_id]
+            },
+        }
+        self.set_models(data)
 
-    def test_not_implemented_with_superadmin(self) -> None:
-        user = self.assert_model_exists("user/2")
-        user.pop("meta_position")
-        response = self.request("user.merge_together", {"id": 2, "user_ids": []})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", user)
+    # def test_not_implemented_with_superadmin(self) -> None:
+    #     user = self.assert_model_exists("user/2")
+    #     user.pop("meta_position")
+    #     response = self.request("user.merge_together", {"id": 2, "user_ids": []})
+    #     self.assert_status_code(response, 200)
+    #     self.assert_model_exists("user/2", user)
 
     def test_empty_payload_fields(self) -> None:
         response = self.request("user.merge_together", {})
@@ -225,10 +228,7 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/1",
-            {
-                "meeting_ids": [1, 2],
-                "meeting_user_ids": [12, 22],
-                "committee_ids": [1]},
+            {"meeting_ids": [1, 2], "meeting_user_ids": [46, 47], "committee_ids": [1]},
         )
         self.assert_model_deleted("user/2")
 
@@ -253,7 +253,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "committee_ids": [1, 2],
                 "organization_id": 1,
                 "default_password": "user2",
-                "meeting_user_ids": [12, 22, 33],
+                "meeting_user_ids": [12, 22, 46],
                 "password": password,
             },
         )
@@ -279,7 +279,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "committee_ids": [1, 2],
                 "organization_id": 1,
                 "default_password": "user2",
-                "meeting_user_ids": [12, 22, 33],
+                "meeting_user_ids": [12, 22, 46],
                 "password": None,
                 "saml_id": "user2",
             },
@@ -335,7 +335,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "committee_ids": [1, 2, 3],
                 "organization_id": 1,
                 "default_password": "user2",
-                "meeting_user_ids": [12, 22, 33, 45],
+                "meeting_user_ids": [12, 22, 46, 47],
                 "password": password,
             },
         )
@@ -343,18 +343,13 @@ class UserMergeTogether(BaseActionTestCase):
             self.assert_model_deleted(f"user/{id_}")
         for id_ in [23, 14, 24, 34, 15]:
             self.assert_model_deleted(f"meeting_user/{id_}")
-        self.assert_model_deleted(
-            "meeting/1", {"meeting_user_ids": [12], "user_ids": [2]}
-        )
-        self.assert_model_deleted(
-            "meeting/2", {"meeting_user_ids": [22], "user_ids": [2]}
-        )
-        self.assert_model_deleted(
-            "meeting/3", {"meeting_user_ids": [33], "user_ids": [2]}
-        )
-        self.assert_model_deleted(
-            "meeting/4", {"meeting_user_ids": [45], "user_ids": [2]}
-        )
+        for meeting_id, id_ in {1: 12, 2: 22, 3: 46, 4: 47}.items():
+            self.assert_model_exists(
+                f"meeting_user/{id_}", {"user_id": 2, "meeting_id": meeting_id}
+            )
+            self.assert_model_exists(
+                f"meeting/{meeting_id}", {"meeting_user_ids": [id_], "user_ids": [2]}
+            )
 
     def test_merge_with_archived_meeting(self) -> None:
         self.set_models(

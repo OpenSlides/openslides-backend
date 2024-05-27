@@ -7,7 +7,7 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import ActionException, BadCodingException
-from ....shared.filters import FilterOperator, Or
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.interfaces.env import Env
 from ....shared.interfaces.logging import LoggingModule
 from ....shared.interfaces.services import Services
@@ -18,7 +18,6 @@ from ...relations.relation_manager import RelationManager
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..meeting_user.delete import MeetingUserDelete
 from ..meeting_user.update import MeetingUserUpdate
 from .base_merge_mixin import MergeUpdateOperations
 from .delete import UserDelete
@@ -80,7 +79,6 @@ class UserMergeTogether(
         )
         self.add_collection_field_groups(
             User,
-            # {"create": UserCreate, "update": UserUpdate, "delete": UserDelete},
             {
                 "ignore": [
                     "password",
@@ -119,8 +117,10 @@ class UserMergeTogether(
                     "delegated_vote_ids",  # throw error if conflict on same poll
                 ],
                 "deep_merge": {
-                    "meeting_user_ids": "meeting_user",
                     "poll_candidate_ids": "poll_candidate",
+                },
+                "deep_create_merge": {
+                    "meeting_user_ids": "meeting_user",
                 },
                 "special_function": [
                     "organization_management_level",
@@ -193,30 +193,17 @@ class UserMergeTogether(
         if len(update_operations["user"]["update"]) != 1:
             raise BadCodingException("Calculated wrong amount of user payloads")
         main_user_payload = update_operations["user"]["update"][0]
-        for meeting_user_id in main_user_payload.pop("meeting_user_ids", []):
-            if not any(
-                payload["id"] == meeting_user_id
-                for payload in update_operations["meeting_user"]["update"]
-            ):
-                update_operations["meeting_user"]["update"].append(
-                    {"id": meeting_user_id}
-                )
         user_id = main_user_payload["id"]
-        if len(delete_ids := update_operations["meeting_user"]["delete"]):
-            self.execute_other_action(
-                MeetingUserDelete,
-                [{"id": id_} for id_ in delete_ids],
-                MeetingUserDelete.skip_archived_meeting_check,
-            )
-        if len(update_payloads := update_operations["meeting_user"]["update"]):
+        if len(
+            update_payloads := [
+                *update_operations["meeting_user"]["update"],
+                *update_operations["meeting_user"]["create"],
+            ]
+        ):
             main_user_payload.update(
                 {
-                    **self.datastore.get(
-                        fqid_from_collection_and_id(
-                            "meeting_user", update_payloads[0]["id"]
-                        ),
-                        ["meeting_id"],
-                    ),
+                    "id": user_id,
+                    "meeting_id": update_payloads[0]["meeting_id"],
                     **{
                         field: update_payloads[0].pop(field)
                         for field in UserMixin.transfer_field_list
@@ -229,10 +216,7 @@ class UserMergeTogether(
                 update_operations["user"]["update"].append(
                     {
                         "id": user_id,
-                        **self.datastore.get(
-                            fqid_from_collection_and_id("meeting_user", current["id"]),
-                            ["meeting_id"],
-                        ),
+                        "meeting_id": current["meeting_id"],
                         **{
                             field: current.pop(field)
                             for field in UserMixin.transfer_field_list
@@ -240,16 +224,44 @@ class UserMergeTogether(
                         },
                     }
                 )
-            # update_payloads = [
-            #     payload for payload in update_payloads if len(payload) > 1
-            # ]
-            self.execute_other_action(
-                MeetingUserUpdate,
-                [{**payload, "user_id": user_id} for payload in update_payloads],
-                MeetingUserUpdate.skip_archived_meeting_check,
-            )
-            update_operations["user"]["update"].reverse()
             self.execute_other_action(UserUpdate, update_operations["user"]["update"])
+
+            meeting_user_update_payloads = [
+                payload
+                for payload in update_operations["meeting_user"]["update"]
+                if len(payload) > 1
+            ]
+            new_meeting_ids = [
+                m_user["meeting_id"]
+                for m_user in update_operations["meeting_user"]["create"]
+            ]
+            new_meeting_users = self.datastore.filter(
+                "meeting_user",
+                And(
+                    FilterOperator("user_id", "=", user_id),
+                    Or(
+                        FilterOperator("meeting_id", "=", meeting_id)
+                        for meeting_id in new_meeting_ids
+                    ),
+                ),
+                ["meeting_id"],
+            )
+            meeting_user_ids_by_meeting_ids = {
+                m_user["meeting_id"]: id_ for id_, m_user in new_meeting_users.items()
+            }
+            for payload in update_operations["meeting_user"]["create"]:
+                if len(payload):
+                    payload["id"] = meeting_user_ids_by_meeting_ids[
+                        payload["meeting_id"]
+                    ]
+                    meeting_user_update_payloads.append(payload)
+            if len(meeting_user_update_payloads):
+                for payload in meeting_user_update_payloads:
+                    payload.pop("meeting_id")
+                self.execute_other_action(
+                    MeetingUserUpdate, meeting_user_update_payloads
+                )
+
             if len(update_operations["user"]["delete"]):
                 self.execute_other_action(
                     UserDelete,

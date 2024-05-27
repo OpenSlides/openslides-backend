@@ -1,3 +1,5 @@
+from typing import Any
+
 from openslides_backend.services.datastore.interface import PartialModel
 
 from ....models.models import MeetingUser
@@ -6,21 +8,15 @@ from .base_merge_mixin import BaseMergeMixin
 
 
 class MeetingUserMergeMixin(BaseMergeMixin):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
             MeetingUser,
-            # {
-            #     "create": MeetingUserCreate,
-            #     "update": MeetingUserUpdate,
-            #     "delete": MeetingUserDelete,
-            # },
             {
                 "ignore": [
-                    "user_id",  # will be overwritten from user-side
-                    "meeting_id",
-                    "motion_editor_ids",
-                    "motion_working_group_speaker_ids",
+                    "user_id",
+                    "motion_editor_ids",  # TODO: Should be merged
+                    "motion_working_group_speaker_ids",  # TODO: Should be merged
                 ],
                 "priority": [
                     "comment",
@@ -28,6 +24,7 @@ class MeetingUserMergeMixin(BaseMergeMixin):
                     "about_me",
                     "vote_weight",
                     "vote_delegated_to_id",
+                    "meeting_id",
                 ],
                 "merge": [
                     "supported_motion_ids",

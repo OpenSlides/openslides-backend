@@ -12,17 +12,14 @@ from .user_meeting_ids_handler import UserMeetingIdsHandler
 handler_to_field_map: dict[type[CalculatedFieldHandler], list[Field]] = {
     MeetingUserIdsHandler: [
         Group.meeting_user_ids,
-        MeetingUser.user_id,
     ],  # calcs meeting.user_ids
     UserMeetingIdsHandler: [
         MeetingUser.group_ids,
-        MeetingUser.user_id,
     ],  # calcs user.meeting_ids
     UserCommitteeCalculateHandler: [
         MeetingUser.group_ids,
         User.committee_management_ids,
         # User.meeting_user_ids,
-        MeetingUser.user_id,
     ],  # calcs user.committee_ids and committee.user_ids
 }
 calculated_field_handlers_map: dict[Field, list[type[CalculatedFieldHandler]]] = (

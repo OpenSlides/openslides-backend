@@ -27,6 +27,9 @@ class MergeModeDict(TypedDict, total=False):
     # and if they do, merge them together and delete the lower-rank targets
     # should only be n:1 relations
     deep_merge: dict[CollectionField, Collection]
+    # deep merge, but if the main model of the sub-merge does not belong to the
+    # parent main model, a new sub-model with the merged data will be created
+    deep_create_merge: dict[CollectionField, Collection]
     # field has its own function
     special_function: list[CollectionField]
 
@@ -38,7 +41,7 @@ class MergeUpdateOperations(TypedDict):
 
 
 class BaseMergeMixin(Action):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._collection_field_groups: dict[Collection, MergeModeDict] = {}
         self._all_collection_fields: dict[Collection, list[CollectionField]] = {}
@@ -145,6 +148,7 @@ class BaseMergeMixin(Action):
         into: PartialModel,
         ranked_others: list[PartialModel],
         update_operations: dict[Collection, MergeUpdateOperations],
+        with_create: bool = False,
     ) -> list[int] | None:
         if field_collection not in self._collection_field_groups:
             return self.execute_merge_on_reference_fields(field, into, ranked_others)
@@ -167,11 +171,15 @@ class BaseMergeMixin(Action):
         # payloads: list[dict[str, Any]] = []
         for to_merge in merge_lists.values():
             if len(to_merge) > 1:
+                as_create = with_create and to_merge[0] in into.get(field, [])
                 to_merge_into, to_merge_others = self.split_merge_by_rank_models(
                     to_merge[0],
                     to_merge[1:],
                     field_models,
                 )
+                if as_create:
+                    to_merge_others = [to_merge_into, *to_merge_others]
+                    to_merge_into = {}
                 result = self.merge_by_rank(
                     field_collection,
                     to_merge_into,
@@ -179,14 +187,28 @@ class BaseMergeMixin(Action):
                     {},
                     update_operations,
                 )
-                result["id"] = to_merge[0]
-                update_operations[field_collection]["update"].append(result)
-                # payloads.append(result)
-            new_reference_ids.append(to_merge[0])
-        # if len(payloads):
-        #     self.execute_other_action(
-        #         self._collection_operations[field_collection]["update"], payloads
-        #     )
+                if as_create:
+                    result.pop(field, [])
+                    update_operations[field_collection]["create"].append(result)
+                else:
+                    result["id"] = to_merge[0]
+                    update_operations[field_collection]["update"].append(result)
+            elif with_create:
+                if to_merge[0] not in into.get(field, []):
+                    model, _ = self.split_merge_by_rank_models(
+                        to_merge[0],
+                        [],
+                        field_models,
+                    )
+                    for rem_field in self._collection_field_groups[
+                        field_collection
+                    ].get("ignore", []):
+                        model.pop(rem_field, None)
+                    model.pop("id")
+                    update_operations[field_collection]["create"].append(model)
+                    update_operations[field_collection]["delete"].append(to_merge[0])
+            if not with_create:
+                new_reference_ids.append(to_merge[0])
         if len(new_reference_ids):
             return new_reference_ids
         return None
@@ -214,21 +236,21 @@ class BaseMergeMixin(Action):
                     changes[field] = date
                     break
         for field in merge_modes.get("highest", []):
-            data = [
+            comp_data = [
                 date
                 for model in [into, *ranked_others]
                 if (date := model.get(field)) is not None
             ]
-            if len(data):
-                changes[field] = max(data)
+            if len(comp_data):
+                changes[field] = max(comp_data)
         for field in merge_modes.get("require_equality", []):
-            data = {
+            eq_data = {
                 date
                 for model in [into, *ranked_others]
                 if (date := model.get(field)) is not None
             }
-            if (length := len(data)) == 1:
-                changes[field] = data.pop()
+            if (length := len(eq_data)) == 1:
+                changes[field] = eq_data.pop()
             elif length > 1:
                 raise ActionException(
                     f"Differing values in field {field} when merging into {collection}/{into['id']}"
@@ -247,6 +269,10 @@ class BaseMergeMixin(Action):
                 field_collection, field, into, ranked_others, update_operations
             ):
                 changes[field] = change
+        for field, field_collection in merge_modes.get("deep_create_merge", {}).items():
+            self.execute_deep_merge_on_reference_fields(
+                field_collection, field, into, ranked_others, update_operations, True
+            )
         update_operations[collection]["delete"].extend(
             [
                 model["id"]
@@ -255,32 +281,16 @@ class BaseMergeMixin(Action):
                 )
             ]
         )
-        # delete_action = self._collection_operations[collection]["delete"]
-        # self.execute_other_action(
-        #     delete_action,
-        #     [
-        #         {"id": model["id"]}
-        #         for model in (
-        #             [into, *ranked_others] if should_create else ranked_others
-        #         )
-        #     ],
-        #     delete_action.skip_archived_meeting_check,
-        # )
         changes.update(
             {key: value for key, value in instance.items() if key != "user_ids"}
         )
         # TODO: Check if data is valid
         return changes
-        # if should_create:
-        #     self.execute_other_action(self._collection_operations[collection]["create"], [changes])
-        # else:
-        #     changes["id"] = instance["id"]
-        #     self.execute_other_action(self._collection_operations[collection]["update"], [changes])
 
     def get_merge_by_rank_models(
         self, collection: Collection, ids: list[int]
     ) -> dict[int, PartialModel]:
-        return self.datastore.get_many(
+        result = self.datastore.get_many(
             [
                 GetManyRequest(
                     collection,
@@ -289,6 +299,9 @@ class BaseMergeMixin(Action):
                 )
             ]
         )[collection]
+        for date in result.values():
+            date.pop("meta_position", None)
+        return result
 
     def split_merge_by_rank_models(
         self,
