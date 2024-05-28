@@ -53,6 +53,7 @@ class UserCreate(
             "is_demo_user",
             "forwarding_committee_ids",
             "saml_id",
+            "member_number",
         ],
         additional_optional_fields={
             "meeting_id": optional_id_schema,
