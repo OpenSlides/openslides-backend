@@ -5,16 +5,11 @@ from openslides_backend.services.datastore.interface import PartialModel
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....services.datastore.commands import GetManyRequest
-from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import ActionException, BadCodingException
 from ....shared.filters import And, FilterOperator, Or
-from ....shared.interfaces.env import Env
-from ....shared.interfaces.logging import LoggingModule
-from ....shared.interfaces.services import Services
 from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
-from ...relations.relation_manager import RelationManager
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
@@ -58,25 +53,8 @@ class UserMergeTogether(
     )
     permission = permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
-    def __init__(
-        self,
-        services: Services,
-        datastore: DatastoreService,
-        relation_manager: RelationManager,
-        logging: LoggingModule,
-        env: Env,
-        skip_archived_meeting_check: bool | None = None,
-        use_meeting_ids_for_archived_meeting_check: bool | None = None,
-    ) -> None:
-        super().__init__(
-            services,
-            datastore,
-            relation_manager,
-            logging,
-            env,
-            skip_archived_meeting_check,
-            use_meeting_ids_for_archived_meeting_check,
-        )
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
             User,
             {
@@ -127,7 +105,6 @@ class UserMergeTogether(
                 "require_equality": ["member_number"],
             },
         )
-        self.check_collection_field_groups()
 
     def prefetch(self, action_data: ActionData) -> None:
         self.mass_prefetch_for_merge(

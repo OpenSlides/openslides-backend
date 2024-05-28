@@ -35,6 +35,8 @@ class UserUpdate(
     Action to update a user.
     """
 
+    internal_id_fields = ["is_present_in_meeting_ids"]
+
     model = User()
     schema = DefaultSchema(User()).get_update_schema(
         optional_properties=[
@@ -54,6 +56,7 @@ class UserUpdate(
             "committee_management_ids",
             "is_demo_user",
             "saml_id",
+            *internal_id_fields,
         ],
         additional_optional_fields={
             "meeting_id": optional_id_schema,
@@ -62,6 +65,17 @@ class UserUpdate(
     )
     permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
+
+    def validate_instance(self, instance: dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if not self.internal and any(
+            forbidden_keys_used := {
+                key for key in instance if key in self.internal_id_fields
+            }
+        ):
+            raise ActionException(
+                f"data must not contain {forbidden_keys_used} properites"
+            )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)

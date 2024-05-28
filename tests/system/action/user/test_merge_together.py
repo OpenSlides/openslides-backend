@@ -1,6 +1,14 @@
+from collections.abc import Iterable
+from typing import cast
+
+from openslides_backend.action.relations.relation_manager import RelationManager
+from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.models.mixins import DEFAULT_PROJECTOR_OPTIONS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from openslides_backend.shared.patterns import (
+    CollectionField,
+    fqid_from_collection_and_id,
+)
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
@@ -200,6 +208,38 @@ class UserMergeTogether(BaseActionTestCase):
     #     self.assert_status_code(response, 200)
     #     self.assert_model_exists("user/2", user)
 
+    def test_configuration_up_to_date(self) -> None:
+        """
+        This test checks, if the merge_together function has been properly
+        updated to be able to handle the current data structure.
+        If this test fails, it is likely because new fields have been added
+        to the collections listed in the AssertionError without considering
+        the necessary changes to the user merge.
+        This can be fixed by editing the collection_field_groups in the
+        action class if it is the 'user' collection,
+        or else in the corresponding mixin class.
+        """
+        action = actions_map["user.merge_together"]
+        merge_together = action(
+            self.services,
+            self.datastore,
+            RelationManager(self.datastore),
+            self.get_application().logging,
+            self.env,
+        )
+        field_groups = merge_together._collection_field_groups  # type: ignore
+        collection_fields = merge_together._all_collection_fields  # type: ignore
+        broken = []
+        for collection in collection_fields:
+            if sorted(collection_fields[collection]) != sorted(
+                field
+                for group in field_groups[collection].values()
+                for field in cast(Iterable[CollectionField], group)
+                if field in collection_fields[collection]
+            ):
+                broken.append(collection)
+        assert broken == []
+
     def test_empty_payload_fields(self) -> None:
         response = self.request("user.merge_together", {})
         self.assert_status_code(response, 400)
@@ -310,21 +350,56 @@ class UserMergeTogether(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_merge_with_omls(self) -> None:
+    def test_merge_with_user_fields(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
         self.set_models(
             {
+                "committee/1": {"manager_ids": [2, 5]},
+                "committee/3": {"manager_ids": [5]},
+                "meeting/2": {"present_user_ids": [4]},
+                "meeting/3": {"present_user_ids": [3, 4]},
+                "meeting/4": {"present_user_ids": [5]},
                 "user/2": {
                     "organization_management_level": "can_manage_organization",
+                    "pronoun": "he",
+                    "first_name": "Nick",
+                    "is_active": False,
+                    "can_change_own_password": True,
+                    "gender": "male",
+                    "email": "nick.everything@rob.banks",
+                    "last_email_sent": 123456789,
+                    "committee_management_ids": [1],
                 },
                 "user/3": {
                     "organization_management_level": "can_manage_users",
+                    "pronoun": "she",
+                    "title": "Dr.",
+                    "first_name": "Rob",
+                    "last_name": "Banks",
+                    "is_physical_person": True,
+                    "default_vote_weight": "1.234567",
+                    "last_login": 987654321,
+                    "is_present_in_meeting_ids": [3],
                 },
                 "user/4": {
                     "organization_management_level": "superadmin",
+                    "is_active": True,
+                    "is_physical_person": False,
+                    "gender": "female",
+                    "last_email_sent": 234567890,
+                    "is_present_in_meeting_ids": [2, 3],
                 },
                 "user/5": {
                     "organization_management_level": "can_manage_users",
+                    "pronoun": "it",
+                    "title": "Prof. Dr. Dr.",
+                    "last_name": "Everything",
+                    "can_change_own_password": False,
+                    "is_present_in_meeting_ids": [4],
+                    "committee_management_ids": [1, 3],
+                },
+                "user/6": {
+                    "email": "rob.banks@allof.them",
                 },
             }
         )
@@ -344,19 +419,44 @@ class UserMergeTogether(BaseActionTestCase):
                 "default_password": "user2",
                 "meeting_user_ids": [12, 22, 46, 47],
                 "password": password,
+                "pronoun": "he",
+                "title": "Dr.",
+                "first_name": "Nick",
+                "last_name": "Banks",
+                "gender": "male",
+                "email": "nick.everything@rob.banks",
+                "default_vote_weight": "1.234567",
+                "is_present_in_meeting_ids": [2, 3, 4],
+                "committee_management_ids": [1, 3],
+                "last_email_sent": 123456789,
             },
         )
         for id_ in range(3, 7):
             self.assert_model_deleted(f"user/{id_}")
-        for id_ in [23, 14, 24, 34, 15]:
+        for id_ in [23, 33, 14, 24, 34, 15, 45]:
             self.assert_model_deleted(f"meeting_user/{id_}")
         for meeting_id, id_ in {1: 12, 2: 22, 3: 46, 4: 47}.items():
             self.assert_model_exists(
                 f"meeting_user/{id_}", {"user_id": 2, "meeting_id": meeting_id}
             )
-            self.assert_model_exists(
-                f"meeting/{meeting_id}", {"meeting_user_ids": [id_], "user_ids": [2]}
-            )
+        self.assert_model_exists(
+            "meeting/1", {"meeting_user_ids": [12], "user_ids": [2]}
+        )
+        self.assert_model_exists(
+            "meeting/2",
+            {"meeting_user_ids": [22], "user_ids": [2], "present_user_ids": [2]},
+        )
+        self.assert_model_exists(
+            "meeting/3",
+            {"meeting_user_ids": [46], "user_ids": [2], "present_user_ids": [2]},
+        )
+        self.assert_model_exists(
+            "meeting/4",
+            {"meeting_user_ids": [47], "user_ids": [2], "present_user_ids": [2]},
+        )
+        self.assert_model_exists("committee/1", {"user_ids": [2], "manager_ids": [2]})
+        self.assert_model_exists("committee/2", {"user_ids": [2]})
+        self.assert_model_exists("committee/3", {"user_ids": [2], "manager_ids": [2]})
 
     def test_merge_with_archived_meeting(self) -> None:
         self.set_models(

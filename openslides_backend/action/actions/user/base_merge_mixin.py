@@ -1,11 +1,10 @@
-from collections.abc import Iterable
-from typing import Any, TypedDict, cast
+from typing import Any, TypedDict
 
 from openslides_backend.services.datastore.interface import PartialModel
 
 from ....models.base import Model
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException, BadCodingException
+from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, CollectionField
 from ...action import Action
 
@@ -92,22 +91,6 @@ class BaseMergeMixin(Action):
             if i[:1] != "_" and i not in ["collection", "verbose_name", "id"]
         ]
         # self._collection_operations[collection] = operations
-
-    def check_collection_field_groups(self) -> None:
-        """Should be called once in __init__ of final action class"""
-        broken = []
-        for collection in self._all_collection_fields:
-            if sorted(self._all_collection_fields[collection]) != sorted(
-                field
-                for group in self._collection_field_groups[collection].values()
-                for field in cast(Iterable[CollectionField], group)
-                if field in self._all_collection_fields[collection]
-            ):
-                broken.append(collection)
-        if len(broken):
-            raise BadCodingException(
-                f"{self.model.collection} merge is not up-to-date for the current database definition(s) of {' and '.join(broken)}"
-            )
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel

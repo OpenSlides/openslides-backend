@@ -10,7 +10,7 @@ from ....models.models import (
     MotionWorkingGroupSpeaker,
     PersonalNote,
 )
-from ....shared.patterns import Collection
+from ....shared.patterns import Collection, CollectionField
 from .base_merge_mixin import BaseMergeMixin, MergeModeDict
 
 
@@ -118,6 +118,18 @@ class MeetingUserMergeMixin(
                 ],
             },
         )
+
+    def handle_special_field(
+        self,
+        collection: Collection,
+        field: CollectionField,
+        into_: PartialModel,
+        ranked_others: list[PartialModel],
+    ) -> Any | None:
+        if collection == "meeting_user" and field == "speaker_ids":
+            pass  # TODO: Do smth here
+            # Deep merge speakers but only of the same type?
+        return super().handle_special_field(collection, field, into_, ranked_others)
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel
