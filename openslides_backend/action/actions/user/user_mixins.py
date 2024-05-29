@@ -123,6 +123,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
 
         check_existence("username")
         check_existence("saml_id")
+        check_existence("member_number")
 
         self.check_meeting_and_users(
             instance, fqid_from_collection_and_id("user", instance["id"])
