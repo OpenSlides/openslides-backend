@@ -21,7 +21,7 @@ class Migration(BaseModelMigration):
                 ["headbar", "primary_500"],
             ).values()
         )
-        theme = themes[0]
+        theme = {} if len(themes) == 0 else themes[0]
         default_color = theme.get("headbar") or (
             self.darken_color(str(theme["primary_500"]))
             if theme.get("primary_500")
