@@ -361,6 +361,14 @@ class UserCreateActionTest(BaseActionTestCase):
             == "A user with the member_number 14m4m3m832 already exists."
         )
 
+    def test_member_number_none(self) -> None:
+        response = self.request(
+            "user.create",
+            {"username": "user2", "member_number": None},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"member_number": None})
+
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
         self.set_models(
             {
