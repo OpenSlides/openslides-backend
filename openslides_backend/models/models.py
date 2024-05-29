@@ -86,6 +86,7 @@ class User(Model):
 
     id = fields.IntegerField(constant=True)
     username = fields.CharField(required=True)
+    member_number = fields.CharField()
     saml_id = fields.CharField(
         constraints={
             "minLength": 1,
