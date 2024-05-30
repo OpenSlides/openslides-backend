@@ -56,6 +56,7 @@ class UserUpdate(
             "committee_management_ids",
             "is_demo_user",
             "saml_id",
+            "member_number",
             *internal_id_fields,
         ],
         additional_optional_fields={

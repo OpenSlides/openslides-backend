@@ -3,6 +3,8 @@ from typing import Any, cast
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
+from ....shared.filters import FilterOperator
+from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
     BaseJsonUploadAction,
     ImportState,
@@ -30,6 +32,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         {"property": "gender", "type": "string", "is_object": True},
         {"property": "pronoun", "type": "string"},
         {"property": "saml_id", "type": "string", "is_object": True},
+        {"property": "member_number", "type": "string", "is_object": True},
     ]
     skip_archived_meeting_check = True
     row_state: ImportState
@@ -37,6 +40,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
     saml_id_lookup: Lookup
     names_email_lookup: Lookup
     all_saml_id_lookup: Lookup
+    member_number_lookup: Lookup
 
     @classmethod
     def get_schema(
@@ -63,6 +67,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                                 "is_active",
                                 "is_physical_person",
                                 "saml_id",
+                                "member_number",
                             ),
                             **additional_user_fields,
                         },
@@ -123,6 +128,10 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     "info": ImportState.ERROR,
                 }
                 messages.append("Found more users with the same username")
+            if self.row_state != ImportState.DONE and " " in username:
+                self.row_state = ImportState.ERROR
+                entry["username"] = {"value": username, "info": ImportState.ERROR}
+                messages.append("Error: Empty spaces not allowed in new usernames")
         elif saml_id := entry.get("saml_id"):
             check_result = self.saml_id_lookup.check_duplicate(saml_id)
             id_ = cast(int, self.saml_id_lookup.get_field_by_name(saml_id, "id"))
@@ -138,18 +147,22 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
 
                 self.row_state = ImportState.DONE
                 entry["id"] = id_
-                entry["username"] = {
-                    "value": username,
-                    "info": ImportState.DONE,
-                    "id": id_,
-                }
+                if isinstance(username, str):
+                    entry["username"] = {
+                        "value": username,
+                        "info": ImportState.DONE,
+                        "id": id_,
+                    }
             elif check_result == ResultType.NOT_FOUND or id_ == 0:
                 self.row_state = ImportState.NEW
         else:
-            if not (entry.get("first_name") or entry.get("last_name")):
+            if not entry.get("username") or (
+                not isinstance(entry.get("username"), str)
+                and not entry.get("username", {}).get("value")
+            ):
                 self.row_state = ImportState.ERROR
                 messages.append(
-                    "Cannot generate username. Missing one of first_name, last_name."
+                    "Cannot generate username. Missing one of first_name, last_name or a unique member_number."
                 )
             else:
                 names_and_email = self._names_and_email(entry)
@@ -177,7 +190,11 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     self.row_state = ImportState.DONE
                     entry["id"] = id_
                     entry["username"] = {
-                        "value": username,
+                        "value": (
+                            cast(dict, username).get("value")
+                            if isinstance(username, dict)
+                            else username
+                        ),
                         "info": ImportState.DONE,
                         "id": id_,
                     }
@@ -186,6 +203,85 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 elif check_result == ResultType.FOUND_MORE_IDS:
                     self.row_state = ImportState.ERROR
                     messages.append("Found more users with name and email")
+
+        if member_number := entry.get("member_number"):
+            check_result = self.member_number_lookup.check_duplicate(member_number)
+            member_id = cast(
+                int, self.member_number_lookup.get_field_by_name(member_number, "id")
+            )
+            if id_ and self.row_state == ImportState.DONE:
+                oldnum = self.datastore.get(
+                    fqid_from_collection_and_id("user", id_), ["member_number"]
+                ).get("member_number")
+                has_member_number_error = False
+
+                if oldnum and member_number != oldnum:
+                    has_member_number_error = True
+                    messages.append("Error: Member numbers can't be updated via import")
+                elif member_id and member_id != id_:
+                    has_member_number_error = True
+                    messages.append("Error: Member number doesn't match detected user")
+                elif check_result == ResultType.FOUND_MORE_IDS:
+                    has_member_number_error = True
+                    messages.append(
+                        "Error: Found more users with the same member number"
+                    )
+
+                if has_member_number_error:
+                    self.row_state = ImportState.ERROR
+                    entry["member_number"] = {
+                        "value": member_number,
+                        "info": ImportState.ERROR,
+                    }
+                else:
+                    entry["member_number"] = {
+                        "value": member_number,
+                        "info": ImportState.DONE if oldnum else ImportState.NEW,
+                    }
+                    if oldnum:
+                        entry["member_number"]["id"] = id_
+                        entry["username"].pop("id")
+            elif not id_:
+                id_ = member_id
+                if check_result == ResultType.FOUND_ID and id_ != 0:
+                    old_username = cast(
+                        str,
+                        self.member_number_lookup.get_field_by_name(
+                            member_number, "username"
+                        ),
+                    )
+                    entry["id"] = id_
+                    entry["member_number"] = {
+                        "id": id_,
+                        "value": member_number,
+                        "info": ImportState.DONE,
+                    }
+                    if not entry.get("username"):
+                        entry["username"] = {
+                            "value": old_username,
+                            "info": ImportState.DONE,
+                        }
+                    elif (
+                        entry["username"] != old_username
+                        and entry["username"]["info"] == ImportState.DONE
+                    ):
+                        entry["username"]["info"] = ImportState.NEW
+                    if self.row_state != ImportState.ERROR:
+                        self.row_state = ImportState.DONE
+                elif check_result == ResultType.FOUND_MORE_IDS:
+                    self.row_state = ImportState.ERROR
+                    entry["member_number"] = {
+                        "value": member_number,
+                        "info": ImportState.ERROR,
+                    }
+                    messages.append(
+                        "Error: Found more users with the same member number"
+                    )
+                else:
+                    entry["member_number"] = {
+                        "value": member_number,
+                        "info": ImportState.DONE,
+                    }
 
         if id_ and len(self.all_id_mapping.get(id_, [])) > 1:
             self.row_state = ImportState.ERROR
@@ -261,6 +357,8 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         usernames: list[str] = []
         fix_usernames: list[str] = []
         payload_indices: list[int] = []
+        memnum_payload_indices: list[int] = []
+        memnum_usernames: list[str] = []
 
         for entry in data:
             if "username" not in entry.keys():
@@ -268,16 +366,32 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     username = saml_id
                 else:
                     username = self.generate_username(entry)
-                usernames.append(username)
-                payload_indices.append(entry["payload_index"])
+                if (
+                    not username
+                    and (memnum := entry.get("member_number"))
+                    and not self.datastore.exists(
+                        "user", FilterOperator("username", "=", memnum)
+                    )
+                ):
+                    memnum_usernames.append(memnum)
+                    memnum_payload_indices.append(entry["payload_index"])
+                else:
+                    usernames.append(username)
+                    payload_indices.append(entry["payload_index"])
             else:
                 fix_usernames.append(entry["username"])
 
-        usernames = self.generate_usernames(usernames, fix_usernames)
+        usernames = self.generate_usernames(usernames, fix_usernames + memnum_usernames)
 
         for index, username in zip(payload_indices, usernames):
             data[index]["username"] = {
                 "value": username,
+                "info": ImportState.GENERATED,
+            }
+            self.username_lookup.add_item(data[index])
+        for index, username in zip(memnum_payload_indices, memnum_usernames):
+            data[index]["username"] = {
+                "value": username if username not in fix_usernames else "",
                 "info": ImportState.GENERATED,
             }
             self.username_lookup.add_item(data[index])
@@ -356,6 +470,17 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             field="saml_id",
             mapped_fields=["username", "saml_id"],
         )
+        self.member_number_lookup = Lookup(
+            self.datastore,
+            "user",
+            [
+                (member_number, entry)
+                for entry in data
+                if (member_number := entry.get("member_number"))
+            ],
+            field="member_number",
+            mapped_fields=["username", "member_number", "saml_id"],
+        )
 
         self.all_id_mapping: dict[int, list[SearchFieldType]] = defaultdict(list)
         for lookup in (
@@ -379,14 +504,22 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     entry.get("email", ""),
                 )
                 lookup_result = self.names_email_lookup.name_to_ids[key][0]
+            if "member_number" in entry:
+                lookup_result = (
+                    self.member_number_lookup.name_to_ids[entry["member_number"]][0]
+                    or lookup_result
+                )
             if not (id_ := lookup_result.get("id")):
                 continue
             if "id" not in entry:
                 entry["id"] = id_
             if "username" not in entry:
+                username = lookup_result["username"]
                 entry["username"] = {
                     "id": id_,
-                    "value": lookup_result["username"],
+                    "value": (
+                        username if isinstance(username, str) else username["value"]
+                    ),
                     "info": ImportState.DONE,
                 }
                 self.username_lookup.add_item(entry)
