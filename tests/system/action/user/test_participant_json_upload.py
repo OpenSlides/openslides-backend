@@ -808,6 +808,41 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "email": {"info": "done", "value": "fritz.chen@scho.ol"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
+    
+    def test_json_upload_update_account_with_only_member_number_in_line(
+        self,
+    ) -> None:
+        self.create_meeting(2)
+        self.create_user("Uhh")
+        self.set_models({"user/2": {
+            "member_number": "Ihh",
+            "email": "uhh.ah@a.h",
+            "first_name": "Ting Tang",
+            "last_name": "Wallawalla Bing Bang",
+            "is_active": 1,
+            "is_physical_person": 1,
+            "default_vote_weight": "1.000000",
+        }})
+        response = self.request(
+            "participant.json_upload",
+            {
+                "data": [
+                    {
+                        "member_number": "Ihh",
+                    }
+                ],
+                "meeting_id": 2
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data["username"] == {"info": "done", "value": "Uhh"}
+        assert data["member_number"] == {"info": "done", "value": "Ihh", "id": 2}
 
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):

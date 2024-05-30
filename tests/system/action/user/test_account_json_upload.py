@@ -989,6 +989,41 @@ class AccountJsonUpload(BaseActionTestCase):
         assert data["member_number"] == {"info": "done", "value": "M3MNUM"}
 
 
+    def test_json_upload_update_account_with_only_member_number_in_line(
+        self,
+    ) -> None:
+        self.create_user("Uhh")
+        self.set_models({"user/2": {
+            "member_number": "Ihh",
+            "email": "uhh.ah@a.h",
+            "first_name": "Ting Tang",
+            "last_name": "Wallawalla Bing Bang",
+            "is_active": 1,
+            "is_physical_person": 1,
+            "default_vote_weight": "1.000000"
+
+        }})
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "member_number": "Ihh",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "account"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        data = import_preview["result"]["rows"][0]["data"]
+        assert data["username"] == {"info": "done", "value": "Uhh"}
+        assert data["member_number"] == {"info": "done", "value": "Ihh", "id": 2}
+
+
 class AccountJsonUploadForUseInImport(BaseActionTestCase):
     def json_upload_saml_id_new(self) -> None:
         self.set_models(
