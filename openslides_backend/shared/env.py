@@ -56,6 +56,12 @@ class Environment(Env):
         "VOTE_PATH": "/internal/vote",
         "VOTE_PORT": "9013",
         "VOTE_PROTOCOL": "http",
+        "DATABASE_HOST": None,
+        "DATABASE_PORT": "5432",
+        "DATABASE_NAME": "openslides",
+        "DATABASE_USER": "openslides",
+        "PGPASSWORD": "openslides",
+        "DATABASE_PASSWORD_FILE": None,
     }
 
     def __init__(self, os_env: Any, *args: Any, **kwargs: Any) -> None:

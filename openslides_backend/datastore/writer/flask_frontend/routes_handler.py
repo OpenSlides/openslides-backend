@@ -70,9 +70,10 @@ def write_without_events():
 @dev_only_route
 @handle_internal_errors
 def truncate_db():
-    writer = injector.get(Writer)
-    writer.truncate_db()
-    return "", 204
+    pass
+    # writer = injector.get(Writer)
+    # writer.truncate_db()
+    # return "", 204
 
 
 @handle_internal_errors

@@ -477,9 +477,10 @@ class DatastoreAdapter(BaseDatastoreService):
         self.retrieve(command)
 
     def truncate_db(self) -> None:
-        command = commands.TruncateDb()
-        self.logger.debug("Start TRUNCATE_DB request to datastore")
-        self.retrieve(command)
+        pass
+        # command = commands.TruncateDb()
+        # self.logger.debug("Start TRUNCATE_DB request to datastore")
+        # self.retrieve(command)
 
     def get_everything(self) -> dict[Collection, dict[int, PartialModel]]:
         command = commands.GetEverything()

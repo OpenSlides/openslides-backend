@@ -106,9 +106,10 @@ class WriterService:
 
     @retry_on_db_failure
     def truncate_db(self) -> None:
-        with self.database.get_context():
-            self.database.truncate_db()
-            logger.info("Database truncated")
+        pass
+        # with self.database.get_context():
+        #     self.database.truncate_db()
+        #     logger.info("Database truncated")
 
     @retry_on_db_failure
     def write_without_events(

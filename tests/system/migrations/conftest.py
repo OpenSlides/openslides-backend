@@ -20,7 +20,6 @@ from openslides_backend.datastore.shared.util import (
     DeletedModelsBehaviour,
     ModelDoesNotExist,
 )
-from openslides_backend.datastore.writer.core import Writer
 from openslides_backend.datastore.writer.flask_frontend.json_handlers import (
     WriteHandler,
 )
@@ -68,8 +67,9 @@ def setup() -> None:
 @pytest.fixture(autouse=True)
 def clear_datastore(setup) -> None:
     def _clear_datastore() -> None:
-        writer: Writer = injector.get(Writer)
-        writer.truncate_db()
+        pass
+        # writer: Writer = injector.get(Writer)
+        # writer.truncate_db()
 
     _clear_datastore()
     return _clear_datastore

@@ -61,6 +61,8 @@ class Client(WerkzeugClient):
             )
         except AuthenticateException as e:
             raise AuthenticationException(str(e))
+        except Exception as e:
+            raise AuthenticationException(str(e))
         assert response.status_code == 200
         # save access token and refresh id for subsequent requests
         self.update_auth_data(
