@@ -74,7 +74,7 @@ class UserUpdate(
             }
         ):
             raise ActionException(
-                f"data must not contain {forbidden_keys_used} properites"
+                f"data must not contain {forbidden_keys_used} properties"
             )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:

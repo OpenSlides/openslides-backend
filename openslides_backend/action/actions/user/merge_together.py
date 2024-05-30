@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from openslides_backend.services.datastore.interface import PartialModel
 
@@ -64,7 +64,6 @@ class UserMergeTogether(
                     "organization_id",
                     "last_email_sent",
                     "last_login",
-                    "committee_ids",
                     "meeting_ids",
                 ],
                 "highest": [
@@ -89,6 +88,7 @@ class UserMergeTogether(
                 "merge": [
                     "is_present_in_meeting_ids",
                     "committee_management_ids",
+                    "committee_ids",
                     "option_ids",  # throw error if conflict on same poll
                     "poll_voted_ids",  # throw error if conflict on same poll
                     "vote_ids",  # throw error if conflict on same poll
@@ -159,8 +159,9 @@ class UserMergeTogether(
         update_operations["user"]["update"].append(
             self.merge_by_rank("user", into, other_models, instance, update_operations)
         )
+        committee_ids = update_operations["user"]["update"][0].pop("committee_ids", [])
         self.call_other_actions(update_operations)
-        return {"id": into["id"]}
+        return {"id": into["id"], "committee_ids": committee_ids}
 
     def call_other_actions(
         self, update_operations: dict[Collection, MergeUpdateOperations]
@@ -245,6 +246,16 @@ class UserMergeTogether(
                     [{"id": id_} for id_ in update_operations["user"]["delete"]],
                     UserDelete.skip_archived_meeting_check,
                 )
+
+            update_operations.pop("user", None)
+            update_operations.pop("meeting_user", None)
+            if any(
+                [
+                    any([len(cast(list, li)) for li in operation.values()])
+                    for operation in update_operations.values()
+                ]
+            ):
+                raise ActionException("Finished without carrying out all operations")
 
     def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
         all_models = [into, *other_models]
