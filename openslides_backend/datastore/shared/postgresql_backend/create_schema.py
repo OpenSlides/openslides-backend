@@ -1,9 +1,12 @@
 import os
 
-from openslides_backend.database.db_connection_handling import (
-    env, get_unpooled_db_connection)
-from openslides_backend.shared.exceptions import DatabaseException
 from psycopg import Connection, sql
+
+from openslides_backend.database.db_connection_handling import (
+    env,
+    get_unpooled_db_connection,
+)
+from openslides_backend.shared.exceptions import DatabaseException
 
 
 def create_schema() -> None:
