@@ -27,6 +27,7 @@ class UserMergeTogether(
 ):
     """
     Action to merge users together.
+    TODO: History?
     """
 
     model = User()
@@ -223,6 +224,7 @@ class UserMergeTogether(
             if len(meeting_user_update_payloads):
                 for payload in meeting_user_update_payloads:
                     payload.pop("meeting_id")
+                    payload["unsafe"] = True
                 self.execute_other_action(
                     MeetingUserUpdate, meeting_user_update_payloads
                 )

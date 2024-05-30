@@ -35,7 +35,11 @@ class UserUpdate(
     Action to update a user.
     """
 
-    internal_id_fields = ["is_present_in_meeting_ids"]
+    internal_id_fields = [
+        "is_present_in_meeting_ids",
+        "option_ids",
+        "poll_candidate_ids",
+    ]
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema(

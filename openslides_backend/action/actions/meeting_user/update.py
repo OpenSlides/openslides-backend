@@ -18,18 +18,25 @@ class MeetingUserUpdate(MeetingUserHistoryMixin, UpdateAction, ExtendHistoryMixi
     Action to update a meeting_user.
     """
 
+    merge_fields = ["motion_submitter_ids"]
+
     model = MeetingUser()
     schema = DefaultSchema(MeetingUser()).get_update_schema(
         optional_properties=[
             "about_me",
             "group_ids",
-            "user_id",
             *meeting_user_standard_fields,
+            *merge_fields,
         ],
+        additional_optional_fields={"unsafe": {"type": "boolean"}},
     )
     extend_history_to = "user_id"
 
     def validate_fields(self, instance: dict[str, Any]) -> dict[str, Any]:
-        if "user_id" in instance and not self.internal:
-            raise ActionException("data must not contain {'user_id'} properties")
+        if (not instance.pop("unsafe", False)) and len(
+            forbidden := {field for field in self.merge_fields if field in instance}
+        ):
+            raise ActionException(
+                f"data must not contain {forbidden} properties"
+            )  # TODO: Test this
         return super().validate_fields(instance)
