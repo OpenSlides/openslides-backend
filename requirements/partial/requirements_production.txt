@@ -13,7 +13,7 @@ pygments==2.18.0
 pypdf[crypto]==4.2.0
 python-magic==0.4.27
 python-sql==1.5.0
-requests==2.31.0
+requests==2.32.2
 roman==4.2
 simplejson==3.19.2
 Werkzeug==3.0.3
