@@ -15,7 +15,7 @@ COLLECTIONS = (
 )
 
 
-def test_migration_all(clear_datastore, write, finalize, assert_model):
+def test_migration_all(write, finalize, assert_model):
     for collection in COLLECTIONS:
         write(
             {
@@ -57,12 +57,9 @@ def test_migration_all(clear_datastore, write, finalize, assert_model):
                 "meta_position": 1,
             },
         )
-        clear_datastore()
 
 
-def test_migration_motion_block_more_objects(
-    clear_datastore, write, finalize, assert_model
-):
+def test_migration_motion_block_more_objects(write, finalize, assert_model):
     for collection in COLLECTIONS:
         write(
             {
@@ -140,7 +137,6 @@ def test_migration_motion_block_more_objects(
                 "meta_position": 1,
             },
         )
-        clear_datastore()
 
 
 def test_assignment_two_stages(migrate, write, finalize, assert_model):

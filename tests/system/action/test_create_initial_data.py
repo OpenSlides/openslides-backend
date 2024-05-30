@@ -9,7 +9,6 @@ from tests.system.action.base import BaseActionTestCase
 class TestInitialDataCreation(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.datastore.truncate_db()
         self.vars = deepcopy(self.env.vars)
         self.env.vars["OPENSLIDES_BACKEND_CREATE_INITIAL_DATA"] = "1"
 

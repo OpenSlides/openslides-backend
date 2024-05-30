@@ -95,7 +95,6 @@ class GeneralActionWSGITester(BaseActionTestCase):
 class TestWSGIWithMigrations(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.datastore.truncate_db()
 
     @patch("openslides_backend.migrations.get_backend_migration_index")
     def test_request_missing_migrations(self, gbmi: Any) -> None:

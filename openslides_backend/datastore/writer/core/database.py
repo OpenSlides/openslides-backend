@@ -35,9 +35,6 @@ class Database(Protocol):
     def delete_history_information(self) -> None:
         """Delete all history information from all positions."""
 
-    def truncate_db(self) -> None:
-        """Truncate all tables. Only for dev purposes!"""
-
     def write_model_updates_without_events(
         self, models: dict[FullQualifiedId, Model]
     ) -> None:

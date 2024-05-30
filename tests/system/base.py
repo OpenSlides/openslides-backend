@@ -69,7 +69,6 @@ class BaseSystemTestCase(TestCase):
         self.media = self.services.media()
         self.vote_service = cast(TestVoteService, self.services.vote())
         self.datastore = self.services.datastore()
-        # self.datastore.truncate_db()
         self.set_thread_watch_timeout(-1)
 
         self.created_fqids = set()

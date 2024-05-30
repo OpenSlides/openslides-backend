@@ -7,14 +7,12 @@ from openslides_backend.datastore.shared.flask_frontend import (
     InvalidRequest,
     JsonResponse,
     add_health_route,
-    dev_only_route,
     handle_internal_errors,
 )
 from openslides_backend.datastore.writer.core import Writer
 from openslides_backend.datastore.writer.flask_frontend.routes import (  # noqa
     DELETE_HISTORY_INFORMATION_URL,
     RESERVE_IDS_URL,
-    TRUNCATE_DB_URL,
     WRITE_URL,
     WRITE_WITHOUT_EVENTS_URL,
 )
@@ -67,15 +65,6 @@ def write_without_events():
     return ("", return_code)
 
 
-@dev_only_route
-@handle_internal_errors
-def truncate_db():
-    pass
-    # writer = injector.get(Writer)
-    # writer.truncate_db()
-    # return "", 204
-
-
 @handle_internal_errors
 def delete_history_information():
     writer = injector.get(Writer)
@@ -88,7 +77,6 @@ def register_routes(app, url_prefix):
         "write",
         "reserve_ids",
         "delete_history_information",
-        "truncate_db",
         "write_without_events",
     ):
         app.add_url_rule(

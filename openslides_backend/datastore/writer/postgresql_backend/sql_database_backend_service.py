@@ -301,11 +301,3 @@ class SqlDatabaseBackendService:
 
     def delete_history_information(self) -> None:
         self.connection.execute("UPDATE positions SET information = NULL;", [])
-
-    def truncate_db(self) -> None:
-        pass
-        # for table in ALL_TABLES:
-        #     self.connection.execute(f"DELETE FROM {table} CASCADE;", [])
-        # # restart sequences manually to provide a clean db
-        # for seq in ("positions_position", "events_id", "collectionfields_id"):
-        #     self.connection.execute(f"ALTER SEQUENCE {seq}_seq RESTART WITH 1;", [])

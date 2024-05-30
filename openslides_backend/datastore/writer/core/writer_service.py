@@ -105,13 +105,6 @@ class WriterService:
             logger.info("History information deleted")
 
     @retry_on_db_failure
-    def truncate_db(self) -> None:
-        pass
-        # with self.database.get_context():
-        #     self.database.truncate_db()
-        #     logger.info("Database truncated")
-
-    @retry_on_db_failure
     def write_without_events(
         self,
         write_request: WriteRequest,
