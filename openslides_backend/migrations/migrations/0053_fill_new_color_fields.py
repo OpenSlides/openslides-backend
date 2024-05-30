@@ -7,7 +7,8 @@ from ...shared.filters import FilterOperator
 
 class Migration(BaseModelMigration):
     """
-    This migration removes all remnants of the old structure level field in meeting users.
+    This migration enriches the database with calculated values
+    for the new projector color fields "chyron_background_color_2" and "chyron_font_color_2".
     """
 
     target_migration_index = 54
