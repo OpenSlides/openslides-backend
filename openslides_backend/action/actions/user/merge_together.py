@@ -65,6 +65,7 @@ class UserMergeTogether(
                     "last_email_sent",
                     "last_login",
                     "meeting_ids",
+                    "committee_ids",
                 ],
                 "highest": [
                     "is_active",
@@ -88,7 +89,6 @@ class UserMergeTogether(
                 "merge": [
                     "is_present_in_meeting_ids",
                     "committee_management_ids",
-                    "committee_ids",
                     "option_ids",  # throw error if conflict on same poll
                     "poll_voted_ids",  # throw error if conflict on same poll
                     "vote_ids",  # throw error if conflict on same poll
@@ -159,9 +159,8 @@ class UserMergeTogether(
         update_operations["user"]["update"].append(
             self.merge_by_rank("user", into, other_models, instance, update_operations)
         )
-        committee_ids = update_operations["user"]["update"][0].pop("committee_ids", [])
         self.call_other_actions(update_operations)
-        return {"id": into["id"], "committee_ids": committee_ids}
+        return {"id": into["id"]}
 
     def call_other_actions(
         self, update_operations: dict[Collection, MergeUpdateOperations]
@@ -176,20 +175,10 @@ class UserMergeTogether(
                 *update_operations["meeting_user"]["create"],
             ]
         ):
-            main_user_payload.update(
-                {
-                    "id": user_id,
-                    "meeting_id": update_payloads[0]["meeting_id"],
-                    **{
-                        field: update_payloads[0].pop(field)
-                        for field in UserMixin.transfer_field_list
-                        if field in update_payloads[0]
-                    },
-                }
-            )
-            for payload_index in range(1, len(update_payloads)):
+            meeting_user_via_user_payloads = []
+            for payload_index in range(len(update_payloads)):
                 current = update_payloads[payload_index]
-                update_operations["user"]["update"].append(
+                meeting_user_via_user_payloads.append(
                     {
                         "id": user_id,
                         "meeting_id": current["meeting_id"],
@@ -200,7 +189,7 @@ class UserMergeTogether(
                         },
                     }
                 )
-            self.execute_other_action(UserUpdate, update_operations["user"]["update"])
+            self.execute_other_action(UserUpdate, meeting_user_via_user_payloads)
 
             meeting_user_update_payloads = [
                 payload
@@ -246,6 +235,7 @@ class UserMergeTogether(
                     [{"id": id_} for id_ in update_operations["user"]["delete"]],
                     UserDelete.skip_archived_meeting_check,
                 )
+            self.execute_other_action(UserUpdate, update_operations["user"]["update"])
 
             update_operations.pop("user", None)
             update_operations.pop("meeting_user", None)

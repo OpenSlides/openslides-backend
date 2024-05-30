@@ -388,6 +388,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "gender": "female",
                     "last_email_sent": 234567890,
                     "is_present_in_meeting_ids": [2, 3],
+                    "member_number": "souperadmin",
                 },
                 "user/5": {
                     "organization_management_level": "can_manage_users",
@@ -426,6 +427,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "gender": "male",
                 "email": "nick.everything@rob.banks",
                 "default_vote_weight": "1.234567",
+                "member_number": "souperadmin",
                 "is_present_in_meeting_ids": [2, 3, 4],
                 "committee_management_ids": [1, 3],
                 "last_email_sent": 123456789,
