@@ -3,9 +3,12 @@ import pathlib
 from collections.abc import Generator
 
 import pytest
-from openslides_backend.database.db_connection_handling import (
-    env, get_unpooled_db_connection)
 from psycopg import Connection, Cursor, sql
+
+from openslides_backend.database.db_connection_handling import (
+    env,
+    get_unpooled_db_connection,
+)
 
 temporary_template_db = "openslides_template"
 openslides_db = env.DATABASE_NAME
