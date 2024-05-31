@@ -15,12 +15,19 @@ COLLECTIONS = (
 
 
 def test_migration_all(write, finalize, assert_model):
-    for collection in COLLECTIONS:
+    write(
+        {
+            "type": "create",
+            "fqid": "meeting/1",
+            "fields": {"id": 1},
+        },
+    )
+    for i, collection in enumerate(COLLECTIONS, start=1):
         write(
             {
-                "type": "create",
+                "type": "update",
                 "fqid": "meeting/1",
-                "fields": {"id": 1, collection + "_ids": [1]},
+                "fields": {collection + "_ids": [1]},
             },
             {
                 "type": "create",
@@ -50,7 +57,7 @@ def test_migration_all(write, finalize, assert_model):
                 "sequential_number": 1,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": 1,
+                "meta_position": i*2,
             },
         )
         assert_model(
@@ -60,16 +67,28 @@ def test_migration_all(write, finalize, assert_model):
                 "sequential_number": 2,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": 2,
+                "meta_position": i*2 + 1,
             },
         )
 
 
 def test_migration_motion_block_more_objects(write, finalize, assert_model):
-    for collection in COLLECTIONS:
+    write(
+        {
+            "type": "create",
+            "fqid": "meeting/1",
+            "fields": {"id": 1},
+        },
+        {
+            "type": "create",
+            "fqid": "meeting/2",
+            "fields": {"id": 2},
+        },
+    )
+    for i, collection in enumerate(COLLECTIONS):
         write(
             {
-                "type": "create",
+                "type": "update",
                 "fqid": "meeting/1",
                 "fields": {"id": 1, collection + "_ids": [1]},
             },
@@ -93,7 +112,7 @@ def test_migration_motion_block_more_objects(write, finalize, assert_model):
         )
         write(
             {
-                "type": "create",
+                "type": "update",
                 "fqid": "meeting/2",
                 "fields": {"id": 2, collection + "_ids": [3]},
             },
@@ -125,7 +144,7 @@ def test_migration_motion_block_more_objects(write, finalize, assert_model):
                 "sequential_number": 1,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": 1,
+                "meta_position": i*4 + 2,
             },
         )
         assert_model(
@@ -135,7 +154,7 @@ def test_migration_motion_block_more_objects(write, finalize, assert_model):
                 "sequential_number": 2,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": 2,
+                "meta_position": i*4 + 3,
             },
         )
         assert_model(
@@ -145,7 +164,7 @@ def test_migration_motion_block_more_objects(write, finalize, assert_model):
                 "sequential_number": 1,
                 "meeting_id": 2,
                 "meta_deleted": False,
-                "meta_position": 3,
+                "meta_position": i*4 + 4,
             },
         )
 
@@ -156,7 +175,7 @@ def test_migration_motion_block_more_objects(write, finalize, assert_model):
                 "sequential_number": 2,
                 "meeting_id": 2,
                 "meta_deleted": False,
-                "meta_position": 4,
+                "meta_position": i*4 + 5
             },
         )
 
