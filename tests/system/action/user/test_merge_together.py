@@ -10,7 +10,7 @@ from openslides_backend.shared.patterns import (
     fqid_from_collection_and_id,
 )
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
-from tests.system.action.base import BaseActionTestCase
+from tests.system.action.poll.test_vote import BaseVoteTestCase
 
 # TODO:
 # Test merge on poll_candidates
@@ -20,7 +20,7 @@ from tests.system.action.base import BaseActionTestCase
 # Check all possible poll related errors (check_poll) method
 
 
-class UserMergeTogether(BaseActionTestCase):
+class UserMergeTogether(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
         meeting_ids_by_committee_id = {1: [1, 2], 2: [3], 3: [4]}
@@ -83,6 +83,7 @@ class UserMergeTogether(BaseActionTestCase):
                 "enable_electronic_voting": True,
                 "committee_ids": list(range(1, num_committees + 1)),
                 "user_ids": list(meeting_data_by_user_id.keys()),
+                "enable_electronic_voting": True,
             },
             **{
                 fqid_from_collection_and_id("committee", id_): {
@@ -109,6 +110,7 @@ class UserMergeTogether(BaseActionTestCase):
                     "motions_default_workflow_id": id_,
                     "motions_default_amendment_workflow_id": id_,
                     "motions_default_statute_amendment_workflow_id": id_,
+                    "users_enable_vote_delegations": True,
                     "committee_id": committee_id_by_meeting_id[id_],
                     **{
                         f"default_projector_{option}_ids": [id_]
@@ -194,6 +196,7 @@ class UserMergeTogether(BaseActionTestCase):
                         if group_id
                         in range(1 + (meeting_id - 1) * 3, 1 + meeting_id * 3)
                     ],
+                    "vote_weight": "1.000000",
                 }
                 for user_id in range(2, num_users + 2)
                 for meeting_id in range(1, num_meetings + 1)
@@ -510,22 +513,27 @@ class UserMergeTogether(BaseActionTestCase):
         self.assert_model_exists("user/2")
         self.assert_model_exists("user/3")
 
-    def test_merge_with_polls_correct(self) -> None:
-        password = self.assert_model_exists("user/2")["password"]
+    def set_up_polls_for_merge(self) -> None:
         self.set_models(
             {
-                "meeting/2": {"present_user_ids": [4]},
-                "meeting/3": {"present_user_ids": [3, 4]},
+                "meeting/1": {"present_user_ids": [2, 4]},
+                "meeting/2": {"present_user_ids": [3, 4]},
+                "meeting/3": {"present_user_ids": [2, 3, 4]},
                 "meeting/4": {"present_user_ids": [5]},
+                "user/2": {
+                    "is_present_in_meeting_ids": [1],
+                },
                 "user/3": {
-                    "is_present_in_meeting_ids": [3],
+                    "is_present_in_meeting_ids": [2, 3],
                 },
                 "user/4": {
-                    "is_present_in_meeting_ids": [2, 3],
+                    "is_present_in_meeting_ids": [1, 2, 3],
                 },
                 "user/5": {
                     "is_present_in_meeting_ids": [4],
                 },
+                "meeting_user/15": {"vote_delegated_to_id": 14},
+                "meeting_user/14": {"vote_delegations_from_ids": [15]},
             }
         )
         response = self.request(
@@ -550,7 +558,7 @@ class UserMergeTogether(BaseActionTestCase):
                 {
                     "title": "Assignment poll 1",
                     "content_object_id": "assignment/1",
-                    "type": "pseudoanonymous",
+                    "type": "named",
                     "pollmethod": "Y",
                     "meeting_id": 1,
                     "options": [
@@ -577,6 +585,37 @@ class UserMergeTogether(BaseActionTestCase):
                     "max_votes_amount": 1,
                     "max_votes_per_option": 1,
                     "backend": "fast",
+                    "entitled_group_ids": [1, 2, 3],
+                },
+                {
+                    "title": "Assignment poll 3",
+                    "content_object_id": "assignment/1",
+                    "type": "named",
+                    "pollmethod": "YN",
+                    "meeting_id": 1,
+                    "options": [
+                        {"poll_candidate_user_ids": [2, 5]},
+                    ],
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
+                    "backend": "fast",
+                    "entitled_group_ids": [1, 2, 3],
+                },
+                {
+                    "title": "Assignment poll 4",
+                    "content_object_id": "assignment/1",
+                    "type": "pseudoanonymous",
+                    "pollmethod": "Y",
+                    "meeting_id": 1,
+                    "options": [
+                        {"content_object_id": "user/4"},
+                        {"content_object_id": "user/5"},
+                    ],
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 2,
+                    "max_votes_per_option": 1,
+                    "backend": "long",
                     "entitled_group_ids": [1, 2, 3],
                 },
                 {
@@ -613,9 +652,29 @@ class UserMergeTogether(BaseActionTestCase):
                 },
             ],
         )
-        # TODO: Put in some votes and maybe delegations
+
+    def test_merge_with_polls_correct(self) -> None:
+        password = self.assert_model_exists("user/2")["password"]
+        self.set_up_polls_for_merge()
+        self.request_multi("poll.start", [{"id": id_} for id_ in range(1, 7)])
+        self.login(4)
+        response = self.request(
+            "poll.vote", {"id": 1, "value": "N"}, stop_poll_after_vote=False
+        )
+        response = self.request(
+            "poll.vote",
+            {"id": 1, "value": "N", "user_id": 5},
+            start_poll_before_vote=False,
+        )
+        self.login(2)
+        response = self.request("poll.vote", {"id": 2, "value": {"4": "Y"}})
+        self.login(3)
+        self.request("poll.vote", {"id": 5, "value": {"11": "A"}})
+        self.request("poll.vote", {"id": 6, "value": {"13": 1, "14": 1, "15": 0}})
+        self.login(1)
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
         self.assert_status_code(response, 200)
+        self.vote_service.stop(1)
         self.assert_model_exists(
             "user/2",
             {
@@ -627,9 +686,16 @@ class UserMergeTogether(BaseActionTestCase):
                 "default_password": "user2",
                 "meeting_user_ids": [12, 22, 46],
                 "password": password,
-                "is_present_in_meeting_ids": [2, 3],
+                "is_present_in_meeting_ids": [1, 2, 3],
+                "poll_candidate_ids": [2, 3],
+                "option_ids": [1, 8],
+                "poll_voted_ids": [1, 2, 5, 6],
+                "vote_ids": [1, 3, 4],
+                "delegated_vote_ids": [1, 2, 3, 4],
             },
         )
+        self.assert_model_exists("committee/1", {"user_ids": [2, 5]})
+        self.assert_model_exists("committee/2", {"user_ids": [2]})
         for id_ in range(3, 5):
             self.assert_model_deleted(f"user/{id_}")
         for id_ in [23, 33, 14, 24, 34]:
@@ -638,6 +704,34 @@ class UserMergeTogether(BaseActionTestCase):
             self.assert_model_exists(
                 f"meeting_user/{id_}", {"user_id": 2, "meeting_id": meeting_id}
             )
-        # TODO: Look if polls have changed
+        self.assert_model_exists(
+            "meeting_user/22",
+            {"user_id": 2, "meeting_id": 2, "motion_submitter_ids": [2]},
+        )
+        self.assert_model_deleted("motion_submitter/1")
+        self.assert_model_exists(
+            "motion_submitter/2",
+            {"motion_id": 1, "meeting_user_id": 22, "meeting_id": 2, "weight": 1},
+        )
+        self.assert_model_exists("poll_candidate/2", {"user_id": 2})
+        self.assert_model_exists("poll_candidate/3", {"user_id": 2})
+        self.assert_model_exists("vote/2", {"user_id": 5, "delegated_user_id": 2})
+        for id_ in [1, 3, 4]:
+            self.assert_model_exists(
+                f"vote/{id_}", {"user_id": 2, "delegated_user_id": 2}
+            )
+        for id_ in [5, 6]:  # pseudoanonymous options
+            self.assert_model_exists(
+                f"vote/{id_}",
+                {"option_id": id_ + 8, "user_id": None, "delegated_user_id": None},
+            )
+        self.assert_model_exists("option/1", {"content_object_id": "user/2"})
+        self.assert_model_exists("option/8", {"content_object_id": "user/2"})
+        self.assert_model_exists("poll/1", {"voted_ids": [5, 2]})
+        for id_ in [2, 5, 6]:
+            self.assert_model_exists(f"poll/{id_}", {"voted_ids": [2]})
 
-    # TODO create versions of above test that cause errors
+    def test_merge_with_polls_correct_all_errors(self) -> None:
+        # TODO create version of above test that cause errors
+        self.set_up_polls_for_merge()
+        assert False  # TODO: implement!!!

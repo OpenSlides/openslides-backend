@@ -39,6 +39,9 @@ class UserUpdate(
         "is_present_in_meeting_ids",
         "option_ids",
         "poll_candidate_ids",
+        "poll_voted_ids",
+        "vote_ids",
+        "delegated_vote_ids",
     ]
 
     model = User()

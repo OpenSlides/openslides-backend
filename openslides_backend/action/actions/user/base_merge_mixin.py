@@ -252,7 +252,7 @@ class BaseMergeMixin(Action):
             if change := self.execute_merge_on_reference_fields(
                 field, into, ranked_others
             ):
-                changes[field] = change
+                changes[field] = sorted(change)
         for field in merge_modes.get("special_function", []):
             result = self.handle_special_field(collection, field, into, ranked_others)
             if result is not None:
