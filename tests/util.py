@@ -3,12 +3,11 @@ from typing import Any, TypedDict, cast
 
 import simplejson as json
 from authlib import AUTHENTICATION_HEADER, COOKIE_NAME, AuthenticateException
+from openslides_backend.shared.exceptions import AuthenticationException
+from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse
-
-from openslides_backend.shared.exceptions import AuthenticationException
-from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 
 
 class ResponseWrapper(BaseResponse):
@@ -53,17 +52,23 @@ class Client(WerkzeugClient):
 
     def login(self, username: str, password: str) -> None:
         handler = self.application.services.authentication().auth_handler.http_handler
-        try:
-            response = handler.send_request(
-                "login",
-                payload=json.dumps({"username": username, "password": password}),
-                headers={"Content-Type": "application/json"},
-            )
-        except AuthenticateException as e:
-            raise AuthenticationException(str(e))
-        except Exception as e:
-            raise AuthenticationException(str(e))
-        assert response.status_code == 200
+        retries = 0
+        while True:
+            try:
+                response = handler.send_request(
+                    "login",
+                    payload=json.dumps({"username": username, "password": password}),
+                    headers={"Content-Type": "application/json"},
+                )
+            except AuthenticateException as e:
+                raise AuthenticationException(str(e))
+            except Exception as e:
+                raise AuthenticationException(str(e))
+            if response.status_code == 500 and retries < 10:
+                retries += 1
+                continue
+            assert response.status_code == 200
+            break
         # save access token and refresh id for subsequent requests
         self.update_auth_data(
             {
