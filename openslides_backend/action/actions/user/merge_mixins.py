@@ -11,6 +11,7 @@ from ....models.models import (
     PersonalNote,
 )
 from ....services.datastore.commands import GetManyRequest
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, CollectionField
 from .base_merge_mixin import BaseMergeMixin, MergeModeDict
 
@@ -158,15 +159,58 @@ class MeetingUserMergeMixin(
                 return super().get_merge_comparison_hash(collection, model)
 
     def check_polls_helper(self, meeting_user_ids: list[int]) -> list[str]:
+        messages: list[str] = []
         meeting_users = self.datastore.get_many(
             [
                 GetManyRequest(
                     "meeting_user",
                     meeting_user_ids,
-                    ["vote_delegations_from_ids", "vote_delegated_to_id", "meeting_id"],
+                    [
+                        "vote_delegations_from_ids",
+                        "vote_delegated_to_id",
+                        "meeting_id",
+                        "group_ids",
+                    ],
                 )
             ]
         ).get("meeting_user", {})
+
+        group_ids: set[int] = set()
+        meeting_ids: set[int] = set()
+        meeting_id_by_group_ids: dict[int, int] = {}
+        for m_user in meeting_users.values():
+            if len(g_ids := m_user.get("group_ids", [])):
+                meeting_id_by_group_ids.update(
+                    {g_id: m_user["meeting_id"] for g_id in g_ids}
+                )
+                group_ids.update(g_ids)
+                meeting_ids.add(m_user["meeting_id"])
+        if meeting_ids:
+            polls = self.datastore.filter(
+                "poll",
+                And(
+                    FilterOperator("state", "=", "started"),
+                    Or(
+                        FilterOperator("meeting_id", "=", meeting_id)
+                        for meeting_id in meeting_ids
+                    ),
+                ),
+                ["entitled_group_ids"],
+            )
+            poll_group_ids: set[int] = {
+                group_id
+                for poll in polls.values()
+                for group_id in poll.get("entitled_group_ids", [])
+            }
+            common = group_ids.intersection(poll_group_ids)
+            if len(common):
+                forbidden_meeting_ids = {
+                    str(meeting_id_by_group_ids[g_id]) for g_id in common
+                }
+                messages.append(
+                    f"some of the users are entitled to vote in currently running polls in meeting(s) {', '.join(forbidden_meeting_ids)}"
+                )
+
         delegator_meeting_user_ids = {
             meeting_user_id
             for meeting_user in meeting_users.values()
@@ -191,7 +235,6 @@ class MeetingUserMergeMixin(
                         is_delegator_by_meeting[meeting_id] = (
                             field == "vote_delegated_to_id"
                         )
-        messages: list[str] = []
         if len(delegation_conflicts):
             messages.append(
                 f"some of the selected users have different delegations roles in meeting(s) {', '.join(delegation_conflicts)}"

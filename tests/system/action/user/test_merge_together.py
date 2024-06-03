@@ -656,7 +656,7 @@ class UserMergeTogether(BaseVoteTestCase):
     def test_merge_with_polls_correct(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
         self.set_up_polls_for_merge()
-        self.request_multi("poll.start", [{"id": id_} for id_ in range(1, 7)])
+        self.request_multi("poll.start", [{"id": i} for i in range(1, 7)])
         self.login(4)
         response = self.request(
             "poll.vote", {"id": 1, "value": "N"}, stop_poll_after_vote=False
@@ -672,6 +672,7 @@ class UserMergeTogether(BaseVoteTestCase):
         self.request("poll.vote", {"id": 5, "value": {"11": "A"}})
         self.request("poll.vote", {"id": 6, "value": {"13": 1, "14": 1, "15": 0}})
         self.login(1)
+        response = self.request_multi("poll.stop", [{"id": i} for i in [3, 4]])
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
         self.assert_status_code(response, 200)
         self.vote_service.stop(1)
@@ -731,7 +732,7 @@ class UserMergeTogether(BaseVoteTestCase):
         for id_ in [2, 5, 6]:
             self.assert_model_exists(f"poll/{id_}", {"voted_ids": [2]})
 
-    def test_merge_with_polls_correct_all_errors(self) -> None:
+    def test_merge_with_polls_all_errors(self) -> None:
         # TODO create version of above test that cause errors
         self.set_up_polls_for_merge()
         assert False  # TODO: implement!!!

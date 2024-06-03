@@ -1,5 +1,3 @@
-
-
 from ....models.models import MotionSubmitter
 from ...generics.update import UpdateAction
 from ...util.action_type import ActionType
