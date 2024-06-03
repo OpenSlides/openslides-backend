@@ -166,11 +166,19 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 )
             else:
                 names_and_email = self._names_and_email(entry)
-                check_result = self.names_email_lookup.check_duplicate(names_and_email)
-                id_ = cast(
-                    int,
-                    self.names_email_lookup.get_field_by_name(names_and_email, "id"),
-                )
+                if names_and_email != ("", "", ""):
+                    check_result = self.names_email_lookup.check_duplicate(
+                        names_and_email
+                    )
+                    id_ = cast(
+                        int,
+                        self.names_email_lookup.get_field_by_name(
+                            names_and_email, "id"
+                        ),
+                    )
+                else:
+                    check_result = ResultType.NOT_FOUND
+                    id_ = 0
                 if check_result == ResultType.FOUND_ID and id_ != 0:
                     username = self.names_email_lookup.get_field_by_name(
                         names_and_email, "username"
@@ -459,6 +467,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                         entry.get("email", ""),
                     )
                 )
+                and names_email != ("", "", "")
             ],
             field=("first_name", "last_name", "email"),
             mapped_fields=["username", "saml_id", "default_password"],
@@ -497,13 +506,17 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 continue
             if "saml_id" in entry:
                 lookup_result = self.saml_id_lookup.name_to_ids[entry["saml_id"]][0]
-            else:
+            elif any(
+                [entry.get(field) for field in ["first_name", "last_name", "email"]]
+            ):
                 key = (
                     entry.get("first_name", ""),
                     entry.get("last_name", ""),
                     entry.get("email", ""),
                 )
                 lookup_result = self.names_email_lookup.name_to_ids[key][0]
+            else:
+                lookup_result = {}
             if "member_number" in entry:
                 lookup_result = (
                     self.member_number_lookup.name_to_ids[entry["member_number"]][0]

@@ -808,41 +808,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "email": {"info": "done", "value": "fritz.chen@scho.ol"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
-    
-    def test_json_upload_update_account_with_only_member_number_in_line(
-        self,
-    ) -> None:
-        self.create_meeting(2)
-        self.create_user("Uhh")
-        self.set_models({"user/2": {
-            "member_number": "Ihh",
-            "email": "uhh.ah@a.h",
-            "first_name": "Ting Tang",
-            "last_name": "Wallawalla Bing Bang",
-            "is_active": 1,
-            "is_physical_person": 1,
-            "default_vote_weight": "1.000000",
-        }})
-        response = self.request(
-            "participant.json_upload",
-            {
-                "data": [
-                    {
-                        "member_number": "Ihh",
-                    }
-                ],
-                "meeting_id": 2
-            },
-        )
-        self.assert_status_code(response, 200)
-        import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["state"] == ImportState.DONE
-        assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
-        assert import_preview["result"]["rows"][0]["messages"] == []
-        data = import_preview["result"]["rows"][0]["data"]
-        assert data["username"] == {"info": "done", "value": "Uhh"}
-        assert data["member_number"] == {"info": "done", "value": "Ihh", "id": 2}
 
 
 class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
@@ -1853,3 +1818,88 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "member_number": {"info": "done", "value": "M3MNUM"},
             "groups": [{"id": 1, "info": "generated", "value": "group1"}],
         }
+
+    def json_upload_dont_recognize_empty_name_and_email(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "user_ids": [1, 3, 4, 5],
+                    "saml_enabled": False,
+                    "committee_ids": [1],
+                    "active_meeting_ids": [1],
+                },
+                "committee/1": {
+                    "name": "jk",
+                    "meeting_ids": [1],
+                    "organization_id": 1,
+                },
+                "meeting/1": {
+                    "name": "jk",
+                    "group_ids": [1, 2],
+                    "committee_id": 1,
+                    "admin_group_id": 2,
+                    "default_group_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
+                "group/1": {
+                    "name": "Default",
+                    "meeting_id": 1,
+                    "default_group_for_meeting_id": 1,
+                },
+                "group/2": {
+                    "name": "Admin",
+                    "meeting_id": 1,
+                    "admin_group_for_meeting_id": 1,
+                },
+                "user/3": {
+                    "email": "",
+                    "default_password": "password",
+                    "password": self.auth.hash("password"),
+                    "username": "a",
+                    "last_name": "",
+                    "first_name": "",
+                    "organization_id": 1,
+                },
+                "user/4": {
+                    "email": "",
+                    "default_password": "password",
+                    "password": self.auth.hash("password"),
+                    "username": "b",
+                    "last_name": "",
+                    "first_name": "",
+                    "organization_id": 1,
+                },
+                "user/5": {
+                    "email": "balu@ntvtn.de",
+                    "title": "title",
+                    "gender": "non-binary",
+                    "pronoun": "pronoun",
+                    "password": "$argon2id$v=19$m=65536,t=3,p=4$iQbqhQ2/XYiFnO6vP6rtGQ$Bv3QuH4l9UQACws9hiuCCUBQepVRnCTqmOn5TkXfnQ8",
+                    "username": "balubear",
+                    "is_active": True,
+                    "last_name": "bear",
+                    "first_name": "balu",
+                    "member_number": "mem_nr",
+                    "organization_id": 1,
+                    "default_password": "aU3seRYj8N",
+                    "is_physical_person": True,
+                    "default_vote_weight": "1.000000",
+                    "can_change_own_password": True,
+                    "committee_management_ids": [],
+                },
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "data": [
+                    {
+                        "member_number": "mem_nr",
+                    }
+                ],
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
