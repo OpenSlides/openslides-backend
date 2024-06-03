@@ -217,7 +217,9 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             member_id = cast(
                 int, self.member_number_lookup.get_field_by_name(member_number, "id")
             )
-            if id_ and self.row_state == ImportState.DONE:
+            if (
+                id_ := entry.get("username", {}).get("id", 0)
+            ) and self.row_state != ImportState.ERROR:
                 oldnum = self.datastore.get(
                     fqid_from_collection_and_id("user", id_), ["member_number"]
                 ).get("member_number")
@@ -242,11 +244,13 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                         "info": ImportState.ERROR,
                     }
                 else:
+                    state = ImportState.DONE if oldnum else ImportState.NEW
                     entry["member_number"] = {
                         "value": member_number,
-                        "info": ImportState.DONE if oldnum else ImportState.NEW,
+                        "info": state,
                     }
                     if oldnum:
+                        self.row_state = state
                         entry["member_number"]["id"] = id_
                         entry["username"].pop("id")
             elif not id_:
