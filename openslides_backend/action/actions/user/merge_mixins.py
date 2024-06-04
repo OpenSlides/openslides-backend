@@ -254,20 +254,4 @@ class MeetingUserMergeMixin(
             messages.append(
                 f"some of the selected users are delegating votes to each other in meeting(s) {', '.join(bad_meetings)}"
             )
-        if len(
-            circular_ids := delegator_meeting_user_ids.intersection(
-                proxy_meeting_user_ids
-            )
-        ):
-            bad_meeting_users = self.datastore.get_many(
-                [GetManyRequest("meeting_user", list(circular_ids), ["meeting_id"])]
-            ).get("meeting_user", {})
-            bad_meetings = {
-                str(meeting_id)
-                for meeting_user in bad_meeting_users.values()
-                if (meeting_id := meeting_user.get("meeting_id"))
-            }
-            messages.append(
-                f"it would create circular delegations in meeting(s) {', '.join(bad_meetings)}"
-            )
         return messages

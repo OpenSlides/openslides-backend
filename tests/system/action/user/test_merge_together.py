@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import cast
+from typing import Any, cast
 
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
@@ -536,11 +536,8 @@ class UserMergeTogether(BaseVoteTestCase):
                 "meeting_user/14": {"vote_delegations_from_ids": [15]},
             }
         )
-        response = self.request(
-            "assignment.create", {"title": "Assignment 1", "meeting_id": 1}
-        )
-        self.assert_status_code(response, 200)
-        response = self.request(
+        self.request("assignment.create", {"title": "Assignment 1", "meeting_id": 1})
+        self.request(
             "motion.create",
             {
                 "title": "Motion 1",
@@ -549,10 +546,8 @@ class UserMergeTogether(BaseVoteTestCase):
                 "submitter_ids": [3],
             },
         )
-        self.assert_status_code(response, 200)
-        response = self.request("topic.create", {"title": "Topic 1", "meeting_id": 3})
-        self.assert_status_code(response, 200)
-        response = self.request_multi(
+        self.request("topic.create", {"title": "Topic 1", "meeting_id": 3})
+        self.request_multi(
             "poll.create",
             [
                 {
@@ -658,21 +653,19 @@ class UserMergeTogether(BaseVoteTestCase):
         self.set_up_polls_for_merge()
         self.request_multi("poll.start", [{"id": i} for i in range(1, 7)])
         self.login(4)
-        response = self.request(
-            "poll.vote", {"id": 1, "value": "N"}, stop_poll_after_vote=False
-        )
-        response = self.request(
+        self.request("poll.vote", {"id": 1, "value": "N"}, stop_poll_after_vote=False)
+        self.request(
             "poll.vote",
             {"id": 1, "value": "N", "user_id": 5},
             start_poll_before_vote=False,
         )
         self.login(2)
-        response = self.request("poll.vote", {"id": 2, "value": {"4": "Y"}})
+        self.request("poll.vote", {"id": 2, "value": {"4": "Y"}})
         self.login(3)
         self.request("poll.vote", {"id": 5, "value": {"11": "A"}})
         self.request("poll.vote", {"id": 6, "value": {"13": 1, "14": 1, "15": 0}})
         self.login(1)
-        response = self.request_multi("poll.stop", [{"id": i} for i in [3, 4]])
+        self.request_multi("poll.stop", [{"id": i} for i in [3, 4]])
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
         self.assert_status_code(response, 200)
         self.vote_service.stop(1)
@@ -728,11 +721,113 @@ class UserMergeTogether(BaseVoteTestCase):
             )
         self.assert_model_exists("option/1", {"content_object_id": "user/2"})
         self.assert_model_exists("option/8", {"content_object_id": "user/2"})
-        self.assert_model_exists("poll/1", {"voted_ids": [5, 2]})
-        for id_ in [2, 5, 6]:
-            self.assert_model_exists(f"poll/{id_}", {"voted_ids": [2]})
+
+        def build_expected_user_dates(
+            voted_present_user_delegated: list[tuple[bool, bool, int, int | None]]
+        ) -> list[dict[str, Any]]:
+            return [
+                {
+                    "voted": date[0],
+                    "present": date[1],
+                    "user_id": date[2],
+                    "vote_delegated_to_user_id": date[3],
+                }
+                for date in voted_present_user_delegated
+            ]
+
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "voted_ids": [5, 2],
+                "entitled_users_at_stop": build_expected_user_dates(
+                    [
+                        (False, True, 2, None),
+                        (True, True, 2, None),
+                        (True, False, 5, 2),
+                    ]
+                ),
+            },
+        )
+        self.assert_model_exists(
+            "poll/2",
+            {
+                "voted_ids": [2],
+                "entitled_users_at_stop": build_expected_user_dates(
+                    [
+                        (True, True, 2, None),
+                        (False, True, 2, None),
+                        (False, False, 5, 2),
+                    ]
+                ),
+            },
+        )
+        for id_ in [3, 4]:
+            self.assert_model_exists(
+                f"poll/{id_}",
+                {
+                    "voted_ids": [],
+                    "entitled_users_at_stop": build_expected_user_dates(
+                        [
+                            (False, True, 2, None),
+                            (False, True, 2, None),
+                            (False, False, 5, 2),
+                        ]
+                    ),
+                },
+            )
+        self.assert_model_exists(
+            "poll/5",
+            {
+                "voted_ids": [2],
+                "entitled_users_at_stop": build_expected_user_dates(
+                    [
+                        (False, True, 2, None),
+                        (False, False, 2, None),
+                        (True, True, 2, None),
+                    ]
+                ),
+            },
+        )
+        self.assert_model_exists(
+            "poll/6",
+            {
+                "voted_ids": [2],
+                "entitled_users_at_stop": build_expected_user_dates(
+                    [(True, True, 2, None), (False, True, 2, None)]
+                ),
+            },
+        )
 
     def test_merge_with_polls_all_errors(self) -> None:
-        # TODO create version of above test that cause errors
         self.set_up_polls_for_merge()
-        assert False  # TODO: implement!!!
+        self.request_multi("poll.start", [{"id": i} for i in range(1, 7)])
+        self.login(4)
+        self.request("poll.vote", {"id": 1, "value": "N"}, stop_poll_after_vote=False)
+        self.request(
+            "poll.vote",
+            {"id": 1, "value": "N", "user_id": 5},
+            start_poll_before_vote=False,
+        )
+        self.login(2)
+        self.request("poll.vote", {"id": 2, "value": {"4": "Y"}})
+        self.login(3)
+        self.request("poll.vote", {"id": 5, "value": {"11": "A"}})
+        self.request("poll.vote", {"id": 6, "value": {"13": 1, "14": 1, "15": 0}})
+        self.login(1)
+        self.request("poll.stop", {"id": 3})
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
+        self.assert_status_code(response, 400)
+        assert (
+            "Cannot carry out merge into user/2, because "
+            + " and ".join(
+                [
+                    "some of the users are entitled to vote in currently running polls in meeting(s) 1",
+                    "some of the selected users have different delegations roles in meeting(s) 1",
+                    "some of the selected users are delegating votes to each other in meeting(s) 1",
+                    "among the selected users multiple voted in poll(s) 1",
+                    "multiple of the selected users are among the options in poll(s) 1, 4",
+                    "multiple of the selected users are in the same candidate list in poll(s) 2, 3",
+                ]
+            )
+            in response.json["message"]
+        )
