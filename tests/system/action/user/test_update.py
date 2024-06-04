@@ -549,6 +549,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_clear_member_number(self) -> None:
+        self.create_model("user/222", {"member_number": "klmnopqrst"})
+        response = self.request("user.update", {"id": 222, "member_number": None})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/222", {"member_number": None})
+
     def test_same_username(self) -> None:
         response = self.request("user.update", {"id": 1, "username": "admin"})
         self.assert_status_code(response, 200)
