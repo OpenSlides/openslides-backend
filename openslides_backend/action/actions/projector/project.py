@@ -30,9 +30,7 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
         additional_required_fields={
             "ids": id_list_schema,
         },
-        additional_optional_fields={
-            "mode": optional_str_schema
-        },
+        additional_optional_fields={"mode": optional_str_schema},
         title="Projector project schema",
     )
     permission = Permissions.Projector.CAN_MANAGE
@@ -89,7 +87,10 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
         )
         for projection_id in result:
             if result[projection_id]["current_projector_id"]:
-                if instance.get("mode") != "UPDATE_ONLY_SELECTED" or result[projection_id]["current_projector_id"] in instance["ids"]:
+                if (
+                    instance.get("mode") != "UPDATE_ONLY_SELECTED"
+                    or result[projection_id]["current_projector_id"] in instance["ids"]
+                ):
                     # Unset stable equal projections
                     if result[projection_id]["stable"]:
                         action_del_data = [{"id": int(projection_id)}]
