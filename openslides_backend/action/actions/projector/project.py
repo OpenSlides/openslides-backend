@@ -4,7 +4,7 @@ from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
-from ....shared.schema import id_list_schema
+from ....shared.schema import id_list_schema, optional_str_schema
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...mixins.weight_mixin import WeightMixin
@@ -29,6 +29,9 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
         optional_properties=["options", "stable", "type"],
         additional_required_fields={
             "ids": id_list_schema,
+        },
+        additional_optional_fields={
+            "mode": optional_str_schema
         },
         title="Projector project schema",
     )
@@ -86,34 +89,35 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
         )
         for projection_id in result:
             if result[projection_id]["current_projector_id"]:
-                # Unset stable equal projections
-                if result[projection_id]["stable"]:
-                    action_del_data = [{"id": int(projection_id)}]
-                    self.execute_other_action(ProjectionDelete, action_del_data)
-                # Move unstable equal projections to history
-                else:
-                    filter_ = And(
-                        FilterOperator(
-                            "meeting_id", "=", result[projection_id]["meeting_id"]
-                        ),
-                        FilterOperator(
-                            "history_projector_id",
-                            "=",
-                            result[projection_id]["current_projector_id"],
-                        ),
-                    )
-                    weight = self.get_weight(filter_, "projection")
-                    action_data = [
-                        {
-                            "id": int(projection_id),
-                            "current_projector_id": None,
-                            "history_projector_id": result[projection_id][
-                                "current_projector_id"
-                            ],
-                            "weight": weight,
-                        }
-                    ]
-                    self.execute_other_action(ProjectionUpdate, action_data)
+                if instance.get("mode") != "UPDATE_ONLY_SELECTED" or result[projection_id]["current_projector_id"] in instance["ids"]:
+                    # Unset stable equal projections
+                    if result[projection_id]["stable"]:
+                        action_del_data = [{"id": int(projection_id)}]
+                        self.execute_other_action(ProjectionDelete, action_del_data)
+                    # Move unstable equal projections to history
+                    else:
+                        filter_ = And(
+                            FilterOperator(
+                                "meeting_id", "=", result[projection_id]["meeting_id"]
+                            ),
+                            FilterOperator(
+                                "history_projector_id",
+                                "=",
+                                result[projection_id]["current_projector_id"],
+                            ),
+                        )
+                        weight = self.get_weight(filter_, "projection")
+                        action_data = [
+                            {
+                                "id": int(projection_id),
+                                "current_projector_id": None,
+                                "history_projector_id": result[projection_id][
+                                    "current_projector_id"
+                                ],
+                                "weight": weight,
+                            }
+                        ]
+                        self.execute_other_action(ProjectionUpdate, action_data)
 
     def move_unstable_projections_to_history(self, instance: dict[str, Any]) -> None:
         for projector_id in instance["ids"]:
