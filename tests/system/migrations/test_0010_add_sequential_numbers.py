@@ -57,7 +57,7 @@ def test_migration_all(write, finalize, assert_model):
                 "sequential_number": 1,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": i*2,
+                "meta_position": i * 2,
             },
         )
         assert_model(
@@ -67,7 +67,7 @@ def test_migration_all(write, finalize, assert_model):
                 "sequential_number": 2,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": i*2 + 1,
+                "meta_position": i * 2 + 1,
             },
         )
 
@@ -144,7 +144,7 @@ def test_migration_motion_block_more_objects(write, finalize, assert_model):
                 "sequential_number": 1,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": i*4 + 2,
+                "meta_position": i * 4 + 2,
             },
         )
         assert_model(
@@ -154,7 +154,7 @@ def test_migration_motion_block_more_objects(write, finalize, assert_model):
                 "sequential_number": 2,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": i*4 + 3,
+                "meta_position": i * 4 + 3,
             },
         )
         assert_model(
@@ -164,7 +164,7 @@ def test_migration_motion_block_more_objects(write, finalize, assert_model):
                 "sequential_number": 1,
                 "meeting_id": 2,
                 "meta_deleted": False,
-                "meta_position": i*4 + 4,
+                "meta_position": i * 4 + 4,
             },
         )
 
@@ -175,7 +175,7 @@ def test_migration_motion_block_more_objects(write, finalize, assert_model):
                 "sequential_number": 2,
                 "meeting_id": 2,
                 "meta_deleted": False,
-                "meta_position": i*4 + 5
+                "meta_position": i * 4 + 5,
             },
         )
 

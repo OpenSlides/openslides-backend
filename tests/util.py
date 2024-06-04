@@ -3,11 +3,12 @@ from typing import Any, TypedDict, cast
 
 import simplejson as json
 from authlib import AUTHENTICATION_HEADER, COOKIE_NAME, AuthenticateException
-from openslides_backend.shared.exceptions import AuthenticationException
-from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse
+
+from openslides_backend.shared.exceptions import AuthenticationException
+from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 
 
 class ResponseWrapper(BaseResponse):
