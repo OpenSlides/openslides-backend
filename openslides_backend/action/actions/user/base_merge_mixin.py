@@ -156,7 +156,7 @@ class BaseMergeMixin(Action):
         # payloads: list[dict[str, Any]] = []
         for to_merge in merge_lists.values():
             if len(to_merge) > 1:
-                as_create = with_create and to_merge[0] in into.get(field, [])
+                as_create = with_create and to_merge[0] not in into.get(field, [])
                 to_merge_into, to_merge_others = self.split_merge_by_rank_models(
                     to_merge[0],
                     to_merge[1:],

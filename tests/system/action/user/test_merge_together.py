@@ -516,9 +516,19 @@ class UserMergeTogether(BaseVoteTestCase):
     def set_up_polls_for_merge(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"present_user_ids": [2, 4]},
-                "meeting/2": {"present_user_ids": [3, 4]},
-                "meeting/3": {"present_user_ids": [2, 3, 4]},
+                "meeting/1": {
+                    "present_user_ids": [2, 4],
+                    "assignment_ids": [1],
+                },
+                "meeting/2": {
+                    "present_user_ids": [3, 4],
+                    "motion_ids": [1],
+                    "motion_submitter_ids": [1],
+                },
+                "meeting/3": {
+                    "present_user_ids": [2, 3, 4],
+                    "topic_ids": [1],
+                },
                 "meeting/4": {"present_user_ids": [5]},
                 "user/2": {
                     "is_present_in_meeting_ids": [1],
@@ -534,19 +544,35 @@ class UserMergeTogether(BaseVoteTestCase):
                 },
                 "meeting_user/15": {"vote_delegated_to_id": 14},
                 "meeting_user/14": {"vote_delegations_from_ids": [15]},
+                "meeting_user/23": {"motion_submitter_ids": [1]},
+                "assignment/1": {
+                    "id": 1,
+                    "title": "Assignment 1",
+                    "meeting_id": 1,
+                },
+                "motion/1": {
+                    "id": 1,
+                    "text": "XDDD",
+                    "title": "Motion 1",
+                    "state_id": 2,
+                    "meeting_id": 2,
+                    "submitter_ids": [1],
+                },
+                "motion_state/2": {"motion_ids": [1]},
+                "motion_submitter/1": {
+                    "id": 1,
+                    "weight": 1,
+                    "motion_id": 1,
+                    "meeting_id": 2,
+                    "meeting_user_id": 23,
+                },
+                "topic/1": {
+                    "id": 1,
+                    "title": "Topic 1",
+                    "meeting_id": 3,
+                },
             }
         )
-        self.request("assignment.create", {"title": "Assignment 1", "meeting_id": 1})
-        self.request(
-            "motion.create",
-            {
-                "title": "Motion 1",
-                "meeting_id": 2,
-                "text": "XDDD",
-                "submitter_ids": [3],
-            },
-        )
-        self.request("topic.create", {"title": "Topic 1", "meeting_id": 3})
         self.request_multi(
             "poll.create",
             [
@@ -648,8 +674,7 @@ class UserMergeTogether(BaseVoteTestCase):
             ],
         )
 
-    def test_merge_with_polls_correct(self) -> None:
-        password = self.assert_model_exists("user/2")["password"]
+    def create_polls_with_correct_votes(self) -> None:
         self.set_up_polls_for_merge()
         self.request_multi("poll.start", [{"id": i} for i in range(1, 7)])
         self.login(4)
@@ -666,9 +691,10 @@ class UserMergeTogether(BaseVoteTestCase):
         self.request("poll.vote", {"id": 6, "value": {"13": 1, "14": 1, "15": 0}})
         self.login(1)
         self.request_multi("poll.stop", [{"id": i} for i in [3, 4]])
-        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
-        self.assert_status_code(response, 200)
-        self.vote_service.stop(1)
+
+    def assert_merge_with_polls_correct(
+        self, password: str, add_to_creatable_ids: int = 0
+    ) -> None:
         self.assert_model_exists(
             "user/2",
             {
@@ -678,7 +704,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "committee_ids": [1, 2],
                 "organization_id": 1,
                 "default_password": "user2",
-                "meeting_user_ids": [12, 22, 46],
+                "meeting_user_ids": [12, 22, 46 + add_to_creatable_ids],
                 "password": password,
                 "is_present_in_meeting_ids": [1, 2, 3],
                 "poll_candidate_ids": [2, 3],
@@ -692,9 +718,9 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_model_exists("committee/2", {"user_ids": [2]})
         for id_ in range(3, 5):
             self.assert_model_deleted(f"user/{id_}")
-        for id_ in [23, 33, 14, 24, 34]:
+        for id_ in [23, 33, 14, 24, 34, *range(46, 46 + add_to_creatable_ids)]:
             self.assert_model_deleted(f"meeting_user/{id_}")
-        for meeting_id, id_ in {1: 12, 2: 22, 3: 46}.items():
+        for meeting_id, id_ in {1: 12, 2: 22, 3: 46 + add_to_creatable_ids}.items():
             self.assert_model_exists(
                 f"meeting_user/{id_}", {"user_id": 2, "meeting_id": meeting_id}
             )
@@ -723,7 +749,9 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_model_exists("option/8", {"content_object_id": "user/2"})
 
         def build_expected_user_dates(
-            voted_present_user_delegated: list[tuple[bool, bool, int, int | None]]
+            voted_present_user_delegated_merged: list[
+                tuple[bool, bool, int, int | None, int | None, int | None]
+            ]
         ) -> list[dict[str, Any]]:
             return [
                 {
@@ -731,8 +759,10 @@ class UserMergeTogether(BaseVoteTestCase):
                     "present": date[1],
                     "user_id": date[2],
                     "vote_delegated_to_user_id": date[3],
+                    **({"user_merged_into_id": date[4]} if date[4] else {}),
+                    **({"delegation_user_merged_into_id": date[5]} if date[5] else {}),
                 }
-                for date in voted_present_user_delegated
+                for date in voted_present_user_delegated_merged
             ]
 
         self.assert_model_exists(
@@ -741,9 +771,9 @@ class UserMergeTogether(BaseVoteTestCase):
                 "voted_ids": [5, 2],
                 "entitled_users_at_stop": build_expected_user_dates(
                     [
-                        (False, True, 2, None),
-                        (True, True, 2, None),
-                        (True, False, 5, 2),
+                        (False, True, 2, None, None, None),
+                        (True, True, 4, None, 2, None),
+                        (True, False, 5, 4, None, 2),
                     ]
                 ),
             },
@@ -754,9 +784,9 @@ class UserMergeTogether(BaseVoteTestCase):
                 "voted_ids": [2],
                 "entitled_users_at_stop": build_expected_user_dates(
                     [
-                        (True, True, 2, None),
-                        (False, True, 2, None),
-                        (False, False, 5, 2),
+                        (True, True, 2, None, None, None),
+                        (False, True, 4, None, 2, None),
+                        (False, False, 5, 4, None, 2),
                     ]
                 ),
             },
@@ -768,9 +798,9 @@ class UserMergeTogether(BaseVoteTestCase):
                     "voted_ids": [],
                     "entitled_users_at_stop": build_expected_user_dates(
                         [
-                            (False, True, 2, None),
-                            (False, True, 2, None),
-                            (False, False, 5, 2),
+                            (False, True, 2, None, None, None),
+                            (False, True, 4, None, 2, None),
+                            (False, False, 5, 4, None, 2),
                         ]
                     ),
                 },
@@ -781,9 +811,9 @@ class UserMergeTogether(BaseVoteTestCase):
                 "voted_ids": [2],
                 "entitled_users_at_stop": build_expected_user_dates(
                     [
-                        (False, True, 2, None),
-                        (False, False, 2, None),
-                        (True, True, 2, None),
+                        (False, True, 4, None, 2, None),
+                        (False, False, 2, None, None, None),
+                        (True, True, 3, None, 2, None),
                     ]
                 ),
             },
@@ -793,10 +823,26 @@ class UserMergeTogether(BaseVoteTestCase):
             {
                 "voted_ids": [2],
                 "entitled_users_at_stop": build_expected_user_dates(
-                    [(True, True, 2, None), (False, True, 2, None)]
+                    [(True, True, 3, None, 2, None), (False, True, 4, None, 2, None)]
                 ),
             },
         )
+
+    def test_merge_with_polls_correct(self) -> None:
+        password = self.assert_model_exists("user/2")["password"]
+        self.create_polls_with_correct_votes()
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+        self.assert_merge_with_polls_correct(password)
+
+    def test_polls_with_subsequent_merges(self) -> None:
+        password = self.assert_model_exists("user/2")["password"]
+        self.create_polls_with_correct_votes()
+        response = self.request("user.merge_together", {"id": 3, "user_ids": [4]})
+        self.assert_status_code(response, 200)
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3]})
+        self.assert_status_code(response, 200)
+        self.assert_merge_with_polls_correct(password, 1)
 
     def test_merge_with_polls_all_errors(self) -> None:
         self.set_up_polls_for_merge()

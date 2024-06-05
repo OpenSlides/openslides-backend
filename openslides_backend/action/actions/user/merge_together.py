@@ -429,11 +429,16 @@ class UserMergeTogether(
             entitled: list[dict[str, Any]] = poll["entitled_users_at_stop"]
             changed = False
             for vote in entitled:
-                if vote.get("user_id") in other_ids:
-                    vote["user_id"] = main_id
+                if (
+                    vote.get("user_merged_into_id") or vote.get("user_id")
+                ) in other_ids:
+                    vote["user_merged_into_id"] = main_id
                     changed = True
-                if vote.get("vote_delegated_to_user_id") in other_ids:
-                    vote["vote_delegated_to_user_id"] = main_id
+                if (
+                    vote.get("delegation_user_merged_into_id")
+                    or vote.get("vote_delegated_to_user_id")
+                ) in other_ids:
+                    vote["delegation_user_merged_into_id"] = main_id
                     changed = True
             if changed:
                 poll_payloads.append({"id": id_, "entitled_users_at_stop": entitled})
