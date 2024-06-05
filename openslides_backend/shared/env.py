@@ -62,6 +62,15 @@ class Environment(Env):
         "DATABASE_USER": "openslides",
         "PGPASSWORD": "openslides",
         "DATABASE_PASSWORD_FILE": None,
+        # psycopg.ConnectionPool attributes with DB_POOL-prefix
+        "DB_POOL_MIN_SIZE": 4,
+        "DB_POOL_MAX_SIZE": 4,
+        "DB_POOL_TIMEOUT": 30,
+        "DB_POOL_MAX_WAITING": 0,
+        "DB_POOL_MAX_LIFETIME": 3600.0,
+        "DB_POOL_MAX_IDLE": 60.0,
+        "DB_POOL_RECONNECT_TIMEOUT": 300.0,
+        "DB_POOL_NUM_WORKERS": 3,
     }
 
     def __init__(self, os_env: Any, *args: Any, **kwargs: Any) -> None:
