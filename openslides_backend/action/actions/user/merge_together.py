@@ -23,6 +23,8 @@ from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..motion_submitter.update import MotionSubmitterUpdateAction
 from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDeleteAction
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
+from ..personal_note.create import PersonalNoteCreateAction
+from ..personal_note.update import PersonalNoteUpdateAction
 from ..user.poll_update_entitled import PollUpdateEntitledAction
 from .base_merge_mixin import MergeUpdateOperations
 from .delete import UserDelete
@@ -249,22 +251,47 @@ class UserMergeTogether(
             meeting_user_id_by_meeting_id = {
                 model["meeting_id"]: id_ for id_, model in meeting_users_by_id.items()
             }
-            for payload in update_operations["motion_submitter"]["create"]:
-                meeting_id = payload.pop("meeting_id")
-                payload["meeting_user_id"] = meeting_user_id_by_meeting_id[meeting_id]
-            self.execute_other_action(
-                MotionSubmitterCreateAction,
-                update_operations["motion_submitter"]["create"],
-            )
-            self.execute_other_action(
-                MotionSubmitterUpdateAction,
-                [
-                    {"id": payload["id"], "weight": payload["weight"]}
-                    for payload in update_operations["motion_submitter"]["update"]
-                    if payload.get("weight")
-                ],
-            )
-            update_operations.pop("motion_submitter")
+
+            create_deep_merge_actions_per_collection: dict[str, dict[str, Any]] = {
+                "motion_submitter": {
+                    "update": MotionSubmitterUpdateAction,
+                    "create": MotionSubmitterCreateAction,
+                    "update_payload_fields": ["weight"],
+                },
+                "personal_note": {
+                    "update": PersonalNoteUpdateAction,
+                    "create": PersonalNoteCreateAction,
+                    "update_payload_fields": ["note", "star"],
+                },
+            }
+
+            update_operations["personal_note"]["create"] = [payload for payload in update_operations["personal_note"]["create"] if payload.get("star") or payload.get("note")]
+
+            for collection, actions in create_deep_merge_actions_per_collection.items():
+                if len(to_create := update_operations[collection]["create"]):
+                    for payload in to_create:
+                        meeting_id = payload.pop("meeting_id")
+                        payload["meeting_user_id"] = meeting_user_id_by_meeting_id[
+                            meeting_id
+                        ]
+                    self.execute_other_action(
+                        actions["create"],
+                        to_create,
+                    )
+                to_update: list[dict[str, Any]] = []
+                for payload in update_operations[collection]["update"]:
+                    data = {"id": payload["id"]}
+                    for field in actions.get("update_payload_fields", []):
+                        if field in payload:
+                            data[field] = payload[field]
+                    if len(data) > 1:
+                        to_update.append(data)
+                if len(to_update):
+                    self.execute_other_action(
+                        actions["update"],
+                        to_update,
+                    )
+                update_operations.pop(collection)
 
             actions_per_collection: dict[str, dict[str, type[Action]]] = {
                 "assignment_candidate": {
@@ -282,10 +309,11 @@ class UserMergeTogether(
             }
 
             for collection, actions in actions_per_collection.items():
-                self.execute_other_action(
-                    actions["update"],
-                    update_operations[collection]["update"],
-                )
+                if len(to_update := update_operations[collection]["update"]):
+                    self.execute_other_action(
+                        actions["update"],
+                        to_update,
+                    )
                 if len(to_delete := update_operations[collection]["delete"]):
                     self.execute_other_action(
                         actions["delete"],
@@ -295,10 +323,10 @@ class UserMergeTogether(
 
             # TODO: Handle updates and deletes on meeting_user sub-models
 
-            if len(update_operations["user"]["delete"]):
+            if len(to_delete := update_operations["user"]["delete"]):
                 self.execute_other_action(
                     UserDelete,
-                    [{"id": id_} for id_ in update_operations["user"]["delete"]],
+                    [{"id": id_} for id_ in to_delete],
                     UserDelete.skip_archived_meeting_check,
                 )
             self.execute_other_action(UserUpdate, update_operations["user"]["update"])

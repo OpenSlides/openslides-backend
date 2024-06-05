@@ -1158,3 +1158,123 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_assignment_or_motion_model_test_was_correct(
             "motion", "motion_submitter", "submitter_ids", expected
         )
+
+    def test_with_personal_notes(self) -> None:
+        # create personal notes
+        data: dict[str, dict[str, Any]] = {
+            **{
+                f"meeting/{id_}": {
+                    "motion_ids": list(range((id_ - 1) * 2 + 1, id_ * 2 + 1)),
+                    "personal_note_ids": [],
+                }
+                for id_ in range(1, 4)
+            },
+            **{
+                f"motion/{id_}": {
+                    "meeting_id": meeting_id,
+                    "title": f"Motion {id_}",
+                    "text": "XD",
+                    "personal_note_ids": [],
+                }
+                for meeting_id in range(1, 4)
+                for id_ in range((meeting_id - 1) * 2 + 1, meeting_id * 2 + 1)
+            },
+            **{
+                f"meeting_user/{id_}": {"personal_note_ids": []}
+                for id_ in [12, 14, 15, 22, 23, 24, 33, 34]
+            },
+        }
+
+        def add_personal_note(
+            id_: int,
+            motion_id: int,
+            meeting_user_id: int,
+            note: str | None = None,
+            star: bool | None = None,
+        ) -> None:
+            motion_fqid = f"motion/{motion_id}"
+            meeting_id = data[motion_fqid]["meeting_id"]
+            date = {
+                "meeting_id": meeting_id,
+                "content_object_id": motion_fqid,
+                "meeting_user_id": meeting_user_id,
+            }
+            if note is not None:
+                date["note"] = note
+            if star is not None:
+                date["star"] = star
+            data[fqid_from_collection_and_id("personal_note", id_)] = date
+            for fqid in [
+                motion_fqid,
+                f"meeting/{meeting_id}",
+                f"meeting_user/{meeting_user_id}",
+            ]:
+                data[fqid]["personal_note_ids"].append(id_)
+
+        add_personal_note(1, 1, 12, "User 2's note")
+        add_personal_note(2, 1, 14, "User 4's note", True)
+        add_personal_note(3, 1, 15, "User 5's note")
+
+        add_personal_note(4, 2, 14, star=True)
+
+        add_personal_note(5, 3, 24, star=True)
+        add_personal_note(6, 3, 22, "", star=False)
+        add_personal_note(7, 3, 23, "User 3's note")
+
+        add_personal_note(8, 4, 23, star=False)
+        add_personal_note(9, 4, 24, star=True)
+
+        add_personal_note(10, 5, 23, "User 3's note")
+
+        add_personal_note(11, 6, 24, "User 4's note", star=False)
+        add_personal_note(12, 6, 23, "User 3's other note")
+        self.set_models(data)
+
+        # merge users 3 and 4 into 2
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+
+        # check results
+        for note_id in [2, 5, 7, 8, 9, 10, 11, 12]:
+            self.assert_model_deleted(f"personal_note/{note_id}")
+        self.assert_model_exists("personal_note/3")
+
+        meeting_user_by_meeting_id = {1: 12, 2: 22, 3: 46}
+        note_base_data_by_motion_id = {
+            id_: {
+                "meeting_id": meeting_id,
+                "meeting_user_id": meeting_user_by_meeting_id[meeting_id],
+                "content_object_id": f"motion/{id_}",
+            }
+            for meeting_id in range(1, 4)
+            for id_ in range((meeting_id - 1) * 2 + 1, meeting_id * 2 + 1)
+        }
+        self.assert_model_exists(
+            "personal_note/1",
+            {**note_base_data_by_motion_id[1], "note": "User 2's note", "star": True},
+        )
+        self.assert_model_exists(
+            "personal_note/13", {**note_base_data_by_motion_id[2], "star": True}
+        )
+        self.assert_model_exists(
+            "personal_note/6",
+            {**note_base_data_by_motion_id[3], "note": "User 3's note", "star": True},
+        )
+        self.assert_model_exists(
+            "personal_note/14", {**note_base_data_by_motion_id[4], "star": True}
+        )
+        self.assert_model_exists(
+            "personal_note/15",
+            {
+                **note_base_data_by_motion_id[5],
+                "note": "User 3's note",
+            },
+        )
+        self.assert_model_exists(
+            "personal_note/16",
+            {
+                **note_base_data_by_motion_id[6],
+                "note": "User 3's other note",
+                "star": False,
+            },
+        )
