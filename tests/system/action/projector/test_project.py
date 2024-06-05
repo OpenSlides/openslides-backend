@@ -345,38 +345,45 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_model_deleted("projection/106")
 
-    def test_try_to_store_second_stable_projection_keeping_active(self) -> None:
+    def test_try_to_store_second_stable_projection_keep_active(self) -> None:
         response = self.request(
             "projector.project",
             {
-                "ids": [23],
-                "content_object_id": "assignment/452",
+                "ids": [65],
                 "meeting_id": 1,
+                "content_object_id": "assignment/453",
                 "stable": True,
                 "keep_active_projections": True,
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "projector/23", {"current_projection_ids": [105, 112], "scroll": 80}
+            "projector/65", {"meeting_id": 1, "current_projection_ids": [112]}
         )
         self.assert_model_exists(
-            "projection/112",
+            "projector/75",
+            {"meeting_id": 1, "current_projection_ids": [110, 111]},
+        )
+
+    def test_try_to_store_second_stable_projection_no_keep_active(self) -> None:
+        response = self.request(
+            "projector.project",
             {
-                "content_object_id": "assignment/452",
-                "current_projector_id": 23,
+                "ids": [65],
+                "meeting_id": 1,
+                "content_object_id": "assignment/453",
                 "stable": True,
+                "keep_active_projections": False,
             },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projector/65", {"meeting_id": 1, "current_projection_ids": [112]}
         )
         self.assert_model_exists(
-            "projection/105",
-            {
-                "content_object_id": "assignment/452",
-                "current_projector_id": 23,
-                "stable": False,
-            },
+            "projector/75",
+            {"meeting_id": 1, "current_projection_ids": [110]},
         )
-        self.assert_model_exists("projection/106")
 
     def test_meeting_as_content_object_ok(self) -> None:
         response = self.request(
