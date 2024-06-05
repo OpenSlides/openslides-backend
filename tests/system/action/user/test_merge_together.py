@@ -13,8 +13,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATI
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
 # TODO:
-# Test merging and deep merging of motion_submitters,
-#   personal_notes, motion_editors and motion_working_group_speakers
+# Test merging and deep merging of personal_notes
 # Test error field errors, require_equality errors, test special functions, all merges, all deep_merges
 
 
@@ -950,6 +949,75 @@ class UserMergeTogether(BaseVoteTestCase):
                     data[meeting_user_fqid] = {}
                 data[meeting_user_fqid][sub_collection + "_ids"] = sub_model_ids
 
+    def assert_assignment_or_motion_model_test_was_correct(
+        self,
+        collection: Literal["assignment", "motion"],
+        sub_collection: str,
+        back_relation: str,
+        expected: dict[int, dict[int, tuple[int, int, int] | None]],
+    ) -> None:
+        """
+        expected needs to have the following format:
+        {
+            meeting_id: {
+                sub_model_id: (model_id, meeting_user_id, weight) | None
+            }
+        }
+
+        wherein None is used instead of the data tuple if the model is
+        supposed to have been deleteded
+        """
+        for meeting_id, expected_sub_models in expected.items():
+            self.assert_model_exists(
+                f"meeting/{meeting_id}",
+                {
+                    sub_collection
+                    + "_ids": [
+                        id_
+                        for id_, sub_model in expected_sub_models.items()
+                        if sub_model is not None
+                    ]
+                },
+            )
+            sub_model_ids_by_collection_id: dict[str, dict[int, list[int]]] = {
+                collection: {},
+                "meeting_user": {},
+            }
+            for sub_model_id, sub_model in expected_sub_models.items():
+                sub_model_fqid = fqid_from_collection_and_id(
+                    sub_collection, sub_model_id
+                )
+                if sub_model is None:
+                    self.assert_model_deleted(sub_model_fqid)
+                else:
+                    model_id = sub_model[0]
+                    meeting_user_id = sub_model[1]
+                    self.assert_model_exists(
+                        sub_model_fqid,
+                        {
+                            "meeting_id": meeting_id,
+                            collection + "_id": model_id,
+                            "meeting_user_id": meeting_user_id,
+                            "weight": sub_model[2],
+                        },
+                    )
+                    for coll, value in [
+                        (collection, model_id),
+                        ("meeting_user", meeting_user_id),
+                    ]:
+                        if value not in sub_model_ids_by_collection_id[coll]:
+                            sub_model_ids_by_collection_id[coll][value] = []
+                        sub_model_ids_by_collection_id[coll][value].append(sub_model_id)
+            for coll, field in [
+                (collection, back_relation),
+                ("meeting_user", sub_collection + "_ids"),
+            ]:
+                for id_, values in sub_model_ids_by_collection_id[coll].items():
+                    model = self.assert_model_exists(
+                        fqid_from_collection_and_id(coll, id_)
+                    )
+                    assert sorted(model[field]) == sorted(values)
+
     def base_assignment_or_motion_model_test(
         self,
         collection: Literal["assignment", "motion"],
@@ -1011,56 +1079,9 @@ class UserMergeTogether(BaseVoteTestCase):
                 21: (10, 45, 1),
             },
         }
-        for meeting_id, expected_sub_models in expected.items():
-            self.assert_model_exists(
-                f"meeting/{meeting_id}",
-                {
-                    sub_collection
-                    + "_ids": [
-                        id_
-                        for id_, sub_model in expected_sub_models.items()
-                        if sub_model is not None
-                    ]
-                },
-            )
-            sub_model_ids_by_collection_id: dict[str, dict[int, list[int]]] = {
-                collection: {},
-                "meeting_user": {},
-            }
-            for sub_model_id, sub_model in expected_sub_models.items():
-                sub_model_fqid = fqid_from_collection_and_id(
-                    sub_collection, sub_model_id
-                )
-                if sub_model is None:
-                    self.assert_model_deleted(sub_model_fqid)
-                else:
-                    model_id = sub_model[0]
-                    meeting_user_id = sub_model[1]
-                    self.assert_model_exists(
-                        sub_model_fqid,
-                        {
-                            "meeting_id": meeting_id,
-                            collection + "_id": model_id,
-                            "meeting_user_id": meeting_user_id,
-                            "weight": sub_model[2],
-                        },
-                    )
-                    for coll, value in [
-                        (collection, model_id),
-                        ("meeting_user", meeting_user_id),
-                    ]:
-                        if value not in sub_model_ids_by_collection_id[coll]:
-                            sub_model_ids_by_collection_id[coll][value] = []
-                        sub_model_ids_by_collection_id[coll][value].append(sub_model_id)
-            for coll, field in [
-                (collection, back_relation),
-                ("meeting_user", sub_collection + "_ids"),
-            ]:
-                for id_, values in sub_model_ids_by_collection_id[coll].items():
-                    model = self.assert_model_exists(
-                        fqid_from_collection_and_id(coll, id_)
-                    )
-                    assert sorted(model[field]) == sorted(values)
+        self.assert_assignment_or_motion_model_test_was_correct(
+            collection, sub_collection, back_relation, expected
+        )
 
     def test_with_assignment_candidates(self) -> None:
         self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
@@ -1072,3 +1093,68 @@ class UserMergeTogether(BaseVoteTestCase):
 
     def test_with_motion_editor(self) -> None:
         self.base_assignment_or_motion_model_test("motion", "motion_editor")
+
+    def test_with_motion_submitters(
+        self,
+    ) -> None:
+        data: dict[str, Any] = {}
+        self.add_assignment_or_motion_models_for_meetings(
+            data,
+            "motion",
+            "motion_submitter",
+            "submitter_ids",
+            {
+                1: [
+                    [12, 15],
+                    [15, 14],
+                    [14, 12],
+                    [12, 14, 15],
+                    [14, 12, 15],
+                    [15, 14, 12],
+                ],
+                2: [[24, 22, 23]],
+                3: [[34], [33]],
+                4: [[45]],
+            },
+        )
+        self.set_models(data)
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+        expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
+            # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
+            1: {
+                1: (1, 12, 1),
+                2: (1, 15, 2),
+                3: (2, 15, 1),
+                4: None,
+                5: None,
+                6: (3, 12, 1),
+                7: (4, 12, 1),
+                8: None,
+                9: (4, 15, 3),
+                10: None,
+                11: (5, 12, 1),
+                12: (5, 15, 3),
+                13: (6, 15, 1),
+                14: None,
+                15: (6, 12, 2),
+                22: (2, 12, 2),  # created to replace 4
+            },
+            2: {
+                16: None,
+                17: (7, 22, 1),
+                18: None,
+            },
+            3: {
+                19: None,
+                20: None,
+                23: (9, 46, 1),  # created to replace 20
+                24: (8, 46, 1),  # created to replace 19
+            },
+            4: {
+                21: (10, 45, 1),
+            },
+        }
+        self.assert_assignment_or_motion_model_test_was_correct(
+            "motion", "motion_submitter", "submitter_ids", expected
+        )
