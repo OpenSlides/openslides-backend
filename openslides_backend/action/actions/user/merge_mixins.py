@@ -110,13 +110,13 @@ class MeetingUserMergeMixin(
                 "merge": [
                     "supported_motion_ids",
                     "vote_delegations_from_ids",
-                    "chat_message_ids",
+                    "chat_message_ids",  # cascade delete field
                     "group_ids",
                     "structure_level_ids",
                 ],
                 "deep_merge": {
                     "assignment_candidate_ids": "assignment_candidate",
-                    "personal_note_ids": "personal_note",
+                    "personal_note_ids": "personal_note",  # cascade delete field
                     "motion_editor_ids": "motion_editor",
                     "motion_working_group_speaker_ids": "motion_working_group_speaker",
                 },
@@ -124,7 +124,7 @@ class MeetingUserMergeMixin(
                     "motion_submitter_ids": "motion_submitter",
                 },
                 "special_function": [
-                    "speaker_ids",  # TODO: what should happen here?
+                    "speaker_ids",  # TODO: what should happen here? (Also: this field may be programmatically cascade deleted)
                 ],
             },
         )

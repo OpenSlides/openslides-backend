@@ -13,11 +13,9 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATI
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
 # TODO:
-# Test merge on poll_candidates
-# Test error when trying to merge users who are on the same candidate list
 # Test merging and deep merging of assignment_candidates, motion_submitters,
 #   personal_notes, motion_editors and motion_working_group_speakers
-# Check all possible poll related errors (check_poll) method
+# Test error field errors, require_equality errors, test special functions, all merges, all deep_merges
 
 
 class UserMergeTogether(BaseVoteTestCase):
@@ -877,3 +875,183 @@ class UserMergeTogether(BaseVoteTestCase):
             )
             in response.json["message"]
         )
+
+    def add_assignments_for_meetings(
+        self,
+        data: dict[str, Any],
+        assignment_candidate_meeting_user_id_lists_per_meeting_id: dict[
+            int, list[list[int]]
+        ],
+    ) -> None:
+        next_assignment_id = 1
+        next_candidate_id = 1
+        for (
+            meeting_id,
+            meeting_user_id_lists,
+        ) in assignment_candidate_meeting_user_id_lists_per_meeting_id.items():
+            candidates_per_meeting_user_id: dict[int, list[int]] = {
+                meeting_user_id: []
+                for li in meeting_user_id_lists
+                for meeting_user_id in li
+            }
+            if (
+                meeting_fqid := fqid_from_collection_and_id("meeting", meeting_id)
+            ) not in data:
+                data[meeting_fqid] = {}
+            data[meeting_fqid]["assignment_ids"] = list(
+                range(
+                    next_assignment_id,
+                    next_assignment_id + len(meeting_user_id_lists),
+                )
+            )
+            data[meeting_fqid]["assignment_candidate_ids"] = list(
+                range(
+                    next_candidate_id,
+                    next_candidate_id + sum([len(li) for li in meeting_user_id_lists]),
+                )
+            )
+            for meeting_user_id_list in meeting_user_id_lists:
+                data[fqid_from_collection_and_id("assignment", next_assignment_id)] = {
+                    "title": f"Assignment {next_assignment_id}",
+                    "meeting_id": meeting_id,
+                    "candidate_ids": list(
+                        range(
+                            next_candidate_id,
+                            next_candidate_id + len(meeting_user_id_list),
+                        )
+                    ),
+                }
+                weight = 1
+                for meeting_user_id in meeting_user_id_list:
+                    data[
+                        fqid_from_collection_and_id(
+                            "assignment_candidate", next_candidate_id
+                        )
+                    ] = {
+                        "weight": weight,
+                        "assignment_id": next_assignment_id,
+                        "meeting_user_id": meeting_user_id,
+                        "meeting_id": meeting_id,
+                    }
+                    candidates_per_meeting_user_id[meeting_user_id].append(
+                        next_candidate_id
+                    )
+                    next_candidate_id += 1
+                    weight += 1
+                next_assignment_id += 1
+            for (
+                meeting_user_id,
+                candidate_ids,
+            ) in candidates_per_meeting_user_id.items():
+                if (
+                    meeting_user_fqid := fqid_from_collection_and_id(
+                        "meeting_user", meeting_user_id
+                    )
+                ) not in data:
+                    data[meeting_user_fqid] = {}
+                data[meeting_user_fqid]["assignment_candidate_ids"] = candidate_ids
+
+    def test_with_assignment_candidates(self) -> None:
+        data: dict[str, Any] = {}
+        self.add_assignments_for_meetings(
+            data,
+            {
+                1: [
+                    [12, 15],
+                    [15, 14],
+                    [14, 12],
+                    [12, 14, 15],
+                    [14, 12, 15],
+                    [15, 14, 12],
+                ],
+                2: [[24, 22, 23]],
+                3: [[34], [33]],
+                4: [[45]],
+            },
+        )
+        self.set_models(data)
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+        expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
+            # meeting_id:candidate_id:(assignment_id, meeting_user_id, weight) | None if deleted
+            1: {
+                1: (1, 12, 1),
+                2: (1, 15, 2),
+                3: (2, 15, 1),
+                4: (2, 12, 2),
+                5: None,
+                6: (3, 12, 1),
+                7: (4, 12, 1),
+                8: None,
+                9: (4, 15, 3),
+                10: None,
+                11: (5, 12, 1),
+                12: (5, 15, 3),
+                13: (6, 15, 1),
+                14: None,
+                15: (6, 12, 2),
+            },
+            2: {
+                16: None,
+                17: (7, 22, 1),
+                18: None,
+            },
+            3: {
+                19: (8, 46, 1),
+                20: (9, 46, 1),
+            },
+            4: {
+                21: (10, 45, 1),
+            },
+        }
+        for meeting_id, expected_candidates in expected.items():
+            self.assert_model_exists(
+                f"meeting/{meeting_id}",
+                {
+                    "assignment_candidate_ids": [
+                        id_
+                        for id_, candidate in expected_candidates.items()
+                        if candidate is not None
+                    ]
+                },
+            )
+            candidate_ids_by_collection_id: dict[str, dict[int, list[int]]] = {
+                "assignment": {},
+                "meeting_user": {},
+            }
+            for candidate_id, candidate in expected_candidates.items():
+                candidate_fqid = fqid_from_collection_and_id(
+                    "assignment_candidate", candidate_id
+                )
+                if candidate is None:
+                    self.assert_model_deleted(candidate_fqid)
+                else:
+                    assignment_id = candidate[0]
+                    meeting_user_id = candidate[1]
+                    self.assert_model_exists(
+                        candidate_fqid,
+                        {
+                            "meeting_id": meeting_id,
+                            "assignment_id": assignment_id,
+                            "meeting_user_id": meeting_user_id,
+                            "weight": candidate[2],
+                        },
+                    )
+                    for collection, value in [
+                        ("assignment", assignment_id),
+                        ("meeting_user", meeting_user_id),
+                    ]:
+                        if value not in candidate_ids_by_collection_id[collection]:
+                            candidate_ids_by_collection_id[collection][value] = []
+                        candidate_ids_by_collection_id[collection][value].append(
+                            candidate_id
+                        )
+            for collection, field in [
+                ("assignment", "candidate_ids"),
+                ("meeting_user", "assignment_candidate_ids"),
+            ]:
+                for id_, values in candidate_ids_by_collection_id[collection].items():
+                    model = self.assert_model_exists(
+                        fqid_from_collection_and_id(collection, id_)
+                    )
+                    assert sorted(model[field]) == sorted(values)

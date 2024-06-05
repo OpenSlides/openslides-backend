@@ -13,6 +13,8 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..assignment_candidate.delete import AssignmentCandidateDelete
+from ..assignment_candidate.update import AssignmentCandidateUpdate
 from ..meeting_user.update import MeetingUserUpdate
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..motion_submitter.update import MotionSubmitterUpdateAction
@@ -258,6 +260,25 @@ class UserMergeTogether(
                 ],
             )
             update_operations.pop("motion_submitter")
+
+            self.execute_other_action(
+                AssignmentCandidateUpdate,
+                update_operations["assignment_candidate"]["update"],
+                # [
+                #     {"id": payload["id"], "weight": payload["weight"]}
+                #     for payload in update_operations["assignment_candidate"]["update"]
+                #     if payload.get("weight")
+                # ],
+            )
+            if len(update_operations["assignment_candidate"]["delete"]):
+                self.execute_other_action(
+                    AssignmentCandidateDelete,
+                    [
+                        {"id": id_}
+                        for id_ in update_operations["assignment_candidate"]["delete"]
+                    ],
+                )
+            update_operations.pop("assignment_candidate")
 
             # TODO: Handle updates and deletes on meeting_user sub-models
 

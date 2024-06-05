@@ -18,7 +18,7 @@ class MeetingUserUpdate(MeetingUserHistoryMixin, UpdateAction, ExtendHistoryMixi
     Action to update a meeting_user.
     """
 
-    merge_fields = ["motion_submitter_ids"]
+    merge_fields = ["motion_submitter_ids", "assignment_candidate_ids"]
 
     model = MeetingUser()
     schema = DefaultSchema(MeetingUser()).get_update_schema(
