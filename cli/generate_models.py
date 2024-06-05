@@ -22,7 +22,11 @@ from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 sys.path.append("global")
 
-from meta.dev.src.helper_get_names import InternalHelper
+from meta.dev.src.helper_get_names import (
+    TableFieldType,
+    InternalHelper,
+    HelperGetNames
+)
 
 SOURCE = "./global/meta/models.yml"
 
@@ -169,7 +173,7 @@ class Model(Node):
         for field_name, field in fields.items():
             if field.get("calculated"):
                 continue
-            self.attributes[field_name] = Attribute(field, collection, field_name)
+            self.attributes[field_name] = Attribute(field.copy(), collection, field_name)
 
     def get_code(self) -> str:
         verbose_name = " ".join(self.collection.split("_"))
@@ -207,6 +211,7 @@ class Attribute(Node):
     equal_fields: str | list[str] | None = None
     constraints: dict[str, Any]
     is_view_field: bool = False
+    write_fields : tuple[str, str, str] | None = None
 
     FIELD_TEMPLATE = string.Template(
         "    ${field_name} = fields.${field_class}(${properties})\n"
@@ -224,7 +229,9 @@ class Attribute(Node):
         else:
             self.type = value.get("type")
             if self.type in RELATION_FIELD_CLASSES.keys():
-                self.is_view_field = InternalHelper.get_view_field_decision(collection_name, field_name, value)
+                self.is_view_field, self.write_fields = InternalHelper.get_view_field_state_write_fields(
+                    collection_name, field_name, value
+                    )
                 self.to = To(value.pop("to"))
                 self.on_delete = value.pop("on_delete", None)
             else:
