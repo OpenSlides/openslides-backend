@@ -77,8 +77,8 @@ class PersonalNoteMergeMixin(BaseMergeMixin):
         self.add_collection_field_groups(
             PersonalNote,
             {
-                "ignore": ["meeting_user_id", "content_object_id", "meeting_id"],
-                "priority": ["note"],
+                "ignore": ["meeting_user_id"],
+                "priority": ["note", "content_object_id", "meeting_id"],
                 "highest": ["star"],
             },
         )
@@ -116,12 +116,12 @@ class MeetingUserMergeMixin(
                 ],
                 "deep_merge": {
                     "assignment_candidate_ids": "assignment_candidate",
-                    "personal_note_ids": "personal_note",  # cascade delete field
                     "motion_editor_ids": "motion_editor",
                     "motion_working_group_speaker_ids": "motion_working_group_speaker",
                 },
                 "deep_create_merge": {
                     "motion_submitter_ids": "motion_submitter",
+                    "personal_note_ids": "personal_note",
                 },
                 "special_function": [
                     "speaker_ids",  # TODO: what should happen here? (Also: this field may be programmatically cascade deleted)

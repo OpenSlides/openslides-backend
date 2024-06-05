@@ -9,6 +9,7 @@ from ....shared.exceptions import ActionException, BadCodingException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
+from ...action import Action
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -16,8 +17,12 @@ from ...util.typing import ActionData
 from ..assignment_candidate.delete import AssignmentCandidateDelete
 from ..assignment_candidate.update import AssignmentCandidateUpdate
 from ..meeting_user.update import MeetingUserUpdate
+from ..motion_editor.delete import MotionEditorDeleteAction
+from ..motion_editor.update import MotionEditorUpdateAction
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..motion_submitter.update import MotionSubmitterUpdateAction
+from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDeleteAction
+from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..user.poll_update_entitled import PollUpdateEntitledAction
 from .base_merge_mixin import MergeUpdateOperations
 from .delete import UserDelete
@@ -261,24 +266,32 @@ class UserMergeTogether(
             )
             update_operations.pop("motion_submitter")
 
-            self.execute_other_action(
-                AssignmentCandidateUpdate,
-                update_operations["assignment_candidate"]["update"],
-                # [
-                #     {"id": payload["id"], "weight": payload["weight"]}
-                #     for payload in update_operations["assignment_candidate"]["update"]
-                #     if payload.get("weight")
-                # ],
-            )
-            if len(update_operations["assignment_candidate"]["delete"]):
+            actions_per_collection: dict[str, dict[str, type[Action]]] = {
+                "assignment_candidate": {
+                    "update": AssignmentCandidateUpdate,
+                    "delete": AssignmentCandidateDelete,
+                },
+                "motion_editor": {
+                    "update": MotionEditorUpdateAction,
+                    "delete": MotionEditorDeleteAction,
+                },
+                "motion_working_group_speaker": {
+                    "update": MotionWorkingGroupSpeakerUpdateAction,
+                    "delete": MotionWorkingGroupSpeakerDeleteAction,
+                },
+            }
+
+            for collection, actions in actions_per_collection.items():
                 self.execute_other_action(
-                    AssignmentCandidateDelete,
-                    [
-                        {"id": id_}
-                        for id_ in update_operations["assignment_candidate"]["delete"]
-                    ],
+                    actions["update"],
+                    update_operations[collection]["update"],
                 )
-            update_operations.pop("assignment_candidate")
+                if len(to_delete := update_operations[collection]["delete"]):
+                    self.execute_other_action(
+                        actions["delete"],
+                        [{"id": id_} for id_ in to_delete],
+                    )
+                update_operations.pop(collection)
 
             # TODO: Handle updates and deletes on meeting_user sub-models
 

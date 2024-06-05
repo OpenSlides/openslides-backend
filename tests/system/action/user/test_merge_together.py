@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
@@ -13,7 +13,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATI
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
 # TODO:
-# Test merging and deep merging of assignment_candidates, motion_submitters,
+# Test merging and deep merging of motion_submitters,
 #   personal_notes, motion_editors and motion_working_group_speakers
 # Test error field errors, require_equality errors, test special functions, all merges, all deep_merges
 
@@ -876,20 +876,21 @@ class UserMergeTogether(BaseVoteTestCase):
             in response.json["message"]
         )
 
-    def add_assignments_for_meetings(
+    def add_assignment_or_motion_models_for_meetings(
         self,
         data: dict[str, Any],
-        assignment_candidate_meeting_user_id_lists_per_meeting_id: dict[
-            int, list[list[int]]
-        ],
+        collection: Literal["assignment", "motion"],
+        sub_collection: str,
+        back_relation: str,
+        meeting_user_id_lists_per_meeting_id: dict[int, list[list[int]]],
     ) -> None:
-        next_assignment_id = 1
-        next_candidate_id = 1
+        next_model_id = 1
+        next_sub_model_id = 1
         for (
             meeting_id,
             meeting_user_id_lists,
-        ) in assignment_candidate_meeting_user_id_lists_per_meeting_id.items():
-            candidates_per_meeting_user_id: dict[int, list[int]] = {
+        ) in meeting_user_id_lists_per_meeting_id.items():
+            sub_models_per_meeting_user_id: dict[int, list[int]] = {
                 meeting_user_id: []
                 for li in meeting_user_id_lists
                 for meeting_user_id in li
@@ -898,63 +899,69 @@ class UserMergeTogether(BaseVoteTestCase):
                 meeting_fqid := fqid_from_collection_and_id("meeting", meeting_id)
             ) not in data:
                 data[meeting_fqid] = {}
-            data[meeting_fqid]["assignment_ids"] = list(
+            data[meeting_fqid][collection + "_ids"] = list(
                 range(
-                    next_assignment_id,
-                    next_assignment_id + len(meeting_user_id_lists),
+                    next_model_id,
+                    next_model_id + len(meeting_user_id_lists),
                 )
             )
-            data[meeting_fqid]["assignment_candidate_ids"] = list(
+            data[meeting_fqid][sub_collection + "_ids"] = list(
                 range(
-                    next_candidate_id,
-                    next_candidate_id + sum([len(li) for li in meeting_user_id_lists]),
+                    next_sub_model_id,
+                    next_sub_model_id + sum([len(li) for li in meeting_user_id_lists]),
                 )
             )
             for meeting_user_id_list in meeting_user_id_lists:
-                data[fqid_from_collection_and_id("assignment", next_assignment_id)] = {
-                    "title": f"Assignment {next_assignment_id}",
+                data[fqid_from_collection_and_id(collection, next_model_id)] = {
+                    "title": f"{collection} {next_model_id}",
                     "meeting_id": meeting_id,
-                    "candidate_ids": list(
+                    back_relation: list(
                         range(
-                            next_candidate_id,
-                            next_candidate_id + len(meeting_user_id_list),
+                            next_sub_model_id,
+                            next_sub_model_id + len(meeting_user_id_list),
                         )
                     ),
                 }
                 weight = 1
                 for meeting_user_id in meeting_user_id_list:
                     data[
-                        fqid_from_collection_and_id(
-                            "assignment_candidate", next_candidate_id
-                        )
+                        fqid_from_collection_and_id(sub_collection, next_sub_model_id)
                     ] = {
                         "weight": weight,
-                        "assignment_id": next_assignment_id,
+                        collection + "_id": next_model_id,
                         "meeting_user_id": meeting_user_id,
                         "meeting_id": meeting_id,
                     }
-                    candidates_per_meeting_user_id[meeting_user_id].append(
-                        next_candidate_id
+                    sub_models_per_meeting_user_id[meeting_user_id].append(
+                        next_sub_model_id
                     )
-                    next_candidate_id += 1
+                    next_sub_model_id += 1
                     weight += 1
-                next_assignment_id += 1
+                next_model_id += 1
             for (
                 meeting_user_id,
-                candidate_ids,
-            ) in candidates_per_meeting_user_id.items():
+                sub_model_ids,
+            ) in sub_models_per_meeting_user_id.items():
                 if (
                     meeting_user_fqid := fqid_from_collection_and_id(
                         "meeting_user", meeting_user_id
                     )
                 ) not in data:
                     data[meeting_user_fqid] = {}
-                data[meeting_user_fqid]["assignment_candidate_ids"] = candidate_ids
+                data[meeting_user_fqid][sub_collection + "_ids"] = sub_model_ids
 
-    def test_with_assignment_candidates(self) -> None:
+    def base_assignment_or_motion_model_test(
+        self,
+        collection: Literal["assignment", "motion"],
+        sub_collection: str,
+    ) -> None:
+        back_relation = "_".join(sub_collection.split("_")[1:]) + "_ids"
         data: dict[str, Any] = {}
-        self.add_assignments_for_meetings(
+        self.add_assignment_or_motion_models_for_meetings(
             data,
+            collection,
+            sub_collection,
+            back_relation,
             {
                 1: [
                     [12, 15],
@@ -973,7 +980,7 @@ class UserMergeTogether(BaseVoteTestCase):
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
         self.assert_status_code(response, 200)
         expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
-            # meeting_id:candidate_id:(assignment_id, meeting_user_id, weight) | None if deleted
+            # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
             1: {
                 1: (1, 12, 1),
                 2: (1, 15, 2),
@@ -1004,54 +1011,64 @@ class UserMergeTogether(BaseVoteTestCase):
                 21: (10, 45, 1),
             },
         }
-        for meeting_id, expected_candidates in expected.items():
+        for meeting_id, expected_sub_models in expected.items():
             self.assert_model_exists(
                 f"meeting/{meeting_id}",
                 {
-                    "assignment_candidate_ids": [
+                    sub_collection
+                    + "_ids": [
                         id_
-                        for id_, candidate in expected_candidates.items()
-                        if candidate is not None
+                        for id_, sub_model in expected_sub_models.items()
+                        if sub_model is not None
                     ]
                 },
             )
-            candidate_ids_by_collection_id: dict[str, dict[int, list[int]]] = {
-                "assignment": {},
+            sub_model_ids_by_collection_id: dict[str, dict[int, list[int]]] = {
+                collection: {},
                 "meeting_user": {},
             }
-            for candidate_id, candidate in expected_candidates.items():
-                candidate_fqid = fqid_from_collection_and_id(
-                    "assignment_candidate", candidate_id
+            for sub_model_id, sub_model in expected_sub_models.items():
+                sub_model_fqid = fqid_from_collection_and_id(
+                    sub_collection, sub_model_id
                 )
-                if candidate is None:
-                    self.assert_model_deleted(candidate_fqid)
+                if sub_model is None:
+                    self.assert_model_deleted(sub_model_fqid)
                 else:
-                    assignment_id = candidate[0]
-                    meeting_user_id = candidate[1]
+                    model_id = sub_model[0]
+                    meeting_user_id = sub_model[1]
                     self.assert_model_exists(
-                        candidate_fqid,
+                        sub_model_fqid,
                         {
                             "meeting_id": meeting_id,
-                            "assignment_id": assignment_id,
+                            collection + "_id": model_id,
                             "meeting_user_id": meeting_user_id,
-                            "weight": candidate[2],
+                            "weight": sub_model[2],
                         },
                     )
-                    for collection, value in [
-                        ("assignment", assignment_id),
+                    for coll, value in [
+                        (collection, model_id),
                         ("meeting_user", meeting_user_id),
                     ]:
-                        if value not in candidate_ids_by_collection_id[collection]:
-                            candidate_ids_by_collection_id[collection][value] = []
-                        candidate_ids_by_collection_id[collection][value].append(
-                            candidate_id
-                        )
-            for collection, field in [
-                ("assignment", "candidate_ids"),
-                ("meeting_user", "assignment_candidate_ids"),
+                        if value not in sub_model_ids_by_collection_id[coll]:
+                            sub_model_ids_by_collection_id[coll][value] = []
+                        sub_model_ids_by_collection_id[coll][value].append(sub_model_id)
+            for coll, field in [
+                (collection, back_relation),
+                ("meeting_user", sub_collection + "_ids"),
             ]:
-                for id_, values in candidate_ids_by_collection_id[collection].items():
+                for id_, values in sub_model_ids_by_collection_id[coll].items():
                     model = self.assert_model_exists(
-                        fqid_from_collection_and_id(collection, id_)
+                        fqid_from_collection_and_id(coll, id_)
                     )
                     assert sorted(model[field]) == sorted(values)
+
+    def test_with_assignment_candidates(self) -> None:
+        self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
+
+    def test_with_motion_working_group_speakers(self) -> None:
+        self.base_assignment_or_motion_model_test(
+            "motion", "motion_working_group_speaker"
+        )
+
+    def test_with_motion_editor(self) -> None:
+        self.base_assignment_or_motion_model_test("motion", "motion_editor")
