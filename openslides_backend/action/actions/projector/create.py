@@ -27,6 +27,8 @@ class ProjectorCreateAction(SequentialNumbersMixin, CreateAction):
             "header_h1_color",
             "chyron_background_color",
             "chyron_font_color",
+            "chyron_background_color_2",
+            "chyron_font_color_2",
             "show_header_footer",
             "show_title",
             "show_logo",
