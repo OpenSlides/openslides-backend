@@ -13,7 +13,8 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATI
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
 # TODO:
-# Test error field errors, require_equality errors, test special functions, all merges
+# Test error field errors, require_equality errors, test special functions
+# Test setter fields
 
 
 class UserMergeTogether(BaseVoteTestCase):
@@ -395,6 +396,38 @@ class UserMergeTogether(BaseVoteTestCase):
                 "user/6": {
                     "email": "rob.banks@allof.them",
                 },
+                "meeting_user/12": {
+                    "about_me": "I am an enthusiastic explorer",
+                    "comment": "Nicks everything",
+                },
+                "meeting_user/14": {"number": "NOMNOM", "comment": "Likes soup"},
+                "meeting_user/15": {
+                    "about_me": "I am a raging lunatic",
+                    "number": "NomDiNom",
+                },
+                "meeting_user/22": {
+                    "number": "num?",
+                    "vote_weight": "2.000000",
+                },
+                "meeting_user/23": {
+                    "comment": "Comment 1",
+                    "vote_weight": "3.000000",
+                },
+                "meeting_user/24": {
+                    "number": "NOM!",
+                    "comment": "Comment 2: Electric Boogaloo",
+                },
+                "meeting_user/33": {
+                    "about_me": "I have a long beard",
+                    "vote_weight": "1.234567",
+                },
+                "meeting_user/34": {
+                    "about_me": "I am hairy",
+                    "vote_weight": "1.000001",
+                },
+                "meeting_user/45": {
+                    "comment": "This is a comment",
+                },
             }
         )
         response = self.request(
@@ -430,10 +463,45 @@ class UserMergeTogether(BaseVoteTestCase):
             self.assert_model_deleted(f"user/{id_}")
         for id_ in [23, 33, 14, 24, 34, 15, 45]:
             self.assert_model_deleted(f"meeting_user/{id_}")
-        for meeting_id, id_ in {1: 12, 2: 22, 3: 46, 4: 47}.items():
-            self.assert_model_exists(
-                f"meeting_user/{id_}", {"user_id": 2, "meeting_id": meeting_id}
-            )
+
+        self.assert_model_exists(
+            "meeting_user/12",
+            {
+                "user_id": 2,
+                "meeting_id": 1,
+                "about_me": "I am an enthusiastic explorer",
+                "comment": "Nicks everything",
+                "number": "NOMNOM",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/22",
+            {
+                "user_id": 2,
+                "meeting_id": 2,
+                "number": "num?",
+                "vote_weight": "2.000000",
+                "comment": "Comment 1",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/46",
+            {
+                "user_id": 2,
+                "meeting_id": 3,
+                "about_me": "I have a long beard",
+                "vote_weight": "1.234567",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/47",
+            {
+                "user_id": 2,
+                "meeting_id": 4,
+                "comment": "This is a comment",
+            },
+        )
+
         self.assert_model_exists(
             "meeting/1", {"meeting_user_ids": [12], "user_ids": [2]}
         )
