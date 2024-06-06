@@ -13,8 +13,9 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATI
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
 # TODO:
-# Test error field errors, require_equality errors, test special functions
-# Test setter fields
+# Test error field, require_equality and special function errors and all other errors
+# Proper delegation tests (i.e. multiple delegations correctly done)
+# TEST SPEAKER FIELD (THOROUGHLY!!!)
 
 
 class UserMergeTogether(BaseVoteTestCase):

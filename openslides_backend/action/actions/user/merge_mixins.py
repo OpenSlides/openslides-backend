@@ -9,11 +9,75 @@ from ....models.models import (
     MotionSubmitter,
     MotionWorkingGroupSpeaker,
     PersonalNote,
+    Speaker,
 )
 from ....services.datastore.commands import GetManyRequest
+from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
-from ....shared.patterns import Collection, CollectionField
+from ....shared.patterns import Collection, fqid_from_collection_and_id
 from .base_merge_mixin import BaseMergeMixin, MergeModeDict
+
+
+class SpeakerMergeMixin(BaseMergeMixin):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_collection_field_groups(
+            Speaker,
+            {
+                "ignore": [
+                    "begin_time",
+                    "end_time",
+                    "pause_time",
+                    "unpause_time",
+                    "total_pause",
+                    "meeting_user_id",
+                    "meeting_id",
+                    "note",
+                    "point_of_order_category_id",
+                    "structure_level_list_of_speakers_id",
+                    "point_of_order",
+                    "speech_state",
+                    "list_of_speakers_id",
+                ],
+                "lowest": [
+                    "weight",
+                ],
+            },
+        )
+
+    def check_speakers(self, meeting_user_ids: list[int]) -> None:
+        if len(meeting_user_ids):
+            running_speakers = self.datastore.filter(
+                "speaker",
+                And(
+                    FilterOperator("end_time", "=", None),
+                    Or(
+                        *[
+                            FilterOperator("meeting_user_id", "=", id_)
+                            for id_ in meeting_user_ids
+                        ]
+                    ),
+                    Or(
+                        *[
+                            FilterOperator(time_field, "!=", None)
+                            for time_field in [
+                                "begin_time",
+                                "pause_time",
+                                "unpause_time",
+                                "total_pause",
+                            ]
+                        ]
+                    ),
+                ),
+                ["id", "meeting_id"],
+            )
+            if len(running_speakers):
+                meeting_ids = {
+                    str(speaker["meeting_id"]) for speaker in running_speakers.values()
+                }
+                raise ActionException(
+                    f"Speakers {', '.join([str(key) for key in running_speakers.keys()])} are still running in meeting(s) {', '.join(meeting_ids)}"
+                )
 
 
 class AssignmentCandidateMergeMixin(BaseMergeMixin):
@@ -90,6 +154,7 @@ class MeetingUserMergeMixin(
     MotionEditorMergeMixin,
     MotionSubmitterMergeMixin,
     AssignmentCandidateMergeMixin,
+    SpeakerMergeMixin,
 ):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -118,32 +183,18 @@ class MeetingUserMergeMixin(
                     "assignment_candidate_ids": "assignment_candidate",
                     "motion_editor_ids": "motion_editor",
                     "motion_working_group_speaker_ids": "motion_working_group_speaker",
+                    "speaker_ids": "speaker",
                 },
                 "deep_create_merge": {
                     "motion_submitter_ids": "motion_submitter",
                     "personal_note_ids": "personal_note",
                 },
-                "special_function": [
-                    "speaker_ids",  # TODO: what should happen here? (Also: this field may be programmatically cascade deleted)
-                ],
             },
         )
 
-    def handle_special_field(
-        self,
-        collection: Collection,
-        field: CollectionField,
-        into_: PartialModel,
-        ranked_others: list[PartialModel],
-    ) -> Any | None:
-        if collection == "meeting_user" and field == "speaker_ids":
-            pass  # TODO: Do smth here
-            # Deep merge speakers but only of the same type?
-        return super().handle_special_field(collection, field, into_, ranked_others)
-
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel
-    ) -> int | str:
+    ) -> int | str | tuple[int | str, ...]:
         match collection:
             case "motion_submitter":
                 return model["motion_id"]
@@ -155,6 +206,29 @@ class MeetingUserMergeMixin(
                 return model["motion_id"]
             case "motion_working_group_speaker":
                 return model["motion_id"]
+            case "speaker":
+                meeting = self.datastore.get(
+                    fqid_from_collection_and_id("meeting", model["meeting_id"]),
+                    ["list_of_speakers_allow_multiple_speakers"],
+                )
+                if (
+                    meeting.get("list_of_speakers_allow_multiple_speakers")
+                    or model.get("end_time") is not None
+                ):
+                    return model["id"]
+                return tuple(
+                    [
+                        model.get(field, "")
+                        for field in [
+                            "list_of_speakers_id",
+                            "speech_state",
+                            "point_of_order",
+                            "structure_level_list_of_speakers_id",
+                            "point_of_order_category_id",
+                            "note",
+                        ]
+                    ]
+                )
             case _:
                 return super().get_merge_comparison_hash(collection, model)
 

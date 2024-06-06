@@ -25,6 +25,8 @@ from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDelet
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
 from ..personal_note.update import PersonalNoteUpdateAction
+from ..speaker.delete import SpeakerDeleteAction
+from ..speaker.update import SpeakerUpdate
 from ..user.poll_update_entitled import PollUpdateEntitledAction
 from .base_merge_mixin import MergeUpdateOperations
 from .delete import UserDelete
@@ -168,6 +170,15 @@ class UserMergeTogether(
         )
 
         self.check_polls(into, other_models)
+        self.check_speakers(
+            list(
+                {
+                    meeting_user_id
+                    for model in [into, *other_models]
+                    for meeting_user_id in model.get("meeting_user_ids", [])
+                }
+            )
+        )
 
         update_operations["user"]["update"].append(
             self.merge_by_rank("user", into, other_models, instance, update_operations)
@@ -309,6 +320,10 @@ class UserMergeTogether(
                 "motion_working_group_speaker": {
                     "update": MotionWorkingGroupSpeakerUpdateAction,
                     "delete": MotionWorkingGroupSpeakerDeleteAction,
+                },
+                "speaker": {
+                    "update": SpeakerUpdate,
+                    "delete": SpeakerDeleteAction,
                 },
             }
 
@@ -513,7 +528,7 @@ class UserMergeTogether(
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel
-    ) -> int | str:
+    ) -> int | str | tuple[int | str, ...]:
         match collection:
             case "meeting_user":
                 return model["meeting_id"]
@@ -553,6 +568,7 @@ class UserMergeTogether(
         field: CollectionField,
         into_: PartialModel,
         ranked_others: list[PartialModel],
+        update_operations: dict[Collection, MergeUpdateOperations],
     ) -> Any | None:
         if collection == "user":
             match field:
@@ -572,4 +588,6 @@ class UserMergeTogether(
                             f"Merge of user/{into_['id']}: Saml_id may not exist on any user except target."
                         )
                     return None
-        return super().handle_special_field(collection, field, into_, ranked_others)
+        return super().handle_special_field(
+            collection, field, into_, ranked_others, update_operations
+        )

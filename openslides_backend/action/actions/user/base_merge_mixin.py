@@ -94,7 +94,7 @@ class BaseMergeMixin(Action):
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel
-    ) -> int | str:
+    ) -> int | str | tuple[int | str, ...]:
         """Should be overridden by sub-classes to have helpful comparison values per collection"""
         return model["id"]  # should never merge models
 
@@ -104,6 +104,7 @@ class BaseMergeMixin(Action):
         field: CollectionField,
         into_: PartialModel,
         ranked_others: list[PartialModel],
+        update_operations: dict[Collection, MergeUpdateOperations],
     ) -> Any | None:
         """
         Should be overridden by sub-classes and return whatever should be entered
@@ -254,7 +255,9 @@ class BaseMergeMixin(Action):
             ):
                 changes[field] = sorted(change)
         for field in merge_modes.get("special_function", []):
-            result = self.handle_special_field(collection, field, into, ranked_others)
+            result = self.handle_special_field(
+                collection, field, into, ranked_others, update_operations
+            )
             if result is not None:
                 changes[field] = result
         for field, field_collection in merge_modes.get("deep_merge", {}).items():
