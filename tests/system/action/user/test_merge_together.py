@@ -1471,6 +1471,74 @@ class UserMergeTogether(BaseVoteTestCase):
             assert (date := data[fqid])["content"] == message
             self.assert_model_exists(fqid, {**date, "meeting_user_id": meeting_user_id})
 
-    def test_merge_on_normal_meeting_user_relation_fields(self) -> None:
-        # group_ids, structure_level_ids
-        pass
+    def test_merge_on_group_and_structure_level_ids(self) -> None:
+        setup_data = [
+            {"tall": [12, 15, 14], "small": [15]},
+            {"thin": [22], "fat": [23, 24]},
+            {"smart": [33], "dumb": [34]},
+        ]
+        data: dict[str, dict[str, Any]] = {
+            f"meeting/{meeting_id}": {
+                "structure_level_ids": list(
+                    range((meeting_id - 1) * 2 + 1, meeting_id * 2)
+                )
+            }
+            for meeting_id in range(1, 4)
+        }
+        structure_level_data: dict[str, dict[str, Any]] = {
+            f"structure_level/{(s_level_id := (meeting_id -1)*2 + s_level_index)}": {
+                "id": s_level_id,
+                "name": name,
+                "meeting_user_ids": meeting_user_ids,
+                "meeting_id": meeting_id,
+            }
+            for meeting_id, structure_levels in enumerate(setup_data, 1)
+            for s_level_index, (name, meeting_user_ids) in enumerate(
+                structure_levels.items(), 1
+            )
+        }
+        data.update(structure_level_data)
+        structure_level_ids_per_meeting_user = {
+            meeting_user_id: [
+                date["id"]
+                for date in structure_level_data.values()
+                if meeting_user_id in date["meeting_user_ids"]
+            ]
+            for meeting_user_id in [12, 14, 15, 22, 23, 24, 33, 34]
+        }
+        data.update(
+            {
+                f"meeting_user/{meeting_user_id}": {
+                    "structure_level_ids": structure_level_ids
+                }
+                for meeting_user_id, structure_level_ids in structure_level_ids_per_meeting_user.items()
+            }
+        )
+        self.set_models(data)
+
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+
+        self.assert_model_exists(
+            "meeting_user/12", {"structure_level_ids": [1], "group_ids": [1, 2]}
+        )
+        self.assert_model_exists(
+            "meeting_user/22", {"structure_level_ids": [3, 4], "group_ids": [4, 5]}
+        )
+        self.assert_model_exists(
+            "meeting_user/46", {"structure_level_ids": [5, 6], "group_ids": [8, 9]}
+        )
+
+        self.assert_model_exists("structure_level/1", {"meeting_user_ids": [12, 15]})
+        self.assert_model_exists("structure_level/2", {"meeting_user_ids": [15]})
+        self.assert_model_exists("structure_level/3", {"meeting_user_ids": [22]})
+        self.assert_model_exists("structure_level/4", {"meeting_user_ids": [22]})
+        self.assert_model_exists("structure_level/5", {"meeting_user_ids": [46]})
+        self.assert_model_exists("structure_level/6", {"meeting_user_ids": [46]})
+
+        self.assert_model_exists("group/1", {"meeting_user_ids": [12]})
+        self.assert_model_exists("group/2", {"meeting_user_ids": [12, 15]})
+        self.assert_model_exists("group/4", {"meeting_user_ids": [22]})
+        self.assert_model_exists("group/5", {"meeting_user_ids": [22]})
+        self.assert_model_exists("group/8", {"meeting_user_ids": [46]})
+        self.assert_model_exists("group/9", {"meeting_user_ids": [46]})
