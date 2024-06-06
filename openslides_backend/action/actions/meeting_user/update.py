@@ -23,6 +23,8 @@ class MeetingUserUpdate(MeetingUserHistoryMixin, UpdateAction, ExtendHistoryMixi
         "assignment_candidate_ids",
         "motion_working_group_speaker_ids",
         "motion_editor_ids",
+        "supported_motion_ids",
+        "chat_message_ids",
     ]
 
     model = MeetingUser()

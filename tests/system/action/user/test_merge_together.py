@@ -13,8 +13,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATI
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
 # TODO:
-# Test merging and deep merging of personal_notes
-# Test error field errors, require_equality errors, test special functions, all merges, all deep_merges
+# Test error field errors, require_equality errors, test special functions, all merges
 
 
 class UserMergeTogether(BaseVoteTestCase):
@@ -202,45 +201,7 @@ class UserMergeTogether(BaseVoteTestCase):
         }
         self.set_models(data)
 
-    # def create_poll(self, id_: int, content_object_id: str, meeting_id, group_ids: list[int]) -> None:
-    #     meeting_fqid = f"meeting/{meeting_id}"
-    #     meeting = self.datastore.get(meeting_fqid, ["poll_ids"])
-    #     content_object = self.datastore.get(content_object_id, ["poll_ids"])
-    #     self.set_models({
-    #         f"poll/{id_}": {
-    #             "content_object_id": content_object_id,
-    #             "title": f"Poll {id_}",
-    #             "type": "named",
-    #             "pollmethod": "YNA",
-    #             "type": Poll.TYPE_NAMED,
-    #             "onehundred_percent_base": "Y",
-    #             "state": Poll.STATE_CREATED,
-    #             "meeting_id": meeting_id,
-    #             "option_ids": list(range(id_*2, 2)),
-    #             "entitled_group_ids": group_ids,
-    #             "min_votes_amount": 1,
-    #             "max_votes_amount": 1,
-    #             "max_votes_per_option": 1,
-    #         },
-    #         **{
-    #             f"option/{option_id}":{"meeting_id": meeting_id, "poll_id": id_} for option_id in range(id_*2, 2)
-    #         },
-    #         meeting_fqid: {
-    #             "poll_ids": [*meeting.get("poll_ids", []), id_],
-    #         },
-    #         content_object_id: {
-    #             "poll_ids": [*content_object.get("poll_ids", []), id_],
-    #         }
-    #     })
-
-    # def test_not_implemented_with_superadmin(self) -> None:
-    #     user = self.assert_model_exists("user/2")
-    #     user.pop("meta_position")
-    #     response = self.request("user.merge_together", {"id": 2, "user_ids": []})
-    #     self.assert_status_code(response, 200)
-    #     self.assert_model_exists("user/2", user)
-
-    def test_configuration_up_to_date(self) -> None:
+    def test_merge_configuration_up_to_date(self) -> None:
         """
         This test checks, if the merge_together function has been properly
         updated to be able to handle the current data structure.
@@ -272,7 +233,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 broken.append(collection)
         assert broken == []
 
-    def test_empty_payload_fields(self) -> None:
+    def test_merge_empty_payload_fields(self) -> None:
         response = self.request("user.merge_together", {})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -280,7 +241,7 @@ class UserMergeTogether(BaseVoteTestCase):
             response.json["message"],
         )
 
-    def test_correct_permission(self) -> None:
+    def test_merge_correct_permission(self) -> None:
         user = self.assert_model_exists("user/1")
         user.pop("meta_position")
         self.user_id = self.create_user(
@@ -292,7 +253,7 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/1", user)
 
-    def test_missing_permission(self) -> None:
+    def test_merge_missing_permission(self) -> None:
         self.user_id = self.create_user("test")
         self.login(self.user_id)
         response = self.request("user.merge_together", {"id": 1, "user_ids": []})
@@ -492,6 +453,8 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_model_exists("committee/2", {"user_ids": [2]})
         self.assert_model_exists("committee/3", {"user_ids": [2], "manager_ids": [2]})
 
+    # TODO: Do this more exactly
+    # (maybe by duplicating this test class with all meetings set to archived)
     def test_merge_with_archived_meeting(self) -> None:
         self.set_models(
             {
@@ -832,7 +795,7 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 200)
         self.assert_merge_with_polls_correct(password)
 
-    def test_polls_with_subsequent_merges(self) -> None:
+    def test_merge_with_polls_and_subsequent_merges(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
         self.create_polls_with_correct_votes()
         response = self.request("user.merge_together", {"id": 3, "user_ids": [4]})
@@ -1083,18 +1046,18 @@ class UserMergeTogether(BaseVoteTestCase):
             collection, sub_collection, back_relation, expected
         )
 
-    def test_with_assignment_candidates(self) -> None:
+    def test_merge_with_assignment_candidates(self) -> None:
         self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
 
-    def test_with_motion_working_group_speakers(self) -> None:
+    def test_merge_with_motion_working_group_speakers(self) -> None:
         self.base_assignment_or_motion_model_test(
             "motion", "motion_working_group_speaker"
         )
 
-    def test_with_motion_editor(self) -> None:
+    def test_merge_with_motion_editor(self) -> None:
         self.base_assignment_or_motion_model_test("motion", "motion_editor")
 
-    def test_with_motion_submitters(
+    def test_merge_with_motion_submitters_and_supporters(
         self,
     ) -> None:
         data: dict[str, Any] = {}
@@ -1118,6 +1081,45 @@ class UserMergeTogether(BaseVoteTestCase):
             },
         )
         self.set_models(data)
+        supporter_ids_per_motion: dict[int, list[int]] = {
+            # meeting/1
+            1: [14],
+            2: [12],
+            3: [15],
+            4: [12, 14],
+            5: [14, 15],
+            # meeting/2
+            7: [23, 24],
+            # meeting/3
+            8: [33],
+            9: [34],
+            # meeting/4
+            10: [45],
+        }
+        motion_ids_per_supporter: dict[int, list[int]] = {
+            id_: [
+                motion_id
+                for motion_id, ids in supporter_ids_per_motion.items()
+                if id_ in ids
+            ]
+            for id_ in {
+                muser_id
+                for muser_ids in supporter_ids_per_motion.values()
+                for muser_id in muser_ids
+            }
+        }
+        self.set_models(
+            {
+                **{
+                    f"meeting_user/{id_}": {"supported_motion_ids": ids}
+                    for id_, ids in motion_ids_per_supporter.items()
+                },
+                **{
+                    f"motion/{id_}": {"supporter_meeting_user_ids": ids}
+                    for id_, ids in supporter_ids_per_motion.items()
+                },
+            }
+        )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
         self.assert_status_code(response, 200)
         expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
@@ -1159,7 +1161,40 @@ class UserMergeTogether(BaseVoteTestCase):
             "motion", "motion_submitter", "submitter_ids", expected
         )
 
-    def test_with_personal_notes(self) -> None:
+        def get_motions(*m_user_ids: int) -> list[int]:
+            return list(
+                {
+                    motion_id
+                    for muser_id in m_user_ids
+                    for motion_id in motion_ids_per_supporter.get(muser_id, [])
+                }
+            )
+
+        new_motion_ids_per_supporter: dict[int, list[int]] = {
+            12: get_motions(12, 14),
+            15: motion_ids_per_supporter[15],
+            22: get_motions(22, 23, 24),
+            46: get_motions(33, 34),
+            45: motion_ids_per_supporter[45],
+        }
+        for meeting_user_id, motion_ids in new_motion_ids_per_supporter.items():
+            self.assert_model_exists(
+                f"meeting_user/{meeting_user_id}", {"supported_motion_ids": motion_ids}
+            )
+        for motion_id in [1, 2, 4]:
+            self.assert_model_exists(
+                f"motion/{motion_id}", {"supporter_meeting_user_ids": [12]}
+            )
+        self.assert_model_exists("motion/3", {"supporter_meeting_user_ids": [15]})
+        self.assert_model_exists("motion/5", {"supporter_meeting_user_ids": [15, 12]})
+        self.assert_model_exists("motion/7", {"supporter_meeting_user_ids": [22]})
+        for motion_id in [8, 9]:
+            self.assert_model_exists(
+                f"motion/{motion_id}", {"supporter_meeting_user_ids": [46]}
+            )
+        self.assert_model_exists("motion/10", {"supporter_meeting_user_ids": [45]})
+
+    def test_merge_with_personal_notes(self) -> None:
         # create personal notes
         data: dict[str, dict[str, Any]] = {
             **{
@@ -1278,3 +1313,164 @@ class UserMergeTogether(BaseVoteTestCase):
                 "star": False,
             },
         )
+
+    def test_merge_on_chat_messages(self) -> None:
+        # chat_message_ids
+        def create_chat_messages(
+            data: dict[str, Any],
+            meeting_id: int,
+            messages_by_meeting_user_by_group: dict[
+                int, tuple[str, list[tuple[int, str]]]
+            ],
+            next_message_id: int = 1,
+        ) -> int:
+            first_message_id = next_message_id
+            chat_message_ids_by_meeting_user: dict[int, list[int]] = {}
+            for group_id, (
+                group_name,
+                messages,
+            ) in messages_by_meeting_user_by_group.items():
+                data[f"chat_group/{group_id}"] = {
+                    "name": group_name,
+                    "meeting_id": meeting_id,
+                    "chat_message_ids": list(
+                        range(next_message_id, next_message_id + len(messages))
+                    ),
+                }
+                for meeting_user_id, message in messages:
+                    data[f"chat_message/{next_message_id}"] = {
+                        "content": message,
+                        "created": next_message_id - first_message_id,
+                        "meeting_user_id": meeting_user_id,
+                        "chat_group_id": group_id,
+                        "meeting_id": meeting_id,
+                    }
+                    if meeting_user_id not in chat_message_ids_by_meeting_user:
+                        chat_message_ids_by_meeting_user[meeting_user_id] = []
+                    chat_message_ids_by_meeting_user[meeting_user_id].append(
+                        next_message_id
+                    )
+                    next_message_id += 1
+            data[f"meeting/{meeting_id}"] = {
+                "chat_group_ids": list(messages_by_meeting_user_by_group.keys()),
+                "chat_message_ids": list(range(first_message_id, next_message_id)),
+            }
+            for (
+                meeting_user_id,
+                message_ids,
+            ) in chat_message_ids_by_meeting_user.items():
+                data[f"meeting_user/{meeting_user_id}"] = {
+                    "chat_message_ids": message_ids
+                }
+            return next_message_id
+
+        data: dict[str, Any] = {}
+        next_id = create_chat_messages(
+            data,
+            1,
+            {
+                1: (
+                    "Idle chatter",
+                    [
+                        (14, "Hey guys!"),
+                        (15, "Hello."),
+                        (12, "Nice weather today, innit?"),
+                        (14, "Quite."),
+                    ],
+                ),
+                2: (
+                    "Gossip",
+                    [
+                        (14, "Have you guys heard?"),
+                        (15, "What?"),
+                        (14, "John Doe got married!"),
+                        (15, "What? To whom?"),
+                        (14, "Jane."),
+                        (15, "Cool."),
+                    ],
+                ),
+            },
+        )
+        next_id = create_chat_messages(
+            data,
+            3,
+            {
+                3: (
+                    "Serious conversation",
+                    [
+                        (34, "Could someone change the current projection?"),
+                        (33, "I'll do it!"),
+                        (34, "Thanks."),
+                    ],
+                )
+            },
+            next_id,
+        )
+        create_chat_messages(
+            data,
+            2,
+            {
+                4: (
+                    "Announcements",
+                    [(23, "Lunch will be served soon."), (24, "Lunch is served.")],
+                )
+            },
+            next_id,
+        )
+        self.set_models(data)
+
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+
+        self.assert_model_exists(
+            "chat_group/1", {"name": "Idle chatter", "chat_message_ids": [1, 2, 3, 4]}
+        )
+        self.assert_model_exists(
+            "chat_group/2", {"name": "Gossip", "chat_message_ids": [5, 6, 7, 8, 9, 10]}
+        )
+        self.assert_model_exists(
+            "chat_group/3",
+            {"name": "Serious conversation", "chat_message_ids": [11, 12, 13]},
+        )
+        self.assert_model_exists(
+            "chat_group/4", {"name": "Announcements", "chat_message_ids": [14, 15]}
+        )
+        self.assert_model_exists(
+            "meeting_user/12",
+            {"chat_message_ids": [1, 3, 4, 5, 7, 9], "user_id": 2, "meeting_id": 1},
+        )
+        self.assert_model_exists(
+            "meeting_user/22",
+            {"chat_message_ids": [14, 15], "user_id": 2, "meeting_id": 2},
+        )
+        self.assert_model_exists(
+            "meeting_user/46",
+            {"chat_message_ids": [11, 12, 13], "user_id": 2, "meeting_id": 3},
+        )
+        for message_id, meeting_user_id, message in [
+            # meeting 1
+            (1, 12, "Hey guys!"),
+            (2, 15, "Hello."),
+            (3, 12, "Nice weather today, innit?"),
+            (4, 12, "Quite."),
+            (5, 12, "Have you guys heard?"),
+            (6, 15, "What?"),
+            (7, 12, "John Doe got married!"),
+            (8, 15, "What? To whom?"),
+            (9, 12, "Jane."),
+            (10, 15, "Cool."),
+            # meeting 2
+            (14, 22, "Lunch will be served soon."),
+            (15, 22, "Lunch is served."),
+            # meeting 3
+            (11, 46, "Could someone change the current projection?"),
+            (12, 46, "I'll do it!"),
+            (13, 46, "Thanks."),
+        ]:
+            fqid = f"chat_message/{message_id}"
+            assert (date := data[fqid])["content"] == message
+            self.assert_model_exists(fqid, {**date, "meeting_user_id": meeting_user_id})
+
+    def test_merge_on_normal_meeting_user_relation_fields(self) -> None:
+        # group_ids, structure_level_ids
+        pass

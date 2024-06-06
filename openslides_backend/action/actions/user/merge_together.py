@@ -265,7 +265,11 @@ class UserMergeTogether(
                 },
             }
 
-            update_operations["personal_note"]["create"] = [payload for payload in update_operations["personal_note"]["create"] if payload.get("star") or payload.get("note")]
+            update_operations["personal_note"]["create"] = [
+                payload
+                for payload in update_operations["personal_note"]["create"]
+                if payload.get("star") or payload.get("note")
+            ]
 
             for collection, actions in create_deep_merge_actions_per_collection.items():
                 if len(to_create := update_operations[collection]["create"]):

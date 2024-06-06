@@ -110,7 +110,7 @@ class MeetingUserMergeMixin(
                 "merge": [
                     "supported_motion_ids",
                     "vote_delegations_from_ids",
-                    "chat_message_ids",  # cascade delete field
+                    "chat_message_ids",
                     "group_ids",
                     "structure_level_ids",
                 ],
