@@ -57,17 +57,7 @@ class SpeakerMergeMixin(BaseMergeMixin):
                             for id_ in meeting_user_ids
                         ]
                     ),
-                    Or(
-                        *[
-                            FilterOperator(time_field, "!=", None)
-                            for time_field in [
-                                "begin_time",
-                                "pause_time",
-                                "unpause_time",
-                                "total_pause",
-                            ]
-                        ]
-                    ),
+                    FilterOperator("begin_time", "!=", None),
                 ),
                 ["id", "meeting_id"],
             )

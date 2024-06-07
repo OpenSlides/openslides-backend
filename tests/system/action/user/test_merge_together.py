@@ -1611,3 +1611,297 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_model_exists("group/5", {"meeting_user_ids": [22]})
         self.assert_model_exists("group/8", {"meeting_user_ids": [46]})
         self.assert_model_exists("group/9", {"meeting_user_ids": [46]})
+
+    def create_speakers_for_test(self, allow_multiple_speakers: bool = False) -> None:
+        # TODO: shorter
+        data: dict[str, dict[str, Any]] = {
+            "meeting/1": {
+                "motion_block_ids": [1, 2],
+                "list_of_speakers_ids": [1, 2],
+                "point_of_order_category_ids": [1, 2],
+                "speaker_ids": [],
+                "structure_level_list_of_speakers_ids": [1, 2, 3, 4],
+                "structure_level_ids": [1, 2],
+            },
+            "meeting/3": {
+                "motion_block_ids": [3],
+                "list_of_speakers_ids": [3],
+                "point_of_order_category_ids": [3, 4],
+                "speaker_ids": [],
+                "structure_level_list_of_speakers_ids": [5, 6],
+                "structure_level_ids": [3, 4],
+            },
+            "motion_block/1": {
+                "title": "MB1",
+                "sequential_number": 1,
+                "meeting_id": 1,
+                "list_of_speakers_id": 1,
+            },
+            "motion_block/2": {
+                "title": "MB2",
+                "sequential_number": 2,
+                "meeting_id": 1,
+                "list_of_speakers_id": 2,
+            },
+            "motion_block/3": {
+                "title": "MB3",
+                "sequential_number": 1,
+                "meeting_id": 3,
+                "list_of_speakers_id": 3,
+            },
+            "structure_level/1": {
+                "name": "A",
+                "structure_level_list_of_speakers_ids": [1, 3],
+                "meeting_id": 1,
+            },
+            "structure_level/2": {
+                "name": "B",
+                "structure_level_list_of_speakers_ids": [2, 4],
+                "meeting_id": 1,
+            },
+            "structure_level/3": {
+                "name": "A",
+                "structure_level_list_of_speakers_ids": [5],
+                "meeting_id": 3,
+            },
+            "structure_level/4": {
+                "name": "B",
+                "structure_level_list_of_speakers_ids": [6],
+                "meeting_id": 3,
+            },
+            "list_of_speakers/1": {
+                "sequential_number": 1,
+                "content_object_id": "motion_block/1",
+                "meeting_id": 1,
+                "speaker_ids": [],
+                "structure_level_list_of_speakers_ids": [1, 2],
+            },
+            "list_of_speakers/2": {
+                "sequential_number": 2,
+                "content_object_id": "motion_block/2",
+                "meeting_id": 1,
+                "speaker_ids": [],
+                "structure_level_list_of_speakers_ids": [3, 4],
+            },
+            "list_of_speakers/3": {
+                "sequential_number": 1,
+                "content_object_id": "motion_block/3",
+                "meeting_id": 3,
+                "speaker_ids": [],
+                "structure_level_list_of_speakers_ids": [5, 6],
+            },
+            "point_of_order_category/1": {
+                "text": "A",
+                "rank": 1,
+                "meeting_id": 1,
+                "speaker_ids": [],
+            },
+            "point_of_order_category/2": {
+                "text": "B",
+                "rank": 2,
+                "meeting_id": 1,
+                "speaker_ids": [],
+            },
+            "point_of_order_category/3": {
+                "text": "A",
+                "rank": 1,
+                "meeting_id": 3,
+                "speaker_ids": [],
+            },
+            "point_of_order_category/4": {
+                "text": "B",
+                "rank": 2,
+                "meeting_id": 3,
+                "speaker_ids": [],
+            },
+            "structure_level_list_of_speakers/1": {
+                "structure_level_id": 1,
+                "list_of_speakers_id": 1,
+                "speaker_ids": [],
+                "initial_time": 5,
+                "remaining_time": 5,
+                "meeting_id": 1,
+            },
+            "structure_level_list_of_speakers/2": {
+                "structure_level_id": 2,
+                "list_of_speakers_id": 1,
+                "speaker_ids": [],
+                "initial_time": 5,
+                "remaining_time": 5,
+                "meeting_id": 1,
+            },
+            "structure_level_list_of_speakers/3": {
+                "structure_level_id": 1,
+                "list_of_speakers_id": 2,
+                "speaker_ids": [],
+                "initial_time": 5,
+                "remaining_time": 5,
+                "meeting_id": 1,
+            },
+            "structure_level_list_of_speakers/4": {
+                "structure_level_id": 2,
+                "list_of_speakers_id": 2,
+                "speaker_ids": [],
+                "initial_time": 5,
+                "remaining_time": 5,
+                "meeting_id": 1,
+            },
+            "structure_level_list_of_speakers/5": {
+                "structure_level_id": 3,
+                "list_of_speakers_id": 3,
+                "speaker_ids": [],
+                "initial_time": 5,
+                "remaining_time": 5,
+                "meeting_id": 3,
+            },
+            "structure_level_list_of_speakers/6": {
+                "structure_level_id": 4,
+                "list_of_speakers_id": 3,
+                "speaker_ids": [],
+                "initial_time": 5,
+                "remaining_time": 5,
+                "meeting_id": 3,
+            },
+        }
+        if allow_multiple_speakers:
+            for id_ in [1, 3]:
+                data[f"meeting/{id_}"][
+                    "list_of_speakers_allow_multiple_speakers"
+                ] = True
+
+        def add_speakers_to_list(
+            meeting_id: int,
+            meeting_user_ids: list[int],
+            list_id: int,
+            done: bool,
+            next_id: int = 1,
+        ) -> int:
+            def get_base_data(weight: int, was_paused: bool) -> dict[str, Any]:
+                meeting_user_id = meeting_user_ids[weight % len(meeting_user_ids)]
+                base_data = {
+                    "meeting_id": meeting_id,
+                    "list_of_speakers_id": list_id,
+                    "meeting_user_id": meeting_user_id,
+                }
+                if done:
+                    begin_time = weight * 10
+                    base_data = {"begin_time": begin_time, "end_time": begin_time + 5}
+                    if was_paused:
+                        base_data["total_pause"] = 2
+                return base_data
+
+            base_category_id = meeting_id
+            base_sllos_id = (list_id - 1) * 2 + 1
+            data.update(
+                {
+                    f"speaker/{next_id}": {
+                        **get_base_data(next_id + 3, False),
+                        "weight": next_id + 3,
+                    },
+                    f"speaker/{next_id+1}": {
+                        **get_base_data(next_id + 4, True),
+                        "weight": next_id + 4,
+                        "speech_state": "contribution",
+                    },
+                    f"speaker/{next_id+2}": {
+                        **get_base_data(next_id + 6, True),
+                        "weight": next_id + 6,
+                        "speech_state": "pro",
+                    },
+                    f"speaker/{next_id+3}": {
+                        **get_base_data(next_id + 5, False),
+                        "weight": next_id + 5,
+                        "speech_state": "contra",
+                    },
+                    f"speaker/{next_id+4}": {
+                        **get_base_data(next_id + 7, True),
+                        "weight": next_id + 7,
+                        "speech_state": "intervention",
+                    },
+                    f"speaker/{next_id+5}": {
+                        **get_base_data(next_id, False),
+                        "weight": next_id - 1,
+                        "speech_state": "interposed_question",
+                    },
+                    f"speaker/{next_id+6}": {
+                        **get_base_data(next_id + 6, True),
+                        "weight": next_id,
+                        "point_of_order": True,
+                    },
+                    f"speaker/{next_id+7}": {
+                        **get_base_data(next_id + 1, False),
+                        "weight": next_id + 1,
+                        "point_of_order": True,
+                        "point_of_order_category_id": base_category_id,
+                    },
+                    f"speaker/{next_id+8}": {
+                        **get_base_data(next_id + 2, True),
+                        "weight": next_id + 2,
+                        "point_of_order": True,
+                        "point_of_order_category_id": base_category_id + 1,
+                    },
+                    f"speaker/{next_id+9}": {
+                        **get_base_data(next_id + 9, False),
+                        "weight": next_id + 9,
+                        "structure_level_list_of_speakers_id": base_sllos_id,
+                    },
+                    f"speaker/{next_id+10}": {
+                        **get_base_data(next_id + 10, False),
+                        "weight": next_id + 10,
+                        "structure_level_list_of_speakers_id": base_sllos_id + 1,
+                    },
+                }
+            )
+            for fqid in [f"meeting/{meeting_id}", f"list_of_speakers/{list_id}"]:
+                data[fqid]["speaker_ids"].extend(range(next_id, next_id + 11))
+            data[f"point_of_order_category/{base_category_id}"]["speaker_ids"].append(
+                next_id + 7
+            )
+            data[f"point_of_order_category/{base_category_id + 1}"][
+                "speaker_ids"
+            ].append(next_id + 8)
+            data[f"structure_level_list_of_speakers/{base_sllos_id}"][
+                "speaker_ids"
+            ].append(next_id + 9)
+            data[f"structure_level_list_of_speakers/{base_sllos_id + 1}"][
+                "speaker_ids"
+            ].append(next_id + 10)
+            return next_id + 11
+
+        next_id = add_speakers_to_list(1, [12, 14, 15], 1, True)  # speakers 1 - 11
+        next_id = add_speakers_to_list(
+            1, [12, 14, 15], 1, False, next_id
+        )  # speakers 12 - 22
+        next_id = add_speakers_to_list(
+            1, [12, 14, 15], 2, False, next_id
+        )  # speakers 23 - 33
+        next_id = add_speakers_to_list(
+            3, [33, 34], 3, False, next_id
+        )  # speakers 34 - 44
+        next_id = add_speakers_to_list(
+            3, [33, 34], 3, False, next_id
+        )  # speakers 45 - 55
+        add_speakers_to_list(1, [15, 12, 14], 2, False, next_id)  # speakers 56 - 66
+        self.set_models(data)
+
+    def test_with_speakers_simple(self) -> None:
+        self.create_speakers_for_test()
+
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+        # TODO: Finish test
+
+    def test_with_speakers_multiple_speakers_allowed(self) -> None:
+        self.create_speakers_for_test(allow_multiple_speakers=True)
+
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+        # TODO: Finish test
+
+    def test_with_running_speaker(self) -> None:
+        self.create_speakers_for_test()
+        self.set_models({"speaker/37": {"begin_time": 370}})
+
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 400)
+        # TODO: Finish test
