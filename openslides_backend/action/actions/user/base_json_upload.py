@@ -155,14 +155,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             elif check_result == ResultType.NOT_FOUND or id_ == 0:
                 self.row_state = ImportState.NEW
         else:
-            # if not entry.get("username") or (
-            #     not isinstance(entry.get("username"), str)
-            #     and not entry.get("username", {}).get("value")
-            # ):
-            #     self.row_state = ImportState.ERROR
-            #     messages.append(
-            #         "Cannot generate username. Missing one of first_name, last_name " # or a unique member_number."
-            #     )
             if entry.get("first_name") or entry.get("last_name"):
                 names_and_email = self._names_and_email(entry)
                 if names_and_email != ("", "", ""):
@@ -356,7 +348,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         ):
             self.row_state = ImportState.ERROR
             messages.append(
-                "Cannot generate username. Missing one of first_name, last_name."  # or a unique member_number."
+                "Cannot generate username. Missing one of first_name, last_name."
             )
 
         if not entry.get("saml_id"):
@@ -384,8 +376,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         usernames: list[str] = []
         fix_usernames: list[str] = []
         payload_indices: list[int] = []
-        # memnum_payload_indices: list[int] = []
-        # memnum_usernames: list[str] = []
 
         for entry in data:
             if "username" not in entry.keys():
@@ -393,22 +383,11 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                     username = saml_id
                 else:
                     username = self.generate_username(entry)
-                # if (
-                #     not username
-                #     and (memnum := entry.get("member_number"))
-                #     and not self.datastore.exists(
-                #         "user", FilterOperator("username", "=", memnum)
-                #     )
-                # ):
-                #     memnum_usernames.append(memnum)
-                #     memnum_payload_indices.append(entry["payload_index"])
-                # else:
                 usernames.append(username)
                 payload_indices.append(entry["payload_index"])
             else:
                 fix_usernames.append(entry["username"])
 
-        # usernames = self.generate_usernames(usernames, fix_usernames + memnum_usernames)
         usernames = self.generate_usernames(usernames, fix_usernames)
 
         for index, username in zip(payload_indices, usernames):
@@ -417,12 +396,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 "info": ImportState.GENERATED,
             }
             self.username_lookup.add_item(data[index])
-        # for index, username in zip(memnum_payload_indices, memnum_usernames):
-        #     data[index]["username"] = {
-        #         "value": username if username not in fix_usernames else "",
-        #         "info": ImportState.GENERATED,
-        #     }
-        #     self.username_lookup.add_item(data[index])
         return data
 
     def handle_default_password(self, entry: dict[str, Any]) -> None:
