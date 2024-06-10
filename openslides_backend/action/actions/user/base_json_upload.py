@@ -381,6 +381,12 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             if "username" not in entry.keys():
                 if saml_id := entry.get("saml_id"):
                     username = saml_id
+                elif not (entry.get("first_name", "") or entry.get("last_name", "")):
+                    entry["username"] = {
+                        "value": "",
+                        "info": ImportState.GENERATED,
+                    }
+                    continue
                 else:
                     username = self.generate_username(entry)
                 usernames.append(username)

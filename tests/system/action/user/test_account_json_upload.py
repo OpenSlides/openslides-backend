@@ -988,6 +988,43 @@ class AccountJsonUpload(BaseActionTestCase):
         assert data["username"] == {"info": "generated", "value": ""}
         assert data["member_number"] == {"info": "done", "value": "M3MNUM"}
 
+    def test_json_upload_2_new_accounts_with_only_member_number_error(
+        self,
+    ) -> None:
+        self.create_user("M3MNUM")
+        response = self.request(
+            "account.json_upload",
+            {
+                "data": [
+                    {
+                        "member_number": "M3MNUM",
+                    },
+                    {
+                        "member_number": "M4MNUM",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.ERROR
+        assert import_preview["name"] == "account"
+        for i in range(0, 2):
+            assert import_preview["result"]["rows"][i]["state"] == ImportState.ERROR
+            assert import_preview["result"]["rows"][i]["messages"] == [
+                "Cannot generate username. Missing one of first_name, last_name."
+            ]
+            data = import_preview["result"]["rows"][i]["data"]
+            assert data["username"] == {"info": "generated", "value": ""}
+        assert import_preview["result"]["rows"][0]["data"]["member_number"] == {
+            "info": "done",
+            "value": "M3MNUM",
+        }
+        assert import_preview["result"]["rows"][1]["data"]["member_number"] == {
+            "info": "done",
+            "value": "M4MNUM",
+        }
+
     def test_json_upload_dont_recognize_empty_name_and_email(self) -> None:
         self.set_models(
             {
