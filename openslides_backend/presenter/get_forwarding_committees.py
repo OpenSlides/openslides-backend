@@ -38,11 +38,11 @@ class GetForwardingCommittees(BasePresenter):
         if not has_perm(
             self.datastore,
             self.user_id,
-            Permissions.Motion.CAN_MANAGE,
+            Permissions.Motion.CAN_MANAGE_METADATA,
             self.data["meeting_id"],
         ):
             msg = "You are not allowed to perform presenter get_forwarding_committees"
-            msg += f" Missing permission: {Permissions.Motion.CAN_MANAGE}"
+            msg += f" Missing permission: {Permissions.Motion.CAN_MANAGE_METADATA}"
             raise PermissionDenied(msg)
 
         meeting = self.datastore.get(

@@ -103,6 +103,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "committee_management_ids": [78],
                 "meeting_id": 111,
                 "group_ids": [111],
+                "member_number": "abcdefg1234567",
             },
         )
         self.assert_status_code(response, 200)
@@ -116,6 +117,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_password": "password",
                 "committee_management_ids": [78],
                 "meeting_user_ids": [1],
+                "member_number": "abcdefg1234567",
             },
         )
         self.assertCountEqual(user2.get("committee_ids", []), [78, 79])
@@ -342,6 +344,30 @@ class UserCreateActionTest(BaseActionTestCase):
         assert (
             response.json["message"] == "A user with the username admin already exists."
         )
+
+    def test_member_number_already_exists(self) -> None:
+        response = self.request(
+            "user.create",
+            {"username": "user1", "member_number": "14m4m3m832"},
+        )
+        self.assert_status_code(response, 200)
+        response = self.request(
+            "user.create",
+            {"username": "user2", "member_number": "14m4m3m832"},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "A user with the member_number 14m4m3m832 already exists."
+        )
+
+    def test_member_number_none(self) -> None:
+        response = self.request(
+            "user.create",
+            {"username": "user2", "member_number": None},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"member_number": None})
 
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
         self.set_models(
