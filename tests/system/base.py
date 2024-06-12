@@ -92,14 +92,16 @@ class BaseSystemTestCase(TestCase):
             },
         )
         self.client = self.create_client(self.update_vote_service_auth_data)
+        self.client.auth = self.auth
         if self.auth_data:
             # Reuse old login data to avoid a new login request
             self.client.update_auth_data(self.auth_data)
         else:
             # Login and save copy of auth data for all following tests
-            self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
+            self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD, 1)
             BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.anon_client = self.create_client()
+        self.anon_client.auth = self.auth
 
     def set_thread_watch_timeout(self, timeout: float) -> None:
         """
@@ -163,7 +165,7 @@ class BaseSystemTestCase(TestCase):
         """
         user = self.get_model(f"user/{user_id}")
         assert user.get("default_password")
-        self.client.login(user["username"], user["default_password"])
+        self.client.login(user["username"], user["default_password"], user_id)
 
     def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
         self.vote_service.set_authentication(
@@ -188,10 +190,14 @@ class BaseSystemTestCase(TestCase):
         write_request = self.get_write_request(
             self.get_create_events(fqid, data, deleted)
         )
+        for event in write_request.events:
+            self.auth.createUpdateUserSession(event)
         self.datastore.write(write_request)
 
     def update_model(self, fqid: str, data: dict[str, Any]) -> None:
         write_request = self.get_write_request(self.get_update_events(fqid, data))
+        for event in write_request.events:
+            self.auth.createUpdateUserSession(event)
         self.datastore.write(write_request)
 
     def get_create_events(
@@ -226,6 +232,8 @@ class BaseSystemTestCase(TestCase):
             else:
                 events.extend(self.get_create_events(fqid, model))
         write_request = self.get_write_request(events)
+        for event in write_request.events:
+            self.auth.createUpdateUserSession(event)
         self.datastore.write(write_request)
 
     def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
