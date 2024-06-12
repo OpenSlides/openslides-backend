@@ -1054,6 +1054,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         is_delegator: bool = False,
         perm: Permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_in_list_of_speakers",
+        disable_delegations: bool = False,
     ) -> None:
         self.create_meeting(1)
         self.set_models(self.test_models)
@@ -1063,6 +1064,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting_user/1": {"user_id": 1, "meeting_id": 1},
                 "meeting/1": {
                     "meeting_user_ids": [1, 17],
+                    **(
+                        {}
+                        if disable_delegations
+                        else {"users_enable_vote_delegations": True}
+                    ),
                     delegator_setting: True,
                 },
             }
@@ -1113,6 +1119,39 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     ) -> None:
         self.create_delegator_test_data(
             is_delegator=True, perm=Permissions.ListOfSpeakers.CAN_MANAGE
+        )
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_delegator_setting_with_no_delegation_set_others_delegations_turned_off(
+        self,
+    ) -> None:
+        self.create_delegator_test_data(disable_delegations=True)
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action speaker.create. Missing Permission: list_of_speakers.can_manage"
+        )
+
+    def test_delegator_setting_with_delegation_delegations_turned_off(self) -> None:
+        self.create_delegator_test_data(is_delegator=True, disable_delegations=True)
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_delegator_setting_with_motion_manager_delegation_delegations_turned_off(
+        self,
+    ) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True,
+            perm=Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+            disable_delegations=True,
         )
         response = self.request(
             "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}

@@ -196,6 +196,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         is_delegator: bool = False,
         perm: Permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_in_list_of_speakers",
+        disable_delegations: bool = False,
     ) -> None:
         self.create_meeting(1)
         self.user_id = 7
@@ -207,6 +208,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "meeting_user_ids": [7],
                     delegator_setting: True,
+                    **(
+                        {}
+                        if disable_delegations
+                        else {"users_enable_vote_delegations": True}
+                    ),
                 },
                 "group/1": {"meeting_user_ids": [7]},
             }
@@ -237,6 +243,11 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
             response.json["message"]
             == "You are not allowed to perform action speaker.delete. Missing Permission: list_of_speakers.can_manage"
         )
+
+    def test_delegator_setting_with_delegation_delegations_turned_off(self) -> None:
+        self.create_delegator_test_data(is_delegator=True, disable_delegations=True)
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
 
     def test_delegator_setting_with_motion_manager_delegation(
         self,
