@@ -25,12 +25,13 @@ from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDelet
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
 from ..personal_note.update import PersonalNoteUpdateAction
+from ..speaker.create_for_merge import SpeakerCreateForMerge
 from ..speaker.delete import SpeakerDeleteAction
 from ..speaker.update import SpeakerUpdate
-from ..user.poll_update_entitled import PollUpdateEntitledAction
 from .base_merge_mixin import MergeUpdateOperations
 from .delete import UserDelete
 from .merge_mixins import MeetingUserMergeMixin
+from .poll_update_entitled import PollUpdateEntitledAction
 from .update import UserUpdate
 from .user_mixins import UserMixin
 
@@ -197,10 +198,11 @@ class UserMergeTogether(
             raise BadCodingException("Calculated wrong amount of user payloads")
         main_user_payload = update_operations["user"]["update"][0]
         user_id = main_user_payload["id"]
+        meeting_user_create_payloads = update_operations["meeting_user"]["create"]
         if len(
             update_payloads := [
                 *update_operations["meeting_user"]["update"],
-                *update_operations["meeting_user"]["create"],
+                *meeting_user_create_payloads,
             ]
         ):
             meeting_user_via_user_payloads = []
@@ -267,12 +269,14 @@ class UserMergeTogether(
                 "motion_submitter": {
                     "update": MotionSubmitterUpdateAction,
                     "create": MotionSubmitterCreateAction,
-                    "update_payload_fields": ["weight"],
                 },
                 "personal_note": {
                     "update": PersonalNoteUpdateAction,
                     "create": PersonalNoteCreateAction,
-                    "update_payload_fields": ["note", "star"],
+                },
+                "speaker": {
+                    "update": SpeakerUpdate,
+                    "create": SpeakerCreateForMerge,
                 },
             }
 
@@ -295,17 +299,21 @@ class UserMergeTogether(
                     )
                 to_update: list[dict[str, Any]] = []
                 for payload in update_operations[collection]["update"]:
-                    data = {"id": payload["id"]}
-                    for field in actions.get("update_payload_fields", []):
-                        if field in payload:
-                            data[field] = payload[field]
-                    if len(data) > 1:
-                        to_update.append(data)
+                    if len(payload) > 1:
+                        to_update.append(payload)
                 if len(to_update):
                     self.execute_other_action(
                         actions["update"],
                         to_update,
                     )
+
+            if len(to_delete := update_operations["speaker"]["delete"]):
+                self.execute_other_action(
+                    SpeakerDeleteAction,
+                    [{"id": id_} for id_ in to_delete],
+                )
+
+            for collection in create_deep_merge_actions_per_collection:
                 update_operations.pop(collection)
 
             actions_per_collection: dict[str, dict[str, type[Action]]] = {
@@ -321,10 +329,6 @@ class UserMergeTogether(
                     "update": MotionWorkingGroupSpeakerUpdateAction,
                     "delete": MotionWorkingGroupSpeakerDeleteAction,
                 },
-                "speaker": {
-                    "update": SpeakerUpdate,
-                    "delete": SpeakerDeleteAction,
-                },
             }
 
             for collection, actions in actions_per_collection.items():
@@ -339,8 +343,6 @@ class UserMergeTogether(
                         [{"id": id_} for id_ in to_delete],
                     )
                 update_operations.pop(collection)
-
-            # TODO: Handle updates and deletes on meeting_user sub-models
 
             if len(to_delete := update_operations["user"]["delete"]):
                 self.execute_other_action(

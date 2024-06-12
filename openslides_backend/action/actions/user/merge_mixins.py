@@ -32,17 +32,20 @@ class SpeakerMergeMixin(BaseMergeMixin):
                     "total_pause",
                     "meeting_user_id",
                     "meeting_id",
-                    "note",
-                    "point_of_order_category_id",
-                    "structure_level_list_of_speakers_id",
                     "point_of_order",
-                    "speech_state",
                     "list_of_speakers_id",
                 ],
                 "lowest": [
                     "weight",
                 ],
+                "require_equality_absolute": [
+                    "speech_state",
+                    "point_of_order_category_id",
+                    "structure_level_list_of_speakers_id",
+                    "note",
+                ],
             },
+            "meeting_user_id",
         )
 
     def check_speakers(self, meeting_user_ids: list[int]) -> None:
@@ -66,7 +69,7 @@ class SpeakerMergeMixin(BaseMergeMixin):
                     str(speaker["meeting_id"]) for speaker in running_speakers.values()
                 }
                 raise ActionException(
-                    f"Speakers {', '.join([str(key) for key in running_speakers.keys()])} are still running in meeting(s) {', '.join(meeting_ids)}"
+                    f"Speaker(s) {', '.join([str(key) for key in running_speakers.keys()])} are still running in meeting(s) {', '.join(meeting_ids)}"
                 )
 
 
@@ -81,6 +84,7 @@ class AssignmentCandidateMergeMixin(BaseMergeMixin):
                     "weight",
                 ],
             },
+            "meeting_user_id",
         )
 
 
@@ -96,14 +100,7 @@ class MotionSubmitterMergeMixin(BaseMergeMixin):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
-            MotionSubmitter,
-            {
-                "ignore": ["meeting_user_id"],
-                "lowest": [
-                    "weight",
-                ],
-                "priority": ["meeting_id", "motion_id"],
-            },
+            MotionSubmitter, motion_meeting_user_list_item_groups, "meeting_user_id"
         )
 
 
@@ -111,8 +108,7 @@ class MotionEditorMergeMixin(BaseMergeMixin):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.add_collection_field_groups(
-            MotionEditor,
-            motion_meeting_user_list_item_groups,
+            MotionEditor, motion_meeting_user_list_item_groups, "meeting_user_id"
         )
 
 
@@ -122,6 +118,7 @@ class MotionWorkingGroupSpeakerMergeMixin(BaseMergeMixin):
         self.add_collection_field_groups(
             MotionWorkingGroupSpeaker,
             motion_meeting_user_list_item_groups,
+            "meeting_user_id",
         )
 
 
@@ -131,10 +128,11 @@ class PersonalNoteMergeMixin(BaseMergeMixin):
         self.add_collection_field_groups(
             PersonalNote,
             {
-                "ignore": ["meeting_user_id"],
-                "priority": ["note", "content_object_id", "meeting_id"],
+                "ignore": ["meeting_user_id", "content_object_id", "meeting_id"],
+                "priority": ["note"],
                 "highest": ["star"],
             },
+            "meeting_user_id",
         )
 
 
@@ -173,13 +171,14 @@ class MeetingUserMergeMixin(
                     "assignment_candidate_ids": "assignment_candidate",
                     "motion_editor_ids": "motion_editor",
                     "motion_working_group_speaker_ids": "motion_working_group_speaker",
-                    "speaker_ids": "speaker",
                 },
                 "deep_create_merge": {
                     "motion_submitter_ids": "motion_submitter",
                     "personal_note_ids": "personal_note",
+                    "speaker_ids": "speaker",
                 },
             },
+            "user_id",
         )
 
     def get_merge_comparison_hash(
@@ -211,11 +210,7 @@ class MeetingUserMergeMixin(
                         model.get(field, "")
                         for field in [
                             "list_of_speakers_id",
-                            "speech_state",
                             "point_of_order",
-                            "structure_level_list_of_speakers_id",
-                            "point_of_order_category_id",
-                            "note",
                         ]
                     ]
                 )

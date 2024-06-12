@@ -25,6 +25,7 @@ class MeetingUserUpdate(MeetingUserHistoryMixin, UpdateAction, ExtendHistoryMixi
         "motion_editor_ids",
         "supported_motion_ids",
         "chat_message_ids",
+        "speaker_ids",
     ]
 
     model = MeetingUser()

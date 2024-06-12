@@ -16,6 +16,7 @@ class MergeModeDict(TypedDict, total=False):
     # error if all examples of the field that are set aren't the same,
     # otherwise use that value
     require_equality: list[CollectionField]
+    require_equality_absolute: list[CollectionField]
     # use highest value among users
     highest: list[CollectionField]
     # use lowest value among users
@@ -46,7 +47,7 @@ class BaseMergeMixin(Action):
         super().__init__(*args, **kwargs)
         self._collection_field_groups: dict[Collection, MergeModeDict] = {}
         self._all_collection_fields: dict[Collection, list[CollectionField]] = {}
-        # self._collection_operations: dict[Collection, MergeOperations] = {}
+        self._collection_back_fields: dict[Collection, str] = {}
 
     def mass_prefetch_for_merge(
         self, collection_to_ids: dict[Collection, list[int]]
@@ -81,6 +82,7 @@ class BaseMergeMixin(Action):
         Class: type[Model],
         # operations: MergeOperations,
         field_groups: MergeModeDict,
+        back_field: str = "",
     ) -> None:
         """Should be called once in __init__ of every sub-class"""
         collection = Class.__dict__["collection"]
@@ -90,7 +92,8 @@ class BaseMergeMixin(Action):
             for i in Class.__dict__.keys()
             if i[:1] != "_" and i not in ["collection", "verbose_name", "id"]
         ]
-        # self._collection_operations[collection] = operations
+        if back_field:
+            self._collection_back_fields[collection] = back_field
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel
@@ -153,8 +156,8 @@ class BaseMergeMixin(Action):
                     merge_lists[hash_val].append(id_)
             else:
                 merge_lists[hash_val] = [id_]
+        merge_lists = {li[0]: li for li in merge_lists.values()}
         new_reference_ids: list[int] = []
-        # payloads: list[dict[str, Any]] = []
         for to_merge in merge_lists.values():
             if len(to_merge) > 1:
                 as_create = with_create and to_merge[0] not in into.get(field, [])
@@ -165,16 +168,24 @@ class BaseMergeMixin(Action):
                 )
                 if as_create:
                     to_merge_others = [to_merge_into, *to_merge_others]
-                    to_merge_into = {}
                 result = self.merge_by_rank(
                     field_collection,
-                    to_merge_into,
+                    None if as_create else to_merge_into,
                     to_merge_others,
                     {},
                     update_operations,
                 )
                 if as_create:
                     result.pop(field, [])
+                    for ignore_field in self._collection_field_groups[
+                        field_collection
+                    ].get("ignore", []):
+                        if (
+                            val := to_merge_into.get(ignore_field)
+                        ) is not None and ignore_field != (
+                            self._collection_back_fields.get(field_collection)
+                        ):
+                            result[ignore_field] = val
                     update_operations[field_collection]["create"].append(result)
                 else:
                     result["id"] = to_merge[0]
@@ -186,11 +197,9 @@ class BaseMergeMixin(Action):
                         [],
                         field_models,
                     )
-                    for rem_field in self._collection_field_groups[
-                        field_collection
-                    ].get("ignore", []):
-                        model.pop(rem_field, None)
                     model.pop("id")
+                    if back := self._collection_back_fields.get(field_collection):
+                        model.pop(back, 0)
                     update_operations[field_collection]["create"].append(model)
                     update_operations[field_collection]["delete"].append(to_merge[0])
             if not with_create:
@@ -202,29 +211,31 @@ class BaseMergeMixin(Action):
     def merge_by_rank(
         self,
         collection: Collection,
-        into: PartialModel,
+        into: PartialModel | None,
         ranked_others: list[PartialModel],
         instance: dict[str, Any],
         update_operations: dict[Collection, MergeUpdateOperations],
         should_create: bool = False,
     ) -> dict[str, Any]:
+        into_dict = into or {}
+        main_id = into_dict.get("id") or ranked_others[0]["id"]
         merge_modes = self._collection_field_groups[collection]
         changes: dict[str, Any] = {}
         for field in merge_modes.get("error", []):
-            for model in [into, *ranked_others]:
+            for model in [into_dict, *ranked_others]:
                 if model.get(field) is not None:
                     raise ActionException(
                         f"Cannot merge {collection} models that have {field} set: Problem in {collection}/{model['id']}"
                     )
         for field in merge_modes.get("priority", []):
-            for model in [into, *ranked_others]:
+            for model in [into_dict, *ranked_others]:
                 if date := model.get(field):
                     changes[field] = date
                     break
         for field in merge_modes.get("highest", []):
             comp_data = [
                 date
-                for model in [into, *ranked_others]
+                for model in [into_dict, *ranked_others]
                 if (date := model.get(field)) is not None
             ]
             if len(comp_data):
@@ -232,7 +243,7 @@ class BaseMergeMixin(Action):
         for field in merge_modes.get("lowest", []):
             comp_data = [
                 date
-                for model in [into, *ranked_others]
+                for model in [into_dict, *ranked_others]
                 if (date := model.get(field)) is not None
             ]
             if len(comp_data):
@@ -241,46 +252,62 @@ class BaseMergeMixin(Action):
             eq_data = {
                 date
                 for model in [into, *ranked_others]
-                if (date := model.get(field)) is not None
+                if model is not None and (date := model.get(field)) is not None
             }
             if (length := len(eq_data)) == 1:
                 changes[field] = eq_data.pop()
             elif length > 1:
                 raise ActionException(
-                    f"Differing values in field {field} when merging into {collection}/{into['id']}"
+                    f"Differing values in field {field} when merging into {collection}/{main_id}"
+                )
+        for field in merge_modes.get("require_equality_absolute", []):
+            eq_data = {
+                model.get(field)
+                for model in [into, *ranked_others]
+                if model is not None
+            }
+            if (length := len(eq_data)) == 1:
+                changes[field] = eq_data.pop()
+            elif length > 1:
+                raise ActionException(
+                    f"Differing values in field {field} when merging into {collection}/{main_id}"
                 )
         for field in merge_modes.get("merge", []):
             if change := self.execute_merge_on_reference_fields(
-                field, into, ranked_others
+                field, into_dict, ranked_others
             ):
                 changes[field] = sorted(change)
         for field in merge_modes.get("special_function", []):
             result = self.handle_special_field(
-                collection, field, into, ranked_others, update_operations
+                collection, field, into_dict, ranked_others, update_operations
             )
             if result is not None:
                 changes[field] = result
         for field, field_collection in merge_modes.get("deep_merge", {}).items():
             if change := self.execute_deep_merge_on_reference_fields(
-                field_collection, field, into, ranked_others, update_operations
+                field_collection, field, into_dict, ranked_others, update_operations
             ):
                 changes[field] = change
         for field, field_collection in merge_modes.get("deep_create_merge", {}).items():
             self.execute_deep_merge_on_reference_fields(
-                field_collection, field, into, ranked_others, update_operations, True
+                field_collection,
+                field,
+                into_dict,
+                ranked_others,
+                update_operations,
+                True,
             )
         update_operations[collection]["delete"].extend(
             [
                 model["id"]
                 for model in (
-                    [into, *ranked_others] if should_create else ranked_others
+                    [into_dict, *ranked_others] if should_create else ranked_others
                 )
             ]
         )
         changes.update(
             {key: value for key, value in instance.items() if key != "user_ids"}
         )
-        # TODO: Check if data is valid
         return changes
 
     def get_merge_by_rank_models(
