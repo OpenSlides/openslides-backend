@@ -59,6 +59,8 @@ class UserMergeTogether(
             "gender",
             "email",
             "default_vote_weight",
+            "pronoun",
+            "member_number",
         ],
         additional_required_fields={
             "user_ids": {
@@ -145,11 +147,11 @@ class UserMergeTogether(
         return super().get_updated_instances(action_data)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        # TODO: Is this stuff necessary
         update_operations: dict[Collection, MergeUpdateOperations] = {
             coll: {"create": [], "update": [], "delete": []}
             for coll in self._collection_field_groups
         }
+        # TODO: Is this stuff necessary
         user_data, meeting_users = self._get_user_data(instance["id"])
         meeting_user_data_by_meeting_id: dict[int, PartialModel] = {}
         for meeting_user in meeting_users.values():

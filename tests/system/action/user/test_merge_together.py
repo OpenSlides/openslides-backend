@@ -15,7 +15,6 @@ from tests.system.action.poll.test_vote import BaseVoteTestCase
 
 # TODO:
 # Test error field, require_equality and special function errors and all other errors
-# Proper delegation tests (i.e. multiple delegations correctly done)
 
 
 class UserMergeTogether(BaseVoteTestCase):
@@ -82,6 +81,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "committee_ids": list(range(1, num_committees + 1)),
                 "user_ids": list(meeting_data_by_user_id.keys()),
                 "enable_electronic_voting": True,
+                "genders": ["male", "female", "diverse", "non-binary"],
             },
             **{
                 fqid_from_collection_and_id("committee", id_): {
@@ -345,8 +345,7 @@ class UserMergeTogether(BaseVoteTestCase):
             response.json["message"],
         )
 
-    def test_merge_with_user_fields(self) -> None:
-        password = self.assert_model_exists("user/2")["password"]
+    def setup_complex_user_fields(self) -> None:
         self.set_models(
             {
                 "committee/1": {"manager_ids": [2, 5]},
@@ -431,6 +430,10 @@ class UserMergeTogether(BaseVoteTestCase):
                 },
             }
         )
+
+    def test_merge_with_user_fields(self) -> None:
+        password = self.assert_model_exists("user/2")["password"]
+        self.setup_complex_user_fields()
         response = self.request(
             "user.merge_together", {"id": 2, "user_ids": [3, 4, 5, 6]}
         )
@@ -440,6 +443,7 @@ class UserMergeTogether(BaseVoteTestCase):
             {
                 "organization_management_level": "superadmin",
                 "is_active": True,
+                "is_physical_person": True,
                 "username": "user2",
                 "meeting_ids": [1, 2, 3, 4],
                 "committee_ids": [1, 2, 3],
@@ -522,6 +526,85 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_model_exists("committee/2", {"user_ids": [2]})
         self.assert_model_exists("committee/3", {"user_ids": [2], "manager_ids": [2]})
 
+    def test_with_custom_fields_complex(self) -> None:
+        self.setup_complex_user_fields()
+        response = self.request(
+            "user.merge_together",
+            {
+                "id": 2,
+                "user_ids": [3, 4, 5, 6],
+                "username": "This",
+                "title": "is",
+                "first_name": "completely",
+                "last_name": "new data",
+                "pronoun": "for",
+                "member_number": "this",
+                "default_password": "now",
+                "gender": "female",
+                "email": "user.in@this.organization",
+                "is_active": False,
+                "is_physical_person": None,
+                "default_vote_weight": "0.424242",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "This",
+                "title": "is",
+                "first_name": "completely",
+                "last_name": "new data",
+                "pronoun": "for",
+                "member_number": "this",
+                "default_password": "now",
+                "gender": "female",
+                "email": "user.in@this.organization",
+                "is_active": False,
+                "is_physical_person": None,
+                "default_vote_weight": "0.424242",
+            },
+        )
+
+    def test_with_custom_fields_simple(self) -> None:
+        response = self.request(
+            "user.merge_together",
+            {
+                "id": 2,
+                "user_ids": [3, 4, 5, 6],
+                "username": "This",
+                "title": "is",
+                "first_name": "completely",
+                "last_name": "new data",
+                "pronoun": "for",
+                "member_number": "this",
+                "default_password": "now",
+                "gender": "female",
+                "email": "user.in@this.organization",
+                "is_active": False,
+                "is_physical_person": None,
+                "default_vote_weight": "0.424242",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "This",
+                "title": "is",
+                "first_name": "completely",
+                "last_name": "new data",
+                "pronoun": "for",
+                "member_number": "this",
+                "default_password": "now",
+                "gender": "female",
+                "email": "user.in@this.organization",
+                "is_active": False,
+                "is_physical_person": None,
+                "default_vote_weight": "0.424242",
+            },
+        )
+
     # TODO: Do this more exactly
     # (maybe by duplicating this test class with all meetings set to archived)
     def test_merge_with_archived_meeting(self) -> None:
@@ -541,6 +624,23 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_exists("user/2")
         self.assert_model_exists("user/3")
+
+    def test_with_multiple_delegations(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/15": {"vote_delegated_to_id": 14},
+                "meeting_user/14": {"vote_delegations_from_ids": [15]},
+                "meeting_user/23": {"vote_delegated_to_id": 24},
+                "meeting_user/24": {"vote_delegations_from_ids": [23]},
+                "meeting_user/33": {"vote_delegations_from_ids": [34]},
+                "meeting_user/34": {"vote_delegated_to_id": 33},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting_user/12", {"vote_delegations_from_ids": [15]})
+        self.assert_model_exists("meeting_user/22", {"vote_delegations_from_ids": [23]})
+        self.assert_model_exists("meeting_user/46", {"vote_delegated_to_id": 33})
 
     def set_up_polls_for_merge(self) -> None:
         self.set_models(
