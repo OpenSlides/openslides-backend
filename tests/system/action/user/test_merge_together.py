@@ -13,9 +13,6 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
-# TODO:
-# Test error field, require_equality and special function errors and all other errors
-
 
 class UserMergeTogether(BaseVoteTestCase):
     def setUp(self) -> None:
@@ -342,6 +339,57 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Merge of user/2: Saml_id may not exist on any user except target.",
+            response.json["message"],
+        )
+
+    def test_merge_is_demo_user_error(self) -> None:
+        self.set_models({"user/2": {"is_demo_user": True}})
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot merge user models that have is_demo_user set: Problem in user/2",
+            response.json["message"],
+        )
+
+    def test_merge_forwarding_committee_ids_error(self) -> None:
+        self.set_models(
+            {
+                "committee/3": {"forwarding_user_id": 3},
+                "user/3": {"forwarding_committee_ids": [3]},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot merge user models that have forwarding_committee_ids set: Problem in user/3",
+            response.json["message"],
+        )
+
+    def test_merge_saml_id_error(self) -> None:
+        self.set_models({"user/3": {"saml_id": "SAML"}})
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Merge of user/2: Saml_id may not exist on any user except target.",
+            response.json["message"],
+        )
+
+    def test_merge_saml_id_no_error(self) -> None:
+        self.set_models({"user/2": {"saml_id": "SAML"}})
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+
+    def test_merge_member_number_error(self) -> None:
+        self.set_models(
+            {
+                "user/2": {"member_number": "MEMNUM"},
+                "user/3": {"member_number": "M3MNUM"},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Differing values in field member_number when merging into user/2",
             response.json["message"],
         )
 

@@ -16,9 +16,10 @@
     gender: string;
     email: string;
     default_vote_weight: decimal(6);
+    pronoun: string;
+    member_number: string;
 }
 ```
-    #TODO: Fill in some other account-side user.update fields?
 
 ## Action
 The action is some kind of [user.update](user.update.md): It updates the primary user fields (if they are empty) with the user-model values of the other users in the order that their ids appear in the user_ids list, merges the `meeting_users` the same way, overwrites certain account fields if given and deletes the non-primary users.

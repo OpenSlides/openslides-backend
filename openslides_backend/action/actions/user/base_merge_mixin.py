@@ -227,27 +227,6 @@ class BaseMergeMixin(Action):
                     raise ActionException(
                         f"Cannot merge {collection} models that have {field} set: Problem in {collection}/{model['id']}"
                     )
-        for field in merge_modes.get("priority", []):
-            for model in [into_dict, *ranked_others]:
-                if date := model.get(field):
-                    changes[field] = date
-                    break
-        for field in merge_modes.get("highest", []):
-            comp_data = [
-                date
-                for model in [into_dict, *ranked_others]
-                if (date := model.get(field)) is not None
-            ]
-            if len(comp_data):
-                changes[field] = max(comp_data)
-        for field in merge_modes.get("lowest", []):
-            comp_data = [
-                date
-                for model in [into_dict, *ranked_others]
-                if (date := model.get(field)) is not None
-            ]
-            if len(comp_data):
-                changes[field] = min(comp_data)
         for field in merge_modes.get("require_equality", []):
             eq_data = {
                 date
@@ -272,11 +251,6 @@ class BaseMergeMixin(Action):
                 raise ActionException(
                     f"Differing values in field {field} when merging into {collection}/{main_id}"
                 )
-        for field in merge_modes.get("merge", []):
-            if change := self.execute_merge_on_reference_fields(
-                field, into_dict, ranked_others
-            ):
-                changes[field] = sorted(change)
         for field in merge_modes.get("special_function", []):
             result = self.handle_special_field(
                 collection, field, into_dict, ranked_others, update_operations
@@ -297,6 +271,32 @@ class BaseMergeMixin(Action):
                 update_operations,
                 True,
             )
+        for field in merge_modes.get("merge", []):
+            if change := self.execute_merge_on_reference_fields(
+                field, into_dict, ranked_others
+            ):
+                changes[field] = sorted(change)
+        for field in merge_modes.get("priority", []):
+            for model in [into_dict, *ranked_others]:
+                if date := model.get(field):
+                    changes[field] = date
+                    break
+        for field in merge_modes.get("highest", []):
+            comp_data = [
+                date
+                for model in [into_dict, *ranked_others]
+                if (date := model.get(field)) is not None
+            ]
+            if len(comp_data):
+                changes[field] = max(comp_data)
+        for field in merge_modes.get("lowest", []):
+            comp_data = [
+                date
+                for model in [into_dict, *ranked_others]
+                if (date := model.get(field)) is not None
+            ]
+            if len(comp_data):
+                changes[field] = min(comp_data)
         update_operations[collection]["delete"].extend(
             [
                 model["id"]
