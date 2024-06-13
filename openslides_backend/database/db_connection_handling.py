@@ -3,7 +3,6 @@ from collections.abc import Callable
 
 import psycopg
 import psycopg_pool
-
 from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import DatabaseException
 
@@ -23,7 +22,7 @@ system_conn_pool = psycopg_pool.ConnectionPool(
     max_lifetime=3600.0,
     max_idle=600.0,
     reconnect_timeout=300.0,
-    num_workers=2,
+    num_workers=1,
 )
 os_conn_pool = psycopg_pool.ConnectionPool(
     conninfo=conn_string_without_db + f"dbname='{env.DATABASE_NAME}'",

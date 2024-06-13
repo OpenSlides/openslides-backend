@@ -3,12 +3,9 @@ import pathlib
 from collections.abc import Generator
 
 import pytest
-from psycopg import Connection, Cursor, sql
-
 from openslides_backend.database.db_connection_handling import (
-    env,
-    get_unpooled_db_connection,
-)
+    env, get_unpooled_db_connection, os_conn_pool, system_conn_pool)
+from psycopg import Connection, Cursor, sql
 from tests.mock_auth_login import auth_mock
 
 temporary_template_db = "openslides_template"
@@ -33,9 +30,8 @@ def _create_new_openslides_db_from_template(curs: Cursor) -> None:
 @pytest.fixture(scope="session", autouse=True)
 def setup_pytest_session() -> Generator[None, None, None]:
     with auth_mock() as auth_mocker:
-        connection = get_unpooled_db_connection("postgres", True)
-        with connection:
-            with connection.cursor() as curs:
+        with system_conn_pool.connection() as conn:
+            with conn.cursor() as curs:
                 curs.execute(
                     sql.SQL("DROP DATABASE IF EXISTS {db} (FORCE);").format(
                         db=sql.Identifier(temporary_template_db)
@@ -46,9 +42,9 @@ def setup_pytest_session() -> Generator[None, None, None]:
                         db=sql.Identifier(temporary_template_db),
                     )
                 )
-        connection = get_unpooled_db_connection(temporary_template_db)
-        with connection:
-            with connection.cursor() as curs:
+        with get_unpooled_db_connection(temporary_template_db) as conn_tmp:
+            #with connection:
+            with conn_tmp.cursor() as curs:
                 # curs.execute("CREATE EXTENSION pldbgapi;")  # Postgres debug extension, needs apt-package postgresql-15-pldebugger on server
                 path_base = pathlib.Path(os.getcwd())
                 path = path_base.joinpath(
@@ -68,25 +64,24 @@ def setup_pytest_session() -> Generator[None, None, None]:
         yield (auth_mocker,)
 
     # teardown session
-    connection = get_unpooled_db_connection("postgres", autocommit=True)
-    with connection:
-        with connection.cursor() as curs:
+    with system_conn_pool.connection() as conn:
+        with conn.cursor() as curs:
             _create_new_openslides_db_from_template(curs)
             curs.execute(
                 sql.SQL("DROP DATABASE IF EXISTS {db} (FORCE);").format(
                     db=sql.Identifier(temporary_template_db)
                 )
             )
+    system_conn_pool.close()
 
 
 @pytest.fixture(autouse=True)
-def setup_pytest_function() -> Generator[Connection, None, None]:
-    connection = get_unpooled_db_connection("postgres", autocommit=True)
-    with connection:
-        with connection.cursor() as curs:
+def db_connection() -> Generator[Connection, None, None]:
+    with system_conn_pool.connection() as conn:
+        with conn.cursor() as curs:
             _create_new_openslides_db_from_template(curs)
-    connection = get_unpooled_db_connection(openslides_db)
-    yield connection
+    with get_unpooled_db_connection(openslides_db) as conn_os:
+        yield conn_os
 
     # teardown single test function
-    connection.close()
+    conn_os.close()
