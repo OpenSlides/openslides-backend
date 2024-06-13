@@ -223,7 +223,7 @@ class BaseMergeMixin(Action):
         changes: dict[str, Any] = {}
         for field in merge_modes.get("error", []):
             for model in [into_dict, *ranked_others]:
-                if model.get(field) is not None:
+                if model.get(field):
                     raise ActionException(
                         f"Cannot merge {collection} models that have {field} set: Problem in {collection}/{model['id']}"
                     )

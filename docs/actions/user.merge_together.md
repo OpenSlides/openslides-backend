@@ -2,7 +2,7 @@
 ```
 {
 // Required
-    id: Id // The user the others will be merged into
+    id: Id // The primary user the others will be merged into
     user_ids: Id[];
 
 // Optional
@@ -21,27 +21,103 @@
 }
 ```
 
+## Definitions
+- `primary user` or `main user`: The user defined by the `id`
+- `secondary users` or `other users`: The users defined in the `user_ids` field
+- `selected users`: Both the `primary` and `secondary users`
+- User ranking: Primary user is ranked above all secondary users, the secondary users are ranked according to their ids position in the `user_ids` field
+
 ## Action
-The action is some kind of [user.update](user.update.md): It updates the primary user fields (if they are empty) with the user-model values of the other users in the order that their ids appear in the user_ids list, merges the `meeting_users` the same way, overwrites certain account fields if given and deletes the non-primary users.
-Conflicts in single-relations should be resolved on a case-by-case basis<!-- TODO: What should be done with the specific single relations?-->
+The action is a kind of expanded [user.update](user.update.md): It updates the primary user fields with the user-model values of the secondary users in the order that their ids appear in the user_ids list, merges the `meeting_users` and related models the same way, overwrites the account fields in the payload with the given values if there are any and deletes the merged models.
 
-Create a new user with the information given in the request. Handling of other fields:
-- `committee_ids`: The union of committees from all meetings of the old temporary users.
-- `organization_management_level`: Set to highest oml among the users.
-<!--TODO: Fill in some other account-side user.update fields?-->
+Conflicts in single-relations are resolved on a case-by-case basis.
 
-As for related meeting_users, they should be merged. 
-If there are conflicts in meetings because two or more of the users are present in the same one:
-- All `ids`-relations should be unified
-- For `id`-relations and other fields should be generically treated like the fields in the related `user` model
+### Restrictions
+An error is thrown if:
+- Any of the selected users are demo- or forwarding users (i.e. `is_demo_user` or `forwarding_committee_ids` is set)
+- Any of the secondary users have a `saml_id`
+- There are multiple different `member_number`s between the selected users (empty does not count)
+- There are conflicts regarding polls, i.e. two or more of the selected users...
+    - are option content_objects (not counting poll_candidate_list membership) on the same poll
+    - are candidates on the same poll_candidate_list
+    - have voted on the same poll (delegated or not)
+    - Any affected meeting_users have groups that are currently entitled to work on any poll
+- Any affected meeting_users _who share a meeting_:
+    - have running speakers
+    - are in a meeting without `list_of_speakers_allow_multiple_speakers` and have waiting speakers on the same list who cannot be merged together into at most one point_of_order and one normal speech. Speeches may not be merged if there are multiple different values (empty does count) within any of the fields:
+        - `speech_state`
+        - `point_of_order_category_id`
+        - `note`
+        - `structure_level_list_of_speakers_id`
 
-Note that the `username` can be one of the given users usernames or a new one - the uniqueness must be checked within all other users.
+### Functionality
+The primary user is updated with the information from the secondary users using the following rules:
+- `organization_management_level` is set to highest oml among the users.
+- boolean fields are set to true if they are true on any selected user.
+- relation-lists are set to the union of their content among all selected users, except the `meeting_user_ids`-relation, which is handled separately
+- login data (`saml_id`, `username`, `password`) remains untouched
+- `pronoun`, `title`, `first_name`, `last_name`, `gender`, `email`, `default_vote_weight`, `member_number` are set to the value from the highest ranked user that has the field
+- `meeting_user_ids` are create-merged (see "Merging of sub-collections/Create merge" and "Meeting user merge")
 
-Important:
+Any date in the custom payload data from the request overwrites anything that would otherwise be determined for that field by the above rules.
 
-All reverse relations to the given users must be changed to the new id of the created user.
+Data validity of the results is checked according to user.update rules.
 
-Finally, delete all given extra users.
+The secondary users are deleted.
+
+#### Merging of sub-collections
+Relation lists where simple unification does not suffice (usually because the target collections function mostly as a type of m:n connection between two other collections) are merged. 
+
+For that purpose, target models for these relations are compared and those that are judged to fulfill equivalent roles are grouped together.
+
+Criteria for equivalence depend on the collection in question.
+
+Within every group, models are ranked in accordance to the rank of their parent models and then merged in accordance with the field appropriate merge type: update-merge or create-merge
+
+##### Update merge
+Each merge group is considered separately:
+The first model in the group is the primary model, all others are secondary models.
+
+Models in each merge group (if there are secondary models) are generally merged in a manner similar to how the user is merged, with individual rules determined for each collection.
+
+The secondary models are deleted.
+
+All remaining models are (re-)connected to the parent primary model whose merge called this one.
+
+##### Create merge
+Like normal merge until the last step:
+If a remaining model is not yet connected to the primary model of the parent merge, instead of updating, it is deleted and a new model with the same data is created.
+
+This is usually necessary in cases where the relation is set to cascade-delete
+
+#### Meeting user merge
+Equivalence is determined via `meeting_id`: All meeting_users with the same `meeting_id` are grouped together.
+
+The primary model is updated/re-created with the information from the secondary models using the following rules:
+- `assignment_candidate_ids`, `motion_editor_ids` and `motion_working_group_speaker_ids` are update-merged
+- `motion_submitter_ids`, `personal_note_ids` and `speaker_ids` are create-merged
+- other relation-lists are set to the union of their content among all selected users
+- login data (`saml_id`, `username`, `password`) remains untouched
+- `comment`, `number`, `about_me`, `vote_weight`, `vote_delegated_to_id` are set to the value from the highest ranked model that has the field
+
+#### Personal note merge
+Equivalence is determined via equivalence of `content_object_id`
+
+The primary model is updated/re-created with the information from the secondary models using the following rules:
+- `star` is set to true if it is true on any selected model.
+- `note` is set to the value from the highest ranked model that has the field
+
+#### Motion working group speaker, motion editor, motion submitter, speaker and assignment candidate merges
+Equivalence is determined as follows for each collection:
+- For the `speaker` collection:
+    - `list_of_speakers_allow_multiple_speakers` must be enabled in the meeting, else they are never equivalent
+    - the `list_of_speakers_id` must be the same
+    - they must be waiting (i.e. `begin_time` and `end_time` are None), else they are never equivalent
+    - `point_of_order` truthy value must be the same
+- `assignment_candidate`: Equivalence of `assignment_id`
+- others: Equivalence of `motion_id`
+
+The primary model is updated/re-created with the lowest `weight` among the selected models.
 
 ## Permissions
 The request user needs the organization management level `can_manage_users`.

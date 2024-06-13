@@ -205,14 +205,9 @@ class MeetingUserMergeMixin(
                     or model.get("end_time") is not None
                 ):
                     return model["id"]
-                return tuple(
-                    [
-                        model.get(field, "")
-                        for field in [
-                            "list_of_speakers_id",
-                            "point_of_order",
-                        ]
-                    ]
+                return (
+                    model["list_of_speakers_id"],
+                    model.get("point_of_order", False),
                 )
             case _:
                 return super().get_merge_comparison_hash(collection, model)

@@ -83,6 +83,7 @@ class UserMergeTogether(
                     "last_email_sent",
                     "last_login",
                     "meeting_ids",
+                    "username",
                 ],
                 "highest": [
                     "is_active",
@@ -94,7 +95,6 @@ class UserMergeTogether(
                     "forwarding_committee_ids",
                 ],
                 "priority": [
-                    "username",
                     "pronoun",
                     "title",
                     "first_name",
