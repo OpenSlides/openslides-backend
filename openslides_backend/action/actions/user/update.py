@@ -87,9 +87,6 @@ class UserUpdate(
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
-        # if not self.internal and len(not_allowed:={prop for prop in self.internal_properties if prop in instance}):
-        #     raise ActionException(f"data must not contain {not_allowed} properties")
-
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
             mapped_fields=[

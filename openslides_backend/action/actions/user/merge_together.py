@@ -37,12 +37,9 @@ from .user_mixins import UserMixin
 
 
 @register_action("user.merge_together")
-class UserMergeTogether(
-    MeetingUserMergeMixin, UpdateAction  # , CheckForArchivedMeetingMixin
-):
+class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
     """
     Action to merge users together.
-    TODO: History?
     """
 
     model = User()
@@ -151,17 +148,6 @@ class UserMergeTogether(
             coll: {"create": [], "update": [], "delete": []}
             for coll in self._collection_field_groups
         }
-        # TODO: Is this stuff necessary
-        user_data, meeting_users = self._get_user_data(instance["id"])
-        meeting_user_data_by_meeting_id: dict[int, PartialModel] = {}
-        for meeting_user in meeting_users.values():
-            if meeting_user_data_by_meeting_id.get(
-                meeting_id := meeting_user["meeting_id"]
-            ):
-                raise ActionException(
-                    f"Primary meeting user has multiple meeting_users for meeting {meeting_id}"
-                )
-            meeting_user_data_by_meeting_id[meeting_id] = meeting_user
         if self.user_id in instance["user_ids"]:
             raise ActionException("Operator may not merge himself into others.")
 
@@ -189,8 +175,10 @@ class UserMergeTogether(
         committee_ids = update_operations["user"]["update"][0].pop(
             "committee_ids", None
         )
+
         self.call_other_actions(update_operations)
         self.update_entitled_user_lists(instance["id"], instance["user_ids"])
+
         return {"id": into["id"], "committee_ids": committee_ids}
 
     def call_other_actions(
@@ -374,76 +362,75 @@ class UserMergeTogether(
         candidate_list_ids_per_user_id: dict[int, set[int]] = {}
         meeting_user_ids: list[int] = []
         for model in all_models:
-            if poll_candidate_ids := model.get("poll_candidate_ids", []):
-                candidate_list_ids_per_user_id[model["id"]] = {
-                    poll_candidate["poll_candidate_list_id"]
-                    for poll_candidate in self.datastore.get_many(
-                        [
-                            GetManyRequest(
-                                "poll_candidate",
-                                poll_candidate_ids,
-                                ["poll_candidate_list_id"],
-                            )
-                        ]
-                    )["poll_candidate"].values()
-                    if poll_candidate.get("poll_candidate_list_id")
-                }
-            if option_ids := model.get("option_ids", []):
-                option_poll_ids_per_user_id[model["id"]] = {
-                    option["poll_id"]
-                    for option in self.datastore.get_many(
-                        [
-                            GetManyRequest(
-                                "option",
-                                option_ids,
-                                ["poll_id"],
-                            )
-                        ]
-                    )["option"].values()
-                    if option.get("poll_id")
-                }
-            vote_data = self.datastore.get_many(
-                [
+            if len(
+                (pc_ids := model.get("poll_candidate_ids", []))
+                + (o_ids := model.get("option_ids", []))
+                + (
+                    v_ids := list(
+                        {
+                            id_
+                            for id_ in [
+                                *model.get("vote_ids", []),
+                                *model.get("delegated_vote_ids", []),
+                            ]
+                        }
+                    )
+                )
+            ):
+                get_many_requests = [
+                    GetManyRequest(
+                        "poll_candidate", pc_ids, ["poll_candidate_list_id"]
+                    ),
+                    GetManyRequest(
+                        "option",
+                        o_ids,
+                        ["poll_id"],
+                    ),
                     GetManyRequest(
                         "vote",
-                        list(
-                            {
-                                id_
-                                for id_ in [
-                                    *model.get("vote_ids", []),
-                                    *model.get("delegated_vote_ids", []),
-                                ]
-                            }
-                        ),
+                        v_ids,
                         ["option_id"],
-                    )
+                    ),
                 ]
-            )["vote"]
-            vote_poll_ids_per_user_id[model["id"]] = {
-                *vote_poll_ids_per_user_id.get(model["id"], set()),
-                *{
-                    cast(int, option["poll_id"])
-                    for option in self.datastore.get_many(
-                        [
-                            GetManyRequest(
-                                "option",
-                                list(
-                                    {
-                                        id_
-                                        for id_ in [
-                                            vote["option_id"]
-                                            for vote in vote_data.values()
-                                            if vote.get("option_id")
-                                        ]
-                                    }
-                                ),
-                                ["poll_id"],
-                            )
-                        ]
-                    )["option"].values()
-                    if option.get("poll_id")
-                },
-            }
+                many_models = self.datastore.get_many(get_many_requests)
+                if pc_ids:
+                    candidate_list_ids_per_user_id[model["id"]] = {
+                        poll_candidate["poll_candidate_list_id"]
+                        for poll_candidate in many_models["poll_candidate"].values()
+                        if poll_candidate.get("poll_candidate_list_id")
+                    }
+                if o_ids:
+                    option_poll_ids_per_user_id[model["id"]] = {
+                        option["poll_id"]
+                        for option in many_models["option"].values()
+                        if option.get("poll_id")
+                    }
+                vote_data = many_models["vote"]
+                vote_poll_ids_per_user_id[model["id"]] = {
+                    *vote_poll_ids_per_user_id.get(model["id"], set()),
+                    *{
+                        cast(int, option["poll_id"])
+                        for option in self.datastore.get_many(
+                            [
+                                GetManyRequest(
+                                    "option",
+                                    list(
+                                        {
+                                            id_
+                                            for id_ in [
+                                                vote["option_id"]
+                                                for vote in vote_data.values()
+                                                if vote.get("option_id")
+                                            ]
+                                        }
+                                    ),
+                                    ["poll_id"],
+                                )
+                            ]
+                        )["option"].values()
+                        if option.get("poll_id")
+                    },
+                }
             meeting_user_ids += model.get("meeting_user_ids", [])
         voting_conflicts = {
             poll_id

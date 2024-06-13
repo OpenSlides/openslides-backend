@@ -1,4 +1,4 @@
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from openslides_backend.services.datastore.interface import PartialModel
 
@@ -80,7 +80,6 @@ class BaseMergeMixin(Action):
     def add_collection_field_groups(
         self,
         Class: type[Model],
-        # operations: MergeOperations,
         field_groups: MergeModeDict,
         back_field: str = "",
     ) -> None:
@@ -113,9 +112,9 @@ class BaseMergeMixin(Action):
         Should be overridden by sub-classes and return whatever should be entered
         as the new value of the field, or None
         """
-        # raise ActionException(
-        #     f"Function for {collection} field {field} not yet implemented"
-        # )
+        raise ActionException(
+            f"Function for {collection} field {field} not yet implemented"
+        )
 
     def execute_merge_on_reference_fields(
         self,
@@ -208,6 +207,29 @@ class BaseMergeMixin(Action):
             return new_reference_ids
         return None
 
+    def check_equality(
+        self,
+        collection: Collection,
+        into: PartialModel | None,
+        ranked_others: list[PartialModel],
+        main_id: int,
+        field: str,
+        absolute: bool = False,
+    ) -> Any | None:
+        eq_data = {
+            date
+            for model in [into, *ranked_others]
+            if model is not None
+            and (((date := model.get(field)) is not None) or absolute)
+        }
+        if (length := len(eq_data)) == 1:
+            return eq_data.pop()
+        elif length > 1:
+            raise ActionException(
+                f"Differing values in field {field} when merging into {collection}/{main_id}"
+            )
+        return None
+
     def merge_by_rank(
         self,
         collection: Collection,
@@ -222,35 +244,23 @@ class BaseMergeMixin(Action):
         merge_modes = self._collection_field_groups[collection]
         changes: dict[str, Any] = {}
         for field in merge_modes.get("error", []):
-            for model in [into_dict, *ranked_others]:
-                if model.get(field):
-                    raise ActionException(
-                        f"Cannot merge {collection} models that have {field} set: Problem in {collection}/{model['id']}"
-                    )
+            if model := next(
+                (model for model in [into_dict, *ranked_others] if model.get(field)),
+                None,
+            ):
+                raise ActionException(
+                    f"Cannot merge {collection} models that have {field} set: Problem in {collection}/{model['id']}"
+                )
         for field in merge_modes.get("require_equality", []):
-            eq_data = {
-                date
-                for model in [into, *ranked_others]
-                if model is not None and (date := model.get(field)) is not None
-            }
-            if (length := len(eq_data)) == 1:
-                changes[field] = eq_data.pop()
-            elif length > 1:
-                raise ActionException(
-                    f"Differing values in field {field} when merging into {collection}/{main_id}"
-                )
+            if result := self.check_equality(
+                collection, into, ranked_others, main_id, field
+            ):
+                changes[field] = result
         for field in merge_modes.get("require_equality_absolute", []):
-            eq_data = {
-                model.get(field)
-                for model in [into, *ranked_others]
-                if model is not None
-            }
-            if (length := len(eq_data)) == 1:
-                changes[field] = eq_data.pop()
-            elif length > 1:
-                raise ActionException(
-                    f"Differing values in field {field} when merging into {collection}/{main_id}"
-                )
+            if result := self.check_equality(
+                collection, into, ranked_others, main_id, field, True
+            ):
+                changes[field] = result
         for field in merge_modes.get("special_function", []):
             result = self.handle_special_field(
                 collection, field, into_dict, ranked_others, update_operations
@@ -277,26 +287,25 @@ class BaseMergeMixin(Action):
             ):
                 changes[field] = sorted(change)
         for field in merge_modes.get("priority", []):
-            for model in [into_dict, *ranked_others]:
-                if date := model.get(field):
-                    changes[field] = date
-                    break
-        for field in merge_modes.get("highest", []):
-            comp_data = [
-                date
-                for model in [into_dict, *ranked_others]
-                if (date := model.get(field)) is not None
-            ]
-            if len(comp_data):
-                changes[field] = max(comp_data)
-        for field in merge_modes.get("lowest", []):
-            comp_data = [
-                date
-                for model in [into_dict, *ranked_others]
-                if (date := model.get(field)) is not None
-            ]
-            if len(comp_data):
-                changes[field] = min(comp_data)
+            if date := next(
+                (
+                    date
+                    for model in [into_dict, *ranked_others]
+                    if (date := model.get(field))
+                ),
+                None,
+            ):
+                changes[field] = date
+        for category, func in [("highest", max), ("lowest", min)]:
+            for field in cast(list[str], merge_modes.get(category, [])):
+                if len(
+                    comp_data := [
+                        date
+                        for model in [into_dict, *ranked_others]
+                        if (date := model.get(field)) is not None
+                    ]
+                ):
+                    changes[field] = func(comp_data)
         update_operations[collection]["delete"].extend(
             [
                 model["id"]
