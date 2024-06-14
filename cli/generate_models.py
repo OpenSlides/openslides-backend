@@ -216,7 +216,7 @@ class Attribute(Node):
     constraints: dict[str, Any]
     is_view_field: bool = False
     is_primary: bool = False
-    write_fields: tuple[str, str, str, list[TableFieldType]] | None = None
+    write_fields: tuple[str, str, str, list[str]] | None = None
 
     FIELD_TEMPLATE = string.Template(
         "    ${field_name} = fields.${field_class}(${properties})\n"
@@ -234,7 +234,7 @@ class Attribute(Node):
         if isinstance(value, str):
             self.type = value
         else:
-            self.type = value.get("type")  # type: ignore
+            self.type = value.get("type","")
             if self.type in RELATION_FIELD_CLASSES.keys():
                 self.is_view_field, self.is_primary, self.write_fields = (
                     self.get_view_field_state_write_fields(
@@ -280,6 +280,8 @@ class Attribute(Node):
             properties += f"on_delete=fields.OnDelete.{self.on_delete}, "
         if self.is_view_field:
             properties += "is_view_field=True, "
+        if self.is_primary:
+            properties += "is_primary=True, "
         if self.required:
             properties += "required=True, "
         if self.read_only:
@@ -292,8 +294,12 @@ class Attribute(Node):
             properties += f"equal_fields={repr(self.equal_fields)}, "
         if self.constraints:
             properties += f"constraints={repr(self.constraints)}, "
+        if self.write_fields is not None:
+            properties += f"write_fields={repr(self.write_fields)}, "
         if self.in_array_constraints and self.type in ("string[]", "number[]"):
             properties += f"in_array_constraints={repr(self.in_array_constraints)}"
+
+
         return self.FIELD_TEMPLATE.substitute(
             dict(
                 field_name=field_name,
@@ -315,12 +321,14 @@ class Attribute(Node):
         - value : represents the definition of the field ( field_name in collection_name )
         Returns:
         - is_view_field : whether the field is a view field or not
+        - is_primary: wether the field is primary or not
         - write_fields:
             - None if no fields need to be written
             - Tuple
                 table_name : name of the intermediate table
                 field1
                 field2
+                foreign_fields
         """
         # variable declaration
         own: TableFieldType
@@ -334,7 +342,7 @@ class Attribute(Node):
         table_name: str = ""
         field1: str = ""
         field2: str = ""
-        write_fields: tuple[str, str, str, list[TableFieldType]] | None = None
+        write_fields: tuple[str, str, str, list[str]] | None = None
 
         # create TableFieldType own out of collection_name, field_name, value as field_def
         own = TableFieldType(collection_name, field_name, value)
@@ -370,12 +378,16 @@ class Attribute(Node):
                 table_name = HelperGetNames.get_gm_table_name(own)
                 field1 = f"{own.table}_{own.ref_column}"
                 field2 = own.column[:-1]
+                for n, field in enumerate(foreign_fields):
+                    foreign_fields[n] = field2 + "_" + f"{field.table}_{field.ref_column}"
                 write_fields = (table_name, field1, field2, foreign_fields)
 
         elif field_type == "generic-relation-list":
             table_name = HelperGetNames.get_gm_table_name(own)
             field1 = f"{own.table}_{own.ref_column}"
             field2 = own.column[:-1]
+            for n, field in enumerate(foreign_fields):
+                foreign_fields[n] = field2 + "_" + f"{field.table}_{field.ref_column}"
 
             write_fields = (table_name, field1, field2, foreign_fields)
 
