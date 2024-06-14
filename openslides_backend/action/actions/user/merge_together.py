@@ -7,7 +7,7 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, BadCodingException
 from ....shared.filters import And, FilterOperator, Or
-from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
+from ....shared.patterns import Collection, CollectionField
 from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -514,22 +514,6 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
                 return model["meeting_id"]
             case _:
                 return super().get_merge_comparison_hash(collection, model)
-
-    def _get_user_data(
-        self, user_id: int
-    ) -> tuple[PartialModel, dict[int, PartialModel]]:
-        user = self.datastore.get(
-            fqid_from_collection_and_id("user", user_id),
-            self._all_collection_fields["user"].copy(),
-        )
-        return (
-            user,
-            self.datastore.filter(
-                "meeting_user",
-                FilterOperator("user_id", "=", user_id),
-                self._all_collection_fields["meeting_user"].copy(),
-            ),
-        )
 
     def get_meeting_ids(self, instance: dict[str, Any]) -> list[int]:
         meeting_users = self.datastore.filter(
