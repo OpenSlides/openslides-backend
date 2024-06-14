@@ -234,7 +234,7 @@ class Attribute(Node):
         if isinstance(value, str):
             self.type = value
         else:
-            self.type = value.get("type","")
+            self.type = value.get("type", "")
             if self.type in RELATION_FIELD_CLASSES.keys():
                 self.is_view_field, self.is_primary, self.write_fields = (
                     self.get_view_field_state_write_fields(
@@ -298,7 +298,6 @@ class Attribute(Node):
             properties += f"write_fields={repr(self.write_fields)}, "
         if self.in_array_constraints and self.type in ("string[]", "number[]"):
             properties += f"in_array_constraints={repr(self.in_array_constraints)}"
-
 
         return self.FIELD_TEMPLATE.substitute(
             dict(
@@ -379,7 +378,9 @@ class Attribute(Node):
                 field1 = f"{own.table}_{own.ref_column}"
                 field2 = own.column[:-1]
                 for n, field in enumerate(foreign_fields):
-                    foreign_fields[n] = field2 + "_" + f"{field.table}_{field.ref_column}"
+                    foreign_fields[n] = (
+                        field2 + "_" + f"{field.table}_{field.ref_column}"
+                    )
                 write_fields = (table_name, field1, field2, foreign_fields)
 
         elif field_type == "generic-relation-list":
