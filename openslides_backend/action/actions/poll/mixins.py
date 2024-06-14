@@ -4,21 +4,15 @@ from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
-from ....permissions.permission_helper import has_perm
-from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
-from ....services.datastore.interface import DatastoreService
-from ....shared.exceptions import MissingPermission, VoteServiceException
-from ....shared.patterns import (
-    KEYSEPARATOR,
-    collection_from_fqid,
-    fqid_from_collection_and_id,
-)
+from ....shared.exceptions import VoteServiceException
+from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_id
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token
+from .functions import check_poll_or_option_perms
 
 
 class PollPermissionMixin(Action):
@@ -39,20 +33,20 @@ class PollPermissionMixin(Action):
         )
 
 
-def check_poll_or_option_perms(
-    content_object_id: str,
-    datastore: DatastoreService,
-    user_id: int,
-    meeting_id: int,
-) -> None:
-    if content_object_id.startswith("motion" + KEYSEPARATOR):
-        perm: Permission = Permissions.Motion.CAN_MANAGE_POLLS
-    elif content_object_id.startswith("assignment" + KEYSEPARATOR):
-        perm = Permissions.Assignment.CAN_MANAGE
-    else:
-        perm = Permissions.Poll.CAN_MANAGE
-    if not has_perm(datastore, user_id, perm, meeting_id):
-        raise MissingPermission(perm)
+# def check_poll_or_option_perms(
+#     content_object_id: str,
+#     datastore: DatastoreService,
+#     user_id: int,
+#     meeting_id: int,
+# ) -> None:
+#     if content_object_id.startswith("motion" + KEYSEPARATOR):
+#         perm: Permission = Permissions.Motion.CAN_MANAGE_POLLS
+#     elif content_object_id.startswith("assignment" + KEYSEPARATOR):
+#         perm = Permissions.Assignment.CAN_MANAGE
+#     else:
+#         perm = Permissions.Poll.CAN_MANAGE
+#     if not has_perm(datastore, user_id, perm, meeting_id):
+#         raise MissingPermission(perm)
 
 
 class StopControl(CountdownControl, Action):

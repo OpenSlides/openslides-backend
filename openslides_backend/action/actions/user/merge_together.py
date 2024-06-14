@@ -25,13 +25,13 @@ from ..motion_working_group_speaker.delete import MotionWorkingGroupSpeakerDelet
 from ..motion_working_group_speaker.update import MotionWorkingGroupSpeakerUpdateAction
 from ..personal_note.create import PersonalNoteCreateAction
 from ..personal_note.update import PersonalNoteUpdateAction
+from ..poll.update import PollUpdateAction
 from ..speaker.create_for_merge import SpeakerCreateForMerge
 from ..speaker.delete import SpeakerDeleteAction
 from ..speaker.update import SpeakerUpdate
 from .base_merge_mixin import MergeUpdateOperations
 from .delete import UserDelete
 from .merge_mixins import MeetingUserMergeMixin
-from .poll_update_entitled import PollUpdateEntitledAction
 from .update import UserUpdate
 from .user_mixins import UserMixin
 
@@ -515,7 +515,7 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
             if changed:
                 poll_payloads.append({"id": id_, "entitled_users_at_stop": entitled})
         if len(poll_payloads):
-            self.execute_other_action(PollUpdateEntitledAction, poll_payloads)
+            self.execute_other_action(PollUpdateAction, poll_payloads)
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel

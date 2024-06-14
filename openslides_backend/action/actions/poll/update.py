@@ -20,6 +20,10 @@ class PollUpdateAction(
     Action to update a poll.
     """
 
+    internal_fields = [
+        "entitled_users_at_stop",
+    ]
+
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema(
         optional_properties=[
@@ -38,6 +42,7 @@ class PollUpdateAction(
             "votesinvalid",
             "votescast",
             "backend",
+            *internal_fields,
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
@@ -45,6 +50,16 @@ class PollUpdateAction(
     )
     poll_history_information = "updated"
     extend_history_to = "content_object_id"
+
+    def validate_fields(self, instance: dict[str, Any]) -> dict[str, Any]:
+        super().validate_instance(instance)
+        if not self.internal and any(
+            forbidden := {key for key in instance if key in self.internal_fields}
+        ):
+            raise ActionException(
+                f"data must not contain {forbidden} properties"
+            )  # TODO: Test this
+        return super().validate_fields(instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
