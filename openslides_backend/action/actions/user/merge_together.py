@@ -9,7 +9,6 @@ from ....shared.exceptions import ActionException, BadCodingException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
-from ...action import Action
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -267,46 +266,8 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
                 "speaker": {
                     "update": SpeakerUpdate,
                     "create": SpeakerCreateForMerge,
+                    "delete": SpeakerDeleteAction,
                 },
-            }
-
-            update_operations["personal_note"]["create"] = [
-                payload
-                for payload in update_operations["personal_note"]["create"]
-                if payload.get("star") or payload.get("note")
-            ]
-
-            for collection, actions in create_deep_merge_actions_per_collection.items():
-                if len(to_create := update_operations[collection]["create"]):
-                    for payload in to_create:
-                        meeting_id = payload.pop("meeting_id")
-                        payload["meeting_user_id"] = meeting_user_id_by_meeting_id[
-                            meeting_id
-                        ]
-                    self.execute_other_action(
-                        actions["create"],
-                        to_create,
-                    )
-                to_update: list[dict[str, Any]] = []
-                for payload in update_operations[collection]["update"]:
-                    if len(payload) > 1:
-                        to_update.append(payload)
-                if len(to_update):
-                    self.execute_other_action(
-                        actions["update"],
-                        to_update,
-                    )
-
-            if len(to_delete := update_operations["speaker"]["delete"]):
-                self.execute_other_action(
-                    SpeakerDeleteAction,
-                    [{"id": id_} for id_ in to_delete],
-                )
-
-            for collection in create_deep_merge_actions_per_collection:
-                update_operations.pop(collection)
-
-            actions_per_collection: dict[str, dict[str, type[Action]]] = {
                 "assignment_candidate": {
                     "update": AssignmentCandidateUpdate,
                     "delete": AssignmentCandidateDelete,
@@ -321,13 +282,38 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
                 },
             }
 
-            for collection, actions in actions_per_collection.items():
-                if len(to_update := update_operations[collection]["update"]):
+            update_operations["personal_note"]["create"] = [
+                payload
+                for payload in update_operations["personal_note"]["create"]
+                if payload.get("star") or payload.get("note")
+            ]
+
+            for collection, actions in create_deep_merge_actions_per_collection.items():
+                if "create" in actions and len(
+                    to_create := update_operations[collection]["create"]
+                ):
+                    for payload in to_create:
+                        meeting_id = payload.pop("meeting_id")
+                        payload["meeting_user_id"] = meeting_user_id_by_meeting_id[
+                            meeting_id
+                        ]
                     self.execute_other_action(
-                        actions["update"],
-                        to_update,
+                        actions["create"],
+                        to_create,
                     )
-                if len(to_delete := update_operations[collection]["delete"]):
+                if "update" in actions:
+                    to_update: list[dict[str, Any]] = []
+                    for payload in update_operations[collection]["update"]:
+                        if len(payload) > 1:
+                            to_update.append(payload)
+                    if len(to_update):
+                        self.execute_other_action(
+                            actions["update"],
+                            to_update,
+                        )
+                if "delete" in actions and len(
+                    to_delete := update_operations[collection]["delete"]
+                ):
                     self.execute_other_action(
                         actions["delete"],
                         [{"id": id_} for id_ in to_delete],

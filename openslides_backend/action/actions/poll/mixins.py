@@ -33,22 +33,6 @@ class PollPermissionMixin(Action):
         )
 
 
-# def check_poll_or_option_perms(
-#     content_object_id: str,
-#     datastore: DatastoreService,
-#     user_id: int,
-#     meeting_id: int,
-# ) -> None:
-#     if content_object_id.startswith("motion" + KEYSEPARATOR):
-#         perm: Permission = Permissions.Motion.CAN_MANAGE_POLLS
-#     elif content_object_id.startswith("assignment" + KEYSEPARATOR):
-#         perm = Permissions.Assignment.CAN_MANAGE
-#     else:
-#         perm = Permissions.Poll.CAN_MANAGE
-#     if not has_perm(datastore, user_id, perm, meeting_id):
-#         raise MissingPermission(perm)
-
-
 class StopControl(CountdownControl, Action):
     def on_stop(self, instance: dict[str, Any]) -> None:
         poll = self.datastore.get(
