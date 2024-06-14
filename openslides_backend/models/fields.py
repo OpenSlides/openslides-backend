@@ -55,7 +55,7 @@ class Field:
         constraints: dict[str, Any] | None = None,
         is_view_field: bool = False,
         is_primary: bool = False,
-        write_fields: tuple[str, str, str, list[str]] | None = None
+        write_fields: tuple[str, str, str, list[str]] | None = None,
     ) -> None:
         self.required = required
         self.read_only = read_only
