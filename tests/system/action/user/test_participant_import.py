@@ -1027,6 +1027,57 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             },
         )
 
+    def test_json_upload_less_fields_field_permission_update_with_member_number(
+        self,
+    ) -> None:
+        self.json_upload_not_sufficient_field_permission_update_with_member_number()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.DONE
+        assert row["messages"] == [
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Following fields were removed from payload, because the user has no permissions to change them: member_number, first_name, email, username, saml_id, default_password",
+        ]
+        assert row["data"] == {
+            "id": 2,
+            "saml_id": {"info": "remove", "value": "saml_id1"},
+            "username": {"info": "remove", "value": "user2"},
+            "first_name": {"info": "remove", "value": "Jim"},
+            "email": {"info": "remove", "value": "Jim.Knopf@Lummer.land"},
+            "vote_weight": {"info": "done", "value": "1.234560"},
+            "default_password": {"info": "remove", "value": ""},
+            "groups": [
+                {"id": 1, "info": "done", "value": "group1"},
+                {"id": 2, "info": "done", "value": "group2"},
+                {"id": 3, "info": "done", "value": "group3"},
+                {"id": 7, "info": "new", "value": "group4"},
+            ],
+            "member_number": {"id": 2, "value": "M3MNUM", "info": "remove"},
+        }
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "user2",
+                "member_number": "M3MNUM",
+                "first_name": "John",
+                "meeting_user_ids": [11, 44],
+                "meeting_ids": [1, 4],
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                "default_password": "secret",
+                "can_change_own_password": True,
+                "password": "secretcrypted",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/11",
+            {
+                "user_id": 2,
+                "vote_weight": "1.234560",
+                "group_ids": [1, 2, 3, 7],
+            },
+        )
+
     def test_json_upload_sufficient_field_permission_create(self) -> None:
         self.json_upload_sufficient_field_permission_create()
         self.set_models(
@@ -1105,3 +1156,117 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             {"id": response.json["results"][0][0].get("id"), "import": True},
         )
         self.assert_status_code(response, 200)
+
+    def test_json_upload_set_member_number_in_existing_participants(self) -> None:
+        self.json_upload_set_member_number_in_existing_participants()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test1",
+                "member_number": "new_one",
+            },
+        )
+        self.assert_model_exists(
+            "user/3",
+            {
+                "id": 3,
+                "username": "test2",
+                "saml_id": "samLidman",
+                "member_number": "another_new_1",
+            },
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "id": 4,
+                "username": "test3",
+                "first_name": "Hasan",
+                "last_name": "Ame",
+                "email": "hasaN.ame@nd.email",
+                "member_number": "UGuessedIt",
+            },
+        )
+
+    def test_json_upload_set_other_matching_criteria_in_existing_participant_via_member_number(
+        self,
+    ) -> None:
+        self.json_upload_set_other_matching_criteria_in_existing_participant_via_member_number()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "newname",
+                "saml_id": "some_other_saml",
+                "first_name": "second",
+                "last_name": "second_to_last",
+                "member_number": "M3MNUM",
+                "default_password": "",
+                "password": "",
+            },
+        )
+
+    def test_json_upload_try_to_update_to_username_that_was_created_in_between(
+        self,
+    ) -> None:
+        self.json_upload_set_other_matching_criteria_in_existing_participant_via_member_number()
+        self.create_user("newname")
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        row = response.json["results"][0][0]["rows"][0]
+        assert row["state"] == ImportState.ERROR
+        assert row["messages"] == [
+            "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Error: username 'newname' found in different id (3 instead of 2)",
+        ]
+        assert row["data"] == {
+            "id": 2,
+            "default_password": {"value": "", "info": "warning"},
+            "username": {"info": "error", "value": "newname"},
+            "saml_id": {"info": "new", "value": "some_other_saml"},
+            "first_name": {"info": "done", "value": "second"},
+            "last_name": {"info": "done", "value": "second_to_last"},
+            "member_number": {"info": "done", "value": "M3MNUM", "id": 2},
+            "groups": [{"id": 1, "info": "generated", "value": "group1"}],
+        }
+
+    def test_json_upload_add_member_number(self) -> None:
+        self.json_upload_add_member_number()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "test",
+                "member_number": "old_one",
+                "default_vote_weight": "2.300000",
+            },
+        )
+        self.assert_model_exists(
+            "meeting_user/1",
+            {
+                "user_id": 2,
+                "vote_weight": "4.345678",
+            },
+        )
+
+    def test_json_upload_new_participant_with_member_number(self) -> None:
+        self.json_upload_new_participant_with_member_number()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "id": 2,
+                "username": "newname",
+                "saml_id": "some_other_saml",
+                "first_name": "second",
+                "last_name": "second_to_last",
+                "member_number": "M3MNUM",
+            },
+        )

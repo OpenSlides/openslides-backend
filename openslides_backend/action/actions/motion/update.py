@@ -183,6 +183,7 @@ class MotionUpdate(
                 "category_id",
                 "block_id",
                 "supporter_meeting_user_ids",
+                "additional_submitter",
                 "recommendation_extension",
                 "start_line_number",
                 "tag_ids",

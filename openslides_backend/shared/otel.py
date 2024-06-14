@@ -55,6 +55,6 @@ def make_span(env: OtelEnv, name: str, attributes: dict[str, str] | None = None)
         return nullcontext()
 
     tracer = trace.get_tracer_provider().get_tracer(__name__)
-    span = tracer.start_as_current_span(name, attributes=attributes)
+    span = tracer.start_as_current_span("backend:" + name, attributes=attributes)
 
     return span

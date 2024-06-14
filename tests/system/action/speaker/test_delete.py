@@ -255,3 +255,129 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("speaker/890")
+
+    def test_with_active_structure_level_speaker(self) -> None:
+        self.set_models(
+            {
+                "meeting/111": {
+                    "speaker_ids": [890],
+                    "is_active_in_organization_id": 1,
+                    "list_of_speakers_default_structure_level_time": 30,
+                },
+                "user/7": {
+                    "username": "test_username1",
+                    "meeting_user_ids": [7],
+                },
+                "meeting_user/7": {
+                    "meeting_id": 111,
+                    "user_id": 7,
+                    "speaker_ids": [890],
+                    "structure_level_ids": [5],
+                },
+                "list_of_speakers/23": {
+                    "speaker_ids": [890],
+                    "structure_level_list_of_speakers_ids": [9],
+                },
+                "speaker/890": {
+                    "meeting_user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 111,
+                    "structure_level_list_of_speakers_id": 9,
+                    "begin_time": 123456789,
+                },
+                "structure_level_list_of_speakers/9": {
+                    "structure_level_id": 5,
+                    "list_of_speakers_id": 23,
+                    "speaker_ids": [890],
+                    "initial_time": 30,
+                    "remaining_time": 30,
+                    "current_start_time": 123456789,
+                    "meeting_id": 111,
+                },
+                "structure_level/5": {
+                    "name": "Lvl",
+                    "structure_level_list_of_speakers_ids": [9],
+                    "default_time": 30,
+                    "meeting_user_ids": [7],
+                    "meeting_id": 111,
+                },
+            }
+        )
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("speaker/890")
+        sllos = self.assert_model_exists(
+            "structure_level_list_of_speakers/9",
+            {
+                "current_start_time": None,
+                "structure_level_id": 5,
+                "list_of_speakers_id": 23,
+                "speaker_ids": [],
+                "initial_time": 30,
+                "meeting_id": 111,
+            },
+        )
+        assert sllos["remaining_time"] < 30
+
+    def test_with_paused_structure_level_speaker(self) -> None:
+        self.set_models(
+            {
+                "meeting/111": {
+                    "speaker_ids": [890],
+                    "is_active_in_organization_id": 1,
+                    "list_of_speakers_default_structure_level_time": 30,
+                },
+                "user/7": {
+                    "username": "test_username1",
+                    "meeting_user_ids": [7],
+                },
+                "meeting_user/7": {
+                    "meeting_id": 111,
+                    "user_id": 7,
+                    "speaker_ids": [890],
+                    "structure_level_ids": [5],
+                },
+                "list_of_speakers/23": {
+                    "speaker_ids": [890],
+                    "structure_level_list_of_speakers_ids": [9],
+                },
+                "speaker/890": {
+                    "meeting_user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 111,
+                    "structure_level_list_of_speakers_id": 9,
+                    "begin_time": 123456789,
+                    "pause_time": 123456800,
+                },
+                "structure_level_list_of_speakers/9": {
+                    "structure_level_id": 5,
+                    "list_of_speakers_id": 23,
+                    "speaker_ids": [890],
+                    "initial_time": 30,
+                    "remaining_time": 18,
+                    "meeting_id": 111,
+                },
+                "structure_level/5": {
+                    "name": "Lvl",
+                    "structure_level_list_of_speakers_ids": [9],
+                    "default_time": 30,
+                    "meeting_user_ids": [7],
+                    "meeting_id": 111,
+                },
+            }
+        )
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("speaker/890")
+        sllos = self.assert_model_exists(
+            "structure_level_list_of_speakers/9",
+            {
+                "current_start_time": None,
+                "structure_level_id": 5,
+                "list_of_speakers_id": 23,
+                "speaker_ids": [],
+                "initial_time": 30,
+                "meeting_id": 111,
+            },
+        )
+        assert sllos["remaining_time"] == 18
