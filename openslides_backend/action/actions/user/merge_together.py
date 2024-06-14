@@ -303,16 +303,17 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
                         actions["create"],
                         to_create,
                     )
-                if "update" in actions:
-                    to_update: list[dict[str, Any]] = []
-                    for payload in update_operations[collection]["update"]:
-                        if len(payload) > 1:
-                            to_update.append(payload)
-                    if len(to_update):
-                        self.execute_other_action(
-                            actions["update"],
-                            to_update,
-                        )
+                if "update" in actions and len(
+                    to_update := [
+                        payload
+                        for payload in update_operations[collection]["update"]
+                        if len(payload) > 1
+                    ]
+                ):
+                    self.execute_other_action(
+                        actions["update"],
+                        to_update,
+                    )
                 if "delete" in actions and len(
                     to_delete := update_operations[collection]["delete"]
                 ):
