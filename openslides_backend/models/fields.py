@@ -54,6 +54,8 @@ class Field:
         default: Any | None = None,
         constraints: dict[str, Any] | None = None,
         is_view_field: bool = False,
+        is_primary: bool = False,
+        write_fields: tuple[str, str, str, list[str]] | None = None
     ) -> None:
         self.required = required
         self.read_only = read_only
@@ -63,6 +65,8 @@ class Field:
             constraints["enum"].append(None)
         self.constraints = constraints or {}
         self.is_view_field = is_view_field
+        self.is_primary = is_primary
+        self.write_fields = write_fields
         self.schema_validator = fastjsonschema.compile(self.get_schema())
 
     def get_schema(self) -> Schema:
