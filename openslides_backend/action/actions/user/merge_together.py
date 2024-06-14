@@ -247,11 +247,19 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
                     MeetingUserUpdate, meeting_user_update_payloads
                 )
 
-            meeting_users_by_id = self.datastore.filter(
-                "meeting_user", FilterOperator("user_id", "=", user_id), ["meeting_id"]
-            )
+            update_operations["personal_note"]["create"] = [
+                payload
+                for payload in update_operations["personal_note"]["create"]
+                if payload.get("star") or payload.get("note")
+            ]
+
             meeting_user_id_by_meeting_id = {
-                model["meeting_id"]: id_ for id_, model in meeting_users_by_id.items()
+                model["meeting_id"]: id_
+                for id_, model in self.datastore.filter(
+                    "meeting_user",
+                    FilterOperator("user_id", "=", user_id),
+                    ["meeting_id"],
+                ).items()
             }
 
             create_deep_merge_actions_per_collection: dict[str, dict[str, Any]] = {
@@ -281,12 +289,6 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
                     "delete": MotionWorkingGroupSpeakerDeleteAction,
                 },
             }
-
-            update_operations["personal_note"]["create"] = [
-                payload
-                for payload in update_operations["personal_note"]["create"]
-                if payload.get("star") or payload.get("note")
-            ]
 
             for collection, actions in create_deep_merge_actions_per_collection.items():
                 if "create" in actions and len(
