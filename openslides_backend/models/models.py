@@ -303,7 +303,9 @@ class Theme(Model):
     yes = fields.ColorField()
     no = fields.ColorField()
     abstain = fields.ColorField()
-    theme_for_organization_id = fields.RelationField(to={"organization": "theme_id"})
+    theme_for_organization_id = fields.RelationField(
+        to={"organization": "theme_id"}, is_view_field=True
+    )
     organization_id = fields.OrganizationField(
         to={"organization": "theme_ids"}, required=True
     )
@@ -920,7 +922,7 @@ class Meeting(Model, MeetingModelMixin):
         to={"committee": "meeting_ids"}, required=True, constant=True
     )
     default_meeting_for_committee_id = fields.RelationField(
-        to={"committee": "default_meeting_id"}
+        to={"committee": "default_meeting_id"}, is_view_field=True
     )
     organization_tag_ids = fields.RelationListField(
         to={"organization_tag": "tagged_ids"}, is_view_field=True
@@ -1108,10 +1110,14 @@ class Group(Model):
         to={"meeting_user": "group_ids"}, is_view_field=True, equal_fields="meeting_id"
     )
     default_group_for_meeting_id = fields.RelationField(
-        to={"meeting": "default_group_id"}, on_delete=fields.OnDelete.PROTECT
+        to={"meeting": "default_group_id"},
+        on_delete=fields.OnDelete.PROTECT,
+        is_view_field=True,
     )
     admin_group_for_meeting_id = fields.RelationField(
-        to={"meeting": "admin_group_id"}, on_delete=fields.OnDelete.PROTECT
+        to={"meeting": "admin_group_id"},
+        on_delete=fields.OnDelete.PROTECT,
+        is_view_field=True,
     )
     mediafile_access_group_ids = fields.RelationListField(
         to={"mediafile": "access_group_ids"},
@@ -1439,6 +1445,7 @@ class Topic(Model):
     agenda_item_id = fields.RelationField(
         to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
         required=True,
         constant=True,
         equal_fields="meeting_id",
@@ -1446,6 +1453,7 @@ class Topic(Model):
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
         required=True,
         constant=True,
         equal_fields="meeting_id",
@@ -1617,11 +1625,13 @@ class Motion(Model):
     agenda_item_id = fields.RelationField(
         to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
         equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
         required=True,
         constant=True,
         equal_fields="meeting_id",
@@ -1827,11 +1837,13 @@ class MotionBlock(Model):
     agenda_item_id = fields.RelationField(
         to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
         equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
         required=True,
         equal_fields="meeting_id",
     )
@@ -1946,6 +1958,7 @@ class MotionState(Model):
     first_state_of_workflow_id = fields.RelationField(
         to={"motion_workflow": "first_state_id"},
         on_delete=fields.OnDelete.PROTECT,
+        is_view_field=True,
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
@@ -1979,13 +1992,14 @@ class MotionWorkflow(Model):
         equal_fields="meeting_id",
     )
     default_workflow_meeting_id = fields.RelationField(
-        to={"meeting": "motions_default_workflow_id"}
+        to={"meeting": "motions_default_workflow_id"}, is_view_field=True
     )
     default_amendment_workflow_meeting_id = fields.RelationField(
-        to={"meeting": "motions_default_amendment_workflow_id"}
+        to={"meeting": "motions_default_amendment_workflow_id"}, is_view_field=True
     )
     default_statute_amendment_workflow_meeting_id = fields.RelationField(
-        to={"meeting": "motions_default_statute_amendment_workflow_id"}
+        to={"meeting": "motions_default_statute_amendment_workflow_id"},
+        is_view_field=True,
     )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_workflow_ids"}, required=True, constant=True
@@ -2139,7 +2153,10 @@ class Option(Model):
         to={"poll": "option_ids"}, constant=True, equal_fields="meeting_id"
     )
     used_as_global_option_in_poll_id = fields.RelationField(
-        to={"poll": "global_option_id"}, constant=True, equal_fields="meeting_id"
+        to={"poll": "global_option_id"},
+        is_view_field=True,
+        constant=True,
+        equal_fields="meeting_id",
     )
     vote_ids = fields.RelationListField(
         to={"vote": "option_id"},
@@ -2218,11 +2235,13 @@ class Assignment(Model):
     agenda_item_id = fields.RelationField(
         to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
         equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
         required=True,
         constant=True,
         equal_fields="meeting_id",
@@ -2282,6 +2301,7 @@ class PollCandidateList(Model):
     )
     option_id = fields.RelationField(
         to={"option": "content_object_id"},
+        is_view_field=True,
         required=True,
         constant=True,
         equal_fields="meeting_id",
@@ -2351,7 +2371,9 @@ class Mediafile(Model):
         to={"mediafile": "parent_id"}, is_view_field=True, equal_fields="owner_id"
     )
     list_of_speakers_id = fields.RelationField(
-        to={"list_of_speakers": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"list_of_speakers": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        is_view_field=True,
     )
     projection_ids = fields.RelationListField(
         to={"projection": "content_object_id"},
@@ -2372,52 +2394,52 @@ class Mediafile(Model):
         constant=True,
     )
     used_as_logo_projector_main_in_meeting_id = fields.RelationField(
-        to={"meeting": "logo_projector_main_id"}
+        to={"meeting": "logo_projector_main_id"}, is_view_field=True
     )
     used_as_logo_projector_header_in_meeting_id = fields.RelationField(
-        to={"meeting": "logo_projector_header_id"}
+        to={"meeting": "logo_projector_header_id"}, is_view_field=True
     )
     used_as_logo_web_header_in_meeting_id = fields.RelationField(
-        to={"meeting": "logo_web_header_id"}
+        to={"meeting": "logo_web_header_id"}, is_view_field=True
     )
     used_as_logo_pdf_header_l_in_meeting_id = fields.RelationField(
-        to={"meeting": "logo_pdf_header_l_id"}
+        to={"meeting": "logo_pdf_header_l_id"}, is_view_field=True
     )
     used_as_logo_pdf_header_r_in_meeting_id = fields.RelationField(
-        to={"meeting": "logo_pdf_header_r_id"}
+        to={"meeting": "logo_pdf_header_r_id"}, is_view_field=True
     )
     used_as_logo_pdf_footer_l_in_meeting_id = fields.RelationField(
-        to={"meeting": "logo_pdf_footer_l_id"}
+        to={"meeting": "logo_pdf_footer_l_id"}, is_view_field=True
     )
     used_as_logo_pdf_footer_r_in_meeting_id = fields.RelationField(
-        to={"meeting": "logo_pdf_footer_r_id"}
+        to={"meeting": "logo_pdf_footer_r_id"}, is_view_field=True
     )
     used_as_logo_pdf_ballot_paper_in_meeting_id = fields.RelationField(
-        to={"meeting": "logo_pdf_ballot_paper_id"}
+        to={"meeting": "logo_pdf_ballot_paper_id"}, is_view_field=True
     )
     used_as_font_regular_in_meeting_id = fields.RelationField(
-        to={"meeting": "font_regular_id"}
+        to={"meeting": "font_regular_id"}, is_view_field=True
     )
     used_as_font_italic_in_meeting_id = fields.RelationField(
-        to={"meeting": "font_italic_id"}
+        to={"meeting": "font_italic_id"}, is_view_field=True
     )
     used_as_font_bold_in_meeting_id = fields.RelationField(
-        to={"meeting": "font_bold_id"}
+        to={"meeting": "font_bold_id"}, is_view_field=True
     )
     used_as_font_bold_italic_in_meeting_id = fields.RelationField(
-        to={"meeting": "font_bold_italic_id"}
+        to={"meeting": "font_bold_italic_id"}, is_view_field=True
     )
     used_as_font_monospace_in_meeting_id = fields.RelationField(
-        to={"meeting": "font_monospace_id"}
+        to={"meeting": "font_monospace_id"}, is_view_field=True
     )
     used_as_font_chyron_speaker_name_in_meeting_id = fields.RelationField(
-        to={"meeting": "font_chyron_speaker_name_id"}
+        to={"meeting": "font_chyron_speaker_name_id"}, is_view_field=True
     )
     used_as_font_projector_h1_in_meeting_id = fields.RelationField(
-        to={"meeting": "font_projector_h1_id"}
+        to={"meeting": "font_projector_h1_id"}, is_view_field=True
     )
     used_as_font_projector_h2_in_meeting_id = fields.RelationField(
-        to={"meeting": "font_projector_h2_id"}
+        to={"meeting": "font_projector_h2_id"}, is_view_field=True
     )
 
 
@@ -2441,7 +2463,9 @@ class Projector(Model):
     header_font_color = fields.ColorField(default="#f5f5f5")
     header_h1_color = fields.ColorField(default="#317796")
     chyron_background_color = fields.ColorField(default="#317796")
+    chyron_background_color_2 = fields.ColorField(default="#134768")
     chyron_font_color = fields.ColorField(default="#ffffff")
+    chyron_font_color_2 = fields.ColorField(default="#ffffff")
     show_header_footer = fields.BooleanField(default=True)
     show_title = fields.BooleanField(default=True)
     show_logo = fields.BooleanField(default=True)
@@ -2473,7 +2497,7 @@ class Projector(Model):
         equal_fields="meeting_id",
     )
     used_as_reference_projector_meeting_id = fields.RelationField(
-        to={"meeting": "reference_projector_id"}
+        to={"meeting": "reference_projector_id"}, is_view_field=True
     )
     used_as_default_projector_for_agenda_item_list_in_meeting_id = fields.RelationField(
         to={"meeting": "default_projector_agenda_item_list_ids"}
@@ -2597,10 +2621,10 @@ class ProjectorCountdown(Model):
         equal_fields="meeting_id",
     )
     used_as_list_of_speakers_countdown_meeting_id = fields.RelationField(
-        to={"meeting": "list_of_speakers_countdown_id"}
+        to={"meeting": "list_of_speakers_countdown_id"}, is_view_field=True
     )
     used_as_poll_countdown_meeting_id = fields.RelationField(
-        to={"meeting": "poll_countdown_id"}
+        to={"meeting": "poll_countdown_id"}, is_view_field=True
     )
     meeting_id = fields.RelationField(
         to={"meeting": "projector_countdown_ids"}, required=True, constant=True
