@@ -5,8 +5,9 @@ from openslides_backend.services.datastore.interface import PartialModel
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permission_helper import has_organization_management_level
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException, BadCodingException
+from ....shared.exceptions import ActionException, BadCodingException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, CollectionField
 from ....shared.schema import id_list_schema
@@ -123,6 +124,31 @@ class UserMergeTogether(
                 "require_equality": ["member_number"],
             },
         )
+
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        selected_users = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "user",
+                    [instance["id"], *instance["user_ids"]],
+                    ["organization_management_level"],
+                )
+            ]
+        )["user"]
+        all_omls = [
+            OrganizationManagementLevel(oml)
+            for user in selected_users.values()
+            if (oml := user.get("organization_management_level"))
+        ]
+        if len(all_omls):
+            min_oml = max(all_omls)
+            if not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                min_oml,
+            ):
+                raise MissingPermission(min_oml)
+        return super().check_permissions(instance)
 
     def prefetch(self, action_data: ActionData) -> None:
         self.mass_prefetch_for_merge(

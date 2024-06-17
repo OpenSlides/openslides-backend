@@ -247,15 +247,17 @@ class UserMergeTogether(BaseVoteTestCase):
             "test",
             organization_management_level=OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
+        id2 = self.create_user("test2")
         self.login(self.user_id)
-        response = self.request("user.merge_together", {"id": 1, "user_ids": []})
+        response = self.request("user.merge_together", {"id": id2, "user_ids": []})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/1", user)
 
     def test_merge_missing_permission(self) -> None:
         self.user_id = self.create_user("test")
+        id2 = self.create_user("test2")
         self.login(self.user_id)
-        response = self.request("user.merge_together", {"id": 1, "user_ids": []})
+        response = self.request("user.merge_together", {"id": id2, "user_ids": []})
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action user.merge_together. Missing OrganizationManagementLevel: can_manage_users",
@@ -402,7 +404,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "meeting/3": {"present_user_ids": [3, 4]},
                 "meeting/4": {"present_user_ids": [5]},
                 "user/2": {
-                    "organization_management_level": "can_manage_organization",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                     "pronoun": "he",
                     "first_name": "Nick",
                     "is_active": False,
@@ -413,7 +415,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "committee_management_ids": [1],
                 },
                 "user/3": {
-                    "organization_management_level": "can_manage_users",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                     "pronoun": "she",
                     "title": "Dr.",
                     "first_name": "Rob",
@@ -424,7 +426,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "is_present_in_meeting_ids": [3],
                 },
                 "user/4": {
-                    "organization_management_level": "superadmin",
+                    "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                     "is_active": True,
                     "is_physical_person": False,
                     "gender": "female",
@@ -433,7 +435,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "member_number": "souperadmin",
                 },
                 "user/5": {
-                    "organization_management_level": "can_manage_users",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                     "pronoun": "it",
                     "title": "Prof. Dr. Dr.",
                     "last_name": "Everything",
@@ -489,7 +491,7 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "organization_management_level": "superadmin",
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                 "is_active": True,
                 "is_physical_person": True,
                 "username": "user2",
@@ -573,6 +575,20 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_model_exists("committee/1", {"user_ids": [2], "manager_ids": [2]})
         self.assert_model_exists("committee/2", {"user_ids": [2]})
         self.assert_model_exists("committee/3", {"user_ids": [2], "manager_ids": [2]})
+
+    def test_merge_forbid_merging_of_higher_level_users(self) -> None:
+        self.setup_complex_user_fields()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        response = self.request(
+            "user.merge_together", {"id": 2, "user_ids": [3, 4, 5, 6]}
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.merge_together. Missing OrganizationManagementLevel: superadmin",
+            response.json["message"],
+        )
 
     def test_with_custom_fields_complex(self) -> None:
         self.setup_complex_user_fields()

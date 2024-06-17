@@ -36,6 +36,7 @@ This action will overwrite data in archived meetings.
 
 ### Restrictions
 An error is thrown if:
+- The operator is trying to merge himself into another user
 - Any of the selected users are demo- or forwarding users (i.e. `is_demo_user` or `forwarding_committee_ids` is set)
 - Any of the secondary users have a `saml_id`
 - There are multiple different `member_number`s between the selected users (empty does not count)
@@ -130,7 +131,8 @@ Equivalence is determined as follows for each collection:
 The primary model is updated/re-created with the lowest `weight` among the selected models.
 
 ## Permissions
-The request user needs the organization management level `can_manage_users`.
+The request user needs at least the organization management level `can_manage_users`.
+He also needs a organization management level that is equal or higher than that of all of the selected users.
 
 ## Client
 
