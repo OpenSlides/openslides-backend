@@ -11,7 +11,6 @@ from ....shared.exceptions import ActionException, BadCodingException, MissingPe
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, CollectionField
 from ....shared.schema import id_list_schema
-from ...action import Action, ActionResults
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -173,6 +172,7 @@ class UserMergeTogether(
         return super().get_updated_instances(action_data)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        instance = super().update_instance(instance)
         update_operations: dict[Collection, MergeUpdateOperations] = {
             coll: {"create": [], "update": [], "delete": []}
             for coll in self._collection_field_groups
@@ -208,7 +208,11 @@ class UserMergeTogether(
         self.call_other_actions(update_operations)
         self.update_entitled_user_lists(instance["id"], instance["user_ids"])
 
-        return {"id": into["id"], "committee_ids": committee_ids}
+        result = {"id": into["id"], "committee_ids": committee_ids}
+        self._history_replacement_groups[self.main_fqid]["user"] = [
+            (result, [into["id"], *instance["user_ids"]], False)
+        ]
+        return result
 
     def call_other_actions(
         self, update_operations: dict[Collection, MergeUpdateOperations]
@@ -351,7 +355,6 @@ class UserMergeTogether(
                         actions["delete"],
                         [{"id": id_} for id_ in to_delete],
                     )
-                update_operations.pop(collection)
 
             if len(to_delete := update_operations["user"]["delete"]):
                 self.execute_other_action(
@@ -359,16 +362,6 @@ class UserMergeTogether(
                     [{"id": id_} for id_ in to_delete],
                 )
             self.execute_other_action(UserUpdate, update_operations["user"]["update"])
-
-            update_operations.pop("user", None)
-            update_operations.pop("meeting_user", None)
-            if any(
-                [
-                    any([len(cast(list, li)) for li in operation.values()])
-                    for operation in update_operations.values()
-                ]
-            ):
-                raise ActionException("Finished without carrying out all operations")
 
     def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
         all_models = [into, *other_models]
@@ -572,15 +565,4 @@ class UserMergeTogether(
                     return None
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations
-        )
-
-    def execute_other_action(
-        self,
-        ActionClass: type["Action"],
-        action_data: ActionData,
-        skip_archived_meeting_check: bool = True,
-        skip_history: bool = False,
-    ) -> ActionResults | None:
-        return super().execute_other_action(
-            ActionClass, action_data, skip_archived_meeting_check, skip_history
         )

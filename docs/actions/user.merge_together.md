@@ -138,4 +138,7 @@ He also needs a organization management level that is equal or higher than that 
 
 The client could/should fill the optional fields from a chosen "main" user to not force the editor to rewrite all the data.
 
-Warnings should be shown alerting the user that this action is not reversable and will potentially change/overwrite data in archived meetings.
+Warnings should be shown alerting the user that 
+- this action is not reversable,
+- will potentially change/overwrite data in archived meetings and
+- will not port the history information of the old users data to the new ones

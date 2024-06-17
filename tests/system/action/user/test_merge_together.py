@@ -13,6 +13,9 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
+# TODO: Test multi request action and
+# relation transfer in history (should suffice to just thouroughly test the history for the motion_editors)
+
 
 class UserMergeTogether(BaseVoteTestCase):
     def setUp(self) -> None:
@@ -575,6 +578,74 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_model_exists("committee/1", {"user_ids": [2], "manager_ids": [2]})
         self.assert_model_exists("committee/2", {"user_ids": [2]})
         self.assert_model_exists("committee/3", {"user_ids": [2], "manager_ids": [2]})
+
+        self.assert_history_information(
+            "user/2",
+            [
+                "Updated with data from {}, {}, {} and {}",
+                *[f"user/{id_}" for id_ in range(3, 7)],
+            ],
+        )
+        for id_ in range(3, 7):
+            self.assert_history_information(f"user/{id_}", ["Merged into {}", "user/2"])
+
+        self.assert_history_information(
+            "meeting_user/12",
+            [
+                "Updated with data from {} and {} during user-merge into {}",
+                *[f"meeting_user/{id_}" for id_ in [14, 15]],
+                "user/2",
+            ],
+        )
+        self.assert_history_information(
+            "meeting_user/22",
+            [
+                "Updated with data from {} and {} during user-merge into {}",
+                *[f"meeting_user/{id_}" for id_ in [23, 24]],
+                "user/2",
+            ],
+        )
+        self.assert_history_information(
+            "meeting_user/46",
+            [
+                "Created from data of {} and {} during user-merge into {}",
+                *[f"meeting_user/{id_}" for id_ in [33, 34]],
+                "user/2",
+            ],
+        )
+        self.assert_history_information(
+            "meeting_user/47",
+            [
+                "Created from data of {} during user-merge into {}",
+                "meeting_user/45",
+                "user/2",
+            ],
+        )
+
+        for id_, target_id in [(33, 46), (45, 47)]:
+            self.assert_history_information(
+                f"meeting_user/{id_}",
+                [
+                    "Replaced by {} during user-merge into {}",
+                    f"meeting_user/{target_id}",
+                    "user/2",
+                ],
+            )
+
+        for target_id, deleted_ids in {
+            12: [14, 15],
+            22: [23, 24],
+            46: [34],
+        }.items():
+            for id_ in deleted_ids:
+                self.assert_history_information(
+                    f"meeting_user/{id_}",
+                    [
+                        "Merged into {} during user-merge into {}",
+                        f"meeting_user/{target_id}",
+                        "user/2",
+                    ],
+                )
 
     def test_merge_forbid_merging_of_higher_level_users(self) -> None:
         self.setup_complex_user_fields()
