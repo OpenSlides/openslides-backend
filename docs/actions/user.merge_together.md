@@ -32,6 +32,8 @@ The action is a kind of expanded [user.update](user.update.md): It updates the p
 
 Conflicts in single-relations are resolved on a case-by-case basis.
 
+This action will overwrite data in archived meetings.
+
 ### Restrictions
 An error is thrown if:
 - Any of the selected users are demo- or forwarding users (i.e. `is_demo_user` or `forwarding_committee_ids` is set)
@@ -133,3 +135,5 @@ The request user needs the organization management level `can_manage_users`.
 ## Client
 
 The client could/should fill the optional fields from a chosen "main" user to not force the editor to rewrite all the data.
+
+Warnings should be shown alerting the user that this action is not reversable and will potentially change/overwrite data in archived meetings.

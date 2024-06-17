@@ -2,6 +2,7 @@ from typing import Any, cast
 
 from openslides_backend.services.datastore.interface import PartialModel
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....services.datastore.commands import GetManyRequest
@@ -9,6 +10,7 @@ from ....shared.exceptions import ActionException, BadCodingException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, CollectionField
 from ....shared.schema import id_list_schema
+from ...action import Action, ActionResults
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -36,7 +38,9 @@ from .user_mixins import UserMixin
 
 
 @register_action("user.merge_together")
-class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
+class UserMergeTogether(
+    MeetingUserMergeMixin, UpdateAction, CheckForArchivedMeetingMixin
+):
     """
     Action to merge users together.
     """
@@ -327,7 +331,6 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
                 self.execute_other_action(
                     UserDelete,
                     [{"id": id_} for id_ in to_delete],
-                    UserDelete.skip_archived_meeting_check,
                 )
             self.execute_other_action(UserUpdate, update_operations["user"]["update"])
 
@@ -515,17 +518,6 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
             case _:
                 return super().get_merge_comparison_hash(collection, model)
 
-    def get_meeting_ids(self, instance: dict[str, Any]) -> list[int]:
-        meeting_users = self.datastore.filter(
-            "meeting_user",
-            Or(
-                FilterOperator("user_id", "=", user_id)
-                for user_id in [instance["id"], *instance["user_ids"]]
-            ),
-            ["meeting_id"],
-        ).values()
-        return list({m["meeting_id"] for m in meeting_users})
-
     def handle_special_field(
         self,
         collection: Collection,
@@ -554,4 +546,15 @@ class UserMergeTogether(MeetingUserMergeMixin, UpdateAction):
                     return None
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations
+        )
+
+    def execute_other_action(
+        self,
+        ActionClass: type["Action"],
+        action_data: ActionData,
+        skip_archived_meeting_check: bool = True,
+        skip_history: bool = False,
+    ) -> ActionResults | None:
+        return super().execute_other_action(
+            ActionClass, action_data, skip_archived_meeting_check, skip_history
         )

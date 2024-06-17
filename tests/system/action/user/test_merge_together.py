@@ -653,26 +653,6 @@ class UserMergeTogether(BaseVoteTestCase):
             },
         )
 
-    # TODO: Do this more exactly
-    # (maybe by duplicating this test class with all meetings set to archived)
-    def test_merge_with_archived_meeting(self) -> None:
-        self.set_models(
-            {
-                "organization/1": {
-                    "active_meeting_ids": [2, 3, 4],
-                    "archived_meeting_ids": [1],
-                },
-                "meeting/1": {
-                    "is_active_in_organization_id": None,
-                    "is_archived_in_organization_id": 1,
-                },
-            }
-        )
-        response = self.request("user.merge_together", {"id": 2, "user_ids": [3]})
-        self.assert_status_code(response, 400)
-        self.assert_model_exists("user/2")
-        self.assert_model_exists("user/3")
-
     def test_with_multiple_delegations(self) -> None:
         self.set_models(
             {
@@ -2192,3 +2172,64 @@ class UserMergeTogether(BaseVoteTestCase):
             "Differing values in field structure_level_list_of_speakers_id when merging into speaker/1",
             response.json["message"],
         )
+
+    def archive_all_meetings(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "active_meeting_ids": [],
+                    "archived_meeting_ids": [1, 2, 3, 4],
+                },
+                **{
+                    f"meeting/{id_}": {
+                        "is_archived_in_organization_id": ONE_ORGANIZATION_ID,
+                        "is_active_in_organization_id": None,
+                    }
+                    for id_ in [1, 2, 3, 4]
+                },
+            }
+        )
+
+    def test_merge_archived_with_user_fields(self) -> None:
+        self.archive_all_meetings()
+        self.test_merge_with_user_fields()
+
+    def test_merge_archived_with_assignment_candidates(self) -> None:
+        self.archive_all_meetings()
+        self.test_merge_with_assignment_candidates()
+
+    def test_merge_archived_on_chat_messages(self) -> None:
+        self.archive_all_meetings()
+        self.test_merge_on_chat_messages()
+
+    def test_merge_archived_with_motion_editor(self) -> None:
+        self.archive_all_meetings()
+        self.test_merge_with_motion_editor()
+
+    def test_merge_archived_with_motion_submitters_and_supporters(self) -> None:
+        self.archive_all_meetings()
+        self.test_merge_with_motion_submitters_and_supporters()
+
+    def test_merge_archived_with_motion_working_group_speakers(self) -> None:
+        self.archive_all_meetings()
+        self.test_merge_with_motion_working_group_speakers()
+
+    def test_merge_archived_with_personal_notes(self) -> None:
+        self.archive_all_meetings()
+        self.test_merge_with_personal_notes()
+
+    def test_merge_archived_with_running_speaker(self) -> None:
+        self.archive_all_meetings()
+        self.test_with_running_speaker()
+
+    def test_merge_archived_normal(self) -> None:
+        self.archive_all_meetings()
+        self.test_merge_normal()
+
+    def test_merge_archived_polls(self) -> None:
+        password = self.assert_model_exists("user/2")["password"]
+        self.create_polls_with_correct_votes()
+        self.archive_all_meetings()
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
+        self.assert_status_code(response, 200)
+        self.assert_merge_with_polls_correct(password)
