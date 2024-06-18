@@ -1,4 +1,7 @@
-from typing import Any, Dict, Optional
+import re
+from typing import Any
+
+from openslides_backend.permissions.permissions import Permissions
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -11,7 +14,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .user_mixin import (
+from .user_mixins import (
     LimitOfUserMixin,
     UpdateHistoryMixin,
     UserMixin,
@@ -46,22 +49,22 @@ class UserUpdate(
             "can_change_own_password",
             "gender",
             "email",
-            "default_number",
-            "default_structure_level",
             "default_vote_weight",
             "organization_management_level",
             "committee_management_ids",
             "is_demo_user",
             "saml_id",
+            "member_number",
         ],
         additional_optional_fields={
             "meeting_id": optional_id_schema,
             **UserMixin.transfer_field_list,
         },
     )
+    permission = Permissions.User.CAN_UPDATE
     check_email_field = "email"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         user = self.datastore.get(
             fqid_from_collection_and_id("user", instance["id"]),
@@ -82,6 +85,9 @@ class UserUpdate(
             instance["can_change_own_password"] = False
             instance["default_password"] = ""
             instance["password"] = ""
+
+        if instance.get("username") and re.search(r"\s", instance["username"]):
+            raise ActionException("Username may not contain spaces")
 
         if (
             instance["id"] == self.user_id
@@ -106,7 +112,7 @@ class UserUpdate(
         check_gender_helper(self.datastore, instance)
         return instance
 
-    def get_removed_meeting_id(self, instance: Dict[str, Any]) -> Optional[int]:
+    def get_removed_meeting_id(self, instance: dict[str, Any]) -> int | None:
         if instance.get("group_ids") == []:
             return instance.get("meeting_id")
         return None

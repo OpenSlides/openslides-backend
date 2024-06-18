@@ -1,5 +1,5 @@
 from contextlib import nullcontext
-from typing import Any, Dict, Optional
+from typing import Any
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -10,6 +10,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from .interfaces.env import Env
 
+otel_initialized = False
+
 
 def init(env: Env, service_name: str) -> None:
     """
@@ -17,10 +19,9 @@ def init(env: Env, service_name: str) -> None:
     """
     if not env.is_otel_enabled():
         return
-
     span_exporter = OTLPSpanExporter(
         endpoint="http://collector:4317",
-        insecure=True
+        insecure=True,
         # optional
         # credentials=ChannelCredentials(credentials),
         # headers=(("metadata", "metadata")),
@@ -31,13 +32,15 @@ def init(env: Env, service_name: str) -> None:
     trace.set_tracer_provider(tracer_provider)
     span_processor = BatchSpanProcessor(span_exporter)
     tracer_provider.add_span_processor(span_processor)
+    global otel_initialized
+    otel_initialized = True
 
 
 def instrument_requests() -> None:
     RequestsInstrumentor().instrument()
 
 
-def make_span(env: Env, name: str, attributes: Optional[Dict[str, str]] = None) -> Any:
+def make_span(env: Env, name: str, attributes: dict[str, str] | None = None) -> Any:
     """
     Returns a new child span to the currently active span.
     If OPENTELEMETRY_ENABLED is not truthy a nullcontext will be returned instead.
@@ -55,7 +58,12 @@ def make_span(env: Env, name: str, attributes: Optional[Dict[str, str]] = None) 
     if not env.is_otel_enabled():
         return nullcontext()
 
+    # global otel_initialized
+    # assert (
+    #     otel_initialized
+    # ), "backend:Opentelemetry span to be set before having set a TRACER_PROVIDER"
+
     tracer = trace.get_tracer_provider().get_tracer(__name__)
-    span = tracer.start_as_current_span(name, attributes=attributes)
+    span = tracer.start_as_current_span("backend:" + name, attributes=attributes)
 
     return span

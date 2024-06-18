@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Motion
 from ....permissions.base_classes import Permission
@@ -16,12 +16,20 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
+from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from .create_base import MotionCreateBase
-from .mixins import AmendmentParagraphHelper
+from .mixins import AmendmentParagraphHelper, TextHashMixin
+from .payload_validation_mixin import MotionCreatePayloadValidationMixin
 
 
 @register_action("motion.create")
-class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
+class MotionCreate(
+    AmendmentParagraphHelper,
+    MotionCreatePayloadValidationMixin,
+    DelegationBasedRestrictionMixin,
+    TextHashMixin,
+    MotionCreateBase,
+):
     """
     Create Action for motions.
     """
@@ -29,6 +37,7 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
     schema = DefaultSchema(Motion()).get_create_schema(
         optional_properties=[
             "number",
+            "additional_submitter",
             "sort_parent_id",
             "category_id",
             "block_id",
@@ -83,49 +92,28 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
             ]
         )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # special check logic
+        error_messages = self.get_create_payload_integrity_error_message(
+            instance, instance["meeting_id"]
+        )
+        if len(error_messages):
+            raise ActionException(error_messages[0]["message"])
         if instance.get("lead_motion_id"):
-            if instance.get("statute_paragraph_id"):
-                raise ActionException(
-                    "You can't give both of lead_motion_id and statute_paragraph_id."
-                )
-            if not instance.get("text") and not instance.get("amendment_paragraphs"):
-                raise ActionException(
-                    "Text or amendment_paragraphs is required in this context."
-                )
-            if instance.get("text") and instance.get("amendment_paragraphs"):
-                raise ActionException(
-                    "You can't give both of text and amendment_paragraphs"
-                )
             if instance.get("text") and "amendment_paragraphs" in instance:
                 del instance["amendment_paragraphs"]
             if instance.get("amendment_paragraphs") and "text" in instance:
                 del instance["text"]
-        else:
-            if not instance.get("text"):
-                raise ActionException("Text is required")
-            if instance.get("amendment_paragraphs"):
-                raise ActionException(
-                    "You can't give amendment_paragraphs in this context"
-                )
         if instance.get("amendment_paragraphs"):
             self.validate_amendment_paragraphs(instance)
-        # if lead_motion and not has perm motion.can_manage
-        # use category_id and block_id from the lead_motion
-        if instance.get("lead_motion_id") and not has_perm(
-            self.datastore,
-            self.user_id,
-            Permissions.Motion.CAN_MANAGE,
-            instance["meeting_id"],
-        ):
+        # if amendment and no category set, use category from the lead motion
+        if instance.get("lead_motion_id") and "category_id" not in instance:
             lead_motion = self.datastore.get(
                 fqid_from_collection_and_id(
                     self.model.collection, instance["lead_motion_id"]
                 ),
-                ["block_id", "category_id"],
+                ["category_id"],
             )
-            instance["block_id"] = lead_motion.get("block_id")
             instance["category_id"] = lead_motion.get("category_id")
 
         # fetch all needed settings and check reason
@@ -135,19 +123,17 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
                 "motions_default_workflow_id",
                 "motions_default_amendment_workflow_id",
                 "motions_default_statute_amendment_workflow_id",
-                "motions_reason_required",
             ],
         )
-        if meeting.get("motions_reason_required") and not instance.get("reason"):
-            raise ActionException("Reason is required")
 
         self.set_state_from_workflow(instance, meeting)
         self.create_submitters(instance)
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
+        self.set_text_hash(instance)
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         perm: Permission
         # Check can create amendment if needed else check can_create
         if instance.get("lead_motion_id"):
@@ -170,7 +156,12 @@ class MotionCreate(AmendmentParagraphHelper, MotionCreateBase):
             forbidden_fields.add("attachment_ids")
 
         perm = Permissions.Motion.CAN_MANAGE
-        if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+        if (
+            self.check_perm_and_delegator_restriction(
+                perm, "users_forbid_delegator_as_submitter", [instance["meeting_id"]]
+            )
+            == []
+        ):
             whitelist += [
                 "title",
                 "text",

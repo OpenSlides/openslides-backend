@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import MeetingUser
 from ....shared.exceptions import ActionException
@@ -31,9 +31,9 @@ class MeetingUserSetData(
             "user_id",
             "comment",
             "number",
-            "structure_level",
             "about_me",
             "vote_weight",
+            "structure_level_ids",
             "vote_delegated_to_id",
             "vote_delegations_from_ids",
             "group_ids",
@@ -41,7 +41,7 @@ class MeetingUserSetData(
     )
     extend_history_to = "user_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting_id = instance.get("meeting_id")
         user_id = instance.pop("user_id", None)
         if instance.get("id"):
@@ -64,7 +64,7 @@ class MeetingUserSetData(
         instance.pop("meeting_id", None)
         return instance
 
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+    def get_meeting_id(self, instance: dict[str, Any]) -> int:
         if not instance.get("id") and (
             not instance.get("user_id") or not instance.get("meeting_id")
         ):

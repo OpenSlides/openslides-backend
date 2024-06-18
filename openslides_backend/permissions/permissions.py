@@ -1,17 +1,16 @@
 # Code generated. DO NOT EDIT.
 
 from enum import Enum
-from typing import Dict, List
 
 from .base_classes import Permission
-
-PERMISSION_YML_CHECKSUM = "ef7ca2dc9651ba3b9615ef7f1ea7fde6"
 
 
 class _AgendaItem(str, Permission, Enum):
     CAN_MANAGE = "agenda_item.can_manage"
+    CAN_MANAGE_MODERATOR_NOTES = "agenda_item.can_manage_moderator_notes"
     CAN_SEE = "agenda_item.can_see"
     CAN_SEE_INTERNAL = "agenda_item.can_see_internal"
+    CAN_SEE_MODERATOR_NOTES = "agenda_item.can_see_moderator_notes"
 
 
 class _Assignment(str, Permission, Enum):
@@ -74,6 +73,8 @@ class _User(str, Permission, Enum):
     CAN_MANAGE = "user.can_manage"
     CAN_MANAGE_PRESENCE = "user.can_manage_presence"
     CAN_SEE = "user.can_see"
+    CAN_SEE_SENSITIVE_DATA = "user.can_see_sensitive_data"
+    CAN_UPDATE = "user.can_update"
 
 
 class Permissions:
@@ -91,10 +92,15 @@ class Permissions:
 
 
 # Holds the corresponding parent for each permission.
-permission_parents: Dict[Permission, List[Permission]] = {
-    _AgendaItem.CAN_SEE: [_AgendaItem.CAN_SEE_INTERNAL],
+permission_parents: dict[Permission, list[Permission]] = {
+    _AgendaItem.CAN_SEE: [
+        _AgendaItem.CAN_SEE_INTERNAL,
+        _AgendaItem.CAN_SEE_MODERATOR_NOTES,
+    ],
     _AgendaItem.CAN_SEE_INTERNAL: [_AgendaItem.CAN_MANAGE],
     _AgendaItem.CAN_MANAGE: [],
+    _AgendaItem.CAN_SEE_MODERATOR_NOTES: [_AgendaItem.CAN_MANAGE_MODERATOR_NOTES],
+    _AgendaItem.CAN_MANAGE_MODERATOR_NOTES: [],
     _Assignment.CAN_SEE: [
         _Assignment.CAN_NOMINATE_OTHER,
         _Assignment.CAN_NOMINATE_SELF,
@@ -135,7 +141,9 @@ permission_parents: Dict[Permission, List[Permission]] = {
     _Projector.CAN_SEE: [_Projector.CAN_MANAGE],
     _Projector.CAN_MANAGE: [],
     _Tag.CAN_MANAGE: [],
-    _User.CAN_SEE: [_User.CAN_MANAGE_PRESENCE],
+    _User.CAN_SEE: [_User.CAN_MANAGE_PRESENCE, _User.CAN_SEE_SENSITIVE_DATA],
     _User.CAN_MANAGE_PRESENCE: [_User.CAN_MANAGE],
+    _User.CAN_SEE_SENSITIVE_DATA: [_User.CAN_UPDATE],
+    _User.CAN_UPDATE: [_User.CAN_MANAGE],
     _User.CAN_MANAGE: [],
 }

@@ -1,5 +1,5 @@
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.http.views.action_view import (
     INTERNAL_AUTHORIZATION_HEADER,
@@ -25,7 +25,7 @@ class BaseInternalRequestTest(BaseActionTestCase):
     def call_internal_route(
         self,
         payload: Any,
-        internal_auth_password: Optional[str] = DEV_PASSWORD,
+        internal_auth_password: str | None = DEV_PASSWORD,
     ) -> Response:
         if internal_auth_password is None:
             headers = {}
@@ -50,11 +50,11 @@ class BaseInternalPasswordTest(BaseInternalRequestTest):
         self.secret_file = NamedTemporaryFile()
         self.secret_file.write(self.internal_auth_password.encode("ascii"))
         self.secret_file.seek(0)
-        self.app.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = self.secret_file.name
+        self.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = self.secret_file.name
 
     def tearDown(self) -> None:
         super().tearDown()
-        self.app.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = ""
+        self.env.vars["INTERNAL_AUTH_PASSWORD_FILE"] = ""
         self.secret_file.close()
 
 
@@ -68,8 +68,8 @@ class BaseInternalActionTest(BaseInternalRequestTest):
     def internal_request(
         self,
         action: str,
-        data: Dict[str, Any],
-        internal_auth_password: Optional[str] = DEV_PASSWORD,
+        data: dict[str, Any],
+        internal_auth_password: str | None = DEV_PASSWORD,
     ) -> Response:
         return super().call_internal_route(
             [{"action": action, "data": [data]}], internal_auth_password
@@ -108,7 +108,7 @@ class TestInternalActionsDev(BaseInternalActionTest):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")
-        assert self.auth.is_equals("new_password", model["password"])
+        assert self.auth.is_equal("new_password", model["password"])
 
     def test_internal_organization_initial_import(self) -> None:
         self.datastore.truncate_db()

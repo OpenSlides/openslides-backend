@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Set, Tuple
+from typing import Any
 
 from openslides_backend.shared.base_service_provider import BaseServiceProvider
 
@@ -12,7 +12,7 @@ from ...permissions.permission_helper import (
     has_organization_management_level,
     has_perm,
 )
-from ...permissions.permissions import Permissions
+from ...permissions.permissions import Permission, Permissions
 from ...services.datastore.interface import GetManyRequest
 from ..exceptions import MissingPermission
 from ..patterns import fqid_from_collection_and_id
@@ -29,15 +29,16 @@ class UserScope(str, Enum):
 
 class UserScopeMixin(BaseServiceProvider):
     def get_user_scope(
-        self, id_or_instance: int | Dict[str, Any]
-    ) -> Tuple[UserScope, int, str]:
+        self, id_or_instance: int | dict[str, Any]
+    ) -> tuple[UserScope, int, str]:
         """
+        Parameter id_or_instance: id for existing user or instance for user to create
         Returns the scope of the given user id together with the relevant scope id (either meeting,
         committee or organization) and the OML level of the user as string (empty string if the user
         has none).
         """
-        meetings: Set[int] = set()
-        committees_manager: Set[int] = set()
+        meetings: set[int] = set()
+        committees_manager: set[int] = set()
         if isinstance(id_or_instance, dict):
             if "group_ids" in id_or_instance:
                 if "meeting_id" in id_or_instance:
@@ -68,7 +69,7 @@ class UserScopeMixin(BaseServiceProvider):
             ]
         ).get("meeting", {})
 
-        meetings_committee: Dict[int, int] = {
+        meetings_committee: dict[int, int] = {
             meeting_id: meeting_data["committee_id"]
             for meeting_id, meeting_data in result.items()
             if meeting_data.get("is_active_in_organization_id")
@@ -81,7 +82,10 @@ class UserScopeMixin(BaseServiceProvider):
         return UserScope.Organization, 1, oml_right
 
     def check_permissions_for_scope(
-        self, id: int, always_check_user_oml: bool = True
+        self,
+        id: int,
+        always_check_user_oml: bool = True,
+        meeting_permission: Permission = Permissions.User.CAN_MANAGE,
     ) -> None:
         """
         Checks the permissions for user-altering actions depending on the user scope.
@@ -131,13 +135,13 @@ class UserScopeMixin(BaseServiceProvider):
                 CommitteeManagementLevel.CAN_MANAGE,
                 meeting["committee_id"],
             ) and not has_perm(
-                self.datastore, self.user_id, Permissions.User.CAN_MANAGE, scope_id
+                self.datastore, self.user_id, meeting_permission, scope_id
             ):
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                         CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                        Permissions.User.CAN_MANAGE: scope_id,
+                        meeting_permission: scope_id,
                     }
                 )
         else:

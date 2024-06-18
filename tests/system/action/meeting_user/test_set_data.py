@@ -10,8 +10,10 @@ class MeetingUserSetData(BaseActionTestCase):
                 "meeting/10": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [5],
+                    "structure_level_ids": [31],
                 },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "structure_level/31": {"meeting_id": 10},
             }
         )
         test_dict = {
@@ -19,7 +21,7 @@ class MeetingUserSetData(BaseActionTestCase):
             "user_id": 1,
             "comment": "test bla",
             "number": "XII",
-            "structure_level": "A",
+            "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
         }
@@ -33,15 +35,17 @@ class MeetingUserSetData(BaseActionTestCase):
                 "meeting/10": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [5],
+                    "structure_level_ids": [31],
                 },
                 "meeting_user/5": {"user_id": 1, "meeting_id": 10},
+                "structure_level/31": {"meeting_id": 10},
             }
         )
         test_dict = {
             "id": 5,
             "comment": "test bla",
             "number": "XII",
-            "structure_level": "A",
+            "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
         }
@@ -93,7 +97,9 @@ class MeetingUserSetData(BaseActionTestCase):
                 "meeting/10": {
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [],
+                    "structure_level_ids": [31],
                 },
+                "structure_level/31": {"meeting_id": 10},
             }
         )
         test_dict = {
@@ -101,7 +107,7 @@ class MeetingUserSetData(BaseActionTestCase):
             "user_id": 1,
             "comment": "test bla",
             "number": "XII",
-            "structure_level": "A",
+            "structure_level_ids": [31],
             "about_me": "A very long description.",
             "vote_weight": "1.500000",
         }
@@ -128,3 +134,21 @@ class MeetingUserSetData(BaseActionTestCase):
             "Identifier for meeting_user instance required, but neither id nor meeting_id/user_id is given."
             == response.json["message"]
         )
+
+    def test_prevent_zero_vote_weight(self) -> None:
+        self.set_models(
+            {
+                "meeting/10": {
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [5],
+                },
+                "meeting_user/5": {
+                    "user_id": 1,
+                    "meeting_id": 10,
+                    "vote_weight": "1.000000",
+                },
+            }
+        )
+        response = self.request("meeting_user.set_data", {"vote_weight": "0.000000"})
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("meeting_user/5", {"vote_weight": "1.000000"})

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import ProjectorCountdown
 from ....permissions.permissions import Permissions
@@ -29,12 +29,12 @@ class ProjectorCountdownUpdate(UpdateAction):
     )
     permission = Permissions.Projector.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if instance.get("title"):
             self.check_title_unique(instance)
         return instance
 
-    def check_title_unique(self, instance: Dict[str, Any]) -> None:
+    def check_title_unique(self, instance: dict[str, Any]) -> None:
         projector_countdown = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["meeting_id"],

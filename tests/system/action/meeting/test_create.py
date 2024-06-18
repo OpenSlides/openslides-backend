@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.i18n.translator import Translator
 from openslides_backend.i18n.translator import translate as _
@@ -10,8 +10,8 @@ from tests.system.action.base import BaseActionTestCase
 
 class MeetingCreateActionTest(BaseActionTestCase):
     def basic_test(
-        self, datapart: Dict[str, Any], set_400_str: str = ""
-    ) -> Dict[str, Any]:
+        self, datapart: dict[str, Any], set_400_str: str = ""
+    ) -> dict[str, Any]:
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
@@ -54,14 +54,14 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_name",
                 "committee_id": 1,
-                "group_ids": [2, 3, 4, 5, 6],
+                "group_ids": [2, 3, 4, 5],
                 "default_group_id": 2,
                 "admin_group_id": 3,
                 "motion_workflow_ids": [1, 2],
                 "motions_default_workflow_id": 1,
                 "motions_default_amendment_workflow_id": 1,
                 "motions_default_statute_amendment_workflow_id": 1,
-                "motion_state_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                "motion_state_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
                 "list_of_speakers_countdown_id": 1,
                 "poll_countdown_id": 2,
                 "projector_countdown_warning_time": 0,
@@ -78,7 +78,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("group/3", {"name": "Admin"})
         self.assert_model_exists("group/4", {"name": "Delegates"})
         self.assert_model_exists("group/5", {"name": "Staff"})
-        self.assert_model_exists("group/6", {"name": "Committees"})
         self.assert_model_exists(
             "motion_workflow/1",
             {
@@ -114,7 +113,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "Complex Workflow",
                 "meeting_id": 1,
-                "state_ids": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                "state_ids": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
                 "first_state_id": 5,
             },
         )
@@ -144,14 +143,11 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion_state/13",
-            {"name": "referred to committee", "previous_state_ids": [7]},
+            {"name": "referred to", "previous_state_ids": [7]},
         )
         self.assert_model_exists(
-            "motion_state/14", {"name": "needs review", "previous_state_ids": [7]}
-        )
-        self.assert_model_exists(
-            "motion_state/15",
-            {"name": "rejected (not authorized)", "previous_state_ids": [6]},
+            "motion_state/14",
+            {"name": "not permitted", "previous_state_ids": [6]},
         )
         self.assert_model_exists(
             "projector/1",
@@ -309,6 +305,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
             set_400_str="Only one of start_time and end_time is not allowed.",
         )
 
+    def test_create_empty_times(self) -> None:
+        self.basic_test({"start_time": None, "end_time": None})
+
     def test_create_name_too_long(self) -> None:
         self.basic_test(
             {"name": "A" * 101},
@@ -442,9 +441,23 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         Translator.set_translation_language("de")
-        for i, name in enumerate(
-            ["Default", "Admin", "Delegates", "Staff", "Committees"], 2
-        ):
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "description": "Präsentations- und Versammlungssystem",
+                "welcome_title": "Willkommen bei OpenSlides",
+                "welcome_text": "Platz für Ihren Begrüßungstext.",
+                "motions_preamble": "Die Versammlung möge beschließen:",
+                "motions_export_title": "Anträge",
+                "assignments_export_title": "Wahlen",
+                "users_pdf_welcometitle": "Willkommen bei OpenSlides",
+                "users_pdf_welcometext": "[Platz für Ihren Begrüßungs- und Hilfetext.]",
+                "users_email_sender": "OpenSlides",
+                "users_email_subject": "OpenSlides-Zugangsdaten",
+                "users_email_body": "Hallo {name},\n\nhier ist Ihr persönlicher OpenSlides-Zugang:\n\n{url}\nBenutzername: {username}\nPasswort: {password}\n\n\nDiese E-Mail wurde automatisch erstellt.",
+            },
+        )
+        for i, name in enumerate(["Default", "Admin", "Delegates", "Staff"], 2):
             self.assert_model_exists(
                 f"group/{i}", {"name": _(name), "external_id": name}
             )
@@ -462,7 +475,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "meeting2",
                 "committee_id": 1,
-                "language": "pt",
+                "language": "en",
                 "external_id": external_id,
             },
         )

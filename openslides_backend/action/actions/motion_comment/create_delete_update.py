@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 from openslides_backend.shared.typing import HistoryInformation
@@ -21,7 +21,7 @@ from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 
 
 class MotionCommentMixin(MeetingUserHelperMixin, Action):
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         super().check_permissions(instance)
 
         section = self.get_section(
@@ -72,8 +72,8 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
         raise PermissionDenied(msg)
 
     def get_section(
-        self, instance: Dict[str, Any], fields: List[str]
-    ) -> Dict[str, Any]:
+        self, instance: dict[str, Any], fields: list[str]
+    ) -> dict[str, Any]:
         section_id = self.get_field_from_instance("section_id", instance)
         return self.datastore.get(
             fqid_from_collection_and_id("motion_comment_section", section_id),
@@ -81,7 +81,7 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
             lock_result=False,
         )
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         instances = self.get_instances_with_fields(["motion_id", "section_id"])
         _, action = self.name.split(".")
         return {
@@ -98,7 +98,7 @@ class MotionCommentMixin(MeetingUserHelperMixin, Action):
 class MotionCommentCreate(MotionCommentMixin, CreateActionWithInferredMeeting):
     relation_field_for_meeting = "motion_id"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         # check, if (section_id, motion_id) already in the datastore.
         filter_ = And(

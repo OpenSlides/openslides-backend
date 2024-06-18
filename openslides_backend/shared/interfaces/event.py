@@ -1,5 +1,7 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional, TypedDict, Union
+from typing import Any, TypedDict, Union
+
+from typing_extensions import NotRequired
 
 from ..patterns import FullQualifiedId
 
@@ -13,21 +15,20 @@ class EventType(str, Enum):
         return repr(self.value)
 
 
-ListFields = TypedDict(
-    "ListFields",
-    {
-        "add": Dict[str, List[Union[int, str]]],
-        "remove": Dict[str, List[Union[int, str]]],
-    },
-)
+ListFieldsDict = dict[str, Union[list[int], list[str]]]
 
 
-class Event(TypedDict, total=False):
+class ListFields(TypedDict):
+    add: NotRequired[ListFieldsDict]
+    remove: NotRequired[ListFieldsDict]
+
+
+class Event(TypedDict):
     """
     Event as part of a write request element.
     """
 
     type: EventType
     fqid: FullQualifiedId
-    fields: Optional[Dict[str, Any]]
-    list_fields: Optional[ListFields]
+    fields: NotRequired[dict[str, Any]]
+    list_fields: NotRequired[ListFields]

@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from ...shared.interfaces.event import Event, EventType
 from ...shared.patterns import fqid_from_collection_and_id
@@ -21,7 +22,7 @@ class CreateAction(Action):
             instance["id"] = new_id
         return action_data
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # Primary instance manipulation for defaults and extra fields.
         instance = self.set_defaults(instance)
 
@@ -32,7 +33,7 @@ class CreateAction(Action):
 
         return instance
 
-    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def set_defaults(self, instance: dict[str, Any]) -> dict[str, Any]:
         for field in self.model.get_fields():
             if (
                 field.own_field_name not in instance.keys()
@@ -41,7 +42,7 @@ class CreateAction(Action):
                 instance[field.own_field_name] = field.default
         return instance
 
-    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
+    def create_events(self, instance: dict[str, Any]) -> Iterable[Event]:
         """
         Creates events for one instance of the current model.
         """
@@ -51,7 +52,7 @@ class CreateAction(Action):
         yield self.build_event(EventType.Create, fqid, instance)
 
     def create_action_result_element(
-        self, instance: Dict[str, Any]
-    ) -> Optional[ActionResultElement]:
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         """Returns the newly created id."""
         return {"id": instance["id"]}

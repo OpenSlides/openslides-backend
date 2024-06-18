@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
@@ -13,6 +13,8 @@ class BackendBaseException(Exception):
     Base exception for all custom exceptions of this service.
     """
 
+    message: str
+
     def __init__(self, message: str) -> None:
         self.message = message
 
@@ -20,11 +22,11 @@ class BackendBaseException(Exception):
 class ViewException(BackendBaseException):
     status_code: int
 
-    def __init__(self, message: str, additional_json: Dict[str, Any] = {}) -> None:
+    def __init__(self, message: str, additional_json: dict[str, Any] = {}) -> None:
         super().__init__(message)
         self.additional_json = additional_json
 
-    def get_json(self) -> Dict[str, Any]:
+    def get_json(self) -> dict[str, Any]:
         return {**self.additional_json, "success": False, "message": self.message}
 
 
@@ -37,10 +39,10 @@ class AuthenticationException(View400Exception):
 
 
 class ActionException(View400Exception):
-    action_error_index: Optional[int]
-    action_data_error_index: Optional[int]
+    action_error_index: int | None
+    action_data_error_index: int | None
 
-    def get_json(self) -> Dict[str, Any]:
+    def get_json(self) -> dict[str, Any]:
         json = super().get_json()
         if hasattr(self, "action_error_index") and self.action_error_index is not None:
             json["action_error_index"] = self.action_error_index
@@ -53,10 +55,10 @@ class ActionException(View400Exception):
 
 
 class ProtectedModelsException(ActionException):
-    fqids: List[FullQualifiedId]
+    fqids: list[FullQualifiedId]
 
     def __init__(
-        self, own_fqid: FullQualifiedId, protected_fqids: List[FullQualifiedId]
+        self, own_fqid: FullQualifiedId, protected_fqids: list[FullQualifiedId]
     ) -> None:
         self.fqids = protected_fqids
         super().__init__(
@@ -65,9 +67,9 @@ class ProtectedModelsException(ActionException):
 
 
 class RequiredFieldsException(ActionException):
-    required_fields: List[str]
+    required_fields: list[str]
 
-    def __init__(self, fqid_str: str, required_fields: List[str]) -> None:
+    def __init__(self, fqid_str: str, required_fields: list[str]) -> None:
         self.required_fields = required_fields
         super().__init__(
             f"{fqid_str}: You try to set following required fields to an empty value: {required_fields}"
@@ -125,7 +127,7 @@ AnyPermission = Union[Permission, OrganizationManagementLevel, CommitteeManageme
 class MissingPermission(PermissionDenied):
     def __init__(
         self,
-        permissions: Union[AnyPermission, Dict[AnyPermission, int]],
+        permissions: AnyPermission | dict[AnyPermission, int],
     ) -> None:
         if isinstance(permissions, dict):
             self.message = (

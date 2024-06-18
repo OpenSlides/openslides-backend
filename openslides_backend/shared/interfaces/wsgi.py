@@ -1,8 +1,9 @@
 from abc import abstractmethod
-from typing import Any, Callable, Dict, Iterable, Optional, Protocol, Text, Tuple
+from collections.abc import Callable, Iterable
+from typing import Any, Protocol
 
 from openslides_backend.http.request import Request
-from openslides_backend.shared.env import Environment
+from openslides_backend.shared.interfaces.env import Env
 
 from . import Headers  # noqa
 from .logging import LoggingModule
@@ -10,11 +11,13 @@ from .services import Services
 
 StartResponse = Callable
 
-WSGIEnvironment = Dict[Text, Any]
+WSGIEnvironment = dict[str, Any]
 
 
 # TODO Use proper type here.
 ResponseBody = Any
+
+RouteResponse = tuple[ResponseBody, str | None]
 
 
 class View(Protocol):
@@ -23,12 +26,10 @@ class View(Protocol):
     """
 
     @abstractmethod
-    def __init__(self, logging: LoggingModule, services: Services) -> None:
-        ...
+    def __init__(self, logging: LoggingModule, services: Services) -> None: ...
 
     @abstractmethod
-    def dispatch(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
-        ...
+    def dispatch(self, request: Request) -> RouteResponse: ...
 
 
 class WSGIApplication(Protocol):
@@ -37,14 +38,14 @@ class WSGIApplication(Protocol):
     """
 
     services: Services
-    env: Environment
+    env: Env
 
     @abstractmethod
-    def __init__(self, logging: LoggingModule, view: View, services: Services) -> None:
-        ...
+    def __init__(
+        self, logging: LoggingModule, view: View, services: Services
+    ) -> None: ...
 
     @abstractmethod
     def __call__(
         self, environ: WSGIEnvironment, start_response: StartResponse
-    ) -> Iterable[bytes]:
-        ...
+    ) -> Iterable[bytes]: ...

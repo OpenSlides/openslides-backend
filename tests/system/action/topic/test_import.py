@@ -41,6 +41,13 @@ class TopicJsonImport(BaseActionTestCase):
         self.assert_model_not_exists("topic/1")
         self.assert_model_not_exists("import_preview/2")
 
+    def test_import_abort_with_import_false_but_wrong_type(self) -> None:
+        self.set_models({"import_preview/2": {"name": "account"}})
+        response = self.request("topic.import", {"id": 2, "import": False})
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("topic/1")
+        self.assert_model_exists("import_preview/2")  # may not delete "account" preview
+
     def test_import_abort_import_with_error(self) -> None:
         self.set_models(
             {

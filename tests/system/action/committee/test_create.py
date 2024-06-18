@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class CommitteeCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
             "user/20": {"username": "test_user20"},
             "user/21": {"username": "test_user21"},
@@ -144,7 +144,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         response = self.request("committee.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['organization_id', 'name'] properties",
+            "data must contain ['name', 'organization_id'] properties",
             response.json["message"],
         )
         self.assert_model_not_exists("committee/1")

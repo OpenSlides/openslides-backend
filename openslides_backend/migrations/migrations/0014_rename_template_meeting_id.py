@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from datastore.migrations import RenameFieldMigration
 
@@ -18,7 +18,7 @@ class Migration(RenameFieldMigration):
     old_field = "template_meeting_id"
     new_field = "template_meeting_ids"
 
-    def modify(self, object: Dict[str, Any]) -> None:
+    def modify(self, object: dict[str, Any]) -> None:
         if self.old_field in object:
             object[self.new_field] = (
                 [object[self.old_field]] if object[self.old_field] else []

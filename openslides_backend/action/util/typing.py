@@ -1,32 +1,35 @@
-from typing import Any, Dict, Iterable, List, Literal, Optional, TypedDict, Union
+from collections.abc import Iterable
+from typing import Any, Literal, Optional, TypedDict, Union
 
 # the list of action data that is processed in a single action call
-ActionData = Iterable[Dict[str, Any]]
+ActionData = Iterable[dict[str, Any]]
+
 
 # a single payload element which contains the action data for this action
-PayloadElement = TypedDict("PayloadElement", {"action": str, "data": ActionData})
+class PayloadElement(TypedDict):
+    action: str
+    data: ActionData
+
 
 # the whole payload that is received from the client
-Payload = List[PayloadElement]
+Payload = list[PayloadElement]
 
-ActionResultElement = Dict[str, Any]
+ActionResultElement = dict[str, Any]
 
-ActionResults = List[Optional[ActionResultElement]]
+ActionResults = list[Optional[ActionResultElement]]
 
-ActionError = TypedDict(
-    "ActionError",
-    {"success": Literal[False], "message": str, "action_data_error_index": int},
-    total=False,
-)
 
-ActionsResponseResults = List[Union[Optional[ActionResults], ActionError]]
+class ActionError(TypedDict, total=False):
+    success: Literal[False]
+    message: str
+    action_data_error_index: int
 
-ActionsResponse = TypedDict(
-    "ActionsResponse",
-    {
-        "status_code": Optional[int],
-        "success": bool,
-        "message": str,
-        "results": ActionsResponseResults,
-    },
-)
+
+ActionsResponseResults = list[Union[Optional[ActionResults], ActionError]]
+
+
+class ActionsResponse(TypedDict):
+    status_code: int | None
+    success: bool
+    message: str
+    results: ActionsResponseResults

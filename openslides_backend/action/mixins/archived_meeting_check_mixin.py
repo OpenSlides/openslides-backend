@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set, cast
+from typing import Any, cast
 
 from ...models import fields
 from ...models.base import model_registry
@@ -15,10 +15,10 @@ class CheckForArchivedMeetingMixin(Action):
     outside the meeting.
     """
 
-    def check_for_archived_meeting(self, instance: Dict[str, Any]) -> None:
+    def check_for_archived_meeting(self, instance: dict[str, Any]) -> None:
         """check all instance fields for their meeting and if the meeting is active"""
         model = model_registry[self.model.collection]()
-        meeting_ids: Set[int] = set()
+        meeting_ids: set[int] = set()
         if "meeting_id" in instance:
             meeting_ids.add(instance["meeting_id"])
         for fname in instance.keys():
@@ -26,12 +26,12 @@ class CheckForArchivedMeetingMixin(Action):
             if isinstance(model_field, fields.BaseGenericRelationField):
                 raise NotImplementedError()
             if (
-                type(model_field) == fields.RelationField
+                isinstance(model_field, fields.RelationField)
                 and tuple(model_field.to.keys())[0] == "meeting"  # type: ignore
             ):
                 meeting_ids.add(instance[fname])
             elif (
-                type(model_field) == fields.RelationListField
+                isinstance(model_field, fields.RelationListField)
                 and tuple(model_field.to.keys())[0] == "meeting"  # type: ignore
             ):
                 meeting_ids.update(instance[fname])
@@ -40,7 +40,7 @@ class CheckForArchivedMeetingMixin(Action):
                 [
                     GetManyRequest(
                         "meeting",
-                        cast(List[int], meeting_ids),
+                        cast(list[int], meeting_ids),
                         ["is_active_in_organization_id"],
                     )
                 ]

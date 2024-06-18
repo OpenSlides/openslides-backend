@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import AssignmentCandidate
 from ....services.datastore.commands import GetManyRequest
@@ -46,7 +46,7 @@ class AssignmentCandidateCreate(PermissionMixin, CreateActionWithInferredMeeting
             ]
         )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         assignment = self.datastore.get(
             fqid_from_collection_and_id("assignment", instance["assignment_id"]),

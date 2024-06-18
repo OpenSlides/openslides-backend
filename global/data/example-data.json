@@ -1,5 +1,5 @@
 {
-    "_migration_index": 47,
+    "_migration_index": 54,
     "organization": {
         "1": {
             "id": 1,
@@ -129,13 +129,13 @@
             "meeting_id": 1,
             "comment": "Test comment",
             "number": "12345-67890",
-            "structure_level": "Test structure level",
             "about_me": "What I want to say about me.",
             "vote_weight": "1.000000",
             "personal_note_ids": [1],
             "speaker_ids": [1, 5, 6, 12],
             "motion_submitter_ids": [1, 2, 3, 4],
             "assignment_candidate_ids": [1],
+            "structure_level_ids": [1],
             "group_ids": [2]
         },
         "2": {
@@ -144,11 +144,11 @@
             "meeting_id": 1,
             "comment": "Test comment a",
             "number": "12345-67891",
-            "structure_level": "Test structure level a",
             "about_me": "What I want to say about me with a",
             "vote_weight": "1.000000",
             "speaker_ids": [2, 3, 7, 10, 11, 13],
             "assignment_candidate_ids": [3, 5],
+            "structure_level_ids": [2],
             "group_ids": [5]
         },
         "3": {
@@ -157,12 +157,12 @@
             "meeting_id": 1,
             "comment": "Test comment b as guest",
             "number": "12345-67892",
-            "structure_level": "Test structure level b",
             "about_me": "What I want to say about me. B",
             "vote_weight": "1.000000",
             "speaker_ids": [4, 8, 9],
             "supported_motion_ids": [3],
             "assignment_candidate_ids": [2, 4],
+            "structure_level_ids": [3],
             "group_ids": [5]
         }
     },
@@ -230,6 +230,7 @@
         "1": {
             "id": 1,
             "is_active_in_organization_id": 1,
+            "language": "en",
             "name": "OpenSlides Demo",
             "description": "Presentation and assembly system",
             "welcome_title": "Welcome to OpenSlides",
@@ -267,12 +268,16 @@
             "agenda_show_internal_items_on_projector": false,
             "agenda_show_subtitles": false,
             "agenda_number_prefix": "TOP",
+            "agenda_show_topic_navigation_on_detail_view": false,
             "list_of_speakers_amount_last_on_projector": 0,
             "list_of_speakers_amount_next_on_projector": -1,
             "list_of_speakers_couple_countdown": true,
             "list_of_speakers_show_amount_of_speakers_on_slide": true,
             "list_of_speakers_show_first_contribution": false,
+            "list_of_speakers_hide_contribution_count": false,
+            "list_of_speakers_allow_multiple_speakers": false,
             "list_of_speakers_enable_point_of_order_speakers": true,
+            "list_of_speakers_can_create_point_of_order_for_others": false,
             "list_of_speakers_enable_point_of_order_categories": false,
             "list_of_speakers_closing_disables_point_of_order": false,
             "list_of_speakers_enable_pro_contra_speech": false,
@@ -321,7 +326,6 @@
                 3
             ],
             "motion_poll_default_backend": "fast",
-            "meeting_user_ids": [1, 2, 3],
             "users_enable_presence_view": true,
             "users_enable_vote_weight": false,
             "users_enable_vote_delegations": true,
@@ -357,6 +361,7 @@
             ],
             "poll_default_backend": "fast",
             "poll_couple_countdown": true,
+            "meeting_user_ids": [1, 2, 3],
             "projector_ids": [
                 1,
                 2
@@ -555,6 +560,7 @@
             "organization_tag_ids": [
                 1
             ],
+            "structure_level_ids": [1, 2, 3],
             "present_user_ids": [
                 1
             ],
@@ -1232,6 +1238,7 @@
             "title": "test",
             "text": "<ul>\n<li>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque</li>\n<li>penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat ma</li>\n<li>ssa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, vene<br>\n<br>\nnatis vitae, justo. Null<br>\nam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi.Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibu</li>\n<li>s in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem.Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, quis gravida magna mi a libero. Fusce vulputate eleifend sapien. Vestibulum purus quam, scelerisque ut, mollis sed, nonummy id, metus. Nullam accumsan lorem in dui. Cras ultricies mi eu turpis hendrerit fringilla. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; In ac dui quis mi consectetuer lacinia. Nam pretium turpis et arcu. Duis arcu tortor, suscipit eget, imperdiet nec, imperdiet iaculis, ipsum. Sed aliquam ultrices mauris. Integer ante arcu, accumsan a, consectetuer eget, posuere ut, mauris. Praesent adipiscing. Phasellus ullamcorper ipsum rutrum nunc. Nunc nonummy metus. Vestibulum volutpat pretium libero. Cras id dui. Aenean ut</li>\n</ul>",
             "modified_final_version": "<p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi.Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem.Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, quis gravida magna mi a libero. Fusce vulputate eleifend sapien. Vestibulum purus quam, scelerisque ut, mollis sed, nonummy id, metus. Nullam accumsan lorem in dui. Cras ultricies mi eu turpis hendrerit fringilla. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; In ac dui quis mi consectetuer lacinia. Nam pretium turpis et arcu. Duis arcu tortor, suscipit eget, imperdiet nec, imperdiet iaculis, ipsum. Sed aliquam ultrices mauris. Integer ante arcu, accumsan a, consectetuer eget, posuere ut, mauris. Praesent adipiscing. Phasellus ullamcorper ipsum rutrum nunc. Nunc nonummy metus. Vestibulum volutpat pretium libero. Cras id dui. Aenean ut</p>",
+            "text_hash": "2d59f168675841ecc69e3040ae3eca7c",
             "category_weight": 10000,
             "sort_weight": 10000,
             "created": 1584512346,
@@ -1267,6 +1274,7 @@
             "sequential_number": 2,
             "title": "\u00c4nderungsantrag zu 1",
             "text": "<p>l&ouml;mk</p>",
+            "text_hash": "0339e76557663e3a6f03b9e347409f97",
             "category_weight": 10000,
             "state_extension": "<p>regeer</p>",
             "sort_weight": 10000,
@@ -1297,6 +1305,7 @@
             "sequential_number": 3,
             "title": "ohne",
             "text": "<p>sf</p>",
+            "text_hash": "60d31eb37595dd44584be5ef363283e3",
             "category_weight": 100,
             "sort_weight": 10000,
             "created": 1584512346,
@@ -1328,6 +1337,7 @@
             "sequential_number": 4,
             "title": "komplex",
             "text": "<p>sdf sdfpdfkw wef</p>\n\n<p>wepkf&nbsp;</p>\n\n<p>we&uuml;pfk&nbsp;</p>\n\n<p>we&uuml;pfdfg</p>",
+            "text_hash": "af905e34b34d2b08b60c6af41153f078",
             "category_weight": 10000,
             "sort_weight": 10000,
             "created": 1584512346,
@@ -1530,6 +1540,7 @@
             "allow_submitter_edit": false,
             "allow_create_poll": false,
             "allow_support": false,
+            "set_workflow_timestamp": false,
             "allow_motion_forwarding": true,
             "meeting_id": 1
         },
@@ -1552,6 +1563,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "4": {
@@ -1573,6 +1585,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "5": {
@@ -1621,6 +1634,7 @@
             "allow_create_poll": false,
             "allow_support": true,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "7": {
@@ -1654,6 +1668,7 @@
             "allow_create_poll": true,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "8": {
@@ -1675,6 +1690,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "9": {
@@ -1696,6 +1712,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "10": {
@@ -1718,6 +1735,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "11": {
@@ -1739,6 +1757,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "12": {
@@ -1760,6 +1779,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "13": {
@@ -1781,6 +1801,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "14": {
@@ -1801,6 +1822,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         },
         "15": {
@@ -1822,6 +1844,7 @@
             "allow_create_poll": false,
             "allow_support": false,
             "allow_motion_forwarding": true,
+            "set_workflow_timestamp": false,
             "meeting_id": 1
         }
     },
@@ -2337,6 +2360,8 @@
             "header_h1_color": "#317796",
             "chyron_background_color": "#317796",
             "chyron_font_color": "#ffffff",
+            "chyron_background_color_2": "#134768",
+            "chyron_font_color_2": "#ffffff",
             "show_header_footer": true,
             "show_title": true,
             "show_logo": true,
@@ -2381,6 +2406,8 @@
             "header_h1_color": "#317796",
             "chyron_background_color": "#317796",
             "chyron_font_color": "#ffffff",
+            "chyron_background_color_2": "#134768",
+            "chyron_font_color_2": "#ffffff",
             "show_header_footer": true,
             "show_title": true,
             "show_logo": true,
@@ -2488,6 +2515,32 @@
                 5
             ],
             "meeting_id": 1
+        }
+    },
+    "structure_level": {
+        "1": {
+            "id": 1,
+            "meeting_id": 1,
+            "name": "Test structure level",
+            "color": "#000000",
+            "default_time": 600,
+            "meeting_user_ids": [1]
+        },
+        "2": {
+            "id": 2,
+            "meeting_id": 1,
+            "name": "Test structure level a",
+            "color": "#000000",
+            "default_time": 600,
+            "meeting_user_ids": [2]
+        },
+        "3": {
+            "id": 3,
+            "meeting_id": 1,
+            "name": "Test structure level b",
+            "color": "#000000",
+            "default_time": 600,
+            "meeting_user_ids": [3]
         }
     }
 }

@@ -2,6 +2,10 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class UserSetPasswordSelfActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.reset_redis()
+
     def test_set_password_correct_permission(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
@@ -17,7 +21,8 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
         model = self.get_model("user/2")
         assert model.get("old_password") is None
         assert model.get("new_password") is None
-        assert self.auth.is_equals("new", model.get("password", ""))
+        assert self.auth.is_equal("new", model.get("password", ""))
+        self.assert_logged_out()
 
     def test_set_password_wrong_password(self) -> None:
         old_hash = self.auth.hash("old")
@@ -72,6 +77,6 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "user 111 is a Single Sign On user and has no local Openslides passwort.",
+            "user 111 is a Single Sign On user and has no local OpenSlides password.",
             response.json["message"],
         )

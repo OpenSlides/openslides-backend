@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
@@ -7,14 +7,13 @@ from .history_mixin import MeetingUserHistoryMixin
 meeting_user_standard_fields = [
     "comment",
     "number",
-    "structure_level",
     "vote_weight",
-    "personal_note_ids",
+    "structure_level_ids",
 ]
 
 
 class MeetingUserMixin(MeetingUserHistoryMixin):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         meeting_user_self = self.datastore.get(
             fqid_from_collection_and_id("meeting_user", instance["id"]),
@@ -52,8 +51,8 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
 
     def check_vote_delegated_to_id(
         self,
-        instance: Dict[str, Any],
-        meeting_user_self: Dict[str, Any],
+        instance: dict[str, Any],
+        meeting_user_self: dict[str, Any],
         user_id_self: int,
         meeting_id_self: int,
     ) -> None:
@@ -84,8 +83,8 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
 
     def check_vote_delegations_from_ids(
         self,
-        instance: Dict[str, Any],
-        meeting_user_self: Dict[str, Any],
+        instance: dict[str, Any],
+        meeting_user_self: dict[str, Any],
         user_id_self: int,
         meeting_id_self: int,
     ) -> None:
@@ -98,8 +97,8 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
             raise ActionException(
                 f"User {user_id_self} can't delegate the vote to himself."
             )
-        vote_error_user_ids: List[int] = []
-        meeting_error_user_ids: List[int] = []
+        vote_error_user_ids: list[int] = []
+        meeting_error_user_ids: list[int] = []
         for meeting_user_id in delegated_from_ids:
             meeting_user = self.datastore.get(
                 fqid_from_collection_and_id("meeting_user", meeting_user_id),

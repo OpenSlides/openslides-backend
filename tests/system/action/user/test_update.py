@@ -1,5 +1,5 @@
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
-from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.permissions.permissions import Permission, Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -11,7 +11,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_models(
             {
-                "user/111": {"username": "User 111"},
+                "user/111": {"username": "User111"},
             }
         )
 
@@ -21,11 +21,11 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"username": "username_srtgb123"},
         )
         response = self.request(
-            "user.update", {"id": 111, "username": " username Xcdfgee "}
+            "user.update", {"id": 111, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert model.get("username") == "username Xcdfgee"
+        assert model.get("username") == "username_Xcdfgee"
         self.assert_history_information("user/111", ["Personal data changed"])
 
     def test_update_some_more_fields(self) -> None:
@@ -43,8 +43,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "pronoun": "Test",
                 "username": "username_Xcdfgee",
                 "default_vote_weight": "1.700000",
-                "organization_management_level": "can_manage_users",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "committee_management_ids": [78],
+                "member_number": "1234-5768-9abc",
             },
         )
         self.assert_status_code(response, 200)
@@ -56,7 +57,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_vote_weight": "1.700000",
                 "committee_ids": [78],
                 "committee_management_ids": [78],
-                "organization_management_level": "can_manage_users",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                "member_number": "1234-5768-9abc",
             },
         )
 
@@ -70,6 +72,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                     "user_ids": [23],
                     "meeting_user_ids": [223],
+                    "structure_level_ids": [31],
                 },
                 "meeting/2": {"committee_id": 2, "is_active_in_organization_id": 1},
                 "user/22": {
@@ -83,12 +86,13 @@ class UserUpdateActionTest(BaseActionTestCase):
                 },
                 "meeting_user/223": {"meeting_id": 1, "user_id": 23, "group_ids": [11]},
                 "group/11": {"meeting_id": 1, "meeting_user_ids": [223]},
+                "structure_level/31": {"meeting_id": 1},
             }
         )
         request_fields = {
             "group_ids": [11],
             "number": "number",
-            "structure_level": "level_1",
+            "structure_level_ids": [31],
             "vote_weight": "1.000000",
         }
         response = self.request(
@@ -250,6 +254,26 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "vote_weight": "2.000000",
             },
         )
+
+    def test_update_prevent_zero_vote_weight(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "username_srtgb123",
+                    "default_vote_weight": "1.000000",
+                },
+                "meeting/1": {
+                    "name": "test_meeting_1",
+                    "is_active_in_organization_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "user.update",
+            {"id": 111, "default_vote_weight": "0.000000", "meeting_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("user/111", {"default_vote_weight": "1.000000"})
 
     def test_update_self_vote_delegation(self) -> None:
         self.set_models(
@@ -513,6 +537,24 @@ class UserUpdateActionTest(BaseActionTestCase):
             "A user with the username admin already exists.", response.json["message"]
         )
 
+    def test_member_number_already_given(self) -> None:
+        self.create_model("user/221", {"member_number": "abcdefghij"})
+        self.create_model("user/222", {"member_number": "klmnopqrst"})
+        response = self.request(
+            "user.update", {"id": 222, "member_number": "abcdefghij"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A user with the member_number abcdefghij already exists.",
+            response.json["message"],
+        )
+
+    def test_clear_member_number(self) -> None:
+        self.create_model("user/222", {"member_number": "klmnopqrst"})
+        response = self.request("user.update", {"id": 222, "member_number": None})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/222", {"member_number": None})
+
     def test_same_username(self) -> None:
         response = self.request("user.update", {"id": 1, "username": "admin"})
         self.assert_status_code(response, 200)
@@ -546,7 +588,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 1",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
             response.json["message"],
         )
 
@@ -579,7 +621,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.SUPERADMIN, self.user_id
         )
         self.set_models(
-            {"user/111": {"username": "User 111"}},
+            {"user/111": {"username": "User111"}},
         )
 
         response = self.request(
@@ -673,7 +715,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
                 "title": "new title",
                 "first_name": "new first_name",
                 "last_name": "new last_name",
@@ -682,8 +724,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": "new default_password",
                 "gender": "female",
                 "email": "info@openslides.com ",  # space intentionally, will be stripped
-                "default_number": "new default_number",
-                "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
             },
@@ -692,7 +732,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "title": "new title",
                 "first_name": "new first_name",
                 "last_name": "new last_name",
@@ -701,8 +741,6 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_password": "new default_password",
                 "gender": "female",
                 "email": "info@openslides.com",
-                "default_number": "new default_number",
-                "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
             },
@@ -719,14 +757,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "meeting_ids": [1],
                 "committee_ids": [60],
             },
@@ -754,14 +792,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "committee_ids": [60],
             },
         )
@@ -778,7 +816,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
                 "pronoun": "pronoun",
             },
         )
@@ -786,7 +824,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "pronoun": "pronoun",
                 "meeting_ids": [1],
                 "committee_ids": None,
@@ -794,6 +832,20 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_perm_group_A_meeting_manage_user_archived_meeting(self) -> None:
+        self.perm_group_A_meeting_manage_user_archived_meeting(
+            Permissions.User.CAN_UPDATE
+        )
+
+    def test_perm_group_A_meeting_manage_user_archived_meeting_with_parent_permission(
+        self,
+    ) -> None:
+        self.perm_group_A_meeting_manage_user_archived_meeting(
+            Permissions.User.CAN_MANAGE
+        )
+
+    def perm_group_A_meeting_manage_user_archived_meeting(
+        self, permission: Permission
+    ) -> None:
         """
         May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee
         User is member of an archived meeting in an other committee, but this doesn't may affect the result.
@@ -805,21 +857,21 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/4": {"is_active_in_organization_id": None},
-                "group/2": {"permissions": ["user.can_manage"]},
+                "group/2": {"permissions": [permission]},
             }
         )
         response = self.request(
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
             {
-                "username": "new username",
+                "username": "new_username",
                 "committee_ids": None,
             },
         )
@@ -827,7 +879,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertCountEqual(user111["meeting_ids"], [1, 4])
 
     def test_perm_group_A_no_permission(self) -> None:
-        """May not update group A fields on organsisation scope, although having both committee permissions"""
+        """May not update group A fields on organization scope, although having both committee permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_committee_management_level([60, 63], 111)
@@ -836,7 +888,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "username": "new username",
+                "username": "new_username",
             },
         )
         self.assert_status_code(response, 403)
@@ -868,8 +920,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_perm_group_B_user_can_manage(self) -> None:
-        """update group B fields for 2 meetings with simple user.can_manage permissions"""
+    def test_perm_group_B_user_can_update(self) -> None:
+        """update group B fields for 2 meetings with simple user.can_update permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(None, self.user_id)
@@ -877,6 +929,10 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "user/5": {"username": "user5"},
                 "user/6": {"username": "user6"},
+                "meeting/1": {
+                    "structure_level_ids": [31],
+                },
+                "structure_level/31": {"meeting_id": 1},
             }
         )
         self.set_user_groups(
@@ -901,7 +957,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "id": 111,
                 "meeting_id": 1,
                 "number": "number1",
-                "structure_level": "structure_level 1",
+                "structure_level_ids": [31],
                 "vote_weight": "12.002345",
                 "about_me": "about me 1",
                 "comment": "comment for meeting/1",
@@ -912,7 +968,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/111",
             {
-                "username": "User 111",
+                "username": "User111",
                 "meeting_ids": [1, 4],
             },
         )
@@ -923,7 +979,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "vote_delegations_from_ids": [3, 5],
                 "number": "number1",
-                "structure_level": "structure_level 1",
+                "structure_level_ids": [31],
                 "vote_weight": "12.002345",
                 "about_me": "about me 1",
                 "comment": "comment for meeting/1",
@@ -940,8 +996,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             "meeting_user/5", {"user_id": 6, "meeting_id": 1, "vote_delegated_to_id": 7}
         )
 
-    def test_perm_group_B_user_can_manage_no_permission(self) -> None:
-        """Group B fields needs explicit user.can_manage permission for meeting"""
+    def test_perm_group_B_user_can_update_no_permission(self) -> None:
+        """Group B fields needs explicit user.can_update permission for meeting"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(None, self.user_id)
@@ -949,7 +1005,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             self.user_id, [3, 6]
         )  # Empty groups of meeting/1 and meeting/4
         self.set_user_groups(111, [1, 4])  # Default groups of meeting/1 and meeting/4
-        self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
 
         response = self.request(
             "user.update",
@@ -961,7 +1017,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 4",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 4",
             response.json["message"],
         )
 
@@ -1005,8 +1061,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"group_ids": [1], "user_id": 111},
         )
 
-    def test_perm_group_C_user_can_manage(self) -> None:
-        """May update group C group_ids by user.can_manage permission with admin group of all related meetings"""
+    def test_perm_group_C_user_can_update(self) -> None:
+        """May update group C group_ids by user.can_update permission with admin group of all related meetings"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_user_groups(self.user_id, [2, 5])  # Admin-groups
@@ -1050,7 +1106,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 1",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
             response.json["message"],
         )
 
@@ -1111,7 +1167,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 4",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 4",
             response.json["message"],
         )
 
@@ -1307,7 +1363,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of can_manage_organization or the saml_id!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization.",
             response.json["message"],
         )
 
@@ -1334,7 +1390,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_perm_group_E_saml_id_high_enough(self) -> None:
+    def test_no_perm_group_H_internal_saml_id(self) -> None:
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -1347,27 +1403,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "saml_id": "test saml id",
             },
         )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/111",
-            {
-                "saml_id": "test saml id",
-            },
-        )
-
-    def test_no_perm_group_E_saml_id(self) -> None:
-        self.permission_setup()
-
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "saml_id": "test saml id",
-            },
-        )
-        self.assert_status_code(response, 403)
+        self.assert_status_code(response, 400)
         self.assertIn(
-            "Your organization management level is not high enough to set a Level of OrganizationManagementLevel or the saml_id!",
+            "The field 'saml_id' can only be used in internal action calls",
             response.json["message"],
         )
 
@@ -1407,6 +1445,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request("user.update", {"id": 111, "username": "   "})
         self.assert_status_code(response, 400)
         assert "This username is forbidden." in response.json["message"]
+        model = self.get_model("user/111")
+        assert model.get("username") == "username_srtgb123"
+
+    def test_update_username_with_spaces(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request("user.update", {"id": 111, "username": "test name"})
+        self.assert_status_code(response, 400)
+        assert "Username may not contain spaces" in response.json["message"]
         model = self.get_model("user/111")
         assert model.get("username") == "username_srtgb123"
 
@@ -1738,7 +1787,6 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 1,
-                "username": " username test ",
                 "first_name": " first name test ",
                 "last_name": " last name test ",
             },
@@ -1747,7 +1795,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/1",
             {
-                "username": "username test",
                 "first_name": "first name test",
                 "last_name": "last name test",
             },
@@ -1921,7 +1968,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting_user/11": {
                     "user_id": 111,
                     "meeting_id": 1,
-                    "structure_level": "level",
+                    "structure_level_ids": [31],
                     "group_ids": [1],
                 },
                 "group/1": {"meeting_user_ids": [11], "meeting_id": 1},
@@ -1929,6 +1976,10 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "group_ids": [1],
                     "is_active_in_organization_id": 1,
                     "committee_id": 78,
+                    "structure_level_ids": [31],
+                },
+                "structure_level/31": {
+                    "meeting_id": 1,
                 },
                 "committee/78": {"meeting_ids": [1]},
             }
@@ -1941,7 +1992,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "meeting_id": 1,
                 "group_ids": [1],
-                "structure_level": "level",
+                "structure_level_ids": [31],
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "committee_management_ids": [78],
             },
@@ -1977,7 +2028,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting_user/42": {
                     "user_id": 222,
                     "meeting_id": 1,
-                    "structure_level": "level",
+                    "vote_weight": "1.000000",
                 },
             }
         )
@@ -1986,7 +2037,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 222,
                 "meeting_id": 2,
-                "structure_level": "level2",
+                "vote_weight": "1.500000",
             },
         )
         self.assert_status_code(response, 200)
@@ -2011,7 +2062,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "meeting_user/42": {
                     "user_id": 222,
                     "meeting_id": 1,
-                    "structure_level": "level",
+                    "vote_weight": "1.000000",
                 },
             }
         )
@@ -2021,7 +2072,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 {
                     "id": 222,
                     "meeting_id": 2,
-                    "structure_level": "level2",
+                    "vote_weight": "1.000000",
                 },
                 {
                     "id": 222,

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from datastore.migrations import BaseModelMigration
 from datastore.writer.core import BaseRequestEvent, RequestUpdateEvent
@@ -15,12 +15,12 @@ class Migration(BaseModelMigration):
 
     field = "tag_ids"
 
-    def migrate_models(self) -> Optional[List[BaseRequestEvent]]:
-        events: List[BaseRequestEvent] = []
+    def migrate_models(self) -> list[BaseRequestEvent] | None:
+        events: list[BaseRequestEvent] = []
         db_models = self.reader.get_all("topic")
         for id, model in db_models.items():
             if self.field in model:
-                update: Dict[str, Any] = {self.field: None}
+                update: dict[str, Any] = {self.field: None}
                 events.append(
                     RequestUpdateEvent(fqid_from_collection_and_id("topic", id), update)
                 )

@@ -98,88 +98,6 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "No user with this number found." in response.json["message"]
 
-    def test_toggle_presence_by_number_too_many_default_numbers(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {
-                    "committee_id": 1,
-                    "is_active_in_organization_id": 1,
-                    "meeting_user_ids": [34, 35],
-                },
-                "user/111": {
-                    "username": "username_srtgb123",
-                    "meeting_user_ids": [34],
-                    "default_number": "1",
-                },
-                "user/112": {
-                    "username": "username_srtgb235",
-                    "meeting_user_ids": [35],
-                    "default_number": "1",
-                },
-                "committee/1": {},
-                "meeting_user/34": {"user_id": 111, "meeting_id": 1, "number": ""},
-                "meeting_user/35": {"user_id": 112, "meeting_id": 1, "number": ""},
-            }
-        )
-        response = self.request(
-            "user.toggle_presence_by_number", {"meeting_id": 1, "number": "1"}
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            "Found more than one user with the default number."
-            in response.json["message"]
-        )
-
-    def test_toggle_presence_by_number_other_user_default_number(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "user/111": {
-                    "username": "username_srtgb123",
-                    "meeting_user_ids": [34],
-                },
-                "user/112": {
-                    "username": "username_srtgb123",
-                    "meeting_user_ids": [35],
-                    "default_number": "1",
-                },
-                "meeting_user/34": {"user_id": 111, "meeting_id": 1, "number": "1"},
-                "meeting_user/35": {"user_id": 112, "meeting_id": 1, "number": ""},
-                "committee/1": {},
-            }
-        )
-        response = self.request(
-            "user.toggle_presence_by_number", {"meeting_id": 1, "number": "1"}
-        )
-        self.assert_status_code(response, 200)
-        model = self.get_model("user/111")
-        assert model.get("is_present_in_meeting_ids") == [1]
-        meeting = self.get_model("meeting/1")
-        assert meeting.get("present_user_ids") == [111]
-        model = self.get_model("user/112")
-        assert model.get("is_present_in_meeting_ids") is None
-
-    def test_toggle_presence_by_number_wrong_number_and_match_default_nuber(
-        self,
-    ) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                "user/111": {
-                    "username": "username_srtgb123",
-                    "meeting_user_ids": [34],
-                    "default_number": "2",
-                },
-                "committee/1": {},
-                "meeting_user/34": {"user_id": 111, "meeting_id": 1, "number": "1"},
-            }
-        )
-        response = self.request(
-            "user.toggle_presence_by_number", {"meeting_id": 1, "number": "2"}
-        )
-        self.assert_status_code(response, 400)
-        assert "No user with this number found." in response.json["message"]
-
     def test_toggle_presence_by_number_no_permissions(self) -> None:
         self.set_models(
             {
@@ -203,11 +121,10 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
                 },
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                    "default_number": "test",
                     "meeting_user_ids": [34],
                 },
                 "committee/1": {},
-                "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": ""},
+                "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": "test"},
             }
         )
         response = self.request(
@@ -228,10 +145,9 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
                     "organization_management_level": None,
                     "committee_ids": [1],
                     "committee_management_ids": [1],
-                    "default_number": "test",
                     "meeting_user_ids": [34],
                 },
-                "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": ""},
+                "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": "test"},
             }
         )
         response = self.request(
@@ -255,12 +171,42 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
                 "user/1": {
                     "organization_management_level": None,
                     "meeting_user_ids": [34],
-                    "default_number": "test",
                 },
                 "meeting_user/34": {
                     "user_id": 1,
                     "meeting_id": 1,
-                    "number": "",
+                    "number": "test",
+                    "group_ids": [1],
+                },
+                "committee/1": {},
+            }
+        )
+        response = self.request(
+            "user.toggle_presence_by_number", {"meeting_id": 1, "number": "test"}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_toggle_presence_by_number_meeting_can_update_permission(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "group_ids": [1],
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [34],
+                },
+                "group/1": {
+                    "meeting_user_ids": [1],
+                    "permissions": [Permissions.User.CAN_UPDATE],
+                },
+                "user/1": {
+                    "organization_management_level": None,
+                    "meeting_user_ids": [34],
+                },
+                "meeting_user/34": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "number": "test",
                     "group_ids": [1],
                 },
                 "committee/1": {},

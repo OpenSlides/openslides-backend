@@ -1,7 +1,7 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
+from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views.presenter_view import PresenterView
-from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_presenter_test_application, get_route_path
 
@@ -9,17 +9,17 @@ PRESENTER_URL = get_route_path(PresenterView.presenter_route)
 
 
 class BasePresenterTestCase(BaseSystemTestCase):
-    def get_application(self) -> WSGIApplication:
+    def get_application(self) -> OpenSlidesBackendWSGIApplication:
         return create_presenter_test_application()
 
     def request(
-        self, presenter: str, data: Optional[Dict[str, Any]] = None
-    ) -> Tuple[int, Any]:
+        self, presenter: str, data: dict[str, Any] | None = None
+    ) -> tuple[int, Any]:
         """
         Requests a single presenter and returns the status code and the json decoded
         response. Automatically removes array around response data.
         """
-        payload: Dict[str, Any] = {"presenter": presenter}
+        payload: dict[str, Any] = {"presenter": presenter}
         if data is not None:
             payload["data"] = data
         response = self.client.post(PRESENTER_URL, json=[payload])

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import Meeting, Projector
 from ....permissions.permissions import Permissions
@@ -30,6 +30,8 @@ class ProjectorUpdate(UpdateAction):
             "header_h1_color",
             "chyron_background_color",
             "chyron_font_color",
+            "chyron_background_color_2",
+            "chyron_font_color_2",
             "show_header_footer",
             "show_title",
             "show_logo",
@@ -39,7 +41,7 @@ class ProjectorUpdate(UpdateAction):
     )
     permission = Permissions.Projector.CAN_MANAGE
 
-    def validate_instance(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: dict[str, Any]) -> None:
         super().validate_instance(instance)
         if instance.get("is_internal"):
             projector = self.datastore.get(

@@ -1,4 +1,3 @@
-from typing import List, Optional, Tuple
 from unittest import TestCase
 
 from openslides_backend.models.helper import calculate_inherited_groups_helper
@@ -15,13 +14,13 @@ class CalculateInheritedGroupsHelperTest(TestCase):
         # access_groups parent_is_public parent_inheritated_group |
         # is_public inherited_access_groups
 
-        data: List[
-            Tuple[
-                Optional[List[int]],
-                Optional[bool],
-                Optional[List[int]],
+        data: list[
+            tuple[
+                list[int] | None,
+                bool | None,
+                list[int] | None,
                 bool,
-                List[int],
+                list[int],
             ]
         ] = [
             ([], None, [], True, []),

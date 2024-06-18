@@ -1,6 +1,7 @@
+from collections.abc import Callable, Iterable
 from copy import deepcopy
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 import fastjsonschema
 
@@ -68,20 +69,20 @@ class ActionHandler(BaseHandler):
 
     MAX_RETRY = 3
 
-    on_success: List[Callable[[], None]]
+    on_success: list[Callable[[], None]]
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
         self.on_success = []
 
     @classmethod
-    def get_health_info(cls) -> Iterable[Tuple[str, Dict[str, Any]]]:
+    def get_health_info(cls) -> Iterable[tuple[str, dict[str, Any]]]:
         """
         Returns name and development status of all actions.
         """
         for name in sorted(actions_map):
             action = actions_map[name]
-            schema: Dict[str, Any] = deepcopy(action_data_schema)
+            schema: dict[str, Any] = deepcopy(action_data_schema)
             schema["items"] = action.schema
             if action.is_singular:
                 schema["maxItems"] = 1
@@ -116,8 +117,8 @@ class ActionHandler(BaseHandler):
             else:
 
                 def transform_to_list(
-                    tuple: Tuple[Optional[WriteRequest], Optional[ActionResults]]
-                ) -> Tuple[List[WriteRequest], Optional[ActionResults]]:
+                    tuple: tuple[WriteRequest | None, ActionResults | None]
+                ) -> tuple[list[WriteRequest], ActionResults | None]:
                     return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
 
                 for element in payload:
@@ -144,9 +145,22 @@ class ActionHandler(BaseHandler):
                 results=results,
             )
 
+    def execute_internal_action(self, action: str, data: dict[str, Any]) -> None:
+        """Helper function to execute an internal action with user id -1."""
+        self.handle_request(
+            [
+                {
+                    "action": action,
+                    "data": [data],
+                }
+            ],
+            -1,
+            internal=True,
+        )
+
     def execute_write_requests(
         self,
-        get_write_requests: Callable[..., Tuple[List[WriteRequest], T]],
+        get_write_requests: Callable[..., tuple[list[WriteRequest], T]],
         *args: Any,
     ) -> T:
         with make_span(self.env, "execute write requests"):
@@ -166,12 +180,12 @@ class ActionHandler(BaseHandler):
 
     def parse_actions(
         self, payload: Payload
-    ) -> Tuple[List[WriteRequest], ActionsResponseResults]:
+    ) -> tuple[list[WriteRequest], ActionsResponseResults]:
         """
         Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
         """
-        write_requests: List[WriteRequest] = []
+        write_requests: list[WriteRequest] = []
         action_response_results: ActionsResponseResults = []
         relation_manager = RelationManager(self.datastore)
         action_name_list = []
@@ -208,8 +222,8 @@ class ActionHandler(BaseHandler):
     def perform_action(
         self,
         action_payload_element: PayloadElement,
-        relation_manager: Optional[RelationManager] = None,
-    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
+        relation_manager: RelationManager | None = None,
+    ) -> tuple[WriteRequest | None, ActionResults | None]:
         action_name = action_payload_element["action"]
         ActionClass = actions_map.get(action_name)
         # Actions cannot be accessed in the following three cases:

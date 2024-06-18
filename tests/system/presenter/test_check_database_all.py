@@ -1,6 +1,7 @@
 from time import time
-from typing import Any, Dict
+from typing import Any
 
+from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
@@ -21,7 +22,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert "meeting/1: Missing fields" in data["errors"]
         assert "meeting/2: Missing fields" in data["errors"]
 
-    def get_meeting_defaults(self) -> Dict[str, Any]:
+    def get_meeting_defaults(self) -> dict[str, Any]:
         return {
             "motions_export_title": "Motions",
             "motions_preamble": "blablabla",
@@ -57,12 +58,16 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
             "agenda_item_creation": "default_no",
             "agenda_new_items_default_visibility": "internal",
             "agenda_show_internal_items_on_projector": False,
+            "agenda_show_topic_navigation_on_detail_view": False,
             "list_of_speakers_amount_next_on_projector": -1,
             "list_of_speakers_couple_countdown": True,
             "list_of_speakers_show_amount_of_speakers_on_slide": True,
             "list_of_speakers_present_users_only": True,
             "list_of_speakers_show_first_contribution": True,
+            "list_of_speakers_hide_contribution_count": True,
+            "list_of_speakers_allow_multiple_speakers": False,
             "list_of_speakers_enable_point_of_order_speakers": True,
+            "list_of_speakers_can_create_point_of_order_for_others": False,
             "list_of_speakers_enable_point_of_order_categories": False,
             "list_of_speakers_closing_disables_point_of_order": False,
             "list_of_speakers_enable_pro_contra_speech": False,
@@ -172,6 +177,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -224,6 +230,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -247,6 +255,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "header_h1_color": "#ffffff",
                     "chyron_background_color": "#ffffff",
                     "chyron_font_color": "#ffffff",
+                    "chyron_background_color_2": "#ffffff",
+                    "chyron_font_color_2": "#ffffff",
                     "show_header_footer": True,
                     "show_title": True,
                     "show_logo": True,
@@ -255,12 +265,12 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "action_worker/1": {
                     "name": "testcase",
-                    "state": "end",
+                    "state": ActionWorkerState.END,
                     "created": round(time() - 3),
                     "timestamp": round(time()),
                 },
                 "import_preview/1": {
-                    "name": "testcase",
+                    "name": "topic",
                     "state": "done",
                     "created": round(time() - 3),
                 },
@@ -271,7 +281,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
         assert data["ok"] is True
         assert "errors" not in data
 
-    def get_new_user(self, username: str, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def get_new_user(self, username: str, datapart: dict[str, Any]) -> dict[str, Any]:
         return {
             "username": username,
             "can_change_own_password": False,
@@ -326,6 +336,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -468,6 +479,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -492,6 +505,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "header_h1_color": "#ffffff",
                     "chyron_background_color": "#ffffff",
                     "chyron_font_color": "#ffffff",
+                    "chyron_background_color_2": "#ffffff",
+                    "chyron_font_color_2": "#ffffff",
                     "show_header_footer": True,
                     "show_title": True,
                     "show_logo": True,
@@ -619,6 +634,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -673,6 +689,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -697,6 +715,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "header_h1_color": "#ffffff",
                     "chyron_background_color": "#ffffff",
                     "chyron_font_color": "#ffffff",
+                    "chyron_background_color_2": "#ffffff",
+                    "chyron_font_color_2": "#ffffff",
                     "show_header_footer": True,
                     "show_title": True,
                     "show_logo": True,
@@ -705,6 +725,7 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                 },
                 "meeting/2": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 3,
@@ -758,6 +779,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "allow_support": False,
                     "allow_create_poll": False,
                     "allow_submitter_edit": False,
+                    "allow_motion_forwarding": False,
+                    "set_workflow_timestamp": False,
                     "set_number": True,
                     "show_state_extension_field": False,
                     "merge_amendment_into_final": "undefined",
@@ -782,6 +805,8 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "header_h1_color": "#ffffff",
                     "chyron_background_color": "#ffffff",
                     "chyron_font_color": "#ffffff",
+                    "chyron_background_color_2": "#ffffff",
+                    "chyron_font_color_2": "#ffffff",
                     "show_header_footer": True,
                     "show_title": True,
                     "show_logo": True,

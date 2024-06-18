@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -36,7 +36,7 @@ class TestCheckDatabase(BasePresenterTestCase):
         assert "Meeting 2" in data["errors"]
         assert "meeting/2: Missing fields" in data["errors"]
 
-    def get_meeting_defaults(self) -> Dict[str, Any]:
+    def get_meeting_defaults(self) -> dict[str, Any]:
         return {
             "motions_export_title": "Motions",
             "motions_preamble": "blablabla",
@@ -77,6 +77,7 @@ class TestCheckDatabase(BasePresenterTestCase):
             "list_of_speakers_show_amount_of_speakers_on_slide": True,
             "list_of_speakers_present_users_only": True,
             "list_of_speakers_show_first_contribution": True,
+            "list_of_speakers_hide_contribution_count": True,
             "list_of_speakers_enable_point_of_order_speakers": True,
             "list_of_speakers_enable_pro_contra_speech": False,
             "list_of_speakers_can_set_contribution_self": False,
@@ -152,6 +153,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "committee/1": {"organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -239,7 +241,7 @@ class TestCheckDatabase(BasePresenterTestCase):
         assert data["ok"] is True
         assert not data["errors"]
 
-    def get_new_user(self, username: str, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def get_new_user(self, username: str, datapart: dict[str, Any]) -> dict[str, Any]:
         return {
             "username": username,
             "can_change_own_password": False,
@@ -285,6 +287,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "committee/1": {"organization_id": 1, "default_meeting_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -545,6 +548,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "committee/1": {"organization_id": 1},
                 "meeting/1": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 1,
@@ -630,6 +634,7 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
                 "meeting/2": {
                     "committee_id": 1,
+                    "language": "en",
                     "name": "Test",
                     "description": "blablabla",
                     "default_group_id": 3,

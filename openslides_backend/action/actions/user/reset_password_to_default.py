@@ -1,18 +1,22 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .password_mixins import ClearSessionsMixin
 
 
-class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+class UserResetPasswordToDefaultMixin(
+    UpdateAction, CheckForArchivedMeetingMixin, ClearSessionsMixin
+):
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Gets the default_password and reset password.
         """
@@ -24,7 +28,7 @@ class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin
         )
         if user.get("saml_id"):
             raise ActionException(
-                f"user {user['saml_id']} is a Single Sign On user and has no local Openslides passwort."
+                f"user {user['saml_id']} is a Single Sign On user and has no local OpenSlides password."
             )
         default_password = self.auth.hash(str(user.get("default_password")))
         instance["password"] = default_password
@@ -44,5 +48,7 @@ class UserResetPasswordToDefaultAction(
     schema = DefaultSchema(User()).get_update_schema()
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.check_permissions_for_scope(instance["id"])
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        self.check_permissions_for_scope(
+            instance["id"], meeting_permission=Permissions.User.CAN_UPDATE
+        )

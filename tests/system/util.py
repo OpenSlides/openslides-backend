@@ -2,13 +2,15 @@ import copy
 import cProfile
 import os
 from abc import abstractmethod
-from typing import Any, Callable, Dict, List, Tuple, Type
+from collections.abc import Callable
+from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from dependency_injector import providers
 from requests.models import Response as RequestsResponse
 
+from openslides_backend.http.application import OpenSlidesBackendWSGIApplication
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
@@ -17,7 +19,8 @@ from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.env import Environment, is_truthy
 from openslides_backend.shared.exceptions import MediaServiceException
-from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
+from openslides_backend.shared.interfaces.services import Services
+from openslides_backend.shared.interfaces.wsgi import Headers, View
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 from tests.util import Response
 
@@ -36,12 +39,11 @@ class TestVoteService(VoteService):
     url: str
 
     @abstractmethod
-    def vote(self, data: Dict[str, Any]) -> Response:
-        ...
+    def vote(self, data: dict[str, Any]) -> Response: ...
 
 
 class TestVoteAdapter(VoteAdapter, TestVoteService):
-    def vote(self, data: Dict[str, Any]) -> Response:
+    def vote(self, data: dict[str, Any]) -> Response:
         data_copy = copy.deepcopy(data)
         del data_copy["id"]
         response = self.make_request(
@@ -51,15 +53,28 @@ class TestVoteAdapter(VoteAdapter, TestVoteService):
         return convert_to_test_response(response)
 
 
-def create_action_test_application() -> WSGIApplication:
+def create_action_test_application() -> OpenSlidesBackendWSGIApplication:
     return create_test_application(ActionView)
 
 
-def create_presenter_test_application() -> WSGIApplication:
+def create_presenter_test_application() -> OpenSlidesBackendWSGIApplication:
     return create_test_application(PresenterView)
 
 
-def create_test_application(view: Type[View]) -> WSGIApplication:
+def create_base_test_application(
+    view: type[View], services: Services, env: Environment | None = None
+) -> OpenSlidesBackendWSGIApplication:
+    if not env:
+        env = Environment(os.environ)
+    application_factory = OpenSlidesBackendWSGI(
+        env=env, logging=MagicMock(), view=view, services=services
+    )
+    application = application_factory.setup()
+
+    return application
+
+
+def create_test_application(view: type[View]) -> OpenSlidesBackendWSGIApplication:
     env = Environment(os.environ)
     services = OpenSlidesBackendServices(
         config=env.get_service_url(),
@@ -75,19 +90,17 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
     mock_media_service.upload_resource = Mock(side_effect=side_effect_for_upload_method)
     services.media = MagicMock(return_value=mock_media_service)
 
-    # Create WSGI application instance. Inject logging module, view class and services container.
-    application_factory = OpenSlidesBackendWSGI(
-        env=env, logging=MagicMock(), view=view, services=services
-    )
-    application = application_factory.setup()
-
-    return application
+    return create_base_test_application(view, services, env)
 
 
 def side_effect_for_upload_method(
     file: str, id: int, mimetype: str, **kwargs: Any
 ) -> None:
-    if mimetype == "application/x-shockwave-flash":
+    # Check against encoded version of "Do me a favour and trigger a mock mediaservice error, will you?"
+    if (
+        file
+        == "RG8gbWUgYSBmYXZvdXIgYW5kIHRyaWdnZXIgYSBtb2NrIG1lZGlhc2VydmljZSBlcnJvciwgd2lsbCB5b3U/"
+    ):
         raise MediaServiceException("Mocked error on media service upload")
 
 
@@ -99,7 +112,7 @@ def get_route_path(route_function: RouteFunction, name: str = "") -> str:
     raise ValueError(f"Route {name} does not exist")
 
 
-def mock_datastore_method(method: str, verbose: bool = False) -> Tuple[Mock, Any]:
+def mock_datastore_method(method: str, verbose: bool = False) -> tuple[Mock, Any]:
     """
     Patches the given method of the DatastoreAdapter and returns the created mock as well as the
     patcher.
@@ -159,8 +172,8 @@ class CountDatastoreCalls:
         self.verbose = verbose
 
     def __enter__(self) -> "CountDatastoreCalls":
-        self.patcher: List[Any] = []
-        self.mocks: List[Mock] = []
+        self.patcher: list[Any] = []
+        self.mocks: list[Mock] = []
         for method in ("get", "get_many"):
             mock, patcher = mock_datastore_method(method, self.verbose)
             self.mocks.append(mock)

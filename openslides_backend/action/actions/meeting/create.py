@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any
 
 from openslides_backend.models.models import Meeting
 
@@ -8,6 +8,7 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
 from ....shared.schema import id_list_schema
+from ....shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -31,7 +32,7 @@ class MeetingCreate(
 ):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_create_schema(
-        required_properties=["committee_id", "name"],
+        required_properties=["committee_id", "name", "language"],
         optional_properties=[
             "description",
             "location",
@@ -45,9 +46,6 @@ class MeetingCreate(
             "admin_ids": id_list_schema,
             "set_as_template": {"type": "boolean"},
         },
-        additional_required_fields={
-            "language": {"type": "string"},
-        },
     )
     dependencies = [
         MotionWorkflowCreateSimpleWorkflowAction,
@@ -56,11 +54,10 @@ class MeetingCreate(
     ]
     skip_archived_meeting_check = True
     translation_of_defaults = [
-        "name",
         "description",
         "welcome_title",
         "welcome_text",
-        "motion_preamble",
+        "motions_preamble",
         "motions_export_title",
         "assignments_export_title",
         "users_pdf_welcometitle",
@@ -70,19 +67,18 @@ class MeetingCreate(
         "users_email_body",
     ]
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def base_update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         Translator.set_translation_language(instance["language"])
+        return super().base_update_instance(instance)
+
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance = super().update_instance(instance)
         # handle set_as_template
         if instance.pop("set_as_template", None):
-            instance["template_for_organization_id"] = 1
+            instance["template_for_organization_id"] = ONE_ORGANIZATION_ID
 
-        committee = self.datastore.get(
-            fqid_from_collection_and_id("committee", instance["committee_id"]),
-            ["user_ids", "organization_id"],
-        )
         organization = self.datastore.get(
-            fqid_from_collection_and_id("organization", committee["organization_id"]),
+            ONE_ORGANIZATION_FQID,
             ["limit_of_meetings", "active_meeting_ids"],
         )
         if (
@@ -93,7 +89,7 @@ class MeetingCreate(
             )
         self.check_start_and_end_time(instance)
 
-        instance["is_active_in_organization_id"] = committee["organization_id"]
+        instance["is_active_in_organization_id"] = ONE_ORGANIZATION_ID
         self.apply_instance(instance)
         action_data = [
             {
@@ -101,14 +97,12 @@ class MeetingCreate(
                 "external_id": "Default",
                 "meeting_id": instance["id"],
                 "permissions": [
-                    Permissions.AgendaItem.CAN_SEE_INTERNAL,
+                    Permissions.AgendaItem.CAN_SEE,
                     Permissions.Assignment.CAN_SEE,
-                    Permissions.ListOfSpeakers.CAN_SEE,
-                    Permissions.Mediafile.CAN_SEE,
+                    Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
                     Permissions.Motion.CAN_SEE,
                     Permissions.Projector.CAN_SEE,
-                    Permissions.User.CAN_SEE,
                 ],
             },
             {
@@ -121,18 +115,15 @@ class MeetingCreate(
                 "external_id": "Delegates",
                 "meeting_id": instance["id"],
                 "permissions": [
-                    Permissions.AgendaItem.CAN_SEE_INTERNAL,
-                    Permissions.Assignment.CAN_NOMINATE_OTHER,
-                    Permissions.Assignment.CAN_NOMINATE_SELF,
+                    Permissions.AgendaItem.CAN_SEE,
+                    Permissions.Assignment.CAN_SEE,
+                    Permissions.ListOfSpeakers.CAN_SEE,
                     Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
                     Permissions.Mediafile.CAN_SEE,
                     Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
-                    Permissions.Motion.CAN_CREATE,
-                    Permissions.Motion.CAN_CREATE_AMENDMENTS,
-                    Permissions.Motion.CAN_SUPPORT,
+                    Permissions.Motion.CAN_SEE,
                     Permissions.Projector.CAN_SEE,
-                    Permissions.User.CAN_SEE,
                 ],
             },
             {
@@ -142,33 +133,14 @@ class MeetingCreate(
                 "permissions": [
                     Permissions.AgendaItem.CAN_MANAGE,
                     Permissions.Assignment.CAN_MANAGE,
-                    Permissions.Assignment.CAN_NOMINATE_SELF,
-                    Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
                     Permissions.ListOfSpeakers.CAN_MANAGE,
                     Permissions.Mediafile.CAN_MANAGE,
                     Permissions.Meeting.CAN_SEE_FRONTPAGE,
-                    Permissions.Meeting.CAN_SEE_HISTORY,
+                    Permissions.Meeting.CAN_SEE_AUTOPILOT,
                     Permissions.Motion.CAN_MANAGE,
                     Permissions.Projector.CAN_MANAGE,
                     Permissions.Tag.CAN_MANAGE,
                     Permissions.User.CAN_MANAGE,
-                ],
-            },
-            {
-                "name": _("Committees"),
-                "external_id": "Committees",
-                "meeting_id": instance["id"],
-                "permissions": [
-                    Permissions.AgendaItem.CAN_SEE_INTERNAL,
-                    Permissions.Assignment.CAN_SEE,
-                    Permissions.ListOfSpeakers.CAN_SEE,
-                    Permissions.Mediafile.CAN_SEE,
-                    Permissions.Meeting.CAN_SEE_FRONTPAGE,
-                    Permissions.Motion.CAN_CREATE,
-                    Permissions.Motion.CAN_CREATE_AMENDMENTS,
-                    Permissions.Motion.CAN_SUPPORT,
-                    Permissions.Projector.CAN_SEE,
-                    Permissions.User.CAN_SEE,
                 ],
             },
         ]
@@ -232,8 +204,8 @@ class MeetingCreate(
         return instance
 
     def get_dependent_action_data(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> List[Dict[str, Any]]:
+        self, instance: dict[str, Any], CreateActionClass: type[Action]
+    ) -> list[dict[str, Any]]:
         if CreateActionClass == MotionWorkflowCreateSimpleWorkflowAction:
             return [
                 {
@@ -265,7 +237,7 @@ class MeetingCreate(
             ]
         return []
 
-    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def set_defaults(self, instance: dict[str, Any]) -> dict[str, Any]:
         for field in self.model.get_fields():
             if (
                 field.own_field_name not in instance.keys()

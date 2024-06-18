@@ -74,6 +74,14 @@ msgstr "Требуется название"
 msgid "A topic needs a title"
 msgstr ""
 
+msgid "A total time is required and must be greater than 0."
+msgstr ""
+
+msgid ""
+"A user with the username '%username%' and the first name '%first_name%' was "
+"created."
+msgstr ""
+
 msgid "About me"
 msgstr "Обо мне"
 
@@ -86,9 +94,6 @@ msgstr ""
 msgid "Accept"
 msgstr "Принять"
 
-msgid "Acceptance"
-msgstr "Принятие"
-
 msgid "Access data (PDF)"
 msgstr "Доступ к данным (PDF)"
 
@@ -97,6 +102,9 @@ msgstr "Группы доступа"
 
 msgid "Access-data"
 msgstr "Данные доступа "
+
+msgid "Account"
+msgstr ""
 
 msgid "Account admin"
 msgstr ""
@@ -107,20 +115,64 @@ msgstr ""
 msgid "Accounts"
 msgstr ""
 
+msgid "Accounts created"
+msgstr ""
+
+msgid "Accounts updated"
+msgstr ""
+
+msgid "Accounts with errors"
+msgstr ""
+
+msgid "Accounts with warnings: affected cells will be skipped"
+msgstr ""
+
 msgid "Activate"
 msgstr ""
 
 msgid "Activate amendments"
 msgstr "Активировать поправки"
 
+msgid "Activate design"
+msgstr ""
+
 msgid "Activate statute amendments"
 msgstr "Активировать поправки к уставу"
+
+msgid "Activate the selection field 'motion editor'"
+msgstr ""
+
+msgid "Activate the selection field 'spokesman'"
+msgstr ""
 
 msgid "Activate vote delegations"
 msgstr ""
 
 msgid "Activate vote weight"
 msgstr "Активировать вес голоса"
+
+msgid ""
+"Activates the automatic logging of the date and time when this state was "
+"first reached. A set time stamp cannot be removed."
+msgstr ""
+
+msgid ""
+"Activates the automatic setting of a number for motions that reach this "
+"state. The scheme for numbering can be customized under > [Settings] > "
+"[Motions]."
+msgstr ""
+
+msgid ""
+"Activates the extension field for the selected state, which can be filled with free text as desired.\n"
+"\n"
+"Example: When activated, the state \"in progress\" can be expanded to e.g. \"in progress by the motion committee\"."
+msgstr ""
+
+msgid ""
+"Activates the extension field of the recommendation in this state, which can"
+" be filled with free text or extended with references to other motions or "
+"committees as desired."
+msgstr ""
 
 msgid "Active"
 msgstr "Активный"
@@ -134,14 +186,8 @@ msgstr "Активные фильтры"
 msgid "Active meetings"
 msgstr ""
 
-msgid "Active users"
-msgstr "Активные пользователи"
-
 msgid "Add"
 msgstr "Добавить"
-
-msgid "Add countdown"
-msgstr "Добавить обратный отсчет"
 
 msgid "Add me"
 msgstr "Добавить меня"
@@ -152,7 +198,13 @@ msgstr "Добавить сообщение"
 msgid "Add new custom translation"
 msgstr "Добавить новый пользовательский перевод"
 
+msgid "Add new entry"
+msgstr ""
+
 msgid "Add option"
+msgstr ""
+
+msgid "Add timer"
 msgstr ""
 
 msgid "Add to agenda"
@@ -171,6 +223,9 @@ msgstr ""
 msgid "Add/remove groups ..."
 msgstr "Добавить/удалить группы ..."
 
+msgid "Add/remove structure levels ..."
+msgstr ""
+
 msgid ""
 "Additional columns after the required ones may be present and will not "
 "affect the import."
@@ -178,22 +233,10 @@ msgstr ""
 "Дополнительные столбцы могут присутствовать после требуемых и не влияют на "
 "импорт."
 
-msgid "Adjourn"
-msgstr "Отложить"
-
-msgid "Adjournment"
-msgstr "Перерыв"
-
-msgid "Admin"
-msgstr "Администратор"
-
 msgid "Administration roles"
 msgstr ""
 
 msgid "Administration roles (at organization level)"
-msgstr ""
-
-msgid "Administrator"
 msgstr ""
 
 msgid "Administrators"
@@ -203,6 +246,14 @@ msgid "After verifiy the preview click on \"import\" please (see top right)."
 msgstr ""
 "После проверки предварительного просмотра нажмите пожалуйста  «импорт» (см. "
 "Вверху справа)."
+
+msgid "After verifying the preview click on \"import\" please (see top right)."
+msgstr ""
+
+msgid ""
+"Afterwards you may be unable to regain your status in this meeting on your "
+"own. Are you sure you want to do this?"
+msgstr ""
 
 msgid "Agenda"
 msgstr "Повестка дня"
@@ -225,7 +276,16 @@ msgstr ""
 msgid "All lists of speakers will be cleared."
 msgstr "Все списки спикеров будут очищены."
 
+msgid "All meetings"
+msgstr ""
+
 msgid "All other fields are optional and may be empty."
+msgstr ""
+
+msgid "All present entitled users"
+msgstr ""
+
+msgid "All structure levels"
 msgstr ""
 
 msgid "All topics will be deleted and won't be accessible afterwards."
@@ -247,6 +307,9 @@ msgid "Allow create poll"
 msgstr "Разрешить создание опроса"
 
 msgid "Allow forwarding of motions"
+msgstr ""
+
+msgid "Allow one participant multiple times on the same list"
 msgstr ""
 
 msgid ""
@@ -307,8 +370,8 @@ msgstr ""
 msgid "Amount of votes"
 msgstr "Количество голосов"
 
-msgid "An email with a password reset link was send!"
-msgstr "Отправлено электронное письмо со ссылкой для сброса пароля!"
+msgid "An email with a password reset link has been sent."
+msgstr ""
 
 msgid "An error occurred while voting."
 msgstr ""
@@ -448,14 +511,20 @@ msgstr ""
 msgid "Are you sure you want to delete this motion block?"
 msgstr "Вы уверены, что хотите удалить этот блок заявления?"
 
-msgid "Are you sure you want to delete this motion?"
-msgstr "Вы уверены, что хотите удалить это заявление?"
+msgid "Are you sure you want to delete this motion? "
+msgstr ""
 
 msgid "Are you sure you want to delete this projector?"
 msgstr "Вы уверены, что хотите удалить этот проектор?"
 
+msgid "Are you sure you want to delete this state?"
+msgstr ""
+
 msgid "Are you sure you want to delete this statute paragraph?"
 msgstr "Вы уверены, что хотите удалить этот пункт устава?"
+
+msgid "Are you sure you want to delete this structure level?"
+msgstr ""
 
 msgid "Are you sure you want to delete this tag?"
 msgstr "Вы уверены, что хотите удалить этот тег?"
@@ -476,10 +545,18 @@ msgid "Are you sure you want to duplicate this meeting?"
 msgstr ""
 
 msgid ""
+"Are you sure you want to end this contribution which still has interposed "
+"question(s)?"
+msgstr ""
+
+msgid ""
 "Are you sure you want to generate new passwords for all selected "
 "participants?"
 msgstr ""
 "Вы уверены, что хотите создать новые пароли для всех выбранных участников?"
+
+msgid "Are you sure you want to irrevocably remove your point of order?"
+msgstr ""
 
 msgid "Are you sure you want to number all agenda items?"
 msgstr "Вы уверены, что хотите пронумеровать все пункты повестки дня?"
@@ -494,11 +571,17 @@ msgstr ""
 msgid "Are you sure you want to remove all selected items from the agenda?"
 msgstr "Вы уверены, что хотите удалить все выбранные пункты из повестки дня?"
 
+msgid "Are you sure you want to remove these participants?"
+msgstr ""
+
 msgid "Are you sure you want to remove this entry from the agenda?"
 msgstr "Вы уверены, что хотите удалить эту запись из повестки дня?"
 
 msgid "Are you sure you want to remove this motion from motion block?"
 msgstr "Вы действительно хотите удалить это заявление из блока заявлений?"
+
+msgid "Are you sure you want to remove this participant?"
+msgstr ""
 
 msgid ""
 "Are you sure you want to remove this speaker from the list of speakers?"
@@ -511,15 +594,13 @@ msgid "Are you sure you want to renumber all motions of this category?"
 msgstr ""
 "Вы уверены, что хотите изменить нумерацию всех заявлений этой категории?"
 
-msgid "Are you sure you want to reset all options to factory defaults?"
+msgid "Are you sure you want to reset all options to default settings?"
 msgstr ""
 
 msgid ""
-"Are you sure you want to reset all options to factory defaults? All changes "
+"Are you sure you want to reset all options to default settings? All changes "
 "of this settings group will be lost!"
 msgstr ""
-"Вы уверены, что хотите сбросить все параметры до заводских значений по "
-"умолчанию? Все изменения этой группы настроек будут потеряны!"
 
 msgid "Are you sure you want to reset all passwords to the default ones?"
 msgstr "Вы уверены, что хотите сбросить все пароли на пароли по умолчанию?"
@@ -558,9 +639,6 @@ msgstr "Спросите, по умолчанию да"
 msgid "Assign"
 msgstr ""
 
-msgid "Assigned accounts"
-msgstr ""
-
 msgid "At least"
 msgstr ""
 
@@ -576,7 +654,13 @@ msgid ""
 " detail view."
 msgstr ""
 
+msgid "Attention: First enter the wifi data in [Settings > General]"
+msgstr ""
+
 msgid "Attention: This action cannot be undone!"
+msgstr ""
+
+msgid "Attribute mapping (JSON)"
 msgstr ""
 
 msgid "Automatically open the microphone for new conference speakers"
@@ -681,16 +765,98 @@ msgstr "Называется"
 msgid "Called with"
 msgstr "Вызывается с"
 
+msgid "Can activate and deactivate logos and fonts under > [Files]."
+msgstr ""
+
+msgid ""
+"Can add or delete speakers to or from the list of speakers, mark, sort, "
+"start/stop and open/close the list of speakers."
+msgstr ""
+
+msgid ""
+"Can add their name to the list of candidates in the [Search for candidates] "
+"phase."
+msgstr ""
+
+msgid "Can change the presence status of other participants."
+msgstr ""
+
 msgid "Can create amendments"
 msgstr "Можно создавать поправки"
 
+msgid ""
+"Can create amendments and modify them later, depending on the workflow, but "
+"cannot delete them."
+msgstr ""
+
 msgid "Can create motions"
 msgstr "Может создавать заявления"
+
+msgid ""
+"Can create motions and modify them later, depending on the workflow, but "
+"cannot delete them."
+msgstr ""
+
+msgid "Can create, change, delete tags for the agenda and for motions."
+msgstr ""
+
+msgid "Can create, change, start/stop and delete polls."
+msgstr ""
+
+msgid "Can create, configure, control and delete projectors."
+msgstr ""
+
+msgid ""
+"Can create, modify and delete elections and candidate lists, as well as "
+"start/stop and reset ballots. "
+msgstr ""
+
+msgid ""
+"Can create, modify and delete motions and votings, amendments and change "
+"recommendations, and edit the metadata of a motion. Including the management"
+" of categories, motion blocks, tags, workflows and comment fields."
+msgstr ""
+
+msgid ""
+"Can create, modify and delete topics, add motions and elections to the "
+"agenda, sort, number and tag agenda items."
+msgstr ""
+
+msgid ""
+"Can create, modify, delete chat groups and define permissions.\n"
+"\n"
+"Note: The chat menu item becomes visible to all participants, except admins, as soon as a chat has been created."
+msgstr ""
+
+msgid ""
+"Can create, modify, delete participant datasets and administrate group "
+"permissions."
+msgstr ""
+
+msgid "Can create, modify, start/stop and delete votings."
+msgstr ""
+
+msgid "Can edit all moderation notes."
+msgstr ""
+
+msgid ""
+"Can edit and assign the following motion metadata: Submitter, state, "
+"recommendation, category, motion blocks and tags."
+msgstr ""
 
 msgid "Can forward motions"
 msgstr ""
 
 msgid "Can forward motions to committee"
+msgstr ""
+
+msgid ""
+"Can forward motions to other meetings within the OpenSlides instance. \n"
+"\n"
+"Further requirements:\n"
+"1. forwarding hierarchy must be set at the organizational level in the committee. \n"
+"2. target meeting must be created.\n"
+"3. forwarding must be activated in the workflow in the state."
 msgstr ""
 
 msgid "Can manage agenda"
@@ -707,6 +873,9 @@ msgstr "Может управлять списком спикеров"
 
 msgid "Can manage logos and fonts"
 msgstr "Может управлять логотипами и шрифтами"
+
+msgid "Can manage moderation notes"
+msgstr ""
 
 msgid "Can manage motion metadata"
 msgstr "Может управлять метаданными заявления"
@@ -744,6 +913,15 @@ msgstr "Можно назначить другого участника"
 msgid "Can nominate oneself"
 msgstr "Можно выдвинуть себя"
 
+msgid ""
+"Can nominate other participants as candidates. \n"
+"\n"
+"Requires group permission: [Can see participants]"
+msgstr ""
+
+msgid "Can not import because of errors"
+msgstr ""
+
 msgid "Can put oneself on the list of speakers"
 msgstr "Возможно поставить себя в список спикеров"
 
@@ -756,8 +934,20 @@ msgstr ""
 msgid "Can see agenda"
 msgstr "Можно видеть повестку дня"
 
+msgid "Can see all internal topics, schedules and comments."
+msgstr ""
+
+msgid "Can see all lists of speakers"
+msgstr ""
+
+msgid "Can see all moderation notes in each list of speakers."
+msgstr ""
+
 msgid "Can see elections"
 msgstr "Можно видеть выборы"
+
+msgid "Can see files"
+msgstr ""
 
 msgid "Can see history"
 msgstr "Можно видеть историю"
@@ -768,13 +958,60 @@ msgstr "Может видеть внутренние элементы и вре�
 msgid "Can see list of speakers"
 msgstr "Можно видеть список ораторов"
 
+msgid "Can see moderation notes"
+msgstr ""
+
 msgid "Can see motions"
 msgstr "Можно видеть заявления"
 
 msgid "Can see motions in internal state"
 msgstr "Может видеть заявления во внутреннем состоянии"
 
+msgid ""
+"Can see motions in the internal state that are limited in the workflow under Restrictions with the same description.\n"
+"\n"
+"Tip: Cross-check desired visibility of motions with test delegate account. "
+msgstr ""
+
 msgid "Can see participants"
+msgstr ""
+
+msgid "Can see the Agenda menu item and all public topics in the agenda."
+msgstr ""
+
+msgid ""
+"Can see the Autopilot menu item with all content for which appropriate "
+"permissions are set."
+msgstr ""
+
+msgid ""
+"Can see the Files menu item and all shared folders and files.\n"
+"\n"
+"Note: Sharing of folders and files may be restricted by group assignment."
+msgstr ""
+
+msgid ""
+"Can see the History menu item with the history of processing timestamps for motions, elections and participants. \n"
+"\n"
+"Note: For privacy reasons, it is recommended to limit the rights to view the History significantly."
+msgstr ""
+
+msgid "Can see the Home menu item."
+msgstr ""
+
+msgid ""
+"Can see the Motions menu item and all motions unless they are limited by "
+"access restrictions in the workflow."
+msgstr ""
+
+msgid ""
+"Can see the Projector menu item and all projectors (in the Autopilot as well"
+" as in the Projector menu item)"
+msgstr ""
+
+msgid ""
+"Can see the Settings menu item and edit all settings as well as the start "
+"page of the meeting."
 msgstr ""
 
 msgid "Can see the autopilot"
@@ -783,17 +1020,41 @@ msgstr "Можно увидеть автопилот"
 msgid "Can see the front page"
 msgstr "Можно видеть первую страницу"
 
-msgid "Can see the list of files"
-msgstr "Можно увидеть список файлов"
-
 msgid "Can see the live stream"
 msgstr "Можно посмотреть прямую трансляцию"
+
+msgid ""
+"Can see the livestream if there is a livestream URL entered in > [Settings] "
+"> [Livestream]."
+msgstr ""
+
+msgid ""
+"Can see the menu item Elections, including the list of candidates and results. \n"
+"\n"
+"Note: The right to vote is defined directly in the ballot."
+msgstr ""
+
+msgid ""
+"Can see the menu item Participants and therefore the following data from all participants: \n"
+"Personal data: Name, pronoun, gender. \n"
+"Meeting specific information: Structure level, Group, Participant number, About me, Presence status."
+msgstr ""
 
 msgid "Can see the projector"
 msgstr "Может видеть проектор"
 
 msgid "Can support motions"
 msgstr "Разрешена поддержка заявлений"
+
+msgid ""
+"Can support motions. The support function must be enabled in > [Settings] > "
+"[Motions] as well as for the corresponding state in > [Workflow]."
+msgstr ""
+
+msgid ""
+"Can upload, modify and delete files, administrate folders and change access "
+"restrictions."
+msgstr ""
 
 msgid "Cancel"
 msgstr "Отменить"
@@ -894,11 +1155,28 @@ msgstr ""
 msgid "Check in or check out participants based on their participant numbers:"
 msgstr "Регистрация или выезд участников на основании их номеров участников:"
 
+msgid "Checkmate! You lost!"
+msgstr ""
+
+msgid "Checkmate! You won!"
+msgstr ""
+
+msgid "Chess"
+msgstr ""
+
 msgid "Choice"
+msgstr ""
+
+msgid "Choose 0 to disable Intervention."
 msgstr ""
 
 msgid "Choose 0 to disable the supporting system."
 msgstr "Выберите 0, чтобы отключить систему поддержки."
+
+msgid ""
+"Choose a number greater than 0 to activate speaking times widget for "
+"structure level countdowns."
+msgstr ""
 
 msgid "Chyron"
 msgstr "Хирон"
@@ -921,6 +1199,9 @@ msgstr "Очистить все фильтры"
 msgid "Clear all list of speakers"
 msgstr "Очистить весь список спикеров"
 
+msgid "Clear current projection"
+msgstr ""
+
 msgid "Clear list"
 msgstr "Очистить список"
 
@@ -935,6 +1216,12 @@ msgstr "Очистить теги"
 
 msgid "Click here to vote!"
 msgstr "Нажмите здесь, чтобы проголосовать!"
+
+msgid "Close"
+msgstr ""
+
+msgid "Close edit mode"
+msgstr ""
 
 msgid "Close list of speakers"
 msgstr "Закрыть список спикеров"
@@ -1011,8 +1298,17 @@ msgstr "Комитеты"
 msgid "Committees and meetings"
 msgstr ""
 
-msgid "Complex Workflow"
-msgstr "Комплексный рабочий процесс"
+msgid "Committees created"
+msgstr ""
+
+msgid "Committees updated"
+msgstr ""
+
+msgid "Committees with errors"
+msgstr ""
+
+msgid "Committees with warnings: affected cells will be skipped"
+msgstr ""
 
 msgid "Conference room"
 msgstr ""
@@ -1047,29 +1343,20 @@ msgstr ""
 msgid "Contribution"
 msgstr ""
 
-msgid "Copy report to clipboard"
+msgid "Contributions"
 msgstr ""
 
-msgid "Count active users"
-msgstr "Считать активных пользователей"
+msgid "Copy report to clipboard"
+msgstr ""
 
 msgid "Count completed requests to speak"
 msgstr "Подсчитайте выполненные запросы на выступление"
 
+msgid "Count logged-in users"
+msgstr ""
+
 msgid "Countdown"
 msgstr "Обратный отсчет"
-
-msgid "Countdown and traffic light"
-msgstr "Обратный отсчет и светофор"
-
-msgid "Countdown description"
-msgstr "Описание обратного отсчета"
-
-msgid "Countdown time"
-msgstr "Время обратного отсчета"
-
-msgid "Countdown title"
-msgstr "Название обратного отсчета"
 
 msgid "Countdowns"
 msgstr "Обратные отсчёты"
@@ -1087,12 +1374,6 @@ msgid "Create"
 msgstr "Создать"
 
 msgid "Create editorial final version"
-msgstr ""
-
-msgid "Create new chat group"
-msgstr ""
-
-msgid "Create new tag"
 msgstr ""
 
 msgid "Create subitem"
@@ -1120,6 +1401,9 @@ msgid "Current list of speakers (as slide)"
 msgstr ""
 
 msgid "Current slide"
+msgstr ""
+
+msgid "Current speaker"
 msgstr ""
 
 msgid "Current speaker chyron"
@@ -1152,29 +1436,6 @@ msgstr ""
 msgid "Datastore is ok!"
 msgstr ""
 
-msgid ""
-"Dear {name},\n"
-"\n"
-"this is your personal OpenSlides login:\n"
-"\n"
-"{url}\n"
-"Username: {username}\n"
-"Password: {password}\n"
-"\n"
-"\n"
-"This email was generated automatically."
-msgstr ""
-"Уважаемый/-ая {name},\n"
-"\n"
-"это ваш личный логин OpenSlides:\n"
-"\n"
-"  {url}\n"
-"  имя пользователя: {username}\n"
-"  пароль: {password}\n"
-"\n"
-"\n"
-"Это письмо было сгенерировано автоматически."
-
 msgid "Decision"
 msgstr "Решение"
 
@@ -1202,20 +1463,12 @@ msgstr "Группы по умолчанию с правом голоса"
 msgid "Default line numbering"
 msgstr "Нумерация строк по умолчанию"
 
-msgid "Default number"
+msgid "Default speaking time for structure levels in seconds"
 msgstr ""
 
-msgid "Default participant number"
+msgid ""
+"Default text version for change recommendations and projection of motions"
 msgstr ""
-
-msgid "Default projector"
-msgstr "Проектор по умолчанию"
-
-msgid "Default structure level"
-msgstr ""
-
-msgid "Default text version for change recommendations"
-msgstr "Версия текста по умолчанию  для изменения рекомендаций"
 
 msgid "Default visibility for new agenda items (except topics)"
 msgstr "Видимость по умолчанию для новых пунктов повестки дня (кроме тем)"
@@ -1230,6 +1483,15 @@ msgid "Default voting type"
 msgstr "Тип голосования по умолчанию"
 
 msgid ""
+"Defines for the selected state which groups have access:\n"
+"- If no option is selected, the motions in the selected state are visible to all; The prerequisite for this is group permission: [Can see motions].\n"
+"- Selecting one or more options restricts access to those groups for which the selected authorization option is defined under > [Participants] > [Groups]."
+msgstr ""
+
+msgid "Defines the colour for the state button."
+msgstr ""
+
+msgid ""
 "Defines the maximum deflection. Entering zero will use the amount of present"
 " participants instead."
 msgstr ""
@@ -1241,8 +1503,19 @@ msgstr ""
 msgid "Defines the time in which applause amounts are add up."
 msgstr ""
 
-msgid "Delegates"
-msgstr "Делегаты"
+msgid ""
+"Defines the wording of the recommendation that belongs to this state.\n"
+"Example: State = Accepted / Recommendation = Acceptance. \n"
+"\n"
+"To activate the recommendation system, a recommender (for example, a motion committee) must be defined under > [Settings] > [Motions] > [Name of recommender].\n"
+"Example recommender: motion committee\n"
+"\n"
+"Additional information:\n"
+"In combination with motion blocks, the recommendation of multiple motions can be followed simultaneously."
+msgstr ""
+
+msgid "Defines which states can be selected next in the workflow."
+msgstr ""
 
 msgid "Delegation of vote"
 msgstr "Делегирование голоса"
@@ -1260,6 +1533,11 @@ msgid "Delete projector"
 msgstr "Удалить проектор"
 
 msgid "Deleted user"
+msgstr ""
+
+msgid ""
+"Deleting this motion will likely impact it's amendments negatively and they "
+"could become unusable."
 msgstr ""
 
 msgid "Deletion"
@@ -1289,8 +1567,14 @@ msgstr "Отличающаяся версия"
 msgid "Disabled (no percents)"
 msgstr "Отключено (без процентов)"
 
+msgid "Disallow new point of order when list of speakers is closed"
+msgstr ""
+
 msgid "Display type"
 msgstr "Тип дисплея"
+
+msgid "Distribute overhang time"
+msgstr ""
 
 msgid "Div"
 msgstr ""
@@ -1298,14 +1582,11 @@ msgstr ""
 msgid "Divergent:"
 msgstr "Отклоняющийся:"
 
-msgid "Do not concern"
-msgstr "Не относятся"
-
-msgid "Do not decide"
-msgstr "Не вздумайте"
-
 msgid "Do not forget to save your changes!"
 msgstr "Не забудьте сохранить свои изменения!"
+
+msgid "Do you accept?"
+msgstr ""
 
 msgid "Do you really want to delete this color set?"
 msgstr ""
@@ -1356,6 +1637,9 @@ msgstr ""
 msgid "Duration"
 msgstr "Продолжительность"
 
+msgid "Duration in minutes"
+msgstr ""
+
 msgid "Duration of all requests to speak"
 msgstr "Продолжительность всех запросов на выступление"
 
@@ -1378,6 +1662,9 @@ msgstr ""
 msgid "Edit"
 msgstr "Редактировать"
 
+msgid "Edit account"
+msgstr ""
+
 msgid "Edit comment field"
 msgstr "Редактировать поле комментария"
 
@@ -1393,14 +1680,26 @@ msgstr "Редактировать детали для"
 msgid "Edit editorial final version"
 msgstr ""
 
+msgid "Edit group"
+msgstr ""
+
 msgid "Edit meeting"
 msgstr ""
 
-msgid "Edit name"
+msgid "Edit moderation note"
+msgstr ""
+
+msgid "Edit point of order ..."
 msgstr ""
 
 msgid "Edit projector"
 msgstr "Редактировать проектор"
+
+msgid "Edit queue"
+msgstr ""
+
+msgid "Edit state"
+msgstr ""
 
 msgid "Edit statute paragraph"
 msgstr "Редактировать пункт параграфа"
@@ -1417,6 +1716,12 @@ msgstr "Отредактируйте, чтобы ввести голоса."
 msgid "Edit topic"
 msgstr "Редактировать тему"
 
+msgid "Edit total time"
+msgstr ""
+
+msgid "Edit workflow"
+msgstr ""
+
 msgid "Editorial final version"
 msgstr ""
 
@@ -1428,6 +1733,9 @@ msgstr "Избирательные документы"
 
 msgid "Elections"
 msgstr "Выборы"
+
+msgid "Element"
+msgstr ""
 
 msgid "Email"
 msgstr "Эл. адрес"
@@ -1450,6 +1758,9 @@ msgstr "Тема электронного письма"
 msgid "Empty text field"
 msgstr "Пустое текстовое поле"
 
+msgid "Enable SSO via SAML"
+msgstr ""
+
 msgid "Enable chat globally"
 msgstr ""
 
@@ -1459,6 +1770,9 @@ msgstr ""
 msgid "Enable forspeech / counter speech"
 msgstr ""
 
+msgid "Enable interposed questions"
+msgstr ""
+
 msgid "Enable numbering for agenda items"
 msgstr "Включить нумерацию пунктов повестки дня"
 
@@ -1466,6 +1780,12 @@ msgid "Enable participant presence view"
 msgstr "Включить просмотр присутствия участников"
 
 msgid "Enable point of order"
+msgstr ""
+
+msgid "Enable point of orders for other participants"
+msgstr ""
+
+msgid "Enable specifications and ranking for possible motions"
 msgstr ""
 
 msgid "Enable star icon usage by speakers"
@@ -1481,6 +1801,41 @@ msgid "Enable/disable account ..."
 msgstr "Включить/отключить аккаунт ..."
 
 msgid "Enable/disable accounts"
+msgstr ""
+
+msgid ""
+"Enables for the selected state the possibility for submitters to change the "
+"state of the motion. Other administrative functions are excluded."
+msgstr ""
+
+msgid "Enables the ability to create votings for motions in this state."
+msgstr ""
+
+msgid ""
+"Enables the editing of the motion text and reason by submitters in the "
+"selected state after the motion has been created."
+msgstr ""
+
+msgid ""
+"Enables the forwarding of motions to other meetings within the OpenSlides instance in the selected state. \n"
+"\n"
+"Prerequisites:\n"
+"1. forwarding hierarchy must be set at the organizational level in the committee. \n"
+"2. target meeting must be created.\n"
+"3. user must have group permission for forwarding."
+msgstr ""
+
+msgid ""
+"Enables the support function for motions in the selected state. The support "
+"function must be activated under > [Settings] > [Motions] as well as the "
+"corresponding group permission in > [Participants] > [Groups] > [Motions] > "
+"[Can support motions]."
+msgstr ""
+
+msgid ""
+"Enables the visibility of amendments directly in the corresponding main motion. The text of amendments is embedded within the text of the motion.\n"
+"\n"
+"Note: Does not affect the visibility of change recommendations."
 msgstr ""
 
 msgid "Encoding of the file"
@@ -1521,6 +1876,9 @@ msgstr ""
 msgid "Enter your email to send the password reset link"
 msgstr ""
 "Введите адрес электронной почты, чтобы отправить ссылку на сброс пароля"
+
+msgid "Entitled present users"
+msgstr ""
 
 msgid "Entitled to vote"
 msgstr "Право голоса"
@@ -1598,10 +1956,16 @@ msgstr "Экспорт выбранных заявлений"
 msgid "Extension"
 msgstr "Расширение"
 
+msgid "External ID"
+msgstr ""
+
 msgid "Favorites"
 msgstr "Фавориты"
 
 msgid "File"
+msgstr ""
+
+msgid "File is being used"
 msgstr ""
 
 msgid "Filename"
@@ -1692,12 +2056,6 @@ msgstr ""
 msgid "Forwarding of motion"
 msgstr ""
 
-msgid "Forwardings"
-msgstr ""
-
-msgid "Front page text"
-msgstr "Текст главной страницы"
-
 msgid "Front page title"
 msgstr "Название главной страницы"
 
@@ -1779,6 +2137,9 @@ msgstr "Группы с разрешениями на запись"
 msgid "Guest"
 msgstr "Гость"
 
+msgid "Has SSO identification"
+msgstr ""
+
 msgid "Has amendments"
 msgstr "Есть поправки"
 
@@ -1794,6 +2155,9 @@ msgstr ""
 msgid "Has logged in"
 msgstr ""
 
+msgid "Has no SSO identification"
+msgstr ""
+
 msgid "Has no email address"
 msgstr ""
 
@@ -1801,6 +2165,9 @@ msgid "Has no speakers"
 msgstr "Не имеет спикеров"
 
 msgid "Has not logged in yet"
+msgstr ""
+
+msgid "Has not voted"
 msgstr ""
 
 msgid "Has notes"
@@ -1857,6 +2224,9 @@ msgstr "Текст справки для доступа к данным и пр�
 msgid "Hidden item"
 msgstr "Скрытый элемент"
 
+msgid "Hide main menu"
+msgstr ""
+
 msgid "Hide more text"
 msgstr "Скрыть больше текста"
 
@@ -1881,12 +2251,26 @@ msgstr "Как создать новые поправки"
 msgid "I know the risk"
 msgstr "Я знаю риск"
 
+msgid ""
+"IMPORTANT: The sender address (noreply@openslides.com) is defined in the OpenSlides server settings and cannot be changed here.\n"
+"                            To receive replies you have to enter a reply address in the next field. Please test the email dispatch in case of changes!"
+msgstr ""
+
+msgid "Identical with"
+msgstr ""
+
+msgid "Identifier"
+msgstr ""
+
 msgid "If deactivated it is displayed below the title"
 msgstr ""
 
 msgid ""
 "If it is an amendment, you can back up its content when editing it and "
 "delete it afterwards."
+msgstr ""
+
+msgid "If the value is set to 0 the time counts up as stopwatch."
 msgstr ""
 
 msgid "Import"
@@ -1913,6 +2297,12 @@ msgstr "Импорт участников"
 msgid "Import statute"
 msgstr "Импорт устава"
 
+msgid "Import successful"
+msgstr ""
+
+msgid "Import successful with some warnings"
+msgstr ""
+
 msgid "Import topics"
 msgstr "Импорт тем"
 
@@ -1922,8 +2312,8 @@ msgstr ""
 msgid "In motion list, motion detail and PDF."
 msgstr "В списке заявления, подробности заявления и PDF."
 
-msgid "In progress, please wait..."
-msgstr "Выполняется, подождите ..."
+msgid "In progress, please wait ..."
+msgstr ""
 
 msgid "In the election process"
 msgstr "В избирательном процессе"
@@ -1958,11 +2348,26 @@ msgstr "Вставьте темы здесь"
 msgid "Insertion"
 msgstr "Вставка"
 
+msgid "Insufficient material! It's a draw!"
+msgstr ""
+
 msgid "Internal"
 msgstr "Внутренний"
 
 msgid "Internal item"
 msgstr "Внутренний элемент"
+
+msgid "Internal login"
+msgstr ""
+
+msgid "Interposed question"
+msgstr ""
+
+msgid "Intervention"
+msgstr ""
+
+msgid "Intervention speaking time in seconds"
+msgstr ""
 
 msgid "Invalid line number"
 msgstr "Неверный номер строки"
@@ -1984,6 +2389,13 @@ msgstr ""
 
 msgid "Is active"
 msgstr "Является ли активным"
+
+msgid ""
+"Is allowed to add himself/herself to the list of speakers. \n"
+"\n"
+"Note:\n"
+"Optional combination of requests to speak with presence status is possible. ( > [Settings] > [List of speakers] > [General] )"
+msgstr ""
 
 msgid "Is already projected"
 msgstr "Уже прогнозируется"
@@ -2058,7 +2470,10 @@ msgid ""
 "It is not allowed to delete countdowns used for list of speakers or polls"
 msgstr ""
 
-msgid "It's your partners turn"
+msgid "It's a draw!"
+msgstr ""
+
+msgid "It's your opponent's turn"
 msgstr ""
 
 msgid "It's your turn!"
@@ -2148,7 +2563,7 @@ msgstr "Нумерация строк"
 msgid "Line spacing"
 msgstr ""
 
-msgid "Linenumber"
+msgid "List of amendments: "
 msgstr ""
 
 msgid "List of electronic votes"
@@ -2175,9 +2590,6 @@ msgstr ""
 msgid "Live conference"
 msgstr "Живая конференция"
 
-msgid "Live conference has to be active. Choose 0 to disable auto connect."
-msgstr ""
-
 msgid "Livestream"
 msgstr "Прямая трансляция"
 
@@ -2190,6 +2602,9 @@ msgstr "URL плаката прямой трансляции"
 msgid "Loading data. Please wait ..."
 msgstr "Загрузка данных. Пожалуйста, подождите ..."
 
+msgid "Logged-in users"
+msgstr ""
+
 msgid "Login"
 msgstr "Войти"
 
@@ -2199,6 +2614,9 @@ msgstr "Все равно войти"
 msgid "Login as guest"
 msgstr "Войти как Гость"
 
+msgid "Login button text"
+msgstr ""
+
 msgid "Logout"
 msgstr "Выйти"
 
@@ -2206,6 +2624,9 @@ msgid "Lowest applause amount"
 msgstr ""
 
 msgid "Main motion and line number"
+msgstr ""
+
+msgid "Mandates switched sucessfully!"
 msgstr ""
 
 msgid "Mark as personal favorite"
@@ -2230,6 +2651,9 @@ msgid "Meeting"
 msgstr ""
 
 msgid "Meeting administrator"
+msgstr ""
+
+msgid "Meeting date"
 msgstr ""
 
 msgid "Meeting information"
@@ -2267,6 +2691,12 @@ msgstr "Сообщения"
 msgid "Meta information"
 msgstr "Мета информация"
 
+msgid "Metadata of Identity Provider (IdP)"
+msgstr ""
+
+msgid "Metadata of Service Provider (SP)"
+msgstr ""
+
 msgid "Min votes cannot be greater than max votes."
 msgstr ""
 
@@ -2279,7 +2709,13 @@ msgstr "Минимизировать"
 msgid "Minimum amount of votes"
 msgstr ""
 
-msgid "Minimum number of digits for motion number"
+msgid "Minimum number of digits for motion identifier"
+msgstr ""
+
+msgid "Moderation note"
+msgstr ""
+
+msgid "Modify design"
 msgstr ""
 
 msgid "Module"
@@ -2324,13 +2760,19 @@ msgstr ""
 msgid "Motion deleted"
 msgstr "Заявление удалено"
 
+msgid "Motion editor"
+msgstr ""
+
+msgid "Motion editors"
+msgstr ""
+
 msgid "Motion forwarded to"
 msgstr ""
 
 msgid "Motion forwarding"
 msgstr ""
 
-msgid "Motion number"
+msgid "Motion identifier"
 msgstr ""
 
 msgid "Motion preamble"
@@ -2372,6 +2814,9 @@ msgstr ""
 msgid "Multiselect"
 msgstr "Множественный выбор"
 
+msgid "Must be unique"
+msgstr ""
+
 msgid "My account"
 msgstr ""
 
@@ -2383,9 +2828,6 @@ msgstr ""
 
 msgid "Name"
 msgstr "Имя"
-
-msgid "Name exceeds 256 characters"
-msgstr ""
 
 msgid "Name of recommender"
 msgstr "имя рекомендателя"
@@ -2399,17 +2841,11 @@ msgstr ""
 msgid "Natural person"
 msgstr ""
 
-msgid "Needs review"
-msgstr "Требует пересмотра"
-
 msgid "Negative votes are not allowed."
 msgstr ""
 
 msgid "Never"
 msgstr "Никогда"
-
-msgid "New Projector"
-msgstr "Новый проектор"
 
 msgid "New account"
 msgstr ""
@@ -2426,10 +2862,16 @@ msgstr "Новая категория"
 msgid "New change recommendation"
 msgstr "Новое изменение рекомендации"
 
+msgid "New chat group"
+msgstr ""
+
 msgid "New comment field"
 msgstr "Новое поле для комментариев"
 
 msgid "New committee"
+msgstr ""
+
+msgid "New design"
 msgstr ""
 
 msgid "New directory"
@@ -2438,11 +2880,17 @@ msgstr "Новый каталог"
 msgid "New election"
 msgstr "Новые выборы"
 
+msgid "New file"
+msgstr ""
+
 msgid "New file name"
 msgstr "Новое имя файла"
 
-msgid "New group name"
-msgstr "Новое название группы"
+msgid "New folder"
+msgstr ""
+
+msgid "New group"
+msgstr ""
 
 msgid "New meeting"
 msgstr ""
@@ -2462,7 +2910,7 @@ msgstr "Новый участник"
 msgid "New password"
 msgstr "Новый пароль"
 
-msgid "New poll"
+msgid "New projector"
 msgstr ""
 
 msgid "New state"
@@ -2516,14 +2964,8 @@ msgstr "Без комментариев"
 msgid "No committee admin"
 msgstr ""
 
-msgid "No concernment"
-msgstr "Нет заинтересованных"
-
 msgid "No data"
 msgstr "Нет данных"
-
-msgid "No decision"
-msgstr "Нет решения"
 
 msgid "No delegation of vote"
 msgstr "Нет делегирования голоса"
@@ -2558,6 +3000,9 @@ msgstr ""
 msgid "No motion block set"
 msgstr "Нет набора блока заявлений"
 
+msgid "No motion editors"
+msgstr ""
+
 msgid "No one has voted for this poll"
 msgstr ""
 
@@ -2573,11 +3018,20 @@ msgstr "Нет личной заметки"
 msgid "No recommendation"
 msgstr "Нет рекомендации"
 
+msgid "No results found"
+msgstr ""
+
 msgid "No results yet."
 msgstr "Пока результатов нет."
 
+msgid "No spokesperson"
+msgstr ""
+
 msgid "No statute paragraphs"
 msgstr "Нет пункта параграфов"
+
+msgid "No structure level"
+msgstr ""
 
 msgid "No tags"
 msgstr "Нет тегов"
@@ -2593,6 +3047,9 @@ msgstr ""
 
 msgid "None"
 msgstr "Никто"
+
+msgid "None of the selected motions can be forwarded."
+msgstr ""
 
 msgid "Not found"
 msgstr ""
@@ -2693,9 +3150,6 @@ msgstr "Старый пароль"
 msgid "One email was send sucessfully."
 msgstr ""
 
-msgid "Only countdown"
-msgstr "Только обратный отсчет"
-
 msgid "Only for internal notes."
 msgstr "Только для внутренних примечаний."
 
@@ -2706,6 +3160,9 @@ msgid "Only present participants can be added to the list of speakers"
 msgstr ""
 "Только присутствующие участники могут быть добавлены в список спикеров."
 
+msgid "Only time"
+msgstr ""
+
 msgid "Only traffic light"
 msgstr "Только светофор"
 
@@ -2713,6 +3170,9 @@ msgid "Open Jitsi in new tab"
 msgstr "Открыть Jitsi в новой вкладке"
 
 msgid "Open a meeting to play \"Connect 4\""
+msgstr ""
+
+msgid "Open a meeting to play chess"
 msgstr ""
 
 msgid "Open items"
@@ -2777,6 +3237,9 @@ msgstr "Оригинал"
 
 msgid "Original version"
 msgstr "Исходная версия"
+
+msgid "Out of sync"
+msgstr ""
 
 msgid "Outside"
 msgstr "Снаружи"
@@ -2897,6 +3360,21 @@ msgid ""
 "here."
 msgstr ""
 
+msgid "Participants created"
+msgstr ""
+
+msgid "Participants skipped"
+msgstr ""
+
+msgid "Participants updated"
+msgstr ""
+
+msgid "Participants with errors"
+msgstr ""
+
+msgid "Participants with warnings: affected cells will be skipped"
+msgstr ""
+
 msgid "Particles"
 msgstr ""
 
@@ -2915,14 +3393,11 @@ msgstr ""
 msgid "Paste/write your topics in this textbox."
 msgstr "Вставьте/напишите ваши темы в этом текстовом поле."
 
-msgid "Permission"
-msgstr "Разрешение"
+msgid "Pause speech"
+msgstr ""
 
 msgid "Permissions"
 msgstr "Разрешения"
-
-msgid "Permit"
-msgstr "Разрешить"
 
 msgid "Personal data changed"
 msgstr ""
@@ -2939,6 +3414,9 @@ msgstr "Личные заметки"
 msgid "Phase"
 msgstr "Фаза"
 
+msgid "Playing against"
+msgstr ""
+
 msgid "Please allow OpenSlides to access your microphone and/or camera"
 msgstr ""
 
@@ -2948,12 +3426,6 @@ msgstr "Пожалуйста, введите имя для нового ката
 msgid "Please enter a name for the new workflow:"
 msgstr "Введите имя для нового рабочего процесса:"
 
-msgid "Please enter a new workflow name:"
-msgstr ""
-
-msgid "Please enter a valid email address"
-msgstr "Введите пожалуйста действительный адрес электронной почты"
-
 msgid "Please enter a valid email address!"
 msgstr "Введите пожалуйста действительный адрес электронной почты!"
 
@@ -2961,6 +3433,12 @@ msgid "Please enter your new password"
 msgstr "Введите пожалуйста новый пароль"
 
 msgid "Please join the conference room now!"
+msgstr ""
+
+msgid "Please select a vote weight greater than or equal to 0.000001"
+msgstr ""
+
+msgid "Please select a vote weight greater than zero."
 msgstr ""
 
 msgid "Please select the directory:"
@@ -2981,6 +3459,12 @@ msgstr "Вопрос по порядку ведения заседания"
 msgid "Polls"
 msgstr ""
 
+msgid "Possible options"
+msgstr ""
+
+msgid "Possible points of order"
+msgstr ""
+
 msgid "Pre"
 msgstr ""
 
@@ -2996,7 +3480,7 @@ msgstr "Предустановленные секунды для нового о
 msgid "Prefix"
 msgstr "Префикс"
 
-msgid "Prefix for the motion number for amendments"
+msgid "Prefix for the motion identifier of amendments"
 msgstr ""
 
 msgid "Presence"
@@ -3023,11 +3507,20 @@ msgstr "Политика конфиденциальности"
 msgid "Privacy policy"
 msgstr "Политика конфиденциальности"
 
+msgid "Private key of Service Provider (SP)"
+msgstr ""
+
 msgid "Process handling"
 msgstr ""
 
 msgid "Project"
 msgstr "Проект"
+
+msgid "Project active structure level"
+msgstr ""
+
+msgid "Project all structure levels"
+msgstr ""
 
 msgid "Project selection?"
 msgstr "Выбор проецировать?"
@@ -3086,14 +3579,23 @@ msgstr "Поместить всех кандидатов в список спи�
 msgid "Queue"
 msgstr "Очередь"
 
+msgid "Rank"
+msgstr ""
+
 msgid "Re-add last speaker"
 msgstr "Повторно добавить последнего выступающего"
+
+msgid "Re-count logged-in users"
+msgstr ""
 
 msgid "Reason"
 msgstr "Причина"
 
 msgid "Reason required for creating new motion"
 msgstr "Причина, необходимая для создания нового заявления"
+
+msgid "Receipt of contributions"
+msgstr ""
 
 msgid "Receive motions"
 msgstr ""
@@ -3113,6 +3615,11 @@ msgstr ""
 msgid "Recommendation label"
 msgstr "Рекомендованная этикетка"
 
+msgid ""
+"Recommendation of motions in such a state can only be seen by motion "
+"managers."
+msgstr ""
+
 msgid "Recommendation reset"
 msgstr ""
 
@@ -3121,12 +3628,6 @@ msgstr ""
 
 msgid "Reenter to conference room"
 msgstr ""
-
-msgid "Refer to committee"
-msgstr "Обратитесь в комитет"
-
-msgid "Referral to committee"
-msgstr "Направление в комитет"
 
 msgid "Referring motions"
 msgstr "Ссылающиеся заявления"
@@ -3137,19 +3638,13 @@ msgstr "Обновить"
 msgid "Reject"
 msgstr "Отклонить"
 
-msgid "Reject (not authorized)"
-msgstr "Отклонено (не авторизован)"
-
 msgid "Rejected"
 msgstr "Отклонено"
 
-msgid "Rejection"
-msgstr "Отказ"
-
-msgid "Rejection (not authorized)"
-msgstr "Отказ (не авторизован)"
-
 msgid "Relevant information could not be accessed"
+msgstr ""
+
+msgid "Reload page"
 msgstr ""
 
 msgid "Remove"
@@ -3192,9 +3687,6 @@ msgstr "Удалить меня"
 msgid "Remove option"
 msgstr ""
 
-msgid "Rename state"
-msgstr ""
-
 msgid "Reopen"
 msgstr ""
 
@@ -3226,6 +3718,9 @@ msgstr ""
 msgid "Required permissions to view this page:"
 msgstr ""
 
+msgid "Requires permission to manage lists of speakers"
+msgstr ""
+
 msgid "Reset"
 msgstr "Сброс"
 
@@ -3244,10 +3739,7 @@ msgstr "Сброс рекомендации"
 msgid "Reset state"
 msgstr "Сброс состояния"
 
-msgid "Reset to factory defaults"
-msgstr "Сброс до заводских настроек по умолчанию"
-
-msgid "Reset your OpenSlides password"
+msgid "Reset to default settings"
 msgstr ""
 
 msgid "Resolution and size"
@@ -3265,6 +3757,9 @@ msgstr ""
 msgid "Results"
 msgstr "результаты"
 
+msgid "Resume speech"
+msgstr ""
+
 msgid "Retrieving vote status... Please wait!"
 msgstr ""
 
@@ -3273,6 +3768,18 @@ msgstr "Направо"
 
 msgid "Roman"
 msgstr "Римские "
+
+msgid "Rows with warnings"
+msgstr ""
+
+msgid "SSO"
+msgstr ""
+
+msgid "SSO Identification"
+msgstr ""
+
+msgid "SSO identification"
+msgstr ""
 
 msgid "Same email"
 msgstr ""
@@ -3288,9 +3795,6 @@ msgstr "Сохранить все изменения"
 
 msgid "Save editorial final version"
 msgstr ""
-
-msgid "Scan this QR code to connect to WLAN."
-msgstr "Сканируйте этот QR-код для подключения к вай-фай."
 
 msgid "Scan this QR code to open URL."
 msgstr "Сканируйте этот QR-код, чтобы открыть URL."
@@ -3328,23 +3832,23 @@ msgstr ""
 msgid "Select all"
 msgstr "Выбрать все"
 
+msgid "Select exactly two participants to swap mandates"
+msgstr ""
+
 msgid "Select file"
 msgstr "Выберите файл"
 
 msgid "Select meetings ..."
 msgstr ""
 
-msgid "Select or search new candidate ..."
-msgstr ""
-
-msgid "Select or search new speaker ..."
-msgstr "Выберите или найдите нового спикера ..."
-
-msgid "Select or search new submitter ..."
-msgstr "Выберите или найдите нового подателя ..."
-
 msgid "Select paragraphs"
 msgstr "Выберите параграф"
+
+msgid "Select participant"
+msgstr ""
+
+msgid "Select speaker"
+msgstr ""
 
 msgid "Send"
 msgstr ""
@@ -3397,6 +3901,9 @@ msgstr ""
 msgid "Set hidden"
 msgstr "Скрыть"
 
+msgid "Set identifier"
+msgstr ""
+
 msgid "Set inactive"
 msgstr ""
 
@@ -3413,9 +3920,6 @@ msgid "Set natural person ..."
 msgstr ""
 
 msgid "Set not present in meeting {}"
-msgstr ""
-
-msgid "Set number"
 msgstr ""
 
 msgid "Set or remove motion forwarding from the selected committees to:"
@@ -3442,13 +3946,13 @@ msgstr ""
 msgid "Set status for selected participants:"
 msgstr "Установить статус для выбранных участников:"
 
+msgid "Set submission timestamp"
+msgstr ""
+
 msgid "Set submitters"
 msgstr ""
 
 msgid "Set tags"
-msgstr ""
-
-msgid "Set timestamp of creation"
 msgstr ""
 
 msgid "Set workflow"
@@ -3522,6 +4026,9 @@ msgstr "Показать окно прямой трансляции"
 msgid "Show logo"
 msgstr "Показать логотип"
 
+msgid "Show main menu"
+msgstr ""
+
 msgid "Show meta information box beside the title on projector"
 msgstr ""
 
@@ -3544,6 +4051,9 @@ msgid "Show recommendation extension field"
 msgstr "Показать поле расширения рекомендаций"
 
 msgid "Show recommendation on projector"
+msgstr ""
+
+msgid "Show recommendations not public"
 msgstr ""
 
 msgid "Show referring motions"
@@ -3587,19 +4097,21 @@ msgid ""
 "24x24px, PNG, JPG or SVG"
 msgstr ""
 
-msgid "Simple Workflow"
-msgstr "Простой рабочий процесс"
+msgid "Single Sign-On settings"
+msgstr ""
 
 msgid "Single votes"
 msgstr "Одиночные голоса"
-
-msgid "Size"
-msgstr ""
 
 msgid "Slide"
 msgstr "Слайд"
 
 msgid "Some csv values could not be read correctly."
+msgstr ""
+
+msgid ""
+"Some mails could not be sent. There may be a problem communicating with the "
+"mail server, please contact your admin."
 msgstr ""
 
 msgid "Sort"
@@ -3608,7 +4120,7 @@ msgstr "Сортировать"
 msgid "Sort agenda"
 msgstr "Сортировать повестку дня"
 
-msgid "Sort by number"
+msgid "Sort by identifier"
 msgstr ""
 
 msgid "Sort categories"
@@ -3635,13 +4147,31 @@ msgstr ""
 msgid "Speakers"
 msgstr "Спикеры"
 
-msgid "Speaking time"
+msgid "Speaking times"
 msgstr ""
 
-msgid "Staff"
-msgstr "Сотрудники"
+msgid "Speech start time"
+msgstr ""
+
+msgid "Speech type"
+msgstr ""
+
+msgid "Spokesperson"
+msgstr ""
+
+msgid "Spokespersons"
+msgstr ""
+
+msgid "Stalemate! It's a draw!"
+msgstr ""
+
+msgid "Start and end time must either both be set or both be empty"
+msgstr ""
 
 msgid "Start date"
+msgstr ""
+
+msgid "Start line number"
 msgstr ""
 
 msgid "Start time"
@@ -3698,8 +4228,14 @@ msgstr ""
 msgid "Structure level"
 msgstr "Уровень структуры"
 
+msgid "Structure levels"
+msgstr ""
+
 msgid "Subcategory"
 msgstr "Подкатегория"
+
+msgid "Submission date"
+msgstr ""
 
 msgid "Submit selection now?"
 msgstr "Отправить выбор сейчас?"
@@ -3767,6 +4303,12 @@ msgstr "Сторонники изменились"
 msgid "Surname"
 msgstr "Фамилия"
 
+msgid "Swap mandates ..."
+msgstr ""
+
+msgid "Switch"
+msgstr ""
+
 msgid "Table of contents"
 msgstr "Содержание"
 
@@ -3791,6 +4333,9 @@ msgstr "Текстовый разделитель"
 msgid "The account is deactivated."
 msgstr ""
 
+msgid "The affected columns will not be imported."
+msgstr ""
+
 msgid "The assembly may decide:"
 msgstr "Собрание может принять решение:"
 
@@ -3799,6 +4344,9 @@ msgstr "Менеджер мероприятий еще не настроил ю�
 
 msgid "The event manager has not set up a privacy policy yet."
 msgstr "Менеджер событий еще не настроил политику конфиденциальности."
+
+msgid "The fields are defined as follows"
+msgstr ""
 
 msgid "The file has too few columns to be parsed properly."
 msgstr "В файле слишком мало столбцов для правильного анализа."
@@ -3812,6 +4360,24 @@ msgid ""
 msgstr ""
 "Файл, кажется, имеет несколько пропущенных столбцов. Они будут считаться "
 "пустыми."
+
+msgid ""
+"The import can not proceed. There is likely a problem with the import data, "
+"please check the preview for details."
+msgstr ""
+
+msgid "The import is in progress, please wait ..."
+msgstr ""
+
+msgid ""
+"The import returned warnings. This does not mean that it failed, but some "
+"data may have been imported differently. Usually the warnings will be the "
+"same as during the preview, but as there is a possibility that new ones have"
+" arisen, the relevant rows will be displayed below."
+msgstr ""
+
+msgid "The import was successful."
+msgstr ""
 
 msgid "The input data for voting is invalid."
 msgstr ""
@@ -3851,13 +4417,6 @@ msgstr ""
 msgid "The request could not be sent. Check your connection."
 msgstr ""
 
-msgid ""
-"The sender address is defined in the OpenSlides server settings and should "
-"modified by administrator only."
-msgstr ""
-"Адрес отправителя определяется в настройках сервера OpenSlides и должен "
-"изменяться только администратором."
-
 msgid "The server could not be reached."
 msgstr "Сервер не может быть достигнут."
 
@@ -3873,11 +4432,11 @@ msgid "The title is required"
 msgstr "Название обязательно"
 
 msgid ""
-"The user %user% has no email, so the invitation email could not be send."
+"The user %user% has no email, so the invitation email could not be sent."
 msgstr ""
 
 msgid ""
-"The users %user% have no email, so the invitation emails could not be send."
+"The users %user% have no email, so the invitation emails could not be sent."
 msgstr ""
 
 msgid "There are not enough options."
@@ -3895,6 +4454,9 @@ msgstr "В этой поправке есть ошибка. Пожалуйста
 msgid "There is an unknown voting problem."
 msgstr ""
 
+msgid "There is an unspecified error in this line, which prevents the import."
+msgstr ""
+
 msgid ""
 "There seems to be a problem connecting to our services. Check your "
 "connection or try again later."
@@ -3909,7 +4471,7 @@ msgstr ""
 msgid "These accounts will be deleted:"
 msgstr ""
 
-msgid "These accounts will be removed from the meeting:"
+msgid "These participants will be removed:"
 msgstr ""
 
 msgid "This account has relations to meetings or committees"
@@ -3920,7 +4482,13 @@ msgid ""
 " and is not manager of any committee"
 msgstr ""
 
-msgid "This account will only be removed from this meeting"
+msgid "This action will diminish your organization management level"
+msgstr ""
+
+msgid "This action will remove you from one or more groups."
+msgstr ""
+
+msgid "This action will remove you from one or more meetings."
 msgstr ""
 
 msgid "This ballot contains deleted users."
@@ -3941,10 +4509,21 @@ msgstr "Это поле обязательно к заполнению."
 msgid "This is not a number."
 msgstr ""
 
+msgid ""
+"This may diminish your ability to do things in this meeting and you may not "
+"be able to revert it by youself. Are you sure you want to do this?"
+msgstr ""
+
+msgid "This meeting"
+msgstr ""
+
 msgid "This meeting is archived"
 msgstr ""
 
 msgid "This paragraph does not exist in the main motion anymore:"
+msgstr ""
+
+msgid "This participant will only be removed from this meeting"
 msgstr ""
 
 msgid "This prefix already exists"
@@ -3959,9 +4538,20 @@ msgstr ""
 "повестки дня."
 
 msgid ""
+"This projector is currently internal. Selecting such projectors as reference"
+" projectors will automatically set them to visible. Do you really want to do"
+" this?"
+msgstr ""
+
+msgid ""
 "This will add or remove the following groups for all selected participants:"
 msgstr ""
 "Это добавит или удалит следующие группы для всех выбранных участников:"
+
+msgid ""
+"This will add or remove the following structure levels for all selected "
+"participants:"
+msgstr ""
 
 msgid ""
 "This will add or remove the following submitters for all selected motions:"
@@ -3976,6 +4566,11 @@ msgid "This will add or remove the following tags for all selected motions:"
 msgstr "Это добавит или удалит следующие теги для всех выбранных заявлений:"
 
 msgid "This will add or remove the selected accounts to following meetings:"
+msgstr ""
+
+msgid ""
+"This will diminish your ability to do things on the organization level and "
+"you will not be able to revert this yourself."
 msgstr ""
 
 msgid "This will move all selected motions as childs to:"
@@ -4012,10 +4607,22 @@ msgstr ""
 msgid "Thoroughly check datastore (unsafe)"
 msgstr ""
 
+msgid "Threefold repetition! It's a draw!"
+msgstr ""
+
 msgid "Tile view"
 msgstr "Вид плитки"
 
 msgid "Time"
+msgstr ""
+
+msgid "Time and traffic light"
+msgstr ""
+
+msgid "Timer"
+msgstr ""
+
+msgid "Timers"
 msgstr ""
 
 msgid "Timestamp"
@@ -4033,6 +4640,9 @@ msgstr "Название для PDF документов заявлений"
 msgid "Title for access data and welcome PDF"
 msgstr "Название для доступа к данным и приветствия PDF"
 
+msgid "To start your search press Enter or the search icon"
+msgstr ""
+
 msgid "Toggle to list of speakers"
 msgstr ""
 
@@ -4048,6 +4658,33 @@ msgstr "Тема"
 msgid "Topics"
 msgstr "Темы"
 
+msgid "Topics created"
+msgstr ""
+
+msgid "Topics skipped"
+msgstr ""
+
+msgid "Topics updated"
+msgstr ""
+
+msgid "Topics with warnings (will be skipped)"
+msgstr ""
+
+msgid "Total accounts"
+msgstr ""
+
+msgid "Total committees"
+msgstr ""
+
+msgid "Total participants"
+msgstr ""
+
+msgid "Total time"
+msgstr ""
+
+msgid "Total topics"
+msgstr ""
+
 msgid "Total votes cast"
 msgstr "Всего поданных голосов"
 
@@ -4062,9 +4699,6 @@ msgstr ""
 
 msgid "Try reconnect"
 msgstr ""
-
-msgid "Type"
-msgstr "Тип"
 
 msgid "Underline"
 msgstr ""
@@ -4087,11 +4721,16 @@ msgstr "Не поддерживается"
 msgid "Upload"
 msgstr "Загрузить"
 
-msgid "Upload files"
-msgstr "Загрузить файлы"
-
 msgid "Upload to"
 msgstr "Загрузить на"
+
+msgid ""
+"Use JSON key:value structure (key = OpenSlides attribute name, value = IdP "
+"attribute name)."
+msgstr ""
+
+msgid "Use color"
+msgstr ""
 
 msgid "Use the following custom number"
 msgstr "Использовать следующий пользовательский номер"
@@ -4103,8 +4742,8 @@ msgstr ""
 "Используйте эти заполнители: {name}, {event_name}, {url}, {username}, "
 "{password}. URL ссылается на системный url."
 
-msgid "Used for WLAN QRCode in PDF of access data."
-msgstr "Используется для WLAN QR-Код в PDF данных доступа."
+msgid "Used for WLAN QRCode projection."
+msgstr ""
 
 msgid "Used for invitation emails and QRCode in PDF of access data."
 msgstr ""
@@ -4115,10 +4754,13 @@ msgstr ""
 msgid "Username"
 msgstr "Имя пользователя"
 
+msgid "Username may not contain spaces"
+msgstr ""
+
 msgid "Username or password is incorrect."
 msgstr ""
 
-msgid "Uses leading zeros to sort motions correctly by number."
+msgid "Uses leading zeros to sort motions correctly by identifier."
 msgstr ""
 
 msgid ""
@@ -4138,8 +4780,14 @@ msgstr ""
 msgid "Visibility"
 msgstr "Видимость"
 
+msgid "Visibility on agenda"
+msgstr ""
+
 msgid "Vote"
 msgstr "Голос"
+
+msgid "Vote submitted"
+msgstr ""
 
 msgid "Vote weight"
 msgstr "Вес голоса"
@@ -4149,9 +4797,6 @@ msgstr ""
 
 msgid "Votes"
 msgstr "Голоса"
-
-msgid "Voting"
-msgstr "Голосование"
 
 msgid "Voting and ballot papers"
 msgstr "Голосование и избирательные бюллетени"
@@ -4221,9 +4866,6 @@ msgstr "Тип голосования"
 msgid "Votings"
 msgstr "Голосование"
 
-msgid "WLAN access data"
-msgstr "WLAN Данные доступа "
-
 msgid "WLAN encryption"
 msgstr "WLAN шифрование"
 
@@ -4239,13 +4881,29 @@ msgstr ""
 msgid "Wait for response ..."
 msgstr ""
 
+msgid "Waiting for response ..."
+msgstr ""
+
 msgid "Warn color"
+msgstr ""
+
+msgid ""
+"Warning: Amendments exist for at least one of the selected motions. Are you "
+"sure you want to delete these motions regardless?"
+msgstr ""
+
+msgid ""
+"Warning: Amendments exist for this motion. Are you sure you want to delete "
+"this motion regardless?"
 msgstr ""
 
 msgid ""
 "Warning: Amendments exist for this motion. Editing this text will likely "
 "impact them negatively. Particularily, amendments might become unusable if "
 "the paragraph they affect is deleted."
+msgstr ""
+
+msgid "Warning: This projector will be set to visible"
 msgstr ""
 
 msgid "Was forwarded to this meeting"
@@ -4262,6 +4920,15 @@ msgstr ""
 
 msgid "Which version?"
 msgstr "Какая версия?"
+
+msgid "Wifi"
+msgstr ""
+
+msgid "Wifi access data"
+msgstr ""
+
+msgid "Wifi name"
+msgstr ""
 
 msgid ""
 "Will be displayed as label before selected recommendation in statute "
@@ -4304,9 +4971,6 @@ msgstr "Да на кандидата"
 msgid "Yes per option"
 msgstr ""
 
-msgid "Yes, delete"
-msgstr ""
-
 msgid "Yes, inclusive meetings"
 msgstr ""
 
@@ -4334,13 +4998,7 @@ msgstr ""
 msgid "You are not supposed to be here..."
 msgstr "Вы не должны быть здесь..."
 
-msgid ""
-"You are receiving this email because you have requested a new password for your OpenSlides-account.\n"
-"\n"
-"Please open the following link and choose a new password:\n"
-"{url}/login/forget-password-confirm?user_id={user_id}&token={token}\n"
-"\n"
-"For completeness your username: {username}"
+msgid "You are using an incompatible client version."
 msgstr ""
 
 msgid ""
@@ -4411,6 +5069,9 @@ msgstr "Вы уже проголосовали."
 msgid "You have to be logged in to be able to vote."
 msgstr "Вы должны войти в систему, чтобы проголосовать."
 
+msgid "You have to be present to add yourself."
+msgstr ""
+
 msgid "You have to be present to vote."
 msgstr "Вы должны присутствовать, чтобы голосовать."
 
@@ -4452,14 +5113,14 @@ msgstr ""
 msgid "Your input does not match the following structure: \"hh:mm\""
 msgstr "Ваш ввод не соответствует следующей структуре: \"чч:мм\""
 
-msgid "Your partner couldn't stand it anymore... You are the winner!"
+msgid "Your opponent couldn't stand it anymore... You are the winner!"
 msgstr ""
 
-msgid "Your partner has won!"
+msgid "Your opponent has won!"
 msgstr ""
 
-msgid "Your password was resetted successfully!"
-msgstr "Ваш пароль был успешно восстановлен!"
+msgid "Your password has been reset successfully!"
+msgstr ""
 
 msgid "Your votes"
 msgstr ""
@@ -4481,14 +5142,8 @@ msgstr ""
 msgid "[Place for your welcome and help text.]"
 msgstr "[Место для приветствия и текста справки.]"
 
-msgid "[Place for your welcome text.]"
-msgstr "[Место для вашего текста приветствия.]"
-
 msgid "absent"
 msgstr "отсутствует"
-
-msgid "accepted"
-msgstr "принято"
 
 msgid "account-example"
 msgstr ""
@@ -4496,14 +5151,8 @@ msgstr ""
 msgid "active"
 msgstr "активный"
 
-msgid "active users"
-msgstr "активные пользователи"
-
 msgid "add group(s)"
 msgstr "добавить группу(ы)"
-
-msgid "adjourned"
-msgstr "отложено"
 
 msgid "already exists"
 msgstr ""
@@ -4526,6 +5175,9 @@ msgstr "бюллетень"
 msgid "by"
 msgstr "по"
 
+msgid "challenged you to a chess match!"
+msgstr ""
+
 msgid "committee-example"
 msgstr ""
 
@@ -4541,12 +5193,6 @@ msgstr "вклад"
 msgid "could not be created"
 msgstr ""
 
-msgid "could not be defined"
-msgstr ""
-
-msgid "could not be referenced"
-msgstr ""
-
 msgid "created"
 msgstr "создан"
 
@@ -4554,6 +5200,9 @@ msgid "custom"
 msgstr "индивидуальный"
 
 msgid "dateless"
+msgstr ""
+
+msgid "delete"
 msgstr ""
 
 msgid "deleted"
@@ -4610,14 +5259,8 @@ msgstr "сохранил свою работу над этим движение�
 msgid "have been created"
 msgstr ""
 
-msgid "have been referenced"
-msgstr ""
-
 msgid "hidden"
 msgstr "скрытый"
-
-msgid "in progress"
-msgstr "в ходе выполнения"
 
 msgid "inactive"
 msgstr "неактивный"
@@ -4646,8 +5289,14 @@ msgstr "пункты"
 msgid "items selected"
 msgstr "выбранные элементы"
 
+msgid "last updated"
+msgstr ""
+
 msgid "lightblue"
 msgstr "светло-синий"
+
+msgid "logged-in users"
+msgstr ""
 
 msgid "long running"
 msgstr ""
@@ -4670,14 +5319,8 @@ msgstr "заявления"
 msgid "move ..."
 msgstr "перенести ..."
 
-msgid "name"
-msgstr ""
-
 msgid "natural person"
 msgstr ""
-
-msgid "needs review"
-msgstr "требует пересмотра"
 
 msgid "no natural person"
 msgstr ""
@@ -4694,11 +5337,8 @@ msgstr "не номинальный"
 msgid "none"
 msgstr "никто"
 
-msgid "not concerned"
-msgstr "не касается"
-
-msgid "not decided"
-msgstr "не решено"
+msgid "not specified"
+msgstr ""
 
 msgid "of"
 msgstr "из"
@@ -4721,9 +5361,6 @@ msgstr "участники"
 msgid "participants-example"
 msgstr "пример участников"
 
-msgid "permitted"
-msgstr "разрешено"
-
 msgid "present"
 msgstr "присутствует"
 
@@ -4736,14 +5373,8 @@ msgstr "опубликовано"
 msgid "red"
 msgstr "красный"
 
-msgid "referred to committee"
-msgstr "отнесено к комитету"
-
-msgid "rejected"
-msgstr "отклонено"
-
-msgid "rejected (not authorized)"
-msgstr "отклонено (не авторизован)"
+msgid "remove"
+msgstr ""
 
 msgid "remove group(s)"
 msgstr "удалить группу(ы)"
@@ -4766,9 +5397,6 @@ msgstr "началось"
 msgid "stopped"
 msgstr ""
 
-msgid "submitted"
-msgstr "Отправлено"
-
 msgid "successfully forwarded"
 msgstr ""
 
@@ -4784,9 +5412,6 @@ msgstr "сегодня"
 msgid "undocumented"
 msgstr "недокументированный"
 
-msgid "unknown"
-msgstr "неизвестный"
-
 msgid "updated"
 msgstr ""
 
@@ -4799,17 +5424,139 @@ msgstr ""
 msgid "will be created"
 msgstr ""
 
-msgid "will be defined"
-msgstr ""
-
 msgid "will be imported"
 msgstr ""
 
-msgid "will be referenced"
-msgstr ""
-
-msgid "withdrawn"
+msgid "will be updated"
 msgstr ""
 
 msgid "yellow"
 msgstr "желтый"
+
+msgid "{{amount}} interposed questions will be cleared"
+msgstr ""
+
+msgid "{{amount}} of them will be saved with 'unknown' speaker"
+msgstr ""
+
+msgid "{{amount}} will be saved"
+msgstr ""
+
+msgid "Acceptance"
+msgstr "Принятие"
+
+msgid "Adjournment"
+msgstr "Перерыв"
+
+msgid "Admin"
+msgstr "Администратор"
+
+msgid "Complex Workflow"
+msgstr "Комплексный рабочий процесс"
+
+msgid ""
+"Dear {name},\n"
+"\n"
+"this is your personal OpenSlides login:\n"
+"\n"
+"{url}\n"
+"Username: {username}\n"
+"Password: {password}\n"
+"\n"
+"\n"
+"This email was generated automatically."
+msgstr ""
+"Уважаемый/-ая {name},\n"
+"\n"
+"это ваш личный логин OpenSlides:\n"
+"\n"
+"  {url}\n"
+"  имя пользователя: {username}\n"
+"  пароль: {password}\n"
+"\n"
+"\n"
+"Это письмо было сгенерировано автоматически."
+
+msgid "Default projector"
+msgstr "Проектор по умолчанию"
+
+msgid "Delegates"
+msgstr "Делегаты"
+
+msgid "No concernment"
+msgstr "Нет заинтересованных"
+
+msgid "No decision"
+msgstr "Нет решения"
+
+msgid "Presentation and assembly system"
+msgstr ""
+
+msgid "Referral to"
+msgstr ""
+
+msgid "Rejection"
+msgstr "Отказ"
+
+msgid "Reset your OpenSlides password"
+msgstr ""
+
+msgid "Simple Workflow"
+msgstr "Простой рабочий процесс"
+
+msgid "Space for your welcome text."
+msgstr ""
+
+msgid "Speaking time"
+msgstr ""
+
+msgid "Staff"
+msgstr "Сотрудники"
+
+msgid "Voting"
+msgstr "Голосование"
+
+msgid ""
+"You are receiving this email because you have requested a new password for your OpenSlides account.\n"
+"\n"
+"Please open the following link and choose a new password:\n"
+"{url}/login/forget-password-confirm?user_id={user_id}&token={token}\n"
+"\n"
+"The link will be valid for 10 minutes."
+msgstr ""
+
+msgid "accepted"
+msgstr "принято"
+
+msgid "adjourned"
+msgstr "отложено"
+
+msgid "in progress"
+msgstr "в ходе выполнения"
+
+msgid "name"
+msgstr ""
+
+msgid "not concerned"
+msgstr "не касается"
+
+msgid "not decided"
+msgstr "не решено"
+
+msgid "not permitted"
+msgstr ""
+
+msgid "permitted"
+msgstr "разрешено"
+
+msgid "referred to"
+msgstr ""
+
+msgid "rejected"
+msgstr "отклонено"
+
+msgid "submitted"
+msgstr "Отправлено"
+
+msgid "withdrawn"
+msgstr ""

@@ -1,11 +1,12 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.models.models import Poll
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
-from tests.system.action.base import BaseActionTestCase
+
+from .base_poll_test import BasePollTestCase
 
 
-class VotePollBaseTestClass(BaseActionTestCase):
+class VotePollBaseTestClass(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.set_models(
@@ -59,13 +60,13 @@ class VotePollBaseTestClass(BaseActionTestCase):
             }
         )
 
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         # has to be implemented by subclasses
         raise NotImplementedError()
 
 
 class VotePollAnalogYNA(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "YNA",
             "type": Poll.TYPE_ANALOG,
@@ -83,7 +84,7 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
 
 
 class VotePollNamedYNA(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "YNA",
             "type": Poll.TYPE_NAMED,
@@ -117,7 +118,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
 
 
 class VotePollNamedY(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "Y",
             "type": Poll.TYPE_NAMED,
@@ -135,7 +136,7 @@ class VotePollNamedY(VotePollBaseTestClass):
 
 
 class VotePollNamedN(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "N",
             "type": Poll.TYPE_NAMED,
@@ -153,7 +154,7 @@ class VotePollNamedN(VotePollBaseTestClass):
 
 
 class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "YNA",
             "type": Poll.TYPE_PSEUDOANONYMOUS,
@@ -171,7 +172,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
 
 
 class VotePollPseudoanonymousY(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "Y",
             "type": Poll.TYPE_PSEUDOANONYMOUS,
@@ -189,7 +190,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
 
 
 class VotePollPseudoAnonymousN(VotePollBaseTestClass):
-    def get_poll_data(self) -> Dict[str, Any]:
+    def get_poll_data(self) -> dict[str, Any]:
         return {
             "pollmethod": "N",
             "type": Poll.TYPE_PSEUDOANONYMOUS,

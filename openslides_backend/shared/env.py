@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Any, Dict
+from typing import Any
 
 DEV_PASSWORD = "openslides"
 
@@ -44,6 +44,8 @@ class Environment:
         "OPENSLIDES_BACKEND_RAISE_4XX": "false",
         "OPENSLIDES_BACKEND_WORKER_TIMEOUT": "30",
         "OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT": "1",
+        "OPENSLIDES_BACKEND_CREATE_INITIAL_DATA": "false",
+        "SUPERADMIN_PASSWORD_FILE": "/run/secrets/superadmin",
         "OPENSLIDES_DEVELOPMENT": "false",
         "OPENSLIDES_LOGLEVEL": Loglevel.NOTSET.name,
         "OPENTELEMETRY_ENABLED": "false",
@@ -66,6 +68,9 @@ class Environment:
             raise AttributeError(f"Environment variable {attr} not found")
         return value
 
+    def __str__(self) -> str:
+        return str(self.vars)
+
     def is_dev_mode(self) -> bool:
         return is_truthy(self.OPENSLIDES_DEVELOPMENT)
 
@@ -82,14 +87,7 @@ class Environment:
             return Loglevel.INFO.name
         return lvl
 
-    def get_address(self, view: str) -> str:
-        if view == "ActionView":
-            return f"0.0.0.0:{self.ACTION_PORT}"
-        elif view == "PresenterView":
-            return f"0.0.0.0:{self.PRESENTER_PORT}"
-        raise ValueError(f"Invalid view {view}")
-
-    def get_service_url(self) -> Dict[str, str]:
+    def get_service_url(self) -> dict[str, str]:
         service_url = {}
         # Extend the vars attribute with the lower case properties for the service URLs.
         for service in ("datastore_reader", "datastore_writer", "media", "vote"):

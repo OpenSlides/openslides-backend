@@ -1,5 +1,6 @@
 from time import time
 
+from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
@@ -80,13 +81,13 @@ class TestExportMeeting(BasePresenterTestCase):
                 "action_worker/1": {
                     "id": 1,
                     "name": "testcase",
-                    "state": "end",
+                    "state": ActionWorkerState.END,
                     "created": round(time() - 3),
                     "timestamp": round(time()),
                 },
                 "import_preview/1": {
                     "id": 1,
-                    "name": "testcase",
+                    "name": "topic",
                     "state": "done",
                     "created": round(time()),
                 },

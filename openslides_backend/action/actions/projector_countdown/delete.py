@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import ProjectorCountdown
 from ....permissions.permissions import Permissions
@@ -19,7 +19,7 @@ class ProjectorCountdownDelete(DeleteAction):
     schema = DefaultSchema(ProjectorCountdown()).get_delete_schema()
     permission = Permissions.Projector.CAN_MANAGE
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         projector_countdown = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [

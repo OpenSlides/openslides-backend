@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/requirements/partial"
+    schedule:
+      interval: "daily"
+    assignees:
+      - "r-peschke"
+    groups:
+       opentelemetry-dependencies:
+          patterns:
+            - "opentelemetry-*"
+    open-pull-requests-limit: 42
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    assignees:
+      - "r-peschke"
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-minor"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    assignees:
+      - "r-peschke"

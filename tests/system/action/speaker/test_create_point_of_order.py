@@ -54,7 +54,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "meeting/7844": {
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "list_of_speakers_present_users_only": False,
                     "is_active_in_organization_id": 1,
                 },
                 "user/7": {
@@ -154,7 +153,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "meeting/7844": {
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "list_of_speakers_present_users_only": False,
                     "is_active_in_organization_id": 1,
                 },
                 "user/7": {"username": "waiting with poo1", "meeting_ids": [7844]},
@@ -271,7 +269,6 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "meeting/7844": {
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "list_of_speakers_present_users_only": False,
                     "is_active_in_organization_id": 1,
                 },
                 "user/7": {"username": "waiting with poo", "meeting_ids": [7844]},
@@ -390,36 +387,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/7844": {
-                    "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
-                    "list_of_speakers_present_users_only": False,
                     "is_active_in_organization_id": 1,
                 },
-                "user/7": {"username": "talking", "meeting_ids": [7844]},
-                "user/8": {"username": "waiting", "meeting_ids": [7844]},
-                "meeting_user/7": {
-                    "meeting_id": 7844,
-                    "user_id": 7,
-                    "speaker_ids": [1],
-                },
-                "meeting_user/8": {
-                    "meeting_id": 7844,
-                    "user_id": 8,
-                    "speaker_ids": [2],
-                },
-                "speaker/1": {
-                    "meeting_user_id": 7,
-                    "list_of_speakers_id": 23,
-                    "begin_time": 100000,
-                    "meeting_id": 7844,
-                },
-                "speaker/2": {
-                    "meeting_user_id": 8,
-                    "list_of_speakers_id": 23,
-                    "weight": 10000,
-                    "meeting_id": 7844,
-                },
-                "list_of_speakers/23": {"speaker_ids": [1, 2], "meeting_id": 7844},
+                "list_of_speakers/23": {"meeting_id": 7844},
             }
         )
         response = self.request(
@@ -431,6 +402,60 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['list_of_speakers_id', 'meeting_user_id'] properties",
+            "meeting_user_id is required.",
             response.json["message"],
+        )
+
+    def setup_create_poo_for_other_user(self, allow: bool = False) -> None:
+        self.set_models(
+            {
+                "meeting/7844": {
+                    "name": "name_asdewqasd",
+                    "list_of_speakers_enable_point_of_order_speakers": True,
+                    "list_of_speakers_can_create_point_of_order_for_others": allow,
+                    "is_active_in_organization_id": 1,
+                },
+                "user/8": {"meeting_user_ids": [8]},
+                "meeting_user/8": {
+                    "meeting_id": 7844,
+                    "user_id": 8,
+                },
+                "list_of_speakers/23": {"meeting_id": 7844},
+            }
+        )
+
+    def test_create_poo_for_other_user_forbidden(self) -> None:
+        self.setup_create_poo_for_other_user()
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "point_of_order": True,
+                "meeting_user_id": 8,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The requesting user 1 is not the user 8 the point-of-order is filed for.",
+            response.json["message"],
+        )
+
+    def test_create_poo_for_other_user_allowed(self) -> None:
+        self.setup_create_poo_for_other_user(True)
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "point_of_order": True,
+                "meeting_user_id": 8,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "meeting_user_id": 8,
+                "weight": 1,
+                "point_of_order": True,
+            },
         )

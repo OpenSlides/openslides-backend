@@ -1,6 +1,8 @@
+from math import floor
 from time import time
-from typing import Any, Dict
+from typing import Any
 
+from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls
@@ -9,8 +11,8 @@ from tests.system.util import CountDatastoreCalls
 class MotionUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"meeting_user_ids": [1]},
+        self.permission_test_models: dict[str, dict[str, Any]] = {
+            "meeting/1": {"meeting_user_ids": [1], "is_active_in_organization_id": 1},
             "motion/111": {
                 "meeting_id": 1,
                 "title": "title_srtgb123",
@@ -71,6 +73,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
                         4: "</><</>broken>",
                     },
                     "start_line_number": 13,
+                    "additional_submitter": "test",
+                    "workflow_timestamp": 1234567890,
                 },
             )
         self.assert_status_code(response, 200)
@@ -86,7 +90,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
         }
         assert model.get("start_line_number") == 13
         assert model.get("created") == 1687339000
-        self.assert_history_information("motion/111", ["Motion updated"])
+        assert model.get("additional_submitter") == "test"
+        assert model.get("workflow_timestamp") == 1234567890
+        self.assert_history_information(
+            "motion/111",
+            ["Workflow_timestamp set to {}", "1234567890", "Motion updated"],
+        )
         assert counter.calls == 3
 
     def test_update_wrong_id(self) -> None:
@@ -228,8 +237,10 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "category_id": 4,
                     "block_id": 51,
                     "supporter_meeting_user_ids": [],
+                    "additional_submitter": "additional",
                     "tag_ids": [],
                     "attachment_ids": [],
+                    "workflow_timestamp": 9876543210,
                 },
             )
         self.assert_status_code(response, 200)
@@ -239,15 +250,19 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("category_id") == 4
         assert model.get("block_id") == 51
         assert model.get("supporter_meeting_user_ids") == []
+        assert model.get("additional_submitter") == "additional"
         assert model.get("tag_ids") == []
         assert model.get("attachment_ids") == []
         # motion/113 does not exist and should therefore not be present in the relations
         assert model.get("state_extension_reference_ids") == ["motion/112"]
         assert model.get("recommendation_extension_reference_ids") == ["motion/112"]
+        assert model.get("workflow_timestamp") == 9876543210
         self.assert_history_information(
             "motion/111",
             [
                 "Supporters changed",
+                "Workflow_timestamp set to {}",
+                "9876543210",
                 "Category set to {}",
                 "motion_category/4",
                 "Motion block set to {}",
@@ -297,6 +312,57 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model["state_id"] == 23
         assert model.get("recommendation_id") is None
         assert model["created"] < model["workflow_timestamp"]
+        self.assert_history_information_contains(
+            "motion/111", "Workflow_timestamp set to {}"
+        )
+
+    def test_update_workflow_timestamp_subsequent(self) -> None:
+        self.set_models(
+            {
+                "meeting/2538": {
+                    "name": "name_jkPIYjFz",
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/111": {
+                    "meeting_id": 2538,
+                    "state_id": 88,
+                    "recommendation_id": 88,
+                    "created": int(time()) - 1,
+                },
+                "motion_workflow/22": {"name": "name_workflow_22", "meeting_id": 2538},
+                "motion_state/88": {
+                    "name": "name_blaglup",
+                    "meeting_id": 2538,
+                    "workflow_id": 22,
+                    "motion_ids": [111],
+                    "motion_recommendation_ids": [111],
+                },
+                "motion_state/23": {
+                    "name": "name_state_23",
+                    "meeting_id": 2538,
+                    "motion_ids": [],
+                    "set_workflow_timestamp": True,
+                },
+                "motion_workflow/35": {
+                    "name": "name_workflow_35",
+                    "first_state_id": 23,
+                    "meeting_id": 2538,
+                },
+            }
+        )
+        response = self.request("motion.update", {"id": 111, "workflow_timestamp": 0})
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion/111")
+        assert model["workflow_timestamp"] == 0
+        response = self.request("motion.update", {"id": 111, "workflow_id": 35})
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion/111")
+        assert model["state_id"] == 23
+        assert model.get("recommendation_id") is None
+        assert model["created"] < model["workflow_timestamp"]
+        self.assert_history_information_contains(
+            "motion/111", "Workflow_timestamp set to {}"
+        )
 
     def test_update_workflow_id_no_change(self) -> None:
         self.set_models(
@@ -416,6 +482,27 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "message", ""
         )
 
+    def test_only_motion_allowed_2(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 1,
+                "state_extension": "blablabla [assignment/1] blablabla",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Found assignment/1 but only motion is allowed." in response.json.get(
+            "message", ""
+        )
+
     def test_reset_recommendation_extension(self) -> None:
         self.set_models(
             {
@@ -454,6 +541,60 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion/2", {"referenced_in_motion_recommendation_extension_ids": []}
         )
 
+    def test_set_supporter_other_meeting(self) -> None:
+        self.create_meeting(2)
+        self.permission_test_models["meeting_user/1"]["meeting_id"] = 2
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "supporter_meeting_user_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['meeting_user/1']",
+            response.json["message"],
+        )
+
+    def test_update_identical_motions(self) -> None:
+        text1 = "test1"
+        hash1 = TextHashMixin.get_hash(text1)
+        text2 = "test2"
+        hash2 = TextHashMixin.get_hash(text2)
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "motion/1": {
+                    "meeting_id": 1,
+                    "text": text1,
+                    "text_hash": hash1,
+                    "identical_motion_ids": [2],
+                },
+                "motion/2": {
+                    "meeting_id": 1,
+                    "text": text1,
+                    "text_hash": hash1,
+                    "identical_motion_ids": [1],
+                },
+                "motion/3": {"meeting_id": 1, "text": text2, "text_hash": hash2},
+            }
+        )
+        response = self.request(
+            "motion.update",
+            {
+                "id": 2,
+                "text": text2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/1", {"identical_motion_ids": []})
+        self.assert_model_exists(
+            "motion/2", {"text_hash": hash2, "identical_motion_ids": [3]}
+        )
+        self.assert_model_exists("motion/3", {"identical_motion_ids": [2]})
+
     def test_update_no_permissions(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
@@ -487,6 +628,38 @@ class MotionUpdateActionTest(BaseActionTestCase):
             Permissions.Motion.CAN_MANAGE,
         )
 
+    def test_update_workflow_timestamp_permission_1(self) -> None:
+        self.base_permission_test(
+            self.permission_test_models,
+            "motion.update",
+            {
+                "id": 111,
+                "workflow_timestamp": 1,
+            },
+            Permissions.Motion.CAN_MANAGE,
+        )
+
+    def test_update_workflow_timestamp_permission_2(self) -> None:
+        self.base_permission_test(
+            self.permission_test_models,
+            "motion.update",
+            {
+                "id": 111,
+                "workflow_timestamp": 1,
+            },
+            Permissions.Motion.CAN_MANAGE_METADATA,
+        )
+
+    def test_update_workflow_timestamp_permission_3(self) -> None:
+        self.base_permission_test(
+            self.permission_test_models,
+            "motion.update",
+            {
+                "id": 111,
+                "workflow_timestamp": 1,
+            },
+        )
+
     def test_update_permission_created(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
@@ -504,35 +677,41 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/111", {"created": 11223344})
 
-    def test_update_permission_metadata_no_wl(self) -> None:
+    def setup_can_manage_metadata(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
-        response = self.request(
-            "motion.update",
-            {
-                "id": 111,
-                "title": "title_bDFsWtKL",
-                "text": "text_eNPkDVuq",
-                "reason": "reason_ukWqADfE",
-            },
-        )
-        self.assert_status_code(response, 403)
-        assert "Forbidden fields:" in response.json["message"]
-        self.assert_model_exists(
-            "meeting_user/2", {"meeting_id": 1, "user_id": 2, "group_ids": [3]}
-        )
 
-    def test_update_permission_metadata_and_wl(self) -> None:
-        self.create_meeting()
-        self.set_models(self.permission_test_models)
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
+    def test_update_permission_metadata_forbidden(self) -> None:
+        self.setup_can_manage_metadata()
+        self.set_models(
+            {
+                "mediafile/1": {"owner_id": "meeting/1"},
+            }
+        )
+        for field, value in {
+            "title": "test",
+            "number": "test",
+            "text": "test",
+            "reason": "test",
+            "modified_final_version": "test",
+            "attachment_ids": [1],
+        }.items():
+            response = self.request(
+                "motion.update",
+                {
+                    "id": 111,
+                    field: value,
+                },
+            )
+            self.assert_status_code(response, 403)
+            assert "Forbidden fields:" in response.json["message"]
+
+    def test_update_permission_metadata_allowed(self) -> None:
+        self.setup_can_manage_metadata()
         self.set_models(
             {
                 "motion_category/2": {"meeting_id": 1, "name": "test"},
@@ -540,19 +719,24 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "tag/3": {"meeting_id": 1, "name": "bla"},
             }
         )
+        now = floor(time())
         response = self.request(
             "motion.update",
             {
                 "id": 111,
                 "category_id": 2,
-                "state_extension": "testtesttest",
+                "state_extension": "test",
+                "recommendation_extension": "test",
+                "start_line_number": 1,
+                "created": now,
                 "tag_ids": [3],
                 "block_id": 4,
+                "supporter_meeting_user_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
 
-    def test_update_permission_submitter_and_wl(self) -> None:
+    def test_update_permission_submitter_allowed(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)

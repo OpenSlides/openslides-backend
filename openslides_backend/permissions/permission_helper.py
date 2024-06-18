@@ -1,5 +1,3 @@
-from typing import List
-
 from openslides_backend.action.mixins.meeting_user_helper import (
     get_groups_from_meeting_user,
 )
@@ -69,7 +67,7 @@ def is_child_permission(child: Permission, parent: Permission) -> bool:
     Iterate the permission tree (represented in the permissions object) from child to
     parent or until there are no parents anymore
     """
-    queue: List[Permission] = [child]
+    queue: list[Permission] = [child]
     while queue:
         current = queue.pop()
         if current == parent:
@@ -121,8 +119,8 @@ def has_committee_management_level(
     return False
 
 
-def filter_surplus_permissions(permission_list: List[Permission]) -> List[Permission]:
-    reduced_permissions: List[Permission] = []
+def filter_surplus_permissions(permission_list: list[Permission]) -> list[Permission]:
+    reduced_permissions: list[Permission] = []
     for permission in permission_list:
         if any(
             is_child_permission(permission, possible_parent)
@@ -147,4 +145,4 @@ def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool
         ["admin_group_id"],
     )
     group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
-    return meeting["admin_group_id"] in group_ids
+    return bool(group_ids) and meeting["admin_group_id"] in group_ids

@@ -146,7 +146,7 @@ class GroupCreateActionTest(BaseActionTestCase):
         response = self.request("group.create", {"meeting_id": 22})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['name', 'meeting_id'] properties",
+            "data must contain ['name'] properties",
             response.json["message"],
         )
 

@@ -1,10 +1,11 @@
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
+from .base_poll_test import BasePollTestCase
 from .poll_test_mixin import PollTestMixin
 
 
-class PollDeleteTest(PollTestMixin):
+class PollDeleteTest(PollTestMixin, BasePollTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {

@@ -1,25 +1,28 @@
 import inspect
 import re
-from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
+from collections.abc import Callable
+from re import Pattern
+from typing import Any, Optional
 
+from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 
 from ...shared.exceptions import View400Exception
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.services import Services
-from ...shared.interfaces.wsgi import Headers, ResponseBody, View
+from ...shared.interfaces.wsgi import Headers, ResponseBody, RouteResponse, View
 from ...shared.otel import make_span
 from ..http_exceptions import MethodNotAllowed, NotFound
 from ..request import Request
 
 ROUTE_OPTIONS_ATTR = "__route_options"
 
-RouteFunction = Callable[[Any, Request], Tuple[ResponseBody, Optional[str]]]
+RouteFunction = Callable[[Any, Request], tuple[ResponseBody, Optional[str]]]
 
 
 def route(
-    name: Union[str, List[str]],
+    name: str | list[str],
     internal: bool = False,
     method: str = "POST",
     json: bool = True,
@@ -28,7 +31,7 @@ def route(
     if isinstance(name, str):
         name = [name]
     for _name in name:
-        route_parts: List[str] = [""]
+        route_parts: list[str] = [""]
         if internal:
             route_parts.append("internal")
         else:
@@ -63,7 +66,7 @@ class BaseView(View):
     During initialization we bind the dependencies to the instance.
     """
 
-    routes: Dict[Pattern, Callable[[Request], Tuple[ResponseBody, Optional[str]]]]
+    routes: dict[Pattern, Callable[[Request], RouteResponse]]
 
     def __init__(self, env: Env, logging: LoggingModule, services: Services) -> None:
         self.services = services
@@ -73,18 +76,19 @@ class BaseView(View):
         self.routes = {}
 
     def get_user_id_from_headers(
-        self, headers: Headers, cookies: Dict
-    ) -> Tuple[int, Optional[str]]:
+        self, headers: Headers, cookies: dict
+    ) -> tuple[int, str | None]:
         """
         Returns user id from authentication service using HTTP headers.
         """
-        user_id, access_token = self.services.authentication().authenticate(
-            headers, cookies
+        self.services.authentication().set_authentication(
+            headers.get(AUTHENTICATION_HEADER, ""), cookies.get(COOKIE_NAME, "")
         )
+        user_id, access_token = self.services.authentication().authenticate()
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
 
-    def dispatch(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
+    def dispatch(self, request: Request) -> RouteResponse:
         functions = inspect.getmembers(
             self,
             predicate=lambda attr: inspect.ismethod(attr)

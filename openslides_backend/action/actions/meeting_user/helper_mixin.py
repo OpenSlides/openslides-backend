@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ....shared.util import fqid_from_collection_and_id
 from ...action import Action
@@ -23,9 +23,9 @@ class MeetingUserHelperMixin(Action):
             return id_
 
     def get_meeting_user(
-        self, meeting_id: int, user_id: int, fields: List[str]
-    ) -> Optional[Dict[str, Any]]:
+        self, meeting_id: int, user_id: int, fields: list[str]
+    ) -> dict[str, Any] | None:
         return get_meeting_user(self.datastore, meeting_id, user_id, fields)
 
-    def get_groups_from_meeting_user(self, meeting_id: int, user_id: int) -> List[int]:
+    def get_groups_from_meeting_user(self, meeting_id: int, user_id: int) -> list[int]:
         return get_groups_from_meeting_user(self.datastore, meeting_id, user_id)

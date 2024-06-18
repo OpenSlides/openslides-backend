@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
@@ -30,7 +30,7 @@ class MeetingUserCreate(MeetingUserHistoryMixin, CreateAction):
         ],
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if self.datastore.exists(
             "meeting_user",
             get_meeting_user_filter(instance["meeting_id"], instance["user_id"]),
@@ -40,7 +40,7 @@ class MeetingUserCreate(MeetingUserHistoryMixin, CreateAction):
             )
         return super().update_instance(instance)
 
-    def get_history_information(self) -> Optional[HistoryInformation]:
+    def get_history_information(self) -> HistoryInformation | None:
         information = {}
         for instance in self.instances:
             instance_information = []
@@ -65,7 +65,7 @@ class MeetingUserCreate(MeetingUserHistoryMixin, CreateAction):
             instance_information.append(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             )
-            information[
-                fqid_from_collection_and_id("user", instance["user_id"])
-            ] = instance_information
+            information[fqid_from_collection_and_id("user", instance["user_id"])] = (
+                instance_information
+            )
         return information

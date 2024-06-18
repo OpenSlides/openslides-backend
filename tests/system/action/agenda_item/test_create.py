@@ -82,6 +82,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "topic/1": {"meeting_id": 1},
+                "topic/2": {"meeting_id": 1},
                 "agenda_item/42": {"comment": "test", "meeting_id": 1, "weight": 10},
             }
         )
@@ -93,7 +94,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
                     "parent_id": 42,
                 },
                 {
-                    "content_object_id": "topic/1",
+                    "content_object_id": "topic/2",
                     "parent_id": 42,
                 },
             ],
@@ -105,6 +106,33 @@ class AgendaItemSystemTest(BaseActionTestCase):
         agenda_item = self.get_model("agenda_item/44")
         self.assertEqual(agenda_item["parent_id"], 42)
         self.assertEqual(agenda_item["weight"], 2)
+
+    def test_create_same_content_object(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "topic/1": {"meeting_id": 1},
+            }
+        )
+        response = self.request_multi(
+            "agenda_item.create",
+            [
+                {
+                    "content_object_id": "topic/1",
+                },
+                {
+                    "content_object_id": "topic/1",
+                },
+            ],
+        )
+        # This should not work! The relation handling is broken here
+        self.assert_status_code(response, 200)
+        agenda_item = self.get_model("agenda_item/1")
+        self.assertEqual(agenda_item["content_object_id"], "topic/1")
+        agenda_item = self.get_model("agenda_item/2")
+        self.assertEqual(agenda_item["content_object_id"], "topic/1")
+        topic = self.get_model("topic/1")
+        self.assertEqual(topic["agenda_item_id"], 2)
 
     def test_create_content_object_does_not_exist(self) -> None:
         response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
@@ -296,6 +324,26 @@ class AgendaItemSystemTest(BaseActionTestCase):
             "agenda_item.create",
             {"content_object_id": "topic/1"},
             Permissions.AgendaItem.CAN_MANAGE,
+        )
+
+    def test_create_moderator_notes_no_permissions(self) -> None:
+        self.base_permission_test(
+            {"topic/1": {"meeting_id": 1}},
+            "agenda_item.create",
+            {"content_object_id": "topic/1", "moderator_notes": "test"},
+            Permissions.AgendaItem.CAN_MANAGE,
+            fail=True,
+        )
+
+    def test_create_moderator_notes_permissions(self) -> None:
+        self.base_permission_test(
+            {"topic/1": {"meeting_id": 1}},
+            "agenda_item.create",
+            {"content_object_id": "topic/1", "moderator_notes": "test"},
+            [
+                Permissions.AgendaItem.CAN_MANAGE,
+                Permissions.AgendaItem.CAN_MANAGE_MODERATOR_NOTES,
+            ],
         )
 
     def test_create_replace_reverse_of_multi_content_object_id_required_error(

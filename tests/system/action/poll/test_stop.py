@@ -1,17 +1,18 @@
-from typing import Any, Dict
+from typing import Any
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
+from .base_poll_test import BasePollTestCase
 from .poll_test_mixin import PollTestMixin
 
 
-class PollStopActionTest(PollTestMixin):
+class PollStopActionTest(PollTestMixin, BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "topic/1": {
                 "meeting_id": 1,
             },
@@ -116,9 +117,24 @@ class PollStopActionTest(PollTestMixin):
         assert poll.get("votesinvalid") == "0.000000"
         assert poll.get("votesvalid") == "7.200000"
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": True, "user_id": user1, "vote_delegated_to_user_id": None},
-            {"voted": False, "user_id": user2, "vote_delegated_to_user_id": None},
-            {"voted": True, "user_id": user3, "vote_delegated_to_user_id": user1},
+            {
+                "voted": True,
+                "present": True,
+                "user_id": user1,
+                "vote_delegated_to_user_id": None,
+            },
+            {
+                "voted": False,
+                "present": True,
+                "user_id": user2,
+                "vote_delegated_to_user_id": None,
+            },
+            {
+                "voted": True,
+                "present": False,
+                "user_id": user3,
+                "vote_delegated_to_user_id": user1,
+            },
         ]
         # test history
         self.assert_history_information("motion/1", ["Voting stopped"])
@@ -183,7 +199,12 @@ class PollStopActionTest(PollTestMixin):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": False, "user_id": 2, "vote_delegated_to_user_id": None},
+            {
+                "voted": False,
+                "present": True,
+                "user_id": 2,
+                "vote_delegated_to_user_id": None,
+            },
         ]
 
     def test_stop_entitled_users_not_present(self) -> None:
@@ -226,7 +247,70 @@ class PollStopActionTest(PollTestMixin):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("entitled_users_at_stop") == [
-            {"voted": False, "user_id": 2, "vote_delegated_to_user_id": None},
+            {
+                "voted": False,
+                "present": False,
+                "user_id": 2,
+                "vote_delegated_to_user_id": None,
+            },
+        ]
+
+    def test_stop_entitled_users_with_delegations(self) -> None:
+        self.set_models(
+            {
+                "motion/1": {
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "type": "named",
+                    "pollmethod": "Y",
+                    "backend": "fast",
+                    "content_object_id": "motion/1",
+                    "state": Poll.STATE_STARTED,
+                    "meeting_id": 1,
+                    "entitled_group_ids": [3],
+                },
+                "user/2": {
+                    "meeting_user_ids": [12],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/12": {
+                    "user_id": 2,
+                    "meeting_id": 1,
+                    "group_ids": [3],
+                    "vote_delegated_to_id": 13,
+                },
+                "user/3": {
+                    "meeting_user_ids": [13],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/13": {
+                    "user_id": 3,
+                    "meeting_id": 1,
+                    "group_ids": [4],
+                    "vote_delegations_from_ids": [12],
+                },
+                "group/3": {"meeting_user_ids": [12], "meeting_id": 1},
+                "group/4": {"meeting_user_ids": [13], "meeting_id": 1},
+                "meeting/1": {
+                    "user_ids": [2, 3],
+                    "group_ids": [3, 4],
+                    "meeting_user_ids": [12, 13],
+                    "is_active_in_organization_id": 1,
+                },
+            }
+        )
+        self.start_poll(1)
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("entitled_users_at_stop") == [
+            {
+                "voted": False,
+                "present": False,
+                "user_id": 2,
+                "vote_delegated_to_user_id": 3,
+            },
         ]
 
     def test_stop_published(self) -> None:
@@ -299,8 +383,8 @@ class PollStopActionTest(PollTestMixin):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
-        # always 9 plus len(user_ids) calls, dependent of user count
-        assert counter.calls == 9 + len(user_ids)
+        # always 10 plus len(user_ids) calls, dependent of user count
+        assert counter.calls == 10 + len(user_ids)
 
     @performance
     def test_stop_performance(self) -> None:

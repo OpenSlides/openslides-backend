@@ -2,21 +2,21 @@ import os
 import re
 import smtplib
 import ssl
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
-from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any
 
-from lxml import html as lxml_html  # type: ignore
-from lxml.html.clean import clean_html  # type: ignore
+from openslides_backend.shared.interfaces.logging import Logger
 
 from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
+from ...shared.html import get_text_from_html
 from ..action import Action
 
-SendErrors = Dict[str, Tuple[int, bytes]]
+SendErrors = dict[str, tuple[int, bytes]]
 
 
 class ConnectionSecurity:
@@ -27,7 +27,7 @@ class ConnectionSecurity:
     STARTTLS = "STARTTLS"
 
     @classmethod
-    def list(cls) -> List[str]:
+    def list(cls) -> list[str]:
         return [
             value
             for attr in dir(cls)
@@ -77,10 +77,8 @@ class EmailUtils:
 
     @staticmethod
     @contextmanager
-    def get_mail_connection() -> (
-        Generator[Union[smtplib.SMTP, smtplib.SMTP_SSL], None, None]
-    ):
-        connection: Optional[Union[smtplib.SMTP, smtplib.SMTP_SSL]] = None
+    def get_mail_connection() -> Generator[smtplib.SMTP | smtplib.SMTP_SSL, None, None]:
+        connection: smtplib.SMTP | smtplib.SMTP_SSL | None = None
         try:
             if EmailSettings.connection_security == ConnectionSecurity.SSLTLS:
                 connection = smtplib.SMTP_SSL(
@@ -111,9 +109,9 @@ class EmailUtils:
 
     @staticmethod
     def send_email(
-        client: Union[smtplib.SMTP, smtplib.SMTP_SSL],
-        from_: Union[str, Address],
-        to: Union[str, List[str]],
+        client: smtplib.SMTP | smtplib.SMTP_SSL,
+        from_: str,
+        to: str | list[str],
         subject: str,
         content: str,
         contentplain: str = "",
@@ -143,18 +141,19 @@ class EmailUtils:
         message = EmailMessage()
         if html:
             if contentplain == "":
-                tree = lxml_html.fromstring(content)
-                contentplain = clean_html(tree).text_content().strip()
+                contentplain = get_text_from_html(content)
             if contentplain:
                 message.set_content(contentplain)
             message.add_alternative(content, subtype="html")
         else:
-            message.set_content(content) if content else message.set_content(
-                contentplain
+            (
+                message.set_content(content)
+                if content
+                else message.set_content(contentplain)
             )
 
         message["From"] = from_
-        message["To"] = to
+        message["To"] = to if isinstance(to, str) else ", ".join(to)
         message.preamble = "You will not see this in a MIME-aware mail reader.\n"
         message.add_header("Subject", subject)
         message.add_header("Date", format_datetime(datetime.now()))
@@ -165,16 +164,16 @@ class EmailUtils:
 
     @staticmethod
     def send_email_safe(
-        client: Union[smtplib.SMTP, smtplib.SMTP_SSL],
-        logger: Any,
-        from_: Union[str, Address],
-        to: Union[str, List[str]],
+        client: smtplib.SMTP | smtplib.SMTP_SSL,
+        logger: Logger,
+        from_: str,
+        to: str | list[str],
         subject: str,
         content: str,
         contentplain: str = "",
         reply_to: str = "",
         html: bool = True,
-    ) -> Tuple[bool, SendErrors]:
+    ) -> tuple[bool, SendErrors]:
         try:
             return True, EmailUtils.send_email(
                 client, from_, to, subject, content, contentplain, reply_to, html
@@ -187,7 +186,7 @@ class EmailUtils:
 class EmailCheckMixin(Action):
     check_email_field: str
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if instance.get(self.check_email_field):
             instance[self.check_email_field] = instance[self.check_email_field].strip()
             if not EmailUtils.check_email(instance[self.check_email_field]):
@@ -198,7 +197,7 @@ class EmailCheckMixin(Action):
 class EmailSenderCheckMixin(Action):
     check_email_sender_field = "users_email_sender"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         if instance.get(self.check_email_sender_field):
             if any(
                 entry in instance[self.check_email_sender_field]

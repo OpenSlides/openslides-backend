@@ -5,9 +5,14 @@ on:
     branches:
       - main
       - 'feature/**'
+      - 'staging/**'
+  merge_group:
+    types: [checks_requested]
 
 env:
   PYTHON_VERSION: 3.10.x
+  DATASTORE_COMMIT_HASH: main  # will be set during job
+  AUTH_COMMIT_HASH: main  # will be set during job
 
 jobs:
   build-production-image:
@@ -24,17 +29,17 @@ jobs:
       run: mkdir secrets && echo -n "openslides" > secrets/postgres_password
 
     - name: Run docker production image
-      run: docker-compose -f docker-compose.prod.yml up -d
+      run: docker compose -f docker-compose.prod.yml up --build -d
 
     - name: Wait for action service
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
-      run: docker-compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
+      run: docker compose -f docker-compose.prod.yml exec -T backend-action scripts/wait.sh backend-action 9002
 
     - name: Wait for presenter service
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
-      run: docker-compose -f docker-compose.prod.yml exec -T backend-presenter scripts/wait.sh backend-presenter 9003
+      run: docker compose -f docker-compose.prod.yml exec -T backend-presenter scripts/wait.sh backend-presenter 9003
 
     - name: Fire a test request to actions component
       run: curl localhost:9002/system/action/health
@@ -51,27 +56,69 @@ jobs:
     - name: Run tests
       run: dev/run-tests.sh
 
+  test-local-setup:
+    name: Build and test local dev setup
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: openslides-backend
+    
+    - name: Set env vars
+      working-directory: openslides-backend/requirements
+      run: |
+        . export_service_commits.sh
+        echo "DATASTORE_COMMIT_HASH=$(echo $DATASTORE_COMMIT_HASH)" >> $GITHUB_ENV
+        echo "AUTH_COMMIT_HASH=$(echo $AUTH_COMMIT_HASH)" >> $GITHUB_ENV
+
+    - name: Clone datastore
+      uses: actions/checkout@v4
+      with:
+        repository: OpenSlides/openslides-datastore-service
+        ref: ${{ env.DATASTORE_COMMIT_HASH }}
+        path: openslides-datastore-service
+
+    - name: Clone auth service
+      uses: actions/checkout@v4
+      with:
+        repository: OpenSlides/openslides-auth-service
+        ref: ${{ env.AUTH_COMMIT_HASH }}
+        path: openslides-auth-service
+
+    - name: Clone vote service
+      uses: actions/checkout@v4
+      with:
+        repository: OpenSlides/openslides-vote-service
+        ref: main
+        path: openslides-vote-service
+
+    - name: Run local setup
+      working-directory: openslides-backend
+      run: dev/run-local.sh
+
   check-coding-style:
     name: Check coding style
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install requirements
-      run: . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
+      run: . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
 
     - name: Check black
       if: always()
-      run: black --check --diff openslides_backend/ tests/ cli/
+      run: make check-black
 
     - name: Check isort
       if: always()
-      run: isort --check-only --diff openslides_backend/ tests/ cli/
+      run: make check-isort
 
     - name: Check flake8
       if: always()
@@ -81,6 +128,10 @@ jobs:
       if: always()
       run: make mypy
 
+    - name: Check pyupgrade
+      if: always()
+      run: make pyupgrade
+
   check-models-all:
     name: Check from models.yml up to permissions and jsons
     runs-on: ubuntu-latest
@@ -89,18 +140,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install requirements
-      run: . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
-
-    - name: Validate models.yml
-      if: always()
-      run: make validate-models-yml
+      run: . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
 
     - name: Check for up to date models.py
       if: always()

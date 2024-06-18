@@ -13,6 +13,9 @@ We recently updated the source language in the database from english to the user
 
 ## Development
 
+Documentation for the actions: [Action overview](docs/Actions-Overview.md)
+Documentation for the presenters: [Presenter overview](docs/Presenter-Overview.md)
+
 ### Development with Docker Compose
 
 The setup is structured to do all development inside the docker containers. To start everything at once and get entered into a bash shell, run
@@ -58,7 +61,7 @@ To setup and local development version run
 
     $ python -m venv .virtualenv
     $ source .virtualenv/bin/activate
-    $ . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
+    $ . requirements/export_service_commits.sh && pip install --requirement requirements/requirements_development.txt
 
 To start it run
 
@@ -103,7 +106,15 @@ The action component listens to port 9002. The presenter component listens to po
 
 * `OPENSLIDES_BACKEND_THREAD_WATCH_TIMEOUT`
 
-  Seconds after which an action is delegated to an action worker. `-1` deactivates action workers all together. Default: `1.0`
+  Seconds after which an action is delegated to an action worker. `-1` represents an infinite timeout. `-2` deactivates action workers and local threading alltogether. Default: `1`
+
+* `OPENSLIDES_BACKEND_CREATE_INITIAL_DATA`
+
+  Whether or not to create initial data. Uses the `initial-data.json` in productive mode and the `example-data.json` in dev mode. Can only be set for the action service. Default: `0`
+
+* `SUPERADMIN_PASSWORD_FILE`
+
+  If `OPENSLIDES_BACKEND_CREATE_INITIAL_DATA` is true, use the password in the given file as the password for the user with id `1`. Only applicable in productive mode. Default: `/run/secrets/superadmin`
 
 ### Development
 
@@ -185,9 +196,11 @@ General schema for internal routes: `/internal/<route>`
   and created write requests will have id -1.
 * `/system/action/health`: Return `{"status": "running"}` if successful. Useful for status checks against the backend.
 * `/system/action/info`: Returns a list of all possible actions with their respective JSON schema.
+* `/system/action/version`: Returns the current backend version.
 * `/internal/migrations`: Provides remote access to the migration tool. For more information, take a look at the [migration route docs](/docs/migration_route.md)
 
 ### Presenter Service
 
 * `/system/presenter/handle_request`: Main route of the service, is used to fetch presenter results.
 * `/system/presenter/health`: Return `{"status": "running"}` if successful. Useful for status checks against the backend.
+* `/system/presenter/version`: Returns the current backend version.

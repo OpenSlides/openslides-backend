@@ -1,4 +1,5 @@
 import os
+from io import StringIO
 
 import pytest
 from datastore.migrations.core.migration_handler import MigrationHandler
@@ -15,8 +16,30 @@ def test_with_sql_dump():
     connection_handler = injector.get(ConnectionHandler)
     with connection_handler.get_connection_context():
         with connection_handler.get_current_connection().cursor() as cursor:
-            with open(SQL_FILE, "r") as file:
-                cursor.execute(file.read(), [])
+            with open(SQL_FILE) as file:
+                content = file.read()
+                if content.startswith("COPY"):
+                    cursor.execute("SET session_replication_role = 'replica'")
+                    lines = content.split("\n")
+                    while lines:
+                        line = lines.pop(0).strip()
+                        if line.startswith("--") or line == "":
+                            continue
+                        assert line.startswith("COPY")
+                        data = StringIO()
+                        while (record := lines.pop(0).strip()) != "\\.":
+                            data.write(record + "\n")
+                        data.seek(0)
+                        cursor.copy_expert(line, data)
+                    cursor.execute("SET session_replication_role = 'origin'")
+                else:
+                    cursor.execute(content, [])
+            # create dummy position if none is present
+            cursor.execute("SELECT COUNT(*) FROM positions")
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(
+                    "INSERT INTO positions (timestamp, user_id, migration_index) VALUES (NOW(), 0, 49)"
+                )
     migration_handler = injector.get(MigrationHandler)
     migration_handler.register_migrations(
         *MigrationWrapper.load_migrations("openslides_backend.migrations.migrations")

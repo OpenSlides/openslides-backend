@@ -1,6 +1,6 @@
-from typing import Type
-
 from dependency_injector import containers, providers
+
+from openslides_backend.shared.interfaces.env import Env
 
 from .http.application import OpenSlidesBackendWSGIApplication
 from .http.views import ActionView, PresenterView
@@ -9,7 +9,6 @@ from .services.datastore.extended_adapter import ExtendedDatastoreAdapter
 from .services.datastore.http_engine import HTTPEngine
 from .services.media.adapter import MediaServiceAdapter
 from .services.vote.adapter import VoteAdapter
-from .shared.env import Environment
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import View, WSGIApplication
 
@@ -51,7 +50,7 @@ class OpenSlidesBackendWSGI(containers.DeclarativeContainer):
 
 
 def create_wsgi_application(
-    logging: LoggingModule, view_name: str, env: Environment
+    logging: LoggingModule, view_name: str, env: Env
 ) -> WSGIApplication:
     """
     Application factory function to create a new instance of the WSGI
@@ -60,7 +59,7 @@ def create_wsgi_application(
     Injects environment, view class and dependencies.
     """
     # Get view class
-    view: Type[View]
+    view: type[View]
     if view_name == "ActionView":
         view = ActionView
     elif view_name == "PresenterView":

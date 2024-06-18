@@ -1,5 +1,11 @@
-from typing import Any, Dict
+from time import time
+from typing import Any
 
+from openslides_backend.action.actions.speaker.speech_state import SpeechState
+from openslides_backend.action.actions.user.delegation_based_restriction_mixin import (
+    DelegationBasedRestriction,
+)
+from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -9,7 +15,7 @@ DEFAULT_PASSWORD = "password"
 class SpeakerCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: dict[str, dict[str, Any]] = {
             "meeting/1": {
                 "name": "name_asdewqasd",
                 "is_active_in_organization_id": 1,
@@ -163,7 +169,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         response = self.request("speaker.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['list_of_speakers_id', 'meeting_user_id'] properties",
+            "data must contain ['list_of_speakers_id'] properties",
             response.json["message"],
         )
 
@@ -171,12 +177,15 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         response = self.request("speaker.create", {"wrong_field": "text_AefohteiF8"})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain ['list_of_speakers_id', 'meeting_user_id'] properties",
+            "data must contain ['list_of_speakers_id'] properties",
             response.json["message"],
         )
 
-    def test_create_already_exist(self) -> None:
+    def setup_multiple_speakers(self, allow: bool = False) -> None:
         self.test_models["list_of_speakers/23"]["speaker_ids"] = [42]
+        self.test_models["meeting/1"][
+            "list_of_speakers_allow_multiple_speakers"
+        ] = allow
         self.set_models(
             {
                 **self.test_models,
@@ -187,6 +196,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 },
             }
         )
+
+    def test_create_already_exists(self) -> None:
+        self.setup_multiple_speakers()
         response = self.request(
             "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
         )
@@ -197,6 +209,17 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         list_of_speakers = self.get_model("list_of_speakers/23")
         assert list_of_speakers.get("speaker_ids") == [42]
+
+    def test_create_multiple_speakers(self) -> None:
+        self.setup_multiple_speakers(True)
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/43",
+            {"meeting_user_id": 17, "list_of_speakers_id": 23},
+        )
 
     def test_create_add_2_speakers_in_1_action(self) -> None:
         self.set_models(
@@ -527,17 +550,17 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         assert assert_message in response.json["message"]
 
     def test_create_pro_contra(self) -> None:
-        self.base_state_speech_test(200, "pro", False, True)
+        self.base_state_speech_test(200, SpeechState.PRO, False, True)
 
     def test_create_contradiction(self) -> None:
-        self.base_state_speech_test(200, "contribution")
+        self.base_state_speech_test(200, SpeechState.CONTRIBUTION)
 
     def test_create_contradiction_2(self) -> None:
-        self.base_state_speech_test(200, "contribution", False)
+        self.base_state_speech_test(200, SpeechState.CONTRIBUTION, False)
 
     def test_create_not_allowed_pro_contra(self) -> None:
         self.base_state_speech_test(
-            400, "pro", False, False, "Pro/Contra is not enabled."
+            400, SpeechState.PRO, False, False, "Pro/Contra is not enabled."
         )
 
     def test_create_not_allowed_contribution(self) -> None:
@@ -553,7 +576,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {
                 "meeting_user_id": 1,
                 "list_of_speakers_id": 23,
-                "speech_state": "contribution",
+                "speech_state": SpeechState.CONTRIBUTION,
             },
         )
         self.assert_status_code(response, 400)
@@ -792,3 +815,354 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists("speaker/1", {"weight": 2})
+
+    def test_create_with_existing_structure_level(self) -> None:
+        self.test_models["meeting/1"]["structure_level_ids"] = [1]
+        self.test_models["meeting/1"]["structure_level_list_of_speakers_ids"] = [42]
+        self.test_models["list_of_speakers/23"][
+            "structure_level_list_of_speakers_ids"
+        ] = [42]
+        self.test_models["structure_level/1"] = {
+            "meeting_id": 1,
+            "structure_level_list_of_speakers_ids": [42],
+        }
+        self.test_models["structure_level_list_of_speakers/42"] = {
+            "meeting_id": 1,
+            "structure_level_id": 1,
+            "list_of_speakers_id": 23,
+        }
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {"meeting_user_id": 17, "list_of_speakers_id": 23, "structure_level_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "structure_level_list_of_speakers_id": 42,
+            },
+        )
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/42", {"speaker_ids": [1]}
+        )
+
+    def test_create_with_new_structure_level(self) -> None:
+        self.test_models["meeting/1"]["structure_level_ids"] = [1]
+        self.test_models["meeting/1"][
+            "list_of_speakers_default_structure_level_time"
+        ] = 100
+        self.test_models["structure_level/1"] = {
+            "meeting_id": 1,
+        }
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {"meeting_user_id": 17, "list_of_speakers_id": 23, "structure_level_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "structure_level_list_of_speakers_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "structure_level_list_of_speakers/1",
+            {
+                "meeting_id": 1,
+                "list_of_speakers_id": 23,
+                "structure_level_id": 1,
+                "speaker_ids": [1],
+                "initial_time": 100,
+                "remaining_time": 100,
+            },
+        )
+
+    def test_create_intervention(self) -> None:
+        self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERVENTION,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "weight": 1,
+                "speech_state": SpeechState.INTERVENTION,
+            },
+        )
+
+    def test_create_interposed_question(self) -> None:
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_interposed_question"
+        ] = True
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "weight": 1,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+            },
+        )
+
+    def test_create_interposed_question_without_meeting_user_id(self) -> None:
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_interposed_question"
+        ] = True
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "list_of_speakers_id": 23,
+                "weight": 1,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+            },
+        )
+
+    def test_create_other_state_without_meeting_user_id(self) -> None:
+        self.test_models["meeting/1"]["list_of_speakers_intervention_time"] = 100
+        self.set_models(self.test_models)
+        for state in (
+            SpeechState.PRO,
+            SpeechState.CONTRA,
+            SpeechState.CONTRIBUTION,
+            SpeechState.INTERVENTION,
+        ):
+            response = self.request(
+                "speaker.create", {"list_of_speakers_id": 23, "speech_state": state}
+            )
+            self.assert_status_code(response, 400)
+
+    def test_create_interposed_question_with_multiple_speakers(self) -> None:
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_interposed_question"
+        ] = True
+        self.set_models(
+            {
+                **self.test_models,
+                "speaker/1": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 1,
+                    "begin_time": round(time()),
+                },
+                "speaker/2": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 2,
+                    "speech_state": SpeechState.INTERPOSED_QUESTION,
+                },
+                "speaker/3": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 3,
+                    "point_of_order": True,
+                },
+                "speaker/4": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                    "weight": 4,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.create",
+            {
+                "list_of_speakers_id": 23,
+                "speech_state": SpeechState.INTERPOSED_QUESTION,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "weight": 1,
+            },
+        )
+        self.assert_model_exists(
+            "speaker/2",
+            {
+                "weight": 1,
+            },
+        )
+        self.assert_model_exists(
+            "speaker/5",
+            {
+                "weight": 2,
+            },
+        )
+        self.assert_model_exists(
+            "speaker/3",
+            {
+                "weight": 3,
+            },
+        )
+        self.assert_model_exists(
+            "speaker/4",
+            {
+                "weight": 4,
+            },
+        )
+
+    def test_create_with_point_of_order_and_speech_state(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {
+                "meeting_user_id": 17,
+                "list_of_speakers_id": 23,
+                "point_of_order": True,
+                "speech_state": SpeechState.CONTRIBUTION,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Speaker can't be point of order and another speech state at the same time."
+        )
+
+    def create_delegator_test_data(
+        self,
+        is_delegator: bool = False,
+        perm: Permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+        delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_in_list_of_speakers",
+        disable_delegations: bool = False,
+    ) -> None:
+        self.create_meeting(1)
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "user/1": {"meeting_user_ids": [1]},
+                "meeting_user/1": {"user_id": 1, "meeting_id": 1},
+                "meeting/1": {
+                    "meeting_user_ids": [1, 17],
+                    **(
+                        {}
+                        if disable_delegations
+                        else {"users_enable_vote_delegations": True}
+                    ),
+                    delegator_setting: True,
+                },
+            }
+        )
+        if is_delegator:
+            self.create_user("delegatee", [1])
+            self.set_models(
+                {
+                    "meeting_user/1": {"vote_delegated_to_id": 2},
+                    "meeting_user/2": {"vote_delegations_from_ids": [1]},
+                }
+            )
+        self.set_organization_management_level(None)
+        self.set_group_permissions(1, [perm])
+        self.set_user_groups(1, [1])
+
+    def test_delegator_setting_with_no_delegation(self) -> None:
+        self.create_delegator_test_data()
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_delegator_setting_with_no_delegation_set_others(self) -> None:
+        self.create_delegator_test_data()
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action speaker.create. Missing Permission: list_of_speakers.can_manage"
+        )
+
+    def test_delegator_setting_with_delegation(self) -> None:
+        self.create_delegator_test_data(is_delegator=True)
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action speaker.create. Missing Permission: list_of_speakers.can_manage"
+        )
+
+    def test_delegator_setting_with_motion_manager_delegation(
+        self,
+    ) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True, perm=Permissions.ListOfSpeakers.CAN_MANAGE
+        )
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_delegator_setting_with_no_delegation_set_others_delegations_turned_off(
+        self,
+    ) -> None:
+        self.create_delegator_test_data(disable_delegations=True)
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 17, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action speaker.create. Missing Permission: list_of_speakers.can_manage"
+        )
+
+    def test_delegator_setting_with_delegation_delegations_turned_off(self) -> None:
+        self.create_delegator_test_data(is_delegator=True, disable_delegations=True)
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_delegator_setting_with_motion_manager_delegation_delegations_turned_off(
+        self,
+    ) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True,
+            perm=Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+            disable_delegations=True,
+        )
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_with_irrelevant_delegator_setting(self) -> None:
+        self.create_delegator_test_data(
+            is_delegator=True, delegator_setting="users_forbid_delegator_as_submitter"
+        )
+        response = self.request(
+            "speaker.create", {"meeting_user_id": 1, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)

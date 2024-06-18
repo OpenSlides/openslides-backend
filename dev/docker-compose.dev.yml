@@ -24,15 +24,11 @@ services:
             - DATASTORE_WRITER_PORT=9011
             - AUTH_HOST=auth
             - MESSAGE_BUS_HOST=redis
+            - CACHE_HOST=redis
             - DATABASE_HOST=postgres
             - DATASTORE_LOG_LEVEL=CRITICAL
         depends_on:
             - datastore-writer
-        networks:
-            - datastore
-            - postgres
-            - auth
-            - redis
     datastore-reader:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
@@ -47,9 +43,6 @@ services:
             - DATABASE_HOST=postgres
         depends_on:
             - postgres
-        networks:
-            - datastore
-            - postgres
     datastore-writer:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
@@ -63,10 +56,6 @@ services:
             - OPENSLIDES_DEVELOPMENT=1
             - DATABASE_HOST=postgres
         depends_on:
-            - postgres
-            - redis
-        networks:
-            - datastore
             - postgres
             - redis
     auth:
@@ -89,10 +78,6 @@ services:
             - datastore-reader
             - datastore-writer
             - redis
-        networks:
-            - datastore
-            - auth
-            - redis
     vote:
         build:
             context: "https://github.com/OpenSlides/openslides-vote-service.git#main"
@@ -112,27 +97,13 @@ services:
             - datastore-reader
             - redis
             - auth
-        networks:
-            - datastore
-            - redis
-            - auth
-            - postgres
     postgres:
-        image: postgres:13
+        image: postgres:15
         environment:
             - POSTGRES_USER=openslides
             - POSTGRES_PASSWORD=openslides
             - POSTGRES_DB=openslides
-        networks:
-            - postgres
     redis:
         image: redis:alpine
         ports:
             - "6379:6379"
-        networks:
-            - redis
-networks:
-    datastore:
-    postgres:
-    redis:
-    auth:

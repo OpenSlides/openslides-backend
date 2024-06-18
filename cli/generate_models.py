@@ -1,14 +1,16 @@
-import hashlib
 import os
 import string
-import sys
 from collections import ChainMap
 from textwrap import dedent
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Optional
 
-import requests
-import yaml
-
+from cli.util.util import (
+    ROOT,
+    assert_equal,
+    open_output,
+    open_yml_file,
+    parse_arguments,
+)
 from openslides_backend.models.base import Model as BaseModel
 from openslides_backend.models.fields import OnDelete
 from openslides_backend.models.mixins import (
@@ -22,8 +24,7 @@ SOURCE = "./global/meta/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "..",
+        ROOT,
         "openslides_backend",
         "models",
         "models.py",
@@ -53,7 +54,7 @@ RELATION_FIELD_CLASSES = {
     "generic-relation-list": "GenericRelationListField",
 }
 
-MODEL_MIXINS: Dict[str, Type] = {
+MODEL_MIXINS: dict[str, type] = {
     "agenda_item": AgendaItemModelMixin,
     "meeting": MeetingModelMixin,
     "poll": PollModelMixin,
@@ -68,7 +69,7 @@ FILE_TEMPLATE = dedent(
     """
 )
 
-MODELS: Dict[str, Dict[str, Any]] = {}
+MODELS: dict[str, dict[str, Any]] = {}
 
 
 def main() -> None:
@@ -92,55 +93,32 @@ def main() -> None:
             type: relation_list
             to: some_model/some_attribute_id
     """
-
+    args = parse_arguments(SOURCE)
     global MODELS
-
-    # Retrieve models.yml from call-parameter for testing purposes, local file or GitHub
-    if len(sys.argv) > 1 and sys.argv[1] != "check":
-        file = sys.argv[1]
-    else:
-        file = SOURCE
-
-    if os.path.isfile(file):
-        with open(file, "rb") as x:
-            models_yml = x.read()
-    else:
-        models_yml = requests.get(file).content
-
-    # calc checksum to assert the models.py is up-to-date
-    checksum = hashlib.md5(models_yml).hexdigest()
-
-    if len(sys.argv) > 1 and sys.argv[1] == "check":
-        from openslides_backend.models.models import MODELS_YML_CHECKSUM
-
-        assert checksum == MODELS_YML_CHECKSUM
-        print("models.py is up to date (checksum-comparison)")
-        sys.exit(0)
-
-    # Fix broken keys
-    models_yml = models_yml.replace(" yes:".encode(), ' "yes":'.encode())
-    models_yml = models_yml.replace(" no:".encode(), ' "no":'.encode())
+    MODELS = open_yml_file(args.filename)
 
     # Load and parse models.yml
-    MODELS = yaml.safe_load(models_yml)
-    with open(DESTINATION, "w") as dest:
+    with open_output(DESTINATION, args.check) as dest:
         dest.write(FILE_TEMPLATE)
         dest.write(
             "from .mixins import "
             + ", ".join(mixin.__name__ for mixin in MODEL_MIXINS.values())
             + "\n"
         )
-        dest.write("\nMODELS_YML_CHECKSUM = " + repr(checksum) + "\n")
         for collection, fields in MODELS.items():
-            if collection == "_migration_index":
+            if collection.startswith("_"):
                 continue
             model = Model(collection, fields)
             dest.write(model.get_code())
 
-    print(f"Models file {DESTINATION} successfully created.")
+        if args.check:
+            assert_equal(dest, DESTINATION)
+            print("Models file up-to-date.")
+        else:
+            print(f"Models file {DESTINATION} successfully created.")
 
 
-def get_model_field(collection: str, field_name: str) -> Union[str, Dict]:
+def get_model_field(collection: str, field_name: str) -> str | dict:
     """
     Helper function the get a specific model field. Used to create generic relations.
     """
@@ -166,7 +144,7 @@ class Node:
 
 class Model(Node):
     collection: str
-    attributes: Dict[str, "Attribute"]
+    attributes: dict[str, "Attribute"]
 
     MODEL_TEMPLATE = string.Template(
         dedent(
@@ -178,7 +156,7 @@ class Model(Node):
         )
     )
 
-    def __init__(self, collection: str, fields: Dict[str, Dict[str, Any]]) -> None:
+    def __init__(self, collection: str, fields: dict[str, dict[str, Any]]) -> None:
         self.collection = collection
         assert collection
         self.attributes = {}
@@ -189,7 +167,7 @@ class Model(Node):
 
     def get_code(self) -> str:
         verbose_name = " ".join(self.collection.split("_"))
-        base_classes: List[Type] = [BaseModel]
+        base_classes: list[type] = [BaseModel]
         if self.collection in MODEL_MIXINS:
             base_classes.append(MODEL_MIXINS[self.collection])
         code = (
@@ -217,16 +195,17 @@ class Attribute(Node):
     fields: Optional["Attribute"] = None
     required: bool = False
     read_only: bool = False
+    constant: bool = False
     default: Any = None
-    on_delete: Optional[OnDelete] = None
-    equal_fields: Optional[Union[str, List[str]]] = None
-    contraints: Dict[str, Any]
+    on_delete: OnDelete | None = None
+    equal_fields: str | list[str] | None = None
+    contraints: dict[str, Any]
 
     FIELD_TEMPLATE = string.Template(
         "    ${field_name} = fields.${field_class}(${properties})\n"
     )
 
-    def __init__(self, value: Union[str, Dict]) -> None:
+    def __init__(self, value: str | dict) -> None:
         self.FIELD_CLASSES = {
             **COMMON_FIELD_CLASSES,
             **RELATION_FIELD_CLASSES,
@@ -246,6 +225,7 @@ class Attribute(Node):
                 )
             self.required = value.get("required", False)
             self.read_only = value.get("read_only", False)
+            self.constant = value.get("constant", False)
             self.default = value.get("default")
             self.equal_fields = value.get("equal_fields")
             for k, v in value.items():
@@ -254,6 +234,7 @@ class Attribute(Node):
                     "to",
                     "required",
                     "read_only",
+                    "constant",
                     "default",
                     "on_delete",
                     "equal_fields",
@@ -279,6 +260,8 @@ class Attribute(Node):
             properties += "required=True, "
         if self.read_only:
             properties += "read_only=True, "
+        if self.constant:
+            properties += "constant=True, "
         if self.default is not None:
             properties += f"default={repr(self.default)}, "
         if self.equal_fields is not None:
@@ -297,9 +280,9 @@ class Attribute(Node):
 
 
 class To(Node):
-    to: Dict[Collection, str]  # collection <-> field_name
+    to: dict[Collection, str]  # collection <-> field_name
 
-    def __init__(self, value: Union[str, Dict]) -> None:
+    def __init__(self, value: str | dict) -> None:
         if isinstance(value, str):
             self.to = self.parse_collectionfield(value)
         elif isinstance(value, list):
@@ -310,7 +293,7 @@ class To(Node):
             assert isinstance(collections, list)
             self.to = {c: value["field"] for c in collections}
 
-    def parse_collectionfield(self, collectionfield: str) -> Dict[Collection, str]:
+    def parse_collectionfield(self, collectionfield: str) -> dict[Collection, str]:
         """
         Parses the given collectionfield into its parts and returns a dict consisting of a single
         respective entry.

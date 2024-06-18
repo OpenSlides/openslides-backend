@@ -1,7 +1,10 @@
 import base64
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
+import pytest
+
+from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
 from openslides_backend.shared.util import (
@@ -24,9 +27,6 @@ class MeetingImport(BaseActionTestCase):
                     "active_meeting_ids": [1],
                     "committee_ids": [1],
                 },
-                "user/1": {
-                    "default_structure_level": "admin in meeting1",
-                },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
                 "meeting/1": {
                     "committee_id": 1,
@@ -44,15 +44,16 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def create_request_data(
-        self, datapart: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        data: Dict[str, Any] = {
+        self, datapart: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "committee_id": 1,
             "meeting": {
                 "_migration_index": current_migration_index,
                 "meeting": {
                     "1": {
                         "id": 1,
+                        "language": "en",
                         "name": "Test",
                         "description": "blablabla",
                         "admin_group_id": 1,
@@ -112,6 +113,7 @@ class MeetingImport(BaseActionTestCase):
                         "list_of_speakers_show_amount_of_speakers_on_slide": True,
                         "list_of_speakers_present_users_only": False,
                         "list_of_speakers_show_first_contribution": False,
+                        "list_of_speakers_hide_contribution_count": False,
                         "list_of_speakers_enable_point_of_order_speakers": True,
                         "list_of_speakers_enable_pro_contra_speech": True,
                         "list_of_speakers_can_set_contribution_self": True,
@@ -336,7 +338,7 @@ class MeetingImport(BaseActionTestCase):
 
         return data
 
-    def get_user_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+    def get_user_data(self, obj_id: int, data: dict[str, Any] = {}) -> dict[str, Any]:
         return {
             "id": obj_id,
             "password": "",
@@ -353,8 +355,6 @@ class MeetingImport(BaseActionTestCase):
             "can_change_own_password": True,
             "gender": "male",
             "email": "",
-            "default_number": "",
-            "default_structure_level": "",
             "default_vote_weight": "1.000000",
             "last_email_sent": None,
             "is_demo_user": False,
@@ -365,7 +365,7 @@ class MeetingImport(BaseActionTestCase):
             **data,
         }
 
-    def get_group_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+    def get_group_data(self, obj_id: int, data: dict[str, Any] = {}) -> dict[str, Any]:
         return {
             "id": obj_id,
             "meeting_id": 1,
@@ -387,7 +387,7 @@ class MeetingImport(BaseActionTestCase):
             **data,
         }
 
-    def get_motion_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+    def get_motion_data(self, obj_id: int, data: dict[str, Any] = {}) -> dict[str, Any]:
         return {
             "id": obj_id,
             "meeting_id": 1,
@@ -412,8 +412,8 @@ class MeetingImport(BaseActionTestCase):
         }
 
     def get_mediafile_data(
-        self, obj_id: int, data: Dict[str, Any] = {}
-    ) -> Dict[str, Any]:
+        self, obj_id: int, data: dict[str, Any] = {}
+    ) -> dict[str, Any]:
         file_content = base64.b64encode(b"testtesttest").decode()
         return {
             "id": obj_id,
@@ -498,7 +498,7 @@ class MeetingImport(BaseActionTestCase):
                         "user_id": 1,
                         "personal_note_ids": [1],
                         "motion_submitter_ids": [],
-                        "structure_level": "meeting freak",
+                        "structure_level_ids": [1],
                         "group_ids": [1],
                     },
                 },
@@ -530,16 +530,24 @@ class MeetingImport(BaseActionTestCase):
                         "name": "testag",
                     }
                 },
+                "structure_level": {
+                    "1": {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "name": "meeting freak",
+                        "meeting_user_ids": [11],
+                    },
+                },
             }
         )
         request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [11]
         request_data["meeting"]["user"]["1"]["meeting_user_ids"] = [11]
-        request_data["meeting"]["user"]["1"]["default_structure_level"] = "default boss"
         request_data["meeting"]["meeting"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
         request_data["meeting"]["meeting"]["1"]["tag_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["structure_level_ids"] = [1]
 
         start = round(time.time())
         response = self.request("meeting.import", request_data)
@@ -560,7 +568,6 @@ class MeetingImport(BaseActionTestCase):
             "user/2",
             {
                 "username": "test",
-                "default_structure_level": "default boss",
                 "meeting_ids": [2],
                 "committee_ids": [1],
                 "meeting_user_ids": [1],
@@ -572,7 +579,7 @@ class MeetingImport(BaseActionTestCase):
             {
                 "meeting_id": 2,
                 "user_id": 2,
-                "structure_level": "meeting freak",
+                "structure_level_ids": [1],
                 "personal_note_ids": [1],
                 "motion_submitter_ids": [],
                 "group_ids": [2],
@@ -589,6 +596,9 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_model_exists(
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
+        )
+        self.assert_model_exists(
+            "structure_level/1", {"meeting_user_ids": [1], "name": "meeting freak"}
         )
         self.assert_model_exists(
             "committee/1", {"user_ids": [2, 1], "meeting_ids": [1, 2]}
@@ -813,6 +823,35 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_model_not_exists("user/3")
 
+    def test_with_forwarding_committees(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "2": self.get_user_data(
+                        2,
+                        {
+                            "username": "user2",
+                            "last_name": "new user",
+                            "email": "tesT@email.de",
+                            "forwarding_committee_ids": [4],
+                        },
+                    )
+                }
+            }
+        )
+
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        user2 = self.assert_model_exists(
+            "user/3",
+            {
+                "username": "user2",
+                "last_name": "new user",
+                "email": "tesT@email.de",
+            },
+        )
+        assert not user2.get("forwarding_committee_ids")
+
     def test_check_negative_default_vote_weight(self) -> None:
         request_data = self.create_request_data({})
         request_data["meeting"]["user"]["1"] = self.get_user_data(
@@ -1003,7 +1042,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 403)
         assert (
-            "Missing permission: CommitteeManagementLevel can_manage in committee 1"
+            "Missing OrganizationManagementLevel: superadmin"
             in response.json["message"]
         )
 
@@ -1475,7 +1514,7 @@ class MeetingImport(BaseActionTestCase):
                     "1": {
                         "id": 1,
                         "name": "testcase",
-                        "state": "end",
+                        "state": ActionWorkerState.END,
                         "created": round(time.time() - 3),
                         "timestamp": round(time.time()),
                     }
@@ -1864,7 +1903,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
         assert user["default_password"] != "admin"
-        assert self.auth.is_equals(user["default_password"], user["password"])
+        assert self.auth.is_equal(user["default_password"], user["password"])
 
     def test_without_default_password(self) -> None:
         request_data = self.create_request_data()
@@ -1875,7 +1914,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
         assert len(user["default_password"]) == 10
-        assert self.auth.is_equals(user["default_password"], user["password"])
+        assert self.auth.is_equal(user["default_password"], user["password"])
         assert "last_email_sent" not in user
         assert "last_login" not in user
 
@@ -2116,7 +2155,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.meeting must contain ['_migration_index', 'meeting'] properties",
+            "data.meeting must contain ['_migration_index'] properties",
             response.json["message"],
         )
 
@@ -2144,11 +2183,11 @@ class MeetingImport(BaseActionTestCase):
         data = self.create_request_data({})
         data["meeting"]["_migration_index"] = 1
         del data["meeting"]["user"]["1"]["organization_id"]
-        data["meeting"]["meeting"]["1"]["motion_poll_default_100_percent_base"] = "80"
+        data["meeting"]["meeting"]["1"]["motion_poll_default_100_percent_base"] = "Y"
         data["meeting"]["meeting"]["1"][
             "assignment_poll_default_100_percent_base"
-        ] = "81"
-        data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "82"
+        ] = "YN"
+        data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "YNA"
 
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
@@ -2162,9 +2201,9 @@ class MeetingImport(BaseActionTestCase):
             "meeting/2",
             {
                 "assignment_poll_enable_max_votes_per_option": False,
-                "motion_poll_default_onehundred_percent_base": "80",
-                "assignment_poll_default_onehundred_percent_base": "81",
-                "poll_default_onehundred_percent_base": "82",
+                "motion_poll_default_onehundred_percent_base": "Y",
+                "assignment_poll_default_onehundred_percent_base": "YN",
+                "poll_default_onehundred_percent_base": "YNA",
             },
         )  # checker repair
         self.assertCountEqual(meeting["user_ids"], [1, 2])
@@ -2361,3 +2400,29 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("user/2")
+
+    def test_without_users(self) -> None:
+        data = self.create_request_data()
+        meeting_data = data["meeting"]
+        del meeting_data["meeting"]["1"]["meeting_user_ids"]
+        del meeting_data["group"]["1"]["meeting_user_ids"]
+        del meeting_data["user"]
+        del meeting_data["meeting_user"]
+        self.assert_model_not_exists("meeting_user/1")
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "username": "admin",
+                "meeting_user_ids": [1],
+            },
+        )
+        self.assert_model_not_exists("user/2")
+
+    @pytest.mark.skip()
+    def test_import_os3_data(self) -> None:
+        data_raw = get_initial_data_file("global/data/export-OS3-demo.json")
+        data = {"committee_id": 1, "meeting": data_raw}
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)

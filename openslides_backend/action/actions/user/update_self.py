@@ -1,11 +1,11 @@
-from typing import Any, Dict
+from typing import Any
 
 from ....models.models import User
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_mixin import UpdateHistoryMixin, UserMixin, check_gender_helper
+from .user_mixins import UpdateHistoryMixin, UserMixin, check_gender_helper
 
 
 @register_action("user.update_self")
@@ -20,7 +20,7 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
     )
     check_email_field = "email"
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
         Set id = user_id.
         """
@@ -29,5 +29,5 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
         check_gender_helper(self.datastore, instance)
         return instance
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
         self.assert_not_anonymous()

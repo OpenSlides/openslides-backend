@@ -1,12 +1,20 @@
-from typing import Any, Iterable, Union
+from collections.abc import Iterable
+from pathlib import Path
 
 import simplejson as json
 from werkzeug.wrappers import Response
 
-from ..services.auth.adapter import AUTHENTICATION_HEADER
+from openslides_backend.action.action_handler import ActionHandler
+from openslides_backend.http.views.action_view import ActionView
+from openslides_backend.http.views.base_view import BaseView
+from openslides_backend.shared.interfaces.env import Env
+from openslides_backend.shared.interfaces.logging import LoggingModule
+from openslides_backend.shared.interfaces.services import Services
+
+from ..services.auth.interface import AUTHENTICATION_HEADER
 from ..shared.env import is_truthy
-from ..shared.exceptions import ViewException
-from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment
+from ..shared.exceptions import ActionException, ViewException
+from ..shared.interfaces.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
 from .http_exceptions import (
     BadRequest,
     Forbidden,
@@ -17,22 +25,72 @@ from .http_exceptions import (
 from .request import Request
 
 
-class OpenSlidesBackendWSGIApplication:
+class OpenSlidesBackendWSGIApplication(WSGIApplication):
     """
     Central application class for this service.
 
     During initialization we bind injected dependencies to the instance.
     """
 
-    def __init__(self, env: Any, logging: Any, view: Any, services: Any) -> None:
+    def __init__(
+        self,
+        env: Env,
+        logging: LoggingModule,
+        view: type[BaseView],
+        services: Services,
+    ) -> None:
         self.env = env
         self.logging = logging
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Initialize OpenSlides Backend WSGI application.")
         self.view = view
         self.services = services
+        if issubclass(view, ActionView):
+            self.create_initial_data()
 
-    def dispatch_request(self, request: Request) -> Union[Response, HTTPException]:
+    def create_initial_data(self) -> None:
+        if is_truthy(self.env.OPENSLIDES_BACKEND_CREATE_INITIAL_DATA):
+            self.logger.info("Creating initial data...")
+            # use example data in dev mode and initial data in prod mode
+            file_prefix = "example" if self.env.is_dev_mode() else "initial"
+            initial_data_path = (
+                Path(__file__).parent
+                / ".."
+                / ".."
+                / "global"
+                / "data"
+                / f"{file_prefix}-data.json"
+            )
+            with open(initial_data_path) as file:
+                initial_data = json.load(file)
+            handler = ActionHandler(self.env, self.services, self.logging)
+            try:
+                handler.execute_internal_action(
+                    "organization.initial_import",
+                    {"data": initial_data},
+                )
+            except ActionException as e:
+                self.logger.error(f"Initial data creation failed: {e}")
+
+            # in prod mode, set superadmin password
+            if not self.env.is_dev_mode():
+                superadmin_password_file = self.env.SUPERADMIN_PASSWORD_FILE
+                if not Path(superadmin_password_file).exists():
+                    self.logger.error(
+                        f"Superadmin password file {superadmin_password_file} not found."
+                    )
+                    return
+                with open(superadmin_password_file) as file:
+                    superadmin_password = file.read()
+                try:
+                    handler.execute_internal_action(
+                        "user.set_password",
+                        {"id": 1, "password": superadmin_password},
+                    )
+                except ActionException as e:
+                    self.logger.error(f"Setting superadmin password failed: {e}")
+
+    def dispatch_request(self, request: Request) -> Response | HTTPException:
         """
         Dispatches request to route according to URL rules. Returns a Response
         object or a HTTPException (or a subclass of it). Both are WSGI
@@ -63,12 +121,12 @@ class OpenSlidesBackendWSGIApplication:
                 raise
         except HTTPException as exception:
             return exception
-        if type(response_body) == dict:
+        if isinstance(response_body, dict):
             status_code = response_body.get("status_code", 200)
         elif request.path == "/system/presenter/handle_request":
             status_code = Response.default_status
         else:
-            raise ViewException(f"Unknown type of response_body:{response_body}.")
+            raise ViewException(f"Unknown type of response_body: {response_body}.")
 
         self.logger.debug(
             f"All done. Application sends HTTP {status_code} with body {response_body}."

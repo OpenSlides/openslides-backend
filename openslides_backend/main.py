@@ -9,22 +9,16 @@ from typing import Any
 from datastore.reader.app import register_services
 from gunicorn.app.base import BaseApplication
 
+from openslides_backend.shared.interfaces.env import Env
+
 from .action.action_worker import gunicorn_post_request, gunicorn_worker_abort
 from .shared.env import Environment
-from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
-from .shared.otel import init as otel_init
-from .shared.otel import instrument_requests as otel_instrument_requests
 
 register_services()
 
 # ATTENTION: We use the Python builtin logging module. To change this use
 # something like "import custom_logging as logging".
-
-DEFAULT_ADDRESSES = {
-    "ActionView": "0.0.0.0:9002",
-    "PresenterView": "0.0.0.0:9003",
-}
 
 
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
@@ -34,9 +28,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     with action component or with presenter component.
     """
 
-    def __init__(
-        self, view_name: str, env: Environment, *args: Any, **kwargs: Any
-    ) -> None:
+    def __init__(self, view_name: str, env: Env, *args: Any, **kwargs: Any) -> None:
         self.env = env
 
         logging.basicConfig(level=self.env.get_loglevel())
@@ -48,13 +40,13 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
                 f"View name has to be ActionView or PresenterView, not {self.view_name}."
             )
         logger.debug(f"Create gunicorn application for {self.view_name}.")
-        logger.debug(f"Using environment: {self.env.vars}")
+        logger.debug(f"Using environment: {self.env}")
 
         super().__init__(*args, **kwargs)
 
     def load_config(self) -> None:
         options = {
-            "bind": self.env.get_address(self.view_name),
+            "bind": self.get_address(),
             "workers": int(self.env.OPENSLIDES_BACKEND_NUM_WORKERS),
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
             "timeout": int(self.env.OPENSLIDES_BACKEND_WORKER_TIMEOUT),
@@ -72,27 +64,29 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         for key, value in options.items():
             self.cfg.set(key, value)
 
+    def get_address(self) -> str:
+        if self.view_name == "ActionView":
+            return f"0.0.0.0:{self.env.ACTION_PORT}"
+        elif self.view_name == "PresenterView":
+            return f"0.0.0.0:{self.env.PRESENTER_PORT}"
+        raise ValueError(f"Invalid view {self.view_name}")
+
     def load(self) -> WSGIApplication:
         # We import this here so Gunicorn can use its reload feature properly.
         from .wsgi import create_wsgi_application
 
-        # TODO: Fix this typing problem.
-        logging_module: LoggingModule = logging  # type: ignore
-
-        otel_instrument_requests()
-        otel_init(self.env, "backend")
-        return create_wsgi_application(logging_module, self.view_name, self.env)
+        return create_wsgi_application(logging, self.view_name, self.env)
 
 
-def start_action_server(env: Environment) -> None:  # pragma: no cover
+def start_action_server(env: Env) -> None:  # pragma: no cover
     OpenSlidesBackendGunicornApplication(view_name="ActionView", env=env).run()
 
 
-def start_presenter_server(env: Environment) -> None:  # pragma: no cover
+def start_presenter_server(env: Env) -> None:  # pragma: no cover
     OpenSlidesBackendGunicornApplication(view_name="PresenterView", env=env).run()
 
 
-def start_them_all(env: Environment) -> None:  # pragma: no cover
+def start_them_all(env: Env) -> None:  # pragma: no cover
     print(
         f"Start all components in child processes. Parent process id is {os.getpid()}."
     )
@@ -105,7 +99,7 @@ def start_them_all(env: Environment) -> None:  # pragma: no cover
     for process in processes.values():
         process.start()
 
-    def sigterm_handler(signalnum: int, current_stack_frame: Any) -> None:
+    def sigterm_handler(signalnum: int, _: Any) -> None:
         strsignal = signal.strsignal  # type: ignore
         print(
             f"Parent process {os.getpid()} received {strsignal(signalnum)} "
