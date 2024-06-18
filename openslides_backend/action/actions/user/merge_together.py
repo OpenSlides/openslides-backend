@@ -163,12 +163,51 @@ class UserMergeTogether(
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         user_ids = [
-            id_ for instance in action_data for id_ in set(instance.get("user_ids", []))
+            id_
+            for instance in action_data
+            for id_ in {*instance.get("user_ids", []), instance["id"]}
         ]
         if len(user_ids) != len(set(user_ids)):
             raise ActionException(
-                "Users cannot be merged into multiple different users at the same time"
+                "Users cannot be part of different merges at the same time"
             )
+        main_ids_by_secondary_id = {
+            user_id: instance["id"]
+            for instance in action_data
+            for user_id in instance.get("user_ids", [])
+        }
+        polls = self.datastore.filter(
+            "poll",
+            And(
+                FilterOperator("entitled_users_at_stop", "!=", None),
+                FilterOperator("entitled_users_at_stop", "!=", []),
+            ),
+            ["entitled_users_at_stop"],
+        )
+        poll_payloads: list[dict[str, Any]] = []
+        for id_, poll in polls.items():
+            entitled: list[dict[str, Any]] = poll["entitled_users_at_stop"]
+            changed = False
+            for vote in entitled:
+                if (
+                    user_id := (vote.get("user_merged_into_id") or vote.get("user_id"))
+                ) in main_ids_by_secondary_id:
+                    vote["user_merged_into_id"] = main_ids_by_secondary_id[user_id]
+                    changed = True
+                if (
+                    user_id := (
+                        vote.get("delegation_user_merged_into_id")
+                        or vote.get("vote_delegated_to_user_id")
+                    )
+                ) in main_ids_by_secondary_id:
+                    vote["delegation_user_merged_into_id"] = main_ids_by_secondary_id[
+                        user_id
+                    ]
+                    changed = True
+            if changed:
+                poll_payloads.append({"id": id_, "entitled_users_at_stop": entitled})
+        if len(poll_payloads):
+            self.execute_other_action(PollUpdateAction, poll_payloads)
         return super().get_updated_instances(action_data)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
@@ -206,7 +245,6 @@ class UserMergeTogether(
         )
 
         self.call_other_actions(update_operations)
-        self.update_entitled_user_lists(instance["id"], instance["user_ids"])
 
         result = {"id": into["id"], "committee_ids": committee_ids}
         self._history_replacement_groups[self.main_fqid]["user"] = [
@@ -497,36 +535,6 @@ class UserMergeTogether(
             raise ActionException(
                 f"Cannot carry out merge into user/{into['id']}, because {' and '.join(messages)}"
             )
-
-    def update_entitled_user_lists(self, main_id: int, other_ids: list[int]) -> None:
-        polls = self.datastore.filter(
-            "poll",
-            And(
-                FilterOperator("entitled_users_at_stop", "!=", None),
-                FilterOperator("entitled_users_at_stop", "!=", []),
-            ),
-            ["entitled_users_at_stop"],
-        )
-        poll_payloads: list[dict[str, Any]] = []
-        for id_, poll in polls.items():
-            entitled: list[dict[str, Any]] = poll["entitled_users_at_stop"]
-            changed = False
-            for vote in entitled:
-                if (
-                    vote.get("user_merged_into_id") or vote.get("user_id")
-                ) in other_ids:
-                    vote["user_merged_into_id"] = main_id
-                    changed = True
-                if (
-                    vote.get("delegation_user_merged_into_id")
-                    or vote.get("vote_delegated_to_user_id")
-                ) in other_ids:
-                    vote["delegation_user_merged_into_id"] = main_id
-                    changed = True
-            if changed:
-                poll_payloads.append({"id": id_, "entitled_users_at_stop": entitled})
-        if len(poll_payloads):
-            self.execute_other_action(PollUpdateAction, poll_payloads)
 
     def get_merge_comparison_hash(
         self, collection: Collection, model: PartialModel

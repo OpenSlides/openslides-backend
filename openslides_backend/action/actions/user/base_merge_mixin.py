@@ -434,7 +434,7 @@ class BaseMergeMixin(Action):
                                 ["{}" for i in range(len(deleted_fqids))]
                             )
                         if len(deleted_fqids) < len(ids):
-                            # if an old model was updated
+                            # an old model was updated
                             changed_model = changes.get(main_fqid, {})
                             updated = len(deleted_fqids) > 0
                             if is_transfer and (
@@ -445,7 +445,7 @@ class BaseMergeMixin(Action):
                                 )
                                 if updated:
                                     information[main_fqid] = self.get_history_date(
-                                        "Transferred to {} and updated_with data from "
+                                        "Transferred to {} and updated with data from "
                                         + deleted_string,
                                         [back_fqid, *deleted_fqids],
                                         collection,
@@ -466,7 +466,7 @@ class BaseMergeMixin(Action):
                                     base_fqid,
                                 )
                         else:
-                            # if a new model was created
+                            # a new model was created
                             [old_main_fqid, *deleted_fqids] = deleted_fqids
                             information[main_fqid] = self.get_history_date(
                                 "Created from data of " + deleted_string,

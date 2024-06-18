@@ -13,9 +13,6 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
-# TODO: Test multi request action and
-# relation transfer in history (should suffice to just thouroughly test the history for the motion_editors)
-
 
 class UserMergeTogether(BaseVoteTestCase):
     def setUp(self) -> None:
@@ -1287,7 +1284,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     [15, 14, 12],
                 ],
                 2: [[24, 22, 23]],
-                3: [[34], [33]],
+                3: [[34, 33], [33]],
                 4: [[45]],
             },
         )
@@ -1319,16 +1316,55 @@ class UserMergeTogether(BaseVoteTestCase):
                 18: None,
             },
             3: {
-                19: (8, 46, 1),
-                20: (9, 46, 1),
+                19: None,
+                20: (8, 46, 1),
+                21: (9, 46, 1),
             },
             4: {
-                21: (10, 45, 1),
+                22: (10, 45, 1),
             },
         }
         self.assert_assignment_or_motion_model_test_was_correct(
             collection, sub_collection, back_relation, expected
         )
+        merged_with = {6: [5], 7: [8], 11: [10], 15: [14], 17: [18, 16]}
+        merged_with_fqids = {
+            fqid_from_collection_and_id(sub_collection, target_id): [
+                fqid_from_collection_and_id(sub_collection, merge_id)
+                for merge_id in merge_ids
+            ]
+            for target_id, merge_ids in merged_with.items()
+        }
+        transferred_to = {4: 12, 21: 46}
+        self.assert_history_information(
+            fqid_from_collection_and_id(sub_collection, 20),
+            [
+                "Transferred to {} and updated with data from {} during user-merge into {}",
+                "meeting_user/46",
+                fqid_from_collection_and_id(sub_collection, 19),
+                "user/2",
+            ],
+        )
+        for target, merges in merged_with_fqids.items():
+            if len(merges) == 1:
+                message = "Updated with data from {} during user-merge into {}"
+            else:
+                message = "Updated with data from {} and {} during user-merge into {}"
+            self.assert_history_information(target, [message, *merges, "user/2"])
+            for merge in merges:
+                self.assert_history_information(
+                    merge,
+                    ["Merged into {} during user-merge into {}", target, "user/2"],
+                )
+        for origin_id, target_id in transferred_to.items():
+            self.assert_history_information(
+                fqid_from_collection_and_id(sub_collection, origin_id),
+                [
+                    "Transferred to {} during user-merge into {}",
+                    f"meeting_user/{target_id}",
+                    "user/2",
+                ],
+            )
 
     def test_merge_with_assignment_candidates(self) -> None:
         self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
@@ -2320,3 +2356,106 @@ class UserMergeTogether(BaseVoteTestCase):
         response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4]})
         self.assert_status_code(response, 200)
         self.assert_merge_with_polls_correct(password)
+
+    def test_merge_multi_request(self) -> None:
+        response = self.request_multi(
+            "user.merge_together",
+            [{"id": 2, "user_ids": [3]}, {"id": 4, "user_ids": [5, 6]}],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"meeting_user_ids": [12, 22, 46]})
+        self.assert_model_exists("user/4", {"meeting_user_ids": [14, 24, 34, 47]})
+        self.assert_model_deleted("user/3")
+        self.assert_model_deleted("user/5")
+        self.assert_model_deleted("user/6")
+
+        self.assert_model_exists("meeting_user/12", {"meeting_id": 1})
+        self.assert_model_exists("meeting_user/22", {"meeting_id": 2})
+        self.assert_model_exists("meeting_user/46", {"meeting_id": 3})
+        self.assert_model_exists("meeting_user/14", {"meeting_id": 1})
+        self.assert_model_exists("meeting_user/24", {"meeting_id": 2})
+        self.assert_model_exists("meeting_user/34", {"meeting_id": 3})
+        self.assert_model_exists("meeting_user/47", {"meeting_id": 4})
+        for id_ in [23, 33, 15, 45]:
+            self.assert_model_deleted(f"meeting_user/{id_}")
+
+        self.assert_history_information(
+            "user/2", ["Updated with data from {}", "user/3"]
+        )
+        self.assert_history_information("user/3", ["Merged into {}", "user/2"])
+        self.assert_history_information(
+            "meeting_user/22",
+            [
+                "Updated with data from {} during user-merge into {}",
+                "meeting_user/23",
+                "user/2",
+            ],
+        )
+        self.assert_history_information(
+            "meeting_user/46",
+            [
+                "Created from data of {} during user-merge into {}",
+                "meeting_user/33",
+                "user/2",
+            ],
+        )
+        self.assert_history_information(
+            "meeting_user/23",
+            ["Merged into {} during user-merge into {}", "meeting_user/22", "user/2"],
+        )
+        self.assert_history_information(
+            "meeting_user/33",
+            ["Replaced by {} during user-merge into {}", "meeting_user/46", "user/2"],
+        )
+
+        self.assert_history_information(
+            "user/4", ["Updated with data from {} and {}", "user/5", "user/6"]
+        )
+        self.assert_history_information("user/5", ["Merged into {}", "user/4"])
+        self.assert_history_information("user/6", ["Merged into {}", "user/4"])
+        self.assert_history_information(
+            "meeting_user/14",
+            [
+                "Updated with data from {} during user-merge into {}",
+                "meeting_user/15",
+                "user/4",
+            ],
+        )
+        self.assert_history_information(
+            "meeting_user/47",
+            [
+                "Created from data of {} during user-merge into {}",
+                "meeting_user/45",
+                "user/4",
+            ],
+        )
+        self.assert_history_information(
+            "meeting_user/15",
+            ["Merged into {} during user-merge into {}", "meeting_user/14", "user/4"],
+        )
+        self.assert_history_information(
+            "meeting_user/45",
+            ["Replaced by {} during user-merge into {}", "meeting_user/47", "user/4"],
+        )
+
+    def test_merge_multi_request_conflict(self) -> None:
+        response = self.request_multi(
+            "user.merge_together",
+            [{"id": 2, "user_ids": [3]}, {"id": 4, "user_ids": [3, 5, 6]}],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Users cannot be part of different merges at the same time",
+            response.json["message"],
+        )
+
+    def test_merge_multi_request_conflict_2(self) -> None:
+        response = self.request_multi(
+            "user.merge_together",
+            [{"id": 2, "user_ids": [3]}, {"id": 4, "user_ids": [2, 5, 6]}],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Users cannot be part of different merges at the same time",
+            response.json["message"],
+        )
