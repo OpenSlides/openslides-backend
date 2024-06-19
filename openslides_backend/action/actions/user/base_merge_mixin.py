@@ -4,14 +4,8 @@ from openslides_backend.services.datastore.interface import PartialModel
 
 from ....models.base import Model
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException, BadCodingException
-from ....shared.patterns import (
-    Collection,
-    CollectionField,
-    FullQualifiedId,
-    fqid_from_collection_and_id,
-)
-from ....shared.typing import HistoryInformation
+from ....shared.exceptions import ActionException
+from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
 from ...action import Action, ActionResults, WriteRequest
 from ...util.typing import ActionData
 
@@ -203,9 +197,9 @@ class BaseMergeMixin(Action):
                 else:
                     result["id"] = to_merge[0]
                     update_operations[field_collection]["update"].append(result)
-                self._history_replacement_groups[self.main_fqid][
-                    field_collection
-                ].append((result, to_merge, is_transfer))
+                self._history_replacement_groups[field_collection].append(
+                    ({**to_merge_into, **result}, to_merge, is_transfer)
+                )
             elif is_transfer:
                 if with_create:
                     to_merge_into.pop("id")
@@ -213,9 +207,9 @@ class BaseMergeMixin(Action):
                         to_merge_into.pop(back, 0)
                     update_operations[field_collection]["create"].append(to_merge_into)
                     update_operations[field_collection]["delete"].append(to_merge[0])
-                self._history_replacement_groups[self.main_fqid][
-                    field_collection
-                ].append((to_merge_into, to_merge, is_transfer))
+                self._history_replacement_groups[field_collection].append(
+                    (to_merge_into, to_merge, is_transfer)
+                )
             if not with_create:
                 new_reference_ids.append(to_merge[0])
         if len(new_reference_ids):
@@ -365,18 +359,17 @@ class BaseMergeMixin(Action):
         self, action_data: ActionData, user_id: int, internal: bool = False
     ) -> tuple[WriteRequest | None, ActionResults | None]:
         self._history_replacement_groups: dict[
-            FullQualifiedId,
-            dict[Collection, list[tuple[dict[str, Any], list[int], bool]]],
+            Collection,
+            list[tuple[dict[str, Any], list[int], bool]],
         ] = {}
+        for collection in self._collection_field_groups:
+            self._history_replacement_groups[collection] = []
         return super().perform(action_data, user_id, internal)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.main_fqid = fqid_from_collection_and_id(
             self.model.collection, instance["id"]
         )
-        self._history_replacement_groups[self.main_fqid] = {}
-        for collection in self._collection_field_groups:
-            self._history_replacement_groups[self.main_fqid][collection] = []
         return super().update_instance(instance)
 
     def execute_other_action(
@@ -389,98 +382,3 @@ class BaseMergeMixin(Action):
         return super().execute_other_action(
             ActionClass, action_data, skip_archived_meeting_check, skip_history
         )
-
-    def get_history_information(self) -> HistoryInformation | None:
-        sup = super().get_history_information()
-        return sup
-
-    def get_history_date(
-        self,
-        message: str,
-        fqids: list[str],
-        collection: Collection,
-        main_fqid: FullQualifiedId,
-    ) -> list[str]:
-        if collection == self.model.collection:
-            return [message, *fqids]
-        return [
-            message + " during " + self.model.collection + "-merge into {}",
-            *fqids,
-            main_fqid,
-        ]
-
-    def get_full_history_information(self) -> HistoryInformation | None:
-        information: HistoryInformation = {}
-        changes = self.datastore.changed_models
-        for base_fqid, replacement_data in self._history_replacement_groups.items():
-            for collection, merges in replacement_data.items():
-                back_field = self._collection_back_fields.get(collection, "")
-                for data, ids, is_transfer in merges:
-                    main_id = data.get("id")
-                    if main_id:
-                        main_fqid = fqid_from_collection_and_id(collection, main_id)
-                        deleted_fqids = [
-                            fqid_from_collection_and_id(collection, id_)
-                            for id_ in ids
-                            if id_ != main_id
-                        ]
-                        if len(deleted_fqids) > 2:
-                            deleted_string = (
-                                ", ".join(["{}" for i in range(len(deleted_fqids) - 1)])
-                                + " and {}"
-                            )
-                        else:
-                            deleted_string = " and ".join(
-                                ["{}" for i in range(len(deleted_fqids))]
-                            )
-                        if len(deleted_fqids) < len(ids):
-                            # an old model was updated
-                            changed_model = changes.get(main_fqid, {})
-                            updated = len(deleted_fqids) > 0
-                            if is_transfer and (
-                                back_id := changed_model.get(back_field)
-                            ):
-                                back_fqid = fqid_from_collection_and_id(
-                                    self._collection_parents[collection], back_id
-                                )
-                                if updated:
-                                    information[main_fqid] = self.get_history_date(
-                                        "Transferred to {} and updated with data from "
-                                        + deleted_string,
-                                        [back_fqid, *deleted_fqids],
-                                        collection,
-                                        base_fqid,
-                                    )
-                                else:
-                                    information[main_fqid] = self.get_history_date(
-                                        "Transferred to {}",
-                                        [back_fqid],
-                                        collection,
-                                        base_fqid,
-                                    )
-                            else:
-                                information[main_fqid] = self.get_history_date(
-                                    "Updated with data from " + deleted_string,
-                                    deleted_fqids,
-                                    collection,
-                                    base_fqid,
-                                )
-                        else:
-                            # a new model was created
-                            [old_main_fqid, *deleted_fqids] = deleted_fqids
-                            information[main_fqid] = self.get_history_date(
-                                "Created from data of " + deleted_string,
-                                [old_main_fqid, *deleted_fqids],
-                                collection,
-                                base_fqid,
-                            )
-                            information[old_main_fqid] = self.get_history_date(
-                                "Replaced by {}", [main_fqid], collection, base_fqid
-                            )
-                        for deleted_fqid in deleted_fqids:
-                            information[deleted_fqid] = self.get_history_date(
-                                "Merged into {}", [main_fqid], collection, base_fqid
-                            )
-                    else:
-                        raise BadCodingException("No id found for history generation")
-        return information

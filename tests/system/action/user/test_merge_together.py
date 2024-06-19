@@ -586,64 +586,6 @@ class UserMergeTogether(BaseVoteTestCase):
         for id_ in range(3, 7):
             self.assert_history_information(f"user/{id_}", ["Merged into {}", "user/2"])
 
-        self.assert_history_information(
-            "meeting_user/12",
-            [
-                "Updated with data from {} and {} during user-merge into {}",
-                *[f"meeting_user/{id_}" for id_ in [14, 15]],
-                "user/2",
-            ],
-        )
-        self.assert_history_information(
-            "meeting_user/22",
-            [
-                "Updated with data from {} and {} during user-merge into {}",
-                *[f"meeting_user/{id_}" for id_ in [23, 24]],
-                "user/2",
-            ],
-        )
-        self.assert_history_information(
-            "meeting_user/46",
-            [
-                "Created from data of {} and {} during user-merge into {}",
-                *[f"meeting_user/{id_}" for id_ in [33, 34]],
-                "user/2",
-            ],
-        )
-        self.assert_history_information(
-            "meeting_user/47",
-            [
-                "Created from data of {} during user-merge into {}",
-                "meeting_user/45",
-                "user/2",
-            ],
-        )
-
-        for id_, target_id in [(33, 46), (45, 47)]:
-            self.assert_history_information(
-                f"meeting_user/{id_}",
-                [
-                    "Replaced by {} during user-merge into {}",
-                    f"meeting_user/{target_id}",
-                    "user/2",
-                ],
-            )
-
-        for target_id, deleted_ids in {
-            12: [14, 15],
-            22: [23, 24],
-            46: [34],
-        }.items():
-            for id_ in deleted_ids:
-                self.assert_history_information(
-                    f"meeting_user/{id_}",
-                    [
-                        "Merged into {} during user-merge into {}",
-                        f"meeting_user/{target_id}",
-                        "user/2",
-                    ],
-                )
-
     def test_merge_forbid_merging_of_higher_level_users(self) -> None:
         self.setup_complex_user_fields()
         self.set_organization_management_level(
@@ -1327,47 +1269,11 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_assignment_or_motion_model_test_was_correct(
             collection, sub_collection, back_relation, expected
         )
-        merged_with = {6: [5], 7: [8], 11: [10], 15: [14], 17: [18, 16]}
-        merged_with_fqids = {
-            fqid_from_collection_and_id(sub_collection, target_id): [
-                fqid_from_collection_and_id(sub_collection, merge_id)
-                for merge_id in merge_ids
-            ]
-            for target_id, merge_ids in merged_with.items()
-        }
-        transferred_to = {4: 12, 21: 46}
-        self.assert_history_information(
-            fqid_from_collection_and_id(sub_collection, 20),
-            [
-                "Transferred to {} and updated with data from {} during user-merge into {}",
-                "meeting_user/46",
-                fqid_from_collection_and_id(sub_collection, 19),
-                "user/2",
-            ],
-        )
-        for target, merges in merged_with_fqids.items():
-            if len(merges) == 1:
-                message = "Updated with data from {} during user-merge into {}"
-            else:
-                message = "Updated with data from {} and {} during user-merge into {}"
-            self.assert_history_information(target, [message, *merges, "user/2"])
-            for merge in merges:
-                self.assert_history_information(
-                    merge,
-                    ["Merged into {} during user-merge into {}", target, "user/2"],
-                )
-        for origin_id, target_id in transferred_to.items():
-            self.assert_history_information(
-                fqid_from_collection_and_id(sub_collection, origin_id),
-                [
-                    "Transferred to {} during user-merge into {}",
-                    f"meeting_user/{target_id}",
-                    "user/2",
-                ],
-            )
 
     def test_merge_with_assignment_candidates(self) -> None:
         self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
+        for id_ in range(2, 10):
+            self.assert_history_information(f"assignment/{id_}", ["Candidates merged"])
 
     def test_merge_with_motion_working_group_speakers(self) -> None:
         self.base_assignment_or_motion_model_test(
@@ -1513,6 +1419,8 @@ class UserMergeTogether(BaseVoteTestCase):
                 f"motion/{motion_id}", {"supporter_meeting_user_ids": [46]}
             )
         self.assert_model_exists("motion/10", {"supporter_meeting_user_ids": [45]})
+        for id_ in range(2, 10):
+            self.assert_history_information(f"motion/{id_}", ["Submitters merged"])
 
     def test_merge_with_personal_notes(self) -> None:
         # create personal notes
@@ -2383,60 +2291,12 @@ class UserMergeTogether(BaseVoteTestCase):
             "user/2", ["Updated with data from {}", "user/3"]
         )
         self.assert_history_information("user/3", ["Merged into {}", "user/2"])
-        self.assert_history_information(
-            "meeting_user/22",
-            [
-                "Updated with data from {} during user-merge into {}",
-                "meeting_user/23",
-                "user/2",
-            ],
-        )
-        self.assert_history_information(
-            "meeting_user/46",
-            [
-                "Created from data of {} during user-merge into {}",
-                "meeting_user/33",
-                "user/2",
-            ],
-        )
-        self.assert_history_information(
-            "meeting_user/23",
-            ["Merged into {} during user-merge into {}", "meeting_user/22", "user/2"],
-        )
-        self.assert_history_information(
-            "meeting_user/33",
-            ["Replaced by {} during user-merge into {}", "meeting_user/46", "user/2"],
-        )
 
         self.assert_history_information(
             "user/4", ["Updated with data from {} and {}", "user/5", "user/6"]
         )
         self.assert_history_information("user/5", ["Merged into {}", "user/4"])
         self.assert_history_information("user/6", ["Merged into {}", "user/4"])
-        self.assert_history_information(
-            "meeting_user/14",
-            [
-                "Updated with data from {} during user-merge into {}",
-                "meeting_user/15",
-                "user/4",
-            ],
-        )
-        self.assert_history_information(
-            "meeting_user/47",
-            [
-                "Created from data of {} during user-merge into {}",
-                "meeting_user/45",
-                "user/4",
-            ],
-        )
-        self.assert_history_information(
-            "meeting_user/15",
-            ["Merged into {} during user-merge into {}", "meeting_user/14", "user/4"],
-        )
-        self.assert_history_information(
-            "meeting_user/45",
-            ["Replaced by {} during user-merge into {}", "meeting_user/47", "user/4"],
-        )
 
     def test_merge_multi_request_conflict(self) -> None:
         response = self.request_multi(
@@ -2459,3 +2319,12 @@ class UserMergeTogether(BaseVoteTestCase):
             "Users cannot be part of different merges at the same time",
             response.json["message"],
         )
+
+    def test_merge_no_meetings(self) -> None:
+        self.create_user("user7")
+        response = self.request("user.merge_together", {"id": 6, "user_ids": [7]})
+        self.assert_status_code(response, 200)
+
+    def test_merge_only_update_meeting_users(self) -> None:
+        response = self.request("user.merge_together", {"id": 4, "user_ids": [3]})
+        self.assert_status_code(response, 200)

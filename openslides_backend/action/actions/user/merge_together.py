@@ -9,8 +9,9 @@ from ....permissions.permission_helper import has_organization_management_level
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, BadCodingException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
-from ....shared.patterns import Collection, CollectionField
+from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
+from ....shared.typing import HistoryInformation
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -247,9 +248,9 @@ class UserMergeTogether(
         self.call_other_actions(update_operations)
 
         result = {"id": into["id"], "committee_ids": committee_ids}
-        self._history_replacement_groups[self.main_fqid]["user"] = [
+        self._history_replacement_groups["user"].append(
             (result, [into["id"], *instance["user_ids"]], False)
-        ]
+        )
         return result
 
     def call_other_actions(
@@ -291,17 +292,20 @@ class UserMergeTogether(
                 m_user["meeting_id"]
                 for m_user in update_operations["meeting_user"]["create"]
             ]
-            new_meeting_users = self.datastore.filter(
-                "meeting_user",
-                And(
-                    FilterOperator("user_id", "=", user_id),
-                    Or(
-                        FilterOperator("meeting_id", "=", meeting_id)
-                        for meeting_id in new_meeting_ids
+            if len(new_meeting_ids):
+                new_meeting_users = self.datastore.filter(
+                    "meeting_user",
+                    And(
+                        FilterOperator("user_id", "=", user_id),
+                        Or(
+                            FilterOperator("meeting_id", "=", meeting_id)
+                            for meeting_id in new_meeting_ids
+                        ),
                     ),
-                ),
-                ["meeting_id"],
-            )
+                    ["meeting_id"],
+                )
+            else:
+                new_meeting_users = {}
             meeting_user_ids_by_meeting_ids = {
                 m_user["meeting_id"]: id_ for id_, m_user in new_meeting_users.items()
             }
@@ -574,3 +578,33 @@ class UserMergeTogether(
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations
         )
+
+    def get_full_history_information(self) -> HistoryInformation | None:
+        information = super().get_full_history_information() or {}
+        for data, ids, is_transfer in self._history_replacement_groups["user"]:
+            main_id = data.get("id")
+            if main_id:
+                main_fqid = fqid_from_collection_and_id("user", main_id)
+                deleted_fqids = [
+                    fqid_from_collection_and_id("user", id_)
+                    for id_ in ids
+                    if id_ != main_id
+                ]
+                if len(deleted_fqids) > 2:
+                    deleted_string = (
+                        ", ".join(["{}" for i in range(len(deleted_fqids) - 1)])
+                        + " and {}"
+                    )
+                else:
+                    deleted_string = " and ".join(
+                        ["{}" for i in range(len(deleted_fqids))]
+                    )
+                information[main_fqid] = [
+                    "Updated with data from " + deleted_string,
+                    *deleted_fqids,
+                ]
+                for deleted_fqid in deleted_fqids:
+                    information[deleted_fqid] = ["Merged into {}", main_fqid]
+            else:
+                raise BadCodingException("No id found for user history generation")
+        return information

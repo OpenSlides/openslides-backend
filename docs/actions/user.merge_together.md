@@ -141,4 +141,4 @@ The client could/should fill the optional fields from a chosen "main" user to no
 Warnings should be shown alerting the user that 
 - this action is not reversable,
 - will potentially change/overwrite data in archived meetings and
-- will not port the history information of the old users data to the new ones
+- will neither port the history information of the secondary users to the new ones nor rewrite the user id in the "Changed by" column

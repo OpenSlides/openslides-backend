@@ -15,6 +15,7 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, fqid_from_collection_and_id
+from ....shared.typing import HistoryInformation
 from .base_merge_mixin import BaseMergeMixin, MergeModeDict
 
 
@@ -87,6 +88,19 @@ class AssignmentCandidateMergeMixin(BaseMergeMixin):
             "meeting_user_id",
         )
 
+    def get_full_history_information(self) -> HistoryInformation | None:
+        information = super().get_full_history_information() or {}
+        assignment_ids: set[int] = set()
+        for data, ids, is_transfer in self._history_replacement_groups[
+            "assignment_candidate"
+        ]:
+            assignment_ids.add(data["assignment_id"])
+        for assignment_id in assignment_ids:
+            information[fqid_from_collection_and_id("assignment", assignment_id)] = [
+                "Candidates merged"
+            ]
+        return information
+
 
 motion_meeting_user_list_item_groups: MergeModeDict = {
     "ignore": ["meeting_user_id", "meeting_id", "motion_id"],
@@ -102,6 +116,19 @@ class MotionSubmitterMergeMixin(BaseMergeMixin):
         self.add_collection_field_groups(
             MotionSubmitter, motion_meeting_user_list_item_groups, "meeting_user_id"
         )
+
+    def get_full_history_information(self) -> HistoryInformation | None:
+        information = super().get_full_history_information() or {}
+        motion_ids: set[int] = set()
+        for data, ids, is_transfer in self._history_replacement_groups[
+            "motion_submitter"
+        ]:
+            motion_ids.add(data["motion_id"])
+        for motion_id in motion_ids:
+            information[fqid_from_collection_and_id("motion", motion_id)] = [
+                "Submitters merged"
+            ]
+        return information
 
 
 class MotionEditorMergeMixin(BaseMergeMixin):
