@@ -5,7 +5,13 @@ from openslides_backend.services.datastore.interface import PartialModel
 from ....models.base import Model
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, CollectionField, fqid_from_collection_and_id
+from ....shared.interfaces.event import EventType
+from ....shared.patterns import (
+    Collection,
+    CollectionField,
+    fqid_from_collection_and_id,
+    id_from_fqid,
+)
 from ...action import Action, ActionResults, WriteRequest
 from ...util.typing import ActionData
 
@@ -382,3 +388,18 @@ class BaseMergeMixin(Action):
         return super().execute_other_action(
             ActionClass, action_data, skip_archived_meeting_check, skip_history
         )
+
+    def build_write_request(self) -> WriteRequest | None:
+        request = super().build_write_request()
+        if request:
+            fqids_in_events = {event["fqid"] for event in request.events}
+            for fqid in request.information or {}:
+                if fqid not in fqids_in_events:
+                    request.events.append(
+                        {
+                            "type": EventType.Update,
+                            "fqid": fqid,
+                            "fields": {"id": id_from_fqid(fqid)},
+                        }
+                    )
+        return request

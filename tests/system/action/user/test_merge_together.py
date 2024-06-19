@@ -1272,6 +1272,9 @@ class UserMergeTogether(BaseVoteTestCase):
 
     def test_merge_with_assignment_candidates(self) -> None:
         self.base_assignment_or_motion_model_test("assignment", "assignment_candidate")
+        self.assert_history_information(
+            "user/2", ["Updated with data from {} and {}", "user/3", "user/4"]
+        )
         for id_ in range(2, 10):
             self.assert_history_information(f"assignment/{id_}", ["Candidates merged"])
 
