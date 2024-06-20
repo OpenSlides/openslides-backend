@@ -386,3 +386,52 @@ class UpdatePollTestCase(BasePollTestCase):
             {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
             Permissions.Assignment.CAN_MANAGE,
         )
+
+    def test_update_entitled_users_at_stop_error(self) -> None:
+        response = self.request(
+            "poll.update",
+            {
+                "entitled_users_at_stop": [
+                    {
+                        "voted": True,
+                        "present": True,
+                        "user_id": 2,
+                        "vote_delegated_to_user_id": None,
+                    },
+                    {
+                        "voted": True,
+                        "present": False,
+                        "user_id": 3,
+                        "vote_delegated_to_user_id": 2,
+                    },
+                ],
+                "id": 1,
+            },
+            internal=False,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data must not contain {'entitled_users_at_stop'} properties"
+            in response.json["message"]
+        )
+
+    def test_update_entitled_users_at_stop(self) -> None:
+        user_list = [
+            {
+                "voted": True,
+                "present": True,
+                "user_id": 2,
+                "vote_delegated_to_user_id": None,
+            },
+            {
+                "voted": True,
+                "present": False,
+                "user_id": 3,
+                "vote_delegated_to_user_id": 2,
+            },
+        ]
+        response = self.request(
+            "poll.update", {"entitled_users_at_stop": user_list, "id": 1}, internal=True
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("poll/1", {"entitled_users_at_stop": user_list})

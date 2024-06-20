@@ -844,3 +844,46 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             response.json["message"]
             == "You can not change a started speaker to intervention if there is a structure_level."
         )
+
+    def test_update_with_internal_fields(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"structure_level_list_of_speakers_ids": [90]},
+                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [90]},
+                "structure_level_list_of_speakers/90": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update",
+            {"id": 890, "weight": 4, "structure_level_list_of_speakers_id": 90},
+            internal=True,
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/890", {"weight": 4, "structure_level_list_of_speakers_id": 90}
+        )
+
+    def test_update_with_internal_fields_error(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"structure_level_list_of_speakers_ids": [90]},
+                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [90]},
+                "structure_level_list_of_speakers/90": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update",
+            {"id": 890, "weight": 4, "structure_level_list_of_speakers_id": 90},
+            internal=False,
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data must not contain {'structure_level_list_of_speakers_id', 'weight'} properties",
+            response.json["message"],
+        )

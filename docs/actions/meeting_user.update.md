@@ -22,9 +22,16 @@
 
 // Group B
     about_me: HTML;
-}
+
 // Group C
     group_ids: Id[];
+
+// Group D
+    assignment_candidate_ids: Id[];
+    motion_working_group_speaker_ids: Id[];
+    motion_editor_ids: Id[];
+    supported_motion_ids: Id[];
+    chat_message_ids: Id[];
 }
 
 ```
@@ -40,3 +47,5 @@ Group C: The request user must satisfy at least one of:
 - the OML `can_manage_users`
 - `user.can_manage` for the meeting
 - The CML `can_manage` for the committee of the meeting
+
+Group D: The request user needs the OML `can_manage_users`, which is handled by [user.merge_together](user.merge_together.md) which is the only place where this is called

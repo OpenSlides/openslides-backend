@@ -13,7 +13,7 @@ class SpeakerCreateForMerge(CreateActionWithInferredMeeting):
     model = Speaker()
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
-        required_properties=["list_of_speakers_id", "meeting_user_id"],
+        required_properties=["list_of_speakers_id", "meeting_user_id", "weight"],
         optional_properties=[
             i
             for i in Speaker.__dict__.keys()
@@ -25,6 +25,8 @@ class SpeakerCreateForMerge(CreateActionWithInferredMeeting):
                 "id",
                 "list_of_speakers_id",
                 "meeting_user_id",
+                "weight",
+                "meeting_id",
                 "pause_time",
             ]
         ],

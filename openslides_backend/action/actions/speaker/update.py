@@ -40,9 +40,7 @@ class SpeakerUpdate(
         if (not self.internal) and len(
             forbidden := {field for field in self.internal_fields if field in instance}
         ):
-            raise ActionException(
-                f"data must not contain {forbidden} properties"
-            )  # TODO: Test this
+            raise ActionException(f"data must not contain {forbidden} properties")
         return super().validate_fields(instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:

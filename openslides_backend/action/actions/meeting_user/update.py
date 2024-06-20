@@ -1,9 +1,6 @@
-from typing import Any
-
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
 from ....models.models import MeetingUser
-from ....shared.exceptions import ActionException
 from ...generics.update import UpdateAction
 from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
@@ -19,13 +16,11 @@ class MeetingUserUpdate(MeetingUserHistoryMixin, UpdateAction, ExtendHistoryMixi
     """
 
     merge_fields = [
-        "motion_submitter_ids",
         "assignment_candidate_ids",
         "motion_working_group_speaker_ids",
         "motion_editor_ids",
         "supported_motion_ids",
         "chat_message_ids",
-        "speaker_ids",
     ]
 
     model = MeetingUser()
@@ -36,15 +31,5 @@ class MeetingUserUpdate(MeetingUserHistoryMixin, UpdateAction, ExtendHistoryMixi
             *meeting_user_standard_fields,
             *merge_fields,
         ],
-        additional_optional_fields={"unsafe": {"type": "boolean"}},
     )
     extend_history_to = "user_id"
-
-    def validate_fields(self, instance: dict[str, Any]) -> dict[str, Any]:
-        if (not instance.pop("unsafe", False)) and len(
-            forbidden := {field for field in self.merge_fields if field in instance}
-        ):
-            raise ActionException(
-                f"data must not contain {forbidden} properties"
-            )  # TODO: Test this
-        return super().validate_fields(instance)

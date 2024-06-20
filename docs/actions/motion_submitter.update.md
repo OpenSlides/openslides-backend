@@ -1,0 +1,12 @@
+## Payload
+```
+{
+// required
+    id: Id;
+    weight: int;
+}
+```
+
+## Action
+Updates a motion_submitters's weight.
+Should only be called by [user.merge_together](user.merge_together.md).
