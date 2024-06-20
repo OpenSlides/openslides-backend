@@ -56,9 +56,7 @@ class PollUpdateAction(
         if not self.internal and any(
             forbidden := {key for key in instance if key in self.internal_fields}
         ):
-            raise ActionException(
-                f"data must not contain {forbidden} properties"
-            )  # TODO: Test this
+            raise ActionException(f"data must not contain {forbidden} properties")
         return super().validate_fields(instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
