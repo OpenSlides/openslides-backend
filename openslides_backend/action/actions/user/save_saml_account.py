@@ -27,7 +27,7 @@ allowed_user_fields = [
     "first_name",
     "last_name",
     "email",
-    "gender",
+    "gender_id",
     "pronoun",
     "is_active",
     "is_physical_person",

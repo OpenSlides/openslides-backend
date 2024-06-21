@@ -16,7 +16,7 @@ class Organization(Model):
     privacy_policy = fields.TextField()
     login_text = fields.TextField()
     reset_password_verbose_errors = fields.BooleanField()
-    genders = fields.CharArrayField(default=["male", "female", "diverse", "non-binary"])
+    gender_ids = fields.RelationListField(to={"gender": "organization_id"})
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
@@ -94,7 +94,6 @@ class User(Model):
     password = fields.CharField()
     default_password = fields.CharField()
     can_change_own_password = fields.BooleanField(default=True)
-    gender = fields.CharField()
     email = fields.CharField()
     default_vote_weight = fields.DecimalField(
         default="1.000000", constraints={"minimum": "0.000001"}
@@ -102,6 +101,7 @@ class User(Model):
     last_email_sent = fields.TimestampField()
     is_demo_user = fields.BooleanField()
     last_login = fields.TimestampField(read_only=True)
+    gender_id = fields.RelationField(to={"gender": "user_ids"})
     organization_management_level = fields.CharField(
         constraints={
             "description": "Hierarchical permission level for the whole organization.",
@@ -195,6 +195,16 @@ class MeetingUser(Model):
     structure_level_ids = fields.RelationListField(
         to={"structure_level": "meeting_user_ids"}, equal_fields="meeting_id"
     )
+
+
+class Gender(Model):
+    collection = "gender"
+    verbose_name = "gender"
+
+    id = fields.IntegerField(constant=True)
+    name = fields.CharField()
+    organization_id = fields.OrganizationField(to={"organization": "gender_ids"})
+    user_ids = fields.RelationListField(to={"user": "gender_id"})
 
 
 class OrganizationTag(Model):

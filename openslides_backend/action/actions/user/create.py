@@ -44,7 +44,7 @@ class UserCreate(
             "is_physical_person",
             "default_password",
             "can_change_own_password",
-            "gender",
+            "gender_id",
             "email",
             "default_vote_weight",
             "organization_management_level",

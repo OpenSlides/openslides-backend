@@ -37,7 +37,7 @@ class OrganizationUpdate(
         "users_email_replyto",
         "users_email_subject",
         "users_email_body",
-        "genders",
+        "gender_ids",
     )
 
     group_B_fields = (
@@ -122,24 +122,28 @@ class OrganizationUpdate(
                 raise ActionException(
                     f"Active users: {count_active_users}. You cannot set the limit lower."
                 )
-        if "genders" in instance:
-            organization = self.datastore.get(ONE_ORGANIZATION_FQID, ["genders"])
-            removed_genders = [
-                gender
-                for gender in organization.get("genders", [])
-                if gender not in instance["genders"]
+        if "gender_ids" in instance: #if org instance TODO change via gender???
+            organization = self.datastore.get(ONE_ORGANIZATION_FQID, ["gender_ids"])
+            removed_genders = [ 
+                gender_id for gender_id in organization.get("gender_ids", []) #nested list comprehension #TODO get_all auf gender collection nutzen?
+                    if gender_id not in instance["gender_ids"] #with filter
             ]
+            for gender_id in removed_genders: #TODO das Löschen aller legalen erlauben?
+                if gender_id > 0 and gender_id < 5:
+                    raise ActionException(
+                        f"You cannot remove preset genders." #gender aus collection löschen?
+                    )
 
             if removed_genders:
                 filter__ = Or(
                     *[
-                        FilterOperator("gender", "=", gender)
-                        for gender in removed_genders
+                        FilterOperator("gender_id", "=", gender_id)
+                        for gender_id in removed_genders
                     ]
                 )
                 users = self.datastore.filter("user", filter__, ["id"]).values()
                 payload_remove_gender = [
-                    {"id": entry["id"], "gender": None} for entry in users
+                    {"id": entry["id"], "gender_id": None} for entry in users
                 ]
                 if payload_remove_gender:
                     self.execute_other_action(UserUpdate, payload_remove_gender)

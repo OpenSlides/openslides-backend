@@ -708,7 +708,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.set_user_groups(111, [1, 6])
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {"organization/1": {"gender_ids": [1, 2, 3, 4]},
+            "gender/1": {"name": "male"},
+            "gender/2": {"name": "female"},
+            "gender/3": {"name": "diverse"},
+            "gender/4": {"name": "non-binary"}}
         )
 
         response = self.request(
@@ -722,7 +726,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com ",  # space intentionally, will be stripped
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
@@ -739,7 +743,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": True,
                 "default_password": "new default_password",
-                "gender": "female",
+                "gender_id": 2,
                 "email": "info@openslides.com",
                 "default_vote_weight": "1.234000",
                 "can_change_own_password": False,
@@ -1465,22 +1469,26 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"username": "username_srtgb123"},
         )
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {"organization/1": {"gender_ids": [1, 2 ,3 ,4]},
+            "gender/1": {"name": "male"},
+            "gender/2": {"name": "female"},
+            "gender/3": {"name": "diverse"},
+            "gender/4": {"name": "non-binary"}}
         )
-        response = self.request("user.update", {"id": 111, "gender": "test"})
+        response = self.request("user.update", {"id": 111, "gender_id": 5})
         self.assert_status_code(response, 400)
         assert (
-            "Gender 'test' is not in the allowed gender list."
+            "Gender '5' is not in the allowed gender list."
             in response.json["message"]
         )
 
-        response = self.request("user.update", {"id": 111, "gender": "diverse"})
+        response = self.request("user.update", {"id": 111, "gender_id": 3}) 
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"gender": "diverse"})
+        self.assert_model_exists("user/111", {"gender_id": 3})
 
-        response = self.request("user.update", {"id": 111, "gender": "non-binary"})
+        response = self.request("user.update", {"id": 111, "gender_id": 4})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"gender": "non-binary"})
+        self.assert_model_exists("user/111", {"gender_id": 4})
 
     def test_update_not_in_update_is_present_in_meeting_ids(self) -> None:
         self.create_model(

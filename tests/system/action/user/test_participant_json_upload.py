@@ -13,7 +13,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
+                    "gender_ids": [1, 2, 3, 4]
                 },
                 "meeting/1": {
                     "name": "test",
@@ -294,6 +294,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "username": "test",
                 },
                 "group/1": {"default_group_for_meeting_id": 1},
+                "gender/1": {"name": "male"}
             }
         )
         fix_fields = {
@@ -330,7 +331,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert row["data"]["username"] == {"value": "test", "info": "done", "id": 34}
         assert row["data"]["vote_weight"] == {"value": "1.456000", "info": "done"}
         assert row["data"]["is_present"] == {"value": False, "info": "done"}
-        assert row["data"]["gender"] == {"value": "male", "info": "done"}
+        assert row["data"]["gender"] == {"id": 1, "value": "male", "info": "done"}
         assert row["data"]["groups"] == [
             {"value": "testgroup", "info": "generated", "id": 1}
         ]
@@ -1872,7 +1873,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "user/5": {
                     "email": "balu@ntvtn.de",
                     "title": "title",
-                    "gender": "non-binary",
+                    "gender_id": 4,
                     "pronoun": "pronoun",
                     "password": "$argon2id$v=19$m=65536,t=3,p=4$iQbqhQ2/XYiFnO6vP6rtGQ$Bv3QuH4l9UQACws9hiuCCUBQepVRnCTqmOn5TkXfnQ8",
                     "username": "balubear",

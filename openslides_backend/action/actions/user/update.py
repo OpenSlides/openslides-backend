@@ -47,7 +47,7 @@ class UserUpdate(
             "is_physical_person",
             "default_password",
             "can_change_own_password",
-            "gender",
+            "gender_id",
             "email",
             "default_vote_weight",
             "organization_management_level",
@@ -110,6 +110,8 @@ class UserUpdate(
             self.check_limit_of_user(1)
 
         check_gender_helper(self.datastore, instance)
+        if gender_id := instance.get("gender_id"):
+            gender_id
         return instance
 
     def get_removed_meeting_id(self, instance: dict[str, Any]) -> int | None:

@@ -16,7 +16,7 @@ class UserUpdateSelf(EmailCheckMixin, UpdateAction, UserMixin, UpdateHistoryMixi
 
     model = User()
     schema = DefaultSchema(User()).get_default_schema(
-        optional_properties=["username", "pronoun", "gender", "email"]
+        optional_properties=["username", "pronoun", "gender_id", "email"]
     )
     check_email_field = "email"
 

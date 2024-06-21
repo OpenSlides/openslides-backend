@@ -12,6 +12,7 @@ def prepare_actions_map() -> None:
         chat_group,
         chat_message,
         committee,
+        gender,
         group,
         list_of_speakers,
         mediafile,

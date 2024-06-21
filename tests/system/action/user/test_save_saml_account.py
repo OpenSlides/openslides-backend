@@ -12,7 +12,7 @@ class UserBaseSamlAccount(BaseActionTestCase):
             "first_name": "Max",
             "last_name": "Mustermann",
             "email": "test@example.com",
-            "gender": "male",
+            "gender_id": 1,
             "pronoun": "er",
             "is_active": True,
             "is_physical_person": True,
@@ -29,7 +29,7 @@ class UserBaseSamlAccount(BaseActionTestCase):
                         "first_name": "firstName",
                         "last_name": "lastName",
                         "email": "email",
-                        "gender": "gender",
+                        "gender_id": "gender_id",
                         "pronoun": "pronoun",
                         "is_active": "is_active",
                         "is_physical_person": "is_person",
@@ -120,6 +120,11 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
 
 class UserCreateSamlAccount(UserBaseSamlAccount):
     def test_create_saml_account_all_fields(self) -> None:
+        self.set_models(
+            {
+                "gender/1": {"name": "male"},
+            }
+        )
         response = self.request(
             "user.save_saml_account",
             {
@@ -128,7 +133,7 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
                 "firstName": "Max",
                 "lastName": "Mustermann",
                 "email": "test@example.com",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": True,
                 "is_person": True,
@@ -147,7 +152,7 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
                 "first_name": "Max",
                 "last_name": "Mustermann",
                 "email": "test@example.com",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": True,
                 "is_physical_person": True,
@@ -158,6 +163,11 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
         )
 
     def test_create_saml_account_all_fields_as_list(self) -> None:
+        self.set_models(
+            {
+                "gender/1": {"name": "male"},
+            }
+        )
         response = self.request(
             "user.save_saml_account",
             {
@@ -166,7 +176,7 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
                 "firstName": ["Max"],
                 "lastName": ["Mustermann"],
                 "email": ["test@example.com"],
-                "gender": ["male"],
+                "gender_id": [1],
                 "pronoun": ["er"],
                 "is_active": [True],
                 "is_person": [True],
@@ -182,7 +192,7 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
                 "first_name": "Max",
                 "last_name": "Mustermann",
                 "email": "test@example.com",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": True,
                 "is_physical_person": True,
@@ -263,7 +273,10 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         )
 
     def test_update_saml_account_all_fields(self) -> None:
-        self.set_models({"user/78": {"username": "Saml", "saml_id": "111222333"}})
+        self.set_models(
+            {"user/78": {"username": "Saml", "saml_id": "111222333"},
+                "gender/1": {"name": "male"},
+            })
         response = self.request(
             "user.save_saml_account",
             {
@@ -272,7 +285,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "firstName": "Max",
                 "lastName": "Mustermann",
                 "email": "test@example.com",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": True,
                 "is_person": True,
@@ -288,7 +301,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "first_name": "Max",
                 "last_name": "Mustermann",
                 "email": "test@example.com",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": True,
                 "is_physical_person": True,
@@ -303,7 +316,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
             "first_name": "Max",
             "last_name": "Mustermann",
             "email": "test@example.com",
-            "gender": "male",
+            "gender_id": 1,
             "pronoun": "er",
             "is_active": True,
             "is_physical_person": True,
@@ -319,7 +332,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "firstName": "Max",
                 "lastName": "Mustermann",
                 "email": "test@example.com",
-                "gender": "male",
+                "gender_id": 1,
                 "pronomen": "er",
                 "is_active": True,
                 "is_person": True,
@@ -340,7 +353,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                     "first_name": "Max",
                     "last_name": "Mustermann",
                     "email": "test@example.com",
-                    "gender": "male",
+                    "gender_id": 1,
                     "pronoun": "er",
                     "is_active": True,
                     "is_physical_person": True,
@@ -370,7 +383,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "first_name": "Maxx",
                 "last_name": "Mustermann",
                 "email": "",
-                "gender": "male",
+                "gender_id": 1,
                 "pronoun": "er",
                 "is_active": False,
                 "is_physical_person": True,
@@ -396,7 +409,7 @@ class UserSamlAccountBoolean(UserBaseSamlAccount):
                 "first_name": None,
                 "last_name": None,
                 "email": None,
-                "gender": None,
+                "gender_id": None,
                 "pronoun": None,
                 "is_active": True,
                 "is_physical_person": True,
@@ -461,7 +474,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "first_name": "firstName",
                 "last_name": "lastName",
                 "email": "email",
-                "gender": "gender",
+                "gender_id": "gender_id",
                 "pronoun": "pronoun",
                 "is_active": "is_active",
                 "is_physical_person": "is_person",

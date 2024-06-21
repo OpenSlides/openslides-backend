@@ -271,9 +271,17 @@ class DuplicateCheckMixin(Action):
 
 def check_gender_helper(datastore: DatastoreService, instance: dict[str, Any]) -> None:
     if instance.get("gender"):
-        organization = datastore.get(ONE_ORGANIZATION_FQID, ["genders"])
-        if organization.get("genders"):
-            if not instance["gender"] in organization["genders"]:
+        organization = datastore.get(ONE_ORGANIZATION_FQID, ["gender_ids"])
+        if organization.get("gender_ids"):
+            gender_dict = datastore.filter("gender", FilterOperator("name","=", instance["gender"]),[])
+            if not gender_dict[0]["id"] in organization["genders"]:
                 raise ActionException(
                     f"Gender '{instance['gender']}' is not in the allowed gender list."
+                )
+    if instance.get("gender_id"):
+        organization = datastore.get(ONE_ORGANIZATION_FQID, ["gender_ids"])
+        if organization.get("gender_ids"):
+            if not instance["gender_id"] in organization["gender_ids"]:
+                raise ActionException(
+                    f"Gender '{instance['gender_id']}' is not in the allowed gender list."
                 )

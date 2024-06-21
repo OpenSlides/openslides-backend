@@ -38,6 +38,7 @@ class ParticipantImport(BaseActionTestCase):
                                 "info": ImportState.DONE,
                             },
                             "gender": {
+                                "id": 1,
                                 "value": "male",
                                 "info": ImportState.DONE,
                             },
@@ -50,8 +51,12 @@ class ParticipantImport(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {
-                    "genders": ["male", "female", "diverse", "non-binary"]
+                    "gender_ids": [1, 2, 3, 4]
                 },
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
                 "import_preview/1": self.import_preview1_data,
                 "meeting/1": {
                     "is_active_in_organization_id": 1,
@@ -102,7 +107,7 @@ class ParticipantImport(BaseActionTestCase):
             {
                 "username": "jonny",
                 "first_name": "Testy",
-                "gender": "male",
+                "gender_id": 1,
                 "last_name": "Tester",
                 "email": "email@test.com",
                 "meeting_ids": [1],
@@ -227,7 +232,7 @@ class ParticipantImport(BaseActionTestCase):
         user = self.assert_model_exists(
             "user/2", {"username": "jonny", "first_name": "Testy"}
         )
-        assert user.get("gender") is None
+        assert user.get("gender_id") is None
 
     def test_import_error_state_done_missing_username(self) -> None:
         self.import_preview1_data["result"]["rows"][0]["data"].pop("username")

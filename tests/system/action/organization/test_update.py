@@ -12,7 +12,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         "first_name": "firstName",
         "last_name": "lastName",
         "email": "email",
-        "gender": "gender",
+        "gender_id": "gender_id",
         "pronoun": "pronoun",
         "is_active": "is_active",
         "is_physical_person": "is_person",
@@ -103,6 +103,14 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_some_more_fields(self) -> None:
+        self.set_models(
+            { #TODO hier sollte doch bestimmt die org einfach selbst gender anlegen, wenn doch management level da ist.
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
+        )
         response = self.request(
             "organization.update",
             {
@@ -144,7 +152,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                     """
                 ),
                 "saml_private_key": "private key dependency",
-                "genders": ["male", "female", "rabbit"],
+                "gender_ids": [1, 2, 3, 4],
             },
         )
         self.assert_status_code(response, 200)
@@ -169,7 +177,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "saml_login_button_text": "Text for SAML login button",
                 "saml_attr_mapping": self.saml_attr_mapping,
                 "saml_private_key": "private key dependency",
-                "genders": ["male", "female", "rabbit"],
+                "gender_ids": [1, 2, 3, 4],
             },
         )
         assert (
@@ -318,36 +326,51 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
     def test_update_genders_remove(self) -> None:
         self.set_models(
             {
-                "organization/1": {"genders": ["male", "female", "test"]},
-                "user/6": {"username": "with_test_gender", "gender": "test"},
-                "user/7": {"username": "not_changed", "gender": "male"},
+                "organization/1": {"gender_ids": [1, 2, 3, 4, 5, 6, 7]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+                "gender/5": {"name": "dragon"},
+                "gender/6": {"name": "fairy"},
+                "gender/7": {"name": "toad"},
+                "user/6": {"username": "with_test_gender", "gender_id": 7},
+                "user/7": {"username": "not_changed", "gender_id": 5},
             }
         )
         response = self.request(
-            "organization.update", {"id": 1, "genders": ["male", "female"]}
+            "organization.update", {"id": 1, "gender_ids": [1, 2, 3, 4, 7]}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"genders": ["male", "female"]})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"gender_ids": [1, 2, 3, 4, 7]})
         self.assert_model_exists(
-            "user/6", {"username": "with_test_gender", "gender": None}
+            "user/6", {"username": "with_test_gender", "gender_id": 7}
         )
         self.assert_model_exists(
-            "user/7", {"username": "not_changed", "gender": "male"}
+            "user/7", {"username": "not_changed", "gender_id": None}
         )
 
-    def test_update_genders_empty(self) -> None:
+    def test_update_default_genders_constant(self) -> None:
         self.set_models(
             {
-                "organization/1": {"genders": ["male", "female", "test"]},
-                "user/6": {"gender": "test"},
-                "user/7": {"gender": "male"},
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+                "user/6": {"gender_id": 3},
+                "user/7": {"gender_id": 1},
             }
         )
-        response = self.request("organization.update", {"id": 1, "genders": []})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"genders": []})
-        self.assert_model_exists("user/6", {"gender": None})
-        self.assert_model_exists("user/7", {"gender": None})
+        response = self.request("organization.update", {"id": 1, "gender_ids": []})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You cannot remove preset genders.",
+            response.json["message"],
+        )
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"gender_ids": [1, 2, 3, 4]})
+        self.assert_model_exists("user/6", {"gender_id": 3})
+        self.assert_model_exists("user/7", {"gender_id": 1})
 
     def test_update_group_a_no_permissions(self) -> None:
         self.set_organization_management_level(

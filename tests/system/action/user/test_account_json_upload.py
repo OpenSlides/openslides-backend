@@ -10,14 +10,20 @@ from tests.system.action.base import BaseActionTestCase
 class AccountJsonUpload(BaseActionTestCase):
     def test_json_upload_simple(self) -> None:
         start_time = int(time())
+        self.set_models(
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
+        )
         response = self.request(
             "account.json_upload",
             {
                 "data": [
                     {
-                        "organization/1": {
-                            "genders": ["male", "female", "diverse", "non-binary"]
-                        },
                         "username": "test",
                         "default_password": "secret",
                         "is_active": "1",
@@ -40,7 +46,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "is_active": True,
                 "is_physical_person": False,
                 "default_vote_weight": {"value": "1.120000", "info": ImportState.DONE},
-                "gender": {"value": "female", "info": ImportState.DONE},
+                "gender": {"id": 2, "value": "female", "info": ImportState.DONE},
             },
         }
         import_preview_id = response.json["results"][0][0].get("id")
@@ -1041,7 +1047,7 @@ class AccountJsonUpload(BaseActionTestCase):
                 "user/5": {
                     "email": "balu@ntvtn.de",
                     "title": "title",
-                    "gender": "non-binary",
+                    "gender_id": 4,
                     "pronoun": "pronoun",
                     "password": "$argon2id$v=19$m=65536,t=3,p=4$iQbqhQ2/XYiFnO6vP6rtGQ$Bv3QuH4l9UQACws9hiuCCUBQepVRnCTqmOn5TkXfnQ8",
                     "username": "balubear",
@@ -1333,7 +1339,12 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
     def json_upload_wrong_gender(self) -> None:
         self.set_models(
-            {"organization/1": {"genders": ["male", "female", "diverse", "non-binary"]}}
+            {"organization/1": {"gender_ids": [1, 2, 3, 4]},
+            "gender/1": {"name": "male"},
+            "gender/2": {"name": "female"},
+            "gender/3": {"name": "diverse"},
+            "gender/4": {"name": "non-binary"},
+            }
         )
         response = self.request(
             "account.json_upload",
@@ -1355,7 +1366,10 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
     def json_upload_wrong_gender_2(self) -> None:
         self.set_models(
-            {ONE_ORGANIZATION_FQID: {"genders": ["dragon", "lobster", "snake"]}}
+            {ONE_ORGANIZATION_FQID: {"gender_ids": [1, 2, 3]},
+            "gender/1": {"name": "dragon"},
+            "gender/2": {"name": "lobster"},
+            "gender/3": {"name": "snake"}}
         )
         response = self.request(
             "account.json_upload",
