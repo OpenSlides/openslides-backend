@@ -19,12 +19,15 @@ class Migration(BaseModelMigration):
         events: list[BaseRequestEvent] = []
         #Get genders. If None we are migrating our database from string based genders. Create genders from "genders" field.
         if gender_strings := self.reader.get("organization/1", ["genders"]).get("genders"):
-            for list_pos, gender_name in enumerate(gender_strings, start=1):
-                genders[list_pos] = {"name": gender_name}
-            for gender_id, gender in genders.items():
+            for gender_id, gender in enumerate(gender_strings, start=1):
                 events.append(
                     RequestCreateEvent(
-                        fqid_from_collection_and_id("gender", gender_id), {"id": gender_id, "name": gender.get("name"), "organization_id": 1}
+                        fqid_from_collection_and_id("gender", gender_id), 
+                        {
+                            "id": gender_id, 
+                            "name": gender, 
+                            "organization_id": 1
+                        }
                     )
                 )
             #update organization
@@ -38,27 +41,28 @@ class Migration(BaseModelMigration):
                 )
             )
             users = self.reader.get_all("user", ["gender"])
-            name_to_gender_id = {gender.get("name"): gender_id for gender_id, gender in genders.items()}
+         #   name_to_gender_id = {gender.get("name"): gender_id for gender_id, gender in genders.items()}
             userids_to_gender = {}
             #update users
             for user_id, user in users.items():
-                if gender_id := name_to_gender_id.get(user.get("gender")):# and #if users gender is present and
-                    if not [g_dict for g_dict in genders.values() if user_id in g_dict.get("user_ids", [])]: #if user is not referenced inside a gender 
-                        events.append(
-                            RequestUpdateEvent(
-                                fqid_from_collection_and_id("user", user_id),
-                                {
-                                    "gender_id": gender_id,
-                                    "gender": None
-                                }
-                            )
+                if gender_id := gender_strings.index(user.get("gender")):
+              #  if gender_id := name_to_gender_id.get(user.get("gender")):# and #if users gender is present and
+                   # if not [g_dict for g_dict in genders.values() if user_id in g_dict.get("user_ids", [])]: #if user is not referenced inside a gender 
+                    events.append(
+                        RequestUpdateEvent(
+                            fqid_from_collection_and_id("user", user_id),
+                            {
+                                "gender_id": gender_id,
+                                "gender": None
+                            }
                         )
-                        if userids_to_gender.get(gender_id):
-                            userids_to_gender[gender_id] = userids_to_gender[gender_id] + [user_id]
-                        else:
-                            userids_to_gender[gender_id] = [user_id]
+                    )
+                    if userids_to_gender.get(gender_id):
+                        userids_to_gender[gender_id] = userids_to_gender[gender_id] + [user_id]
                     else:
-                        pass
+                        userids_to_gender[gender_id] = [user_id]
+                else:
+                    pass
             #update genders with back relation to users TODO: one creation no update + create default genders
             for gender_id, user_ids in userids_to_gender.items():
                 events.append(
