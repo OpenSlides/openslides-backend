@@ -216,7 +216,8 @@ class MeetingImport(
                     "last_email_sent",
                     "last_login",
                     "committee_ids",
-                    "gender"
+                    "gender",
+                    "gender_id" #this is fine since we do not delete actual user data and imported genders can be omitted as superseded outdated
                 ],
                 "organization": [
                     "genders"

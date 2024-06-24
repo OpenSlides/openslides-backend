@@ -2094,6 +2094,7 @@ class MeetingImport(BaseActionTestCase):
 
     def test_with_listfields_from_migration(self) -> None:
         """test for listFields in event.data after migration. Uses migration 0035 to create one"""
+        self.update_model("user/1", {"gender_id": 1})
         data = self.create_request_data(
             {
                 "motion": {
@@ -2153,6 +2154,15 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "motion/3", {"title": "motion/6", "state_extension": "[motion/2]"}
         )
+        self.assert_model_exists( #this is here to show that the gender_id persists the checker
+            "user/1", 
+            {
+                "username": "admin",
+                "committee_ids": [1],
+                "gender_id": 1
+            }
+        )
+
 
     def test_without_migration_index(self) -> None:
         data = self.create_request_data({})
