@@ -41,6 +41,8 @@ class ProjectorCreateActionTest(BaseActionTestCase):
             "header_h1_color": "#cdef01",
             "chyron_background_color": "#234567",
             "chyron_font_color": "#890abc",
+            "chyron_background_color_2": "#123456",
+            "chyron_font_color_2": "#ffaaff",
             "show_header_footer": True,
             "show_title": True,
             "show_logo": True,
