@@ -63,7 +63,7 @@ class Migration(BaseModelMigration):
                         userids_to_gender[gender_id] = [user_id]
                 else:
                     pass
-            #update genders with back relation to users TODO: one creation no update + create default genders
+            #update genders with back relation to users
             for gender_id, user_ids in userids_to_gender.items():
                 events.append(
                     RequestUpdateEvent(
