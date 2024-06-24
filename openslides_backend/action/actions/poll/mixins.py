@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any
 
 import simplejson as json
+
 from openslides_backend.models.models import Poll
 from openslides_backend.shared.typing import HistoryInformation
 
@@ -13,9 +14,12 @@ from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, VoteServiceException
 from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import (KEYSEPARATOR, collection_from_fqid,
-                                 collectionfield_and_fqid_from_fqfield,
-                                 fqid_from_collection_and_id)
+from ....shared.patterns import (
+    KEYSEPARATOR,
+    collection_from_fqid,
+    collectionfield_and_fqid_from_fqfield,
+    fqid_from_collection_and_id,
+)
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
