@@ -57,7 +57,7 @@ class TestInitialDataCreation(BaseActionTestCase):
         self.assert_model_exists("organization/1", {"name": "[Your organization]"})
         user = self.assert_model_exists("user/1", {"username": "superadmin"})
         assert self.auth.is_equal("password123", user["password"])
-        response = self.request(
+        self.request(
             "user.set_password",
             {
                 "id": 1,
