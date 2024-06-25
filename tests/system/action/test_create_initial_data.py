@@ -34,18 +34,6 @@ class TestInitialDataCreation(BaseActionTestCase):
         self.logger.info.assert_any_call("Creating initial data...")
         self.logger.error.assert_called_with("Initial data creation failed: test")
 
-    def test_initial_data_prod_mode(self) -> None:
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
-            fp.write(b"password123")
-        self.env.vars["OPENSLIDES_DEVELOPMENT"] = "false"
-        self.env.vars["SUPERADMIN_PASSWORD_FILE"] = fp.name
-        self.app.create_initial_data()
-        self.logger.info.assert_any_call("Creating initial data...")
-        self.logger.error.assert_not_called()
-        self.assert_model_exists("organization/1", {"name": "[Your organization]"})
-        user = self.assert_model_exists("user/1", {"username": "superadmin"})
-        assert self.auth.is_equal("password123", user["password"])
-
     def test_initial_data_prod_mode_changed_superadmin_password(self) -> None:
         with tempfile.NamedTemporaryFile(delete=False) as fp:
             fp.write(b"password123")
@@ -66,3 +54,15 @@ class TestInitialDataCreation(BaseActionTestCase):
         )
         self.app.create_initial_data()
         assert self.auth.is_equal("password456", user["password"])
+
+    def test_initial_data_prod_mode(self) -> None:
+        with tempfile.NamedTemporaryFile(delete=False) as fp:
+            fp.write(b"password123")
+        self.env.vars["OPENSLIDES_DEVELOPMENT"] = "false"
+        self.env.vars["SUPERADMIN_PASSWORD_FILE"] = fp.name
+        self.app.create_initial_data()
+        self.logger.info.assert_any_call("Creating initial data...")
+        self.logger.error.assert_not_called()
+        self.assert_model_exists("organization/1", {"name": "[Your organization]"})
+        user = self.assert_model_exists("user/1", {"username": "superadmin"})
+        assert self.auth.is_equal("password123", user["password"])
