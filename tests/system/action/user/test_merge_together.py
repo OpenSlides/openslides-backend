@@ -2331,3 +2331,28 @@ class UserMergeTogether(BaseVoteTestCase):
     def test_merge_only_update_meeting_users(self) -> None:
         response = self.request("user.merge_together", {"id": 4, "user_ids": [3]})
         self.assert_status_code(response, 200)
+
+    def test_merge_with_motion_submitter_transfer(
+        self,
+    ) -> None:
+        data: dict[str, Any] = {}
+        self.add_assignment_or_motion_models_for_meetings(
+            data,
+            "motion",
+            "motion_submitter",
+            "submitter_ids",
+            {3: [[33]]},
+        )
+        self.set_models(data)
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3]})
+        self.assert_status_code(response, 200)
+        expected: dict[int, dict[int, tuple[int, int, int] | None]] = {
+            # meeting_id:sub_model_id:(model_id, meeting_user_id, weight) | None if deleted
+            3: {
+                1: None,
+                2: (1, 46, 1),
+            },
+        }
+        self.assert_assignment_or_motion_model_test_was_correct(
+            "motion", "motion_submitter", "submitter_ids", expected
+        )

@@ -402,7 +402,7 @@ class UserMergeTogether(
                     UserDelete,
                     [{"id": id_} for id_ in to_delete],
                 )
-            self.execute_other_action(UserUpdate, update_operations["user"]["update"])
+            self.execute_other_action(UserUpdate, [main_user_payload])
 
     def check_polls(self, into: PartialModel, other_models: list[PartialModel]) -> None:
         all_models = [into, *other_models]

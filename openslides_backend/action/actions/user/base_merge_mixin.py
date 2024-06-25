@@ -208,11 +208,9 @@ class BaseMergeMixin(Action):
                 )
             elif is_transfer:
                 if with_create:
-                    to_merge_into.pop("id")
-                    if back := self._collection_back_fields.get(field_collection):
-                        to_merge_into.pop(back, 0)
-                    update_operations[field_collection]["create"].append(to_merge_into)
-                    update_operations[field_collection]["delete"].append(to_merge[0])
+                    self.copy_create_model(
+                        update_operations, field_collection, to_merge_into
+                    )
                 self._history_replacement_groups[field_collection].append(
                     (to_merge_into, to_merge, is_transfer)
                 )
@@ -221,6 +219,28 @@ class BaseMergeMixin(Action):
         if len(new_reference_ids):
             return new_reference_ids
         return None
+
+    def copy_create_model(
+        self,
+        update_operations: dict[Collection, MergeUpdateOperations],
+        collection: Collection,
+        merge_model: PartialModel,
+    ) -> None:
+        id_: int = merge_model.pop("id")
+        if back := self._collection_back_fields.get(collection):
+            merge_model.pop(back, 0)
+        for field, sub_collection in (
+            self._collection_field_groups[collection]
+            .get("deep_create_merge", {})
+            .items()
+        ):
+            ids: list[int] = merge_model.pop(field, [])
+            if len(ids):
+                field_models = self.get_merge_by_rank_models(sub_collection, ids)
+                for model in field_models.values():
+                    self.copy_create_model(update_operations, sub_collection, model)
+        update_operations[collection]["create"].append(merge_model)
+        update_operations[collection]["delete"].append(id_)
 
     def check_equality(
         self,
