@@ -2356,3 +2356,15 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_assignment_or_motion_model_test_was_correct(
             "motion", "motion_submitter", "submitter_ids", expected
         )
+
+    def test_merge_with_legacy_vote_weight(self) -> None:
+        self.set_models(
+            {
+                "meeting_user/14": {"vote_weight": "0.000000"},
+                "meeting_user/22": {"vote_weight": "0.000000"},
+                "meeting_user/34": {"vote_weight": "0.000000"},
+                "user/2": {"default_vote_weight": "0.000000"},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
+        self.assert_status_code(response, 200)

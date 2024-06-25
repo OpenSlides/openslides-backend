@@ -33,6 +33,7 @@ The action is a kind of expanded [user.update](user.update.md): It updates the p
 Conflicts in single-relations are resolved on a case-by-case basis.
 
 This action will overwrite data in archived meetings.
+It will also cause old-format `vote_weight` and `default_vote_weight` values (i.e. entries with the value `0.000000`) to be replaced by the value `0.000001`, which is legal in the current system.
 
 ### Restrictions
 An error is thrown if:
