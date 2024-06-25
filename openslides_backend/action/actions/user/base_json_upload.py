@@ -348,7 +348,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             self.handle_default_password(entry)
 
         if gender := entry.get("gender"):
-            if gender_model := next((row for row in self.gender_dict.values() if row["name"] == gender), None):
+            if gender_model := next((model for model in self.gender_dict.values() if model["name"] == gender), None):
                 entry["gender"] = {"info": ImportState.DONE, "value": gender, "id": gender_model["id"]}
             else:
                 entry["gender"] = {"info": ImportState.WARNING, "value": gender}
@@ -503,7 +503,6 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         ):
             for id, values in lookup.id_to_name.items():
                 self.all_id_mapping[id].extend(values)
-
 
     def distribute_found_value_to_data(self, data: list[dict[str, Any]]) -> None:
         for entry in data:

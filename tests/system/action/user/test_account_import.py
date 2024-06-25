@@ -198,7 +198,7 @@ class AccountJsonImport(BaseActionTestCase):
                             {
                                 "state": ImportState.NEW,
                                 "messages": [
-                                    "Gender '5' is not in the allowed gender list."
+                                    "GenderId '5' is not in the allowed gender list."
                                 ],
                                 "data": {
                                     "id": 1,

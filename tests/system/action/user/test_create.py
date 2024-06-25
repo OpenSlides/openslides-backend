@@ -1148,7 +1148,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Gender '5' is not in the allowed gender list."
+            "GenderId '5' is not in the allowed gender list."
             in response.json["message"]
         )
 

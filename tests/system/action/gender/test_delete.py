@@ -73,7 +73,7 @@ class GenderDeleteActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 400)
         assert (
-            "Cannot delete or update gender '1' from default selection."
+            "Cannot delete or update gender 'male' from default selection."
             in response.json["message"]
         )
         self.assert_model_exists("gender/1", {"name": "male"})

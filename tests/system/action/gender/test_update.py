@@ -70,7 +70,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model(self.gender_fqid)
         self.assertIn(
-            "Cannot delete or update gender '2' from default selection.",
+            "Cannot delete or update gender 'female' from default selection.",
             response.json["message"],
         )
 

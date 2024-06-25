@@ -18,7 +18,7 @@ from .user_mixins import (
     LimitOfUserMixin,
     UpdateHistoryMixin,
     UserMixin,
-    check_gender_helper,
+    check_gender_exists,
 )
 
 
@@ -109,9 +109,7 @@ class UserUpdate(
         if instance.get("is_active") and not user.get("is_active"):
             self.check_limit_of_user(1)
 
-        check_gender_helper(self.datastore, instance)
-        if gender_id := instance.get("gender_id"):
-            gender_id
+        check_gender_exists(self.datastore, instance)
         return instance
 
     def get_removed_meeting_id(self, instance: dict[str, Any]) -> int | None:

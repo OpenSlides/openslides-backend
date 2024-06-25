@@ -24,11 +24,5 @@ class GenderCreate(CreateAction, CheckForArchivedMeetingMixin, GenderUniqueMixin
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        gender = instance.get("name")
-        if gender == "":
-            raise ActionException("Empty gender name not allowed.")
-       # gender_dict = self.datastore.get_all("gender", ["id", "name"], lock_result=False)
-       # if next((row for row in gender_dict.values() if row["name"] == gender), None):
-       #     raise ActionException(f"Gender '{gender}' already exists.")
         instance["organization_id"] = ONE_ORGANIZATION_ID
         return instance
