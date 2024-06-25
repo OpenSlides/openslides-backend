@@ -3,9 +3,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class UserUpdateSelfActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
-        self.set_models(
-            {"gender/1": {"name": "male"}}
-        )
+        self.set_models({"gender/1": {"name": "male"}})
         self.update_model(
             "user/1",
             {"username": "username_srtgb123"},

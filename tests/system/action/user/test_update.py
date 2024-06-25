@@ -708,11 +708,13 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.set_user_groups(111, [1, 6])
         self.set_models(
-            {"organization/1": {"gender_ids": [1, 2, 3, 4]},
-            "gender/1": {"name": "male"},
-            "gender/2": {"name": "female"},
-            "gender/3": {"name": "diverse"},
-            "gender/4": {"name": "non-binary"}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
 
         response = self.request(
@@ -1469,11 +1471,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"username": "username_srtgb123"},
         )
         self.set_models(
-            {"organization/1": {"gender_ids": [1, 2 ,3 ,4]},
-            "gender/1": {"name": "male"},
-            "gender/2": {"name": "female"},
-            "gender/3": {"name": "diverse"},
-            "gender/4": {"name": "non-binary"}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
         response = self.request("user.update", {"id": 111, "gender_id": 5})
         self.assert_status_code(response, 400)
@@ -1482,7 +1486,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-        response = self.request("user.update", {"id": 111, "gender_id": 3}) 
+        response = self.request("user.update", {"id": 111, "gender_id": 3})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/111", {"gender_id": 3})
 

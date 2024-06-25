@@ -217,11 +217,9 @@ class MeetingImport(
                     "last_login",
                     "committee_ids",
                     "gender",
-                    "gender_id" #this is fine since we do not delete actual user data and imported genders can be omitted as superseded outdated
+                    "gender_id",  # this is fine since we do not delete actual user data and imported genders can be omitted as superseded outdated
                 ],
-                "organization": [
-                    "genders"
-                ]
+                "organization": ["genders"],
             },
         )
         try:

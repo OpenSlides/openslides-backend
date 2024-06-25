@@ -107,7 +107,7 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         super().validate_entry(row)
         entry = row["data"]
         entry["meeting_id"] = self.meeting_id
-        
+
         if isinstance(entry.get("gender"), dict):
             if entry["gender"].get("info") != ImportState.WARNING:
                 entry["gender_id"] = entry["gender"]["id"]

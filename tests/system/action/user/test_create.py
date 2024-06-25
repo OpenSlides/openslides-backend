@@ -546,11 +546,13 @@ class UserCreateActionTest(BaseActionTestCase):
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_models(
-            {"organization/1": {"gender_ids": [1, 2, 3, 4]},
-            "gender/1": {"name": "male"},
-            "gender/2": {"name": "female"},
-            "gender/3": {"name": "diverse"},
-            "gender/4": {"name": "non-binary"}}
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
+            }
         )
 
         response = self.request_json(

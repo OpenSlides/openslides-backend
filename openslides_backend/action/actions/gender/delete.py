@@ -1,11 +1,11 @@
 from typing import Any
 
-from .mixins import GenderPermissionMixin
 from ....models.models import Gender
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import GenderPermissionMixin
 
 
 @register_action("gender.delete")

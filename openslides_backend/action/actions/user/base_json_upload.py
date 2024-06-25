@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import Any, cast
 
 from ....models.models import User
-from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
@@ -348,8 +347,19 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             self.handle_default_password(entry)
 
         if gender := entry.get("gender"):
-            if gender_model := next((model for model in self.gender_dict.values() if model["name"] == gender), None):
-                entry["gender"] = {"info": ImportState.DONE, "value": gender, "id": gender_model["id"]}
+            if gender_model := next(
+                (
+                    model
+                    for model in self.gender_dict.values()
+                    if model["name"] == gender
+                ),
+                None,
+            ):
+                entry["gender"] = {
+                    "info": ImportState.DONE,
+                    "value": gender,
+                    "id": gender_model["id"],
+                }
             else:
                 entry["gender"] = {"info": ImportState.WARNING, "value": gender}
                 messages.append(f"Gender '{gender}' is not in the allowed gender list.")
@@ -493,7 +503,9 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             field="member_number",
             mapped_fields=["username", "member_number", "saml_id"],
         )
-        self.gender_dict = self.datastore.get_all("gender", ["id", "name"], lock_result=False)
+        self.gender_dict = self.datastore.get_all(
+            "gender", ["id", "name"], lock_result=False
+        )
 
         self.all_id_mapping: dict[int, list[SearchFieldType]] = defaultdict(list)
         for lookup in (

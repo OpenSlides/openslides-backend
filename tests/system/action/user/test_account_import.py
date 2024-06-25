@@ -12,9 +12,7 @@ class AccountJsonImport(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {
-                    "gender_ids": [1, 2, 3, 4]
-                },
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
                 "gender/1": {"name": "male"},
                 "gender/2": {"name": "female"},
                 "gender/3": {"name": "diverse"},
@@ -180,9 +178,7 @@ class AccountJsonImport(BaseActionTestCase):
         )
         response = self.request("account.import", {"id": 7, "import": True})
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/1", {"first_name": "Testy", "gender_id": 4}
-        )
+        self.assert_model_exists("user/1", {"first_name": "Testy", "gender_id": 4})
 
     def test_ignore_unknown_gender(self) -> None:
         self.set_models(

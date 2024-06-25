@@ -269,13 +269,18 @@ class DuplicateCheckMixin(Action):
         return []
 
 
-def check_gender_exists(datastore: DatastoreService, instance: dict[str, Any]) ->  dict[str, int] | None:
-    '''returns gender as a dict of "name" and "id" if it exists, otherwise raises ActionException'''
+def check_gender_exists(
+    datastore: DatastoreService, instance: dict[str, Any]
+) -> dict[str, int] | None:
+    """returns gender as a dict of "name" and "id" if it exists, otherwise raises ActionException"""
     if gender_id := instance.get("gender_id"):
         gender_dict = datastore.get_all("gender", ["id", "name"], lock_result=False)
-        if gender := next((model for model in gender_dict.values() if model["id"] == gender_id), None):
+        if gender := next(
+            (model for model in gender_dict.values() if model["id"] == gender_id), None
+        ):
             return gender
         else:
             raise ActionException(
                 f"GenderId '{gender_id}' is not in the allowed gender list."
             )
+    return None

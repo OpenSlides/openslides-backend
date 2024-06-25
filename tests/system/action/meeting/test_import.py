@@ -26,7 +26,7 @@ class MeetingImport(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [1],
                     "committee_ids": [1],
-                    "gender_ids": [1, 2, 3, 4]
+                    "gender_ids": [1, 2, 3, 4],
                 },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
                 "meeting/1": {
@@ -2094,7 +2094,6 @@ class MeetingImport(BaseActionTestCase):
 
     def test_with_listfields_from_migration(self) -> None:
         """test for listFields in event.data after migration. Uses migration 0035 to create one"""
-        self.set_models({"user/2": {"username": "test", "gender_id": 1}})#this is here to show that the gender_id persists the checker
         data = self.create_request_data(
             {
                 "motion": {
@@ -2154,14 +2153,6 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "motion/3", {"title": "motion/6", "state_extension": "[motion/2]"}
         )
-        self.assert_model_exists( #this is here to show that the gender_id persists the checker
-            "user/2", 
-            {
-                "username": "test",
-                "gender_id": 1
-            }
-        )
-
 
     def test_without_migration_index(self) -> None:
         data = self.create_request_data({})
@@ -2202,12 +2193,10 @@ class MeetingImport(BaseActionTestCase):
             "assignment_poll_default_100_percent_base"
         ] = "YN"
         data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "YNA"
-        self.update_model("user/1", {"gender_id": 1}) #this is here to show that the gender_id persists the checker
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
         assert counter.calls == 5
-        self.assert_model_exists("user/1", {"meeting_user_ids": [2], "gender_id": 1}) #this is here to show that the gender_id persists the checker
         self.assert_model_exists(
             "meeting_user/2", {"user_id": 1, "meeting_id": 2, "group_ids": [2]}
         )

@@ -39,16 +39,13 @@ class GenderDeleteActionTest(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {"gender_ids": [1, self.gender_id, 6]},
             }
         )
-        #user = self.request("user.update", {"id": 21, "gender_id": self.gender_id}) #error?
+        # user = self.request("user.update", {"id": 21, "gender_id": self.gender_id}) #error?
         response = self.request("gender.delete", {"id": self.gender_id})
 
         self.assert_status_code(response, 200)
         gender1 = self.assert_model_deleted(
             self.gender_fqid,
-            {
-                "organization_id": 1,
-                "name": self.gender_name
-            },
+            {"organization_id": 1, "name": self.gender_name},
         )
         self.assertCountEqual(gender1["user_ids"], [21])
 

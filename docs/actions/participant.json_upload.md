@@ -14,7 +14,7 @@ The types noted below are the internal types after conversion in the backend. Se
           member_number: string, // unique member_number, info: done, error, new (newly added) or remove (missing field permission)
           title: string,  // info: done or remove (missing field permission)
           pronoun: string,  // info: done or remove (missing field permission)
-          gender: string, // as defined in organization/genders, info: done, warning (undefined gender) or remove (missing field permission)
+          gender: string, // info: done, warning (undefined gender) or remove (missing field permission)
           default_password: string,  // info: generated, done, warning or remove (missing field permission)
           is_active: boolean,  // info: done or remove (missing field permission)
           is_physical_person: boolean,  // info: done or remove (missing field permission)

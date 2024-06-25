@@ -2,7 +2,7 @@ from time import time
 from typing import Any
 
 from openslides_backend.action.action_worker import ActionWorkerState
-from openslides_backend.models.models import Meeting, Gender
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
@@ -151,14 +151,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "saml_enabled": False,
                     "saml_login_button_text": "Login button text",
                 },
-                "gender/1": {"name": "male",
-                    "organization_id": 1},
-                "gender/2": {"name": "female",
-                    "organization_id": 1},
-                "gender/3": {"name": "diverse",
-                    "organization_id": 1},
-                "gender/4": {"name": "non-binary",
-                    "organization_id": 1},
+                "gender/1": {"name": "male", "organization_id": 1},
+                "gender/2": {"name": "female", "organization_id": 1},
+                "gender/3": {"name": "diverse", "organization_id": 1},
+                "gender/4": {"name": "non-binary", "organization_id": 1},
                 "theme/1": {
                     "name": "Test Theme",
                     "accent_500": "#000000",
@@ -322,14 +318,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "saml_enabled": True,
                     "saml_login_button_text": "SAML Login",
                 },
-                "gender/1": {"name": "male",
-                    "organization_id": 1},
-                "gender/2": {"name": "female",
-                    "organization_id": 1},
-                "gender/3": {"name": "diverse",
-                    "organization_id": 1},
-                "gender/4": {"name": "non-binary",
-                    "organization_id": 1},
+                "gender/1": {"name": "male", "organization_id": 1},
+                "gender/2": {"name": "female", "organization_id": 1},
+                "gender/3": {"name": "diverse", "organization_id": 1},
+                "gender/4": {"name": "non-binary", "organization_id": 1},
                 "theme/1": {
                     "name": "Test Theme",
                     "accent_500": "#000000",
@@ -624,14 +616,10 @@ class TestCheckDatabaseAll(BasePresenterTestCase):
                     "saml_enabled": True,
                     "saml_login_button_text": "SAML Login",
                 },
-                "gender/1": {"name": "male",
-                    "organization_id": 1},
-                "gender/2": {"name": "female",
-                    "organization_id": 1},
-                "gender/3": {"name": "diverse",
-                    "organization_id": 1},
-                "gender/4": {"name": "non-binary",
-                    "organization_id": 1},
+                "gender/1": {"name": "male", "organization_id": 1},
+                "gender/2": {"name": "female", "organization_id": 1},
+                "gender/3": {"name": "diverse", "organization_id": 1},
+                "gender/4": {"name": "non-binary", "organization_id": 1},
                 "theme/1": {
                     "name": "Test Theme",
                     "accent_500": "#000000",

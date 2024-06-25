@@ -12,9 +12,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {
-                    "gender_ids": [1, 2, 3, 4]
-                },
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
                 "meeting/1": {
                     "name": "test",
                     "group_ids": [1],
@@ -294,7 +292,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "username": "test",
                 },
                 "group/1": {"default_group_for_meeting_id": 1},
-                "gender/1": {"name": "male"}
+                "gender/1": {"name": "male"},
             }
         )
         fix_fields = {

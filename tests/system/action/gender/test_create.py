@@ -1,8 +1,9 @@
 from typing import Any
 
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
+
 
 class GenderCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
@@ -38,9 +39,7 @@ class GenderCreateActionTest(BaseActionTestCase):
     def test_create_only_required(self) -> None:
         gender_name = "male"
 
-        response = self.request(
-            "gender.create", {"name": gender_name}
-        )
+        response = self.request("gender.create", {"name": gender_name})
         self.assert_status_code(response, 200)
         model = self.get_model("gender/1")
         assert model.get("name") == gender_name

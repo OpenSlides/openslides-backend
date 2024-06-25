@@ -1339,11 +1339,12 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
     def json_upload_wrong_gender(self) -> None:
         self.set_models(
-            {"organization/1": {"gender_ids": [1, 2, 3, 4]},
-            "gender/1": {"name": "male"},
-            "gender/2": {"name": "female"},
-            "gender/3": {"name": "diverse"},
-            "gender/4": {"name": "non-binary"},
+            {
+                "organization/1": {"gender_ids": [1, 2, 3, 4]},
+                "gender/1": {"name": "male"},
+                "gender/2": {"name": "female"},
+                "gender/3": {"name": "diverse"},
+                "gender/4": {"name": "non-binary"},
             }
         )
         response = self.request(
@@ -1366,10 +1367,12 @@ class AccountJsonUploadForUseInImport(BaseActionTestCase):
 
     def json_upload_wrong_gender_2(self) -> None:
         self.set_models(
-            {ONE_ORGANIZATION_FQID: {"gender_ids": [1, 2, 3]},
-            "gender/1": {"name": "dragon"},
-            "gender/2": {"name": "lobster"},
-            "gender/3": {"name": "snake"}}
+            {
+                ONE_ORGANIZATION_FQID: {"gender_ids": [1, 2, 3]},
+                "gender/1": {"name": "dragon"},
+                "gender/2": {"name": "lobster"},
+                "gender/3": {"name": "snake"},
+            }
         )
         response = self.request(
             "account.json_upload",
