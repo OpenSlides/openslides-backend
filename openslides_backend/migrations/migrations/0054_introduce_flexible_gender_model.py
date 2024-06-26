@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from datastore.migrations import BaseModelMigration
 from datastore.shared.util import fqid_from_collection_and_id
 from datastore.writer.core import (
@@ -33,7 +35,7 @@ class Migration(BaseModelMigration):
             )
         )
         users = self.reader.get_all("user", ["gender"])
-        userids_for_gender: dict[str, list[int]] = {}
+        userids_for_gender = defaultdict(list)
         # update users
         for user_id, user in users.items():
             if user.get("gender"):
@@ -44,10 +46,7 @@ class Migration(BaseModelMigration):
                             {"gender_id": gender_id, "gender": None},
                         )
                     )
-                    if userids_for_gender.get(gender_id):
-                        userids_for_gender[gender_id].append(user_id)
-                    else:
-                        userids_for_gender[gender_id] = [user_id]
+                    userids_for_gender[gender_id].append(user_id)
         # create genders with back relation to users
         for gender_id, gender in enumerate(gender_strings, start=1):
             events.append(

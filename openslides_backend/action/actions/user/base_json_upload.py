@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import Any, cast
 
 from ....models.models import User
-from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
     BaseJsonUploadAction,
