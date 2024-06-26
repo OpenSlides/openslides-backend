@@ -883,7 +883,11 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             internal=False,
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must not contain {'structure_level_list_of_speakers_id', 'weight'} properties",
-            response.json["message"],
-        )
+        message: str = response.json["message"]
+        assert message.startswith("data must not contain {")
+        assert message.endswith("} properties")
+        for field in [
+            "'structure_level_list_of_speakers_id'",
+            "'weight'",
+        ]:
+            self.assertIn(field, message)
