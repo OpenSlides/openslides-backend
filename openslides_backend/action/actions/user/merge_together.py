@@ -85,17 +85,8 @@ class UserMergeTogether(
                     "last_login",
                     "meeting_ids",
                     "username",
-                ],
-                "highest": [
                     "is_active",
                     "is_physical_person",
-                    "can_change_own_password",
-                ],
-                "error": [
-                    "is_demo_user",
-                    "forwarding_committee_ids",
-                ],
-                "priority": [
                     "pronoun",
                     "title",
                     "first_name",
@@ -104,9 +95,15 @@ class UserMergeTogether(
                     "email",
                     "default_vote_weight",
                 ],
+                "highest": [
+                    "can_change_own_password",
+                ],
+                "error": [
+                    "is_demo_user",
+                    "forwarding_committee_ids",
+                ],
                 "merge": [
                     "committee_ids",
-                    "is_present_in_meeting_ids",
                     "committee_management_ids",
                     "option_ids",  # throw error if conflict on same poll
                     "poll_voted_ids",  # throw error if conflict on same poll
@@ -118,10 +115,11 @@ class UserMergeTogether(
                     "meeting_user_ids": "meeting_user",
                 },
                 "special_function": [
+                    "is_present_in_meeting_ids",  # union of primary user data and the meetings from the other users where primary is not a member
                     "organization_management_level",
                     "saml_id",  # error if set on secondary users, otherwise ignore the field
+                    "member_number",
                 ],
-                "require_equality": ["member_number"],
             },
         )
 
@@ -578,9 +576,50 @@ class UserMergeTogether(
                             f"Merge of user/{into_['id']}: Saml_id may not exist on any user except target."
                         )
                     return None
+                case "is_present_in_meeting_ids":
+                    all_meeting_ids = self.get_meeting_ids_per_user(
+                        [into_, *ranked_others]
+                    )
+                    check_meeting_ids = all_meeting_ids[into_["id"]]
+                    present_meeting_ids: set[int] = set(into_.get(field, []))
+                    for other in ranked_others:
+                        present_meeting_ids.update(
+                            set(other.get(field, [])).difference(check_meeting_ids)
+                        )
+                        check_meeting_ids.update(all_meeting_ids[other["id"]])
+                    return list(present_meeting_ids)
+                case "member_number":
+                    self.check_equality(
+                        collection, into_, ranked_others, into_["id"], field
+                    )
+                    return None
         return super().handle_special_field(
             collection, field, into_, ranked_others, update_operations
         )
+
+    def get_meeting_ids_per_user(
+        self, users: list[PartialModel]
+    ) -> dict[int, set[int]]:
+        meeting_users = self.datastore.filter(
+            "meeting_user",
+            And(
+                FilterOperator("group_ids", "!=", []),
+                Or(FilterOperator("user_id", "=", user["id"]) for user in users),
+            ),
+            ["meeting_id"],
+        )
+        return {
+            user["id"]: {
+                meeting_id
+                for meeting_user_id in user.get("meeting_user_ids", [])
+                if (
+                    meeting_id := meeting_users.get(meeting_user_id, {}).get(
+                        "meeting_id"
+                    )
+                )
+            }
+            for user in users
+        }
 
     def get_full_history_information(self) -> HistoryInformation | None:
         information = super().get_full_history_information() or {}

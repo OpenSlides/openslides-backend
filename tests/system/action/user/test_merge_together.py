@@ -492,8 +492,6 @@ class UserMergeTogether(BaseVoteTestCase):
             "user/2",
             {
                 "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
-                "is_active": True,
-                "is_physical_person": True,
                 "username": "user2",
                 "meeting_ids": [1, 2, 3, 4],
                 "committee_ids": [1, 2, 3],
@@ -502,16 +500,19 @@ class UserMergeTogether(BaseVoteTestCase):
                 "meeting_user_ids": [12, 22, 46, 47],
                 "password": password,
                 "pronoun": "he",
-                "title": "Dr.",
                 "first_name": "Nick",
-                "last_name": "Banks",
+                "is_active": False,
+                "can_change_own_password": True,
                 "gender": "male",
                 "email": "nick.everything@rob.banks",
-                "default_vote_weight": "1.234567",
-                "member_number": "souperadmin",
-                "is_present_in_meeting_ids": [2, 3, 4],
+                "is_present_in_meeting_ids": [3, 4],
                 "committee_management_ids": [1, 3],
                 "last_email_sent": 123456789,
+                "title": None,
+                "last_name": None,
+                "default_vote_weight": None,
+                "member_number": None,
+                "is_physical_person": None,
             },
         )
         for id_ in range(3, 7):
@@ -562,7 +563,7 @@ class UserMergeTogether(BaseVoteTestCase):
         )
         self.assert_model_exists(
             "meeting/2",
-            {"meeting_user_ids": [22], "user_ids": [2], "present_user_ids": [2]},
+            {"meeting_user_ids": [22], "user_ids": [2]},
         )
         self.assert_model_exists(
             "meeting/3",
@@ -889,7 +890,6 @@ class UserMergeTogether(BaseVoteTestCase):
                 "default_password": "user2",
                 "meeting_user_ids": [12, 22, 46 + add_to_creatable_ids],
                 "password": password,
-                "is_present_in_meeting_ids": [1, 2, 3],
                 "poll_candidate_ids": [2, 3],
                 "option_ids": [1, 8],
                 "poll_voted_ids": [1, 2, 5, 6],
@@ -2368,3 +2368,18 @@ class UserMergeTogether(BaseVoteTestCase):
         )
         response = self.request("user.merge_together", {"id": 2, "user_ids": [4]})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"default_vote_weight": "0.000000"})
+        self.assert_model_exists("meeting_user/12", {"vote_weight": "1.000000"})
+        self.assert_model_exists("meeting_user/22", {"vote_weight": "0.000001"})
+        self.assert_model_exists("meeting_user/46", {"vote_weight": "0.000001"})
+
+    def test_merge_with_presence(self) -> None:
+        self.set_models(
+            {
+                "user/3": {"is_present_in_meeting_ids": [2, 3]},
+                "user/5": {"is_present_in_meeting_ids": [4]},
+            }
+        )
+        response = self.request("user.merge_together", {"id": 2, "user_ids": [3, 4, 5]})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"is_present_in_meeting_ids": [3, 4]})

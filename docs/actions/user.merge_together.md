@@ -33,7 +33,7 @@ The action is a kind of expanded [user.update](user.update.md): It updates the p
 Conflicts in single-relations are resolved on a case-by-case basis.
 
 This action will overwrite data in archived meetings.
-It will also cause old-format `vote_weight` and `default_vote_weight` values (i.e. entries with the value `0.000000`) to be replaced by the value `0.000001`, which is legal in the current system.
+It will also cause old-format `vote_weight` values (i.e. entries with the value `0.000000`) to be replaced by the value `0.000001`, which is legal in the current system.
 
 ### Restrictions
 An error is thrown if:
@@ -57,11 +57,13 @@ An error is thrown if:
 ### Functionality
 The primary user is updated with the information from the secondary users using the following rules:
 - `organization_management_level` is set to highest oml among the users.
-- boolean fields are set to true if they are true on any selected user.
-- relation-lists are set to the union of their content among all selected users, except the `meeting_user_ids`-relation, which is handled separately
+- `can_change_own_password` is set to true if it is true on any selected user.
+- relation-lists are set to the union of their content among all selected users, except the `is_present_in_meeting_ids`- and `meeting_user_ids`-relation, which are handled separately
 - login data (`saml_id`, `username`, `password`) remains untouched
-- `pronoun`, `title`, `first_name`, `last_name`, `gender`, `email`, `default_vote_weight`, `member_number` are set to the value from the highest ranked user that has the field
+- If any user has a`member_number` it is used
+- The `is_present_in_meeting_ids` relation list will be expanded with all meetings
 - `meeting_user_ids` are create-merged (see "Merging of sub-collections/Create merge" and "Meeting user merge")
+- All other fields are left as-is
 
 Any date in the custom payload data from the request overwrites anything that would otherwise be determined for that field by the above rules.
 
@@ -109,7 +111,6 @@ The primary model is updated/re-created with the information from the secondary 
 - `assignment_candidate_ids`, `motion_editor_ids` and `motion_working_group_speaker_ids` are update-merged
 - `motion_submitter_ids`, `personal_note_ids` and `speaker_ids` are create-merged
 - other relation-lists are set to the union of their content among all selected users
-- login data (`saml_id`, `username`, `password`) remains untouched
 - `comment`, `number`, `about_me`, `vote_weight`, `vote_delegated_to_id` are set to the value from the highest ranked model that has the field
 
 #### Personal note merge
