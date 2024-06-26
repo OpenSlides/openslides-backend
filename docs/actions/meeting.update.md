@@ -125,6 +125,7 @@
     users_forbid_delegator_in_list_of_speakers: boolean;
     users_forbid_delegator_as_submitter: boolean;
     users_forbid_delegator_as_supporter: boolean;
+    users_forbid_delegator_to_vote: boolean;
 
     assignments_export_title: string;
     assignments_export_preamble: string;

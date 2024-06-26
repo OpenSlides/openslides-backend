@@ -210,6 +210,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         is_delegator: bool = False,
         perm: Permission = Permissions.Motion.CAN_SUPPORT,
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_supporter",
+        disable_delegations: bool = False,
     ) -> None:
         self.create_meeting(1)
         self.set_models(
@@ -234,6 +235,11 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "motions_supporters_min_amount": 1,
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1],
+                    **(
+                        {}
+                        if disable_delegations
+                        else {"users_enable_vote_delegations": True}
+                    ),
                     delegator_setting: True,
                 },
             }
@@ -265,6 +271,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "motions_supporters_min_amount": 1,
                     "is_active_in_organization_id": 1,
                     "users_forbid_delegator_as_submitter": True,
+                    "users_enable_vote_delegations": True,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -296,6 +303,13 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
             response.json["message"]
             == "You are not allowed to perform action motion.set_support_self. Missing Permission: motion.can_manage"
         )
+
+    def test_delegator_setting_with_delegation_delegations_turned_off(self) -> None:
+        self.create_delegator_test_data(is_delegator=True, disable_delegations=True)
+        response = self.request(
+            "motion.set_support_self", {"motion_id": 1, "support": True}
+        )
+        self.assert_status_code(response, 200)
 
     def test_delegator_setting_with_motion_manager_delegation(
         self,

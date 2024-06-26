@@ -10,6 +10,7 @@
     first_name: string;
     last_name: string;
     username: string;
+    member_number: string;
     is_active: boolean;
     is_physical_person: boolean;
     can_change_own_password: boolean;
@@ -57,6 +58,7 @@ Updates a user.
 * The `organization_management_level` as replacement can be taken from the enum of the field user.organization_management_level.
 * Remove starting and trailing spaces from `username`, `first_name` and `last_name`
 * The given `gender` must be present in `organization/genders`
+* The `member_number` must be unique within all users.
 
 Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present.md).
 

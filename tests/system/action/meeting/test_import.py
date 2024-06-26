@@ -2,6 +2,8 @@ import base64
 import time
 from typing import Any
 
+import pytest
+
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
@@ -2417,3 +2419,10 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("user/2")
+
+    @pytest.mark.skip()
+    def test_import_os3_data(self) -> None:
+        data_raw = get_initial_data_file("global/data/export-OS3-demo.json")
+        data = {"committee_id": 1, "meeting": data_raw}
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)

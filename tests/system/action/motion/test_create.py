@@ -602,6 +602,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         is_delegator: bool = False,
         perm: Permission = Permissions.Motion.CAN_CREATE,
         delegator_setting: DelegationBasedRestriction = "users_forbid_delegator_as_submitter",
+        disable_delegations: bool = False,
     ) -> None:
         self.add_workflow()
         self.set_models(
@@ -611,6 +612,11 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "meeting_user_ids": [1],
                     delegator_setting: True,
+                    **(
+                        {}
+                        if disable_delegations
+                        else {"users_enable_vote_delegations": True}
+                    ),
                 },
             }
         )
@@ -628,7 +634,14 @@ class MotionCreateActionTest(BaseActionTestCase):
 
     def test_create_delegator_setting(self) -> None:
         self.add_workflow()
-        self.set_models({"meeting/1": {"users_forbid_delegator_as_submitter": True}})
+        self.set_models(
+            {
+                "meeting/1": {
+                    "users_forbid_delegator_as_submitter": True,
+                    "users_enable_vote_delegations": True,
+                }
+            }
+        )
         response = self.request(
             "motion.create",
             {
@@ -669,6 +682,21 @@ class MotionCreateActionTest(BaseActionTestCase):
             response.json["message"]
             == "You are not allowed to perform action motion.create. Missing Permission: motion.can_manage"
         )
+
+    def test_create_delegator_setting_with_delegation_delegations_turned_off(
+        self,
+    ) -> None:
+        self.create_delegator_test_data(is_delegator=True, disable_delegations=True)
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
 
     def test_create_delegator_setting_with_motion_manager_delegation(
         self,

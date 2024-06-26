@@ -105,8 +105,11 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         entry.pop("structure_level_ids")
         entry.pop("meeting_id")
 
-        if "username" in failing_fields and not entry["username"].get("id"):
-            failing_fields.remove("username")
+        if not entry.get("id"):
+            if "username" in failing_fields:
+                failing_fields.remove("username")
+            if "member_number" in failing_fields:
+                failing_fields.remove("member_number")
         if failing_fields:
             messages.append(
                 f"Following fields were removed from payload, because the user has no permissions to change them: {', '.join(failing_fields)}"

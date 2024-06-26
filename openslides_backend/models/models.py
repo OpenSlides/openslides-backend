@@ -78,6 +78,7 @@ class User(Model):
 
     id = fields.IntegerField(constant=True)
     username = fields.CharField(required=True)
+    member_number = fields.CharField()
     saml_id = fields.CharField(
         constraints={
             "minLength": 1,
@@ -566,6 +567,7 @@ class Meeting(Model, MeetingModelMixin):
     users_forbid_delegator_in_list_of_speakers = fields.BooleanField()
     users_forbid_delegator_as_submitter = fields.BooleanField()
     users_forbid_delegator_as_supporter = fields.BooleanField()
+    users_forbid_delegator_to_vote = fields.BooleanField()
     assignments_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.TextField()
     assignment_poll_ballot_paper_selection = fields.CharField(
@@ -2230,7 +2232,9 @@ class Projector(Model):
     header_font_color = fields.ColorField(default="#f5f5f5")
     header_h1_color = fields.ColorField(default="#317796")
     chyron_background_color = fields.ColorField(default="#317796")
+    chyron_background_color_2 = fields.ColorField(default="#134768")
     chyron_font_color = fields.ColorField(default="#ffffff")
+    chyron_font_color_2 = fields.ColorField(default="#ffffff")
     show_header_footer = fields.BooleanField(default=True)
     show_title = fields.BooleanField(default=True)
     show_logo = fields.BooleanField(default=True)

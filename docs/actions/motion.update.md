@@ -45,6 +45,7 @@ If the request user does not have `motion.can_manage`, the fields in the payload
     * `motion_block_id`
     * `origin`
     * `supporter_meeting_user_ids`
+    * `additional_submitter`
     * `recommendation_extension`
     * `start_line_number`
     * `workflow_timestamp`

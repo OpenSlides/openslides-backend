@@ -45,15 +45,22 @@ class BaseUserImport(BaseImportAction):
             ("default_password", ""),
         )
         username = cast(str, self.get_value_from_union_str_object(entry["username"]))
+        member_number = self.get_value_from_union_str_object(entry.get("member_number"))
         if (
             (obj := entry.get("saml_id"))
             and obj["value"]
             and obj["info"] != ImportState.REMOVE
         ):
             for field, value in field_values:
-                if self.username_lookup.get_field_by_name(username, field) or entry.get(
-                    field
-                ):
+                field_data = self.username_lookup.get_field_by_name(username, field)
+                if member_number:
+                    field_data = (
+                        self.member_number_lookup.get_field_by_name(
+                            member_number, field
+                        )
+                        or field_data
+                    )
+                if field_data or entry.get(field):
                     entry[field] = value
 
         if (
@@ -81,7 +88,8 @@ class BaseUserImport(BaseImportAction):
                 create_action_payload.append(row["data"])
                 index_to_is_create.append(True)
             else:
-                row["data"].pop("username", None)
+                if " " in row["data"].get("username", ""):
+                    row["data"].pop("username", None)
                 update_action_payload.append(row["data"])
                 index_to_is_create.append(False)
         create_results: ActionResults | None = []
@@ -104,7 +112,19 @@ class BaseUserImport(BaseImportAction):
         return ids
 
     def validate_entry(self, row: ImportRow) -> None:
-        id = self.validate_with_lookup(row, self.username_lookup, "username")
+        if not (
+            row["state"] == ImportState.DONE
+            and row["data"].get("username", {}).get("info") == ImportState.NEW
+        ):
+            id = self.validate_with_lookup(row, self.username_lookup, "username")
+            self.validate_with_lookup(
+                row, self.member_number_lookup, "member_number", False, id
+            )
+        else:
+            id = self.validate_with_lookup(
+                row, self.member_number_lookup, "member_number"
+            )
+            self.validate_with_lookup(row, self.username_lookup, "username", False, id)
         self.validate_with_lookup(row, self.saml_id_lookup, "saml_id", False, id)
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR
@@ -135,4 +155,18 @@ class BaseUserImport(BaseImportAction):
                 if "saml_id" in (entry := row["data"])
             ],
             field="saml_id",
+        )
+        self.member_number_lookup = Lookup(
+            self.datastore,
+            "user",
+            [
+                (entry["member_number"]["value"], entry)
+                for row in self.rows
+                if "member_number" in (entry := row["data"])
+            ],
+            field="member_number",
+            mapped_fields=[
+                "default_password",
+                "can_change_own_password",
+            ],
         )

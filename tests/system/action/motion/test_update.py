@@ -237,6 +237,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                     "category_id": 4,
                     "block_id": 51,
                     "supporter_meeting_user_ids": [],
+                    "additional_submitter": "additional",
                     "tag_ids": [],
                     "attachment_ids": [],
                     "workflow_timestamp": 9876543210,
@@ -249,6 +250,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("category_id") == 4
         assert model.get("block_id") == 51
         assert model.get("supporter_meeting_user_ids") == []
+        assert model.get("additional_submitter") == "additional"
         assert model.get("tag_ids") == []
         assert model.get("attachment_ids") == []
         # motion/113 does not exist and should therefore not be present in the relations

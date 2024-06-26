@@ -122,6 +122,23 @@ run-dev-attach-local:
 run-dev-local run-bash-local: | start-dev-local run-dev-attach-local
 
 
+# Build and run development container. Additionally run OpenTelemetry services
+
+start-dev-otel:
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml up --build --detach
+
+start-dev-attach-otel start-dev-interactive-otel:
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml up --build
+
+stop-dev-otel:
+	docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml down --volumes
+
+run-dev-attach-otel:
+	docker compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
+
+run-dev-otel run-bash-otel: | start-dev-otel run-dev-attach-otel
+
+
 # Build standalone development container (not usable inside the docker container)
 
 build-dev:

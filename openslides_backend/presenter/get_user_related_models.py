@@ -7,6 +7,7 @@ from openslides_backend.shared.schema import id_list_schema
 
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PresenterException
+from ..shared.filters import And, FilterOperator
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -97,12 +98,14 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             "motion_submitter_ids",
             "assignment_candidate_ids",
         )
-        gmr = GetManyRequest(
+        meeting_users = self.datastore.filter(
             "meeting_user",
-            user["meeting_user_ids"],
+            And(
+                FilterOperator("user_id", "=", user["id"]),
+                FilterOperator("group_ids", "!=", []),
+            ),
             ["meeting_id", *result_fields],
-        )
-        meeting_users = self.datastore.get_many([gmr]).get("meeting_user", {}).values()
+        ).values()
 
         gmr = GetManyRequest(
             "meeting",

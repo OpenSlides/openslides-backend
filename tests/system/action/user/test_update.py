@@ -45,6 +45,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_vote_weight": "1.700000",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "committee_management_ids": [78],
+                "member_number": "1234-5768-9abc",
             },
         )
         self.assert_status_code(response, 200)
@@ -57,6 +58,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "committee_ids": [78],
                 "committee_management_ids": [78],
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                "member_number": "1234-5768-9abc",
             },
         )
 
@@ -534,6 +536,24 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertIn(
             "A user with the username admin already exists.", response.json["message"]
         )
+
+    def test_member_number_already_given(self) -> None:
+        self.create_model("user/221", {"member_number": "abcdefghij"})
+        self.create_model("user/222", {"member_number": "klmnopqrst"})
+        response = self.request(
+            "user.update", {"id": 222, "member_number": "abcdefghij"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A user with the member_number abcdefghij already exists.",
+            response.json["message"],
+        )
+
+    def test_clear_member_number(self) -> None:
+        self.create_model("user/222", {"member_number": "klmnopqrst"})
+        response = self.request("user.update", {"id": 222, "member_number": None})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/222", {"member_number": None})
 
     def test_same_username(self) -> None:
         response = self.request("user.update", {"id": 1, "username": "admin"})
