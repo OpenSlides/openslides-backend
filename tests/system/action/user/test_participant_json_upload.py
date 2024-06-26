@@ -126,7 +126,7 @@ class ParticipantJsonUpload(BaseActionTestCase):
         assert response.json["results"][0][0]["rows"][0] == {
             "state": ImportState.ERROR,
             "messages": [
-                "Cannot generate username. Missing one of first_name, last_name or a unique member_number."
+                "Cannot generate username. Missing one of first_name, last_name."
             ],
             "data": {
                 "username": {"value": "", "info": ImportState.GENERATED},

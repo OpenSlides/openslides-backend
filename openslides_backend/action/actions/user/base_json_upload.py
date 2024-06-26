@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Any, cast
 
 from ....models.models import User
-from ....shared.filters import FilterOperator
+from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.import_mixins import (
     BaseJsonUploadAction,
@@ -155,15 +155,7 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
             elif check_result == ResultType.NOT_FOUND or id_ == 0:
                 self.row_state = ImportState.NEW
         else:
-            if not entry.get("username") or (
-                not isinstance(entry.get("username"), str)
-                and not entry.get("username", {}).get("value")
-            ):
-                self.row_state = ImportState.ERROR
-                messages.append(
-                    "Cannot generate username. Missing one of first_name, last_name or a unique member_number."
-                )
-            else:
+            if entry.get("first_name") or entry.get("last_name"):
                 names_and_email = self._names_and_email(entry)
                 if names_and_email != ("", "", ""):
                     check_result = self.names_email_lookup.check_duplicate(
@@ -210,6 +202,8 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 elif check_result == ResultType.FOUND_MORE_IDS:
                     self.row_state = ImportState.ERROR
                     messages.append("Found more users with name and email")
+            else:
+                self.row_state = ImportState.NEW
 
         if member_number := entry.get("member_number"):
             check_result = self.member_number_lookup.check_duplicate(member_number)
@@ -343,7 +337,21 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
                 messages.append(
                     f"Because this {self.import_name} is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides."
                 )
-        else:
+
+        if (
+            self.row_state == ImportState.NEW
+            and not entry.get("username")
+            or (
+                not isinstance(entry.get("username"), str)
+                and not entry.get("username", {}).get("value")
+            )
+        ):
+            self.row_state = ImportState.ERROR
+            messages.append(
+                "Cannot generate username. Missing one of first_name, last_name."
+            )
+
+        if not entry.get("saml_id"):
             self.handle_default_password(entry)
 
         if gender := entry.get("gender"):
@@ -378,41 +386,29 @@ class BaseUserJsonUpload(UsernameMixin, BaseJsonUploadAction):
         usernames: list[str] = []
         fix_usernames: list[str] = []
         payload_indices: list[int] = []
-        memnum_payload_indices: list[int] = []
-        memnum_usernames: list[str] = []
 
         for entry in data:
             if "username" not in entry.keys():
                 if saml_id := entry.get("saml_id"):
                     username = saml_id
+                elif not (entry.get("first_name", "") or entry.get("last_name", "")):
+                    entry["username"] = {
+                        "value": "",
+                        "info": ImportState.GENERATED,
+                    }
+                    continue
                 else:
                     username = self.generate_username(entry)
-                if (
-                    not username
-                    and (memnum := entry.get("member_number"))
-                    and not self.datastore.exists(
-                        "user", FilterOperator("username", "=", memnum)
-                    )
-                ):
-                    memnum_usernames.append(memnum)
-                    memnum_payload_indices.append(entry["payload_index"])
-                else:
-                    usernames.append(username)
-                    payload_indices.append(entry["payload_index"])
+                usernames.append(username)
+                payload_indices.append(entry["payload_index"])
             else:
                 fix_usernames.append(entry["username"])
 
-        usernames = self.generate_usernames(usernames, fix_usernames + memnum_usernames)
+        usernames = self.generate_usernames(usernames, fix_usernames)
 
         for index, username in zip(payload_indices, usernames):
             data[index]["username"] = {
                 "value": username,
-                "info": ImportState.GENERATED,
-            }
-            self.username_lookup.add_item(data[index])
-        for index, username in zip(memnum_payload_indices, memnum_usernames):
-            data[index]["username"] = {
-                "value": username if username not in fix_usernames else "",
                 "info": ImportState.GENERATED,
             }
             self.username_lookup.add_item(data[index])
