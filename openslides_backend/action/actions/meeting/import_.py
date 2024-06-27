@@ -217,7 +217,6 @@ class MeetingImport(
                     "last_login",
                     "committee_ids",
                     "gender",
-                    "gender_id",  # this is fine since we do not delete actual user data and imported genders can be omitted as superseded outdated
                 ],
                 "organization": ["genders"],
             },
@@ -750,7 +749,7 @@ class MeetingImport(
             instance["meeting"] = defaultdict(dict)
             for fqid, model in migrated_models.items():
                 collection, id = collection_and_id_from_fqid(fqid)
-                if collection not in ("organization", "committee", "theme", "gender"):
+                if collection not in ("organization", "committee", "theme"):
                     instance["meeting"][collection][str(id)] = model
 
         instance["meeting"]["_migration_index"] = backend_migration_index
