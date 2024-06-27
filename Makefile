@@ -71,13 +71,28 @@ pip-check:
 coverage:
 	pytest --cov --cov-report html
 
+coverage-show-uncovered:
+	pytest --cov --cov-report term-missing:skip-covered
+
 extract-translations:
 	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 
-db:
+drop-database:
+	make -C global/meta/dev drop-database
+
+create-database:
+	make -C global/meta/dev create-database
+
+apply-db-schema:
+	make -C global/meta/dev apply-db-schema
+	python cli/create_schema.py
+
+create-database-with-schema:
 	make -C global/meta/dev create-database-with-schema
 	python cli/create_schema.py
 
+run-psql:
+	make -C global/meta/dev run-psql
 
 # Build and run production docker container (not usable inside the docker container)
 

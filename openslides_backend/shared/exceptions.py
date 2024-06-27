@@ -1,9 +1,7 @@
 from typing import Any, Union
 
-from ..permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from ..permissions.management_levels import (CommitteeManagementLevel,
+                                             OrganizationManagementLevel)
 from ..permissions.permissions import Permission
 from .patterns import FullQualifiedId
 
@@ -81,6 +79,10 @@ class PresenterException(View400Exception):
 
 
 class ServiceException(View400Exception):
+    pass
+
+
+class DatabaseException(ServiceException):
     pass
 
 
