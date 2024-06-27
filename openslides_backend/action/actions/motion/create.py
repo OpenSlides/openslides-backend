@@ -46,7 +46,6 @@ class MotionCreate(
             "attachment_ids",
             "text",
             "lead_motion_id",
-            "statute_paragraph_id",
             "reason",
             "amendment_paragraphs",
         ],
@@ -78,7 +77,6 @@ class MotionCreate(
                         "id",
                         "motions_default_workflow_id",
                         "motions_default_amendment_workflow_id",
-                        "motions_default_statute_amendment_workflow_id",
                         "motions_reason_required",
                         "motion_submitter_ids",
                         "motions_number_type",
@@ -122,7 +120,6 @@ class MotionCreate(
             [
                 "motions_default_workflow_id",
                 "motions_default_amendment_workflow_id",
-                "motions_default_statute_amendment_workflow_id",
             ],
         )
 
@@ -169,7 +166,6 @@ class MotionCreate(
                 "lead_motion_id",
                 "amendment_paragraphs",
                 "category_id",
-                "statute_paragraph_id",
                 "workflow_id",
                 "id",
                 "meeting_id",

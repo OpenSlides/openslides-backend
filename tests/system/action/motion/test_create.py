@@ -228,27 +228,6 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Reason is required" in response.json["message"]
 
-    def test_create_lead_motion_and_statute_paragraph_id_given(self) -> None:
-        self.set_models(
-            {
-                "motion_statute_paragraph/1": {"meeting_id": 1},
-            }
-        )
-        response = self.request(
-            "motion.create",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 1,
-                "text": "text",
-                "lead_motion_id": 1,
-                "statute_paragraph_id": 1,
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert "both of lead_motion_id and statute_paragraph_id." in response.json.get(
-            "message", ""
-        )
-
     def test_create_with_submitters(self) -> None:
         self.set_models(
             {
@@ -547,10 +526,8 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "name": "name_uZXBoHMp",
                     "is_active_in_organization_id": 1,
                     "motion_ids": [1],
-                    "motion_statute_paragraph_ids": [1],
                 },
                 "motion/1": {"meeting_id": 1, "number": "T001"},
-                "motion_statute_paragraph/1": {"meeting_id": 1, "title": "Paragraph"},
             }
         )
         response = self.request(
@@ -560,15 +537,11 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "text": "<p>of motion</p>",
                 "number": "A001",
                 "lead_motion_id": 1,
-                "statute_paragraph_id": 1,
                 "meeting_id": 1,
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "You can't give both of lead_motion_id and statute_paragraph_id."
-            in response.json["message"]
-        )
+        assert "TODO." in response.json["message"]
 
     def test_create_amendment_paragraphs_where_not_allowed(self) -> None:
         self.set_models(

@@ -22,7 +22,6 @@
         [paragraph_number: number]: HTML;
     };  // JSON Field
     lead_motion_id: Id;
-    statute_paragraph_id: Id;
     reason: HTML; // is required, if special settings are set
 
 // Optional special fields, see notes below
@@ -42,27 +41,23 @@
 ## Action
 Creates a new motion.
 
-First, the type of the motion is identified by the values of `lead_motion_id`, `statute_paragraph_id`:
+First, the type of the motion is identified by the values of `lead_motion_id`:
 
 - A normal motion: None of the fields are given.
 - An amendment: `lead_motion_id` is given.
-- A statute amendment: `statute_paragraph_id` is given.
 
-If `lead_motion_id` and `statute_paragraph_id` is given, it must result in an error. This is the logic for other fields depending on the motion type:
+If `lead_motion_id` is given, it must result in an error. This is the logic for other fields depending on the motion type:
 
 - normal motion:
   - `text` required
   -  error, if `amendment_paragraph` is given
 - amendment:
   - `text` XOR `amendment_paragraph` required
-- statute amendment:
-  - `text` required
-  -  error, if `amendment_paragraph` is given
 
 `reason` is independent must be given, if `meeting/motions_reason_required` is true.
 
 There are some fields that need special attention:
-- `workflow_id`: If it is given, the motion's state is set to the workflow's first state. The workflow must be from the same meeting. If the field is not given, one of the three default (`meeting/motions_default_workflow_id`, `meeting/motions_default_amendment_workflow_id` or `meeting/motions_default_statute_amendment_workflow_id`) workflows is used depending on the type of the motion to create.
+- `workflow_id`: If it is given, the motion's state is set to the workflow's first state. The workflow must be from the same meeting. If the field is not given, one of the three default (`meeting/motions_default_workflow_id` or `meeting/motions_default_amendment_workflow_id`) workflows is used depending on the type of the motion to create.
 - `submitter_ids`: These are **user ids** and not ids of the `submitter` model. If nothing is given (`[]`), the request user's id is used. For each id in the list a `motion_submitter` model is created. The weight must be set to the order of the given list.
 - `agenda_*`: See [Agenda](https://github.com/OpenSlides/OpenSlides/wiki/Agenda#additional-fields-during-creation-of-agenda-content-objects).
 
@@ -142,7 +137,6 @@ If the request user does not have `motion.can_manage`, the fields in the payload
 - `lead_motion_id`
 - `amendment_paragraph`
 - `category_id`
-- `statute_paragraph_id`
 - `workflow_id`
 
 If `lead_motion_id` is given and `category_id` is empty, the value of `category_id` is set to the value of the lead motion.
