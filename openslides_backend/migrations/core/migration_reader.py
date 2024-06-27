@@ -35,6 +35,8 @@ class MigrationReader(Protocol):
     models which are not deleted.
     """
 
+    is_in_memory_migration: bool = False
+
     def get(self, fqid: FullQualifiedId, mapped_fields: list[Field] = []) -> Model: ...
 
     def get_many(
@@ -75,7 +77,6 @@ class MigrationReader(Protocol):
 class MigrationReaderImplementation(MigrationReader):
     reader: Reader
     read_database: ReadDatabase
-    is_in_memory_migration: bool = False
 
     def get(self, fqid: FullQualifiedId, mapped_fields: list[Field] = []) -> Model:
         return self.reader.get(GetRequest(fqid, mapped_fields))
