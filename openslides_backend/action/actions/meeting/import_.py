@@ -217,6 +217,15 @@ class MeetingImport(
                     "last_login",
                     "committee_ids",
                 ],
+                "motion_workflow": [
+                    "default_statute_amendment_workflow_meeting_id",  # This is removed due to deprecation of statutes
+                ],
+                "meeting": [
+                    "motions_default_statute_amendment_workflow_id",  # This is removed due to deprecation of statutes
+                    "motions_statutes_enabled",  # This is removed due to deprecation of statutes
+                    "motions_statute_recommendations_by",  # This is removed due to deprecation of statutes
+                    "motion_statute_paragraph_ids",  # This is removed due to deprecation of statutes
+                ],
             },
         )
         try:
