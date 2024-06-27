@@ -76,7 +76,10 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
                 raise ActionException(
                     f"User {meeting_user_delegated_to.get('user_id')}'s delegation id don't belong to meeting {meeting_id_self}."
                 )
-            if meeting_user_delegated_to.get("vote_delegated_to_id"):
+            if (
+                meeting_user_delegated_to.get("vote_delegated_to_id")
+                and instance["id"] != meeting_user_delegated_to["vote_delegated_to_id"]
+            ):
                 raise ActionException(
                     f"User {user_id_self} cannot delegate his vote to user {meeting_user_delegated_to['user_id']}, because that user has delegated his vote himself."
                 )
@@ -106,7 +109,9 @@ class MeetingUserMixin(MeetingUserHistoryMixin):
             )
             if meeting_user.get("meeting_id") != meeting_id_self:
                 meeting_error_user_ids.append(cast(int, meeting_user.get("user_id")))
-            if meeting_user.get("vote_delegations_from_ids"):
+            if meeting_user.get("vote_delegations_from_ids") and meeting_user[
+                "vote_delegations_from_ids"
+            ] != [instance["id"]]:
                 vote_error_user_ids.append(cast(int, meeting_user.get("user_id")))
         if meeting_error_user_ids:
             raise ActionException(
