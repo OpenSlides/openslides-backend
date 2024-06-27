@@ -15,10 +15,6 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..meeting_user.create import MeetingUserCreate
-from ..meeting_user.update import MeetingUserUpdate
-from ..motion_submitter.create import MotionSubmitterCreateAction
-from ..user.create import UserCreate
 from .create_base import MotionCreateBase
 
 
@@ -87,6 +83,69 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
             ]
         )
 
+    def get_user_verbose_names(self, meeting_user_ids: list[int]) -> str | None:
+        meeting_users = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting_user", meeting_user_ids, ["user_id", "structure_level_ids"]
+                )
+            ]
+        )["meeting_user"]
+        user_ids = [
+            user_id
+            for meeting_user in meeting_users.values()
+            if (user_id := meeting_user.get("user_id"))
+        ]
+        if not len(user_ids):
+            return None
+        requests = [
+            GetManyRequest(
+                "user", user_ids, ["id", "first_name", "last_name", "title", "pronoun"]
+            )
+        ]
+        if structure_level_ids := list(
+            {
+                structure_level_id
+                for meeting_user in meeting_users.values()
+                for structure_level_id in meeting_user.get("structure_level_ids", [])
+            }
+        ):
+            requests.append(
+                GetManyRequest("structure_level", structure_level_ids, ["name"])
+            )
+        user_data = self.datastore.get_many(requests)
+        users = user_data["user"]
+        structure_levels = user_data["structure_level"]
+        names = []
+        for meeting_user_id in meeting_user_ids:
+            meeting_user = meeting_users[meeting_user_id]
+            user = users.get(meeting_user.get("user_id", 0))
+            if user:
+                additional_info: list[str] = []
+                if pronoun := user.get("pronoun"):
+                    additional_info = [pronoun]
+                if sl_ids := meeting_user.get("structure_level_ids"):
+                    if slnames := ", ".join(
+                        name
+                        for structure_level_id in sl_ids
+                        if (
+                            name := structure_levels.get(structure_level_id, {}).get(
+                                "name"
+                            )
+                        )
+                    ):
+                        additional_info.append(slnames)
+                suffix = " · ".join(additional_info)
+                if suffix:
+                    suffix = f"({suffix})"
+                if not any(user.get(field) for field in ["first_name", "last_name"]):
+                    short_name = f"User {user['id']}"
+                else:
+                    short_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+                long_name = f"{user.get('title', '')} {short_name} {suffix}".strip()
+                names.append(long_name)
+        return ", ".join(names)
+
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
@@ -98,100 +157,36 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
         committee = self.check_for_origin_id(instance)
         self.check_state_allow_forwarding(instance)
 
-        # handle forwarding user
-        target_meeting = self.datastore.get(
-            fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-            ["id", "default_group_id"],
-        )
-
         if instance.pop("use_original_submitter", None):
-            submitters = self.datastore.filter(
-                "motion_submitter",
-                FilterOperator("motion_id", "=", instance["origin_id"]),
-                ["meeting_user_id"],
+            submitters = list(
+                self.datastore.filter(
+                    "motion_submitter",
+                    FilterOperator("motion_id", "=", instance["origin_id"]),
+                    ["meeting_user_id"],
+                ).values()
             )
-            if submitters:
-                self.apply_instance(instance)
-                weight = 1
-                for submitter in submitters.values():
-                    meeting_user_id = submitter["meeting_user_id"]
-                    data = {
-                        "motion_id": instance["id"],
-                        "meeting_user_id": meeting_user_id,
-                        "weight": weight,
-                    }
-                    weight += 1
-                    self.execute_other_action(
-                        MotionSubmitterCreateAction, [data], skip_history=True
-                    )
+            submitters = sorted(submitters, key=lambda x: x.get("weight", 10000))
+            meeting_user_ids = [
+                meeting_user_id
+                for submitter in submitters
+                if (meeting_user_id := submitter.get("meeting_user_id"))
+            ]
+            if len(meeting_user_ids):
+                instance["additional_submitter"] = self.get_user_verbose_names(
+                    meeting_user_ids
+                )
             text_submitter = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["origin_id"]),
                 ["additional_submitter"],
             ).get("additional_submitter")
             if text_submitter:
-                instance["additional_submitter"] = text_submitter
-
+                if instance.get("additional_submitter"):
+                    instance["additional_submitter"] += ", " + text_submitter
+                else:
+                    instance["additional_submitter"] = text_submitter
         else:
-            if committee.get("forwarding_user_id"):
-                forwarding_user_id = committee["forwarding_user_id"]
-                meeting_id = instance["meeting_id"]
-                forwarding_user_groups = self.get_groups_from_meeting_user(
-                    meeting_id, forwarding_user_id
-                )
-                if target_meeting["default_group_id"] not in forwarding_user_groups:
-                    meeting_user = self.get_meeting_user(
-                        meeting_id, forwarding_user_id, ["id", "group_ids"]
-                    )
-                    if not meeting_user:
-                        self.execute_other_action(
-                            MeetingUserCreate,
-                            [
-                                {
-                                    "meeting_id": meeting_id,
-                                    "user_id": forwarding_user_id,
-                                    "group_ids": [target_meeting["default_group_id"]],
-                                }
-                            ],
-                        )
-                    else:
-                        self.execute_other_action(
-                            MeetingUserUpdate,
-                            [
-                                {
-                                    "id": meeting_user["id"],
-                                    "group_ids": (meeting_user.get("group_ids") or [])
-                                    + [target_meeting["default_group_id"]],
-                                }
-                            ],
-                        )
-
-            else:
-                username = committee.get("name", "Committee User")
-                meeting_id = instance["meeting_id"]
-                committee_user_create_payload = {
-                    "last_name": username,
-                    "is_physical_person": False,
-                    "is_active": False,
-                    "forwarding_committee_ids": [committee["id"]],
-                }
-                action_result = self.execute_other_action(
-                    UserCreate, [committee_user_create_payload], skip_history=True
-                )
-                assert action_result and action_result[0]
-                forwarding_user_id = action_result[0]["id"]
-                self.execute_other_action(
-                    MeetingUserCreate,
-                    [
-                        {
-                            "user_id": forwarding_user_id,
-                            "meeting_id": meeting_id,
-                            "group_ids": [target_meeting["default_group_id"]],
-                        }
-                    ],
-                )
-            instance["submitter_ids"] = [forwarding_user_id]
-
-            self.create_submitters(instance)
+            name = committee.get("name", f"Committee {committee['id']}")
+            instance["additional_submitter"] = name
 
         self.set_sequential_number(instance)
         self.handle_number(instance)
