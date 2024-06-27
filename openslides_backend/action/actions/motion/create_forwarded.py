@@ -234,7 +234,7 @@ class MotionCreateForwarded(TextHashMixin, MotionCreateBase):
             fqid_from_collection_and_id(
                 "committee", forwarded_from_meeting["committee_id"]
             ),
-            ["id", "name", "forward_to_committee_ids", "forwarding_user_id"],
+            ["id", "name", "forward_to_committee_ids"],
         )
         if meeting["committee_id"] not in committee.get("forward_to_committee_ids", []):
             raise ActionException(
