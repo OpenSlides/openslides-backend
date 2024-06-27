@@ -107,7 +107,7 @@ class GenderCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_Xcdfgee",
             },
-            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
 
     def test_no_permission(self) -> None:

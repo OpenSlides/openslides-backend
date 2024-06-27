@@ -21,7 +21,7 @@ class GenderUpdateAction(
     schema = DefaultSchema(Gender()).get_update_schema(
         required_properties=["name"],
     )
-    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         super().check_editable(instance)

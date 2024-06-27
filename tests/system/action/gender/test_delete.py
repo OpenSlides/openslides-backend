@@ -77,14 +77,12 @@ class GenderDeleteActionTest(BaseActionTestCase):
 
     def test_delete_no_permission(self) -> None:
         self.create_data()
-        self.set_models(
-            {"user/1": {"organization_management_level": "can_manage_users"}}
-        )
+        self.set_models({"user/1": {"organization_management_level": None}})
 
         response = self.request("gender.delete", {"id": self.gender_id})
         self.assert_status_code(response, 403)
         assert (
-            "Missing OrganizationManagementLevel: can_manage_organization"
+            "Missing OrganizationManagementLevel: can_manage_users"
             in response.json["message"]
         )
         self.assert_model_exists(self.gender_fqid)
@@ -92,7 +90,7 @@ class GenderDeleteActionTest(BaseActionTestCase):
     def test_delete_permission(self) -> None:
         self.create_data()
         self.set_models(
-            {"user/1": {"organization_management_level": "can_manage_organization"}}
+            {"user/1": {"organization_management_level": "can_manage_users"}}
         )
 
         response = self.request("gender.delete", {"id": self.gender_id})

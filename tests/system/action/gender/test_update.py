@@ -92,16 +92,14 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
     def test_update_no_permission(self) -> None:
         self.create_data()
-        self.set_models(
-            {"user/1": {"organization_management_level": "can_manage_users"}}
-        )
+        self.set_models({"user/1": {"organization_management_level": None}})
 
         response = self.request(
             "gender.update", {"id": self.gender_id, "name": "testy"}
         )
         self.assert_status_code(response, 403)
         assert (
-            "Missing OrganizationManagementLevel: can_manage_organization"
+            "Missing OrganizationManagementLevel: can_manage_users"
             in response.json["message"]
         )
         self.assert_model_exists(
@@ -112,7 +110,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_update_permission(self) -> None:
         self.create_data()
         self.set_models(
-            {"user/1": {"organization_management_level": "can_manage_organization"}}
+            {"user/1": {"organization_management_level": "can_manage_users"}}
         )
         response = self.request(
             "gender.update", {"id": self.gender_id, "name": "testy"}

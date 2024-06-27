@@ -16,7 +16,7 @@ class GenderDeleteAction(DeleteAction, GenderPermissionMixin):
 
     model = Gender()
     schema = DefaultSchema(Gender()).get_delete_schema()
-    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     skip_archived_meeting_check = True
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:

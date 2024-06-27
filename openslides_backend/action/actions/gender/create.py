@@ -20,7 +20,7 @@ class GenderCreate(CreateAction, CheckForArchivedMeetingMixin, GenderUniqueMixin
     schema = DefaultSchema(Gender()).get_create_schema(
         required_properties=["name"],
     )
-    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         instance["organization_id"] = ONE_ORGANIZATION_ID
