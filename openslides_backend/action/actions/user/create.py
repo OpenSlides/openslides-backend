@@ -51,7 +51,7 @@ class UserCreate(
             "is_present_in_meeting_ids",
             "committee_management_ids",
             "is_demo_user",
-            "forwarding_committee_ids",
+            # "forwarding_committee_ids",
             "saml_id",
             "member_number",
         ],

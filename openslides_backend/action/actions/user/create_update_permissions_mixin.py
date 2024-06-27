@@ -213,8 +213,8 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         """
         self.assert_not_anonymous()
 
-        if "forwarding_committee_ids" in instance:
-            raise PermissionDenied("forwarding_committee_ids is not allowed.")
+        # if "forwarding_committee_ids" in instance:
+        #     raise PermissionDenied("forwarding_committee_ids is not allowed.")
 
         if not hasattr(self, "permstore"):
             self.permstore = PermissionVarStore(
