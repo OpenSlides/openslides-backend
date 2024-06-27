@@ -23,7 +23,6 @@ class HTTPEngine:
     WRITER_ENDPOINTS = [
         "reserve_ids",
         "write",
-        "truncate_db",
         "delete_history_information",
         "write_without_events",
     ]

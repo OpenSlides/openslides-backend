@@ -87,7 +87,7 @@ class TestGetForwardingCommittees(BasePresenterTestCase):
                 "group/3": {"meeting_id": 3},
             }
         )
-        self.client.login("test", TEST_USER_PW)
+        self.client.login("test", TEST_USER_PW, 3)
         status_code, data = self.request("get_forwarding_committees", {"meeting_id": 3})
         assert status_code == 403
         assert "Missing permission" in data["message"]

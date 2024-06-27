@@ -51,17 +51,25 @@ class Client(WerkzeugClient):
         self.auth_data: AuthData = {}
         self.on_auth_data_changed = on_auth_data_changed
 
-    def login(self, username: str, password: str) -> None:
+    def login(self, username: str, password: str, user_id: int) -> None:
         handler = self.application.services.authentication().auth_handler.http_handler
-        try:
-            response = handler.send_request(
-                "login",
-                payload=json.dumps({"username": username, "password": password}),
-                headers={"Content-Type": "application/json"},
-            )
-        except AuthenticateException as e:
-            raise AuthenticationException(str(e))
-        assert response.status_code == 200
+        retries = 0
+        while True:
+            try:
+                response = handler.send_request(
+                    "login",
+                    payload=json.dumps({"username": username, "password": password}),
+                    headers={"Content-Type": "application/json"},
+                )
+            except AuthenticateException as e:
+                raise AuthenticationException(str(e))
+            except Exception as e:
+                raise AuthenticationException(str(e))
+            if response.status_code == 500 and retries < 10:
+                retries += 1
+                continue
+            assert response.status_code == 200
+            break
         # save access token and refresh id for subsequent requests
         self.update_auth_data(
             {

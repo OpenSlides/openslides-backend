@@ -18,7 +18,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assertIn("Datastore is not empty.", response.json["message"])
 
     def test_initial_import_with_initial_data_file(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
@@ -31,7 +30,6 @@ class OrganizationInitialImport(BaseActionTestCase):
                 )
 
     def test_initial_import_with_example_data_file(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file("global/data/example-data.json")}
         request_data["data"]["organization"]["1"]["default_language"] = "de"
         response = self.request("organization.initial_import", request_data)
@@ -57,7 +55,6 @@ class OrganizationInitialImport(BaseActionTestCase):
                 self.assert_model_exists(f"{collection}/{id_}", entry)
 
     def test_initial_import_wrong_field(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         request_data["data"]["organization"]["1"]["test_field"] = "test"
         response = self.request("organization.initial_import", request_data)
@@ -68,7 +65,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
 
     def test_initial_import_missing_default_language(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         del request_data["data"]["organization"]["1"]["default_language"]
         response = self.request("organization.initial_import", request_data)
@@ -79,7 +75,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
 
     def test_initial_import_wrong_type(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         request_data["data"]["theme"]["1"]["theme_for_organization_id"] = None
         request_data["data"]["organization"]["1"]["theme_id"] = "test"
@@ -96,7 +91,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
 
     def test_initial_import_wrong_relation(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         request_data["data"]["organization"]["1"]["theme_id"] = 666
         response = self.request("organization.initial_import", request_data)
@@ -111,7 +105,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
 
     def test_inital_import_missing_required(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         del request_data["data"]["organization"]["1"]["theme_id"]
         response = self.request("organization.initial_import", request_data)
@@ -121,7 +114,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
 
     def test_initial_import_negative_default_vote_weight(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         request_data["data"]["user"]["1"]["default_vote_weight"] = "-2.000000"
         response = self.request("organization.initial_import", request_data)
@@ -133,7 +125,6 @@ class OrganizationInitialImport(BaseActionTestCase):
 
     def test_initial_import_empty_data(self) -> None:
         """when there is no data given, use initial_data.json for initial import"""
-        self.datastore.truncate_db()
         request_data: dict[str, Any] = {"data": {}}
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
@@ -147,7 +138,6 @@ class OrganizationInitialImport(BaseActionTestCase):
                 )
 
     def test_initial_import_without_MI(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": {"f": 1}}
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
@@ -157,7 +147,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
 
     def test_initial_import_with_MI_to_small(self) -> None:
-        self.datastore.truncate_db()
         request_data = {"data": {"_migration_index": -1}}
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
@@ -167,7 +156,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         )
 
     def test_initial_import_MI_greater_backend_MI(self) -> None:
-        self.datastore.truncate_db()
         backend_migration_index = get_backend_migration_index()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         request_data["data"]["_migration_index"] = backend_migration_index - 1
@@ -180,7 +168,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assertTrue(response.json["results"][0][0]["migration_needed"])
 
     def test_initial_import_MI_lower_backend_MI(self) -> None:
-        self.datastore.truncate_db()
         backend_migration_index = get_backend_migration_index()
         request_data = {"data": {"_migration_index": backend_migration_index + 1}}
         response = self.request("organization.initial_import", request_data)
@@ -199,7 +186,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         - asserts that the MIs from backend and database are equal
         """
 
-        self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
 
         response = self.request("organization.initial_import", request_data)

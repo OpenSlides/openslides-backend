@@ -84,6 +84,10 @@ class ServiceException(View400Exception):
     pass
 
 
+class DatabaseException(ServiceException):
+    pass
+
+
 class DatastoreException(ServiceException):
     pass
 

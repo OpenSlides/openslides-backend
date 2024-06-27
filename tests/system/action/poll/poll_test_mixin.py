@@ -56,8 +56,8 @@ class PollTestMixin(BaseActionTestCase):
         )
         self.start_poll(1)
         for i in user_ids:
-            self.client.login(f"user{i}", DEFAULT_PASSWORD)
+            self.client.login(f"user{i}", DEFAULT_PASSWORD, i)
             response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
             self.assert_status_code(response, 200)
-        self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
+        self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD, 1)
         return user_ids
