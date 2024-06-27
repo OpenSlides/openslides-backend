@@ -183,7 +183,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             "meeting_user/13",
             {"vote_delegated_to_id": None, "vote_delegations_from_ids": [14]},
         )
-        #also test the reverse direction of reversing the delegation direction
+        # also test the reverse direction of reversing the delegation direction
         response = self.request_executor(
             {"vote_delegations_from_ids": [13], "vote_delegated_to_id": None}
         )
