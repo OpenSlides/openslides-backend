@@ -207,6 +207,12 @@ A more general format description see in [Action-Service](https://github.com/Ope
 - [theme.delete](actions/theme.delete.md)
 - [theme.update](actions/theme.update.md)
 
+## Gender
+
+- [gender.create](actions/theme.create.md)
+- [gender.delete](actions/theme.delete.md)
+- [gender.update](actions/theme.update.md)
+
 ## Topics
 
 - [topic.create](actions/topic.create.md)

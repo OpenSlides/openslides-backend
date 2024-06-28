@@ -3,6 +3,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class UserUpdateSelfActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
+        self.set_models({"gender/1": {"name": "male"}})
         self.update_model(
             "user/1",
             {"username": "username_srtgb123"},
@@ -13,7 +14,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
                 "username": "username_Xcdfgee",
                 "email": " email1@example.com   ",
                 "pronoun": "Test",
-                "gender": "male",
+                "gender_id": 1,
             },
         )
         self.assert_status_code(response, 200)
@@ -21,7 +22,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         assert model.get("username") == "username_Xcdfgee"
         assert model.get("email") == "email1@example.com"
         assert model.get("pronoun") == "Test"
-        assert model.get("gender") == "male"
+        assert model.get("gender_id") == 1
         self.assert_history_information("user/1", ["Personal data changed"])
 
     def test_username_already_given(self) -> None:

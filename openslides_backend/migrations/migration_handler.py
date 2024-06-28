@@ -13,7 +13,7 @@ from ..shared.interfaces.services import Services
 from . import MigrationWrapper
 
 # Amount of time that should be waited for a result from the migrate thread before returning an empty result
-THREAD_WAIT_TIME = 0.1
+THREAD_WAIT_TIME = 0.14
 
 
 class MigrationState(str, Enum):

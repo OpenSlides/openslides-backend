@@ -11,7 +11,7 @@
     is_active: boolean;
     is_physical_person: boolean;
     can_change_own_password: boolean;
-    gender: string;
+    gender_id: Id;
     pronoun: string;
     email: string;
     default_vote_weight: decimal(6);
@@ -56,7 +56,7 @@ Creates a user.
 * If `username` is given, it has to be unique within all users. If there already exists a user with the same username, an error must be returned. If the `username` is not given, 1. the saml_id will be used or 2. it has to be generated (see [user.create#generate-a-username](user.create.md#generate-a-username) below). Also the username may not contain spaces.
 * The `organization_management_level` as restring can be taken from the enum of this user field.
 * Remove starting and trailing spaces from `username`, `first_name` and `last_name`
-* The given `gender` must be present in `organization/genders`
+* The given `gender_id` must be present in `organization/gender_ids`
 * If `saml_id` is set in payload, there may be no `password` or `default_password` set or generated and `set_change_own_password` will be set to False.
 * The `member_number` must be unique within all users.
 

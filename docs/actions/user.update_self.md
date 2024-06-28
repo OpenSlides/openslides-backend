@@ -4,7 +4,7 @@
 // Optional
     username: string;
     email: string;
-    gender: string;
+    gender_id: Id;
     pronoun: string;
 }
 ```

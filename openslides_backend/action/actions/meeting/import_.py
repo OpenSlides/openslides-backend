@@ -216,6 +216,7 @@ class MeetingImport(
                     "last_email_sent",
                     "last_login",
                     "committee_ids",
+                    "gender",
                 ],
             },
         )

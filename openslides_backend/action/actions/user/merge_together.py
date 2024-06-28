@@ -28,7 +28,7 @@ class UserMergeTogether(CreateAction, CheckForArchivedMeetingMixin):
             "is_active",
             "is_physical_person",
             "default_password",
-            "gender",
+            "gender_id",
             "email",
             "default_vote_weight",
         ],

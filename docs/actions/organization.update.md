@@ -17,7 +17,6 @@
     users_email_replyto: string;
     users_email_subject: string;
     users_email_body: text;
-    genders: string[];
     
 // Group B
     enable_electronic_voting: boolean;
