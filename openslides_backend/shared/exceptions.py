@@ -1,7 +1,9 @@
 from typing import Any, Union
 
-from ..permissions.management_levels import (CommitteeManagementLevel,
-                                             OrganizationManagementLevel)
+from ..permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from ..permissions.permissions import Permission
 from .patterns import FullQualifiedId
 
