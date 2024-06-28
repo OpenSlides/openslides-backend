@@ -26,7 +26,9 @@ class GenderPermissionMixin(Action):
         gender = instance.get("id", 0)
         if 0 < gender < 5:
             if gender_name := self.datastore.get(
-                fqid_from_collection_and_id("gender", instance.get("id", 0)), ["name"]
+                fqid_from_collection_and_id("gender", instance.get("id", 0)),
+                ["name"],
+                lock_result=False,
             ).get("name"):
                 gender = gender_name
             msg = f"Cannot delete or update gender '{gender}' from default selection."

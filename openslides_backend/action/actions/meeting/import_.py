@@ -216,9 +216,8 @@ class MeetingImport(
                     "last_email_sent",
                     "last_login",
                     "committee_ids",
-                    "gender", # This is removed due to obsoletion of gender strings 
+                    "gender",
                 ],
-                "organization": ["genders"], # This is removed due to obsoletion of gender strings
             },
         )
         try:
