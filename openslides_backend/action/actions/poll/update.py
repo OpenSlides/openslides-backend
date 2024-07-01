@@ -1,6 +1,7 @@
 from typing import Any
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+from openslides_backend.services.datastore.interface import PartialModel
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
@@ -62,8 +63,10 @@ class PollUpdateAction(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["state", "type"],
+            ["state", "type", "entitled_users_at_stop"],
         )
+
+        self.check_entitled_users_at_stop(instance, poll)
 
         state_change = self.check_state_change(instance, poll)
 
@@ -163,3 +166,40 @@ class PollUpdateAction(
             if instance.get(field):
                 return True
         return False
+
+    def check_entitled_users_at_stop(
+        self, instance: dict[str, Any], poll: PartialModel
+    ) -> None:
+        field = "entitled_users_at_stop"
+        if field not in instance:
+            return
+        if field not in poll:
+            raise ActionException(
+                "Can not set 'entitled_users_at_stop' via poll.update"
+            )
+        if not isinstance(instance[field], list) or any(
+            entry
+            for entry in instance[field]
+            if not isinstance(entry, dict) or not entry.get("user_id")
+        ):
+            raise ActionException("'entitled_users_at_stop' has the wrong format")
+        original_main_user_id_to_entry: dict[int, dict[str, Any]] = {
+            date["user_id"]: date for date in poll[field]
+        }
+        new_main_user_id_to_entry: dict[int, dict[str, Any]] = {
+            date["user_id"]: date for date in instance[field]
+        }
+        original_ids = {user_id for user_id in original_main_user_id_to_entry}
+        new_ids = {user_id for user_id in new_main_user_id_to_entry}
+        if (len(original_ids) != len(new_ids)) or len(original_ids.difference(new_ids)):
+            raise ActionException(
+                "Can not change essential 'entitled_users_at_stop' data via poll.update"
+            )
+        if any(
+            original_entry.get(field) != new_main_user_id_to_entry[user_id].get(field)
+            for user_id, original_entry in original_main_user_id_to_entry.items()
+            for field in ["voted", "present", "user_id", "vote_delegated_to_user_id"]
+        ):
+            raise ActionException(
+                "Can not change essential 'entitled_users_at_stop' data via poll.update"
+            )
