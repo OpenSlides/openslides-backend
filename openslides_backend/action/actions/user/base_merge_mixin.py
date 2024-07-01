@@ -276,6 +276,15 @@ class BaseMergeMixin(Action):
         update_operations: dict[Collection, MergeUpdateOperations],
         should_create: bool = False,
     ) -> dict[str, Any]:
+        """
+        Main function for the merging of specific models using the collection_field_groups of this collection.
+
+        Takes a main model `into`, into which the others will be merged,
+        and a list of models `ranked_models`, that will be merged into the main model in-order.
+        It returns the new data for the main model, which the calling function has to decide how to handle
+        and also recursively handles the related collections and writes the changes of their models into the correct category
+        of the update_operations dict that is passed to it.
+        """
         into_dict = into or {}
         main_id = into_dict.get("id") or ranked_others[0]["id"]
         merge_modes = self._collection_field_groups[collection]
