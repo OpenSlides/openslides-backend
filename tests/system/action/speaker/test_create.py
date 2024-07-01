@@ -2,7 +2,7 @@ from time import time
 from typing import Any
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
-from openslides_backend.action.actions.user.delegation_based_restriction_mixin import (
+from openslides_backend.action.mixins.delegation_based_restriction_mixin import (
     DelegationBasedRestriction,
 )
 from openslides_backend.permissions.base_classes import Permission

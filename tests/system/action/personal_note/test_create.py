@@ -11,6 +11,7 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
                 "name": "name_meeting_110",
                 "is_active_in_organization_id": 1,
                 "meeting_user_ids": [1],
+                "group_ids": [1],
             },
             "meeting_user/1": {
                 "meeting_id": 110,
@@ -18,6 +19,7 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
             },
             "motion/23": {"meeting_id": 110},
             "user/1": {"meeting_ids": [110]},
+            "group/1": {"meeting_id": 110},
         }
 
     def test_create(self) -> None:
@@ -99,3 +101,28 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
             "Anonymous is not allowed to execute personal_note.create"
             in response.json["message"]
         )
+
+    def test_create_other_meeting_user_error(self) -> None:
+        self.set_models(self.test_models)
+        self.create_user("dummy", [1])
+        response = self.request(
+            "personal_note.create",
+            {"meeting_user_id": 2, "content_object_id": "motion/23", "star": True},
+            internal=False,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data must not contain {'meeting_user_id'} properties"
+            in response.json["message"]
+        )
+
+    def test_create_other_meeting_user(self) -> None:
+        self.set_models(self.test_models)
+        self.create_user("dummy", [1])
+        response = self.request(
+            "personal_note.create",
+            {"meeting_user_id": 2, "content_object_id": "motion/23", "star": True},
+            internal=True,
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("personal_note/1")

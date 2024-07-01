@@ -7,12 +7,15 @@
 // At least one has to be given
     star: boolean;
     note: HTML;
+
+// Only allowed when called internally
+    meeting_user_id: Id
 }
 ```
 
 ## Action
 The `personal_note/meeting_id` is set to the meeting id of the content object. The
-`personal_note/meeting_user_id` is set to the `meeting_user` of the request user in the meeting
+`personal_note/meeting_user_id` is set to the `meeting_user` of the request user in the meeting (unless defined otherwise)
 determined by the given `content_object_id`. Fails if there is already a personal note for the
 content object and the user (`meeting_user_id` and `content_object_id` are unique together).
 

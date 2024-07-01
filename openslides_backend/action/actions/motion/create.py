@@ -12,11 +12,11 @@ from ....shared.schema import (
     number_string_json_schema,
     optional_id_schema,
 )
+from ...mixins.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
-from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from .create_base import MotionCreateBase
 from .mixins import AmendmentParagraphHelper, TextHashMixin
 from .payload_validation_mixin import MotionCreatePayloadValidationMixin

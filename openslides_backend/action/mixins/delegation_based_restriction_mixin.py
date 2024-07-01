@@ -3,10 +3,10 @@ from typing import Literal
 from openslides_backend.action.action import Action
 from openslides_backend.shared.filters import And, FilterOperator, Or
 
-from ....permissions.base_classes import Permission
-from ....permissions.permission_helper import has_perm
-from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import MissingPermission
+from ...permissions.base_classes import Permission
+from ...permissions.permission_helper import has_perm
+from ...services.datastore.commands import GetManyRequest
+from ...shared.exceptions import MissingPermission
 
 DelegationBasedRestriction = Literal[
     "users_forbid_delegator_in_list_of_speakers",

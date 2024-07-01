@@ -6,11 +6,11 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..meeting_user.helper_mixin import MeetingUserHelperMixin
-from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 
 
 @register_action("motion.set_support_self")

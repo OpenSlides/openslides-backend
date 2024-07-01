@@ -8,7 +8,7 @@ from ....shared.schema import decimal_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..poll.mixins import check_poll_or_option_perms
+from ..poll.functions import check_poll_or_option_perms
 from ..poll.set_state import PollSetState
 from ..vote.create import VoteCreate
 from ..vote.update import VoteUpdate

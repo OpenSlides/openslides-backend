@@ -21,12 +21,27 @@ class PersonalNoteCreateAction(
     Action to create a personal note.
     """
 
+    internal_id_fields = [
+        "meeting_user_id",
+    ]
+
     model = PersonalNote()
     schema = DefaultSchema(PersonalNote()).get_create_schema(
         required_properties=["content_object_id"],
-        optional_properties=["star", "note"],
+        optional_properties=["star", "note", *internal_id_fields],
     )
     relation_field_for_meeting = "content_object_id"
+
+    def validate_instance(self, instance: dict[str, Any]) -> None:
+        super().validate_instance(instance)
+        if not self.internal and any(
+            forbidden_keys_used := {
+                key for key in instance if key in self.internal_id_fields
+            }
+        ):
+            raise ActionException(
+                f"data must not contain {forbidden_keys_used} properties"
+            )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         """
@@ -34,27 +49,30 @@ class PersonalNoteCreateAction(
         - check star or note.
         - check uniqueness
         """
-        filter_ = And(
-            FilterOperator("user_id", "=", self.user_id),
-            FilterOperator("meeting_id", "=", instance["meeting_id"]),
-        )
-        filtered_meeting_user = self.datastore.filter(
-            "meeting_user", filter_, ["id", "personal_note_ids"]
-        )
-        if filtered_meeting_user:
-            meeting_user = list(filtered_meeting_user.values())[0]
-            instance["meeting_user_id"] = meeting_user["id"]
-        else:
-            action_results = self.execute_other_action(
-                MeetingUserCreate,
-                [
-                    {
-                        "user_id": self.user_id,
-                        "meeting_id": instance["meeting_id"],
-                    }
-                ],
+        if "meeting_id" not in instance:
+            instance = self.update_instance_with_meeting_id(instance)
+        if "meeting_user_id" not in instance:
+            filter_ = And(
+                FilterOperator("user_id", "=", self.user_id),
+                FilterOperator("meeting_id", "=", instance["meeting_id"]),
             )
-            instance["meeting_user_id"] = action_results[0]["id"]  # type: ignore
+            filtered_meeting_user = self.datastore.filter(
+                "meeting_user", filter_, ["id", "personal_note_ids"]
+            )
+            if filtered_meeting_user:
+                meeting_user = list(filtered_meeting_user.values())[0]
+                instance["meeting_user_id"] = meeting_user["id"]
+            else:
+                action_results = self.execute_other_action(
+                    MeetingUserCreate,
+                    [
+                        {
+                            "user_id": self.user_id,
+                            "meeting_id": instance["meeting_id"],
+                        }
+                    ],
+                )
+                instance["meeting_user_id"] = action_results[0]["id"]  # type: ignore
 
         if not (instance.get("star") or instance.get("note")):
             raise ActionException("Can't create personal note without star or note.")
