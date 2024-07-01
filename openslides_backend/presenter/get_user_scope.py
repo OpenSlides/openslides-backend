@@ -36,10 +36,11 @@ class GetUserScope(UserScopeMixin, BasePresenter):
         result: dict[str, Any] = {}
         user_ids = self.data["user_ids"]
         for user_id in user_ids:
-            scope, scope_id, user_oml = self.get_user_scope(user_id)
+            scope, scope_id, user_oml, committee_ids = self.get_user_scope(user_id)
             result[str(user_id)] = {
                 "collection": scope,
                 "id": scope_id,
                 "user_oml": user_oml,
+                "committee_ids": committee_ids,
             }
         return result

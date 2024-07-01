@@ -8,6 +8,7 @@ from ...permissions.management_levels import (
     OrganizationManagementLevel,
 )
 from ...permissions.permission_helper import (
+    get_shared_committee_management_levels,
     has_committee_management_level,
     has_organization_management_level,
     has_perm,
@@ -30,7 +31,7 @@ class UserScope(str, Enum):
 class UserScopeMixin(BaseServiceProvider):
     def get_user_scope(
         self, id_or_instance: int | dict[str, Any]
-    ) -> tuple[UserScope, int, str]:
+    ) -> tuple[UserScope, int, str, list[int]]:
         """
         Parameter id_or_instance: id for existing user or instance for user to create
         Returns the scope of the given user id together with the relevant scope id (either meeting,
@@ -76,10 +77,20 @@ class UserScopeMixin(BaseServiceProvider):
         }
         committees = committees_manager | set(meetings_committee.values())
         if len(meetings_committee) == 1 and len(committees) == 1:
-            return UserScope.Meeting, next(iter(meetings_committee)), oml_right
+            return (
+                UserScope.Meeting,
+                next(iter(meetings_committee)),
+                oml_right,
+                list(committees),
+            )
         elif len(committees) == 1:
-            return UserScope.Committee, next(iter(committees)), oml_right
-        return UserScope.Organization, 1, oml_right
+            return (
+                UserScope.Committee,
+                next(iter(committees)),
+                oml_right,
+                list(committees),
+            )
+        return UserScope.Organization, 1, oml_right, list(committees)
 
     def check_permissions_for_scope(
         self,
@@ -94,7 +105,7 @@ class UserScopeMixin(BaseServiceProvider):
         Reason: A user with OML-level-permission has scope "meeting" or "committee" if
         he belongs to only 1 meeting or 1 committee.
         """
-        scope, scope_id, user_oml = self.get_user_scope(id)
+        scope, scope_id, user_oml, committees = self.get_user_scope(id)
         if (
             always_check_user_oml
             and user_oml
@@ -145,4 +156,11 @@ class UserScopeMixin(BaseServiceProvider):
                     }
                 )
         else:
+            if get_shared_committee_management_levels(
+                self.datastore,
+                self.user_id,
+                CommitteeManagementLevel.CAN_MANAGE,
+                committees,
+            ):
+                return
             raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})

@@ -685,7 +685,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("meeting_user/2", {"meeting_id": 1, "group_ids": [1]})
 
-    def test_create_permission_group_A_no_permission(self) -> None:
+    def test_create_permission_group_A_both_committee_permissions(self) -> None:
         """May not create group A fields on organsisation scope, although having both committee permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
@@ -706,11 +706,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "group_ids": [4],
             },
         )
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "You are not allowed to perform action user.create. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
-            response.json["message"],
-        )
+        self.assert_status_code(response, 200)
 
     def test_create_permission_group_B_user_can_manage(self) -> None:
         """create group B fields with simple user.can_manage permissions"""

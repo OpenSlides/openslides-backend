@@ -229,6 +229,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             self.instance_user_scope,
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
+            self.instance_committee_ids,
         ) = self.get_user_scope(instance.get("id") or instance)
 
         self._check_for_higher_OML(actual_group_fields, instance)
@@ -255,6 +256,8 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             return
 
         if self.instance_user_scope == UserScope.Organization:
+            if self.permstore.user_committees.intersection(self.instance_committee_ids):
+                return
             raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
         if self.instance_user_scope == UserScope.Committee:
             if self.instance_user_scope_id not in self.permstore.user_committees:
@@ -352,6 +355,10 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                     self.instance_user_oml_permission
                 )
             else:
+                if self.permstore.user_committees.intersection(
+                    self.instance_committee_ids
+                ):
+                    return
                 expected_oml_permission = OrganizationManagementLevel.CAN_MANAGE_USERS
             if expected_oml_permission > self.permstore.user_oml:
                 raise MissingPermission({expected_oml_permission: 1})
@@ -529,6 +536,7 @@ class CreateUpdatePermissionsFailingFields(CreateUpdatePermissionsMixin):
             self.instance_user_scope,
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
+            self.instance_committee_ids,
         ) = self.get_user_scope(instance.get("id") or instance)
 
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
