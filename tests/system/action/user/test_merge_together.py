@@ -4,7 +4,6 @@ from typing import Any, Literal, cast
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
-from openslides_backend.models.mixins import DEFAULT_PROJECTOR_OPTIONS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.patterns import (
     CollectionField,
@@ -17,125 +16,276 @@ from tests.system.action.poll.test_vote import BaseVoteTestCase
 class UserMergeTogether(BaseVoteTestCase):
     def setUp(self) -> None:
         super().setUp()
-        meeting_ids_by_committee_id = {1: [1, 2], 2: [3], 3: [4]}
-        num_committees = len(meeting_ids_by_committee_id)
-        num_meetings = len(
-            {
-                id_
-                for meeting_ids in meeting_ids_by_committee_id.values()
-                for id_ in meeting_ids
-            }
-        )
-        committee_id_by_meeting_id = {
-            id_: committee_id
-            for id_ in range(1, num_meetings + 1)
-            for committee_id, meeting_ids in meeting_ids_by_committee_id.items()
-            if id_ in meeting_ids
-        }
-        meeting_data_by_user_id: dict[int, dict[int, list[int]]] = {
-            2: {1: [1, 2], 2: [2]},
-            3: {2: [2], 3: [2]},
-            4: {1: [2], 2: [1], 3: [3]},
-            5: {1: [2], 4: [1]},
-            6: {},
-        }
-        meeting_ids_by_user_id: dict[int, list[int]] = {
-            id_: list(meeting_data_by_user_id[id_].keys())
-            for id_ in meeting_data_by_user_id
-        }
-        num_users = len(meeting_data_by_user_id)
-        user_ids_by_meeting_id = {
-            id_: [
-                user_id
-                for user_id, meeting_ids in meeting_ids_by_user_id.items()
-                if id_ in meeting_ids
-            ]
-            for id_ in range(1, num_meetings + 1)
-        }
-        group_ids_by_user_id = {
-            id_: [
-                (meeting_id - 1) * 3 + group_number
-                for meeting_id in data
-                for group_number in data[meeting_id]
-            ]
-            for id_, data in meeting_data_by_user_id.items()
-        }
-        user_ids_by_group_id = {
-            id_: [
-                user_id
-                for user_id in group_ids_by_user_id
-                if id_ in group_ids_by_user_id[user_id]
-            ]
-            for id_ in range(1, num_meetings * 3 + 1)
-        }
-        data = {
-            ONE_ORGANIZATION_FQID: {
+        models = {
+            "user/2": {
+                "username": "user2",
+                "is_active": True,
+                "default_password": "user2",
+                "password": self.auth.hash("user2"),
+                "meeting_ids": [1, 2],
+                "meeting_user_ids": [12, 22],
+                "committee_ids": [1],
+                "organization_id": 1,
+            },
+            "user/3": {
+                "username": "user3",
+                "is_active": True,
+                "default_password": "user3",
+                "password": self.auth.hash("user3"),
+                "meeting_ids": [2, 3],
+                "meeting_user_ids": [23, 33],
+                "committee_ids": [1, 2],
+                "organization_id": 1,
+            },
+            "user/4": {
+                "username": "user4",
+                "is_active": True,
+                "default_password": "user4",
+                "password": self.auth.hash("user4"),
+                "meeting_ids": [1, 2, 3],
+                "meeting_user_ids": [14, 24, 34],
+                "committee_ids": [1, 2],
+                "organization_id": 1,
+            },
+            "user/5": {
+                "username": "user5",
+                "is_active": True,
+                "default_password": "user5",
+                "password": self.auth.hash("user5"),
+                "meeting_ids": [1, 4],
+                "meeting_user_ids": [15, 45],
+                "committee_ids": [1, 3],
+                "organization_id": 1,
+            },
+            "user/6": {
+                "username": "user6",
+                "is_active": True,
+                "default_password": "user6",
+                "password": self.auth.hash("user6"),
+                "meeting_ids": [],
+                "meeting_user_ids": [],
+                "committee_ids": [],
+                "organization_id": 1,
+            },
+            "organization/1": {
                 "limit_of_meetings": 0,
-                "active_meeting_ids": [
-                    meeting_id for meeting_id in committee_id_by_meeting_id
-                ],
+                "active_meeting_ids": [1, 2, 3, 4],
                 "enable_electronic_voting": True,
-                "committee_ids": list(range(1, num_committees + 1)),
-                "user_ids": list(meeting_data_by_user_id.keys()),
-                "enable_electronic_voting": True,
+                "committee_ids": [1, 2, 3],
+                "user_ids": [2, 3, 4, 5, 6],
                 "genders": ["male", "female", "diverse", "non-binary"],
             },
-            **{
-                fqid_from_collection_and_id("committee", id_): {
-                    "organization_id": ONE_ORGANIZATION_ID,
-                    "name": f"Committee {id_}",
-                    "meeting_ids": meeting_ids_by_committee_id[id_],
-                    "user_ids": list(
-                        {
-                            user_id
-                            for meeting_id in meeting_ids_by_committee_id[id_]
-                            for user_id in user_ids_by_meeting_id[meeting_id]
-                        }
-                    ),
-                }
-                for id_ in range(1, num_committees + 1)
+            "committee/1": {
+                "organization_id": 1,
+                "name": "Committee 1",
+                "meeting_ids": [1, 2],
+                "user_ids": [2, 3, 4, 5],
             },
-            **{
-                fqid_from_collection_and_id("meeting", id_): {
-                    "name": f"Meeting {id_}",
-                    "is_active_in_organization_id": ONE_ORGANIZATION_ID,
-                    "language": "en",
-                    "projector_countdown_default_time": 60,
-                    "projector_countdown_warning_time": 0,
-                    "motions_default_workflow_id": id_,
-                    "motions_default_amendment_workflow_id": id_,
-                    "motions_default_statute_amendment_workflow_id": id_,
-                    "users_enable_vote_delegations": True,
-                    "committee_id": committee_id_by_meeting_id[id_],
-                    **{
-                        f"default_projector_{option}_ids": [id_]
-                        for option in DEFAULT_PROJECTOR_OPTIONS
-                    },
-                    "group_ids": list(range(1 + (id_ - 1) * 3, 1 + id_ * 3)),
-                    "admin_group_id": 1 + (id_ - 1) * 3,
-                    "meeting_user_ids": [
-                        id_ * 10 + user_id for user_id in user_ids_by_meeting_id[id_]
-                    ],
-                    "user_ids": [user_id for user_id in user_ids_by_meeting_id[id_]],
-                }
-                for id_ in range(1, num_meetings + 1)
+            "meeting/1": {
+                "name": "Meeting 1",
+                "is_active_in_organization_id": 1,
+                "language": "en",
+                "motions_default_workflow_id": 1,
+                "motions_default_amendment_workflow_id": 1,
+                "motions_default_statute_amendment_workflow_id": 1,
+                "users_enable_vote_delegations": True,
+                "committee_id": 1,
+                "group_ids": [1, 2, 3],
+                "admin_group_id": 1,
+                "meeting_user_ids": [12, 14, 15],
+                "user_ids": [2, 4, 5],
             },
-            **{
-                fqid_from_collection_and_id("group", id_): {
-                    "meeting_id": (id_ - 1) // 3 + 1,
-                    "name": f"Group {id_}",
-                    "admin_group_for_meeting_id": (
-                        (id_ - 1) // 3 + 1 if id_ % 3 == 1 else None
-                    ),
-                    "default_group_for_meeting_id": (
-                        (id_ - 1) // 3 + 1 if id_ % 3 == 0 else None
-                    ),
-                    "meeting_user_ids": [
-                        ((id_ - 1) // 3 + 1) * 10 + user_id
-                        for user_id in user_ids_by_group_id[id_]
-                    ],
-                }
-                for id_ in range(1, num_meetings * 3 + 1)
+            "group/1": {
+                "meeting_id": 1,
+                "name": "Group 1",
+                "admin_group_for_meeting_id": 1,
+                "default_group_for_meeting_id": None,
+                "meeting_user_ids": [12],
+            },
+            "group/2": {
+                "meeting_id": 1,
+                "name": "Group 2",
+                "admin_group_for_meeting_id": None,
+                "default_group_for_meeting_id": None,
+                "meeting_user_ids": [12, 14, 15],
+            },
+            "group/3": {
+                "meeting_id": 1,
+                "name": "Group 3",
+                "admin_group_for_meeting_id": None,
+                "default_group_for_meeting_id": 1,
+                "meeting_user_ids": [],
+            },
+            "meeting_user/12": {
+                "user_id": 2,
+                "meeting_id": 1,
+                "group_ids": [1, 2],
+                "vote_weight": "1.000000",
+            },
+            "meeting_user/14": {
+                "user_id": 4,
+                "meeting_id": 1,
+                "group_ids": [2],
+                "vote_weight": "1.000000",
+            },
+            "meeting_user/15": {
+                "user_id": 5,
+                "meeting_id": 1,
+                "group_ids": [2],
+                "vote_weight": "1.000000",
+            },
+            "meeting/2": {
+                "name": "Meeting 2",
+                "is_active_in_organization_id": 1,
+                "language": "en",
+                "motions_default_workflow_id": 2,
+                "motions_default_amendment_workflow_id": 2,
+                "motions_default_statute_amendment_workflow_id": 2,
+                "users_enable_vote_delegations": True,
+                "committee_id": 1,
+                "group_ids": [4, 5, 6],
+                "admin_group_id": 4,
+                "meeting_user_ids": [22, 23, 24],
+                "user_ids": [2, 3, 4],
+            },
+            "group/4": {
+                "meeting_id": 2,
+                "name": "Group 4",
+                "admin_group_for_meeting_id": 2,
+                "default_group_for_meeting_id": None,
+                "meeting_user_ids": [24],
+            },
+            "group/5": {
+                "meeting_id": 2,
+                "name": "Group 5",
+                "admin_group_for_meeting_id": None,
+                "default_group_for_meeting_id": None,
+                "meeting_user_ids": [22, 23],
+            },
+            "group/6": {
+                "meeting_id": 2,
+                "name": "Group 6",
+                "admin_group_for_meeting_id": None,
+                "default_group_for_meeting_id": 2,
+                "meeting_user_ids": [],
+            },
+            "meeting_user/22": {
+                "user_id": 2,
+                "meeting_id": 2,
+                "group_ids": [5],
+                "vote_weight": "1.000000",
+            },
+            "meeting_user/23": {
+                "user_id": 3,
+                "meeting_id": 2,
+                "group_ids": [5],
+                "vote_weight": "1.000000",
+            },
+            "meeting_user/24": {
+                "user_id": 4,
+                "meeting_id": 2,
+                "group_ids": [4],
+                "vote_weight": "1.000000",
+            },
+            "committee/2": {
+                "organization_id": 1,
+                "name": "Committee 2",
+                "meeting_ids": [3],
+                "user_ids": [3, 4],
+            },
+            "meeting/3": {
+                "name": "Meeting 3",
+                "is_active_in_organization_id": 1,
+                "language": "en",
+                "motions_default_workflow_id": 3,
+                "motions_default_amendment_workflow_id": 3,
+                "motions_default_statute_amendment_workflow_id": 3,
+                "users_enable_vote_delegations": True,
+                "committee_id": 2,
+                "group_ids": [7, 8, 9],
+                "admin_group_id": 7,
+                "meeting_user_ids": [33, 34],
+                "user_ids": [3, 4],
+            },
+            "group/7": {
+                "meeting_id": 3,
+                "name": "Group 7",
+                "admin_group_for_meeting_id": 3,
+                "default_group_for_meeting_id": None,
+                "meeting_user_ids": [],
+            },
+            "group/8": {
+                "meeting_id": 3,
+                "name": "Group 8",
+                "admin_group_for_meeting_id": None,
+                "default_group_for_meeting_id": None,
+                "meeting_user_ids": [33],
+            },
+            "group/9": {
+                "meeting_id": 3,
+                "name": "Group 9",
+                "admin_group_for_meeting_id": None,
+                "default_group_for_meeting_id": 3,
+                "meeting_user_ids": [34],
+            },
+            "meeting_user/33": {
+                "user_id": 3,
+                "meeting_id": 3,
+                "group_ids": [8],
+                "vote_weight": "1.000000",
+            },
+            "meeting_user/34": {
+                "user_id": 4,
+                "meeting_id": 3,
+                "group_ids": [9],
+                "vote_weight": "1.000000",
+            },
+            "committee/3": {
+                "organization_id": 1,
+                "name": "Committee 3",
+                "meeting_ids": [4],
+                "user_ids": [5],
+            },
+            "meeting/4": {
+                "name": "Meeting 4",
+                "is_active_in_organization_id": 1,
+                "language": "en",
+                "motions_default_workflow_id": 4,
+                "motions_default_amendment_workflow_id": 4,
+                "motions_default_statute_amendment_workflow_id": 4,
+                "users_enable_vote_delegations": True,
+                "committee_id": 3,
+                "group_ids": [10, 11, 12],
+                "admin_group_id": 10,
+                "meeting_user_ids": [45],
+                "user_ids": [5],
+            },
+            "group/10": {
+                "meeting_id": 4,
+                "name": "Group 10",
+                "admin_group_for_meeting_id": 4,
+                "default_group_for_meeting_id": None,
+                "meeting_user_ids": [45],
+            },
+            "group/11": {
+                "meeting_id": 4,
+                "name": "Group 11",
+                "admin_group_for_meeting_id": None,
+                "default_group_for_meeting_id": None,
+                "meeting_user_ids": [],
+            },
+            "group/12": {
+                "meeting_id": 4,
+                "name": "Group 12",
+                "admin_group_for_meeting_id": None,
+                "default_group_for_meeting_id": 4,
+                "meeting_user_ids": [],
+            },
+            "meeting_user/45": {
+                "user_id": 5,
+                "meeting_id": 4,
+                "group_ids": [10],
+                "vote_weight": "1.000000",
             },
             **{
                 fqid_from_collection_and_id("motion_workflow", id_): {
@@ -145,7 +295,7 @@ class UserMergeTogether(BaseVoteTestCase):
                     "first_state_id": id_,
                     "meeting_id": id_,
                 }
-                for id_ in range(1, num_meetings + 1)
+                for id_ in range(1, 5)
             },
             **{
                 fqid_from_collection_and_id("motion_state", id_): {
@@ -156,49 +306,10 @@ class UserMergeTogether(BaseVoteTestCase):
                     "meeting_id": id_,
                     "allow_create_poll": True,
                 }
-                for id_ in range(1, num_meetings + 1)
-            },
-            **{
-                fqid_from_collection_and_id("user", id_): {
-                    "username": f"user{id_}",
-                    "is_active": True,
-                    "default_password": f"user{id_}",
-                    "password": self.auth.hash(f"user{id_}"),
-                    "meeting_ids": meeting_ids_by_user_id[id_],
-                    "meeting_user_ids": [
-                        meeting_id * 10 + id_
-                        for meeting_id in meeting_ids_by_user_id[id_]
-                    ],
-                    "committee_ids": list(
-                        {
-                            committee_id_by_meeting_id[meeting_id]
-                            for meeting_id in meeting_ids_by_user_id[id_]
-                        }
-                    ),
-                    "organization_id": ONE_ORGANIZATION_ID,
-                }
-                for id_ in range(2, num_users + 2)
-            },
-            **{
-                fqid_from_collection_and_id(
-                    "meeting_user", meeting_id * 10 + user_id
-                ): {
-                    "user_id": user_id,
-                    "meeting_id": meeting_id,
-                    "group_ids": [
-                        group_id
-                        for group_id in group_ids_by_user_id[user_id]
-                        if group_id
-                        in range(1 + (meeting_id - 1) * 3, 1 + meeting_id * 3)
-                    ],
-                    "vote_weight": "1.000000",
-                }
-                for user_id in range(2, num_users + 2)
-                for meeting_id in range(1, num_meetings + 1)
-                if user_id in user_ids_by_meeting_id[meeting_id]
+                for id_ in range(1, 5)
             },
         }
-        self.set_models(data)
+        self.set_models(models)
 
     def test_merge_configuration_up_to_date(self) -> None:
         """
