@@ -72,16 +72,18 @@ class BaseMergeMixin(Action):
         )
         mass_prefetch_payload: dict[Collection, list[int]] = {}
         for collection, collection_data in data.items():
-            if recurse := self._collection_field_groups.get(collection, {}).get(
-                "deep_merge"
-            ):
-                for field, recurse_collection in recurse.items():
-                    ids: list[int] = []
-                    for date in collection_data.values():
-                        if vals := date.get(field):
-                            ids.extend(vals)
-                    if len(ids):
-                        mass_prefetch_payload[recurse_collection] = ids
+            field_groups = self._collection_field_groups.get(collection, {})
+            recurse = {
+                **field_groups.get("deep_merge", {}),
+                **field_groups.get("deep_create_merge", {}),
+            }
+            for field, recurse_collection in recurse.items():
+                ids: list[int] = []
+                for date in collection_data.values():
+                    if vals := date.get(field):
+                        ids.extend(vals)
+                if len(ids):
+                    mass_prefetch_payload[recurse_collection] = ids
         if len(mass_prefetch_payload):
             self.mass_prefetch_for_merge(mass_prefetch_payload)
 
