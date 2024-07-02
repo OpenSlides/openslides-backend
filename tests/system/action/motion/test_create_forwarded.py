@@ -22,6 +22,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             "meeting/2": {
                 "name": "name_SNLGsvIV",
                 "motions_default_workflow_id": 12,
+                "motions_default_amendment_workflow_id": 12,
                 "committee_id": 52,
                 "is_active_in_organization_id": 1,
                 "default_group_id": 112,
@@ -419,7 +420,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_not_allowed_to_forward_amendments(self) -> None:
+    def test_not_allowed_to_forward_amendments_directly(self) -> None:
         self.set_models(
             {
                 "meeting/1": {
@@ -435,6 +436,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "derived_motion_ids": [],
                     "all_origin_ids": [],
                     "all_derived_motion_ids": [],
+                    "amendment_ids": [11]
                 },
                 "motion/11": {
                     "title": "test11 layer 2",
@@ -468,6 +470,49 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert "Amendments cannot be forwarded." in response.json["message"]
+
+    def test_allowed_to_forward_amendments_indirectly(self) -> None:
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_XDAddEAW",
+                    "committee_id": 53,
+                    "is_active_in_organization_id": 1,
+                    "motion_ids": [12,13]
+                },
+                "user/1": {"meeting_ids": [1, 2]},
+                "motion/12": {
+                    "title": "title_FcnPUXJB layer 1",
+                    "meeting_id": 1,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "amendment_ids": [13]
+                },
+                "motion/13": {
+                    "title": "test11 layer 2",
+                    "meeting_id": 1,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "lead_motion_id": 12,
+                    "state_id": 30,
+                },
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_foo",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_amendments": True
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert False #TODO: Check resulting data, results and write a few more tests
 
     def test_forward_to_2_meetings_1_transaction(self) -> None:
         """Forwarding of 1 motion to 2 meetings in 1 transaction"""
