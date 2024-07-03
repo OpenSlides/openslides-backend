@@ -15,7 +15,8 @@ from .base_create_forwarded import BaseMotionCreateForwarded
 )
 class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
     """
-    Create action for forwarded motions.
+    Internal create action for forwarded motion amendments.
+    Should only be called by motion.create_forwarded
     """
 
     schema = DefaultSchema(Motion()).get_create_schema(
@@ -24,7 +25,6 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
         additional_optional_fields={
             "use_original_submitter": {"type": "boolean"},
             "use_original_number": {"type": "boolean"},
-            "with_amendments": {"type": "boolean"},
         },
     )
 
