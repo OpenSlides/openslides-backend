@@ -5,19 +5,15 @@ from typing import Any
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
 from openslides_backend.shared.typing import HistoryInformation
 
-from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.filters import FilterOperator, Or
+from ....shared.filters import FilterOperator
+from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
-from ...util.default_schema import DefaultSchema
-from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
 from .create_base import MotionCreateBase
-from ...action import Action
-from ....shared.interfaces.write_request import WriteRequest
 
 
 class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
@@ -138,23 +134,23 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 names.append(long_name)
         return ", ".join(names)
 
-    def perform(self, action_data: ActionData, user_id: int, internal: bool = False) -> tuple[WriteRequest | None, ActionResults | None]:
-        self.id_to_result_extra_data: dict[int,dict[str,Any]] = {}
+    def perform(
+        self, action_data: ActionData, user_id: int, internal: bool = False
+    ) -> tuple[WriteRequest | None, ActionResults | None]:
+        self.id_to_result_extra_data: dict[int, dict[str, Any]] = {}
         return super().perform(action_data, user_id, internal)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-            [
-                "motions_default_workflow_id",
-                "motions_default_amendment_workflow_id"
-            ],
+            ["motions_default_workflow_id", "motions_default_amendment_workflow_id"],
         )
         self.set_state_from_workflow(instance, meeting)
         committee = self.check_for_origin_id(instance)
         self.check_state_allow_forwarding(instance)
+        use_original_number = instance.get("use_original_number", False)
 
-        if instance.pop("use_original_submitter", None):
+        if use_original_submitter := instance.pop("use_original_submitter", False):
             submitters = list(
                 self.datastore.filter(
                     "motion_submitter",
@@ -190,53 +186,87 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         self.set_origin_ids(instance)
         self.set_text_hash(instance)
         instance["forwarded"] = round(time.time())
-        amendment_ids = self.datastore.get(fqid_from_collection_and_id("motion", instance["origin_id"]), ["amendment_ids"]).get("amendment_ids", [])
+        self.datastore.apply_changed_model(
+            fqid_from_collection_and_id("motion", instance["id"]), instance
+        )
+        amendment_ids = self.datastore.get(
+            fqid_from_collection_and_id("motion", instance["origin_id"]),
+            ["amendment_ids"],
+        ).get("amendment_ids", [])
         if self.should_forward_amendments(instance):
-            new_amendments = self.datastore.get_many([GetManyRequest("motion", amendment_ids, [
-                "title",
-                "text",
-                "amendment_paragraphs",
-                "reason",
-                "id",
-                "state_id"
-            ])])["motion"]
+            new_amendments = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "motion",
+                        amendment_ids,
+                        [
+                            "title",
+                            "text",
+                            "amendment_paragraphs",
+                            "reason",
+                            "id",
+                            "state_id",
+                        ],
+                    )
+                ]
+            )["motion"]
             total = len(new_amendments)
-            state_ids = {state_id for amendment in new_amendments.values() if (state_id:= amendment.get("state_id"))}
+            state_ids = {
+                state_id
+                for amendment in new_amendments.values()
+                if (state_id := amendment.get("state_id"))
+            }
             if len(state_ids):
-                states = self.datastore.get_many([GetManyRequest("motion_state",list(state_ids), ["allow_motion_forwarding"])])["motion_state"]
+                states = self.datastore.get_many(
+                    [
+                        GetManyRequest(
+                            "motion_state", list(state_ids), ["allow_motion_forwarding"]
+                        )
+                    ]
+                )["motion_state"]
             else:
                 states = {}
-            states = {id_:state for id_, state in states.items() if state.get("allow_motion_forwarding")}
-            for amendment in new_amendments.values():
-                if not ((state_id := amendment.pop("state_id", None)) and state_id in states):
+            states = {
+                id_: state
+                for id_, state in states.items()
+                if state.get("allow_motion_forwarding")
+            }
+            for amendment in list(new_amendments.values()):
+                if not (
+                    (state_id := amendment.pop("state_id", None)) and state_id in states
+                ):
                     new_amendments.pop(amendment["id"])
             amendment_data = new_amendments.values()
             for amendment in amendment_data:
-                amendment.update({
-                    "origin_id": amendment["id"],
-                    "meeting_id": instance["meeting_id"],
-                    "use_original_submitter": instance.get("use_original_submitter", False),
-                    "use_original_number": instance.get("use_original_number", False)
-                })
+                amendment.update(
+                    {
+                        "lead_motion_id": instance["id"],
+                        "origin_id": amendment["id"],
+                        "meeting_id": instance["meeting_id"],
+                        "use_original_submitter": use_original_submitter,
+                        "use_original_number": use_original_number,
+                    }
+                )
                 amendment.pop("meta_position", 0)
                 amendment.pop("id")
             amendment_results = self.create_amendments(list(amendment_data)) or []
-            instance["amendment_ids"] = [result["id"] for result in amendment_results if result]
             self.id_to_result_extra_data[instance["id"]] = {
-                "non_forwarded_amendment_amount": total-len(amendment_results),
-                "amendment_result_data": amendment_results
+                "non_forwarded_amendment_amount": total - len(amendment_results),
+                "amendment_result_data": amendment_results,
             }
         else:
             self.id_to_result_extra_data[instance["id"]] = {
                 "non_forwarded_amendment_amount": len(amendment_ids),
-                "amendment_result_data": []
+                "amendment_result_data": [],
             }
         return instance
-    
+
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
         raise ActionException("Not implemented")
-    
-    def create_action_result_element(self, instance: dict[str, Any]) -> ActionResultElement | None:
+
+    def create_action_result_element(
+        self, instance: dict[str, Any]
+    ) -> ActionResultElement | None:
         result = super().create_action_result_element(instance) or {}
         result.update(self.id_to_result_extra_data.get(result["id"], {}))
         return result

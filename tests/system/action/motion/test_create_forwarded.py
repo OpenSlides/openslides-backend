@@ -436,7 +436,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "derived_motion_ids": [],
                     "all_origin_ids": [],
                     "all_derived_motion_ids": [],
-                    "amendment_ids": [11]
+                    "amendment_ids": [11],
                 },
                 "motion/11": {
                     "title": "test11 layer 2",
@@ -479,7 +479,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "name": "name_XDAddEAW",
                     "committee_id": 53,
                     "is_active_in_organization_id": 1,
-                    "motion_ids": [12,13]
+                    "motion_ids": [12, 13],
                 },
                 "user/1": {"meeting_ids": [1, 2]},
                 "motion/12": {
@@ -488,16 +488,17 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                     "derived_motion_ids": [],
                     "all_origin_ids": [],
                     "all_derived_motion_ids": [],
-                    "amendment_ids": [13]
+                    "amendment_ids": [13],
                 },
                 "motion/13": {
-                    "title": "test11 layer 2",
+                    "title": "amendment",
                     "meeting_id": 1,
                     "derived_motion_ids": [],
                     "all_origin_ids": [],
                     "all_derived_motion_ids": [],
                     "lead_motion_id": 12,
                     "state_id": 30,
+                    "amendment_paragraphs": {"0": "texts"},
                 },
             }
         )
@@ -508,11 +509,269 @@ class MotionCreateForwardedTest(BaseActionTestCase):
                 "meeting_id": 2,
                 "origin_id": 12,
                 "text": "test",
-                "with_amendments": True
+                "with_amendments": True,
             },
         )
         self.assert_status_code(response, 200)
-        assert False #TODO: Check resulting data, results and write a few more tests
+        assert response.json["results"][0] == [
+            {
+                "id": 14,
+                "non_forwarded_amendment_amount": 0,
+                "sequential_number": 1,
+                "amendment_result_data": [
+                    {
+                        "amendment_result_data": [],
+                        "id": 15,
+                        "non_forwarded_amendment_amount": 0,
+                        "sequential_number": 2,
+                    }
+                ],
+            }
+        ]
+        self.assert_model_exists(
+            "motion/14",
+            {
+                "origin_id": 12,
+                "title": "test_foo",
+                "meeting_id": 2,
+                "text": "test",
+                "amendment_ids": [15],
+                "state_id": 34,
+                "additional_submitter": "committee_forwarder",
+            },
+        )
+        self.assert_model_exists(
+            "motion/15",
+            {
+                "lead_motion_id": 14,
+                "origin_id": 13,
+                "title": "amendment",
+                "meeting_id": 2,
+                "state_id": 34,
+                "amendment_paragraphs": {"0": "texts"},
+                "additional_submitter": "committee_forwarder",
+            },
+        )
+
+    def test_allowed_to_forward_amendments_indirectly_complex(self) -> None:
+        self.set_models(self.test_model)
+        user1 = self.create_user("first_submitter", [111])
+        user2 = self.create_user("second_submitter", [111])
+        self.set_models(
+            {
+                f"user/{user1}": {"first_name": "A", "last_name": "man"},
+                f"user/{user2}": {
+                    "title": "A",
+                    "first_name": "hairy",
+                    "last_name": "woman",
+                },
+                "meeting/1": {
+                    "name": "name_XDAddEAW",
+                    "committee_id": 53,
+                    "is_active_in_organization_id": 1,
+                    "motion_ids": [12, 13, 14, 15],
+                },
+                "user/1": {"meeting_ids": [1, 2]},
+                "motion/12": {
+                    "number": "MAIN",
+                    "title": "title_FcnPUXJB layer 1",
+                    "meeting_id": 1,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "amendment_ids": [13, 14, 15],
+                    "submitter_ids": [1, 2],
+                },
+                "motion_submitter/1": {
+                    "motion_id": 12,
+                    "meeting_user_id": 3,
+                    "weight": 1,
+                },
+                "motion_submitter/2": {
+                    "motion_id": 12,
+                    "meeting_user_id": 4,
+                    "weight": 2,
+                },
+                "motion/13": {
+                    "number": "AMNDMNT1",
+                    "title": "amendment1",
+                    "meeting_id": 1,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "lead_motion_id": 12,
+                    "state_id": 30,
+                    "amendment_paragraphs": {"0": "texts"},
+                    "submitter_ids": [3],
+                },
+                "motion_submitter/3": {
+                    "motion_id": 13,
+                    "meeting_user_id": 3,
+                    "weight": 1,
+                },
+                "motion/14": {
+                    "number": "AMNDMNT2",
+                    "title": "amendment2",
+                    "meeting_id": 1,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "lead_motion_id": 12,
+                    "state_id": 31,
+                    "amendment_paragraphs": {"0": "NO!!!"},
+                },
+                "motion/15": {
+                    "number": "AMNDMNT3",
+                    "title": "amendment3",
+                    "meeting_id": 1,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "lead_motion_id": 12,
+                    "state_id": 30,
+                    "amendment_paragraphs": {"0": "tests"},
+                    "amendment_ids": [16, 17],
+                },
+                "motion/16": {
+                    "number": "AMNDMNT4",
+                    "title": "amendment4",
+                    "meeting_id": 1,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "lead_motion_id": 15,
+                    "state_id": 30,
+                    "amendment_paragraphs": {"0": "testssss"},
+                },
+                "motion/17": {
+                    "number": "AMNDMNT5",
+                    "title": "amendment5",
+                    "meeting_id": 1,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "lead_motion_id": 15,
+                    "state_id": 31,
+                    "amendment_paragraphs": {"0": "test"},
+                },
+                "meeting/2": {
+                    "motions_default_workflow_id": 12,
+                    "motions_default_amendment_workflow_id": 13,
+                },
+                "motion_state/31": {
+                    "name": "No forward state",
+                    "meeting_id": 1,
+                },
+                "motion_workflow/13": {
+                    "name": "name_workflow2",
+                    "first_state_id": 35,
+                    "state_ids": [35],
+                    "meeting_id": 2,
+                },
+                "motion_state/35": {
+                    "name": "name_state35",
+                    "meeting_id": 2,
+                },
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_foo",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "with_amendments": True,
+                "use_original_submitter": True,
+                "use_original_number": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0] == [
+            {
+                "id": 18,
+                "non_forwarded_amendment_amount": 1,
+                "sequential_number": 1,
+                "amendment_result_data": [
+                    {
+                        "id": 19,
+                        "non_forwarded_amendment_amount": 0,
+                        "sequential_number": 2,
+                        "amendment_result_data": [],
+                    },
+                    {
+                        "id": 20,
+                        "non_forwarded_amendment_amount": 1,
+                        "sequential_number": 3,
+                        "amendment_result_data": [
+                            {
+                                "id": 21,
+                                "non_forwarded_amendment_amount": 0,
+                                "sequential_number": 4,
+                                "amendment_result_data": [],
+                            },
+                        ],
+                    },
+                ],
+            }
+        ]
+        self.assert_model_exists(
+            "motion/18",
+            {
+                "number": "MAIN",
+                "origin_id": 12,
+                "title": "test_foo",
+                "meeting_id": 2,
+                "text": "test",
+                "amendment_ids": [19, 20],
+                "additional_submitter": "A man, A hairy woman",
+                "sequential_number": 1,
+                "state_id": 34,
+            },
+        )
+        self.assert_model_exists(
+            "motion/19",
+            {
+                "number": "AMNDMNT1",
+                "lead_motion_id": 18,
+                "origin_id": 13,
+                "title": "amendment1",
+                "meeting_id": 2,
+                "amendment_paragraphs": {"0": "texts"},
+                "additional_submitter": "A man",
+                "sequential_number": 2,
+                "state_id": 35,
+            },
+        )
+        self.assert_model_exists(
+            "motion/20",
+            {
+                "number": "AMNDMNT3",
+                "lead_motion_id": 18,
+                "origin_id": 15,
+                "title": "amendment3",
+                "meeting_id": 2,
+                "state_id": 35,
+                "amendment_paragraphs": {"0": "tests"},
+                "additional_submitter": None,
+                "amendment_ids": [21],
+                "sequential_number": 3,
+            },
+        )
+        self.assert_model_exists(
+            "motion/21",
+            {
+                "number": "AMNDMNT4",
+                "lead_motion_id": 20,
+                "origin_id": 16,
+                "title": "amendment4",
+                "meeting_id": 2,
+                "state_id": 35,
+                "amendment_paragraphs": {"0": "testssss"},
+                "additional_submitter": None,
+                "sequential_number": 4,
+            },
+        )
 
     def test_forward_to_2_meetings_1_transaction(self) -> None:
         """Forwarding of 1 motion to 2 meetings in 1 transaction"""
@@ -725,7 +984,9 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         created = [date["id"] for date in response.json["results"][0]]
         for i in range(2):
-            self.assert_model_exists(f"motion/{created[i]}", {"number": f"{i+1}"})
+            self.assert_model_exists(
+                f"motion/{created[i]}", {"number": f"{i+1}", "sequential_number": 1 + i}
+            )
 
     def test_forward_multiple_to_meeting_with_set_number_and_use_original_number(
         self,

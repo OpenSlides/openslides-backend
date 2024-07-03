@@ -1,22 +1,25 @@
 from typing import Any
+
+from ....models.models import Motion
 from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
-from .base_create_forwarded import BaseMotionCreateForwarded
-from ...util.register import register_action
-from ...util.default_schema import DefaultSchema
-from ....models.models import Motion
-from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ...util.action_type import ActionType
+from ...util.default_schema import DefaultSchema
+from ...util.register import register_action
+from ...util.typing import ActionData, ActionResults
+from .base_create_forwarded import BaseMotionCreateForwarded
 
 
-@register_action("motion.create_forwarded_amendment", action_type=ActionType.BACKEND_INTERNAL)
+@register_action(
+    "motion.create_forwarded_amendment", action_type=ActionType.BACKEND_INTERNAL
+)
 class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
     """
     Create action for forwarded motions.
     """
 
     schema = DefaultSchema(Motion()).get_create_schema(
-        required_properties=["meeting_id", "title", "origin_id"],
+        required_properties=["meeting_id", "title", "origin_id", "lead_motion_id"],
         optional_properties=["reason", "text", "amendment_paragraphs"],
         additional_optional_fields={
             "use_original_submitter": {"type": "boolean"},

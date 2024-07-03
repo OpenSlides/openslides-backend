@@ -1,22 +1,11 @@
-import time
-from collections import defaultdict
 from typing import Any
 
-from openslides_backend.action.actions.motion.mixins import TextHashMixin
-from openslides_backend.shared.typing import HistoryInformation
-
 from ....models.models import Motion
-from ....permissions.permission_helper import has_perm
-from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.filters import FilterOperator, Or
+from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionData, ActionResultElement, ActionResults
-from ...util.action_type import ActionType
-from .create_base import MotionCreateBase
+from ...util.typing import ActionData, ActionResults
 from .base_create_forwarded import BaseMotionCreateForwarded
 from .create_forwarded_amendment import MotionCreateForwardedAmendment
 
@@ -50,7 +39,7 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
         if origin.get("lead_motion_id") or origin.get("statute_paragraph_id"):
             msg = "Amendments cannot be forwarded."
             raise PermissionDenied(msg)
-    
+
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
         return self.execute_other_action(MotionCreateForwardedAmendment, amendment_data)
 
