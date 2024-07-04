@@ -70,7 +70,6 @@ class UserMergeTogether(
             },
         },
     )
-    permission = permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -138,15 +137,13 @@ class UserMergeTogether(
             for user in selected_users.values()
             if (oml := user.get("organization_management_level"))
         ]
-        if len(all_omls):
-            min_oml = max(all_omls)
-            if not has_organization_management_level(
-                self.datastore,
-                self.user_id,
-                min_oml,
-            ):
-                raise MissingPermission(min_oml)
-        return super().check_permissions(instance)
+        min_oml = max([*all_omls, OrganizationManagementLevel.CAN_MANAGE_USERS])
+        if not has_organization_management_level(
+            self.datastore,
+            self.user_id,
+            min_oml,
+        ):
+            raise MissingPermission(min_oml)
 
     def prefetch(self, action_data: ActionData) -> None:
         self.mass_prefetch_for_merge(
@@ -170,7 +167,7 @@ class UserMergeTogether(
             raise ActionException(
                 "Users cannot be part of different merges at the same time"
             )
-        main_ids_by_secondary_id = {
+        secondary_id_to_main_ids = {
             user_id: instance["id"]
             for instance in action_data
             for user_id in instance.get("user_ids", [])
@@ -190,16 +187,16 @@ class UserMergeTogether(
             for vote in entitled:
                 if (
                     user_id := (vote.get("user_merged_into_id") or vote.get("user_id"))
-                ) in main_ids_by_secondary_id:
-                    vote["user_merged_into_id"] = main_ids_by_secondary_id[user_id]
+                ) in secondary_id_to_main_ids:
+                    vote["user_merged_into_id"] = secondary_id_to_main_ids[user_id]
                     changed = True
                 if (
                     user_id := (
                         vote.get("delegation_user_merged_into_id")
                         or vote.get("vote_delegated_to_user_id")
                     )
-                ) in main_ids_by_secondary_id:
-                    vote["delegation_user_merged_into_id"] = main_ids_by_secondary_id[
+                ) in secondary_id_to_main_ids:
+                    vote["delegation_user_merged_into_id"] = secondary_id_to_main_ids[
                         user_id
                     ]
                     changed = True

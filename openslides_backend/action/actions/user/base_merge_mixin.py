@@ -65,7 +65,7 @@ class BaseMergeMixin(Action):
                 GetManyRequest(
                     collection,
                     ids,
-                    self._all_collection_fields[collection].copy(),
+                    self._all_collection_fields[collection],
                 )
                 for collection, ids in collection_to_ids.items()
             ]
@@ -80,8 +80,7 @@ class BaseMergeMixin(Action):
             for field, recurse_collection in recurse.items():
                 ids: list[int] = []
                 for date in collection_data.values():
-                    if vals := date.get(field):
-                        ids.extend(vals)
+                    ids.extend(date.get(field, []))
                 if len(ids):
                     mass_prefetch_payload[recurse_collection] = ids
         if len(mass_prefetch_payload):
@@ -94,7 +93,7 @@ class BaseMergeMixin(Action):
         back_field: str = "",
     ) -> None:
         """Should be called once in __init__ of every sub-class"""
-        collection = Class.__dict__["collection"]
+        collection = Class.collection
         self._collection_field_groups[collection] = field_groups
         self._all_collection_fields[collection] = [
             i

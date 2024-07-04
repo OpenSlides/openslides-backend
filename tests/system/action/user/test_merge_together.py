@@ -334,12 +334,11 @@ class UserMergeTogether(BaseVoteTestCase):
         collection_fields = merge_together._all_collection_fields  # type: ignore
         broken = []
         for collection in collection_fields:
-            if sorted(collection_fields[collection]) != sorted(
+            if set(collection_fields[collection]) != {
                 field
                 for group in field_groups[collection].values()
                 for field in cast(Iterable[CollectionField], group)
-                if field in collection_fields[collection]
-            ):
+            }:
                 broken.append(collection)
         assert broken == []
 
