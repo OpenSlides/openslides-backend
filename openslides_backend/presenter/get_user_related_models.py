@@ -97,17 +97,6 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             "motion_submitter_ids",
             "assignment_candidate_ids",
         )
-        meeting_users = list(
-            self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "meeting_user",
-                        meeting_user_ids,
-                        [*result_fields, "group_ids", "meeting_id"],
-                    )
-                ]
-            )["meeting_user"].values()
-        )
         meeting_users = [
             meeting_user
             for meeting_user in self.datastore.get_many(
