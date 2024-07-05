@@ -561,6 +561,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "can_change_own_password": False,
                 "meeting_ids": [1],
                 "meeting_user_ids": [38],
+                "gender_id": 3,
             },
         )
         level_up = self.assert_model_exists("structure_level/1")
@@ -636,6 +637,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "default_password": "",
                 "can_change_own_password": False,
                 "meeting_user_ids": [35],
+                "gender_id": None,
             },
         )
         self.assert_model_exists(
@@ -678,6 +680,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "last_name": "Baez7",
                 "can_change_own_password": True,
                 "meeting_user_ids": [37],
+                "gender_id": 2,
             },
         )
         self.assert_model_exists(
