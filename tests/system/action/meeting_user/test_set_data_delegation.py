@@ -159,6 +159,44 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_reverse_delegation(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "meeting_user/14": {"vote_delegations_from_ids": [13]},
+                "meeting_user/13": {
+                    "vote_delegated_to_id": 14,
+                    "vote_delegations_from_ids": [],
+                },
+            }
+        )
+        response = self.request_executor(
+            {"vote_delegations_from_ids": [], "vote_delegated_to_id": 13}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/14",
+            {"vote_delegated_to_id": 13, "vote_delegations_from_ids": []},
+        )
+        self.assert_model_exists(
+            "meeting_user/13",
+            {"vote_delegated_to_id": None, "vote_delegations_from_ids": [14]},
+        )
+        # also test the reverse direction of reversing the delegation direction
+        response = self.request_executor(
+            {"vote_delegations_from_ids": [13], "vote_delegated_to_id": None}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/14",
+            {"vote_delegated_to_id": None, "vote_delegations_from_ids": [13]},
+        )
+        self.assert_model_exists(
+            "meeting_user/13",
+            {"vote_delegated_to_id": 14, "vote_delegations_from_ids": []},
+        )
+
     def test_delegated_to_error_target_not_exists(self) -> None:
         response = self.request_executor({"vote_delegated_to_id": 1000})
         self.assert_status_code(response, 400)
