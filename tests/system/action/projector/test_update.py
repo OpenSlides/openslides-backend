@@ -34,6 +34,8 @@ class ProjectorUpdate(BaseActionTestCase):
                 "header_h1_color": "#ffffff",
                 "chyron_background_color": "#ffffff",
                 "chyron_font_color": "#ffffff",
+                "chyron_background_color_2": "#ffffff",
+                "chyron_font_color_2": "#ffffff",
                 "show_header_footer": True,
                 "show_title": True,
                 "show_logo": True,

@@ -1270,3 +1270,15 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "member_number": "M3MNUM",
             },
         )
+
+    def test_json_upload_dont_recognize_empty_name_and_email(self) -> None:
+        self.json_upload_dont_recognize_empty_name_and_email()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/5",
+            {
+                "username": "balubear",
+                "member_number": "mem_nr",
+            },
+        )

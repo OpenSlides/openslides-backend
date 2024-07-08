@@ -30,6 +30,11 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
         additional_required_fields={
             "ids": id_list_schema,
         },
+        additional_optional_fields={
+            "keep_active_projections": {
+                "type": "boolean",
+            }
+        },
         title="Projector project schema",
     )
     permission = Permissions.Projector.CAN_MANAGE
@@ -86,34 +91,38 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
         )
         for projection_id in result:
             if result[projection_id]["current_projector_id"]:
-                # Unset stable equal projections
-                if result[projection_id]["stable"]:
-                    action_del_data = [{"id": int(projection_id)}]
-                    self.execute_other_action(ProjectionDelete, action_del_data)
-                # Move unstable equal projections to history
-                else:
-                    filter_ = And(
-                        FilterOperator(
-                            "meeting_id", "=", result[projection_id]["meeting_id"]
-                        ),
-                        FilterOperator(
-                            "history_projector_id",
-                            "=",
-                            result[projection_id]["current_projector_id"],
-                        ),
-                    )
-                    weight = self.get_weight(filter_, "projection")
-                    action_data = [
-                        {
-                            "id": int(projection_id),
-                            "current_projector_id": None,
-                            "history_projector_id": result[projection_id][
-                                "current_projector_id"
-                            ],
-                            "weight": weight,
-                        }
-                    ]
-                    self.execute_other_action(ProjectionUpdate, action_data)
+                if (
+                    not instance.get("keep_active_projections")
+                    or result[projection_id]["current_projector_id"] in instance["ids"]
+                ):
+                    # Unset stable equal projections
+                    if result[projection_id]["stable"]:
+                        action_del_data = [{"id": int(projection_id)}]
+                        self.execute_other_action(ProjectionDelete, action_del_data)
+                    # Move unstable equal projections to history
+                    else:
+                        filter_ = And(
+                            FilterOperator(
+                                "meeting_id", "=", result[projection_id]["meeting_id"]
+                            ),
+                            FilterOperator(
+                                "history_projector_id",
+                                "=",
+                                result[projection_id]["current_projector_id"],
+                            ),
+                        )
+                        weight = self.get_weight(filter_, "projection")
+                        action_data = [
+                            {
+                                "id": int(projection_id),
+                                "current_projector_id": None,
+                                "history_projector_id": result[projection_id][
+                                    "current_projector_id"
+                                ],
+                                "weight": weight,
+                            }
+                        ]
+                        self.execute_other_action(ProjectionUpdate, action_data)
 
     def move_unstable_projections_to_history(self, instance: dict[str, Any]) -> None:
         for projector_id in instance["ids"]:

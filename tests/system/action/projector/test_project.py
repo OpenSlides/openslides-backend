@@ -345,6 +345,46 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_model_deleted("projection/106")
 
+    def test_try_to_store_second_stable_projection_keep_active(self) -> None:
+        response = self.request(
+            "projector.project",
+            {
+                "ids": [65],
+                "meeting_id": 1,
+                "content_object_id": "assignment/453",
+                "stable": True,
+                "keep_active_projections": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projector/65", {"meeting_id": 1, "current_projection_ids": [112]}
+        )
+        self.assert_model_exists(
+            "projector/75",
+            {"meeting_id": 1, "current_projection_ids": [110, 111]},
+        )
+
+    def test_try_to_store_second_stable_projection_no_keep_active(self) -> None:
+        response = self.request(
+            "projector.project",
+            {
+                "ids": [65],
+                "meeting_id": 1,
+                "content_object_id": "assignment/453",
+                "stable": True,
+                "keep_active_projections": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projector/65", {"meeting_id": 1, "current_projection_ids": [112]}
+        )
+        self.assert_model_exists(
+            "projector/75",
+            {"meeting_id": 1, "current_projection_ids": [110]},
+        )
+
     def test_meeting_as_content_object_ok(self) -> None:
         response = self.request(
             "projector.project",

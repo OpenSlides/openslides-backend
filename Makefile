@@ -71,6 +71,9 @@ pip-check:
 coverage:
 	pytest --cov --cov-report html
 
+coverage-show-uncovered:
+	pytest --cov --cov-report term-missing:skip-covered
+
 extract-translations:
 	pybabel extract --no-location --sort-output --omit-header -o openslides_backend/i18n/messages/template-en.pot openslides_backend
 

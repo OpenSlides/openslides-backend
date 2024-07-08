@@ -89,7 +89,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
         return committees_data
 
     def get_meetings_data(self, user: dict[str, Any]) -> list[dict[str, Any]]:
-        if not user.get("meeting_user_ids"):
+        if not (meeting_user_ids := user.get("meeting_user_ids")):
             return []
 
         result_fields = (
@@ -97,12 +97,22 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             "motion_submitter_ids",
             "assignment_candidate_ids",
         )
-        gmr = GetManyRequest(
-            "meeting_user",
-            user["meeting_user_ids"],
-            ["meeting_id", *result_fields],
-        )
-        meeting_users = self.datastore.get_many([gmr]).get("meeting_user", {}).values()
+        meeting_users = [
+            meeting_user
+            for meeting_user in self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "meeting_user",
+                        meeting_user_ids,
+                        [*result_fields, "group_ids", "meeting_id"],
+                    )
+                ]
+            )["meeting_user"].values()
+            if meeting_user.pop("group_ids", None)
+        ]
+
+        if len(meeting_users) == 0:
+            return []
 
         gmr = GetManyRequest(
             "meeting",
