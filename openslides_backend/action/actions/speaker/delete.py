@@ -7,10 +7,10 @@ from ....models.models import Speaker
 from ....permissions.permissions import Permissions
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
+from ...mixins.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
-from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 
 
 @register_action("speaker.delete")

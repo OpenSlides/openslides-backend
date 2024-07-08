@@ -11,6 +11,10 @@
     point_of_order: bool;
     point_of_order_category_id: Id;
     note: string;
+
+// Only if internal
+    structure_level_list_of_speakers_id: Id;
+    weight: int
 }
 ```
 
