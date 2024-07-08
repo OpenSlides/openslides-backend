@@ -26,6 +26,9 @@
     votesinvalid?: number;
     votescast?: number;
     publish_immediately: boolean;
+
+// action called internally
+    entitled_users_at_stop: json;
 }
 ```
 
