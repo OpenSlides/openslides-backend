@@ -35,8 +35,8 @@ class UserScopeMixin(BaseServiceProvider):
         """
         Parameter id_or_instance: id for existing user or instance for user to create
         Returns the scope of the given user id together with the relevant scope id (either meeting,
-        committee or organization) and the OML level of the user as string (empty string if the user
-        has none).
+        committee or organization), the OML level of the user as string (empty string if the user
+        has none) and the ids of all committees that the user is either a manager in or a member of.
         """
         meetings: set[int] = set()
         committees_manager: set[int] = set()
