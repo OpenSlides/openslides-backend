@@ -43,5 +43,10 @@ class MotionCreateForwarded(BaseMotionCreateForwarded):
     def create_amendments(self, amendment_data: ActionData) -> ActionResults | None:
         return self.execute_other_action(MotionCreateForwardedAmendment, amendment_data)
 
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.with_amendments = instance.pop("with_amendments", False)
+        super().update_instance(instance)
+        return instance
+
     def should_forward_amendments(self, instance: dict[str, Any]) -> bool:
-        return instance.pop("with_amendments", False)
+        return self.with_amendments

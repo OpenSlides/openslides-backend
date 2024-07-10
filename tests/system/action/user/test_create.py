@@ -1217,18 +1217,6 @@ class UserCreateActionTest(BaseActionTestCase):
         user = self.get_model("user/2")
         assert "default_vote_weight" not in user
 
-    # def test_create_forwarding_committee_ids_not_allowed(self) -> None:
-    #     self.set_models({"meeting/1": {"is_active_in_organization_id": 1}})
-    #     response = self.request(
-    #         "user.create",
-    #         {
-    #             "username": "test_Xcdfgee",
-    #             "forwarding_committee_ids": [],
-    #         },
-    #     )
-    #     self.assert_status_code(response, 403)
-    #     assert "forwarding_committee_ids is not allowed." in response.json["message"]
-
     def test_create_negative_vote_weight(self) -> None:
         self.set_models(
             {
