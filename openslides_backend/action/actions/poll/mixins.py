@@ -80,6 +80,7 @@ class StopControl(CountdownControl, Action):
                 "poll_couple_countdown",
                 "poll_countdown_id",
                 "users_enable_vote_weight",
+                "users_enable_vote_delegations",
             ],
         )
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
@@ -161,9 +162,13 @@ class StopControl(CountdownControl, Action):
         instance["votesinvalid"] = "0.000000"
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_users(poll | instance)
+        instance["entitled_users_at_stop"] = self.get_entitled_users(
+            poll | instance, meeting
+        )
 
-    def get_entitled_users(self, poll: dict[str, Any]) -> list[dict[str, Any]]:
+    def get_entitled_users(
+        self, poll: dict[str, Any], meeting: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         entitled_users = []
         all_voted_users = set(poll.get("voted_ids", []))
 
@@ -184,14 +189,15 @@ class StopControl(CountdownControl, Action):
         gm_result = self.datastore.get_many([gmr])
         meeting_users = gm_result.get("meeting_user", {}).values()
 
-        # fetch vote delegations
-        delegated_to_mu_ids = list(
-            {id_ for mu in meeting_users if (id_ := mu.get("vote_delegated_to_id"))}
-        )
         mu_to_user_id = {}
-        if delegated_to_mu_ids:
-            gmr = GetManyRequest("meeting_user", delegated_to_mu_ids, ["user_id"])
-            mu_to_user_id = self.datastore.get_many([gmr]).get("meeting_user", {})
+        if meeting.get("users_enable_vote_delegations"):
+            # fetch vote delegations
+            delegated_to_mu_ids = list(
+                {id_ for mu in meeting_users if (id_ := mu.get("vote_delegated_to_id"))}
+            )
+            if delegated_to_mu_ids:
+                gmr = GetManyRequest("meeting_user", delegated_to_mu_ids, ["user_id"])
+                mu_to_user_id = self.datastore.get_many([gmr]).get("meeting_user", {})
 
         gmr = GetManyRequest(
             "user",
@@ -210,6 +216,7 @@ class StopControl(CountdownControl, Action):
                     "vote_delegated_to_user_id": (
                         mu_to_user_id[vote_mu_id]["user_id"]
                         if (vote_mu_id := mu.get("vote_delegated_to_id"))
+                        and meeting.get("users_enable_vote_delegations")
                         else None
                     ),
                 }
