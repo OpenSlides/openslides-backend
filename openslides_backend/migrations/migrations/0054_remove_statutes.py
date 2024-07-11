@@ -269,10 +269,23 @@ class Migration(BaseModelMigration):
                         )
                         comment_section_fqid = fqid_from_collection_and_id(
                             "motion_comment_section",
-                            motion_comment.get("section_id", ""),
+                            motion_comment.get("section_id", 0),
                         )
                         if response := self.update_relations(
                             comment_section_fqid, "comment_ids", model_id
+                        ):
+                            events.append(response)
+
+                    if collection_name == "personal_note":
+                        personal_note = self.reader.get(
+                            fqid_from_collection_and_id(collection_name, model_id)
+                        )
+                        meeting_user_fqid = fqid_from_collection_and_id(
+                            "meeting_user",
+                            personal_note.get("meeting_user_id", 0)
+                        )
+                        if response := self.update_relations(
+                            meeting_user_fqid, "personal_note_ids", model_id
                         ):
                             events.append(response)
 
@@ -566,7 +579,7 @@ class Migration(BaseModelMigration):
 
                 # delete cascading models related with motion
                 self.update_polls(
-                    motion.get("poll_ids", ""),
+                    motion.get("poll_ids", []),
                     to_remove_in_meetings,
                     meeting_id,
                     events,
@@ -579,7 +592,7 @@ class Migration(BaseModelMigration):
                     events,
                 )
                 self.update_list_of_speakers(
-                    motion.get("list_of_speakers_id", ""),
+                    motion.get("list_of_speakers_id", 0),
                     to_remove_in_meetings,
                     meeting_id,
                     events,

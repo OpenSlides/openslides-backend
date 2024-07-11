@@ -105,6 +105,7 @@ def create_comprehensive_data(write) -> None:
                 "user_id": 1,
                 "supported_motion_ids": [1],
                 "speaker_ids": [1],
+                "personal_note_ids": [1],
                 "meeting_id": 11,
             },
         },
@@ -321,6 +322,7 @@ def create_comprehensive_data(write) -> None:
             "fqid": "personal_note/1",
             "fields": {
                 "id": 1,
+                "meeting_user_id": 1,
                 "content_object_id": "motion/1",
                 "meeting_id": 11,
             },
@@ -557,8 +559,56 @@ def create_comprehensive_data(write) -> None:
         },
     )
 
+def test_no_delete_without_statute(write, finalize, assert_model):
+    write(
+        {
+            "type": "create",
+            "fqid": "meeting/11",
+            "fields": {
+                "id": 11,
+                "name": "string",
+                "language": "string",
+                "motion_ids": [1, 2],
+            },
+        },
+        {
+            "type": "create",
+            "fqid": "motion/1",
+            "fields": {
+                "id": 1,
+                "title": "text",
+                "meeting_id": 11,
+            },
+        },
+        {
+            "type": "create",
+            "fqid": "motion/2",
+            "fields": {
+                "id": 2,
+                "title": "text",
+                "meeting_id": 11,
+            },
+        },
+    )
+    finalize("0054_remove_statutes")
+    assert_model(
+        "motion/2",
+        {
+            "id": 2,
+            "title": "text",
+            "meeting_id": 11,
+        },
+    )
+    assert_model(
+        "motion/1",
+        {
+            "id": 1,
+            "title": "text",
+            "meeting_id": 11,
+        },
+    )
 
-def test_delete_without_sideffects(write, finalize, assert_model):
+def test_delete_motion_without_sideffects(write, finalize, assert_model):
     write(
         {
             "type": "create",
@@ -1106,6 +1156,7 @@ def test_migration_full(write, finalize, assert_model):
         {
             "id": 1,
             "content_object_id": "motion/1",
+            'meeting_user_id': 1,
             "meeting_id": 11,
             "meta_deleted": True,
         },
