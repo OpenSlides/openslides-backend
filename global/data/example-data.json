@@ -34,6 +34,7 @@
             "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
             "url": "https://example.com",
             "user_ids": [1, 2, 3],
+            "enable_duplicate_from_mandatory": false,
             "saml_enabled": false,
             "saml_login_button_text": "SAML Login",
             "saml_attr_mapping": {

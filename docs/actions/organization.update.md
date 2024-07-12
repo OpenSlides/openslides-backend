@@ -18,6 +18,7 @@
     users_email_subject: string;
     users_email_body: text;
     genders: string[];
+    enable_duplicate_from_mandatory: boolean;
     
 // Group B
     enable_electronic_voting: boolean;
