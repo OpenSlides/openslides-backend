@@ -164,3 +164,13 @@ class StructureLevelListOfSpeakersCreateTest(BaseActionTestCase):
             },
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
+
+    def test_create_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.models,
+            "structure_level_list_of_speakers.create",
+            {
+                "structure_level_id": 1,
+                "list_of_speakers_id": 2,
+            },
+        )

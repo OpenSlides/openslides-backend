@@ -227,6 +227,13 @@ class MediafileMoveActionTest(BaseActionTestCase):
             Permissions.Mediafile.CAN_MANAGE,
         )
 
+    def test_move_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "mediafile.move",
+            {"owner_id": "meeting/1", "ids": [8], "parent_id": 7},
+        )
+
     def test_move_no_permissions_orga(self) -> None:
         self.permission_test_models["mediafile/7"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.permission_test_models["mediafile/8"]["owner_id"] = ONE_ORGANIZATION_FQID

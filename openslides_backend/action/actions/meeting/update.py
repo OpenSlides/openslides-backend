@@ -33,6 +33,7 @@ meeting_settings_keys = [
     "location",
     "start_time",
     "end_time",
+    "locked_from_inside",
     "conference_show",
     "conference_auto_connect",
     "conference_los_restriction",

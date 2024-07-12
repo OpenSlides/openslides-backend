@@ -413,6 +413,17 @@ class MotionCreateActionTest(BaseActionTestCase):
             Permissions.Motion.CAN_CREATE,
         )
 
+    def test_create_permission_simple_fields_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+            },
+        )
+
     def setup_permission_test(
         self, permissions: list[Permission], additional_data: dict[str, Any] = {}
     ) -> None:

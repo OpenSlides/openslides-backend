@@ -82,3 +82,16 @@ class MotionBlockActionTest(BaseActionTestCase):
             {"title": "test_Xcdfgee", "meeting_id": 1},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_create_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "meeting/1": {
+                    "name": "test",
+                    "agenda_item_creation": "always",
+                    "is_active_in_organization_id": 1,
+                }
+            },
+            "motion_block.create",
+            {"title": "test_Xcdfgee", "meeting_id": 1},
+        )

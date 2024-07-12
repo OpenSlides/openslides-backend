@@ -195,6 +195,13 @@ class OptionUpdateActionTest(BaseActionTestCase):
             Permissions.Poll.CAN_MANAGE,
         )
 
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.vote_models,
+            "option.update",
+            {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
+        )
+
     def test_update_together_with_poll(self) -> None:
         self.set_models(
             {

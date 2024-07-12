@@ -59,3 +59,10 @@ class TopicUpdateTest(BaseActionTestCase):
             {"id": 1, "title": "test2", "text": "text"},
             Permissions.AgendaItem.CAN_MANAGE,
         )
+
+    def test_update_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "topic.update",
+            {"id": 1, "title": "test2", "text": "text"},
+        )

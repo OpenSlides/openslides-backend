@@ -113,3 +113,15 @@ class StructureLevelUpdateTest(BaseActionTestCase):
             },
             Permissions.User.CAN_MANAGE,
         )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "structure_level/1": {"meeting_id": 1, "name": "test"},
+            },
+            "structure_level.update",
+            {
+                "id": 1,
+                "name": "test2",
+            },
+        )

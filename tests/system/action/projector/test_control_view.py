@@ -82,3 +82,10 @@ class ProjectorControlView(BaseActionTestCase):
             {"id": 1, "field": "scale", "direction": "reset"},
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_control_view_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projector.control_view",
+            {"id": 1, "field": "scale", "direction": "reset"},
+        )

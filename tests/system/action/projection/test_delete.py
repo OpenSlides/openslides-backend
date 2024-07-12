@@ -79,3 +79,10 @@ class ProjectionDelete(BaseActionTestCase):
             {"id": 12},
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projection.delete",
+            {"id": 12},
+        )

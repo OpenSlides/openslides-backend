@@ -14,6 +14,7 @@
     location: string;
     start_time: timestamp;
     end_time: timestamp;
+    locked_from_inside: boolean;
 
     conference_show: boolean;
     conference_auto_connect: boolean;
@@ -183,7 +184,6 @@
     jitsi_domain: string;
     jitsi_room_name: string;
     jitsi_room_password: string;
-    enable_chat: boolean;
 }
 ```
 

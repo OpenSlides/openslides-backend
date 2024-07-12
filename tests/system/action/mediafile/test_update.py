@@ -695,6 +695,13 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             Permissions.Mediafile.CAN_MANAGE,
         )
 
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "mediafile.update",
+            {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+        )
+
     def test_update_no_permissions_orga_owner(self) -> None:
         self.permission_test_models["mediafile/111"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.base_permission_test(

@@ -57,3 +57,10 @@ class ListOfSpeakersUpdateActionTest(BaseActionTestCase):
             {"id": 111, "closed": True},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "list_of_speakers.update",
+            {"id": 111, "closed": True},
+        )
