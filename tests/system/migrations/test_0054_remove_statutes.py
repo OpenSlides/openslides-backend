@@ -103,6 +103,9 @@ def create_comprehensive_data(write) -> None:
             "fields": {
                 "id": 1,
                 "user_id": 1,
+                "editor_ids": [1],
+                "motion_submitter_ids": [1],
+                "motion_working_group_speaker_ids": [1],
                 "supported_motion_ids": [1],
                 "speaker_ids": [1],
                 "personal_note_ids": [1],

@@ -78,16 +78,19 @@ class Migration(BaseModelMigration):
             "field": "submitter_ids",
             "collection": "motion_submitter",
             "meeting_field": "motion_submitter_ids",
+            "meeting_user_field": "motion_submitter_ids"
         },
         {
             "field": "editor_ids",
             "collection": "motion_editor",
             "meeting_field": "motion_editor_ids",
+            "meeting_user_field": "editor_ids"
         },
         {
             "field": "working_group_speaker_ids",
             "collection": "motion_working_group_speaker",
             "meeting_field": "motion_working_group_speaker_ids",
+            "meeting_user_field": "motion_working_group_speaker_ids"
         },
         {
             "field": "change_recommendation_ids",
@@ -103,6 +106,7 @@ class Migration(BaseModelMigration):
             "field": "personal_note_ids",
             "collection": "personal_note",
             "meeting_field": "personal_note_ids",
+            "meeting_user_field": "personal_note_ids"
         },
     ]
 
@@ -247,6 +251,7 @@ class Migration(BaseModelMigration):
         motion: dict,
         deleted_motions_ids: list,
         to_remove_in_meetings: defaultdict[int, defaultdict[str, list]],
+        meeting_users_to_update: defaultdict[str, defaultdict[str, list]],
         meeting_id: int,
         events: list,
     ) -> None:
@@ -263,31 +268,25 @@ class Migration(BaseModelMigration):
                     )
                     to_remove_in_meetings[meeting_id][collection_name].append(model_id)
                     # do some manual updates one layer down
+                    model = self.reader.get(
+                        fqid_from_collection_and_id(collection_name, model_id)
+                    )
                     if collection_name == "motion_comment":
-                        motion_comment = self.reader.get(
-                            fqid_from_collection_and_id(collection_name, model_id)
-                        )
                         comment_section_fqid = fqid_from_collection_and_id(
                             "motion_comment_section",
-                            motion_comment.get("section_id", 0),
+                            model.get("section_id", 0),
                         )
                         if response := self.update_relations(
                             comment_section_fqid, "comment_ids", model_id
                         ):
                             events.append(response)
-
-                    if collection_name == "personal_note":
-                        personal_note = self.reader.get(
-                            fqid_from_collection_and_id(collection_name, model_id)
-                        )
+                    
+                    if meeting_user_field := entry.get("meeting_user_field"):
                         meeting_user_fqid = fqid_from_collection_and_id(
                             "meeting_user",
-                            personal_note.get("meeting_user_id", 0)
+                            model.get("meeting_user_id", 0)
                         )
-                        if response := self.update_relations(
-                            meeting_user_fqid, "personal_note_ids", model_id
-                        ):
-                            events.append(response)
+                        meeting_users_to_update[meeting_user_fqid][meeting_user_field].append(model_id)
 
     def update_polls(
         self,
@@ -528,6 +527,8 @@ class Migration(BaseModelMigration):
             lambda: defaultdict(list)
         )
         tags_to_update: defaultdict[int, list] = defaultdict(list)
+        meeting_users_to_update: defaultdict[str, defaultdict[str, list]] = defaultdict(
+            lambda: defaultdict(list))
 
         # delete all statute paragraphs
         statute_paragraphs = self.reader.get_all(
@@ -566,6 +567,7 @@ class Migration(BaseModelMigration):
                     motion,
                     deleted_motions_ids,
                     to_remove_in_meetings,
+                    meeting_users_to_update,
                     meeting_id,
                     events,
                 )
@@ -604,6 +606,20 @@ class Migration(BaseModelMigration):
                 events.append(
                     RequestDeleteEvent(fqid_from_collection_and_id("motion", motion_id))
                 )
+
+        for meeting_users_fqid, field_default_dict in meeting_users_to_update.items():
+            meeting_user = self.reader.get(meeting_users_fqid)
+            meeting_user_fields = {}
+            for field_name, ids_to_delete in field_default_dict.items():
+                field_value = meeting_user.get(field_name)
+                field_value = self.subtract_ids(field_value, ids_to_delete)
+                meeting_user_fields[field_name] = field_value
+            events.append(
+                RequestUpdateEvent(
+                    meeting_users_fqid,
+                    meeting_user_fields
+                )
+            )
 
         for tag_id, object_list in tags_to_update.items():
             if response := self.update_relations(
