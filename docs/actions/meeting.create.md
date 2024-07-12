@@ -45,3 +45,4 @@ It translates created objects (eg. groups, workflow, states, ...) to the given l
 
 ## Permissions
 The user must have CML `can_manage`.
+If the organization setting: `enable_duplicate_from_mandatory` is set, OML rights are required.
