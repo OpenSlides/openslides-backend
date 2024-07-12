@@ -36,10 +36,6 @@ class MotionCreateBase(
         if workflow_id is None:
             if instance.get("lead_motion_id"):
                 workflow_id = meeting.get("motions_default_amendment_workflow_id")
-            elif instance.get("statute_paragraph_id"):
-                workflow_id = meeting.get(
-                    "motions_default_statute_amendment_workflow_id"
-                )
             else:
                 workflow_id = meeting.get("motions_default_workflow_id")
         if workflow_id:

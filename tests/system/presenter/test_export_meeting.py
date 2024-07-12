@@ -29,7 +29,6 @@ class TestExportMeeting(BasePresenterTestCase):
             "motion_change_recommendation",
             "motion_state",
             "motion_workflow",
-            "motion_statute_paragraph",
             "poll",
             "option",
             "vote",

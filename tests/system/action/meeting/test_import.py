@@ -59,7 +59,6 @@ class MeetingImport(BaseActionTestCase):
                         "admin_group_id": 1,
                         "default_group_id": 2,
                         "motions_default_amendment_workflow_id": 1,
-                        "motions_default_statute_amendment_workflow_id": 1,
                         "motions_default_workflow_id": 1,
                         "projector_countdown_default_time": 60,
                         "projector_countdown_warning_time": 60,
@@ -130,13 +129,11 @@ class MeetingImport(BaseActionTestCase):
                         "motions_show_referring_motions": True,
                         "motions_show_sequential_number": True,
                         "motions_recommendations_by": "ABK",
-                        "motions_statute_recommendations_by": "Statute ABK",
                         "motions_recommendation_text_mode": "original",
                         "motions_default_sorting": "number",
                         "motions_number_type": "per_category",
                         "motions_number_min_digits": 3,
                         "motions_number_with_blank": False,
-                        "motions_statutes_enabled": True,
                         "motions_amendments_enabled": True,
                         "motions_amendments_in_main_list": True,
                         "motions_amendments_of_amendments": True,
@@ -207,7 +204,6 @@ class MeetingImport(BaseActionTestCase):
                         "motion_category_ids": [],
                         "motion_block_ids": [],
                         "motion_workflow_ids": [1],
-                        "motion_statute_paragraph_ids": [],
                         "motion_change_recommendation_ids": [],
                         "poll_ids": [],
                         "option_ids": [],
@@ -267,7 +263,6 @@ class MeetingImport(BaseActionTestCase):
                         "name": "blup",
                         "first_state_id": 1,
                         "default_amendment_workflow_meeting_id": 1,
-                        "default_statute_amendment_workflow_meeting_id": 1,
                         "default_workflow_meeting_id": 1,
                         "state_ids": [1],
                         "sequential_number": 1,
@@ -2419,6 +2414,41 @@ class MeetingImport(BaseActionTestCase):
             },
         )
         self.assert_model_not_exists("user/2")
+
+    def test_delete_statutes(self) -> None:
+        """test for deleted statute motions in event.data after migration. Uses migrations 0054 and onwards."""
+        data = self.create_request_data()
+        data["meeting"]["meeting"]["1"][
+            "motions_default_statute_amendment_workflow_id"
+        ] = 1
+        data["meeting"]["meeting"]["1"][
+            "motions_statute_recommendations_by"
+        ] = "Statute ABK"
+        data["meeting"]["meeting"]["1"]["motions_statutes_enabled"] = True
+        data["meeting"]["meeting"]["1"]["motion_statute_paragraph_ids"] = []
+
+        data["meeting"]["motion_workflow"]["1"][
+            "default_statute_amendment_workflow_meeting_id"
+        ] = 1
+        data["meeting"]["_migration_index"] = 54
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("motion_workflow/2")
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "motions_default_statute_amendment_workflow_id": None,
+                "motions_statute_recommendations_by": None,
+                "motions_statutes_enabled": None,
+                "motion_statute_paragraph_ids": None,
+            },
+        )
+        self.assert_model_exists(
+            "motion_workflow/1",
+            {
+                "default_statute_amendment_workflow_meeting_id": None,
+            },
+        )
 
     @pytest.mark.skip()
     def test_import_os3_data(self) -> None:

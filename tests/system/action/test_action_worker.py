@@ -184,7 +184,6 @@ class ActionWorkerTest(BaseActionTestCase):
             "motion_block": {},
             "topic": {},
             "assignment": {},
-            "motion_statute_paragraph": {"text": "text"},
         }
 
         def thread_method(self: ActionWorkerTest, collection: str) -> None:
@@ -231,15 +230,10 @@ class ActionWorkerTest(BaseActionTestCase):
         def thread_method(self: ActionWorkerTest) -> None:
             with self.lock:
                 data = [
-                    {
-                        "title": f"title{i}",
-                        "meeting_id": 222,
-                        "text": "text",
-                    }
-                    for i in range(1, self.number)
+                    {"title": "boo", "username": "foo"} for i in range(1, self.number)
                 ]
                 self.start1 = datetime.now()
-            self.request_multi("motion_statute_paragraph.create", data)
+            self.request_multi("user.create", data)
             self.end1 = datetime.now()
 
         thread = Thread(target=thread_method, args=(self,))

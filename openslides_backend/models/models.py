@@ -454,10 +454,6 @@ class Meeting(Model, MeetingModelMixin):
     motions_default_amendment_workflow_id = fields.RelationField(
         to={"motion_workflow": "default_amendment_workflow_meeting_id"}, required=True
     )
-    motions_default_statute_amendment_workflow_id = fields.RelationField(
-        to={"motion_workflow": "default_statute_amendment_workflow_meeting_id"},
-        required=True,
-    )
     motions_preamble = fields.TextField(default="The assembly may decide:")
     motions_default_line_numbering = fields.CharField(
         default="outside", constraints={"enum": ["outside", "inline", "none"]}
@@ -472,7 +468,6 @@ class Meeting(Model, MeetingModelMixin):
     motions_show_sequential_number = fields.BooleanField(default=True)
     motions_recommendations_by = fields.CharField()
     motions_block_slide_columns = fields.IntegerField(constraints={"minimum": 1})
-    motions_statute_recommendations_by = fields.CharField()
     motions_recommendation_text_mode = fields.CharField(
         default="diff", constraints={"enum": ["original", "changed", "diff", "agreed"]}
     )
@@ -485,7 +480,6 @@ class Meeting(Model, MeetingModelMixin):
     )
     motions_number_min_digits = fields.IntegerField(default=2)
     motions_number_with_blank = fields.BooleanField(default=False)
-    motions_statutes_enabled = fields.BooleanField(default=False)
     motions_amendments_enabled = fields.BooleanField(default=True)
     motions_amendments_in_main_list = fields.BooleanField(default=True)
     motions_amendments_of_amendments = fields.BooleanField(default=False)
@@ -706,9 +700,6 @@ class Meeting(Model, MeetingModelMixin):
     )
     motion_workflow_ids = fields.RelationListField(
         to={"motion_workflow": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
-    )
-    motion_statute_paragraph_ids = fields.RelationListField(
-        to={"motion_statute_paragraph": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_comment_ids = fields.RelationListField(
         to={"motion_comment": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
@@ -1433,9 +1424,6 @@ class Motion(Model):
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    statute_paragraph_id = fields.RelationField(
-        to={"motion_statute_paragraph": "motion_ids"}, equal_fields="meeting_id"
-    )
     comment_ids = fields.RelationListField(
         to={"motion_comment": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -1792,35 +1780,8 @@ class MotionWorkflow(Model):
     default_amendment_workflow_meeting_id = fields.RelationField(
         to={"meeting": "motions_default_amendment_workflow_id"}
     )
-    default_statute_amendment_workflow_meeting_id = fields.RelationField(
-        to={"meeting": "motions_default_statute_amendment_workflow_id"}
-    )
     meeting_id = fields.RelationField(
         to={"meeting": "motion_workflow_ids"}, required=True, constant=True
-    )
-
-
-class MotionStatuteParagraph(Model):
-    collection = "motion_statute_paragraph"
-    verbose_name = "motion statute paragraph"
-
-    id = fields.IntegerField(constant=True)
-    title = fields.CharField(required=True)
-    text = fields.HTMLStrictField()
-    weight = fields.IntegerField(default=10000)
-    sequential_number = fields.IntegerField(
-        required=True,
-        read_only=True,
-        constant=True,
-        constraints={
-            "description": "The (positive) serial number of this model in its meeting. This number is auto-generated and read-only."
-        },
-    )
-    motion_ids = fields.RelationListField(
-        to={"motion": "statute_paragraph_id"}, equal_fields="meeting_id"
-    )
-    meeting_id = fields.RelationField(
-        to={"meeting": "motion_statute_paragraph_ids"}, required=True, constant=True
     )
 
 
