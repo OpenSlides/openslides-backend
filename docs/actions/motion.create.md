@@ -43,7 +43,7 @@ Creates a new motion.
 
 The motion is an amendment to another motion if `lead_motion_id` is given. Otherwise it is a normal motion.
 
-If `lead_motion_id` is given, it must in specific cases result in an error:
+This is the logic for other fields depending on the motion type:
 
 - normal motion:
   - `text` required
