@@ -56,7 +56,7 @@ Payload:
 ## Action
 If an analog poll with votes is given, the state is set to `finished` if at least one vote value is given. if `publish_immediately` is true and some vote value is given, the state is set to `published`. All options given are created as instances of the `option` model. If some options have values (for analog polls), `vote` objects have to be created, one for each option and vote value (`Y`, `N`, `A`).
 
-The options must be unique in the way that each non-empty `text` and non-empty `content_object_id` can only exists once. The `option/weight` has to be set in the order the options are given in the payload. A global option has to be created.
+The options must be unique in the way that each non-empty `text` and non-empty `content_object_id` can only exist once. The `option/weight` has to be set in the order the options are given in the payload. A global option has to be created.
 
 If the `type` is `pseudoanonymous`, `is_pseudoanonymized` has to be set to `true`.
 

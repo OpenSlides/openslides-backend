@@ -562,6 +562,7 @@ def create_comprehensive_data(write) -> None:
         },
     )
 
+
 def test_no_delete_without_statute(write, finalize, assert_model):
     write(
         {
@@ -610,6 +611,7 @@ def test_no_delete_without_statute(write, finalize, assert_model):
             "meeting_id": 11,
         },
     )
+
 
 def test_delete_motion_without_sideffects(write, finalize, assert_model):
     write(
@@ -1159,7 +1161,7 @@ def test_migration_full(write, finalize, assert_model):
         {
             "id": 1,
             "content_object_id": "motion/1",
-            'meeting_user_id': 1,
+            "meeting_user_id": 1,
             "meeting_id": 11,
             "meta_deleted": True,
         },
