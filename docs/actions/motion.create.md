@@ -41,20 +41,18 @@
 ## Action
 Creates a new motion.
 
-First, the type of the motion is identified by the values of `lead_motion_id`:
+The motion is an amendment to another motion if `lead_motion_id` is given. Otherwise it is a normal motion.
 
-- A normal motion: None of the fields are given.
-- An amendment: `lead_motion_id` is given.
-
-If `lead_motion_id` is given, it must result in an error. This is the logic for other fields depending on the motion type:
+If `lead_motion_id` is given, it must in specific cases result in an error:
 
 - normal motion:
   - `text` required
   -  error, if `amendment_paragraph` is given
 - amendment:
   - `text` XOR `amendment_paragraph` required
+  -  error otherwise
 
-`reason` is independent must be given, if `meeting/motions_reason_required` is true.
+`reason` must independently of the above be given, if `meeting/motions_reason_required` is true.
 
 There are some fields that need special attention:
 - `workflow_id`: If it is given, the motion's state is set to the workflow's first state. The workflow must be from the same meeting. If the field is not given, one of the three default (`meeting/motions_default_workflow_id` or `meeting/motions_default_amendment_workflow_id`) workflows is used depending on the type of the motion to create.
