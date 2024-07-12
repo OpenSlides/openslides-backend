@@ -48,6 +48,14 @@
 
 // Group H
     saml_id: string;
+
+// only internal
+    is_present_in_meeting_ids: Id[];
+    option_ids: Id[];
+    poll_candidate_ids: Id[];
+    poll_voted_ids: Id[];
+    vote_ids: Id[];
+    delegated_vote_ids: Id[];
 }
 ```
 

@@ -331,10 +331,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "committee_id": 1,
                     "meeting_user_ids": [1],
                 },
-                "meeting_user/1": {
-                    "meeting_id": 1,
-                    "user_id": 2,
-                },
+                "meeting_user/1": {"meeting_id": 1, "user_id": 2, "group_ids": []},
             }
         )
         status_code, data = self.request("get_user_related_models", {"user_ids": [2]})

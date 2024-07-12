@@ -1219,11 +1219,11 @@ class Speaker(Model):
     verbose_name = "speaker"
 
     id = fields.IntegerField(constant=True)
-    begin_time = fields.TimestampField(read_only=True)
-    end_time = fields.TimestampField(read_only=True)
+    begin_time = fields.TimestampField()
+    end_time = fields.TimestampField()
     pause_time = fields.TimestampField(read_only=True)
-    unpause_time = fields.TimestampField(read_only=True)
-    total_pause = fields.IntegerField(read_only=True)
+    unpause_time = fields.TimestampField()
+    total_pause = fields.IntegerField()
     weight = fields.IntegerField(default=10000)
     speech_state = fields.CharField(
         constraints={
