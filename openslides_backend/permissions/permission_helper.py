@@ -119,6 +119,32 @@ def has_committee_management_level(
     return False
 
 
+def get_shared_committee_management_levels(
+    datastore: DatastoreService,
+    user_id: int,
+    expected_level: CommitteeManagementLevel,
+    committee_ids: list[int],
+) -> list[int]:
+    """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
+    if user_id > 0:
+        cml_fields = ["committee_management_ids"]
+        user = datastore.get(
+            fqid_from_collection_and_id("user", user_id),
+            [*cml_fields],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        if user.get("organization_management_level") in (
+            OrganizationManagementLevel.SUPERADMIN,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+        ):
+            return committee_ids
+        return list(
+            set(committee_ids).intersection(user.get("committee_management_ids", []))
+        )
+    return []
+
+
 def filter_surplus_permissions(permission_list: list[Permission]) -> list[Permission]:
     reduced_permissions: list[Permission] = []
     for permission in permission_list:
