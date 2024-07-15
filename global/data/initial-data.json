@@ -20,7 +20,7 @@
             "template_meeting_ids": [],
             "mediafile_ids": [],
             "user_ids": [1],
-            "enable_duplicate_from_mandatory": false,
+            "require_duplicate_from": false,
             "saml_enabled": false,
             "saml_login_button_text": "SAML Login",
             "saml_attr_mapping": {

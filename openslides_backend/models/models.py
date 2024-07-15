@@ -36,7 +36,7 @@ class Organization(Model):
     default_language = fields.CharField(
         required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
-    enable_duplicate_from_mandatory = fields.BooleanField()
+    require_duplicate_from = fields.BooleanField()
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
     saml_attr_mapping = fields.JSONField()

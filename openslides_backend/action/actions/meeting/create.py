@@ -84,7 +84,7 @@ class MeetingCreate(
             [
                 "limit_of_meetings",
                 "active_meeting_ids",
-                "enable_duplicate_from_mandatory",
+                "require_duplicate_from",
             ],
         )
         if (
@@ -95,7 +95,7 @@ class MeetingCreate(
             )
 
         if organization.get(
-            "enable_duplicate_from_mandatory"
+            "require_duplicate_from"
         ) and not has_organization_management_level(
             self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):

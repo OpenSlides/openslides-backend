@@ -531,5 +531,5 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.basic_test(
             {},
             set_400_str="You cannot create a new meeting, because you need to use a template.",
-            orga_settings={"enable_duplicate_from_mandatory": True},
+            orga_settings={"require_duplicate_from": True},
         )
