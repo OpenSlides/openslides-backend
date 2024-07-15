@@ -742,3 +742,84 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.update", {"id": 1, "external_id": external_id})
         self.assert_status_code(response, 200)
+
+    def test_update_cant_lock_template(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "set_as_template": True,
+                "locked_from_inside": True,
+                "location": "Geneva",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and a template at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_cant_lock_template_2(self) -> None:
+        self.create_meeting()
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "template_for_organization_id": 1,
+                    "locked_from_inside": True,
+                    "admin_group_id": 2,
+                }
+            }
+        )
+        self.set_user_groups(1, [2])
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "location": "Geneva"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and a template at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_cant_lock_template_3(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "template_for_organization_id": 1,
+                }
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "locked_from_inside": True, "location": "Geneva"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and a template at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_cant_lock_template_4(self) -> None:
+        self.create_meeting()
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "locked_from_inside": True,
+                    "admin_group_id": 2,
+                }
+            }
+        )
+        self.set_user_groups(1, [2])
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "set_as_template": True, "location": "Geneva"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and a template at the same time.",
+            response.json["message"],
+        )
