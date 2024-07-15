@@ -226,3 +226,17 @@ class UserSetPresentActionTest(BaseActionTestCase):
             "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
         )
         self.assert_status_code(response, 200)
+
+    def test_set_present_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "meeting/1": {
+                    "users_allow_self_set_present": False,
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
+                "committee/1": {},
+            },
+            "user.set_present",
+            {"id": 1, "meeting_id": 1, "present": True},
+        )

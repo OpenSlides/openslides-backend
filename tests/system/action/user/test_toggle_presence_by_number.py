@@ -216,3 +216,29 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
             "user.toggle_presence_by_number", {"meeting_id": 1, "number": "test"}
         )
         self.assert_status_code(response, 200)
+
+    def test_toggle_presence_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "meeting/1": {
+                    "users_allow_self_set_present": False,
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
+                "group/1": {
+                    "meeting_user_ids": [1],
+                },
+                "user/1": {
+                    "meeting_user_ids": [34],
+                },
+                "meeting_user/34": {
+                    "user_id": 1,
+                    "meeting_id": 1,
+                    "number": "test",
+                    "group_ids": [1],
+                },
+                "committee/1": {},
+            },
+            "user.toggle_presence_by_number",
+            {"meeting_id": 1, "number": "test"},
+        )

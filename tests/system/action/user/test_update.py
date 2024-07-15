@@ -899,6 +899,42 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_perm_group_A_locked_meeting(self) -> None:
+        """May update group A fields on organsisation scope, because belongs to 2 meetings in 2 committees, requiring OML level permission"""
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        self.set_user_groups(111, [1, 6])
+        self.set_models(
+            {
+                "organization/1": {
+                    "genders": ["male", "female", "diverse", "non-binary"]
+                },
+                "meeting/4": {"locked_from_inside": True},
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+                "title": "new title",
+                "first_name": "new first_name",
+                "last_name": "new last_name",
+                "is_active": True,
+                "is_physical_person": True,
+                "default_password": "new default_password",
+                "gender": "female",
+                "email": "info@openslides.com ",  # space intentionally, will be stripped
+                "default_vote_weight": "1.234000",
+                "can_change_own_password": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+
     def test_perm_group_F_default_password_for_superadmin_no_permission(self) -> None:
         """May not update the default_password for superadmin without having permission oml.SUPERADMIN"""
         self.permission_setup()
@@ -1023,6 +1059,34 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_perm_group_B_user_can_update_locked_meeting(self) -> None:
+        """Group B fields needs explicit user.can_update permission for meeting"""
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        self.set_user_groups(
+            self.user_id, [3, 6]
+        )  # Empty groups of meeting/1 and meeting/4
+        self.set_user_groups(111, [1, 4])  # Default groups of meeting/1 and meeting/4
+        self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
+        self.set_models({"meeting/4": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 4,
+                "number": "number1 in 4",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "TODO: fill in",
+            response.json["message"],
+        )
+
     def test_perm_group_C_oml_manager(self) -> None:
         """May update group C group_ids by OML permission"""
         self.permission_setup()
@@ -1111,6 +1175,128 @@ class UserUpdateActionTest(BaseActionTestCase):
             "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
             response.json["message"],
         )
+
+    def test_perm_group_C_locked_meeting(self) -> None:
+        """May not update group C group_ids"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "TODO: fill in",
+            response.json["message"],
+        )
+
+    def test_perm_group_C_locked_meeting_and_meeting_member(self) -> None:
+        """May not update group C group_ids"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        self.set_user_groups(self.user_id, [1])
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "TODO: fill in",
+            response.json["message"],
+        )
+
+    def test_perm_group_C_locked_meeting_cml(self) -> None:
+        """May not update group C group_ids"""
+        self.permission_setup()
+        self.set_committee_management_level([60], self.user_id)
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "TODO: fill in",
+            response.json["message"],
+        )
+
+    def test_perm_group_C_locked_meeting_cml_and_meeting_member(self) -> None:
+        """May not update group C group_ids"""
+        self.permission_setup()
+        self.set_committee_management_level([60], self.user_id)
+        self.set_user_groups(self.user_id, [1])
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 403)
+
+    def test_perm_group_C_locked_meeting_admin(self) -> None:
+        """May not update group C group_ids"""
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_perm_group_C_locked_meeting_other_meeting(self) -> None:
+        """May not update group C group_ids"""
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        self.set_user_groups(
+            self.user_id, [3, 6]
+        )  # Empty groups of meeting/1 and meeting/4
+        self.set_user_groups(111, [1, 4])  # Default groups of meeting/1 and meeting/4
+        self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
+        self.set_models({"meeting/4": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
 
     def test_perm_group_C_special_1(self) -> None:
         """group C group_ids adding meeting in same committee with committee permission"""
@@ -1275,6 +1461,26 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_perm_group_D_locked_meeting(self) -> None:
+        """May not update Group D committee fields, because of missing CML permission for one committee"""
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_committee_management_level([60], self.user_id)
+        self.set_committee_management_level([60], 111)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        self.set_models({"meeting/4": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "committee_management_ids": [63],
+            },
+        )
+        self.assert_status_code(response, 200)
+
     def test_perm_group_D_permission_with_CML_and_untouched_committee(
         self,
     ) -> None:
@@ -1369,6 +1575,23 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_perm_group_E_locked_meeting(self) -> None:
+        """OML level to set is higher than level of request user"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            },
+        )
+        self.assert_status_code(response, 200)
+
     def test_perm_group_F_demo_user_permission(self) -> None:
         """demo_user only editable by Superadmin"""
         self.permission_setup()
@@ -1391,6 +1614,24 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_demo_user": True,
             },
         )
+
+    def test_perm_group_F_locked_meeting(self) -> None:
+        """demo_user only editable by Superadmin"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "is_demo_user": True,
+            },
+        )
+
+        self.assert_status_code(response, 200)
 
     def test_no_perm_group_H_internal_saml_id(self) -> None:
         self.permission_setup()

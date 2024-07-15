@@ -742,3 +742,31 @@ class SendInvitationMail(BaseActionTestCase):
             },
             perm,
         )
+
+    def test_with_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "meeting/1": {
+                    "meeting_user_ids": [2],
+                },
+                "user/3": {
+                    "username": "Testuser 2",
+                    "first_name": "Jim",
+                    "last_name": "Beam",
+                    "default_password": "secret",
+                    "email": "recipient2@example.com",
+                    "meeting_user_ids": [2],
+                    "meeting_ids": [1],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 1,
+                    "user_id": 3,
+                    "group_ids": [1],
+                },
+            },
+            "user.send_invitation_email",
+            {
+                "id": 2,
+                "meeting_id": 1,
+            },
+        )
