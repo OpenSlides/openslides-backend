@@ -94,7 +94,7 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
             "users_allow_self_set_present"
         ):
             return
-        raise PermissionDenied("You are not allowed to perform action user.set_present")
+        raise PermissionDenied("You are not allowed to set present.")
 
     def get_history_information(self) -> HistoryInformation | None:
         return {
