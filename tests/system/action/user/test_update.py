@@ -1083,7 +1083,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "TODO: fill in",
+            "The user needs Permission user.can_update for meeting 4",
             response.json["message"],
         )
 
@@ -1194,7 +1194,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "TODO: fill in",
+            "The user needs Permission user.can_update for meeting 1",
             response.json["message"],
         )
 
@@ -1217,7 +1217,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "TODO: fill in",
+            "The user needs Permission user.can_update for meeting 1",
             response.json["message"],
         )
 
@@ -1237,7 +1237,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "TODO: fill in",
+            "The user needs Permission user.can_update for meeting 1",
             response.json["message"],
         )
 
@@ -1258,7 +1258,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "TODO: fill in",
+            "The user needs Permission user.can_update for meeting 1",
             response.json["message"],
         )
 

@@ -817,21 +817,22 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_organization_management_level(
             OrganizationManagementLevel.SUPERADMIN, self.user_id
         )
+        self.create_meeting(4)
         self.set_models({"meeting/4": {"locked_from_inside": True}})
 
         response = self.request(
             "user.create",
             {
                 "username": "usersname",
-                "meeting_id": 1,
-                "group_ids": [1],
-                "is_present_in_meeting_ids": [1],
+                "meeting_id": 4,
+                "group_ids": [4],
+                "is_present_in_meeting_ids": [4],
                 "number": "number1",
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "TODO: Fill in",
+            "The user needs Permission user.can_manage for meeting 4",
             response.json["message"],
         )
 
@@ -860,19 +861,20 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_organization_management_level(
             OrganizationManagementLevel.SUPERADMIN, self.user_id
         )
+        self.create_meeting(4)
         self.set_models({"meeting/4": {"locked_from_inside": True}})
 
         response = self.request(
             "user.create",
             {
                 "username": "usersname",
-                "meeting_id": 1,
-                "group_ids": [1],
+                "meeting_id": 4,
+                "group_ids": [4],
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "TODO: Fill in",
+            "The user needs Permission user.can_manage for meeting 4",
             response.json["message"],
         )
 
@@ -958,20 +960,21 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_permission_group_C_cml_locked_meeting(self) -> None:
         """May not create group C group_ids in locked meetings as a committee manager"""
         self.permission_setup()
-        self.set_committee_management_level([60], self.user_id)
+        self.create_meeting(4)
+        self.set_committee_management_level([63], self.user_id)
         self.set_models({"meeting/4": {"locked_from_inside": True}})
 
         response = self.request(
             "user.create",
             {
                 "username": "usersname",
-                "meeting_id": 1,
-                "group_ids": [1],
+                "meeting_id": 4,
+                "group_ids": [4],
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "TODO: Fill in",
+            "The user needs Permission user.can_manage for meeting 4",
             response.json["message"],
         )
 

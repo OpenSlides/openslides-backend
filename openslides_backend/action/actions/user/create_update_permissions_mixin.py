@@ -221,8 +221,9 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 self.datastore, self.user_id, self.permission
             )
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
-        if self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
-            return
+        self.operator_is_superadmin = (
+            self.permstore.user_oml == OrganizationManagementLevel.SUPERADMIN
+        )
 
         # store scope, id and OML-permission for requested user
         (
@@ -231,14 +232,24 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             self.instance_user_oml_permission,
         ) = self.get_user_scope(instance.get("id") or instance)
 
-        self._check_for_higher_OML(actual_group_fields, instance)
+        if not self.operator_is_superadmin:
+            self._check_for_higher_OML(actual_group_fields, instance)
 
-        # Ordered by supposed velocity advantages. Changing order only can effect the sequence of detected errors for tests
+        instance_meeting_id = instance.get("meeting_id")
+        locked_from_inside = False
+        if instance_meeting_id:
+            locked_from_inside = self.datastore.get(
+                fqid_from_collection_and_id("meeting", instance_meeting_id),
+                ["locked_from_inside"],
+                lock_result=False,
+            ).get("locked_from_inside", False)
+
+        # Ordered by supposed velocity advantages. Changing order can only effect the sequence of detected errors for tests
         self.check_group_H(actual_group_fields["H"])
         self.check_group_E(actual_group_fields["E"], instance)
         self.check_group_D(actual_group_fields["D"], instance)
-        self.check_group_C(actual_group_fields["C"], instance)
-        self.check_group_B(actual_group_fields["B"], instance)
+        self.check_group_C(actual_group_fields["C"], instance, locked_from_inside)
+        self.check_group_B(actual_group_fields["B"], instance, locked_from_inside)
         self.check_group_A(actual_group_fields["A"])
         self.check_group_F(actual_group_fields["F"])
         self.check_group_G(actual_group_fields["G"])
@@ -249,7 +260,8 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
     ) -> None:
         """Check Group A: Depending on scope of user to act on"""
         if (
-            not fields
+            self.operator_is_superadmin
+            or not fields
             or self.permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return
@@ -281,33 +293,39 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 }
             )
 
-    def check_group_B(self, fields: list[str], instance: dict[str, Any]) -> None:
+    def check_group_B(
+        self, fields: list[str], instance: dict[str, Any], locked_from_inside: bool
+    ) -> None:
         """Check Group B meeting fields: Only meeting.permissions for each meeting"""
-        if fields:
+        if ((not self.operator_is_superadmin) or locked_from_inside) and fields:
             meeting_ids = self._meetings_from_group_B_fields_from_instance(instance)
             if diff := meeting_ids - self.permstore.user_meetings:
                 raise MissingPermission(
                     {self.permission: meeting_id for meeting_id in diff}
                 )
 
-    def check_group_C(self, fields: list[str], instance: dict[str, Any]) -> None:
+    def check_group_C(
+        self, fields: list[str], instance: dict[str, Any], locked_from_inside: bool
+    ) -> None:
         """Check Group C group_ids: OML, CML or meeting.permissions for each meeting"""
         if (
-            fields
-            and self.permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS
-        ):
+            (self.permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS)
+            or locked_from_inside
+        ) and fields:
             touch_meeting_id = instance.get("meeting_id")
             if (
-                touch_meeting_id not in self.permstore.user_committees_meetings
-                and touch_meeting_id not in self.permstore.user_meetings
-            ):
+                locked_from_inside
+                or touch_meeting_id not in self.permstore.user_committees_meetings
+            ) and touch_meeting_id not in self.permstore.user_meetings:
                 raise PermissionDenied(
-                    f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission {self.permission} for meeting {touch_meeting_id}"
+                    f"The user needs Permission {self.permission} for meeting {touch_meeting_id}"
+                    if locked_from_inside
+                    else f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission {self.permission} for meeting {touch_meeting_id}"
                 )
 
     def check_group_D(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group D committee-related fields: OML or CML level for each committee"""
-        if (
+        if (not self.operator_is_superadmin) and (
             fields
             and self.permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
@@ -322,7 +340,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
 
     def check_group_E(self, fields: list[str], instance: dict[str, Any]) -> None:
         """Check Group E organization_management_level: OML level necessary"""
-        if fields:
+        if (not self.operator_is_superadmin) and fields:
             expected_oml = max(
                 OrganizationManagementLevel(
                     instance.get("organization_management_level")
@@ -340,7 +358,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
     ) -> None:
         """Check F common fields: scoped permissions necessary, but if instance user has
         an oml-permission, that of the request user must be higher"""
-        if not fields:
+        if self.operator_is_superadmin or not fields:
             return
 
         if (
@@ -387,7 +405,11 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
 
     def check_group_G(self, fields: list[str]) -> None:
         """Group G: OML SUPERADMIN necessary"""
-        if fields and self.permstore.user_oml < OrganizationManagementLevel.SUPERADMIN:
+        if (
+            not self.operator_is_superadmin
+            and fields
+            and self.permstore.user_oml < OrganizationManagementLevel.SUPERADMIN
+        ):
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 
     def check_group_H(
@@ -398,12 +420,16 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         Check Group H: Like group A, but only on internal calls, which will never call
         the check_permissions automatically or oml.can_manage_user permission in user.create
         """
-        if fields and not (
-            self.internal
-            or (
-                self.name == "user.create"
-                and self.permstore.user_oml
-                >= OrganizationManagementLevel.CAN_MANAGE_USERS
+        if (
+            not self.operator_is_superadmin
+            and fields
+            and not (
+                self.internal
+                or (
+                    self.name == "user.create"
+                    and self.permstore.user_oml
+                    >= OrganizationManagementLevel.CAN_MANAGE_USERS
+                )
             )
         ):
             msg = "The field 'saml_id' can only be used in internal action calls"
