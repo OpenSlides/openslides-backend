@@ -96,6 +96,9 @@ class MeetingClone(MeetingImport):
         self.check_one_meeting(instance)
         meeting = self.get_meeting_from_json(meeting_json)
 
+        if meeting.get("locked_from_inside"):
+            raise ActionException("Cannot clone locked meeting.")
+
         if committee_id := instance.get("committee_id"):
             meeting["committee_id"] = committee_id
 
