@@ -1,25 +1,21 @@
+from collections.abc import Generator
 from contextlib import contextmanager
+from typing import Any
 from unittest.mock import patch
-from urllib import parse
 
-from authlib import (
-    ANONYMOUS_USER,
-    AuthenticateException,
-    AuthHandler,
-    InvalidCredentialsException,
-)
-
+from authlib import ANONYMOUS_USER, AuthHandler
 from openslides_backend.services.auth.adapter import AuthenticationHTTPAdapter
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.interfaces.event import Event
 from openslides_backend.shared.interfaces.logging import LoggingModule
-from openslides_backend.shared.patterns import collection_and_id_from_fqid, id_from_fqid
+from openslides_backend.shared.patterns import (collection_and_id_from_fqid,
+                                                id_from_fqid)
 
 from .util import Client
 
 
 # Method(s) from Client
-def login(self, username: str, password: str, user_id: int) -> None:
+def login(self: Any, username: str, password: str, user_id: int) -> None:
     if self.application.services.authentication().is_anonymous(user_id):
         self.update_auth_data(
             {
@@ -40,12 +36,15 @@ def login(self, username: str, password: str, user_id: int) -> None:
                             user_id
                         )
                     ),
-                    "refresh_id": MockAuthenticationHTTPAdapter._create_cookie_header(
-                        user_id
+                    "refresh_id": (
+                        refresh_id := MockAuthenticationHTTPAdapter._create_cookie_header(
+                            user_id
+                        )
                     ),
                 }
             )
             self.auth.auth_token_to_user_ids[access_token] = user_id
+            self.auth.cookie_to_user_ids[refresh_id] = user_id
         else:
             raise AuthenticationException(
                 f"Mock: Wrong credentials for user {user_id}:{username}:{password}"
@@ -59,6 +58,7 @@ class MockAuthenticationHTTPAdapter:
 
     user_sessions: dict[int, dict[str, str]]
     auth_token_to_user_ids: dict[str, int]
+    cookie_to_user_ids: dict[str, int]
 
     @staticmethod
     def _create_auth_token(user_id: int) -> str:
@@ -66,7 +66,7 @@ class MockAuthenticationHTTPAdapter:
 
     @staticmethod
     def _create_cookie_header(user_id: int) -> str:
-        return f"mocked cookie header user_id {user_id}"
+        return f"mocked cookie header user_id/{user_id}"
 
     def __init__(self, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
@@ -74,6 +74,9 @@ class MockAuthenticationHTTPAdapter:
         self.headers = {"Content-Type": "application/json"}
         self.user_sessions = {}
         self.auth_token_to_user_ids = {}
+        self.cookie_to_user_ids = {}
+        self.access_token = ""
+        self.refresh_id = ""
 
     def authenticate(self) -> tuple[int, str | None]:
         self.logger.debug(
@@ -81,7 +84,6 @@ class MockAuthenticationHTTPAdapter:
         )
         if not self.access_token or not self.refresh_id:
             return ANONYMOUS_USER, None
-        user_id = id_from_fqid(self.access_token)
         if user_id := self.auth_token_to_user_ids.get(self.access_token):
             return user_id, self.access_token
         elif (user_id := id_from_fqid(self.access_token)) in self.user_sessions:
@@ -93,15 +95,18 @@ class MockAuthenticationHTTPAdapter:
 
     def authenticate_only_refresh_id(self) -> int:
         self.logger.debug(
-            f"Start request to authentication service with the following cookie: {self.refresh_id}"
+            f"Mock: Start request to authentication service with the following cookie: {self.refresh_id}"
         )
-        try:
-            return self.auth_handler.authenticate_only_refresh_id(
-                parse.unquote(self.refresh_id)
-            )
-        except (AuthenticateException, InvalidCredentialsException) as e:
-            self.logger.debug(f"Error in auth service: {e.message}")
-            raise AuthenticationException(e.message)
+        if not self.refresh_id:
+            return ANONYMOUS_USER
+        if user_id := self.cookie_to_user_ids.get(self.refresh_id):
+            return user_id
+        elif (user_id := id_from_fqid(self.refresh_id)) in self.user_sessions:
+            self.cookie_to_user_ids[self.refresh_id] = user_id
+            return user_id
+        message = f"Mock: Cookie error on cookie_token {self.refresh_id}"
+        self.logger.debug(f"Error in auth service: {message}")
+        raise AuthenticationException(message)
 
     def hash(self, toHash: str) -> str:
         return toHash
@@ -127,6 +132,7 @@ class MockAuthenticationHTTPAdapter:
 
     def clear_all_sessions(self) -> None:
         self.auth_token_to_user_ids.pop(self.access_token, None)
+        self.cookie_to_user_ids.pop(self.refresh_id, None)
         try:
             user_id = id_from_fqid(self.access_token)
         except IndexError:
@@ -134,7 +140,7 @@ class MockAuthenticationHTTPAdapter:
         if user_id:
             self.user_sessions.pop(user_id, None)
 
-    def createUpdateUserSession(self, event: Event) -> None:
+    def create_update_user_session(self, event: Event) -> None:
         collection, user_id = collection_and_id_from_fqid(event["fqid"])
         if collection == "user":
             if event.get("type") == "create":
@@ -153,13 +159,13 @@ auth_http_adapter_patch = patch.multiple(
         if not method_name.startswith("_") or method_name == "__init__"
     },
 )
-AuthenticationHTTPAdapter.createUpdateUserSession = (
-    MockAuthenticationHTTPAdapter.createUpdateUserSession
+AuthenticationHTTPAdapter.create_update_user_session = (
+    MockAuthenticationHTTPAdapter.create_update_user_session
 )
 
 
 @contextmanager
-def auth_mock():
+def auth_mock() -> Generator[tuple[Any, Any]]:
     with auth_http_adapter_patch:
         with login_patch:
-            yield (auth_http_adapter_patch, login_patch)
+            yield auth_http_adapter_patch, login_patch

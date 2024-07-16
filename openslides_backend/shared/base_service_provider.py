@@ -1,3 +1,4 @@
+from openslides_backend.database.db_connection_handling import os_conn_pool
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.services.media.interface import MediaService
@@ -34,3 +35,6 @@ class BaseServiceProvider:
         self.vote_service = services.vote()
         self.datastore = datastore
         self.logging = logging
+        if os_conn_pool.closed:
+            os_conn_pool.open()
+        self.db_connection = os_conn_pool.connection()

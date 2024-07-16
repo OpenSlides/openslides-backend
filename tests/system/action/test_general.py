@@ -1,6 +1,8 @@
 from typing import Any
 from unittest.mock import patch
 
+import pytest
+
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.shared.interfaces.write_request import (
     WriteRequestWithMigrationIndex,
@@ -92,6 +94,9 @@ class GeneralActionWSGITester(BaseActionTestCase):
             self.assertIn(action, actions.keys())
 
 
+@pytest.mark.skip(
+    reason="Test not relevant anymore after migration to relational database"
+)
 class TestWSGIWithMigrations(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()

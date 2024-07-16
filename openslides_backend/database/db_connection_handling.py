@@ -3,6 +3,7 @@ from collections.abc import Callable
 
 import psycopg
 import psycopg_pool
+
 from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import DatabaseException
 
@@ -24,22 +25,28 @@ system_conn_pool = psycopg_pool.ConnectionPool(
     reconnect_timeout=300.0,
     num_workers=1,
 )
-os_conn_pool = psycopg_pool.ConnectionPool(
-    conninfo=conn_string_without_db + f"dbname='{env.DATABASE_NAME}'",
-    connection_class=psycopg.Connection,
-    kwargs={"autocommit": True, "row_factory": psycopg.rows.dict_row},
-    min_size=int(env.DB_POOL_MIN_SIZE),
-    max_size=int(env.DB_POOL_MAX_SIZE),
-    open=False,
-    check=psycopg_pool.ConnectionPool.check_connection,
-    name="ConnPool for openslides-db",
-    timeout=float(env.DB_POOL_TIMEOUT),
-    max_waiting=int(env.DB_POOL_MAX_WAITING),
-    max_lifetime=float(env.DB_POOL_MAX_LIFETIME),
-    max_idle=float(env.DB_POOL_MAX_IDLE),
-    reconnect_timeout=float(env.DB_POOL_RECONNECT_TIMEOUT),
-    num_workers=int(env.DB_POOL_NUM_WORKERS),
-)
+
+
+def create_os_conn_pool(open: bool = True) -> psycopg_pool.ConnectionPool:
+    return psycopg_pool.ConnectionPool(
+        conninfo=conn_string_without_db + f"dbname='{env.DATABASE_NAME}'",
+        connection_class=psycopg.Connection,
+        kwargs={"autocommit": True, "row_factory": psycopg.rows.dict_row},
+        min_size=int(env.DB_POOL_MIN_SIZE),
+        max_size=int(env.DB_POOL_MAX_SIZE),
+        open=open,
+        check=psycopg_pool.ConnectionPool.check_connection,
+        name="ConnPool for openslides-db",
+        timeout=float(env.DB_POOL_TIMEOUT),
+        max_waiting=int(env.DB_POOL_MAX_WAITING),
+        max_lifetime=float(env.DB_POOL_MAX_LIFETIME),
+        max_idle=float(env.DB_POOL_MAX_IDLE),
+        reconnect_timeout=float(env.DB_POOL_RECONNECT_TIMEOUT),
+        num_workers=int(env.DB_POOL_NUM_WORKERS),
+    )
+
+
+os_conn_pool = create_os_conn_pool(open=False)
 
 
 def get_unpooled_db_connection(

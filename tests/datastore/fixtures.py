@@ -47,8 +47,11 @@ def setup_db_connection():
         password=DEV_SECRET,
     )
     _db_connection.autocommit = False
-    with _db_connection:
-        yield _db_connection
+    yield _db_connection
+
+    # teardown
+    if not _db_connection.closed:
+        _db_connection.close()
 
 
 @pytest.fixture()

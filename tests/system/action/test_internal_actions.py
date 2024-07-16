@@ -87,6 +87,14 @@ class TestInternalActionsDev(BaseInternalActionTest):
     Hint: This test assumes that OPENSLIDES_DEVELOPMENT is truthy.
     """
 
+    def setUp(self) -> None:
+        if self._testMethodName in (
+            "test_internal_organization_initial_import",
+            "test_internal_execute_stack_internal_via_public_route",
+        ):
+            self.init_with_login = False
+        super().setUp()
+
     def test_internal_user_create(self) -> None:
         response = self.internal_request("user.create", {"username": "test"})
         self.assert_status_code(response, 200)
@@ -175,6 +183,11 @@ class TestInternalActionsProdWithPasswordFile(
     """
     Same as TestInternalActionsProd but with a server-side password set.
     """
+
+    def setUp(self) -> None:
+        if self._testMethodName in ("test_internal_execute_stack_internal_action"):
+            self.init_with_login = False
+        super().setUp()
 
     def test_internal_wrong_password(self) -> None:
         response = self.internal_request("user.create", {"username": "test"}, "wrong")

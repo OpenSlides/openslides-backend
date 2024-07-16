@@ -2,10 +2,10 @@ from time import time
 from typing import Any
 
 import pytest
+
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
-from openslides_backend.permissions.management_levels import \
-    OrganizationManagementLevel
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 
 from .base import BasePresenterTestCase
 

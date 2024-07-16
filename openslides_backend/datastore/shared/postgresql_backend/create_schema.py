@@ -41,7 +41,7 @@ def create_schema() -> None:
                 sql.SQL(
                     "SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = %s AND schemaname = %s);"
                 ),
-                ("organization_t", "public"),
+                ("poll", "vote"),
             ).fetchone()
             if result and result.get("exists"):
                 return
@@ -50,3 +50,10 @@ def create_schema() -> None:
             )
             cursor.execute(open(path).read())
             print("Relational schema applied\n")
+
+            # idempotent vote-service database
+            path = os.path.realpath(
+                os.path.join(os.getcwd(), "vote-schema", "schema.sql")
+            )
+            cursor.execute(open(path).read())
+            print("Idempotent openslides-vote-service schema applied\n")
