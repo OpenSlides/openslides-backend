@@ -240,3 +240,31 @@ class UserSetPresentActionTest(BaseActionTestCase):
             "user.set_present",
             {"id": 1, "meeting_id": 1, "present": True},
         )
+
+    def test_set_present_committee_can_manage_permission_with_locked_meeting(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "users_allow_self_set_present": False,
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "locked_from_inside": True,
+                },
+                "committee/1": {"user_ids": [1]},
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_ids": [1],
+                    "committee_management_ids": [1],
+                },
+            }
+        )
+        response = self.request(
+            "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.set_present",
+            response.json["message"],
+        )
