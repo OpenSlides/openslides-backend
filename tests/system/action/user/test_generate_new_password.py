@@ -126,13 +126,38 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
 
     def test_scope_organization_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
-        self.setup_scoped_user(UserScope.Organization)
+        self.set_models(
+            {
+                "committee/1": {"meeting_ids": [1]},
+                "committee/2": {"meeting_ids": [2]},
+                "meeting/1": {
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "committee_id": 2,
+                    "is_active_in_organization_id": 1,
+                },
+                "user/111": {"id": 111},
+                "group/11": {"meeting_id": 1},
+                "group/22": {"meeting_id": 2},
+            }
+        )
         response = self.request("user.generate_new_password", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action user.generate_new_password. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
             response.json["message"],
         )
+
+    def test_scope_multi_committee_permission_in_committee(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Committee)
+        self.setup_scoped_user(UserScope.Organization)
+        response = self.request("user.generate_new_password", {"id": 111})
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/111")
+        assert user.get("password") and user.get("default_password")
+        self.assert_logged_in()
 
     def test_scope_organization_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)

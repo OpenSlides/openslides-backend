@@ -772,6 +772,31 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_perm_group_A_cml_manage_user_with_two_committees(self) -> None:
+        """May update group A fields on committee scope. User belongs to 1 meeting in 1 committee"""
+        self.permission_setup()
+        self.create_meeting(4)
+        self.set_committee_management_level([60], self.user_id)
+        self.set_user_groups(111, [1, 4])
+        self.set_models({"user/111": {"committee_ids": [60, 63]}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new_username",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new_username",
+                "meeting_ids": [1, 4],
+                "committee_ids": [60, 63],
+            },
+        )
+
     def test_perm_group_A_cml_manage_user_archived_meeting_in_other_committee(
         self,
     ) -> None:
@@ -956,6 +981,29 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertIn(
             "Your organization management level is not high enough to change a user with a Level of superadmin!",
             response.json["message"],
+        )
+
+    def test_perm_group_F_cml_manage_user_with_two_committees(self) -> None:
+        """May update group A fields on committee scope. User belongs to 1 meeting in 1 committee"""
+        self.permission_setup()
+        self.create_meeting(4)
+        self.set_committee_management_level([60], self.user_id)
+        self.set_user_groups(111, [1, 4])
+        self.set_models({"user/111": {"committee_ids": [60, 63]}})
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "default_password": "new_one",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "default_password": "new_one",
+            },
         )
 
     def test_perm_group_B_user_can_update(self) -> None:
