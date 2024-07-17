@@ -3,7 +3,7 @@ from collections.abc import Callable
 from copy import deepcopy
 from typing import Any, cast
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, _patch
 
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
@@ -56,6 +56,7 @@ class BaseSystemTestCase(TestCase):
     # Save auth data as class variable
     auth_data: AuthData | None = None
 
+    auth_mockers: dict[str, _patch]
     # Save all created fqids
     created_fqids: set[str]
 
@@ -96,7 +97,7 @@ class BaseSystemTestCase(TestCase):
                 },
             )
         self.client = self.create_client(self.update_vote_service_auth_data)
-        self.client.auth = self.auth
+        self.client.auth = self.auth  # type: ignore
         if self.init_with_login:
             if self.auth_data:
                 # Reuse old login data to avoid a new login request
@@ -106,7 +107,7 @@ class BaseSystemTestCase(TestCase):
                 self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD, 1)
                 BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.anon_client = self.create_client()
-        self.anon_client.auth = self.auth
+        self.anon_client.auth = self.auth  # type: ignore
 
     def set_thread_watch_timeout(self, timeout: float) -> None:
         """
@@ -197,14 +198,14 @@ class BaseSystemTestCase(TestCase):
         )
         if self.check_auth_mockers_started():
             for event in write_request.events:
-                self.auth.create_update_user_session(event)
+                self.auth.create_update_user_session(event)  # type: ignore
         self.datastore.write(write_request)
 
     def update_model(self, fqid: str, data: dict[str, Any]) -> None:
         write_request = self.get_write_request(self.get_update_events(fqid, data))
         if self.check_auth_mockers_started():
             for event in write_request.events:
-                self.auth.create_update_user_session(event)
+                self.auth.create_update_user_session(event)  # type: ignore
         self.datastore.write(write_request)
 
     def get_create_events(
@@ -241,13 +242,13 @@ class BaseSystemTestCase(TestCase):
         write_request = self.get_write_request(events)
         if self.check_auth_mockers_started():
             for event in write_request.events:
-                self.auth.create_update_user_session(event)
+                self.auth.create_update_user_session(event)  # type: ignore
         self.datastore.write(write_request)
 
     def check_auth_mockers_started(self) -> bool:
         if (
             hasattr(self, "auth_mockers")
-            and not self.auth_mockers["auth_http_adapter_patch"]._active_patches
+            and not self.auth_mockers["auth_http_adapter_patch"]._active_patches  # type: ignore
         ):
             return False
         return True

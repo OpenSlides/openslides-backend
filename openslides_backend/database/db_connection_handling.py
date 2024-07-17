@@ -27,8 +27,14 @@ system_conn_pool = psycopg_pool.ConnectionPool(
 )
 
 
+# os_conn_pool: psycopg_pool.ConnectionPool = None
+
+
 def create_os_conn_pool(open: bool = True) -> psycopg_pool.ConnectionPool:
-    return psycopg_pool.ConnectionPool(
+    global os_conn_pool
+    if "os_conn_pool" in globals() and not os_conn_pool.closed:
+        os_conn_pool.close()
+    os_conn_pool = psycopg_pool.ConnectionPool(
         conninfo=conn_string_without_db + f"dbname='{env.DATABASE_NAME}'",
         connection_class=psycopg.Connection,
         kwargs={"autocommit": True, "row_factory": psycopg.rows.dict_row},
@@ -44,6 +50,7 @@ def create_os_conn_pool(open: bool = True) -> psycopg_pool.ConnectionPool:
         reconnect_timeout=float(env.DB_POOL_RECONNECT_TIMEOUT),
         num_workers=int(env.DB_POOL_NUM_WORKERS),
     )
+    return os_conn_pool
 
 
 os_conn_pool = create_os_conn_pool(open=False)

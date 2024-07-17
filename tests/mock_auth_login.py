@@ -1,15 +1,15 @@
 from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import _patch, patch
 
 from authlib import ANONYMOUS_USER, AuthHandler
+
 from openslides_backend.services.auth.adapter import AuthenticationHTTPAdapter
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.interfaces.event import Event
 from openslides_backend.shared.interfaces.logging import LoggingModule
-from openslides_backend.shared.patterns import (collection_and_id_from_fqid,
-                                                id_from_fqid)
+from openslides_backend.shared.patterns import collection_and_id_from_fqid, id_from_fqid
 
 from .util import Client
 
@@ -144,9 +144,9 @@ class MockAuthenticationHTTPAdapter:
         collection, user_id = collection_and_id_from_fqid(event["fqid"])
         if collection == "user":
             if event.get("type") == "create":
-                self.user_sessions[user_id] = event.get("fields")
+                self.user_sessions[user_id] = event.get("fields", {})
             elif event.get("type") == "update":
-                self.user_sessions[user_id].update(event.get("fields"))
+                self.user_sessions[user_id].update(event.get("fields", {}))
 
 
 login_patch = patch.object(Client, "login", new=login)
@@ -159,13 +159,13 @@ auth_http_adapter_patch = patch.multiple(
         if not method_name.startswith("_") or method_name == "__init__"
     },
 )
-AuthenticationHTTPAdapter.create_update_user_session = (
+AuthenticationHTTPAdapter.create_update_user_session = (  # type: ignore
     MockAuthenticationHTTPAdapter.create_update_user_session
 )
 
 
 @contextmanager
-def auth_mock() -> Generator[tuple[Any, Any]]:
+def auth_mock() -> Generator[tuple[_patch, _patch], None, None]:
     with auth_http_adapter_patch:
         with login_patch:
             yield auth_http_adapter_patch, login_patch

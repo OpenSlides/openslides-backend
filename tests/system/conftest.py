@@ -1,12 +1,18 @@
 import os
 import pathlib
 from collections.abc import Generator
+from typing import Any
+from unittest.mock import _patch
 
 import pytest
-from openslides_backend.database.db_connection_handling import (
-    create_os_conn_pool, env, get_unpooled_db_connection, os_conn_pool,
-    system_conn_pool)
 from psycopg import Connection, Cursor, sql
+
+from openslides_backend.database.db_connection_handling import (
+    create_os_conn_pool,
+    env,
+    get_unpooled_db_connection,
+    system_conn_pool,
+)
 from tests.mock_auth_login import auth_http_adapter_patch, login_patch
 
 temporary_template_db = "openslides_template"
@@ -29,7 +35,7 @@ def _create_new_openslides_db_from_template(curs: Cursor) -> None:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_pytest_session(request) -> Generator[None, None, None]:
+def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
     # with auth_mock() as auth_mocker:
     login_patch.start()
     auth_http_adapter_patch.start()
@@ -87,7 +93,7 @@ def setup_pytest_session(request) -> Generator[None, None, None]:
 
 
 @pytest.fixture(scope="class")
-def auth_mockers(request, setup_pytest_session):
+def auth_mockers(request: Any, setup_pytest_session: Any) -> None:
     """catch the session wide auth_mocker and apply for single classes,
     which use them as self.auth_mocker, see https://docs.pytest.org/en/8.2.x/how-to/unittest.html
     """
@@ -96,8 +102,6 @@ def auth_mockers(request, setup_pytest_session):
 
 @pytest.fixture(autouse=True)
 def db_connection() -> Generator[Connection, None, None]:
-    global os_conn_pool
-    os_conn_pool.close()
     with system_conn_pool.connection() as conn:
         with conn.cursor() as curs:
             _create_new_openslides_db_from_template(curs)
