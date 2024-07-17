@@ -122,7 +122,9 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
         )
         meetings = self.datastore.get_many([gmr]).get("meeting", {})
         operator_meetings = self.datastore.get(
-            fqid_from_collection_and_id("user", self.user_id), ["meeting_ids"]
+            fqid_from_collection_and_id("user", self.user_id),
+            ["meeting_ids"],
+            lock_result=False,
         ).get("meeting_ids", [])
 
         return [

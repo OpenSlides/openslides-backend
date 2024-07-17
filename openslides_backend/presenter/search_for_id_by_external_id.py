@@ -90,7 +90,8 @@ class SearchForIdByExternalId(BasePresenter):
                     ),
                     ["locked_from_inside", "group_ids"],
                 )
-            ]
+            ],
+            lock_result=False,
         )["meeting"]
         for group_id, group in filtered.items():
             if meetings.get(group.get("meeting_id", 0), {}).get(

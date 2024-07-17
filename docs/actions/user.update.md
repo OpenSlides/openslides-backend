@@ -87,10 +87,11 @@ The request user needs `user.can_update` in each referenced meeting.
 
 Group C:
 
-The request user must satisfy at least one of:
-- the OML `can_manage_users`
-- `user.can_update` for the meeting, OR
-- The CML `can_manage` for the committee of the meeting
+For each meeting the request user must satisfy at least one of:
+- `user.can_manage` for the meeting, OR
+- If the meeting is not locked via `locked_from_inside` setting:
+  * the OML `can_manage_users` in the organization
+  * The CML `can_manage` for the committee of the meeting
 
 Group D:
 

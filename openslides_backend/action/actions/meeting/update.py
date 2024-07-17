@@ -212,6 +212,7 @@ class MeetingUpdate(
         db_meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["id"]),
             ["template_for_organization_id", "locked_from_inside"],
+            lock_result=False,
         )
         lock_meeting = (
             instance.get("locked_from_inside")

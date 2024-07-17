@@ -142,7 +142,8 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
             locked_meetings = [
                 str(id_)
                 for id_, meeting in self.datastore.get_many(
-                    [GetManyRequest("meeting", meeting_ids, ["locked_from_inside"])]
+                    [GetManyRequest("meeting", meeting_ids, ["locked_from_inside"])],
+                    lock_result=False,
                 )
                 .get("meeting", {})
                 .items()
