@@ -38,6 +38,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "is_active_in_organization_id",
                         "name",
                         "motions_default_workflow_id",
+                        "motions_default_amendment_workflow_id",
                         "committee_id",
                         "default_group_id",
                         "motion_submitter_ids",
@@ -66,9 +67,11 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "all_origin_ids",
                         "derived_motion_ids",
                         "all_derived_motion_ids",
+                        "amendment_ids",
                     ],
                 ),
-            ]
+            ],
+            lock_result=False,
         )
 
     def get_user_verbose_names(self, meeting_user_ids: list[int]) -> str | None:
@@ -77,7 +80,8 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 GetManyRequest(
                     "meeting_user", meeting_user_ids, ["user_id", "structure_level_ids"]
                 )
-            ]
+            ],
+            lock_result=False,
         )["meeting_user"]
         user_ids = [
             user_id
@@ -101,7 +105,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             requests.append(
                 GetManyRequest("structure_level", structure_level_ids, ["name"])
             )
-        user_data = self.datastore.get_many(requests)
+        user_data = self.datastore.get_many(requests, lock_result=False)
         users = user_data["user"]
         structure_levels = user_data["structure_level"]
         names = []
@@ -144,6 +148,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["motions_default_workflow_id", "motions_default_amendment_workflow_id"],
+            lock_result=False,
         )
         self.set_state_from_workflow(instance, meeting)
         committee = self.check_for_origin_id(instance)
@@ -156,6 +161,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                     "motion_submitter",
                     FilterOperator("motion_id", "=", instance["origin_id"]),
                     ["meeting_user_id"],
+                    lock_result=False,
                 ).values()
             )
             submitters = sorted(submitters, key=lambda x: x.get("weight", 10000))
@@ -171,6 +177,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             text_submitter = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["origin_id"]),
                 ["additional_submitter"],
+                lock_result=False,
             ).get("additional_submitter")
             if text_submitter:
                 if instance.get("additional_submitter"):
@@ -192,6 +199,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         amendment_ids = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["origin_id"]),
             ["amendment_ids"],
+            lock_result=False,
         ).get("amendment_ids", [])
         if self.should_forward_amendments(instance):
             new_amendments = self.datastore.get_many(
@@ -222,7 +230,8 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         GetManyRequest(
                             "motion_state", list(state_ids), ["allow_motion_forwarding"]
                         )
-                    ]
+                    ],
+                    lock_result=False,
                 )["motion_state"]
             else:
                 states = {}
@@ -273,7 +282,9 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
 
     def handle_number(self, instance: dict[str, Any]) -> dict[str, Any]:
         origin = self.datastore.get(
-            fqid_from_collection_and_id("motion", instance["origin_id"]), ["number"]
+            fqid_from_collection_and_id("motion", instance["origin_id"]),
+            ["number"],
+            lock_result=False,
         )
         if instance.pop("use_original_number", None) and (num := origin.get("number")):
             number = self.get_clean_number(num, instance["meeting_id"])
@@ -295,14 +306,17 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["committee_id"],
+            lock_result=False,
         )
         forwarded_from = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["origin_id"]),
             ["meeting_id"],
+            lock_result=False,
         )
         forwarded_from_meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", forwarded_from["meeting_id"]),
             ["committee_id"],
+            lock_result=False,
         )
         # use the forwarding user id and id later in the handle forwarding user
         # code.
@@ -311,6 +325,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                 "committee", forwarded_from_meeting["committee_id"]
             ),
             ["id", "name", "forward_to_committee_ids"],
+            lock_result=False,
         )
         if meeting["committee_id"] not in committee.get("forward_to_committee_ids", []):
             raise ActionException(
@@ -340,6 +355,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
             origin = self.datastore.get(
                 fqid_from_collection_and_id("motion", instance["origin_id"]),
                 ["all_origin_ids", "meeting_id"],
+                lock_result=False,
             )
             instance["origin_meeting_id"] = origin["meeting_id"]
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
@@ -349,10 +365,12 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         origin = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["state_id"],
+            lock_result=False,
         )
         state = self.datastore.get(
             fqid_from_collection_and_id("motion_state", origin["state_id"]),
             ["allow_motion_forwarding"],
+            lock_result=False,
         )
         if not state.get("allow_motion_forwarding"):
             raise ActionException("State doesn't allow to forward motion.")
