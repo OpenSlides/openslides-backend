@@ -1,3 +1,4 @@
+import contextlib
 import os
 from collections.abc import Callable
 
@@ -54,6 +55,22 @@ def create_os_conn_pool(open: bool = True) -> psycopg_pool.ConnectionPool:
 
 
 os_conn_pool = create_os_conn_pool(open=False)
+
+
+def get_current_os_conn_pool() -> psycopg_pool.ConnectionPool:
+    global os_conn_pool
+    if os_conn_pool.closed:
+        try:
+            os_conn_pool._check_open()
+            os_conn_pool.open()
+        except psycopg.OperationalError:
+            os_conn_pool = create_os_conn_pool()
+    return os_conn_pool
+
+
+def get_current_os_conn() -> contextlib._GeneratorContextManager[psycopg.Connection]:
+    os_conn_pool = get_current_os_conn_pool()
+    return os_conn_pool.connection()
 
 
 def get_unpooled_db_connection(

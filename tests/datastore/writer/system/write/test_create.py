@@ -36,8 +36,7 @@ def test_create_simple(json_client, data):
 def test_increased_id_sequence(json_client, data, db_cur):
     create_model(json_client, data)
     db_cur.execute("select id from id_sequences where collection = %s", ["a"])
-    id = db_cur.fetchone()[0]
-    assert id == 2
+    assert db_cur.fetchone()["id"] == 2
 
 
 def test_create_double_increased_id_sequence(json_client, data, db_cur):
@@ -46,8 +45,7 @@ def test_create_double_increased_id_sequence(json_client, data, db_cur):
     response = json_client.post(WRITE_URL, data)
     assert_response_code(response, 201)
     db_cur.execute("select id from id_sequences where collection = %s", ["a"])
-    id = db_cur.fetchone()[0]
-    assert id == 4
+    assert db_cur.fetchone()["id"] == 4
 
 
 def test_create_empty_field(json_client, data):

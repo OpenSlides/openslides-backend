@@ -26,7 +26,7 @@ def test_initial_migration_index(json_client, data, db_cur):
     create_model(json_client, data)
 
     db_cur.execute("select migration_index from positions where position=%s", [1])
-    migration_index = db_cur.fetchone()[0]
+    migration_index = db_cur.fetchone()["migration_index"]
     assert migration_index == -1
 
 
@@ -43,7 +43,7 @@ def test_use_current_migration_index(json_client, data, db_connection, db_cur):
     assert_model("a/1", {"f": 2}, 2)
 
     db_cur.execute("select migration_index from positions where position=%s", [2])
-    migration_index = db_cur.fetchone()[0]
+    migration_index = db_cur.fetchone()["migration_index"]
     assert migration_index == 3
 
 
@@ -71,7 +71,7 @@ def test_send_migration_index(json_client, data, db_cur):
     create_model(json_client, data)
 
     db_cur.execute("select migration_index from positions where position=%s", [1])
-    migration_index = db_cur.fetchone()[0]
+    migration_index = db_cur.fetchone()["migration_index"]
     assert migration_index == 3
 
 
@@ -88,5 +88,5 @@ def test_send_migration_index_not_empty(json_client, data, db_cur):
     )
 
     db_cur.execute("select migration_index from positions where position=%s", [1])
-    migration_index = db_cur.fetchone()[0]
+    migration_index = db_cur.fetchone()["migration_index"]
     assert migration_index == -1

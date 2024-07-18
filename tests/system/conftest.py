@@ -36,7 +36,6 @@ def _create_new_openslides_db_from_template(curs: Cursor) -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_pytest_session() -> Generator[dict[str, _patch], None, None]:
-    # with auth_mock() as auth_mocker:
     login_patch.start()
     auth_http_adapter_patch.start()
     with system_conn_pool.connection() as conn:

@@ -16,7 +16,7 @@ def setup(db_connection, db_cur):
             values (%s, %s, %s, 1) returning position""",
             [user_id, json.dumps(information), timestamp],
         )
-        position = db_cur.fetchone()[0]
+        position = db_cur.fetchone()["position"]
         db_cur.execute(
             "insert into events (position, fqid, type, data, weight) values (%s, %s, %s, %s, 1)",
             [position, fqid, EVENT_TYPE.CREATE, json.dumps({})],
