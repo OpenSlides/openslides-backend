@@ -67,3 +67,5 @@ class CheckDatabaseAll(BasePresenter):
             return {"ok": True}
         except CheckException as ce:
             return {"ok": False, "errors": str(ce)}
+        except Exception as e:
+            return {"ok": False, "errors": str(e)}

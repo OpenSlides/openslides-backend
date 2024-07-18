@@ -3,7 +3,7 @@ from collections.abc import Callable
 from copy import deepcopy
 from typing import Any, cast
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, _patch
 
 import simplejson as json
 from fastjsonschema.exceptions import JsonSchemaException
@@ -56,8 +56,12 @@ class BaseSystemTestCase(TestCase):
     # Save auth data as class variable
     auth_data: AuthData | None = None
 
+    auth_mockers: dict[str, _patch]
     # Save all created fqids
     created_fqids: set[str]
+
+    # create organization, superadmin and login
+    init_with_login: bool = True
 
     def setUp(self) -> None:
         register_services()
@@ -69,38 +73,41 @@ class BaseSystemTestCase(TestCase):
         self.media = self.services.media()
         self.vote_service = cast(TestVoteService, self.services.vote())
         self.datastore = self.services.datastore()
-        self.datastore.truncate_db()
         self.set_thread_watch_timeout(-1)
 
         self.created_fqids = set()
-        self.create_model(
-            "user/1",
-            {
-                "username": ADMIN_USERNAME,
-                "password": self.auth.hash(ADMIN_PASSWORD),
-                "default_password": ADMIN_PASSWORD,
-                "is_active": True,
-                "organization_management_level": "superadmin",
-                "organization_id": ONE_ORGANIZATION_ID,
-            },
-        )
-        self.create_model(
-            ONE_ORGANIZATION_FQID,
-            {
-                "name": "OpenSlides Organization",
-                "default_language": "en",
-                "user_ids": [1],
-            },
-        )
+        if self.init_with_login:
+            self.create_model(
+                "user/1",
+                {
+                    "username": ADMIN_USERNAME,
+                    "password": self.auth.hash(ADMIN_PASSWORD),
+                    "default_password": ADMIN_PASSWORD,
+                    "is_active": True,
+                    "organization_management_level": "superadmin",
+                    "organization_id": ONE_ORGANIZATION_ID,
+                },
+            )
+            self.create_model(
+                ONE_ORGANIZATION_FQID,
+                {
+                    "name": "OpenSlides Organization",
+                    "default_language": "en",
+                    "user_ids": [1],
+                },
+            )
         self.client = self.create_client(self.update_vote_service_auth_data)
-        if self.auth_data:
-            # Reuse old login data to avoid a new login request
-            self.client.update_auth_data(self.auth_data)
-        else:
-            # Login and save copy of auth data for all following tests
-            self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
-            BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
+        self.client.auth = self.auth  # type: ignore
+        if self.init_with_login:
+            if self.auth_data:
+                # Reuse old login data to avoid a new login request
+                self.client.update_auth_data(self.auth_data)
+            else:
+                # Login and save copy of auth data for all following tests
+                self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD, 1)
+                BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.anon_client = self.create_client()
+        self.anon_client.auth = self.auth  # type: ignore
 
     def set_thread_watch_timeout(self, timeout: float) -> None:
         """
@@ -164,7 +171,7 @@ class BaseSystemTestCase(TestCase):
         """
         user = self.get_model(f"user/{user_id}")
         assert user.get("default_password")
-        self.client.login(user["username"], user["default_password"])
+        self.client.login(user["username"], user["default_password"], user_id)
 
     def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
         self.vote_service.set_authentication(
@@ -189,10 +196,16 @@ class BaseSystemTestCase(TestCase):
         write_request = self.get_write_request(
             self.get_create_events(fqid, data, deleted)
         )
+        if self.check_auth_mockers_started():
+            for event in write_request.events:
+                self.auth.create_update_user_session(event)  # type: ignore
         self.datastore.write(write_request)
 
     def update_model(self, fqid: str, data: dict[str, Any]) -> None:
         write_request = self.get_write_request(self.get_update_events(fqid, data))
+        if self.check_auth_mockers_started():
+            for event in write_request.events:
+                self.auth.create_update_user_session(event)  # type: ignore
         self.datastore.write(write_request)
 
     def get_create_events(
@@ -227,7 +240,18 @@ class BaseSystemTestCase(TestCase):
             else:
                 events.extend(self.get_create_events(fqid, model))
         write_request = self.get_write_request(events)
+        if self.check_auth_mockers_started():
+            for event in write_request.events:
+                self.auth.create_update_user_session(event)  # type: ignore
         self.datastore.write(write_request)
+
+    def check_auth_mockers_started(self) -> bool:
+        if (
+            hasattr(self, "auth_mockers")
+            and not self.auth_mockers["auth_http_adapter_patch"]._active_patches  # type: ignore
+        ):
+            return False
+        return True
 
     def validate_fields(self, fqid: str, fields: dict[str, Any]) -> None:
         model = model_registry[collection_from_fqid(fqid)]()

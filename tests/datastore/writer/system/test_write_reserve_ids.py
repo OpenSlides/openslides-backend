@@ -32,7 +32,7 @@ def test_create_reserve(json_client, data, db_cur):
 
     db_cur.execute("select * from id_sequences")
     result = db_cur.fetchall()
-    assert result == [("a", 3)]
+    assert result == [{"collection": "a", "id": 3}]
 
 
 def test_reserve_create(json_client, data, db_cur):
@@ -42,11 +42,11 @@ def test_reserve_create(json_client, data, db_cur):
 
     db_cur.execute("select * from id_sequences")
     result = db_cur.fetchall()
-    assert result == [("a", 6)]
+    assert result == [{"collection": "a", "id": 6}]
 
     response = json_client.post(WRITE_URL, data)
     assert_response_code(response, 201)
 
     db_cur.execute("select * from id_sequences")
     result = db_cur.fetchall()
-    assert result == [("a", 6)]
+    assert result == [{"collection": "a", "id": 6}]

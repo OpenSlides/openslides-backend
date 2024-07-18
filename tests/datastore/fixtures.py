@@ -1,14 +1,10 @@
 import os
 
-import psycopg
 import pytest
 
+from openslides_backend.database.db_connection_handling import get_current_os_conn
 from openslides_backend.datastore.shared.di import injector
 from openslides_backend.datastore.shared.postgresql_backend import ALL_TABLES
-from openslides_backend.datastore.shared.postgresql_backend.pg_connection_handler import (
-    DATABASE_ENVIRONMENT_VARIABLES as POSTGRESQL_ENVIRONMENT_VARIABLES,
-)
-from openslides_backend.datastore.shared.services.environment_service import DEV_SECRET
 
 
 def get_env(name):
@@ -33,28 +29,22 @@ def reset_di():
 
 # Postgresql
 
-_db_connection: psycopg.Connection
+# _db_connection: psycopg.Connection
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db_connection():
-    global _db_connection
-    _db_connection = psycopg.connect(
-        host=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.HOST),
-        port=int(get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.PORT) or 5432),
-        dbname=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.NAME),
-        user=get_env(POSTGRESQL_ENVIRONMENT_VARIABLES.USER),
-        password=DEV_SECRET,
-    )
-    _db_connection.autocommit = False
-    with _db_connection:
-        yield _db_connection
+    with get_current_os_conn() as db_connection:
+        yield db_connection
+
+    # teardown
+    if not db_connection.closed:
+        db_connection.close()
 
 
 @pytest.fixture()
-def db_connection():
-    global _db_connection
-    yield _db_connection
+def db_connection(setup_db_connection):
+    yield setup_db_connection
 
 
 @pytest.fixture(autouse=True)

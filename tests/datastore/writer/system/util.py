@@ -58,4 +58,4 @@ def assert_no_model(fqid):
 def assert_no_db_entry(db_cur):
     for table in ALL_TABLES:
         db_cur.execute(f"select count(*) from {table}")
-        assert db_cur.fetchone()[0] == 0
+        assert db_cur.fetchone()["count"] == 0

@@ -15,4 +15,4 @@ def test_delete_history_information(db_connection, db_cur, json_client):
 
     with db_connection.cursor() as cursor:
         cursor.execute("select information from positions")
-        assert cursor.fetchone()[0] is None
+        assert cursor.fetchone()["information"] is None

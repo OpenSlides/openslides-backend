@@ -128,9 +128,6 @@ class BaseDatastoreService(Protocol):
     def write_without_events(self, write_request: WriteRequest) -> None: ...
 
     @abstractmethod
-    def truncate_db(self) -> None: ...
-
-    @abstractmethod
     def is_deleted(self, fqid: FullQualifiedId) -> bool: ...
 
     @abstractmethod

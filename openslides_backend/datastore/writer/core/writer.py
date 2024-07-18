@@ -21,9 +21,6 @@ class Writer(Protocol):
     def delete_history_information(self) -> None:
         """Delete all history information from all positions."""
 
-    def truncate_db(self) -> None:
-        """Truncate all tables. Dev mode only"""
-
     def write_without_events(
         self,
         write_request: WriteRequest,
