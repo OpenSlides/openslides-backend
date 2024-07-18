@@ -300,7 +300,7 @@ class UserSendInvitationMail(UpdateAction):
             instance["meeting_id"],
         ):
             return
-        if has_organization_management_level(
+        if not instance.get("meeting_id") and has_organization_management_level(
             self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return

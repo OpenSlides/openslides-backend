@@ -403,6 +403,13 @@ class UpdatePollTestCase(BasePollTestCase):
             Permissions.Assignment.CAN_MANAGE,
         )
 
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "poll.update",
+            {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
+        )
+
     def test_update_entitled_users_at_stop_error(self) -> None:
         response = self.request(
             "poll.update",

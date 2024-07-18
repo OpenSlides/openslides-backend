@@ -14,6 +14,7 @@
     location: string;
     start_time: timestamp;
     end_time: timestamp;
+    locked_from_inside: boolean;
 
     conference_show: boolean;
     conference_auto_connect: boolean;
@@ -183,7 +184,6 @@
     jitsi_domain: string;
     jitsi_room_name: string;
     jitsi_room_password: string;
-    enable_chat: boolean;
 }
 ```
 
@@ -192,6 +192,8 @@ Updates the meeting.
 
 If `set_as_template` is `True`, `template_for_organization_id` has to be set to `1`. If it is `False`, it has to be set to `None`.
 `reference_projector_id` can only be set to a projector, which is not internal.
+
+This action doesn't allow for a meeting to be set as a template and have `locked_from_inside` set to true at the same time. if this would be the result of an action call, an exception will be thrown.
 
 ## Permissions
 - Users with `meeting.can_manage_settings` can modify group A

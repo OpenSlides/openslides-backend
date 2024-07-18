@@ -50,3 +50,12 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             {"id": 111, "name": "name_Xcdfgee"},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 1},
+            },
+            "motion_workflow.update",
+            {"id": 111, "name": "name_Xcdfgee"},
+        )

@@ -72,4 +72,11 @@ def build_motion_meeting_user_delete_test(collection: str) -> type[BaseActionTes
                 Permissions.Motion.CAN_MANAGE_METADATA,
             )
 
+        def test_delete_permissions_locked_meeting(self) -> None:
+            self.base_locked_out_superadmin_permission_test(
+                self.permission_test_models,
+                self.action,
+                {"id": 111},
+            )
+
     return BaseMotionMeetingUserDeleteTest

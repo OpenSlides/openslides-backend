@@ -214,3 +214,10 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             {"meeting_id": 1, "tree": [{"id": 22}]},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_sort_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion_category.sort",
+            {"meeting_id": 1, "tree": [{"id": 22}]},
+        )

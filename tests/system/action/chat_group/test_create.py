@@ -128,6 +128,16 @@ class ChatGroupCreate(BaseActionTestCase):
             Permissions.Chat.CAN_MANAGE,
         )
 
+    def test_create_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                ONE_ORGANIZATION_FQID: {"enable_chat": True},
+                "meeting/1": {"name": "test"},
+            },
+            "chat_group.create",
+            {"name": "redekreis1", "meeting_id": 1},
+        )
+
     def test_create_not_unique_name(self) -> None:
         self.set_models(
             {

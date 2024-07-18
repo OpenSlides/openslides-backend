@@ -506,6 +506,13 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
 
+    def test_create_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.test_models,
+            "speaker.create",
+            {"meeting_user_id": 17, "list_of_speakers_id": 23},
+        )
+
     def test_create_permissions_selfadd(self) -> None:
         self.create_meeting()
         self.user_id = 7

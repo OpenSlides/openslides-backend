@@ -378,7 +378,11 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.test_models,
             "meeting.update",
-            {"id": 1, "welcome_title": "Hallo"},
+            {
+                "id": 1,
+                "welcome_title": "Hallo",
+                "locked_from_inside": True,
+            },
             Permissions.Meeting.CAN_MANAGE_SETTINGS,
         )
 
@@ -497,6 +501,97 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "jitsi_room_password": "blablabla",
             },
             OrganizationManagementLevel.SUPERADMIN,
+        )
+
+    def test_update_with_locked_meeting_group_a(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "welcome_title": "Hallo",
+                "locked_from_inside": True,
+            },
+            OrganizationManagementLevel.SUPERADMIN,
+            True,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_b(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "present_user_ids": [2]},
+            OrganizationManagementLevel.SUPERADMIN,
+            True,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_c(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "reference_projector_id": 1},
+            OrganizationManagementLevel.SUPERADMIN,
+            True,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_c_allowed(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "reference_projector_id": 1},
+            Permissions.Projector.CAN_MANAGE,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_d(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_models(self.test_models)
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+        self.set_user_groups(self.user_id, [3])
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
+                "external_id": "test",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Missing permission: Not admin of this meeting",
+            response.json["message"],
+        )
+
+    def test_update_with_locked_meeting_group_e(self) -> None:
+        self.set_models(self.test_models)
+        self.base_permission_test(
+            {"organization_tag/1": {}},
+            "meeting.update",
+            {"id": 1, "organization_tag_ids": [1]},
+            OrganizationManagementLevel.SUPERADMIN,
+            lock_meeting=True,
+        )
+
+    def test_update_with_locked_meeting_group_f(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "jitsi_domain": "test",
+                "jitsi_room_name": "room1",
+                "jitsi_room_password": "blablabla",
+            },
+            OrganizationManagementLevel.SUPERADMIN,
+            lock_meeting=True,
         )
 
     def test_update_list_of_speakers_enable_point_of_order_speakers(self) -> None:
@@ -647,3 +742,84 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("meeting.update", {"id": 1, "external_id": external_id})
         self.assert_status_code(response, 200)
+
+    def test_update_cant_lock_template(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "set_as_template": True,
+                "locked_from_inside": True,
+                "location": "Geneva",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and a template at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_cant_lock_template_2(self) -> None:
+        self.create_meeting()
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "template_for_organization_id": 1,
+                    "locked_from_inside": True,
+                    "admin_group_id": 2,
+                }
+            }
+        )
+        self.set_user_groups(1, [2])
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "location": "Geneva"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and a template at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_cant_lock_template_3(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "template_for_organization_id": 1,
+                }
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "locked_from_inside": True, "location": "Geneva"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and a template at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_cant_lock_template_4(self) -> None:
+        self.create_meeting()
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "locked_from_inside": True,
+                    "admin_group_id": 2,
+                }
+            }
+        )
+        self.set_user_groups(1, [2])
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "set_as_template": True, "location": "Geneva"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and a template at the same time.",
+            response.json["message"],
+        )

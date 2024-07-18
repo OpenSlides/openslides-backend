@@ -102,3 +102,10 @@ class GroupUpdateActionTest(BaseActionTestCase):
             {"id": 3, "name": "name_Xcdfgee"},
             Permissions.User.CAN_MANAGE,
         )
+
+    def test_update_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "group.update",
+            {"id": 3, "name": "name_Xcdfgee"},
+        )

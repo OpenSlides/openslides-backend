@@ -434,6 +434,15 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
             Permissions.Poll.CAN_MANAGE,
         )
 
+    def test_stop_permissions_locked_meeting(self) -> None:
+        self.set_models(self.test_models)
+        self.start_poll(1)
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "poll.stop",
+            {"id": 1},
+        )
+
     def test_stop_datastore_calls(self) -> None:
         user_ids = self.prepare_users_and_poll(3)
 
@@ -443,8 +452,8 @@ class PollStopActionTest(PollTestMixin, BasePollTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids
-        # always 11 plus len(user_ids) calls, dependent of user count
-        assert counter.calls == 11 + len(user_ids)
+        # always 12 plus len(user_ids) calls, dependent of user count
+        assert counter.calls == 12 + len(user_ids)
 
     @performance
     def test_stop_performance(self) -> None:

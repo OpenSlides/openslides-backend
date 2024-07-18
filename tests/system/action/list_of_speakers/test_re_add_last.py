@@ -389,3 +389,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
             {"id": 111},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
+
+    def test_re_add_last_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "list_of_speakers.re_add_last",
+            {"id": 111},
+        )

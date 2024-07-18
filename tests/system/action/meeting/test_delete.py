@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
@@ -415,3 +416,13 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_deleted(fqid)
         for i in range(220, 222):
             self.assert_model_exists(f"user/{i}", {})
+
+    def test_delete_with_locked_meeting(self) -> None:
+        self.base_permission_test(
+            {},
+            "meeting.delete",
+            {"id": 1},
+            OrganizationManagementLevel.SUPERADMIN,
+            False,
+            lock_meeting=True,
+        )

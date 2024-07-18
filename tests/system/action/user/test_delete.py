@@ -21,7 +21,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         model = self.get_model("user/112")
         assert model.get("username") == "username_srtgb123"
 
-    def test_delete_correct_with_groups(self) -> None:
+    def test_delete_correct_with_groups_and_locked_meeting(self) -> None:
         self.set_models(
             {
                 "user/111": {
@@ -41,6 +41,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "user_ids": [111],
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1111],
+                    "locked_from_inside": True,
                 },
                 "committee/1": {
                     "meeting_ids": [456],
