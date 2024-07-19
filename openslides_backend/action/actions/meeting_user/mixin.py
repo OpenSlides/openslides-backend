@@ -1,6 +1,13 @@
 from typing import Any, cast
 
+from openslides_backend.services.datastore.commands import GetManyRequest
+
+from ....action.action import Action
+from ....action.util.typing import ActionData, ActionResults
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
+from ....shared.filters import And, Filter, FilterOperator, Or
+from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from .history_mixin import MeetingUserHistoryMixin
 
@@ -9,7 +16,146 @@ meeting_user_standard_fields = [
     "number",
     "vote_weight",
     "structure_level_ids",
+    "locked_out",
 ]
+
+
+class CheckLockedOutMixin(Action):
+    def perform(
+        self, action_data: ActionData, user_id: int, internal: bool = False
+    ) -> tuple[WriteRequest | None, ActionResults | None]:
+        self.meeting_id_to_can_manage_group_ids: dict[int, set[int]] = {}
+        return super().perform(action_data, user_id, internal)
+
+    def check_locking_status(
+        self,
+        meeting_user_id: int | None,
+        instance: dict[str, Any],
+        user_id: int | None = None,
+        user: dict[str, Any] | None = None,
+    ) -> None:
+        if not any(
+            field in instance
+            for field in [
+                "locked_out",
+                "group_ids",
+                "organization_management_level",
+                "committee_management_ids",
+            ]
+        ):
+            return
+        if meeting_user_id:
+            db_instance: dict[str, Any] = self.datastore.get(
+                fqid_from_collection_and_id("meeting_user", meeting_user_id),
+                ["locked_out", "group_ids", "meeting_id"],
+            )
+        else:
+            db_instance = {}
+        final: dict[str, Any] = db_instance.copy()
+        final.update(instance)
+        if not final.get("locked_out"):
+            return
+        if not user_id:
+            user_id = (user or {}).get("id") or final["user_id"]
+        if user_id == self.user_id:
+            raise ActionException("You may not lock yourself out of a meeting")
+        self._check_setting_oml_cml_for_locking(
+            cast(int, user_id), final["meeting_id"], instance
+        )
+        if not user:
+            user = self.datastore.get(
+                fqid_from_collection_and_id("user", cast(int, user_id)),
+                ["organization_management_level", "committee_management_ids"],
+            )
+        user_copy = user.copy()
+        user_copy.update(final)
+        final = user_copy
+        if oml := final.get("organization_management_level"):
+            raise ActionException(
+                f"Cannot lock user {user_id} from meeting {final['meeting_id']} as long as he has the OrganizationManagementLevel {oml}"
+            )
+        meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", final["meeting_id"]),
+            ["committee_id"],
+        )
+        if meeting["committee_id"] in final.get("committee_management_ids", []):
+            raise ActionException(
+                f"Cannot lock user {user_id} out of meeting {final['meeting_id']} as he is manager of the meetings committee"
+            )
+        if final["meeting_id"] not in self.meeting_id_to_can_manage_group_ids:
+            groups = self.datastore.filter(
+                "group",
+                FilterOperator("meeting_id", "=", final["meeting_id"]),
+                ["permissions", "admin_group_for_meeting_id"],
+            )
+            self.meeting_id_to_can_manage_group_ids[final["meeting_id"]] = {
+                id_
+                for id_, group in groups.items()
+                if group.get("admin_group_for_meeting_id")
+                or Permissions.User.CAN_MANAGE in group.get("permissions", [])
+            }
+        forbidden_group_ids = self.meeting_id_to_can_manage_group_ids[
+            final["meeting_id"]
+        ]
+        if forbidden_groups := forbidden_group_ids.intersection(
+            final.get("group_ids", [])
+        ):
+            raise ActionException(
+                f"User {user_id}: Group(s) {forbidden_groups} have user.can_manage permissions and may therefore not be used by users who are locked out"
+            )
+
+    def _check_setting_oml_cml_for_locking(
+        self, user_id: int, meeting_id: int, instance: dict[str, Any]
+    ) -> None:
+        if not (
+            instance.get("organization_management_level")
+            or instance.get("committee_management_ids")
+        ):
+            return
+        filters = [
+            FilterOperator("user_id", "=", user_id),
+            FilterOperator("locked_out", "=", True),
+        ]
+        if (new_locked := instance.get("locked_out")) is False:
+            filters.append(FilterOperator("meeting_id", "!=", meeting_id))
+        filter_: Filter = And(filters)
+        if new_locked:
+            filter_ = Or(FilterOperator("meeting_id", "=", meeting_id), filter_)
+        locked_from_meeting_users = self.datastore.filter(
+            "meeting_user", filter_, ["meeting_id"]
+        )
+        locked_from_meeting_ids = {
+            meeting_user["meeting_id"]
+            for meeting_user in locked_from_meeting_users.values()
+        }
+        if len(locked_from_meeting_ids):
+            if (oml := instance.get("organization_management_level")) and len(
+                locked_from_meeting_ids
+            ):
+                raise ActionException(
+                    f"Cannot give OrganizationManagementLevel {oml} to user {user_id} as he is locked out of meeting(s) {locked_from_meeting_ids}"
+                )
+            if committee_ids := instance.get("committee_management_ids"):
+                committees = self.datastore.get_many(
+                    [GetManyRequest("committee", committee_ids, ["meeting_ids", "id"])]
+                )["committee"]
+                meeting_id_to_committee_id = {
+                    meeting_id: committee["id"]
+                    for committee in committees.values()
+                    for meeting_id in committee.get("meeting_ids", [])
+                }
+                if len(
+                    forbidden_committee_meeting_ids := locked_from_meeting_ids.intersection(
+                        meeting_id_to_committee_id.keys()
+                    )
+                ):
+                    forbidden_committee_ids = {
+                        meeting_id_to_committee_id[meeting_id]
+                        for meeting_id in forbidden_committee_meeting_ids
+                    }
+                    raise ActionException(
+                        f"Cannot set user {user_id} as manager for committee(s) {forbidden_committee_ids} due to being locked out of meeting(s) {forbidden_committee_meeting_ids}"
+                    )
 
 
 class MeetingUserMixin(MeetingUserHistoryMixin):

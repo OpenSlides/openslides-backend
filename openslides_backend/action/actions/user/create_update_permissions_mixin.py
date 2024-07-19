@@ -195,6 +195,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             "vote_delegated_to_id",
             "vote_delegations_from_ids",
             "is_present_in_meeting_ids",
+            "locked_out",
             "is_present",  # participant import
         ],
         "C": ["meeting_id", "group_ids"],

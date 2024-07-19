@@ -186,6 +186,7 @@ class MeetingUserMergeMixin(
                     "vote_weight",
                     "vote_delegated_to_id",
                     "meeting_id",
+                    "locked_out",
                 ],
                 "merge": [
                     "supported_motion_ids",
