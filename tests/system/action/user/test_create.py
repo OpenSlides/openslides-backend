@@ -1,5 +1,8 @@
+from typing import Any
+
 from openslides_backend.action.util.crypto import PASSWORD_CHARS
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 
@@ -740,6 +743,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "vote_delegations_from_ids": [2, 3],
                 "group_ids": [1],
                 "is_present_in_meeting_ids": [1],
+                "locked_out": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -764,6 +768,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "comment": "comment for meeting/1",
                 "vote_delegations_from_ids": [2, 3],
                 "group_ids": [1],
+                "locked_out": True,
             },
         )
         self.assert_model_exists(
@@ -1380,6 +1385,79 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"user_ids": None})
         self.assert_model_exists(
             "meeting/2", {"user_ids": [223], "meeting_user_ids": [1]}
+        )
+
+    def assert_lock_out_user(
+        self,
+        meeting_id: int,
+        other_payload_data: dict[str, Any],
+        errormsg: str | None = None,
+    ) -> None:
+        self.create_meeting()  # committee:60; groups: default:1, admin:2, can_manage:3
+        self.create_meeting(4)  # committee:63; groups: default:4, admin:5, can_update:6
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        self.add_group_permissions(6, [Permissions.User.CAN_UPDATE])
+        response = self.request(
+            "user.create",
+            {
+                "username": "test",
+                "meeting_id": meeting_id,
+                "locked_out": True,
+                **other_payload_data,
+            },
+        )
+        if errormsg is not None:
+            self.assert_status_code(response, 400)
+            self.assertIn(
+                errormsg,
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+
+    def test_create_locked_out_user_foreign_cml_allowed(self) -> None:
+        self.assert_lock_out_user(1, {"committee_management_ids": [63]})
+
+    def test_create_locked_out_user_superadmin_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"organization_management_level": "superadmin"},
+            errormsg="Cannot lock user from meeting 1 as long as he has the OrganizationManagementLevel superadmin",
+        )
+
+    def test_create_locked_out_user_other_oml_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"organization_management_level": "can_manage_users"},
+            errormsg="Cannot lock user from meeting 1 as long as he has the OrganizationManagementLevel can_manage_users",
+        )
+
+    def test_create_locked_out_user_cml_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"committee_management_ids": [60]},
+            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee",
+        )
+
+    def test_create_locked_out_user_meeting_admin_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"group_ids": [2]},
+            errormsg="Group(s) 2 have user.can_update permissions and may therefore not be used by users who are locked out",
+        )
+
+    def test_create_locked_out_user_can_manage_error(self) -> None:
+        self.assert_lock_out_user(
+            1,
+            {"group_ids": [3]},
+            errormsg="Group(s) 3 have user.can_update permissions and may therefore not be used by users who are locked out",
+        )
+
+    def test_create_locked_out_user_can_update_error(self) -> None:
+        self.assert_lock_out_user(
+            4,
+            {"group_ids": [6]},
+            errormsg="Group(s) 6 have user.can_update permissions and may therefore not be used by users who are locked out",
         )
 
 
