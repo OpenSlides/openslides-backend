@@ -202,3 +202,4 @@ This action doesn't allow for a meeting to be set as a template and have `locked
 - Admins of the meeting can modify group D
 - Users with CML `can_manage` or users with a OML of `can_manage_organization` can modify group E
 - Only users with OML `superadmin` can modify group F
+- Users need OML `can_manage_organization` to `set_as_template` if organization setting `require_duplicate_from` is set.

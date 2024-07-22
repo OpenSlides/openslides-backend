@@ -18,6 +18,7 @@ from ....permissions.permission_helper import (
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.util import ONE_ORGANIZATION_FQID
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
@@ -227,6 +228,19 @@ class MeetingUpdate(
             raise ActionException(
                 "A meeting cannot be locked from the inside and a template at the same time."
             )
+        organization = self.datastore.get(
+            ONE_ORGANIZATION_FQID, ["require_duplicate_from"]
+        )
+        if organization.get("require_duplicate_from"):
+            if set_as_template is not None and not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            ):
+                raise ActionException(
+                    "A meeting cannot be set as a template by a committee manager, if duplicate from is required."
+                )
+
         if set_as_template is True:
             instance["template_for_organization_id"] = 1
         elif set_as_template is False:
