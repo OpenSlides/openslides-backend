@@ -48,3 +48,10 @@ class PointOfOrderCategoryDelete(BaseActionTestCase):
             {"id": 53},
             Permissions.Meeting.CAN_MANAGE_SETTINGS,
         )
+
+    def test_delete_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "point_of_order_category.delete",
+            {"id": 53},
+        )

@@ -331,6 +331,7 @@ class Meeting(Model, MeetingModelMixin):
     location = fields.CharField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
+    locked_from_inside = fields.BooleanField()
     imported_at = fields.TimestampField()
     language = fields.CharField(
         required=True,

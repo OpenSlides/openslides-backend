@@ -70,6 +70,13 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
             Permissions.Motion.CAN_SEE,
         )
 
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion_comment.delete",
+            {"id": 111},
+        )
+
     def test_update_no_permission_cause_write_group(self) -> None:
         self.permission_test_models["motion_comment_section/78"]["write_group_ids"] = [
             2

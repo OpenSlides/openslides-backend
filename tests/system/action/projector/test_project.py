@@ -549,3 +549,17 @@ class ProjectorProject(BaseActionTestCase):
             },
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_project_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projector.project",
+            {
+                "ids": [23],
+                "content_object_id": "assignment/453",
+                "meeting_id": 1,
+                "options": {},
+                "stable": False,
+                "type": "test",
+            },
+        )

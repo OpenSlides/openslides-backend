@@ -23,6 +23,8 @@ Go through all meetings:
 If it doesn't find the `group_name` in at least one meeting, throw an `ActionException`.
 Returns dictionary with `"succeeded": [meeting_ids], "standard_group": [meeting_ids], "nothing": [meeting_ids]`.
 
+Will raise an error if some of the selected meetings are locked from the inside via the `locked_from_inside` setting.
+
 ## Permissions
 The request user needs OML `can_manage_users`
 

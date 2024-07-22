@@ -295,3 +295,97 @@ class UserAssignMeetings(BaseActionTestCase):
             "Meeting Archived/1 cannot be changed, because it is archived."
             in response.json["message"]
         )
+
+    def test_assign_meetings_with_locked_meetings(self) -> None:
+        self.set_models(
+            {
+                "group/11": {
+                    "name": "to_find",
+                    "meeting_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "group/22": {
+                    "name": "nothing",
+                    "meeting_id": 2,
+                    "meeting_user_ids": [2],
+                },
+                "group/31": {"name": "to_find", "meeting_id": 3},
+                "group/43": {"name": "standard", "meeting_id": 4},
+                "group/51": {"name": "to_find", "meeting_id": 5},
+                "group/52": {
+                    "name": "nothing",
+                    "meeting_id": 5,
+                    "meeting_user_ids": [5],
+                },
+                "meeting/1": {
+                    "name": "success(existing)",
+                    "group_ids": [11],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "meeting_user_ids": [1],
+                },
+                "meeting/2": {
+                    "name": "nothing",
+                    "group_ids": [22],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "meeting_user_ids": [2],
+                    "locked_from_inside": True,
+                },
+                "meeting/3": {
+                    "name": "success(added)",
+                    "group_ids": [31],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "locked_from_inside": False,
+                },
+                "meeting/4": {
+                    "name": "standard",
+                    "group_ids": [43],
+                    "is_active_in_organization_id": 1,
+                    "default_group_id": 43,
+                    "committee_id": 2,
+                    "locked_from_inside": True,
+                },
+                "meeting/5": {
+                    "name": "success(added)",
+                    "group_ids": [51, 52],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "meeting_user_ids": [5],
+                },
+                "user/1": {
+                    "meeting_user_ids": [1, 2, 5],
+                    "meeting_ids": [1, 2, 5],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [11],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 2,
+                    "user_id": 1,
+                    "group_ids": [22],
+                },
+                "meeting_user/5": {
+                    "meeting_id": 5,
+                    "user_id": 1,
+                    "group_ids": [52],
+                },
+                "committee/2": {"meeting_ids": [1, 2, 3, 4, 5]},
+            }
+        )
+        response = self.request(
+            "user.assign_meetings",
+            {
+                "id": 1,
+                "meeting_ids": [1, 2, 3, 4, 5],
+                "group_name": "to_find",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Cannot assign meetings because some selected meetings are locked: 2, 4."
+        )

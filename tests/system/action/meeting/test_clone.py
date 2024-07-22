@@ -1900,3 +1900,10 @@ class MeetingClone(BaseActionTestCase):
             "motion/1/amendment_paragraphs error: Invalid html in 1\n\tmotion/1/amendment_paragraphs error: Invalid html in 2"
             in response.json["message"]
         )
+
+    def test_permissions_oml_locked_meeting(self) -> None:
+        self.create_meeting()
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 400)
+        assert "Cannot clone locked meeting." in response.json["message"]

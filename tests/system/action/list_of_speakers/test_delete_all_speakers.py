@@ -63,3 +63,10 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
             {"id": 111},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
+
+    def test_delete_all_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "list_of_speakers.delete_all_speakers",
+            {"id": 111},
+        )

@@ -192,3 +192,13 @@ class AssignmentCreateActionTest(BaseActionTestCase):
             },
             Permissions.Assignment.CAN_MANAGE,
         )
+
+    def test_create_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "assignment.create",
+            {
+                "title": "title_Xcdfgee",
+                "meeting_id": 1,
+            },
+        )

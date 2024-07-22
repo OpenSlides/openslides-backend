@@ -1,6 +1,5 @@
 from typing import Any
 
-from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -45,10 +44,9 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
             {"id": 111},
         )
 
-    def test_delete_permission(self) -> None:
-        self.base_permission_test(
+    def test_delete_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
             self.permission_test_models,
             "motion_change_recommendation.delete",
             {"id": 111},
-            Permissions.Motion.CAN_MANAGE,
         )

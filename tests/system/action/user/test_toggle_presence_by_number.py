@@ -216,3 +216,57 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
             "user.toggle_presence_by_number", {"meeting_id": 1, "number": "test"}
         )
         self.assert_status_code(response, 200)
+
+    def test_toggle_presence_by_number_locked_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [34],
+                    "locked_from_inside": True,
+                },
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                    "meeting_user_ids": [34],
+                },
+                "committee/1": {},
+                "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": "test"},
+            }
+        )
+        response = self.request(
+            "user.toggle_presence_by_number", {"meeting_id": 1, "number": "test"}
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to toggle presence by number.",
+            response.json["message"],
+        )
+
+    def test_toggle_presence_by_number_cml_locked_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "meeting_user_ids": [34],
+                    "locked_from_inside": True,
+                },
+                "committee/1": {"user_ids": [1]},
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_ids": [1],
+                    "committee_management_ids": [1],
+                    "meeting_user_ids": [34],
+                },
+                "meeting_user/34": {"user_id": 1, "meeting_id": 1, "number": "test"},
+            }
+        )
+        response = self.request(
+            "user.toggle_presence_by_number", {"meeting_id": 1, "number": "test"}
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to toggle presence by number.",
+            response.json["message"],
+        )

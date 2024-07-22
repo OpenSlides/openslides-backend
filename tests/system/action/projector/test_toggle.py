@@ -126,3 +126,10 @@ class ProjectorToggle(BaseActionTestCase):
             {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_toggle_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "projector.toggle",
+            {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
+        )

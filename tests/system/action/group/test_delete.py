@@ -112,6 +112,15 @@ class GroupDeleteActionTest(BaseActionTestCase):
             Permissions.User.CAN_MANAGE,
         )
 
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "group/111": {"name": "name_srtgb123", "meeting_id": 1},
+            },
+            "group.delete",
+            {"id": 111},
+        )
+
     def test_delete_mediafile1(self) -> None:
         self.set_models(
             {

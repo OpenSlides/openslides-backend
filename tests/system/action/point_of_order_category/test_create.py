@@ -37,3 +37,10 @@ class PointOfOrderCategoryCreate(BaseActionTestCase):
             {"text": "blablabla", "rank": 11, "meeting_id": 1},
             Permissions.Meeting.CAN_MANAGE_SETTINGS,
         )
+
+    def test_create_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "point_of_order_category.create",
+            {"text": "blablabla", "rank": 11, "meeting_id": 1},
+        )

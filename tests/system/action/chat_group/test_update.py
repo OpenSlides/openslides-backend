@@ -82,6 +82,13 @@ class ChatGroupUpdate(BaseActionTestCase):
             Permissions.Chat.CAN_MANAGE,
         )
 
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.test_models,
+            "chat_group.update",
+            {"id": 1, "name": "test"},
+        )
+
     def test_update_not_unique_name(self) -> None:
         self.set_models(
             {

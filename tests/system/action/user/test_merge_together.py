@@ -510,7 +510,7 @@ class UserMergeTogether(BaseVoteTestCase):
             {
                 "committee/1": {"manager_ids": [2, 5]},
                 "committee/3": {"manager_ids": [5]},
-                "meeting/2": {"present_user_ids": [4]},
+                "meeting/2": {"present_user_ids": [4], "locked_from_inside": True},
                 "meeting/3": {"present_user_ids": [3, 4]},
                 "meeting/4": {"present_user_ids": [5]},
                 "user/2": {
