@@ -1443,21 +1443,20 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_lock_out_user(
             1,
             {"group_ids": [2]},
-            errormsg="Group(s) 2 have user.can_update permissions and may therefore not be used by users who are locked out",
+            errormsg="Group(s) 2 have user.can_manage permissions and may therefore not be used by users who are locked out",
         )
 
     def test_create_locked_out_user_can_manage_error(self) -> None:
         self.assert_lock_out_user(
             1,
             {"group_ids": [3]},
-            errormsg="Group(s) 3 have user.can_update permissions and may therefore not be used by users who are locked out",
+            errormsg="Group(s) 3 have user.can_manage permissions and may therefore not be used by users who are locked out",
         )
 
-    def test_create_locked_out_user_can_update_error(self) -> None:
+    def test_create_locked_out_user_can_update_allowed(self) -> None:
         self.assert_lock_out_user(
             4,
             {"group_ids": [6]},
-            errormsg="Group(s) 6 have user.can_update permissions and may therefore not be used by users who are locked out",
         )
 
 

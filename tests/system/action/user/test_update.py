@@ -2807,15 +2807,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "account",
             1,
             other_data={"group_ids": [2]},
-            errormsg="Group(s) 2 have user.can_update permissions and may therefore not be used by users who are locked out",
+            errormsg="Group(s) 2 have user.can_manage permissions and may therefore not be used by users who are locked out",
         )
 
-    def test_update_locked_out_can_update_error(self) -> None:
+    def test_update_locked_out_can_update_allowed(self) -> None:
         self.assert_lock_out_user(
             "account",
             4,
             other_data={"group_ids": [6]},
-            errormsg="Group(s) 6 have user.can_update permissions and may therefore not be used by users who are locked out",
         )
 
     def test_update_locked_out_on_foreign_cml_allowed(self) -> None:
@@ -2848,21 +2847,20 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_lock_out_user(
             "meetingad1",
             1,
-            errormsg="Group(s) 2 have user.can_update permissions and may therefore not be used by users who are locked out",
+            errormsg="Group(s) 2 have user.can_manage permissions and may therefore not be used by users who are locked out",
         )
 
     def test_update_locked_out_on_can_manage_error(self) -> None:
         self.assert_lock_out_user(
             "can_manage1",
             1,
-            errormsg="Group(s) 3 have user.can_update permissions and may therefore not be used by users who are locked out",
+            errormsg="Group(s) 3 have user.can_manage permissions and may therefore not be used by users who are locked out",
         )
 
-    def test_update_locked_out_on_can_update_error(self) -> None:
+    def test_update_locked_out_on_can_update_allowed(self) -> None:
         self.assert_lock_out_user(
             "can_update4",
             4,
-            errormsg="Group(s) 6 have user.can_update permissions and may therefore not be used by users who are locked out",
         )
 
     def test_update_locked_out_on_foreign_meeting_admin_allowed(self) -> None:
@@ -2898,7 +2896,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             other_data={"group_ids": [2]},
             lock_out=None,
             lock_before=True,
-            errormsg="Group(s) 2 have user.can_update permissions and may therefore not be used by users who are locked out",
+            errormsg="Group(s) 2 have user.can_manage permissions and may therefore not be used by users who are locked out",
         )
 
     def test_update_locked_out_remove_superadmin(self) -> None:

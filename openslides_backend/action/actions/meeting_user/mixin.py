@@ -1,6 +1,5 @@
 from typing import Any, cast
 
-from openslides_backend.permissions.permission_helper import is_child_permission
 from openslides_backend.services.datastore.commands import GetManyRequest
 
 from ....action.action import Action
@@ -93,10 +92,7 @@ class CheckLockOutPermissionMixin(Action):
                 id_
                 for id_, group in groups.items()
                 if group.get("admin_group_for_meeting_id")
-                or any(
-                    is_child_permission(Permissions.User.CAN_UPDATE, group_perm)
-                    for group_perm in group.get("permissions") or []
-                )
+                or Permissions.User.CAN_MANAGE in (group.get("permissions") or [])
             }
         forbidden_group_ids = self.meeting_id_to_can_manage_group_ids[
             final["meeting_id"]
@@ -105,7 +101,7 @@ class CheckLockOutPermissionMixin(Action):
             final.get("group_ids", [])
         ):
             raise ActionException(
-                f"Group(s) {', '.join([str(id_) for id_ in forbidden_groups])} have user.can_update permissions and may therefore not be used by users who are locked out"
+                f"Group(s) {', '.join([str(id_) for id_ in forbidden_groups])} have user.can_manage permissions and may therefore not be used by users who are locked out"
             )
 
     def _check_setting_locked_for_oml_cml(self, final: dict[str, Any]) -> None:
