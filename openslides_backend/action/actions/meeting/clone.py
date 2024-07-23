@@ -85,17 +85,19 @@ class MeetingClone(MeetingImport):
         organization = self.datastore.get(
             ONE_ORGANIZATION_FQID, ["require_duplicate_from", "template_meeting_ids"]
         )
-        if organization.get("require_duplicate_from"):
-            if not has_organization_management_level(
+        if (
+            organization.get("require_duplicate_from")
+            and not has_organization_management_level(
                 self.datastore,
                 self.user_id,
                 OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            ) and not instance["meeting_id"] in (
-                organization.get("template_meeting_ids") or []
-            ):
-                raise ActionException(
-                    "Committee manager cannot clone a non-template meeting, if duplicate-from is required."
-                )
+            )
+            and not instance["meeting_id"]
+            in (organization.get("template_meeting_ids") or [])
+        ):
+            raise ActionException(
+                "Committee manager cannot clone a non-template meeting if duplicate-from is required."
+            )
 
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json

@@ -231,15 +231,18 @@ class MeetingUpdate(
         organization = self.datastore.get(
             ONE_ORGANIZATION_FQID, ["require_duplicate_from"]
         )
-        if organization.get("require_duplicate_from"):
-            if set_as_template is not None and not has_organization_management_level(
+        if (
+            organization.get("require_duplicate_from")
+            and set_as_template is not None
+            and not has_organization_management_level(
                 self.datastore,
                 self.user_id,
                 OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            ):
-                raise ActionException(
-                    "A meeting cannot be set as a template by a committee manager, if duplicate from is required."
-                )
+            )
+        ):
+            raise ActionException(
+                "A meeting cannot be set as a template by a committee manager if duplicate from is required."
+            )
 
         if set_as_template is True:
             instance["template_for_organization_id"] = 1

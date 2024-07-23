@@ -1945,5 +1945,5 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "Committee manager cannot clone a non-template meeting, if duplicate-from is required."
+            == "Committee manager cannot clone a non-template meeting if duplicate-from is required."
         )

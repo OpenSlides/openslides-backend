@@ -741,7 +741,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "A meeting cannot be set as a template by a committee manager, if duplicate from is required."
+            == "A meeting cannot be set as a template by a committee manager if duplicate from is required."
         )
 
     def test_update_check_jitsi_domain_1(self) -> None:
