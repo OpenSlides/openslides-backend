@@ -1287,3 +1287,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 "member_number": "mem_nr",
             },
         )
+
+    def test_json_upload_multi_with_locked_out(self) -> None:
+        self.json_upload_multi_with_locked_out()
+        # TODO: Test subsequent import
+
+    # TODO: locking now forbidden test

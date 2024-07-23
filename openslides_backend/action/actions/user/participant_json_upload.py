@@ -10,12 +10,15 @@ from openslides_backend.shared.schema import required_id_schema, str_list_schema
 from ...mixins.import_mixins import ImportState
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .base_json_upload import BaseUserJsonUpload
 from .participant_common import ParticipantCommon
 
 
 @register_action("participant.json_upload")
-class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
+class ParticipantJsonUpload(
+    BaseUserJsonUpload, ParticipantCommon, CheckLockOutPermissionMixin
+):
     schema = BaseUserJsonUpload.get_schema(
         additional_required_fields={
             "meeting_id": required_id_schema,
@@ -25,6 +28,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 "number",
                 "vote_weight",
                 "comment",
+                "locked_out",
             ),
             "is_present": {"type": "boolean"},
             "structure_level": str_list_schema,
@@ -45,6 +49,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         {"property": "comment", "type": "string", "is_object": True},
         {"property": "is_present", "type": "boolean", "is_object": True},
         {"property": "groups", "type": "string", "is_object": True, "is_list": True},
+        {"property": "locked_out", "type": "boolean", "is_object": True},
     ]
     import_name = "participant"
     lookups: dict[str, dict[str, int]] = {}
@@ -74,7 +79,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
     def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         entry["meeting_id"] = self.meeting_id
         results = super().validate_entry(entry)
-        messages = results["messages"]
+        messages: list[str] = results["messages"]
         entry = results["data"]
 
         # validate groups
@@ -127,6 +132,41 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             else:
                 if not isinstance(entry[field], dict):
                     entry[field] = {"value": entry[field], "info": ImportState.DONE}
+
+        # validate locking
+        locking_check_instance: dict[str, Any] = {"meeting_id": self.meeting_id}
+        if "id" in entry:
+            locking_check_instance["id"] = entry["id"]
+        if "locked_out" in entry and entry["locked_out"]["info"] != ImportState.REMOVE:
+            locking_check_instance["locked_out"] = entry["locked_out"]["value"]
+        if len(
+            group_ids := [
+                id_ for group_object in group_objects if (id_ := group_object.get("id"))
+            ]
+        ):
+            locking_check_instance["group_ids"] = group_ids
+        locking_messages = self.check_locking_status(
+            self.meeting_id,
+            locking_check_instance,
+            entry.get("id"),
+            raise_exception=False,
+        )
+        if len(locking_messages):
+            results["state"] = ImportState.ERROR
+            if (
+                "locked_out" in entry
+                and entry["locked_out"]["info"] != ImportState.REMOVE
+            ):
+                entry["locked_out"]["info"] = ImportState.ERROR
+            messages.extend(["Error: " + msg[0] for msg in locking_messages])
+            if len(
+                forbidden_group_ids := {
+                    group_id for msg in locking_messages for group_id in msg[1] or []
+                }
+            ):
+                for group_object in group_objects:
+                    if group_object.get("id") in forbidden_group_ids:
+                        group_object["info"] = ImportState.ERROR
 
         if group_objects:
             entry["groups"] = group_objects
