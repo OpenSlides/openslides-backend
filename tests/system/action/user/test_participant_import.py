@@ -1290,6 +1290,101 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
 
     def test_json_upload_multi_with_locked_out(self) -> None:
         self.json_upload_multi_with_locked_out()
-        # TODO: Test subsequent import
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "meeting_id": 1, "locked_out": True}
+        )
+        self.assert_model_exists(
+            "meeting_user/2", {"user_id": 4, "meeting_id": 1, "locked_out": True}
+        )
+        self.assert_model_exists(
+            "meeting_user/3", {"user_id": 5, "meeting_id": 5, "locked_out": None}
+        )
+        self.assert_model_exists(
+            "meeting_user/4", {"user_id": 6, "meeting_id": 5, "locked_out": None}
+        )
+        self.assert_model_exists(
+            "meeting_user/5", {"user_id": 7, "meeting_id": 1, "locked_out": True}
+        )
+        self.assert_model_exists(
+            "meeting_user/6", {"user_id": 8, "meeting_id": 1, "locked_out": True}
+        )
+        self.assert_model_exists(
+            "meeting_user/7", {"user_id": 9, "meeting_id": 1, "locked_out": False}
+        )
+        self.assert_model_exists(
+            "meeting_user/8", {"user_id": 10, "meeting_id": 1, "locked_out": False}
+        )
+        self.assert_model_exists(
+            "meeting_user/9", {"user_id": 11, "meeting_id": 1, "locked_out": True}
+        )
+        self.assert_model_exists(
+            "meeting_user/10", {"user_id": 12, "meeting_id": 1, "locked_out": True}
+        )
+        self.assert_model_exists(
+            "meeting_user/11", {"user_id": 3, "meeting_id": 1, "locked_out": True}
+        )
+        self.assert_model_exists(
+            "meeting_user/12", {"user_id": 5, "meeting_id": 1, "locked_out": True}
+        )
+        self.assert_model_exists(
+            "meeting_user/13", {"user_id": 6, "meeting_id": 1, "locked_out": True}
+        )
 
-    # TODO: locking now forbidden test
+    def test_json_upload_update_locked_out_on_meeting_admin_auto_overwrite_group(
+        self,
+    ) -> None:
+        self.json_upload_update_locked_out_on_meeting_admin_auto_overwrite_group()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.DONE
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "meeting_id": 1, "locked_out": True}
+        )
+
+    def test_json_upload_update_locked_out_on_can_manage_auto_overwrite_group(
+        self,
+    ) -> None:
+        self.json_upload_update_locked_out_on_can_manage_auto_overwrite_group()
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0]["state"] == ImportState.DONE
+        self.assert_model_exists(
+            "meeting_user/1", {"user_id": 2, "meeting_id": 1, "locked_out": True}
+        )
+
+    def test_json_upload_lock_out_self_error(self) -> None:
+        self.json_upload_update_locked_out_on_meeting_admin_auto_overwrite_group()
+        self.login(2)
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == [
+            "Error: You may not lock yourself out of a meeting"
+        ]
+
+    def test_json_upload_lock_out_orgaadmin(self) -> None:
+        self.json_upload_update_locked_out_on_meeting_admin_auto_overwrite_group()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, 2
+        )
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == [
+            "Error: Cannot lock user from meeting 1 as long as he has the OrganizationManagementLevel can_manage_organization"
+        ]
+
+    def test_json_upload_lock_out_committeeadmin(self) -> None:
+        self.json_upload_update_locked_out_on_meeting_admin_auto_overwrite_group()
+        self.set_committee_management_level([60], 2)
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 200)
+        entry = response.json["results"][0][0]["rows"][0]
+        assert entry["state"] == ImportState.ERROR
+        assert entry["messages"] == [
+            "Error: Cannot lock user out of meeting 1 as he is manager of the meetings committee"
+        ]

@@ -178,6 +178,10 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 row["state"] = ImportState.ERROR
                 instances[0]["info"] = ImportState.ERROR
 
+        self.validate_locked_out_status(
+            entry, row["messages"], entry.get("groups", []), row
+        )
+
         entry.pop("meeting_id")
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:
             self.import_state = ImportState.ERROR

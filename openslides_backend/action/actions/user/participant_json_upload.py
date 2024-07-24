@@ -10,15 +10,12 @@ from openslides_backend.shared.schema import required_id_schema, str_list_schema
 from ...mixins.import_mixins import ImportState
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..meeting_user.mixin import CheckLockOutPermissionMixin
 from .base_json_upload import BaseUserJsonUpload
 from .participant_common import ParticipantCommon
 
 
 @register_action("participant.json_upload")
-class ParticipantJsonUpload(
-    BaseUserJsonUpload, ParticipantCommon, CheckLockOutPermissionMixin
-):
+class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
     schema = BaseUserJsonUpload.get_schema(
         additional_required_fields={
             "meeting_id": required_id_schema,
@@ -134,39 +131,7 @@ class ParticipantJsonUpload(
                     entry[field] = {"value": entry[field], "info": ImportState.DONE}
 
         # validate locking
-        locking_check_instance: dict[str, Any] = {"meeting_id": self.meeting_id}
-        if "id" in entry:
-            locking_check_instance["id"] = entry["id"]
-        if "locked_out" in entry and entry["locked_out"]["info"] != ImportState.REMOVE:
-            locking_check_instance["locked_out"] = entry["locked_out"]["value"]
-        if len(
-            group_ids := [
-                id_ for group_object in group_objects if (id_ := group_object.get("id"))
-            ]
-        ):
-            locking_check_instance["group_ids"] = group_ids
-        locking_messages = self.check_locking_status(
-            self.meeting_id,
-            locking_check_instance,
-            entry.get("id"),
-            raise_exception=False,
-        )
-        if len(locking_messages):
-            results["state"] = ImportState.ERROR
-            if (
-                "locked_out" in entry
-                and entry["locked_out"]["info"] != ImportState.REMOVE
-            ):
-                entry["locked_out"]["info"] = ImportState.ERROR
-            messages.extend(["Error: " + msg[0] for msg in locking_messages])
-            if len(
-                forbidden_group_ids := {
-                    group_id for msg in locking_messages for group_id in msg[1] or []
-                }
-            ):
-                for group_object in group_objects:
-                    if group_object.get("id") in forbidden_group_ids:
-                        group_object["info"] = ImportState.ERROR
+        self.validate_locked_out_status(entry, messages, group_objects, results)
 
         if group_objects:
             entry["groups"] = group_objects

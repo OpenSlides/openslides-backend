@@ -1053,66 +1053,6 @@ class ParticipantJsonUpload(BaseActionTestCase):
         }.items():
             assert data[key] == value
 
-    def test_json_upload_update_locked_out_on_meeting_admin_auto_overwrite_group(
-        self,
-    ) -> None:
-        self.prepare_locked_out_test("test", [2])
-        response = self.request(
-            "participant.json_upload",
-            {
-                "meeting_id": 1,
-                "data": [
-                    {
-                        "username": "test",
-                        "locked_out": "1",
-                    }
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["state"] == ImportState.DONE
-        assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
-        assert import_preview["result"]["rows"][0]["messages"] == []
-        data = import_preview["result"]["rows"][0]["data"]
-        for key, value in {
-            "username": {"info": "done", "value": "test", "id": 2},
-            "locked_out": {"info": "done", "value": True},
-            "groups": [{"id": 1, "info": "generated", "value": "default"}],
-        }.items():
-            assert data[key] == value
-
-    def test_json_upload_update_locked_out_on_can_manage_auto_overwrite_group(
-        self,
-    ) -> None:
-        self.prepare_locked_out_test("test", [3])
-        response = self.request(
-            "participant.json_upload",
-            {
-                "meeting_id": 1,
-                "data": [
-                    {
-                        "username": "test",
-                        "locked_out": "1",
-                    }
-                ],
-            },
-        )
-        self.assert_status_code(response, 200)
-        import_preview = self.assert_model_exists("import_preview/1")
-        assert import_preview["state"] == ImportState.DONE
-        assert import_preview["name"] == "participant"
-        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
-        assert import_preview["result"]["rows"][0]["messages"] == []
-        data = import_preview["result"]["rows"][0]["data"]
-        for key, value in {
-            "username": {"info": "done", "value": "test", "id": 2},
-            "locked_out": {"info": "done", "value": True},
-            "groups": [{"id": 1, "info": "generated", "value": "default"}],
-        }.items():
-            assert data[key] == value
-
     def test_json_upload_update_meeting_admin_on_locked_out_user_error(self) -> None:
         self.prepare_locked_out_test("test", [1])
         self.set_models({"meeting_user/1": {"locked_out": True}})
@@ -2474,3 +2414,91 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 "value": "can_manage",
             },
         ]
+
+    def json_upload_update_locked_out_on_meeting_admin_auto_overwrite_group(
+        self,
+    ) -> None:
+        self.create_meeting()
+        self.create_meeting(5)
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2, 3, 4]},
+                "group/1": {"meeting_id": 1, "name": "default"},
+                "group/2": {"meeting_id": 1, "name": "admin"},
+                "group/3": {"meeting_id": 1, "name": "can_manage"},
+                "group/4": {"meeting_id": 1, "name": "can_update"},
+            }
+        )
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        self.add_group_permissions(4, [Permissions.User.CAN_UPDATE])
+        self.add_group_permissions(7, [Permissions.User.CAN_MANAGE])
+        self.create_user("test", [2])
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test",
+                        "locked_out": "1",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        data = import_preview["result"]["rows"][0]["data"]
+        for key, value in {
+            "username": {"info": "done", "value": "test", "id": 2},
+            "locked_out": {"info": "done", "value": True},
+            "groups": [{"id": 1, "info": "generated", "value": "default"}],
+        }.items():
+            assert data[key] == value
+
+    def json_upload_update_locked_out_on_can_manage_auto_overwrite_group(
+        self,
+    ) -> None:
+        self.create_meeting()
+        self.create_meeting(5)
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2, 3, 4]},
+                "group/1": {"meeting_id": 1, "name": "default"},
+                "group/2": {"meeting_id": 1, "name": "admin"},
+                "group/3": {"meeting_id": 1, "name": "can_manage"},
+                "group/4": {"meeting_id": 1, "name": "can_update"},
+            }
+        )
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        self.add_group_permissions(4, [Permissions.User.CAN_UPDATE])
+        self.add_group_permissions(7, [Permissions.User.CAN_MANAGE])
+        self.create_user("test", [3])
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test",
+                        "locked_out": "1",
+                    }
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        import_preview = self.assert_model_exists("import_preview/1")
+        assert import_preview["state"] == ImportState.DONE
+        assert import_preview["name"] == "participant"
+        assert import_preview["result"]["rows"][0]["state"] == ImportState.DONE
+        assert import_preview["result"]["rows"][0]["messages"] == []
+        data = import_preview["result"]["rows"][0]["data"]
+        for key, value in {
+            "username": {"info": "done", "value": "test", "id": 2},
+            "locked_out": {"info": "done", "value": True},
+            "groups": [{"id": 1, "info": "generated", "value": "default"}],
+        }.items():
+            assert data[key] == value
