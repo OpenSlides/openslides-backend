@@ -178,6 +178,7 @@ class MeetingUserMergeMixin(
             {
                 "ignore": [
                     "user_id",
+                    "locked_out",
                 ],
                 "priority": [
                     "comment",
@@ -186,7 +187,6 @@ class MeetingUserMergeMixin(
                     "vote_weight",
                     "vote_delegated_to_id",
                     "meeting_id",
-                    "locked_out",
                 ],
                 "merge": [
                     "supported_motion_ids",

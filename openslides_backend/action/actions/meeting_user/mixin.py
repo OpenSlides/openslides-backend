@@ -64,27 +64,37 @@ class CheckLockOutPermissionMixin(Action):
             db_instance = {}
         final: dict[str, Any] = db_instance.copy()
         final.update(instance)
-        if not final.get("locked_out"):
-            return result
         if not user_id:
             user_id = (user or {}).get("id") or final.get("user_id")
-        if user_id == self.user_id:
+        if user_id == self.user_id and final.get("locked_out"):
             self._add_message(
                 "You may not lock yourself out of a meeting", result, raise_exception
             )
         if user_id:
             self._check_setting_oml_cml_for_locking(
                 cast(int, user_id),
-                final["meeting_id"],
+                final.get("meeting_id"),
                 instance,
                 result,
                 raise_exception,
             )
             if not user:
-                user = self.datastore.get(
-                    fqid_from_collection_and_id("user", cast(int, user_id)),
-                    ["organization_management_level", "committee_management_ids"],
-                )
+                try:
+                    user = self.datastore.get(
+                        fqid_from_collection_and_id("user", cast(int, user_id)),
+                        ["organization_management_level", "committee_management_ids"],
+                    )
+                except Exception as err:
+                    if (
+                        len(err.args)
+                        and isinstance(err.args[0], str)
+                        and "does not exist" in err.args[0]
+                    ):
+                        return result
+                    else:
+                        raise err
+        if not final.get("locked_out"):
+            return result
         if user:
             user_copy = user.copy()
             user_copy.update(final)
@@ -161,7 +171,7 @@ class CheckLockOutPermissionMixin(Action):
     def _check_setting_oml_cml_for_locking(
         self,
         user_id: int,
-        meeting_id: int,
+        meeting_id: int | None,
         instance: dict[str, Any],
         result: list[LockingStatusCheckResult],
         raise_exception: bool,
@@ -175,10 +185,10 @@ class CheckLockOutPermissionMixin(Action):
             FilterOperator("user_id", "=", user_id),
             FilterOperator("locked_out", "=", True),
         ]
-        if (new_locked := instance.get("locked_out")) is False:
+        if (new_locked := instance.get("locked_out")) is False and meeting_id:
             filters.append(FilterOperator("meeting_id", "!=", meeting_id))
         filter_: Filter = And(filters)
-        if new_locked:
+        if new_locked and meeting_id:
             filter_ = Or(FilterOperator("meeting_id", "=", meeting_id), filter_)
         locked_from_meeting_users = self.datastore.filter(
             "meeting_user", filter_, ["meeting_id"]
