@@ -2958,3 +2958,36 @@ class UserUpdateActionTest(BaseActionTestCase):
             lock_before=True,
             lock_out=False,
         )
+
+    def test_create_permission_as_locked_out(self) -> None:
+        self.permission_setup()
+        self.create_meeting(base=4)
+        meeting_user_ids = self.set_user_groups(self.user_id, [3, 6])  # Admin-groups
+        self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
+        self.set_group_permissions(6, [Permissions.User.CAN_UPDATE])
+        self.set_user_groups(111, [1, 4])
+        self.set_models(
+            {
+                "meeting/4": {"committee_id": 60},
+                "committee/60": {"meeting_ids": [1, 4]},
+                **{
+                    f"meeting_user/{m_user_id}": {"locked_out": True}
+                    for m_user_id in meeting_user_ids
+                },
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
+            response.json["message"],
+        )

@@ -1288,6 +1288,43 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             },
         )
 
+    def test_json_upload_permission_as_locked_out(self) -> None:
+        self.json_upload_dont_recognize_empty_name_and_email()
+        meeting_user_id = self.set_user_groups(1, [2])[0]
+        self.set_models(
+            {
+                f"meeting_user/{meeting_user_id}": {"locked_out": True},
+                "user/1": {"organization_management_level": None},
+            }
+        )
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "test",
+                        "default_password": "secret",
+                        "is_active": "1",
+                        "is_physical_person": "F",
+                        "number": "strange number",
+                        "structure_level": ["testlevel", "notfound"],
+                        "vote_weight": "1.12",
+                        "comment": "my comment",
+                        "is_present": "0",
+                        "groups": ["testgroup", "notfound_group1", "notfound_group2"],
+                        "wrong": 15,
+                    }
+                ],
+            },
+        )
+        response = self.request("participant.import", {"id": 1, "import": True})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action participant.import. Missing permissions: Permission user.can_manage in meeting 1 or OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            response.json["message"],
+        )
+
     def test_json_upload_multi_with_locked_out(self) -> None:
         self.json_upload_multi_with_locked_out()
         response = self.request("participant.import", {"id": 1, "import": True})

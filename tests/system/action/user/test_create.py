@@ -1536,3 +1536,25 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
         self.assertIn(
             "A user with the username 123saml already exists.", response.json["message"]
         )
+
+    def test_create_permission_as_locked_out(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        meeting_user_id = self.set_user_groups(self.user_id, [3])[0]
+        self.set_models({f"meeting_user/{meeting_user_id}": {"locked_out": True}})
+        self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "meeting_id": 1,
+                "group_ids": [1],
+                "number": "123456",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_manage for meeting 1",
+            response.json["message"],
+        )
