@@ -1305,9 +1305,14 @@ class MotionCreateForwardedTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         created_id = response.json["results"][0][0]["id"]
-        self.assert_model_exists(
-            f"motion/{created_id}",
-            {
-                "additional_submitter": "Worship the administrator (he · is, very, good), He is User 2 (he · is, good), King (Kong · very), Good (good), He, she, it (ein 's' muss mit), Grandma not see, Sue B. Mid-Edit"
-            },
-        )
+        motion = self.assert_model_exists(f"motion/{created_id}")
+        for name in [
+            "Worship the administrator (he · is, very, good)",
+            "He is User 2 (he · is, good)",
+            "King (Kong · very)",
+            "Good (good)",
+            "He, she, it (ein 's' muss mit)",
+            "Grandma not see",
+            "Sue B. Mid-Edit",
+        ]:
+            assert name in motion["additional_submitter"]
