@@ -51,43 +51,38 @@ class DelegationBasedRestrictionMixin(Action):
         """
         if not len(meeting_ids):
             return []
-        data = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    "user",
-                    [self.user_id],
-                    ["meeting_user_ids"],
+
+        meeting_users = self.datastore.filter(
+            "meeting_user",
+            And(
+                Or(
+                    FilterOperator("meeting_id", "=", meeting_id)
+                    for meeting_id in meeting_ids
                 ),
-                GetManyRequest(
-                    "meeting",
-                    meeting_ids,
-                    [restriction, "users_enable_vote_delegations"],
-                ),
-            ]
+                FilterOperator("user_id", "=", self.user_id),
+                FilterOperator("vote_delegated_to_id", "!=", None),
+            ),
+            ["meeting_id"],
+            lock_result=False,
         )
-        operator = data["user"][self.user_id]
-        if operator.get("meeting_user_ids"):
-            meeting_users = self.datastore.filter(
-                "meeting_user",
-                And(
-                    Or(
-                        FilterOperator("meeting_id", "=", meeting_id)
-                        for meeting_id in meeting_ids
+        if len(meeting_users):
+            delegation_meeting_ids = [
+                meeting_user["meeting_id"] for meeting_user in meeting_users.values()
+            ]
+            data = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "meeting",
+                        delegation_meeting_ids,
+                        [restriction, "users_enable_vote_delegations"],
                     ),
-                    Or(
-                        FilterOperator("id", "=", meeting_user_id)
-                        for meeting_user_id in operator["meeting_user_ids"]
-                    ),
-                ),
-                ["vote_delegated_to_id", "meeting_id"],
+                ],
+                lock_result=False,
             )
             broken_meetings: list[int] = []
-            for meeting_user in meeting_users.values():
-                meeting_id = meeting_user["meeting_id"]
-                if (
-                    (meeting := data["meeting"][meeting_id]).get(restriction)
-                    and (meeting.get("users_enable_vote_delegations"))
-                    and meeting_user.get("vote_delegated_to_id")
+            for meeting_id in delegation_meeting_ids:
+                if (meeting := data["meeting"][meeting_id]).get(restriction) and (
+                    meeting.get("users_enable_vote_delegations")
                 ):
                     broken_meetings.append(meeting_id)
             return broken_meetings
