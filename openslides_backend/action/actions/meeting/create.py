@@ -41,9 +41,11 @@ class MeetingCreate(
             "organization_tag_ids",
             "external_id",
         ],
+        additional_required_fields={
+            "admin_ids": id_list_schema,
+        },
         additional_optional_fields={
             "user_ids": id_list_schema,
-            "admin_ids": id_list_schema,
             "set_as_template": {"type": "boolean"},
         },
     )
@@ -169,6 +171,10 @@ class MeetingCreate(
                 for user_id in admin_ids
             ]
             self.execute_other_action(MeetingUserCreate, action_data)
+        elif not instance.get("template_for_organization_id"):
+            raise ActionException(
+                "Cannot create non-template meeting without admin_ids"
+            )
 
         # Add users to default group
         if user_ids := instance.pop("user_ids", []):
