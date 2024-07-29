@@ -224,7 +224,10 @@ class Migration(BaseModelMigration):
                                 and model_id in deleted_motions_ids
                             ):
                                 continue
-                        elif int(model_id.split("/")[1]) in deleted_motions_ids:
+                        elif (
+                            model_id.split("/")[0] == "motion"
+                            and int(model_id.split("/")[1]) in deleted_motions_ids
+                        ):
                             continue
                         if isinstance(model_id, int):
                             fqid = fqid_from_collection_and_id(

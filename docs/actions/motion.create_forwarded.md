@@ -43,5 +43,5 @@ The request user needs `motion.can_forward` in the source meeting. `motion.can_m
 
 ### Exceptions
 
-Although they would have meaningful title, text and reason, motions with a "parent", namely amendments (`lead_motion_id`), should not be forwarded. The backend should throw an error when an amendment was forwarded.
+Although they would have meaningful title, text and reason, amendment motions (motions with a field `lead_motion_id`), should not be forwarded. The backend should throw an error when an amendment was forwarded.
 The client does not offer to forward an amendment.

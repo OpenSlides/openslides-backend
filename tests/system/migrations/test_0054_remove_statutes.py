@@ -851,7 +851,7 @@ def test_two_meetings(write, finalize, assert_model):
 
 
 def test_migration_full(write, finalize, assert_model):
-    create_comprehensive_data(write)  # TODO other models delete
+    create_comprehensive_data(write)
     finalize("0054_remove_statutes")
     assert_model(
         "motion/1",
@@ -1336,4 +1336,66 @@ def test_migration_full(write, finalize, assert_model):
             "meeting_id": 11,
         },
     )
+
+
+def test_non_deleted_motion_extension(write, finalize, assert_model):
+    """This tests if the fields state_extension_reference_ids and recommendation_extension_reference_ids are correctly processed and the corresponding motions updated"""
+    create_comprehensive_data(write)
+    write(
+        {
+            "type": "update",
+            "fqid": "motion/2",
+            "fields": {
+                "state_extension_reference_ids": ["motion/1", "motion/3"],
+                "recommendation_extension_reference_ids": ["motion/1", "motion/3"],
+            },
+        },
+        {"type": "update", "fqid": "meeting/11", "fields": {"motion_ids": [1, 2, 3]}},
+        {
+            "type": "update",
+            "fqid": "motion_state/1",
+            "fields": {"motion_recommendation_ids": [1, 2, 3]},
+        },
+        {
+            "type": "create",
+            "fqid": "motion/3",
+            "fields": {
+                "id": 3,
+                "title": "text",
+                "meeting_id": 11,
+                "recommendation_id": 1,
+                "referenced_in_motion_state_extension_ids": [2],
+                "referenced_in_motion_recommendation_extension_ids": [2],
+            },
+        },
+    )
+    finalize("0054_remove_statutes")
+    assert_model(
+        "motion/3",
+        {
+            "id": 3,
+            "title": "text",
+            "meeting_id": 11,
+            "recommendation_id": 1,
+        },
+    )
+    assert_model(
+        "motion/2",
+        {
+            "id": 2,
+            "statute_paragraph_id": [2],
+            "title": "text",
+            "meta_deleted": True,
+            "meeting_id": 11,
+            "recommendation_id": 1,
+            "state_extension_reference_ids": ["motion/1", "motion/3"],
+            "referenced_in_motion_state_extension_ids": [1],
+            "recommendation_extension_reference_ids": ["motion/1", "motion/3"],
+            "referenced_in_motion_recommendation_extension_ids": [1],
+            "change_recommendation_ids": [1],
+            "working_group_speaker_ids": [1],
+            "agenda_item_id": 1,
+        },
+    )
+
     # assert models updated and backrelation emtied including workflow and motion
