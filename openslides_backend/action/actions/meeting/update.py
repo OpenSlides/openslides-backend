@@ -229,7 +229,7 @@ class MeetingUpdate(
                 "A meeting cannot be locked from the inside and a template at the same time."
             )
         organization = self.datastore.get(
-            ONE_ORGANIZATION_FQID, ["require_duplicate_from"]
+            ONE_ORGANIZATION_FQID, ["require_duplicate_from"], lock_result=False
         )
         if (
             organization.get("require_duplicate_from")

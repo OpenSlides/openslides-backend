@@ -83,7 +83,9 @@ class MeetingClone(MeetingImport):
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         organization = self.datastore.get(
-            ONE_ORGANIZATION_FQID, ["require_duplicate_from", "template_meeting_ids"]
+            ONE_ORGANIZATION_FQID,
+            ["require_duplicate_from", "template_meeting_ids"],
+            lock_result=False,
         )
         if (
             organization.get("require_duplicate_from")
