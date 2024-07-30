@@ -15,7 +15,10 @@ from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
 
+from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permission_helper import has_organization_management_level
 from ....shared.export_helper import export_meeting
+from ....shared.util import ONE_ORGANIZATION_FQID
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
@@ -79,6 +82,25 @@ class MeetingClone(MeetingImport):
         MeetingPermissionMixin.check_permissions(self, instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        organization = self.datastore.get(
+            ONE_ORGANIZATION_FQID,
+            ["require_duplicate_from", "template_meeting_ids"],
+            lock_result=False,
+        )
+        if (
+            organization.get("require_duplicate_from")
+            and not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            )
+            and not instance["meeting_id"]
+            in (organization.get("template_meeting_ids") or [])
+        ):
+            raise ActionException(
+                "Committee manager cannot clone a non-template meeting if duplicate-from is required."
+            )
+
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json
         additional_user_ids = instance.pop("user_ids", None) or []
