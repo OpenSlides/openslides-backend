@@ -10,9 +10,9 @@ from ...mixins.check_unique_name_mixin import CheckUniqueInContextMixin
 
 class GenderUniqueMixin(CheckUniqueInContextMixin):
     def validate_instance(self, instance: dict[str, Any]) -> None:
-        super().validate_instance(instance)
         if instance.get("name") == "":
             raise ActionException("Empty gender name not allowed.")
+        super().validate_instance(instance)
         self.check_unique_in_context(
             "name",
             instance.get("name", ""),

@@ -202,8 +202,10 @@ class Gender(Model):
     verbose_name = "gender"
 
     id = fields.IntegerField(constant=True)
-    name = fields.CharField()
-    organization_id = fields.OrganizationField(to={"organization": "gender_ids"})
+    name = fields.CharField(required=True)
+    organization_id = fields.OrganizationField(
+        to={"organization": "gender_ids"}, required=True
+    )
     user_ids = fields.RelationListField(to={"user": "gender_id"})
 
 
