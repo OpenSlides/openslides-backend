@@ -548,3 +548,20 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         response = self.request("user.delete", {"id": 2})
         self.assert_status_code(response, 200)
+    
+    def test_delete_last_meeting_admin(self) -> None:
+        self.create_meeting()
+        self.create_user("username_srtgb123", [2])
+        response = self.request("user.delete", {"id": 2})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot remove last admin from meeting 1",
+            response.json["message"],
+        )
+    
+    def test_delete_non_last_meeting_admin(self) -> None:
+        self.create_meeting()
+        self.create_user("username_srtgb123", [2])
+        self.create_user("username_srtgb456", [2])
+        response = self.request("user.delete", {"id": 2})
+        self.assert_status_code(response, 200)
