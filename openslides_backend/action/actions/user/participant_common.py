@@ -115,7 +115,7 @@ class ParticipantCommon(BaseImportJsonUploadAction):
                 fqid_from_collection_and_id("group", meeting["admin_group_id"]),
                 ["id", "meeting_user_ids"],
             )
-            if not any(
+            if group.get("meeting_user_ids", []) and not any(
                 m_user_id not in meeting_users
                 for m_user_id in group.get("meeting_user_ids", [])
             ):

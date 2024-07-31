@@ -286,7 +286,14 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assertCountEqual(committee.get("user_ids", []), [1, 2, 3])
 
     def test_create_with_admins_empty_array(self) -> None:
-        self.basic_test({"admin_ids": []}, "Cannot create meeting without admin_ids")
+        self.basic_test(
+            {"admin_ids": []}, "Cannot create non-template meeting without admin_ids"
+        )
+
+    def test_create_set_as_template_with_admins_empty_array(self) -> None:
+        meeting = self.basic_test({"admin_ids": [], "set_as_template": True})
+        assert meeting.get("template_for_organization_id") == 1
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": [1]})
 
     def test_create_set_as_template(self) -> None:
         meeting = self.basic_test({"set_as_template": True})

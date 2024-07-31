@@ -263,6 +263,17 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
                         row["messages"].append(
                             f"The meeting template {template} was not found, the meeting will be created without a template."
                         )
+            elif not any(
+                admin for admin in entry.get("meeting_admins", []) if admin.get("id")
+            ):
+                row["state"] = ImportState.ERROR
+                entry["meeting_admins"] = [
+                    *entry.get("meeting_admins", []),
+                    {"value": "", "info": ImportState.ERROR},
+                ]
+                row["messages"].append(
+                    "Error: Non-template meetings cannot be created without admins"
+                )
 
     def is_same_day(self, a: int | None, b: int | None) -> bool:
         if a is None or b is None:

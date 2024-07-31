@@ -789,13 +789,16 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
     def test_json_upload_update_multiple_users_all_error(self) -> None:
         self.json_upload_multiple_users()
         self.request("user.delete", {"id": 2})
-        self.request("user.update", {"id": 3, "meeting_id": 1, "group_ids": [1]})
         self.request("structure_level.create", {"meeting_id": 1, "name": "no. 5"})
         self.set_models(
             {
                 "group/1": {"admin_group_for_meeting_id": 1},
-                "group/2": {"admin_group_for_meeting_id": None},
+                "group/2": {
+                    "admin_group_for_meeting_id": None,
+                    "meeting_user_ids": None,
+                },
                 "group/7": {"name": "changed"},
+                "meeting_user/31": {"group_ids": [1]},
             }
         )
         self.request_multi("group.delete", [{"id": 2}, {"id": 3}])
@@ -1326,7 +1329,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         self.set_models(
             {
                 "meeting_user/2": {"group_ids": [3]},
-                "group/2": {"meeting_user_ids": None},
+                "group/2": {"meeting_user_ids": [1]},
                 "group/3": {"meeting_user_ids": [2]},
             }
         )
