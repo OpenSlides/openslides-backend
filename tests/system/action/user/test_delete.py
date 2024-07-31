@@ -548,20 +548,54 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         response = self.request("user.delete", {"id": 2})
         self.assert_status_code(response, 200)
-    
+
     def test_delete_last_meeting_admin(self) -> None:
         self.create_meeting()
         self.create_user("username_srtgb123", [2])
         response = self.request("user.delete", {"id": 2})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot remove last admin from meeting 1",
+            "Cannot remove last admin from meeting(s) 1",
             response.json["message"],
         )
-    
+
     def test_delete_non_last_meeting_admin(self) -> None:
         self.create_meeting()
         self.create_user("username_srtgb123", [2])
         self.create_user("username_srtgb456", [2])
         response = self.request("user.delete", {"id": 2})
         self.assert_status_code(response, 200)
+
+    def test_delete_both_meeting_admins(self) -> None:
+        self.create_meeting()
+        self.create_user("username_srtgb123", [2])
+        self.create_user("username_srtgb456", [2])
+        response = self.request_multi("user.delete", [{"id": 2}, {"id": 3}])
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot remove last admin from meeting(s) 1",
+            response.json["message"],
+        )
+
+    def test_delete_last_meeting_admin_of_template_meeting(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1},
+                "organization/1": {"template_meeting_ids": [1]},
+            }
+        )
+        self.create_user("username_srtgb123", [2])
+        response = self.request("user.delete", {"id": 2})
+        self.assert_status_code(response, 200)
+
+    def test_delete_non_last_meeting_admin_from_two_meetings(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_user("username_srtgb123", [2, 5])
+        response = self.request("user.delete", {"id": 2})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot remove last admin from meeting(s) 1, 4",
+            response.json["message"],
+        )

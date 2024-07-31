@@ -2101,6 +2101,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_no_OML_set(self) -> None:
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])
+        self.create_user("dummy", [2])
 
         response = self.request(
             "user.update",
@@ -2656,3 +2657,79 @@ class UserUpdateActionTest(BaseActionTestCase):
             "'delegated_vote_ids'",
         ]:
             self.assertIn(field, message)
+
+    def test_update_groups_on_last_meeting_admin(self) -> None:
+        self.create_meeting()
+        self.create_user("username_srtgb123", [2])
+        response = self.request(
+            "user.update", {"id": 2, "meeting_id": 1, "group_ids": [3]}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot remove last admin from meeting(s) 1",
+            response.json["message"],
+        )
+
+    def test_update_groups_on_both_last_meeting_admins(self) -> None:
+        self.create_meeting()
+        self.create_user("username_srtgb123", [2])
+        self.create_user("username_srtgb456", [2])
+        response = self.request_multi(
+            "user.update",
+            [
+                {"id": 2, "meeting_id": 1, "group_ids": [3]},
+                {"id": 3, "meeting_id": 1, "group_ids": [3]},
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot remove last admin from meeting(s) 1",
+            response.json["message"],
+        )
+
+    def test_update_groups_on_last_meeting_admin_multi(self) -> None:
+        self.create_meeting()
+        self.create_meeting(4)
+        self.create_user("username_srtgb123", [2])
+        self.create_user("username_srtgb456", [5])
+        response = self.request_multi(
+            "user.update",
+            [
+                {"id": 2, "meeting_id": 1, "group_ids": [3]},
+                {"id": 3, "meeting_id": 4, "group_ids": [6]},
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot remove last admin from meeting(s) 1, 4",
+            response.json["message"],
+        )
+
+    def test_update_groups_on_last_meeting_admin_in_template_meeting(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1},
+                "organization/1": {"template_meeting_ids": [1]},
+            }
+        )
+        self.create_user("username_srtgb123", [2])
+        response = self.request(
+            "user.update", {"id": 2, "meeting_id": 1, "group_ids": [3]}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_groups_on_last_meeting_admin_and_add_a_new_admin(self) -> None:
+        self.create_meeting()
+        self.create_user("username_srtgb123", [2])
+        self.create_user("username_srtgb456", [1])
+        response = self.request_multi(
+            "user.update",
+            [
+                {"id": 2, "meeting_id": 1, "group_ids": [3]},
+                {"id": 3, "meeting_id": 1, "group_ids": [2]},
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting_user/1", {"user_id": 2, "group_ids": [3]})
+        self.assert_model_exists("meeting_user/2", {"user_id": 3, "group_ids": [2]})

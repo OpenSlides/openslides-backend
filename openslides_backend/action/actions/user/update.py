@@ -2,10 +2,14 @@ import re
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.services.datastore.commands import GetManyRequest
 
+from ....action.action import original_instances
+from ....action.util.typing import ActionData
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException, PermissionException
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
@@ -20,10 +24,6 @@ from .user_mixins import (
     UserMixin,
     check_gender_helper,
 )
-from openslides_backend.services.datastore.commands import GetManyRequest
-from ....shared.filters import Filter, FilterOperator, Or, And
-from ....action.util.typing import ActionData
-from ....action.action import original_instances
 
 
 @register_action("user.update")
@@ -136,7 +136,7 @@ class UserUpdate(
 
         check_gender_helper(self.datastore, instance)
         return instance
-    
+
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         self.check_meeting_admin_integrity(action_data)
@@ -148,23 +148,76 @@ class UserUpdate(
         return None
 
     def check_meeting_admin_integrity(self, instances: ActionData) -> None:
-        instances = [instance for instance in instances if instance.get("meeting_id") and "group_ids" in instance]
-        meeting_ids_to_user_ids_to_group_ids: dict[int, dict[int, list[int]]] = {date["meeting_id"]: {} for date in instances}
+        instances = [
+            instance
+            for instance in instances
+            if instance.get("meeting_id") and "group_ids" in instance
+        ]
+        meeting_ids_to_user_ids_to_group_ids: dict[int, dict[int, list[int]]] = {
+            date["meeting_id"]: {} for date in instances
+        }
         for date in instances:
-            meeting_ids_to_user_ids_to_group_ids[date["meeting_id"]][date["id"]] = date["group_ids"]
+            meeting_ids_to_user_ids_to_group_ids[date["meeting_id"]][date["id"]] = date[
+                "group_ids"
+            ]
         if len(meeting_ids_to_user_ids_to_group_ids):
-            meetings = self.datastore.get_many([GetManyRequest("meeting", list(meeting_ids_to_user_ids_to_group_ids.keys()), ["admin_group_id", "template_for_organization_id"])])["meetings"]
+            meetings = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "meeting",
+                        list(meeting_ids_to_user_ids_to_group_ids.keys()),
+                        ["admin_group_id", "template_for_organization_id"],
+                    )
+                ]
+            )["meeting"]
             for meeting_id, meeting in meetings.items():
                 if meeting.get("template_for_organization_id"):
                     del meeting_ids_to_user_ids_to_group_ids[meeting_id]
             if not len(meeting_ids_to_user_ids_to_group_ids):
                 return
-            filters = Or(And(FilterOperator("meeting_id", "=", meeting_id), Or(FilterOperator("user_id", "=", user_id) for user_id in user_data)) for meeting_id, user_data in meeting_ids_to_user_ids_to_group_ids.items())
-            meeting_users = self.datastore.filter("meeting_user", filters, ["group_ids", "user_id"])
-            groups = self.datastore.get_many([GetManyRequest("group", [admin_group_id for meeting in meetings.values() if (admin_group_id := meeting.get("admin_group_id"))], ["meeting_user_ids", "admin_group_for_meeting_id"])])["group"]
-            added_groups_per_meeting = {meeting_id: group_id for meeting_id, user_data in meeting_ids_to_user_ids_to_group_ids.items() for group_list in user_data.values() for group_id in group_list}
+            filters = Or(
+                And(
+                    FilterOperator("meeting_id", "=", meeting_id),
+                    Or(
+                        FilterOperator("user_id", "=", user_id) for user_id in user_data
+                    ),
+                )
+                for meeting_id, user_data in meeting_ids_to_user_ids_to_group_ids.items()
+            )
+            meeting_users = self.datastore.filter(
+                "meeting_user", filters, ["group_ids", "user_id"]
+            )
+            groups = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "group",
+                        [
+                            admin_group_id
+                            for meeting in meetings.values()
+                            if (admin_group_id := meeting.get("admin_group_id"))
+                        ],
+                        ["meeting_user_ids", "admin_group_for_meeting_id"],
+                    )
+                ]
+            )["group"]
+            added_groups_per_meeting = {
+                group_id
+                for user_data in meeting_ids_to_user_ids_to_group_ids.values()
+                for group_list in user_data.values()
+                for group_id in group_list
+            }
+            broken_meetings: list[str] = []
             for group_id, group_data in groups.items():
                 if group_id in added_groups_per_meeting:
                     continue
-                if not any(m_user_id not in meeting_users for m_user_id in group_data.get("meeting_user_ids", [])):
-                    raise ActionException(f"Cannot remove last admin from meeting {group_data['admin_group_for_meeting_id']}")
+                if group_data.get("meeting_user_ids") and not any(
+                    m_user_id not in meeting_users
+                    for m_user_id in group_data.get("meeting_user_ids", [])
+                ):
+                    broken_meetings.append(
+                        str(group_data["admin_group_for_meeting_id"])
+                    )
+            if len(broken_meetings):
+                raise ActionException(
+                    f"Cannot remove last admin from meeting(s) {', '.join(sorted(broken_meetings))}"
+                )

@@ -1,15 +1,14 @@
 import re
 from copy import deepcopy
-from typing import Any, TypedDict
+from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
-from openslides_backend.services.datastore.commands import GetManyRequest
 
 from ....presenter.search_users import SearchUsers
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import ActionException
-from ....shared.filters import Filter, FilterOperator, Or, And
+from ....shared.filters import FilterOperator
 from ....shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, optional_id_schema
 from ...action import Action, original_instances

@@ -18,7 +18,7 @@ class BaseUserImport(BaseImportAction):
         self.setup_lookups()
         for row in self.rows:
             self.validate_entry(row)
-        
+
         self.check_all_rows()
 
         self.handle_create_relations(instance)

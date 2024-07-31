@@ -19,10 +19,14 @@ class ParticipantJsonUpload(BaseActionTestCase):
                     "name": "test",
                     "group_ids": [1, 7],
                     "structure_level_ids": [1],
-                    "admin_group_id": 7
+                    "admin_group_id": 7,
                 },
                 "group/1": {"name": "testgroup", "meeting_id": 1},
-                "group/7": {"name": "custom_admin_group", "meeting_id": 1, "admin_group_for_meeting_id": 1},
+                "group/7": {
+                    "name": "custom_admin_group",
+                    "meeting_id": 1,
+                    "admin_group_for_meeting_id": 1,
+                },
                 "structure_level/1": {"name": "testlevel", "meeting_id": 1},
             }
         )
@@ -108,6 +112,50 @@ class ParticipantJsonUpload(BaseActionTestCase):
             "data": {
                 "id": 2,
                 "username": {"id": 2, "value": "bob", "info": ImportState.DONE},
+                "groups": [
+                    {"value": "testgroup", "info": ImportState.GENERATED, "id": 1},
+                    {"value": "", "info": ImportState.ERROR},
+                ],
+            },
+        }
+
+    def test_json_upload_remove_last_admins(self) -> None:
+        self.create_user("bob", [7])
+        self.create_user("alice", [7])
+        self.set_models({"group/1": {"default_group_for_meeting_id": 1}})
+        response = self.request(
+            "participant.json_upload",
+            {
+                "meeting_id": 1,
+                "data": [
+                    {
+                        "username": "bob",
+                    },
+                    {
+                        "username": "alice",
+                    },
+                ],
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["rows"][0] == {
+            "state": ImportState.ERROR,
+            "messages": ["Error: Cannot remove last member of admin group"],
+            "data": {
+                "id": 2,
+                "username": {"id": 2, "value": "bob", "info": ImportState.DONE},
+                "groups": [
+                    {"value": "testgroup", "info": ImportState.GENERATED, "id": 1},
+                    {"value": "", "info": ImportState.ERROR},
+                ],
+            },
+        }
+        assert response.json["results"][0][0]["rows"][1] == {
+            "state": ImportState.ERROR,
+            "messages": ["Error: Cannot remove last member of admin group"],
+            "data": {
+                "id": 3,
+                "username": {"id": 3, "value": "alice", "info": ImportState.DONE},
                 "groups": [
                     {"value": "testgroup", "info": ImportState.GENERATED, "id": 1},
                     {"value": "", "info": ImportState.ERROR},
@@ -1951,10 +1999,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     {
                         "username": "bob",
                     },
-                    {
-                        "username": "alice",
-                        "groups": ["group2"]
-                    }
+                    {"username": "alice", "groups": ["group2"]},
                 ],
             },
         )
@@ -1974,9 +2019,11 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         assert row["state"] == ImportState.NEW
         assert row["messages"] == []
         assert row["data"]["username"] == {"value": "alice", "info": ImportState.DONE}
-        assert row["data"]["groups"] == [{"value": "group2", "info": ImportState.DONE, "id": 2}]
+        assert row["data"]["groups"] == [
+            {"value": "group2", "info": ImportState.DONE, "id": 2}
+        ]
 
-    def json_upload_remove_admin_group(self) -> None:
+    def json_upload_remove_admin_group_normal(self) -> None:
         self.create_user("bob", [2])
         self.create_user("alice", [2])
         response = self.request(
@@ -2005,11 +2052,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
 
     def json_upload_remove_last_admin_in_template(self) -> None:
         self.create_user("bob", [2])
-        self.set_models({
-            "group/1": {"default_group_for_meeting_id": 1},
-            "meeting/1": {"template_for_organization_id": 1},
-            "organization/1": {"template_meeting_ids": [1]}
-        })
+        self.set_models(
+            {
+                "group/1": {"default_group_for_meeting_id": 1},
+                "meeting/1": {"template_for_organization_id": 1},
+                "organization/1": {"template_meeting_ids": [1]},
+            }
+        )
         response = self.request(
             "participant.json_upload",
             {
@@ -2033,4 +2082,3 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                 ],
             },
         }
-
