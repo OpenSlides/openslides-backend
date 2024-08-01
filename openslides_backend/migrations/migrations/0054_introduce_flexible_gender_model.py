@@ -21,6 +21,7 @@ class Migration(BaseModelMigration):
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []
+        users = self.reader.get_all("user", ["gender"])
         if not self.reader.is_in_memory_migration:
             gender_strings = self.reader.get("organization/1", ["genders"]).get(
                 "genders", ""
@@ -35,19 +36,26 @@ class Migration(BaseModelMigration):
                     },
                 )
             )
-            users = self.reader.get_all("user", ["gender"])
             userids_for_gender = defaultdict(list)
             # update users
             for user_id, user in users.items():
-                if user.get("gender"):
-                    if gender_id := gender_strings.index(user.get("gender")) + 1:
-                        events.append(
-                            RequestUpdateEvent(
-                                fqid_from_collection_and_id("user", user_id),
-                                {"gender_id": gender_id, "gender": None},
-                            )
+                user_gender_string = user.get("gender", "")
+                if user_gender_string in gender_strings:
+                    gender_id = gender_strings.index(user_gender_string) + 1
+                    events.append(
+                        RequestUpdateEvent(
+                            fqid_from_collection_and_id("user", user_id),
+                            {"gender_id": gender_id, "gender": None},
                         )
-                        userids_for_gender[gender_id].append(user_id)
+                    )
+                    userids_for_gender[gender_id].append(user_id)
+                else:
+                    events.append(
+                        RequestUpdateEvent(
+                            fqid_from_collection_and_id("user", user_id),
+                            {"gender": None},
+                        )
+                    )
             # create genders with back relation to users
             for gender_id, gender in enumerate(gender_strings, start=1):
                 events.append(
@@ -61,4 +69,15 @@ class Migration(BaseModelMigration):
                         },
                     )
                 )
+        else:
+            for user_id, user in users.items():
+                if "gender" in user:
+                    events.append(
+                        RequestUpdateEvent(
+                            fqid_from_collection_and_id("user", user_id),
+                            {
+                                "gender": None,
+                            },
+                        )
+                    )
         return events

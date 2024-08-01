@@ -96,6 +96,3 @@ class GenderDeleteActionTest(BaseActionTestCase):
         response = self.request("gender.delete", {"id": self.gender_id})
         self.assert_status_code(response, 200)
         self.assert_model_deleted(self.gender_fqid)
-
-    def test_delete_with_obtaining_user(self) -> None:
-        pass

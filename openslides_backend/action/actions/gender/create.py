@@ -23,5 +23,6 @@ class GenderCreate(CreateAction, CheckForArchivedMeetingMixin, GenderUniqueMixin
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        super().update_instance(instance)
         instance["organization_id"] = ONE_ORGANIZATION_ID
         return instance

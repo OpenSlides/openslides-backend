@@ -12,7 +12,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         "first_name": "firstName",
         "last_name": "lastName",
         "email": "email",
-        "gender_id": "gender_id",
+        "gender": "gender",
         "pronoun": "pronoun",
         "is_active": "is_active",
         "is_physical_person": "is_person",

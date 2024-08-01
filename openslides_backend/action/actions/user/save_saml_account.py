@@ -27,7 +27,7 @@ allowed_user_fields = [
     "first_name",
     "last_name",
     "email",
-    "gender_id",
+    "gender",
     "pronoun",
     "is_active",
     "is_physical_person",
@@ -83,11 +83,26 @@ class UserSaveSamlAccount(
                     ]
                 }
                 for model_field, payload_field in self.saml_attr_mapping.items()
-                if model_field in allowed_user_fields
+                # handle only allowed fields. handle gender seperatly since it needs conversion to id
+                if model_field in allowed_user_fields and model_field != "gender"
             },
             "required": [self.saml_attr_mapping["saml_id"]],
             "additionalProperties": True,
         }
+        self.schema["properties"].update(
+            {
+                "gender": {
+                    "oneOf": [
+                        {"type": ["string", "null"], "maxLength": 256},
+                        {
+                            "type": "array",
+                            "items": {"type": ["string", "null"], "maxLength": 256},
+                            "minItems": 0,
+                        },
+                    ]
+                },
+            }
+        )
         try:
             fastjsonschema.validate(self.schema, instance)
         except fastjsonschema.JsonSchemaException as exception:
@@ -109,7 +124,16 @@ class UserSaveSamlAccount(
                     if isinstance((tx := instance_old[payload_field]), list) and len(tx)
                     else tx
                 )
-                if value not in (None, []):
+                if payload_field == "gender":
+                    gender_dict = self.datastore.filter(
+                        "gender",
+                        FilterOperator("name", "=", value),
+                        ["id", "name"],
+                    )
+                    if gender_dict:
+                        gender = next(iter(gender_dict.values()))
+                        instance["gender_id"] = gender.get("id", 0)
+                elif value not in (None, []):
                     instance[model_field] = value
 
         return super().validate_fields(instance)
@@ -126,7 +150,7 @@ class UserSaveSamlAccount(
         users = self.datastore.filter(
             "user",
             FilterOperator("saml_id", "=", instance["saml_id"]),
-            ["id", *allowed_user_fields],
+            ["id", "gender_id", *allowed_user_fields],
         )
         if len(users) == 1:
             self.user = next(iter(users.values()))

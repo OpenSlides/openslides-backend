@@ -72,9 +72,7 @@ class TestMigrationRoute(BaseMigrationRouteTest, BaseInternalPasswordTest):
     def test_clear_collectionfield_tables(self) -> None:
         response = self.migration_request("clear-collectionfield-tables")
         self.assert_status_code(response, 200)
-        assert (
-            response.json["status"] == MigrationState.FINALIZATION_REQUIRED
-        )  # changing to compare to MigrationState.MIGRATION_RUNNING still feels wrong since an error could still occur while the thread is running
+        assert response.json["status"] == MigrationState.FINALIZATION_REQUIRED
         assert response.json["output"] == "Cleaning collectionfield helper tables...\n"
 
     def test_unknown_command(self) -> None:

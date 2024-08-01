@@ -3,7 +3,7 @@ from typing import Any
 from datastore.shared.util import fqid_from_collection_and_id
 
 from openslides_backend.action.action import Action
-from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.exceptions import ActionException, PermissionException
 
 from ...mixins.check_unique_name_mixin import CheckUniqueInContextMixin
 
@@ -22,14 +22,17 @@ class GenderUniqueMixin(CheckUniqueInContextMixin):
 
 
 class GenderPermissionMixin(Action):
-    def check_editable(self, instance: dict[str, Any]) -> None:
-        gender = instance.get("id", 0)
-        if 0 < gender < 5:
+    def check_permissions(self, instance: dict[str, Any]) -> None:
+        super().check_permissions(instance)
+        # default genders shall not be mutable
+        gender_id = instance.get("id", 0)
+        if 0 < gender_id < 5:
             if gender_name := self.datastore.get(
-                fqid_from_collection_and_id("gender", instance.get("id", 0)),
+                fqid_from_collection_and_id("gender", gender_id),
                 ["name"],
                 lock_result=False,
             ).get("name"):
-                gender = gender_name
-            msg = f"Cannot delete or update gender '{gender}' from default selection."
-            raise ActionException(msg)
+                msg = f"Cannot delete or update gender '{gender_name}' from default selection."
+            else:
+                msg = f"Cannot delete or update gender '{gender_id}' from default selection."
+            raise PermissionException(msg)

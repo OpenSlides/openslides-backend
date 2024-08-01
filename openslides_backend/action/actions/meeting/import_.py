@@ -88,14 +88,20 @@ class MeetingImport(
         action_data = self.get_updated_instances(action_data)
         instance = next(iter(action_data))
         self.validate_instance(instance)
-        instance = self.preprocess_data(instance)
+        instance = self.preprocess_data(
+            instance
+        )  # calls remove_not_allowed_fields then migrate_data
         try:
             self.check_permissions(instance)
         except MissingPermission as e:
             msg = f"You are not allowed to perform action {self.name}."
             e.message = msg + " " + e.message
             raise e
-        instance = self.base_update_instance(instance)
+        instance = self.base_update_instance(
+            instance
+        )  # calls checker which throws error
+        "We can do that but then we would have to ensure, that the client will not export the gender in future migration indices. Also we would have to rewrite the tests for the meeting import to not include the gender."
+        "Since `perform` will eventually call `migrate_data` but after the `checker` is invoked, which will otherwise raise an exception regarding the old `gender` field, I suggest to pop the `gender` in the `remove_not_allowed_fields` method."
         self.events.extend(self.create_events(instance))
         write_request = self.build_write_request()
         result = [self.create_action_result_element(instance)]
@@ -163,6 +169,7 @@ class MeetingImport(
             user.pop("committee_ids", None)
             user.pop("committee_management_ids", None)
             user.pop("forwarding_committee_ids", None)
+            # user.pop("gender", None)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
         json_data.pop("action_worker", None)
         json_data.pop("import_preview", None)
@@ -216,7 +223,6 @@ class MeetingImport(
                     "last_email_sent",
                     "last_login",
                     "committee_ids",
-                    "gender",
                 ],
             },
         )
@@ -299,6 +305,17 @@ class MeetingImport(
 
         for entry, username in zip(user_entries, new_usernames):
             entry["username"] = username
+
+    # def transform_gender_to_id(self, user_json: dict[str,Any]) -> dict[str,Any]:
+    #     for user_id, user in user_json.items():
+    #         if "gender" in user:
+    #             gender_dict = datastore.get_all(user["gender"], ["id", "name"], lock_result=False)
+    #             if gender := next(
+    #                 (model for model in gender_dict.values() if model["name"] == user["gender"]), None
+    #             ):
+    #                 user["gender_id"] = datastore.get("gender", ["name"])
+    #             del user["gender"]
+    #     return user_json
 
     def check_limit_of_meetings(
         self, text: str = "import", text2: str = "active "

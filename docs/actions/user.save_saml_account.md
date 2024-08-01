@@ -7,7 +7,7 @@
     first_name: string,
     last_name: string,
     email: string,
-    gender_id: Id,
+    gender: string,
     pronoun: string,
     is_active: boolean,
     is_physical_person: boolean,

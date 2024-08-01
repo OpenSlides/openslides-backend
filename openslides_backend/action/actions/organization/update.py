@@ -36,7 +36,6 @@ class OrganizationUpdate(
         "users_email_replyto",
         "users_email_subject",
         "users_email_body",
-        "gender_ids",
     )
 
     group_B_fields = (

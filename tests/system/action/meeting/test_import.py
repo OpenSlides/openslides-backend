@@ -358,7 +358,6 @@ class MeetingImport(BaseActionTestCase):
             "is_physical_person": True,
             "default_password": "admin",
             "can_change_own_password": True,
-            "gender": "male",
             "email": "",
             "default_vote_weight": "1.000000",
             "last_email_sent": None,
@@ -2138,6 +2137,7 @@ class MeetingImport(BaseActionTestCase):
         data["meeting"]["meeting"]["1"]["motion_ids"] = [5, 6]
         data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1, 2]
         data["meeting"]["motion_state"]["1"]["motion_ids"] = [5, 6]
+        data["meeting"]["user"]["1"]["gender"] = "male"
         data["meeting"]["_migration_index"] = 35
         assert (
             data["meeting"]["motion"]["5"]["referenced_in_motion_state_extension_ids"]
@@ -2193,6 +2193,7 @@ class MeetingImport(BaseActionTestCase):
             "assignment_poll_default_100_percent_base"
         ] = "YN"
         data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "YNA"
+        data["meeting"]["user"]["1"]["gender"] = "male"  # migration 0054
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
@@ -2220,6 +2221,10 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "organization/1", {"user_ids": [1, 2], "active_meeting_ids": [1, 2]}
         )
+
+        self._assert_fields(
+            "user/2", {"gender": None, "gender_id": None}
+        )  # migration 0054
 
     @performance
     def test_big_file(self) -> None:

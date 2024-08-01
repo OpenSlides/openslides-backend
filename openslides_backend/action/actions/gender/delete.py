@@ -1,5 +1,3 @@
-from typing import Any
-
 from ....models.models import Gender
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.delete import DeleteAction
@@ -18,7 +16,3 @@ class GenderDeleteAction(DeleteAction, GenderPermissionMixin):
     schema = DefaultSchema(Gender()).get_delete_schema()
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
     skip_archived_meeting_check = True
-
-    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        super().check_editable(instance)
-        return instance

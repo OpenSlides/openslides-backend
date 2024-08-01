@@ -1,5 +1,3 @@
-from typing import Any
-
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Gender
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -22,8 +20,3 @@ class GenderUpdateAction(
         required_properties=["name"],
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
-
-    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
-        super().check_editable(instance)
-        instance = super().update_instance(instance)
-        return instance

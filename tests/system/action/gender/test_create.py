@@ -25,9 +25,6 @@ class GenderCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("gender/2")
-        assert model.get("name") == gender_name
-        assert model.get("organization_id") == 1
         self.assert_model_exists(
             "gender/1",
             {
@@ -35,14 +32,13 @@ class GenderCreateActionTest(BaseActionTestCase):
                 "organization_id": 1,
             },
         )
-
-    def test_create_only_required(self) -> None:
-        gender_name = "male"
-
-        response = self.request("gender.create", {"name": gender_name})
-        self.assert_status_code(response, 200)
-        model = self.get_model("gender/1")
-        assert model.get("name") == gender_name
+        self.assert_model_exists(
+            "gender/2",
+            {
+                "name": gender_name,
+                "organization_id": 1,
+            },
+        )
 
     def test_create_wrong_field(self) -> None:
         response = self.request(
