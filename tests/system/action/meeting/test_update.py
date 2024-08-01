@@ -696,6 +696,61 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         assert "template_for_organization_id" not in meeting
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": []})
 
+    def test_update_set_as_template_required_duplicate_from(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1},
+                ONE_ORGANIZATION_FQID: {
+                    "template_meeting_ids": [1],
+                    "require_duplicate_from": True,
+                },
+            }
+        )
+        self.set_user_groups(1, [1])
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "set_as_template": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        meeting = self.get_model("meeting/1")
+        assert "set_as_template" not in meeting
+        assert "template_for_organization_id" not in meeting
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": []})
+
+    def test_update_set_as_template_not_allowed(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1},
+                ONE_ORGANIZATION_FQID: {
+                    "template_meeting_ids": [1],
+                    "require_duplicate_from": True,
+                },
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_ids": [1],
+                    "committee_management_ids": [1],
+                },
+                "committee/1": {"user_ids": [1], "manager_ids": [1]},
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "set_as_template": False,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "A meeting cannot be set as a template by a committee manager if duplicate from is required."
+        )
+
     def test_update_set_as_template_false_template_error(self) -> None:
         self.set_models(self.test_models)
         self.set_models(

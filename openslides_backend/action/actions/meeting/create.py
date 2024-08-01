@@ -4,6 +4,8 @@ from openslides_backend.models.models import Meeting
 
 from ....i18n.translator import Translator
 from ....i18n.translator import translate as _
+from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permission_helper import has_organization_management_level
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id, id_from_fqid
@@ -79,13 +81,26 @@ class MeetingCreate(
 
         organization = self.datastore.get(
             ONE_ORGANIZATION_FQID,
-            ["limit_of_meetings", "active_meeting_ids"],
+            [
+                "limit_of_meetings",
+                "active_meeting_ids",
+                "require_duplicate_from",
+            ],
         )
         if (
             limit_of_meetings := organization.get("limit_of_meetings", 0)
         ) and limit_of_meetings == len(organization.get("active_meeting_ids", [])):
             raise ActionException(
                 f"You cannot create a new meeting, because you reached your limit of {limit_of_meetings} active meetings."
+            )
+
+        if organization.get(
+            "require_duplicate_from"
+        ) and not has_organization_management_level(
+            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            raise ActionException(
+                "You cannot create a new meeting, because you need to use a template."
             )
         self.check_start_and_end_time(instance)
 
