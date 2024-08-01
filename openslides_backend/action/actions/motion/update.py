@@ -27,7 +27,6 @@ from .mixins import (
     set_workflow_timestamp_helper,
 )
 from .payload_validation_mixin import MotionUpdatePayloadValidationMixin
-from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.update")
@@ -35,7 +34,6 @@ class MotionUpdate(
     MotionUpdatePayloadValidationMixin,
     AmendmentParagraphHelper,
     PermissionHelperMixin,
-    SetNumberMixin,
     TextHashMixin,
     UpdateAction,
 ):

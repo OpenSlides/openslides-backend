@@ -9,6 +9,9 @@
 
 // Optional
     reason: HTML;
+    use_original_submitter: boolean;
+    use_original_number: boolean;
+    with_amendments: boolean;
 }
 ```
 
@@ -25,18 +28,33 @@ The original motion must be updated as well (this is done by the automatic relat
 * The unique `id` of the newly created motion has to be linked to the _origin motion_s `derived_motion_ids` field.
   * Deleting the newly created motion has to ensure that the corresponding entry was removed from the _origin motion_s `derived_motion_ids` field
 
+The optional flags `use_original_submitter` and `use_original_number` will cause the original submitters and original numbers to be used in the new motion respectively. In case of the submitters, the action will generate the full name of the submitters and write the entire list of them and the value of the origin motions `additional_submitter` comma separated into the new motions `additional_submitter` field. If `use_original_submitter` is false the name of the origin motions committee will be written into the `additional_submitter` field instead
+
+If `with_amendments` is set to True, all amendments of the motion, that have a state that can forward, will also be forwarded to the target meeting and connected to the newly forwarded lead motion.
+The three boolean flags for extra rules will be applied to the amendments as well.
+
+If the forwarded amendments have amendments themselves, those will also be treated the same way
+
 ### Forwarding tree fields
 
 * `all_origin_ids` of the newly created motion must be set to `all_origin_ids` of the origin motion plus the given `origin_id`. It is important that the id is appended at the end of the list, since the order of this field represents the order of the tree in case a motion of the tree is deleted.
 * The id of the newly created motion must be added to the `all_derived_motion_ids` field of all motions in the `all_origin_ids` field of this motion. Order is not important here.
 
-### New user in receiving meeting
-
-* A new user on committee level will be generated automatically _inactive_ with meeting standard group and committee's name. This user is stored in the committee as `forwarding_user` and used in further forwardings, if necessary with new membership in standard group of new meetings.
-
 ### State needs to allow forwarding
 
 * The origin state must allow forwarding (`allow_motion_forwarding` must be set to True).
+
+## Result
+
+The result object for each instance has the format
+```
+{
+  id: Id,
+  sequential_number: int,
+  non_forwarded_amendment_amount: int, // Number of amendments that couldn't be returned because of forwarding being not allowed in the state
+  amendment_result_data: [...], // List of result data objects in the same format, for all newly created amendments for the newly created motion
+}
+```
 
 ## Permissions
 The request user needs `motion.can_forward` in the source meeting. `motion.can_manage` is not explicitly needed for the request user, because it is included. There are no rights needed in the receiving meeting.

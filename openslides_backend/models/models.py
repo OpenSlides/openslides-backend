@@ -118,9 +118,6 @@ class User(Model):
         constraints={"description": "Calculated field."},
     )
     committee_management_ids = fields.RelationListField(to={"committee": "manager_ids"})
-    forwarding_committee_ids = fields.RelationListField(
-        to={"committee": "forwarding_user_id"}
-    )
     meeting_user_ids = fields.RelationListField(
         to={"meeting_user": "user_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -297,7 +294,6 @@ class Committee(Model):
     receive_forwardings_from_committee_ids = fields.RelationListField(
         to={"committee": "forward_to_committee_ids"}
     )
-    forwarding_user_id = fields.RelationField(to={"user": "forwarding_committee_ids"})
     organization_tag_ids = fields.RelationListField(
         to={"organization_tag": "tagged_ids"}
     )
