@@ -41,10 +41,8 @@ class MeetingCreate(
             "organization_tag_ids",
             "external_id",
         ],
-        additional_required_fields={
-            "admin_ids": id_list_schema,
-        },
         additional_optional_fields={
+            "admin_ids": id_list_schema,
             "user_ids": id_list_schema,
             "set_as_template": {"type": "boolean"},
         },

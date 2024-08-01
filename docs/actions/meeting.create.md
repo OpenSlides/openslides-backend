@@ -32,7 +32,8 @@ When creating a meeting the following objects have to be created, too:
 
 If `user_ids` are given, it must be checked that it is a subset of `committee/user_ids`. Each user is added to the meeting by being added to the default group.
 
-If `admin_ids` are given, it must be checked that it is a subset of `committee/user_ids`. Each user is added to the meeting by being added to the admin group.
+If `admin_ids` are given, it must be checked that they are a subset of `committee/user_ids`. Each user is added to the meeting by being added to the admin group.
+If they aren't given and `set_as_template` is not true, there will be an error.
 
 The field `is_active_in_organization_id` has to be set to the organization_id.
 

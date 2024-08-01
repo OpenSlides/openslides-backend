@@ -290,8 +290,74 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {"admin_ids": []}, "Cannot create non-template meeting without admin_ids"
         )
 
+    def test_create_with_no_admins(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                },
+                "committee/1": {
+                    "name": "test_committee",
+                    "user_ids": [2],
+                    "organization_id": 1,
+                },
+                "group/1": {},
+                "user/2": {},
+                "organization_tag/3": {},
+            }
+        )
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "organization_tag_ids": [3],
+                "language": "en",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Cannot create non-template meeting without admin_ids"
+        )
+
     def test_create_set_as_template_with_admins_empty_array(self) -> None:
         meeting = self.basic_test({"admin_ids": [], "set_as_template": True})
+        assert meeting.get("template_for_organization_id") == 1
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": [1]})
+
+    def test_create_set_as_template_with_no_admins_array(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                },
+                "committee/1": {
+                    "name": "test_committee",
+                    "user_ids": [2],
+                    "organization_id": 1,
+                },
+                "group/1": {},
+                "user/2": {},
+                "organization_tag/3": {},
+            }
+        )
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "organization_tag_ids": [3],
+                "language": "en",
+                "set_as_template": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        meeting = self.get_model("meeting/1")
         assert meeting.get("template_for_organization_id") == 1
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": [1]})
 

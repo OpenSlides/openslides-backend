@@ -22,6 +22,8 @@
 The meeting will be duplicated as it is including all its items. That means, that every motion, every topic, every mediafile, every assignment and so will be duplicated too. Users should not be duplicated, instead the existing users from the source meeting should be included in the new meeting as part of the default- or admin-group.
 The users in user_ids/admin_ids will also be added to the default_group/admin_group of the new meeting. The difference is, that they don't have to be part of the source meeting.
 
+If `set_as_template` is not true and there are no `admin_ids` in the payload and no admins in meeting that should be duplicated, there will be an error.
+
 A differing committee_id can be given, otherwise the committee_id
 will be cloned untouched. 
 
