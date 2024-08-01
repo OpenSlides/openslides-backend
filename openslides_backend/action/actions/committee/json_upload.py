@@ -263,17 +263,34 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
                         row["messages"].append(
                             f"The meeting template {template} was not found, the meeting will be created without a template."
                         )
-            elif not any(
-                admin for admin in entry.get("meeting_admins", []) if admin.get("id")
+            if entry.get("meeting_name") and not any(
+                admin
+                for admin in entry.get("meeting_admins", [])
+                if admin.get("info") == ImportState.DONE
             ):
-                row["state"] = ImportState.ERROR
-                entry["meeting_admins"] = [
-                    *entry.get("meeting_admins", []),
-                    {"value": "", "info": ImportState.ERROR},
-                ]
-                row["messages"].append(
-                    "Error: Non-template meetings cannot be created without admins"
-                )
+                admin_ids: list[int] = []
+                if (
+                    template_id := entry.get("meeting_template", {}).get("id")
+                ) and entry.get("meeting_template", {}).get("info") == ImportState.DONE:
+                    groups = self.datastore.filter(
+                        "group",
+                        FilterOperator("admin_group_for_meeting_id", "=", template_id),
+                        ["meeting_user_ids"],
+                    )
+                    admin_ids = [
+                        meeting_user_id
+                        for group in groups.values()
+                        for meeting_user_id in (group.get("meeting_user_ids") or [])
+                    ]
+                if not len(admin_ids):
+                    row["state"] = ImportState.ERROR
+                    entry["meeting_admins"] = [
+                        *entry.get("meeting_admins", []),
+                        {"value": "", "info": ImportState.ERROR},
+                    ]
+                    row["messages"].append(
+                        "Error: Meeting cannot be created without admins"
+                    )
 
     def is_same_day(self, a: int | None, b: int | None) -> bool:
         if a is None or b is None:
@@ -331,17 +348,18 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
         }
         for row in self.rows:
             entry = row["data"]
-            if entry.get("meeting_name"):
-                if (
-                    entry.get("meeting_template")
-                    and entry["meeting_template"]["info"] == ImportState.DONE
-                ):
-                    statistics_data["meetings_cloned"] += 1
-                else:
-                    statistics_data["meetings_created"] += 1
-            for tag in entry.get("organization_tags", []):
-                if tag["info"] == ImportState.NEW:
-                    statistics_data["organization_tags_created"] += 1
+            if not row["state"] == ImportState.ERROR:
+                if entry.get("meeting_name"):
+                    if (
+                        entry.get("meeting_template")
+                        and entry["meeting_template"]["info"] == ImportState.DONE
+                    ):
+                        statistics_data["meetings_cloned"] += 1
+                    else:
+                        statistics_data["meetings_created"] += 1
+                for tag in entry.get("organization_tags", []):
+                    if tag["info"] == ImportState.NEW:
+                        statistics_data["organization_tags_created"] += 1
         self.statistics.extend(
             {"name": key, "value": value} for key, value in statistics_data.items()
         )
