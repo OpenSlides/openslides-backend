@@ -1,3 +1,5 @@
+from typing import Any
+
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -8,6 +10,20 @@ from .base_poll_test import BasePollTestCase
 class UpdatePollTestCase(BasePollTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.entitled_users_at_stop_data: list[dict[str, Any]] = [
+            {
+                "voted": True,
+                "present": True,
+                "user_id": 2,
+                "vote_delegated_to_user_id": None,
+            },
+            {
+                "voted": True,
+                "present": False,
+                "user_id": 3,
+                "vote_delegated_to_user_id": 2,
+            },
+        ]
         self.set_models(
             {
                 "assignment/1": {
@@ -385,4 +401,188 @@ class UpdatePollTestCase(BasePollTestCase):
             "poll.update",
             {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
             Permissions.Assignment.CAN_MANAGE,
+        )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "poll.update",
+            {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
+        )
+
+    def test_update_entitled_users_at_stop_error(self) -> None:
+        response = self.request(
+            "poll.update",
+            {
+                "entitled_users_at_stop": self.entitled_users_at_stop_data,
+                "id": 1,
+            },
+            internal=False,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data must not contain {'entitled_users_at_stop'} properties"
+            in response.json["message"]
+        )
+
+    def test_update_entitled_users_at_stop_fields_changed_error(self) -> None:
+        self.set_models(
+            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+        )
+        response = self.request(
+            "poll.update",
+            {
+                "entitled_users_at_stop": [
+                    {**self.entitled_users_at_stop_data[0], "voted": False},
+                    self.entitled_users_at_stop_data[1],
+                ],
+                "id": 1,
+            },
+            internal=True,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Can not change essential 'entitled_users_at_stop' data via poll.update"
+            in response.json["message"]
+        )
+
+    def test_update_entitled_users_at_stop_initial_set_attempt_error(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"entitled_users_at_stop": self.entitled_users_at_stop_data, "id": 1},
+            internal=True,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Can not set 'entitled_users_at_stop' via poll.update"
+            in response.json["message"]
+        )
+
+    def test_update_entitled_users_at_stop_list_shortened_error(self) -> None:
+        self.set_models(
+            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+        )
+        response = self.request(
+            "poll.update",
+            {"entitled_users_at_stop": [self.entitled_users_at_stop_data[1]], "id": 1},
+            internal=True,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Can not change essential 'entitled_users_at_stop' data via poll.update"
+            in response.json["message"]
+        )
+
+    def test_update_entitled_users_at_stop_list_lengthened_error(self) -> None:
+        self.set_models(
+            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+        )
+        response = self.request(
+            "poll.update",
+            {
+                "entitled_users_at_stop": [
+                    *self.entitled_users_at_stop_data,
+                    {"voted": True, "present": True, "user_id": 5},
+                ],
+                "id": 1,
+            },
+            internal=True,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Can not change essential 'entitled_users_at_stop' data via poll.update"
+            in response.json["message"]
+        )
+
+    def test_update_entitled_users_at_stop_wrong_format_error(self) -> None:
+        self.set_models(
+            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+        )
+        response = self.request(
+            "poll.update",
+            {"entitled_users_at_stop": {"this": "shouldn't be a dict"}, "id": 1},
+            internal=True,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "'entitled_users_at_stop' has the wrong format" in response.json["message"]
+        )
+
+    def test_update_entitled_users_at_stop_wrong_format_error_2(self) -> None:
+        self.set_models(
+            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+        )
+        response = self.request(
+            "poll.update",
+            {"entitled_users_at_stop": ["this shouldn't be a string"], "id": 1},
+            internal=True,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "'entitled_users_at_stop' has the wrong format" in response.json["message"]
+        )
+
+    def test_update_entitled_users_at_stop_wrong_format_error_3(self) -> None:
+        self.set_models(
+            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+        )
+        response = self.request(
+            "poll.update",
+            {
+                "entitled_users_at_stop": [{"this": "is still the wrong format"}],
+                "id": 1,
+            },
+            internal=True,
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "'entitled_users_at_stop' has the wrong format" in response.json["message"]
+        )
+
+    def test_update_entitled_users_at_stop_nothing_changed(self) -> None:
+        self.set_models(
+            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+        )
+        response = self.request(
+            "poll.update",
+            {"entitled_users_at_stop": self.entitled_users_at_stop_data, "id": 1},
+            internal=True,
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/1", {"entitled_users_at_stop": self.entitled_users_at_stop_data}
+        )
+
+    def test_update_entitled_users_at_stop_fields_changed_success(self) -> None:
+        self.set_models(
+            {"poll/1": {"entitled_users_at_stop": self.entitled_users_at_stop_data}}
+        )
+        response = self.request(
+            "poll.update",
+            {
+                "entitled_users_at_stop": [
+                    {
+                        **self.entitled_users_at_stop_data[0],
+                        "delegation_user_merged_into_id": 9,
+                        "user_merged_into_id": 10,
+                    },
+                    self.entitled_users_at_stop_data[1],
+                ],
+                "id": 1,
+            },
+            internal=True,
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "entitled_users_at_stop": [
+                    {
+                        **self.entitled_users_at_stop_data[0],
+                        "delegation_user_merged_into_id": 9,
+                        "user_merged_into_id": 10,
+                    },
+                    self.entitled_users_at_stop_data[1],
+                ]
+            },
         )

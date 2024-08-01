@@ -163,6 +163,13 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
 
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.models,
+            "speaker.update",
+            {"id": 890, "speech_state": SpeechState.PRO},
+        )
+
     def test_update_check_request_user_is_user_not_can_see(self) -> None:
         self.create_meeting()
         self.set_models(
@@ -844,3 +851,50 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             response.json["message"]
             == "You can not change a started speaker to intervention if there is a structure_level."
         )
+
+    def test_update_with_internal_fields(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"structure_level_list_of_speakers_ids": [90]},
+                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [90]},
+                "structure_level_list_of_speakers/90": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update",
+            {"id": 890, "weight": 4, "structure_level_list_of_speakers_id": 90},
+            internal=True,
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/890", {"weight": 4, "structure_level_list_of_speakers_id": 90}
+        )
+
+    def test_update_with_internal_fields_error(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"structure_level_list_of_speakers_ids": [90]},
+                "list_of_speakers/23": {"structure_level_list_of_speakers_ids": [90]},
+                "structure_level_list_of_speakers/90": {
+                    "meeting_id": 1,
+                    "list_of_speakers_id": 23,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update",
+            {"id": 890, "weight": 4, "structure_level_list_of_speakers_id": 90},
+            internal=False,
+        )
+        self.assert_status_code(response, 400)
+        message: str = response.json["message"]
+        assert message.startswith("data must not contain {")
+        assert message.endswith("} properties")
+        for field in [
+            "'structure_level_list_of_speakers_id'",
+            "'weight'",
+        ]:
+            self.assertIn(field, message)

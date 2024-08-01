@@ -250,3 +250,14 @@ class ProjectorUpdate(BaseActionTestCase):
             },
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "projector.update",
+            {
+                "id": 111,
+                "name": "name_Xcdfgee",
+                "width": 100,
+            },
+        )

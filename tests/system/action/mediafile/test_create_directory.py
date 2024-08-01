@@ -538,6 +538,17 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             Permissions.Mediafile.CAN_MANAGE,
         )
 
+    def test_create_directory_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "mediafile.create_directory",
+            {
+                "owner_id": "meeting/1",
+                "title": "title_Xcdfgee",
+                "access_group_ids": [7],
+            },
+        )
+
     def test_create_directory_no_permissions_orga_owner(self) -> None:
         self.base_permission_test(
             self.permission_test_models,

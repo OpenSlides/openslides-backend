@@ -293,6 +293,11 @@ class ParticipantImport(BaseActionTestCase):
             True,
         )
 
+    def test_import_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {}, "participant.import", {"id": 1, "import": True}
+        )
+
 
 class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInImport):
     def test_upload_import_invalid_vote_weight_with_remove(self) -> None:

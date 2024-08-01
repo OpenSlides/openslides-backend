@@ -85,3 +85,12 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
             {"id": 111},
             Permissions.Assignment.CAN_MANAGE,
         )
+
+    def test_delete_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "assignment/111": {"meeting_id": 1, "title": "title_srtgb123"},
+            },
+            "assignment.delete",
+            {"id": 111},
+        )

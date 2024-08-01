@@ -191,3 +191,10 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
             {"id": 22, "recommendation_id": 77},
             Permissions.Motion.CAN_MANAGE_METADATA,
         )
+
+    def test_set_recommendation_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion.set_recommendation",
+            {"id": 22, "recommendation_id": 77},
+        )

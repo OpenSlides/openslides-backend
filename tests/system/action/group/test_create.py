@@ -183,6 +183,13 @@ class GroupCreateActionTest(BaseActionTestCase):
             Permissions.User.CAN_MANAGE,
         )
 
+    def test_create_check_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "group.create",
+            {"name": "test_Xcdfgee", "meeting_id": 1},
+        )
+
     def test_create_external_id_forbidden(self) -> None:
         self.set_models(
             {

@@ -1458,6 +1458,13 @@ class MeetingImport(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_locked_meeting(self) -> None:
+        request_data = self.create_request_data({})
+        request_data["meeting"]["meeting"]["1"]["locked_from_inside"] = True
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert "Cannot import a locked meeting." in response.json["message"]
+
     def test_field_check(self) -> None:
         request_data = self.create_request_data(
             {

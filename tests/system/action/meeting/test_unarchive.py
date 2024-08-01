@@ -60,6 +60,11 @@ class MeetingRevertArchivingTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_unarchive_locked_meeting(self) -> None:
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+        response = self.request("meeting.unarchive", {"id": 1})
+        self.assert_status_code(response, 200)
+
     def test_unarchive_meeting_is_not_archived(self) -> None:
         self.update_model("meeting/1", {"is_active_in_organization_id": 1})
         response = self.request("meeting.unarchive", {"id": 1})

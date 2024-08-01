@@ -71,6 +71,11 @@ class MeetingArchiveTest(BaseActionTestCase):
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 200)
 
+    def test_archive_locked_meeting(self) -> None:
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+        response = self.request("meeting.archive", {"id": 1})
+        self.assert_status_code(response, 200)
+
     def test_archive_permission_oml(self) -> None:
         self.set_models(
             {

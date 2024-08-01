@@ -50,7 +50,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                 {"assignment_id": 111, "meeting_user_id": 110},
             )
         self.assert_status_code(response, 200)
-        assert counter.calls == 6
+        assert counter.calls == 7
         model = self.get_model("assignment_candidate/1")
         assert model.get("meeting_user_id") == 110
         assert model.get("assignment_id") == 111

@@ -140,3 +140,10 @@ class ChatGroupSortActionTest(BaseActionTestCase):
             {"meeting_id": 1, "chat_group_ids": [32, 31]},
             Permissions.Chat.CAN_MANAGE,
         )
+
+    def test_sort_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "chat_group.sort",
+            {"meeting_id": 1, "chat_group_ids": [32, 31]},
+        )

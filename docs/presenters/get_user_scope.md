@@ -14,6 +14,7 @@
     collection: String,  # one of "meeting", "committee" or "organization"
     id: Id,
     user_oml: String, # one of "superadmin", "can_manage_organization", "can_manage_users", ""
+    committee_ids: int[] // Ids of all committees the user is part of
   }
 }
 ```

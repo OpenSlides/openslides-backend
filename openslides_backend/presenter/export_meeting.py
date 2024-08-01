@@ -4,7 +4,7 @@ import fastjsonschema
 
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
-from ..shared.exceptions import PermissionDenied
+from ..shared.exceptions import PermissionDenied, PresenterException
 from ..shared.export_helper import export_meeting
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
@@ -41,6 +41,15 @@ class Export(BasePresenter):
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
         export_data = export_meeting(self.datastore, self.data["meeting_id"])
+        if id_ := next(
+            (
+                id_
+                for id_, meeting in export_data["meeting"].items()
+                if meeting.get("locked_from_inside")
+            ),
+            None,
+        ):
+            raise PresenterException(f"Cannot export: meeting {id_} is locked.")
         self.exclude_organization_tags_and_default_meeting_for_committee(export_data)
         return export_data
 

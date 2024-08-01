@@ -272,3 +272,10 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
             {"id": 22},
             Permissions.Motion.CAN_MANAGE_METADATA,
         )
+
+    def test_follow_recommendation_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion.follow_recommendation",
+            {"id": 22},
+        )
