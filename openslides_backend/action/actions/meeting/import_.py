@@ -90,7 +90,7 @@ class MeetingImport(
         self.validate_instance(instance)
         instance = self.preprocess_data(
             instance
-        )  # calls remove_not_allowed_fields then migrate_data
+        )
         try:
             self.check_permissions(instance)
         except MissingPermission as e:
@@ -99,9 +99,7 @@ class MeetingImport(
             raise e
         instance = self.base_update_instance(
             instance
-        )  # calls checker which throws error
-        "We can do that but then we would have to ensure, that the client will not export the gender in future migration indices. Also we would have to rewrite the tests for the meeting import to not include the gender."
-        "Since `perform` will eventually call `migrate_data` but after the `checker` is invoked, which will otherwise raise an exception regarding the old `gender` field, I suggest to pop the `gender` in the `remove_not_allowed_fields` method."
+        )
         self.events.extend(self.create_events(instance))
         write_request = self.build_write_request()
         result = [self.create_action_result_element(instance)]
@@ -169,7 +167,6 @@ class MeetingImport(
             user.pop("committee_ids", None)
             user.pop("committee_management_ids", None)
             user.pop("forwarding_committee_ids", None)
-            # user.pop("gender", None)
         self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
         json_data.pop("action_worker", None)
         json_data.pop("import_preview", None)

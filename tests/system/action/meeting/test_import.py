@@ -26,7 +26,6 @@ class MeetingImport(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [1],
                     "committee_ids": [1],
-                    "gender_ids": [1, 2, 3, 4],
                 },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
                 "meeting/1": {
@@ -41,10 +40,6 @@ class MeetingImport(BaseActionTestCase):
                     "sequential_number": 26,
                     "number_value": 31,
                 },
-                "gender/1": {"name": "male"},
-                "gender/2": {"name": "female"},
-                "gender/3": {"name": "diverse"},
-                "gender/4": {"name": "non-binary"},
             }
         )
 

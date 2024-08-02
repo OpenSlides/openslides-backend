@@ -36,8 +36,6 @@
 Updates the organization.
 It has to be checked that the theme_id has to be one of the theme_ids.
 
-Checks for deleted genders and clean the gender of users which have deleted genders.
-
 ## Permissions
 - Users with OML of `can_manage_organization` can modify group A
 - Users with OML of `superadmin` can modify group B

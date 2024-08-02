@@ -15,6 +15,7 @@ class Migration(BaseModelMigration):
     custom gender names for non default genders.
     This requires to replace all gender strings in organization and
     user models to be replaced with the corresponding gender id.
+    If the migration runs in memory then all gender information is set to None.
     """
 
     target_migration_index = 55
