@@ -1316,3 +1316,55 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             "Sue B. Mid-Edit",
         ]:
             assert name in motion["additional_submitter"]
+
+    def test_with_change_recommendation(self) -> None:
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "motion/12": {"change_recommendation_ids": [1]},
+                "meeting/1": {"motion_change_recommendation_ids": [1]},
+                "motion_change_recommendation/1": {
+                    "line_from": 11,
+                    "line_to": 23,
+                    "text": "Hello world",
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                    "rejected": True,
+                    "internal": True,
+                    "type": "replacement",
+                    "other_description": "Iamachangerecommendation",
+                    "creation_time": 0,
+                },
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+                "with_change_recommendations": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        created_id = response.json["results"][0][0]["id"]
+        self.assert_model_exists(
+            f"motion/{created_id}", {"change_recommendation_ids": [2]}
+        )
+        reco = self.assert_model_exists(
+            "motion_change_recommendation/2",
+            {
+                "line_from": 11,
+                "line_to": 23,
+                "text": "Hello world",
+                "motion_id": created_id,
+                "meeting_id": 2,
+                "rejected": True,
+                "internal": True,
+                "type": "replacement",
+                "other_description": "Iamachangerecommendation",
+            },
+        )
+        assert reco["creation_time"] > 0

@@ -25,6 +25,7 @@ class MotionCreateForwardedAmendment(BaseMotionCreateForwarded):
         additional_optional_fields={
             "use_original_submitter": {"type": "boolean"},
             "use_original_number": {"type": "boolean"},
+            "with_change_recommendations": {"type": "boolean"},
         },
     )
 
