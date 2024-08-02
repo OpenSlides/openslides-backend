@@ -88,18 +88,14 @@ class MeetingImport(
         action_data = self.get_updated_instances(action_data)
         instance = next(iter(action_data))
         self.validate_instance(instance)
-        instance = self.preprocess_data(
-            instance
-        )
+        instance = self.preprocess_data(instance)
         try:
             self.check_permissions(instance)
         except MissingPermission as e:
             msg = f"You are not allowed to perform action {self.name}."
             e.message = msg + " " + e.message
             raise e
-        instance = self.base_update_instance(
-            instance
-        )
+        instance = self.base_update_instance(instance)
         self.events.extend(self.create_events(instance))
         write_request = self.build_write_request()
         result = [self.create_action_result_element(instance)]
