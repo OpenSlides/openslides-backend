@@ -11,10 +11,11 @@ from ....shared.mixins.user_scope_mixin import UserScopeMixin
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .user_mixins import AdminIntegrityCheckMixin
 
 
 @register_action("user.delete")
-class UserDelete(UserScopeMixin, DeleteAction):
+class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
     """
     Action to delete a user.
     """
@@ -55,54 +56,15 @@ class UserDelete(UserScopeMixin, DeleteAction):
                     meeting_ids_to_user_ids[meeting_id] = [id_]
                 else:
                     meeting_ids_to_user_ids[meeting_id].append(id_)
-        if len(meeting_ids_to_user_ids):
-            meetings = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "meeting",
-                        list(meeting_ids_to_user_ids.keys()),
-                        ["admin_group_id", "template_for_organization_id"],
-                    )
-                ]
-            )["meeting"]
-            for meeting_id, meeting in meetings.items():
-                if meeting.get("template_for_organization_id"):
-                    del meeting_ids_to_user_ids[meeting_id]
-            if not len(meeting_ids_to_user_ids):
-                return
-            meeting_users = self.datastore.filter(
-                "meeting_user",
-                Or(
-                    *[
-                        FilterOperator("user_id", "=", user_id)
-                        for user_id in delete_data
-                    ]
-                ),
-                ["group_ids", "user_id"],
-            )
-            groups = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "group",
-                        [
-                            admin_group_id
-                            for meeting in meetings.values()
-                            if (admin_group_id := meeting.get("admin_group_id"))
-                        ],
-                        ["meeting_user_ids", "admin_group_for_meeting_id"],
-                    )
-                ]
-            )["group"]
-            broken_meetings: list[str] = []
-            for group_data in groups.values():
-                if group_data.get("meeting_user_ids") and not any(
-                    m_user_id not in meeting_users
-                    for m_user_id in group_data.get("meeting_user_ids", [])
-                ):
-                    broken_meetings.append(
-                        str(group_data["admin_group_for_meeting_id"])
-                    )
-            if len(broken_meetings):
-                raise ActionException(
-                    f"Cannot remove last admin from meeting(s) {', '.join(sorted(broken_meetings))}"
-                )
+        meetings = self.get_meeting_data_from_per_meeting_dict(meeting_ids_to_user_ids)
+        self.filter_templates_from_per_meeting_dict(meeting_ids_to_user_ids, meetings)
+        if not len(meeting_ids_to_user_ids):
+            return
+        self.check_admin_group_integrity(
+            Or(*[FilterOperator("user_id", "=", user_id) for user_id in delete_data]),
+            [
+                admin_group_id
+                for meeting in meetings.values()
+                if (admin_group_id := meeting.get("admin_group_id"))
+            ],
+        )

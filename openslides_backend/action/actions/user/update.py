@@ -2,7 +2,6 @@ import re
 from typing import Any
 
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.services.datastore.commands import GetManyRequest
 
 from ....action.action import original_instances
 from ....action.util.typing import ActionData
@@ -19,6 +18,7 @@ from ...util.register import register_action
 from .conditional_speaker_cascade_mixin import ConditionalSpeakerCascadeMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixins import (
+    AdminIntegrityCheckMixin,
     LimitOfUserMixin,
     UpdateHistoryMixin,
     UserMixin,
@@ -34,6 +34,7 @@ class UserUpdate(
     LimitOfUserMixin,
     UpdateHistoryMixin,
     ConditionalSpeakerCascadeMixin,
+    AdminIntegrityCheckMixin,
 ):
     """
     Action to update a user.
@@ -160,22 +161,16 @@ class UserUpdate(
             meeting_ids_to_user_ids_to_group_ids[date["meeting_id"]][date["id"]] = date[
                 "group_ids"
             ]
-        if len(meeting_ids_to_user_ids_to_group_ids):
-            meetings = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "meeting",
-                        list(meeting_ids_to_user_ids_to_group_ids.keys()),
-                        ["admin_group_id", "template_for_organization_id"],
-                    )
-                ]
-            )["meeting"]
-            for meeting_id, meeting in meetings.items():
-                if meeting.get("template_for_organization_id"):
-                    del meeting_ids_to_user_ids_to_group_ids[meeting_id]
-            if not len(meeting_ids_to_user_ids_to_group_ids):
-                return
-            filters = Or(
+        meetings = self.get_meeting_data_from_per_meeting_dict(
+            meeting_ids_to_user_ids_to_group_ids
+        )
+        self.filter_templates_from_per_meeting_dict(
+            meeting_ids_to_user_ids_to_group_ids, meetings
+        )
+        if not len(meeting_ids_to_user_ids_to_group_ids):
+            return
+        self.check_admin_group_integrity(
+            Or(
                 And(
                     FilterOperator("meeting_id", "=", meeting_id),
                     Or(
@@ -183,41 +178,16 @@ class UserUpdate(
                     ),
                 )
                 for meeting_id, user_data in meeting_ids_to_user_ids_to_group_ids.items()
-            )
-            meeting_users = self.datastore.filter(
-                "meeting_user", filters, ["group_ids", "user_id"]
-            )
-            groups = self.datastore.get_many(
-                [
-                    GetManyRequest(
-                        "group",
-                        [
-                            admin_group_id
-                            for meeting in meetings.values()
-                            if (admin_group_id := meeting.get("admin_group_id"))
-                        ],
-                        ["meeting_user_ids", "admin_group_for_meeting_id"],
-                    )
-                ]
-            )["group"]
-            added_groups_per_meeting = {
+            ),
+            [
+                admin_group_id
+                for meeting in meetings.values()
+                if (admin_group_id := meeting.get("admin_group_id"))
+            ],
+            {
                 group_id
                 for user_data in meeting_ids_to_user_ids_to_group_ids.values()
                 for group_list in user_data.values()
                 for group_id in group_list
-            }
-            broken_meetings: list[str] = []
-            for group_id, group_data in groups.items():
-                if group_id in added_groups_per_meeting:
-                    continue
-                if group_data.get("meeting_user_ids") and not any(
-                    m_user_id not in meeting_users
-                    for m_user_id in group_data.get("meeting_user_ids", [])
-                ):
-                    broken_meetings.append(
-                        str(group_data["admin_group_for_meeting_id"])
-                    )
-            if len(broken_meetings):
-                raise ActionException(
-                    f"Cannot remove last admin from meeting(s) {', '.join(sorted(broken_meetings))}"
-                )
+            },
+        )

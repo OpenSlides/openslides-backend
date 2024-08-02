@@ -100,19 +100,30 @@ class ParticipantCommon(BaseImportJsonUploadAction):
         )
         if meeting["admin_group_id"] in added_groups:
             return True
-        filters = And(
-            FilterOperator("meeting_id", "=", meeting_id),
-            Or(
-                FilterOperator("user_id", "=", user_id)
-                for user_id in user_ids_to_group_ids
-            ),
+        return self._admin_integrity_check_and_amend_update_rows(
+            update_rows, user_ids_to_group_ids, meeting_id, meeting["admin_group_id"]
         )
+
+    def _admin_integrity_check_and_amend_update_rows(
+        self,
+        update_rows: dict[int, dict[str, Any] | ImportRow],
+        user_ids_to_group_ids: dict[int, list[int]],
+        meeting_id: int,
+        admin_group_id: int,
+    ) -> bool:
         if len(user_ids_to_group_ids):
+            filters = And(
+                FilterOperator("meeting_id", "=", meeting_id),
+                Or(
+                    FilterOperator("user_id", "=", user_id)
+                    for user_id in user_ids_to_group_ids
+                ),
+            )
             meeting_users = self.datastore.filter(
                 "meeting_user", filters, ["group_ids", "user_id"]
             )
             group = self.datastore.get(
-                fqid_from_collection_and_id("group", meeting["admin_group_id"]),
+                fqid_from_collection_and_id("group", admin_group_id),
                 ["id", "meeting_user_ids"],
             )
             if group.get("meeting_user_ids", []) and not any(
@@ -122,7 +133,7 @@ class ParticipantCommon(BaseImportJsonUploadAction):
                 broken_user_ids: set[int] = {
                     m_user["user_id"]
                     for m_user in meeting_users.values()
-                    if meeting["admin_group_id"] in (m_user.get("group_ids", []) or [])
+                    if admin_group_id in (m_user.get("group_ids", []) or [])
                 }
                 for user_id in broken_user_ids:
                     row = update_rows[user_id]
