@@ -69,7 +69,7 @@ class DelegationBasedRestrictionMixin(Action):
             delegation_meeting_ids = [
                 meeting_user["meeting_id"] for meeting_user in meeting_users.values()
             ]
-            data = self.datastore.get_many(
+            delegation_meetings = self.datastore.get_many(
                 [
                     GetManyRequest(
                         "meeting",
@@ -78,10 +78,10 @@ class DelegationBasedRestrictionMixin(Action):
                     ),
                 ],
                 lock_result=False,
-            )
+            )["meeting"]
             broken_meetings: list[int] = []
-            for meeting_id in delegation_meeting_ids:
-                if (meeting := data["meeting"][meeting_id]).get(restriction) and (
+            for meeting_id, meeting in delegation_meetings.items():
+                if meeting.get(restriction) and (
                     meeting.get("users_enable_vote_delegations")
                 ):
                     broken_meetings.append(meeting_id)
