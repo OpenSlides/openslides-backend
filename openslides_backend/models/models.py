@@ -903,6 +903,9 @@ class Meeting(Model, MeetingModelMixin):
         to={"group": "default_group_for_meeting_id"}, required=True
     )
     admin_group_id = fields.RelationField(to={"group": "admin_group_for_meeting_id"})
+    anonymous_group_id = fields.RelationField(
+        to={"group": "anonymous_group_for_meeting_id"}
+    )
 
 
 class StructureLevel(Model):
@@ -986,6 +989,9 @@ class Group(Model):
     )
     admin_group_for_meeting_id = fields.RelationField(
         to={"meeting": "admin_group_id"}, on_delete=fields.OnDelete.PROTECT
+    )
+    anonymous_group_for_meeting_id = fields.RelationField(
+        to={"meeting": "anonymous_group_id"}, on_delete=fields.OnDelete.PROTECT
     )
     mediafile_access_group_ids = fields.RelationListField(
         to={"mediafile": "access_group_ids"}, equal_fields="meeting_id"

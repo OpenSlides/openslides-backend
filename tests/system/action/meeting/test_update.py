@@ -610,6 +610,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_with_user(self) -> None:
+        """Also tests if the anonymous group is created"""
         self.set_models(
             {
                 "committee/1": {"meeting_ids": [3]},
@@ -653,6 +654,10 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             ]
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "group/12",
+            {"meeting_id": 3, "name": "Anonymous", "anonymous_group_for_meeting_id": 3},
+        )
 
     def test_update_set_as_template_true(self) -> None:
         self.set_models(self.test_models)
@@ -877,3 +882,107 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "A meeting cannot be locked from the inside and a template at the same time.",
             response.json["message"],
         )
+
+    def test_update_cant_lock_public_meeting(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "enable_anonymous": True,
+                "locked_from_inside": True,
+                "location": "Geneva",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and have anonymous enabled at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_cant_lock_public_meeting_2(self) -> None:
+        self.create_meeting()
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "enable_anonymous": True,
+                    "locked_from_inside": True,
+                    "admin_group_id": 2,
+                }
+            }
+        )
+        self.set_user_groups(1, [2])
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "location": "Geneva"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and have anonymous enabled at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_cant_lock_public_meeting_3(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "enable_anonymous": True,
+                }
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "locked_from_inside": True, "location": "Geneva"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and have anonymous enabled at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_cant_lock_public_meeting_4(self) -> None:
+        self.create_meeting()
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {
+                    "locked_from_inside": True,
+                    "admin_group_id": 2,
+                }
+            }
+        )
+        self.set_user_groups(1, [2])
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "enable_anonymous": True, "location": "Geneva"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "A meeting cannot be locked from the inside and have anonymous enabled at the same time.",
+            response.json["message"],
+        )
+
+    def test_update_set_anonymous_with_anonymous_group_already_existing(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {"anonymous_group_id": 99, "group_ids": [1, 99]},
+                "group/99": {
+                    "anonymous_group_for_meeting_id": 1,
+                    "name": "Anonymous",
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                "enable_anonymous": True,
+                "location": "Geneva",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("group/100")
