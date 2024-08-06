@@ -38,6 +38,7 @@ class OrganizationUpdate(
         "users_email_subject",
         "users_email_body",
         "genders",
+        "require_duplicate_from",
     )
 
     group_B_fields = (
