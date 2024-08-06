@@ -1181,7 +1181,16 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     "meeting_id": 1,
                     "name": "group7M1",
                 },
-                "meeting/1": {"meeting_user_ids": [31], "group_ids": [1, 2, 3, 7]},
+                "group/8": {
+                    "meeting_id": 1,
+                    "name": "Anonymous",
+                    "anonymous_group_for_meeting_id": 1,
+                },
+                "meeting/1": {
+                    "meeting_user_ids": [31],
+                    "group_ids": [1, 2, 3, 7, 8],
+                    "anonymous_group_id": 8,
+                },
                 "meeting/4": {"meeting_user_ids": [34]},
             }
         )
@@ -1216,7 +1225,13 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
                     {
                         "first_name": "Joan",
                         "last_name": "Baez7",
-                        "groups": ["group2", "group4", "unknown", "group7M1"],
+                        "groups": [
+                            "group2",
+                            "group4",
+                            "Anonymous",
+                            "unknown",
+                            "group7M1",
+                        ],
                     },
                 ],
             },
@@ -1310,6 +1325,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
             "groups": [
                 {"id": 2, "info": "done", "value": "group2"},
                 {"info": "new", "value": "group4"},
+                {"info": "new", "value": "Anonymous"},
                 {"info": "new", "value": "unknown"},
                 {"id": 7, "info": "done", "value": "group7M1"},
             ],
