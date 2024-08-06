@@ -6,11 +6,13 @@ from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .history_mixin import MeetingUserHistoryMixin
-from .mixin import meeting_user_standard_fields
+from .mixin import MeetingUserGroupMixin, meeting_user_standard_fields
 
 
 @register_action("meeting_user.update", action_type=ActionType.BACKEND_INTERNAL)
-class MeetingUserUpdate(MeetingUserHistoryMixin, UpdateAction, ExtendHistoryMixin):
+class MeetingUserUpdate(
+    MeetingUserHistoryMixin, UpdateAction, MeetingUserGroupMixin, ExtendHistoryMixin
+):
     """
     Action to update a meeting_user.
     """

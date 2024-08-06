@@ -1459,3 +1459,25 @@ class UserCreateActionTestInternal(BaseInternalActionTest):
         self.assertIn(
             "A user with the username 123saml already exists.", response.json["message"]
         )
+
+    def test_create_anonymous_group_id(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2, 3, 4]},
+                "group/4": {"anonymous_group_for_meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "meeting_id": 1,
+                "group_ids": [4],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot add explicit users to a meetings anonymous group",
+            response.json["message"],
+        )

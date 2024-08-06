@@ -1,7 +1,9 @@
 from typing import Any, cast
 
 from ....shared.exceptions import ActionException
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
+from ...action import Action
 from .history_mixin import MeetingUserHistoryMixin
 
 meeting_user_standard_fields = [
@@ -10,6 +12,21 @@ meeting_user_standard_fields = [
     "vote_weight",
     "structure_level_ids",
 ]
+
+
+class MeetingUserGroupMixin(Action):
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        if len(group_ids := instance.get("group_ids", [])) and self.datastore.exists(
+            "group",
+            And(
+                FilterOperator("anonymous_group_for_meeting_id", "!=", None),
+                Or(FilterOperator("id", "=", id_) for id_ in group_ids),
+            ),
+        ):
+            raise ActionException(
+                "Cannot add explicit users to a meetings anonymous group"
+            )
+        return super().update_instance(instance)
 
 
 class MeetingUserMixin(MeetingUserHistoryMixin):
