@@ -1289,10 +1289,9 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(self.test_models)
         self.set_models(
             {
-                "committee/2": {"organization_id": 1},
                 "user/1": {
-                    "committee_management_ids": [1, 2],
-                    "committee_ids": [1, 2],
+                    "committee_management_ids": [1],
+                    "committee_ids": [1],
                     "organization_management_level": None,
                 },
             }
