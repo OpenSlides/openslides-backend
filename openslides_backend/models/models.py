@@ -149,6 +149,7 @@ class MeetingUser(Model):
     number = fields.CharField()
     about_me = fields.HTMLStrictField()
     vote_weight = fields.DecimalField(constraints={"minimum": "0.000001"})
+    locked_out = fields.BooleanField()
     user_id = fields.RelationField(
         to={"user": "meeting_user_ids"}, required=True, constant=True
     )
