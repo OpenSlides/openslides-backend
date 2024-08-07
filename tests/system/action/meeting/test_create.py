@@ -10,13 +10,19 @@ from tests.system.action.base import BaseActionTestCase
 
 class MeetingCreateActionTest(BaseActionTestCase):
     def basic_test(
-        self, datapart: dict[str, Any], set_400_str: str = ""
+        self,
+        datapart: dict[str, Any],
+        set_400_str: str = "",
+        orga_settings: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        if orga_settings is None:
+            orga_settings = {}
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {
                     "limit_of_meetings": 0,
                     "active_meeting_ids": [],
+                    **orga_settings,
                 },
                 "committee/1": {
                     "name": "test_committee",
@@ -511,4 +517,19 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "language": "de",
                 "external_id": external_id,
             },
+        )
+
+    def test_enable_duplicate_mandatory(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_management_ids": [1],
+                }
+            }
+        )
+        self.basic_test(
+            {},
+            set_400_str="You cannot create a new meeting, because you need to use a template.",
+            orga_settings={"require_duplicate_from": True},
         )
