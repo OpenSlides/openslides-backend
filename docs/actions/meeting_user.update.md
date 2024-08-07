@@ -37,3 +37,5 @@
 ```
 ## Internal action
 Updates a meeting_user. `vote_delegated_to_id` and `vote_delegations_from_ids` has special checks, see user checks.
+
+Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.

@@ -32,6 +32,8 @@
 ## Action
 The action creates a meeting_user item. `vote_delegated_to_id` and `vote_delegations_from_ids` have special checks, see user checks.
 
+Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
+
 ## Permissions
 Group A: The request user needs `user.can_manage`.
 
