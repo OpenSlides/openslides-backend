@@ -4,10 +4,10 @@ from openslides_backend.action.mixins.meeting_user_helper import (
 
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
-from ..shared.exceptions import PermissionDenied
+from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.patterns import fqid_from_collection_and_id
 from .management_levels import CommitteeManagementLevel, OrganizationManagementLevel
-from .permissions import Permission, permission_parents
+from .permissions import Permission, Permissions, permission_parents
 
 
 def has_perm(
@@ -179,3 +179,29 @@ def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool
 
     group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
     return bool(group_ids) and meeting["admin_group_id"] in group_ids
+
+
+anonymous_perms_whitelist: set[Permission] = {
+    Permissions.AgendaItem.CAN_SEE,
+    Permissions.AgendaItem.CAN_SEE_INTERNAL,
+    Permissions.AgendaItem.CAN_SEE_MODERATOR_NOTES,
+    Permissions.Assignment.CAN_SEE,
+    Permissions.ListOfSpeakers.CAN_SEE,
+    Permissions.Mediafile.CAN_SEE,
+    Permissions.Meeting.CAN_SEE_AUTOPILOT,
+    Permissions.Meeting.CAN_SEE_FRONTPAGE,
+    Permissions.Meeting.CAN_SEE_HISTORY,
+    Permissions.Meeting.CAN_SEE_LIVESTREAM,
+    Permissions.Motion.CAN_SEE,
+    Permissions.Motion.CAN_SEE_INTERNAL,
+    Permissions.Projector.CAN_SEE,
+    Permissions.User.CAN_SEE,
+    Permissions.User.CAN_SEE_SENSITIVE_DATA,
+}
+
+
+def check_if_perms_are_allowed_for_anonymous(permissions: list[Permission]) -> None:
+    if len(forbidden := set(permissions).difference(anonymous_perms_whitelist)):
+        raise ActionException(
+            f"The following permissions may not be set for the anonymous group: {forbidden}"
+        )
