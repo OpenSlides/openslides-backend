@@ -151,6 +151,10 @@ class CheckLockOutPermissionMixin(Action):
         result: list[LockingStatusCheckResult],
         raise_exception: bool,
     ) -> None:
+        """
+        Check function for when "locked_out" is newly set to true in this action.
+        Looks if the user has an oml or cml, that would inhibit this.
+        """
         if oml := final.get("organization_management_level"):
             self._add_message(
                 f"Cannot lock user from meeting {final['meeting_id']} as long as he has the OrganizationManagementLevel {oml}",
@@ -176,6 +180,10 @@ class CheckLockOutPermissionMixin(Action):
         result: list[LockingStatusCheckResult],
         raise_exception: bool,
     ) -> None:
+        """
+        Check function for when an oml or cml is newly set in this action.
+        Looks if the user is locked out in any meeting, as this would inhibit any oml or cml permissions.
+        """
         if not (
             instance.get("organization_management_level")
             or instance.get("committee_management_ids")
@@ -185,10 +193,10 @@ class CheckLockOutPermissionMixin(Action):
             FilterOperator("user_id", "=", user_id),
             FilterOperator("locked_out", "=", True),
         ]
-        if (new_locked := instance.get("locked_out")) is False and meeting_id:
+        if (newly_locked := instance.get("locked_out")) is False and meeting_id:
             filters.append(FilterOperator("meeting_id", "!=", meeting_id))
         filter_: Filter = And(filters)
-        if new_locked and meeting_id:
+        if newly_locked and meeting_id:
             filter_ = Or(FilterOperator("meeting_id", "=", meeting_id), filter_)
         locked_from_meeting_users = self.datastore.filter(
             "meeting_user", filter_, ["meeting_id"]
