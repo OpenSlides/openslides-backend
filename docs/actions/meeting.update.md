@@ -199,6 +199,8 @@ This action doesn't allow for a meeting to be set as a template and have `locked
 
 If `enable_anonymous` is set, this action will create an anonymous group for the meeting. This will have the name `Anonymous` and otherwise differ from the other groups in the meeting due to having `anonymous_group_for_meeting_id` set.
 
+The meetings `anonymous_group_id` may not be used for the `assignment_poll_default_group_ids`, `topic_poll_default_group_ids` and `motion_poll_default_group_ids` fields.
+
 ## Permissions
 - Users with `meeting.can_manage_settings` can modify group A
 - Users with `user.can_update` can modify group B

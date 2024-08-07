@@ -221,8 +221,8 @@ class BaseActionTestCase(BaseSystemTestCase):
         enable: bool = True,
         meeting_id: int = 1,
         permissions: list[Permission] = [],
-    ) -> None:
-        """Also creates an anonymous group at the group_id meeting_id+3"""
+    ) -> int:
+        """Also creates an anonymous group at the next-highest free group_id"""
         next_group_id = self.datastore.reserve_id("group")
         group_ids = self.get_model(f"meeting/{meeting_id}").get("group_ids", [])
         self.set_models(
@@ -240,6 +240,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 },
             }
         )
+        return next_group_id
 
     def set_organization_management_level(
         self, level: OrganizationManagementLevel | None, user_id: int = 1

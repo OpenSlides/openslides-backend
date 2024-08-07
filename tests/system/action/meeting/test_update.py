@@ -986,3 +986,34 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("group/100")
+
+    def base_anonymous_group_in_poll_default_field_test(self, field: str) -> None:
+        self.create_meeting()
+        self.set_anonymous()
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                field: [4],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            f"Anonymous group is not allowed in {field}.",
+            response.json["message"],
+        )
+
+    def test_anonymous_in_assignment_poll_default_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_default_field_test(
+            "assignment_poll_default_group_ids"
+        )
+
+    def test_anonymous_in_motion_poll_default_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_default_field_test(
+            "motion_poll_default_group_ids"
+        )
+
+    def test_anonymous_in_topic_poll_default_group_ids(self) -> None:
+        self.base_anonymous_group_in_poll_default_field_test(
+            "topic_poll_default_group_ids"
+        )

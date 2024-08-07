@@ -20,6 +20,7 @@ from ....shared.exceptions import ActionException, MissingPermission, Permission
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import ONE_ORGANIZATION_FQID
 from ...generics.update import UpdateAction
+from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
@@ -174,6 +175,7 @@ class MeetingUpdate(
     UpdateAction,
     GetMeetingIdFromIdMixin,
     MeetingCheckTimesMixin,
+    ForbidAnonymousGroupMixin,
 ):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
@@ -268,10 +270,12 @@ class MeetingUpdate(
 
         self.check_start_and_end_time(instance)
 
-        if instance.get("enable_anonymous") and not self.datastore.get(
+        anonymous_group_id = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["id"]),
             ["anonymous_group_id"],
-        ).get("anonymous_group_id"):
+        ).get("anonymous_group_id")
+
+        if instance.get("enable_anonymous") and not anonymous_group_id:
             group_result = self.execute_other_action(
                 GroupCreate,
                 [
@@ -281,9 +285,18 @@ class MeetingUpdate(
                     }
                 ],
             )
-            instance["anonymous_group_id"] = cast(list[dict[str, Any]], group_result)[
-                0
-            ]["id"]
+            instance["anonymous_group_id"] = anonymous_group_id = cast(
+                list[dict[str, Any]], group_result
+            )[0]["id"]
+        self.check_anonymous_not_in_list_fields(
+            instance,
+            [
+                "assignment_poll_default_group_ids",
+                "topic_poll_default_group_ids",
+                "motion_poll_default_group_ids",
+            ],
+            anonymous_group_id,
+        )
 
         instance = super().update_instance(instance)
         return instance
