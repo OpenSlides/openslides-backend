@@ -211,6 +211,16 @@ def build_motion_meeting_user_create_test(collection: str) -> type[BaseActionTes
                 Permissions.Motion.CAN_MANAGE_METADATA,
             )
 
+        def test_create_permissions_locked_out(self) -> None:
+            self.base_permission_test(
+                self.permission_test_models,
+                self.action,
+                {"motion_id": 357, "meeting_user_id": 78},
+                Permissions.Motion.CAN_MANAGE_METADATA,
+                lock_out_calling_user=True,
+                fail=True,
+            )
+
         def test_create_permissions_locked_meeting(self) -> None:
             self.base_locked_out_superadmin_permission_test(
                 self.permission_test_models,
