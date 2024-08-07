@@ -216,8 +216,30 @@ class BaseActionTestCase(BaseSystemTestCase):
             }
         )
 
-    def set_anonymous(self, enable: bool = True, meeting_id: int = 1) -> None:
-        self.set_models({f"meeting/{meeting_id}": {"enable_anonymous": enable}})
+    def set_anonymous(
+        self,
+        enable: bool = True,
+        meeting_id: int = 1,
+        permissions: list[Permission] = [],
+    ) -> None:
+        """Also creates an anonymous group at the group_id meeting_id+3"""
+        next_group_id = self.datastore.reserve_id("group")
+        group_ids = self.get_model(f"meeting/{meeting_id}").get("group_ids", [])
+        self.set_models(
+            {
+                f"meeting/{meeting_id}": {
+                    "enable_anonymous": enable,
+                    "group_ids": [*group_ids, next_group_id],
+                    "anonymous_group_id": next_group_id,
+                },
+                f"group/{next_group_id}": {
+                    "name": "Anonymous",
+                    "meeting_id": meeting_id,
+                    "anonymous_group_for_meeting_id": meeting_id,
+                    "permissions": permissions,
+                },
+            }
+        )
 
     def set_organization_management_level(
         self, level: OrganizationManagementLevel | None, user_id: int = 1

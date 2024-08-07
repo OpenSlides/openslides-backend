@@ -15,7 +15,7 @@ def has_perm(
 ) -> bool:
     meeting = datastore.get(
         fqid_from_collection_and_id("meeting", meeting_id),
-        ["default_group_id", "enable_anonymous", "locked_from_inside"],
+        ["anonymous_group_id", "enable_anonymous", "locked_from_inside"],
         lock_result=False,
     )
     not_locked_from_editing = not meeting.get("locked_from_inside")
@@ -40,11 +40,14 @@ def has_perm(
         if not group_ids:
             return False
     elif user_id == 0:
-        # anonymous users are in the default group
+        # anonymous users are in the anonymous group
         # check if anonymous is allowed
         if not meeting.get("enable_anonymous"):
             raise PermissionDenied(f"Anonymous is not enabled for meeting {meeting_id}")
-        group_ids = [meeting["default_group_id"]]
+        if anonymous_group_id := meeting.get("anonymous_group_id"):
+            group_ids = [anonymous_group_id]
+        else:
+            return False
     else:
         return False
 
