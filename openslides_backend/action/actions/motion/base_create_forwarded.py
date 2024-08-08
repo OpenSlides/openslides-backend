@@ -13,6 +13,7 @@ from ....shared.filters import FilterOperator
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...util.typing import ActionData, ActionResultElement, ActionResults
+from ..motion_change_recommendation.create import MotionChangeRecommendationCreateAction
 from .create_base import MotionCreateBase
 
 
@@ -193,9 +194,31 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
         self.set_origin_ids(instance)
         self.set_text_hash(instance)
         instance["forwarded"] = round(time.time())
+        with_change_recommendations = instance.pop("with_change_recommendations", False)
         self.datastore.apply_changed_model(
             fqid_from_collection_and_id("motion", instance["id"]), instance
         )
+        if with_change_recommendations:
+            change_recos = self.datastore.filter(
+                "motion_change_recommendation",
+                FilterOperator("motion_id", "=", instance["origin_id"]),
+                [
+                    "rejected",
+                    "internal",
+                    "type",
+                    "other_description",
+                    "line_from",
+                    "line_to",
+                    "text",
+                ],
+            )
+            change_reco_data = [
+                {**change_reco, "motion_id": instance["id"]}
+                for change_reco in change_recos.values()
+            ]
+            self.execute_other_action(
+                MotionChangeRecommendationCreateAction, change_reco_data
+            )
         amendment_ids = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["origin_id"]),
             ["amendment_ids"],
@@ -254,6 +277,7 @@ class BaseMotionCreateForwarded(TextHashMixin, MotionCreateBase):
                         "meeting_id": instance["meeting_id"],
                         "use_original_submitter": use_original_submitter,
                         "use_original_number": use_original_number,
+                        "with_change_recommendations": with_change_recommendations,
                     }
                 )
                 amendment.pop("meta_position", 0)

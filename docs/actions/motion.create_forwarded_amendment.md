@@ -13,6 +13,7 @@
     amendment_paragraphs: JSON
     use_original_submitter: boolean;
     use_original_number: boolean;
+    with_change_recommendations: boolean;
 }
 ```
 

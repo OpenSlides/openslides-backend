@@ -1316,3 +1316,225 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             "Sue B. Mid-Edit",
         ]:
             assert name in motion["additional_submitter"]
+
+    def test_with_change_recommendations(self) -> None:
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "motion/12": {"change_recommendation_ids": [1, 2]},
+                "meeting/1": {"motion_change_recommendation_ids": [1, 2]},
+                "motion_change_recommendation/1": {
+                    "line_from": 11,
+                    "line_to": 23,
+                    "text": "Hello world",
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                    "rejected": True,
+                    "internal": True,
+                    "type": "replacement",
+                    "other_description": "Iamachangerecommendation",
+                    "creation_time": 0,
+                },
+                "motion_change_recommendation/2": {
+                    "line_from": 24,
+                    "line_to": 25,
+                    "text": "!",
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                    "type": "replacement",
+                    "creation_time": 1,
+                },
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+                "with_change_recommendations": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        created_id = response.json["results"][0][0]["id"]
+        self.assert_model_exists(
+            f"motion/{created_id}", {"change_recommendation_ids": [3, 4]}
+        )
+        reco = self.assert_model_exists(
+            "motion_change_recommendation/3",
+            {
+                "line_from": 11,
+                "line_to": 23,
+                "text": "Hello world",
+                "motion_id": created_id,
+                "meeting_id": 2,
+                "rejected": True,
+                "internal": True,
+                "type": "replacement",
+                "other_description": "Iamachangerecommendation",
+            },
+        )
+        assert reco["creation_time"] > 0
+        self.assert_model_exists(
+            "motion_change_recommendation/4",
+            {
+                "line_from": 24,
+                "line_to": 25,
+                "text": "!",
+                "type": "replacement",
+                "motion_id": created_id,
+                "meeting_id": 2,
+            },
+        )
+
+    def test_without_change_recommendations(self) -> None:
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "motion/12": {"change_recommendation_ids": [1, 2]},
+                "meeting/1": {"motion_change_recommendation_ids": [1, 2]},
+                "motion_change_recommendation/1": {
+                    "line_from": 11,
+                    "line_to": 23,
+                    "text": "Hello world",
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                    "rejected": True,
+                    "internal": True,
+                    "type": "replacement",
+                    "other_description": "Iamachangerecommendation",
+                    "creation_time": 0,
+                },
+                "motion_change_recommendation/2": {
+                    "line_from": 24,
+                    "line_to": 25,
+                    "text": "!",
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                    "type": "replacement",
+                    "creation_time": 1,
+                },
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+            },
+        )
+        self.assert_status_code(response, 200)
+        created_id = response.json["results"][0][0]["id"]
+        self.assert_model_exists(
+            f"motion/{created_id}", {"change_recommendation_ids": None}
+        )
+        self.assert_model_not_exists("motion_change_recommendation/3")
+
+    def test_with_no_change_recommendations(self) -> None:
+        self.set_models(self.test_model)
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+                "with_change_recommendations": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_with_amendment_change_recommendations(self) -> None:
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "motion/12": {"change_recommendation_ids": [1], "amendment_ids": [13]},
+                "meeting/1": {"motion_change_recommendation_ids": [1, 2]},
+                "motion/13": {
+                    "number": "AMNDMNT1",
+                    "title": "amendment1",
+                    "meeting_id": 1,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "lead_motion_id": 12,
+                    "state_id": 30,
+                    "text": "bla",
+                    "change_recommendation_ids": [2],
+                },
+                "motion_change_recommendation/1": {
+                    "line_from": 11,
+                    "line_to": 23,
+                    "text": "Hello world",
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                    "rejected": True,
+                    "internal": True,
+                    "type": "replacement",
+                    "other_description": "Iamachangerecommendation",
+                    "creation_time": 0,
+                },
+                "motion_change_recommendation/2": {
+                    "line_from": 24,
+                    "line_to": 25,
+                    "text": "!",
+                    "motion_id": 13,
+                    "meeting_id": 1,
+                    "type": "replacement",
+                    "creation_time": 1,
+                },
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+                "with_change_recommendations": True,
+                "with_amendments": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        created_id = response.json["results"][0][0]["id"]
+        self.assert_model_exists(
+            f"motion/{created_id}", {"change_recommendation_ids": [3]}
+        )
+        self.assert_model_exists(
+            f"motion/{created_id+1}",
+            {"change_recommendation_ids": [4], "lead_motion_id": created_id},
+        )
+        reco = self.assert_model_exists(
+            "motion_change_recommendation/3",
+            {
+                "line_from": 11,
+                "line_to": 23,
+                "text": "Hello world",
+                "motion_id": created_id,
+                "meeting_id": 2,
+                "rejected": True,
+                "internal": True,
+                "type": "replacement",
+                "other_description": "Iamachangerecommendation",
+            },
+        )
+        assert reco["creation_time"] > 0
+        self.assert_model_exists(
+            "motion_change_recommendation/4",
+            {
+                "line_from": 24,
+                "line_to": 25,
+                "text": "!",
+                "type": "replacement",
+                "motion_id": created_id + 1,
+                "meeting_id": 2,
+            },
+        )
