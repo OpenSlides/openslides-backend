@@ -1377,7 +1377,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             },
         )
         assert reco["creation_time"] > 0
-        reco = self.assert_model_exists(
+        self.assert_model_exists(
             "motion_change_recommendation/4",
             {
                 "line_from": 24,
@@ -1527,7 +1527,7 @@ class MotionCreateForwardedTest(BaseActionTestCase):
             },
         )
         assert reco["creation_time"] > 0
-        reco = self.assert_model_exists(
+        self.assert_model_exists(
             "motion_change_recommendation/4",
             {
                 "line_from": 24,
