@@ -192,7 +192,7 @@
 ## Action
 Updates the meeting.
 
-If `set_as_template` is `True`, `template_for_organization_id` has to be set to `1`. If it is `False`, it has to be set to `None` and if there are currently no users in the meetings andin group, and exception needs to be raised.
+If `set_as_template` is `True`, `template_for_organization_id` has to be set to `1`. If it is `False`, `template_for_organization_id` has to be set to `None` and if there are currently no users in the meetings admin group, an exception needs to be raised.
 `reference_projector_id` can only be set to a projector, which is not internal.
 
 This action doesn't allow for a meeting to be set as a template and have `locked_from_inside` set to true at the same time. if this would be the result of an action call, an exception will be thrown.

@@ -56,8 +56,8 @@ class UserDelete(UserScopeMixin, DeleteAction, AdminIntegrityCheckMixin):
                     meeting_ids_to_user_ids[meeting_id] = [id_]
                 else:
                     meeting_ids_to_user_ids[meeting_id].append(id_)
-        meetings = self.get_meeting_data_from_per_meeting_dict(meeting_ids_to_user_ids)
-        self.filter_templates_from_per_meeting_dict(meeting_ids_to_user_ids, meetings)
+        meetings = self.get_meeting_data_from_meeting_ids(list(meeting_ids_to_user_ids))
+        self.filter_templates_from_meetings_data_dict(meeting_ids_to_user_ids, meetings)
         if not len(meeting_ids_to_user_ids):
             return
         self.check_admin_group_integrity(

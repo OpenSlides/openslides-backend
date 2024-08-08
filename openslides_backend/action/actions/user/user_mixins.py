@@ -315,24 +315,24 @@ class AdminIntegrityCheckMixin(Action):
                 f"Cannot remove last admin from meeting(s) {', '.join(sorted(broken_meetings))}"
             )
 
-    def get_meeting_data_from_per_meeting_dict(
-        self, per_meeting_dict: dict[int, Any]
+    def get_meeting_data_from_meeting_ids(
+        self, meeting_ids: list[int]
     ) -> dict[int, PartialModel]:
-        if len(per_meeting_dict):
+        if len(meeting_ids):
             return self.datastore.get_many(
                 [
                     GetManyRequest(
                         "meeting",
-                        list(per_meeting_dict.keys()),
+                        meeting_ids,
                         ["admin_group_id", "template_for_organization_id"],
                     )
                 ]
             )["meeting"]
         return {}
 
-    def filter_templates_from_per_meeting_dict(
-        self, per_meeting_dict: dict[int, Any], meeting_data: dict[int, PartialModel]
+    def filter_templates_from_meetings_data_dict(
+        self, meetings_data_dict: dict[int, Any], meeting_data: dict[int, PartialModel]
     ) -> None:
         for meeting_id, meeting in meeting_data.items():
             if meeting.get("template_for_organization_id"):
-                del per_meeting_dict[meeting_id]
+                del meetings_data_dict[meeting_id]

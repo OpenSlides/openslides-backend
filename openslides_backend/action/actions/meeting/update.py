@@ -253,7 +253,7 @@ class MeetingUpdate(
             )
             if not admin_group.get("meeting_user_ids"):
                 raise ActionException(
-                    "Cannot remove meeting template status until it has administrators"
+                    "Can only remove meeting template status if it has at least one administrator."
                 )
             instance["template_for_organization_id"] = None
 

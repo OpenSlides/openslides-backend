@@ -2642,6 +2642,7 @@ class ParticipantJsonUploadForUseInImport(BaseActionTestCase):
         self.add_group_permissions(4, [Permissions.User.CAN_UPDATE])
         self.add_group_permissions(7, [Permissions.User.CAN_MANAGE])
         self.create_user("test", [2])
+        self.create_user("test2", [2])
         response = self.request(
             "participant.json_upload",
             {

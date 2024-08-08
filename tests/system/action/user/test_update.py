@@ -2774,6 +2774,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 f"user/{users['committeead60'][0]}": {"committee_management_ids": [60]},
             }
         )
+        self.create_user("dummy_meeting_ad", [2])
         return users
 
     def test_update_locked_out_on_self_error(self) -> None:

@@ -768,7 +768,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Cannot remove meeting template status until it has administrators"
+            "Can only remove meeting template status if it has at least one administrator."
             in response.json["message"]
         )
 

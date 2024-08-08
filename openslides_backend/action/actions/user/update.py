@@ -166,10 +166,10 @@ class UserUpdate(
             meeting_ids_to_user_ids_to_group_ids[date["meeting_id"]][date["id"]] = date[
                 "group_ids"
             ]
-        meetings = self.get_meeting_data_from_per_meeting_dict(
-            meeting_ids_to_user_ids_to_group_ids
+        meetings = self.get_meeting_data_from_meeting_ids(
+            list(meeting_ids_to_user_ids_to_group_ids)
         )
-        self.filter_templates_from_per_meeting_dict(
+        self.filter_templates_from_meetings_data_dict(
             meeting_ids_to_user_ids_to_group_ids, meetings
         )
         if not len(meeting_ids_to_user_ids_to_group_ids):

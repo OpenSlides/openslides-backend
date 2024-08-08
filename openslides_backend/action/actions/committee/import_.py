@@ -7,20 +7,20 @@ from openslides_backend.action.actions.organization_tag.create import (
 )
 from openslides_backend.action.util.typing import ActionData, ActionResults
 from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...mixins.import_mixins import BaseImportAction, ImportRow, ImportState, Lookup
 from ...util.register import register_action
 from .create import CommitteeCreate
+from .import_mixin import CommitteeImportMixin
 from .update import CommitteeUpdateAction
 
 DEFAULT_TAG_COLOR = "#2196f3"
 
 
 @register_action("committee.import")
-class CommitteeImport(BaseImportAction):
+class CommitteeImport(BaseImportAction, CommitteeImportMixin):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
     import_name = "committee"
@@ -53,37 +53,9 @@ class CommitteeImport(BaseImportAction):
         self.validate_field(row, self.committee_map, "forward_to_committees")
         self.validate_field(row, self.user_map, "managers")
         self.validate_field(row, self.user_map, "meeting_admins")
-        if row["data"].get("meeting_name") and not any(
-            admin
-            for admin in row["data"].get("meeting_admins", [])
-            if admin.get("info") == ImportState.DONE
-        ):
-            admin_ids: list[int] = []
-            if (
-                template_id := row["data"].get("meeting_template", {}).get("id")
-            ) and row["data"].get("meeting_template", {}).get(
-                "info"
-            ) == ImportState.DONE:
-                groups = self.datastore.filter(
-                    "group",
-                    FilterOperator("admin_group_for_meeting_id", "=", template_id),
-                    ["meeting_user_ids"],
-                )
-                admin_ids = [
-                    meeting_user_id
-                    for group in groups.values()
-                    for meeting_user_id in (group.get("meeting_user_ids") or [])
-                ]
-            if not len(admin_ids):
-                self.import_state = ImportState.ERROR
-                row["state"] = ImportState.ERROR
-                row["data"]["meeting_admins"] = [
-                    *row["data"].get("meeting_admins", []),
-                    {"value": "", "info": ImportState.ERROR},
-                ]
-                row["messages"].append(
-                    "Error: Meeting cannot be created without admins"
-                )
+        self.check_admin_groups_for_meeting(row)
+        if row["state"] == ImportState.ERROR:
+            self.import_state = ImportState.ERROR
         self.validate_field(row, self.organization_tag_map, "organization_tags")
 
     def handle_relation_fields(self, entry: dict[str, Any]) -> dict[str, Any]:

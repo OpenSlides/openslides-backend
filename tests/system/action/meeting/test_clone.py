@@ -86,7 +86,9 @@ class MeetingClone(BaseActionTestCase):
                 **{field: 1 for field in Meeting.reverse_default_projectors()},
             },
         }
-        self.test_models_with_admin = self.test_models.copy()
+        self.test_models_with_admin = {
+            key: data.copy() for key, data in self.test_models.items()
+        }
         self.test_models_with_admin["user/1"] = {
             "meeting_user_ids": [1],
             "meeting_ids": [1],
@@ -104,8 +106,6 @@ class MeetingClone(BaseActionTestCase):
         self.test_models_with_admin["organization/1"]["user_ids"] = [1]
 
     def test_clone_without_users(self) -> None:
-        del self.test_models["meeting/1"]["meeting_user_ids"]
-        del self.test_models["group/2"]["meeting_user_ids"]
         self.set_models(self.test_models)
 
         response = self.request(
@@ -440,7 +440,6 @@ class MeetingClone(BaseActionTestCase):
         self.test_models["meeting/1"]["user_ids"] = [1, 11]
         self.test_models["meeting/1"]["meeting_user_ids"] = [2, 3]
         self.test_models["group/1"]["meeting_user_ids"] = [2, 3]
-        del self.test_models["group/2"]["meeting_user_ids"]
         self.test_models["organization/1"]["user_ids"] = [1, 11, 12, 13]
         self.test_models["organization/1"]["committee_ids"] = [1, 2]
         self.set_models(self.test_models)

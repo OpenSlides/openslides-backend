@@ -31,7 +31,10 @@ class BaseUserImport(BaseImportAction):
         return {}
 
     def check_all_rows(self) -> None:
-        pass
+        """
+        Function for bulk-checks of the import rows after validation via 'validate_entry'.
+        Should be overwritten by subclasses if it is required.
+        """
 
     def handle_create_relations(self, instance: dict[str, Any]) -> None:
         pass
