@@ -13,13 +13,14 @@ from ....permissions.management_levels import OrganizationManagementLevel
 from ...mixins.import_mixins import BaseImportAction, ImportRow, ImportState, Lookup
 from ...util.register import register_action
 from .create import CommitteeCreate
+from .import_mixin import CommitteeImportMixin
 from .update import CommitteeUpdateAction
 
 DEFAULT_TAG_COLOR = "#2196f3"
 
 
 @register_action("committee.import")
-class CommitteeImport(BaseImportAction):
+class CommitteeImport(BaseImportAction, CommitteeImportMixin):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     skip_archived_meeting_check = True
     import_name = "committee"
@@ -52,6 +53,9 @@ class CommitteeImport(BaseImportAction):
         self.validate_field(row, self.committee_map, "forward_to_committees")
         self.validate_field(row, self.user_map, "managers")
         self.validate_field(row, self.user_map, "meeting_admins")
+        self.check_admin_groups_for_meeting(row)
+        if row["state"] == ImportState.ERROR:
+            self.import_state = ImportState.ERROR
         self.validate_field(row, self.organization_tag_map, "organization_tags")
 
     def handle_relation_fields(self, entry: dict[str, Any]) -> dict[str, Any]:

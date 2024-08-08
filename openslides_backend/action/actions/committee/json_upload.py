@@ -17,10 +17,13 @@ from ...mixins.import_mixins import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .import_mixin import CommitteeImportMixin
 
 
 @register_action("committee.json_upload")
-class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
+class CommitteeJsonUpload(
+    BaseJsonUploadAction, CommitteeImportMixin, MeetingCheckTimesMixin
+):
     model = Committee()
     schema = DefaultSchema(Committee()).get_default_schema(
         additional_required_fields={
@@ -263,6 +266,7 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
                         row["messages"].append(
                             f"The meeting template {template} was not found, the meeting will be created without a template."
                         )
+            self.check_admin_groups_for_meeting(row)
 
     def is_same_day(self, a: int | None, b: int | None) -> bool:
         if a is None or b is None:
@@ -320,17 +324,18 @@ class CommitteeJsonUpload(BaseJsonUploadAction, MeetingCheckTimesMixin):
         }
         for row in self.rows:
             entry = row["data"]
-            if entry.get("meeting_name"):
-                if (
-                    entry.get("meeting_template")
-                    and entry["meeting_template"]["info"] == ImportState.DONE
-                ):
-                    statistics_data["meetings_cloned"] += 1
-                else:
-                    statistics_data["meetings_created"] += 1
-            for tag in entry.get("organization_tags", []):
-                if tag["info"] == ImportState.NEW:
-                    statistics_data["organization_tags_created"] += 1
+            if not row["state"] == ImportState.ERROR:
+                if entry.get("meeting_name"):
+                    if (
+                        entry.get("meeting_template")
+                        and entry["meeting_template"]["info"] == ImportState.DONE
+                    ):
+                        statistics_data["meetings_cloned"] += 1
+                    else:
+                        statistics_data["meetings_created"] += 1
+                for tag in entry.get("organization_tags", []):
+                    if tag["info"] == ImportState.NEW:
+                        statistics_data["organization_tags_created"] += 1
         self.statistics.extend(
             {"name": key, "value": value} for key, value in statistics_data.items()
         )

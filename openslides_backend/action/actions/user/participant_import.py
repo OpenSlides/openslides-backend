@@ -30,6 +30,12 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
         instance = super().update_instance(instance)
         return instance
 
+    def check_all_rows(self) -> None:
+        if (
+            not self.check_meeting_admin_integrity(self.meeting_id, self.rows)
+        ) and self.import_state == ImportState.DONE:
+            self.import_state = ImportState.ERROR
+
     def update_models_to_create(self, model_name: str, field_name: str) -> None:
         self.models_to_create[field_name] = []
         to_create: set[str] = {

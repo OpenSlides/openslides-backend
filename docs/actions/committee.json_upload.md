@@ -34,9 +34,13 @@ Besides the usual headers as seen in the payload (`name`, `type`, `is_list`), th
 - `organization_tags`:
   - `done`: The tag was found in the datastore.
   - `new`: The tag will be newly created with color `#2196f3`.
-- `managers` and `meeting_admins`:
+- `managers`:
   - `done`: The user was found in the datastore.
   - `warning`: The user was not found and will not be part of the import.
+- `meeting_admins`:
+  - `done`: The user was found in the datastore.
+  - `warning`: The user was not found and will not be part of the import.
+  - `error`: Will be entered in extra object if no user was found here or in the otional templates admins
 - `meeting_template`:
   - `done`: The meeting was found in the datastore, the new meeting will be cloned from it.
   - `warning`: The meeting was not found and the new meeting will not be cloned, but freshly created.
@@ -56,6 +60,7 @@ meetings_created: int
 meetings_cloned: int
 organization_tags_created: int
 ```
+Rows with error state will not add onto the `meetings_created`, `meetings_cloned` and `organization_tags_created` statistic fields.
 See [common description](preface_special_imports.md#general-format-of-the-result-send-to-the-client-for-preview).
 
 ## Action

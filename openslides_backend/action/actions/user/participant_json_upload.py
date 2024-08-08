@@ -71,6 +71,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 },
             ]
         )
+        self.check_meeting_admin_integrity(self.meeting_id, self.rows)
         return data
 
     def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:

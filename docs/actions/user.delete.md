@@ -4,7 +4,7 @@
 ```
 
 ## Action
-Deletes a user. Prevent to delete oneself.
+Deletes a user. Prevents to delete oneself. Prevents to delete last admin group member of non-template meetings.
 
 All unstarted speakers of the deleted user are deleted.
 
