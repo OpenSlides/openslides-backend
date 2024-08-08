@@ -1412,12 +1412,94 @@ class MeetingClone(BaseActionTestCase):
             }
         )
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action meeting.clone. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
+        )
+
+    def test_permissions_explicit_source_committee_permission(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "user/1": {
+                    "committee_management_ids": [1],
+                    "committee_ids": [1],
+                    "organization_management_level": None,
+                },
+            }
+        )
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "committee_id": 1, "admin_ids": [1]}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
+        )
+        self.assert_model_exists(
+            "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 1}
+        )
+
+    def test_permissions_foreign_template_meeting_cml(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "committee/2": {"organization_id": 1},
+                "user/1": {
+                    "committee_management_ids": [1, 2],
+                    "committee_ids": [2],
+                    "organization_management_level": None,
+                },
+                "meeting/1": {"template_for_organization_id": 1},
+            }
+        )
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "committee_id": 2, "admin_ids": [1]}
+        )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
         )
         self.assert_model_exists(
             "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 2}
+        )
+
+    def test_permissions_foreign_meeting_cml_error(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "committee/2": {"organization_id": 1},
+                "user/1": {
+                    "committee_management_ids": [1, 2],
+                    "committee_ids": [1, 2],
+                    "organization_management_level": None,
+                },
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action meeting.clone. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
+        )
+
+    def test_permissions_foreign_committee_cml_error(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "committee/2": {"organization_id": 1},
+                "user/1": {
+                    "committee_management_ids": [1],
+                    "committee_ids": [1],
+                    "organization_management_level": None,
+                },
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action meeting.clone. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
         )
 
     def test_permissions_oml_can_manage(self) -> None:
@@ -1454,7 +1536,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Missing permission: CommitteeManagementLevel can_manage in committee 2",
+            "You are not allowed to perform action meeting.clone. Missing OrganizationManagementLevel: can_manage_organization",
             response.json["message"],
         )
 
