@@ -25,6 +25,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
                 "number",
                 "vote_weight",
                 "comment",
+                "locked_out",
             ),
             "is_present": {"type": "boolean"},
             "structure_level": str_list_schema,
@@ -45,6 +46,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
         {"property": "comment", "type": "string", "is_object": True},
         {"property": "is_present", "type": "boolean", "is_object": True},
         {"property": "groups", "type": "string", "is_object": True, "is_list": True},
+        {"property": "locked_out", "type": "boolean", "is_object": True},
     ]
     import_name = "participant"
     lookups: dict[str, dict[str, int]] = {}
@@ -75,7 +77,7 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
     def validate_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         entry["meeting_id"] = self.meeting_id
         results = super().validate_entry(entry)
-        messages = results["messages"]
+        messages: list[str] = results["messages"]
         entry = results["data"]
 
         # validate groups
@@ -128,6 +130,9 @@ class ParticipantJsonUpload(BaseUserJsonUpload, ParticipantCommon):
             else:
                 if not isinstance(entry[field], dict):
                     entry[field] = {"value": entry[field], "info": ImportState.DONE}
+
+        # validate locking
+        self.validate_locked_out_status(entry, messages, group_objects, results)
 
         if group_objects:
             entry["groups"] = group_objects

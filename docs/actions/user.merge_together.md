@@ -112,6 +112,7 @@ The primary model is updated/re-created with the information from the secondary 
 - `motion_submitter_ids`, `personal_note_ids` and `speaker_ids` are create-merged
 - other relation-lists are set to the union of their content among all selected users
 - `comment`, `number`, `about_me`, `vote_weight`, `vote_delegated_to_id` are set to the value from the highest ranked model that has the field
+- `locked_out` is set to whatever the primary model of the sub-merge has
 
 #### Personal note merge
 Equivalence is determined via equivalence of `content_object_id`
