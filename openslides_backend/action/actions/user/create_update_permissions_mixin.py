@@ -130,9 +130,13 @@ class PermissionVarStore:
             for meeting_user_id in meeting_user_ids:
                 meeting_user = self.datastore.get(
                     fqid_from_collection_and_id("meeting_user", meeting_user_id),
-                    ["group_ids"],
+                    ["group_ids", "locked_out"],
                 )
-                group_ids = meeting_user.get("group_ids")
+                group_ids = (
+                    meeting_user.get("group_ids")
+                    if not meeting_user.get("locked_out")
+                    else []
+                )
                 if group_ids:
                     for group_id in group_ids:
                         if group_id not in all_groups:
@@ -195,6 +199,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             "vote_delegated_to_id",
             "vote_delegations_from_ids",
             "is_present_in_meeting_ids",
+            "locked_out",
             "is_present",  # participant import
         ],
         "C": ["meeting_id", "group_ids"],

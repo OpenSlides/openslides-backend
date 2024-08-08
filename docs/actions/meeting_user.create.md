@@ -20,6 +20,7 @@
     chat_message_ids: Id[];
     vote_delegated_to_id: Id;
     vote_delegations_from_ids: Id[];
+    locked_out: boolean;
 
 // Group B
     about_me: HTML;
@@ -31,6 +32,7 @@
 
 ## Action
 The action creates a meeting_user item. `vote_delegated_to_id` and `vote_delegations_from_ids` have special checks, see user checks.
+If `locked_out` is set, it checks against the present `user.can_manage` and all admin statuses and throws an error if any are present.
 
 ## Permissions
 Group A: The request user needs `user.can_manage`.
