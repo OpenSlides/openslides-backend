@@ -178,6 +178,7 @@ class MeetingUserMergeMixin(
             {
                 "ignore": [
                     "user_id",
+                    "locked_out",
                 ],
                 "priority": [
                     "comment",

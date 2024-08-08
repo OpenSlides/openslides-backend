@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission, Permissions
@@ -106,6 +106,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "vote_delegations_from_ids": [223],
                 "comment": "comment<iframe></iframe>",
                 "about_me": "<p>about</p><iframe></iframe>",
+                "locked_out": True,
                 **request_fields,
             },
         )
@@ -127,6 +128,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "vote_delegations_from_ids": [223],
                 "comment": "comment&lt;iframe&gt;&lt;/iframe&gt;",
                 "about_me": "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;",
+                "locked_out": True,
                 **request_fields,
             },
         )
@@ -2677,5 +2679,338 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Cannot add explicit users to a meetings anonymous group",
+            response.json["message"],
+        )
+
+    def create_data_for_locked_out_test(self) -> dict[str, tuple[int, int | None]]:
+        """
+        Creates two meetings and a bunch of users with different roles.
+        The return dict has the format {username: (user_id,meeting_user_id)}
+        """
+        self.create_meeting()  # committee:60; groups: default:1, admin:2, can_manage:3
+        self.create_meeting(4)  # committee:63; groups: default:4, admin:5, can_update:6
+        self.add_group_permissions(3, [Permissions.User.CAN_MANAGE])
+        self.add_group_permissions(6, [Permissions.User.CAN_UPDATE])
+        users: dict[str, tuple[int, int | None]] = {}
+        users["superad"] = (
+            self.create_user("superad", [], OrganizationManagementLevel.SUPERADMIN),
+            None,
+        )
+        users["orgaad"] = (
+            self.create_user(
+                "orgaad", [], OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+            ),
+            None,
+        )
+        users["userad"] = (
+            self.create_user(
+                "userad", [], OrganizationManagementLevel.CAN_MANAGE_USERS
+            ),
+            None,
+        )
+        users["committeead60"] = self.create_user("committeead60"), None
+        users["meetingad1"] = self.create_user("meetingad1", [2]), 1
+        users["can_manage1"] = self.create_user("can_manage1", [3]), 2
+        users["can_update4"] = self.create_user("can_update1", [6]), 3
+        users["participant1"] = self.create_user("participant1", [1]), 4
+        users["account"] = self.create_user("account"), None
+        self.set_models(
+            {
+                "committee/60": {"manager_ids": [users["committeead60"][0]]},
+                f"user/{users['committeead60'][0]}": {"committee_management_ids": [60]},
+            }
+        )
+        return users
+
+    def test_update_locked_out_on_self_error(self) -> None:
+        self.create_data_for_locked_out_test()
+        self.set_user_groups(1, [1])
+        response = self.request(
+            "user.update",
+            {
+                "id": 1,
+                "meeting_id": 1,
+                "locked_out": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You may not lock yourself out of a meeting",
+            response.json["message"],
+        )
+
+    def assert_lock_out_user(
+        self,
+        username: Literal[
+            "superad",
+            "orgaad",
+            "userad",
+            "committeead60",
+            "meetingad1",
+            "can_manage1",
+            "can_update4",
+            "participant1",
+            "account",
+        ],
+        meeting_id: int,
+        lock_out: bool | None = True,
+        other_data: dict[str, Any] = {},
+        add_to_meeting: int | None = None,
+        lock_before: bool = False,
+        errormsg: str | None = None,
+    ) -> None:
+        """
+        Checks if the locking errors work based on the data from the create_data_for_locked_out_test function.
+        Parameters are:
+        - username: The name of the user that should be updated
+        - meeting_id: Id of the meeting in which the user should potentially be locked
+        - lock_out: Whether the 'locked_out' field should be set and to what value (None means leave out)
+        - other_data: The rest of the payload
+        - add_to_meeting: Will add the user to the specified meeting's default group beforehand
+        - lock_before: If true, the user will be locked out of the meeting before calling the action
+        - errormsg: The expected error message, if left empty the request is expected to end in success
+        """
+        users = self.create_data_for_locked_out_test()
+        user_id, meeting_user_id = users[username]
+        if add_to_meeting:
+            self.set_user_groups(user_id, [meeting_id])
+        if lock_before and meeting_user_id:
+            self.set_models({f"meeting_user/{meeting_user_id}": {"locked_out": True}})
+        data = {
+            "id": user_id,
+            "meeting_id": meeting_id,
+            **other_data,
+        }
+        if lock_out is not None:
+            data["locked_out"] = lock_out
+        response = self.request(
+            "user.update",
+            data,
+        )
+        if errormsg is not None:
+            self.assert_status_code(response, 400)
+            self.assertIn(
+                errormsg,
+                response.json["message"],
+            )
+        else:
+            self.assert_status_code(response, 200)
+
+    def test_update_locked_out_foreign_cml_allowed(self) -> None:
+        self.assert_lock_out_user(
+            "account", 1, other_data={"committee_management_ids": [63]}
+        )
+
+    def test_update_locked_out_superadmin_error(self) -> None:
+        self.assert_lock_out_user(
+            "account",
+            1,
+            other_data={"organization_management_level": "superadmin"},
+            errormsg="Cannot give OrganizationManagementLevel superadmin to user 10 as he is locked out of meeting(s) 1",
+        )
+
+    def test_update_locked_out_other_oml_error(self) -> None:
+        self.assert_lock_out_user(
+            "account",
+            1,
+            other_data={"organization_management_level": "can_manage_users"},
+            errormsg="Cannot give OrganizationManagementLevel can_manage_users to user 10 as he is locked out of meeting(s) 1",
+        )
+
+    def test_update_locked_out_cml_error(self) -> None:
+        self.assert_lock_out_user(
+            "account",
+            1,
+            other_data={"committee_management_ids": [60]},
+            errormsg="Cannot set user 10 as manager for committee(s) 60 due to being locked out of meeting(s) 1",
+        )
+
+    def test_update_locked_out_meeting_admin_error(self) -> None:
+        self.assert_lock_out_user(
+            "account",
+            1,
+            other_data={"group_ids": [2]},
+            errormsg="Group(s) 2 have user.can_manage permissions and may therefore not be used by users who are locked out",
+        )
+
+    def test_update_locked_out_can_update_allowed(self) -> None:
+        self.assert_lock_out_user(
+            "account",
+            4,
+            other_data={"group_ids": [6]},
+        )
+
+    def test_update_locked_out_on_foreign_cml_allowed(self) -> None:
+        self.assert_lock_out_user("committeead60", 4, add_to_meeting=4)
+
+    def test_update_locked_out_on_superadmin_error(self) -> None:
+        self.assert_lock_out_user(
+            "superad",
+            1,
+            add_to_meeting=1,
+            errormsg="Cannot lock user from meeting 1 as long as he has the OrganizationManagementLevel superadmin",
+        )
+
+    def test_update_locked_out_on_other_oml_error(self) -> None:
+        self.assert_lock_out_user(
+            "orgaad",
+            1,
+            add_to_meeting=1,
+            errormsg="Cannot lock user from meeting 1 as long as he has the OrganizationManagementLevel can_manage_organization",
+        )
+
+    def test_update_locked_out_on_cml_error(self) -> None:
+        self.assert_lock_out_user(
+            "committeead60",
+            1,
+            errormsg="Cannot lock user out of meeting 1 as he is manager of the meetings committee",
+        )
+
+    def test_update_locked_out_on_meeting_admin_error(self) -> None:
+        self.assert_lock_out_user(
+            "meetingad1",
+            1,
+            errormsg="Group(s) 2 have user.can_manage permissions and may therefore not be used by users who are locked out",
+        )
+
+    def test_update_locked_out_on_can_manage_error(self) -> None:
+        self.assert_lock_out_user(
+            "can_manage1",
+            1,
+            errormsg="Group(s) 3 have user.can_manage permissions and may therefore not be used by users who are locked out",
+        )
+
+    def test_update_locked_out_on_can_update_allowed(self) -> None:
+        self.assert_lock_out_user(
+            "can_update4",
+            4,
+        )
+
+    def test_update_locked_out_on_foreign_meeting_admin_allowed(self) -> None:
+        self.assert_lock_out_user("meetingad1", 4, add_to_meeting=4)
+
+    def test_update_locked_out_on_foreign_can_manage_allowed(self) -> None:
+        self.assert_lock_out_user("can_manage1", 4, add_to_meeting=4)
+
+    def test_update_other_oml_on_locked_out_user_error(self) -> None:
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"organization_management_level": "can_manage_users"},
+            lock_out=None,
+            lock_before=True,
+            errormsg="Cannot give OrganizationManagementLevel can_manage_users to user 9 as he is locked out of meeting(s) 1",
+        )
+
+    def test_update_cml_on_locked_out_user_error(self) -> None:
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"committee_management_ids": [60]},
+            lock_out=None,
+            lock_before=True,
+            errormsg="Cannot set user 9 as manager for committee(s) 60 due to being locked out of meeting(s) 1",
+        )
+
+    def test_update_meeting_admin_on_locked_out_user_error(self) -> None:
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"group_ids": [2]},
+            lock_out=None,
+            lock_before=True,
+            errormsg="Group(s) 2 have user.can_manage permissions and may therefore not be used by users who are locked out",
+        )
+
+    def test_update_locked_out_remove_superadmin(self) -> None:
+        self.assert_lock_out_user(
+            "superad", 1, other_data={"organization_management_level": None}
+        )
+
+    def test_update_locked_out_remove_cml(self) -> None:
+        self.assert_lock_out_user(
+            "committeead60", 1, other_data={"committee_management_ids": None}
+        )
+
+    def test_update_locked_out_remove_meeting_admin(self) -> None:
+        self.assert_lock_out_user(
+            "meetingad1",
+            1,
+            other_data={"group_ids": [1]},
+        )
+
+    def test_update_locked_out_remove_can_manage(self) -> None:
+        self.assert_lock_out_user(
+            "can_manage1",
+            1,
+            other_data={"group_ids": [1]},
+        )
+
+    def test_update_oml_remove_locked_out(self) -> None:
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"organization_management_level": "can_manage_organization"},
+            lock_before=True,
+            lock_out=False,
+        )
+
+    def test_update_cml_remove_locked_out(self) -> None:
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"committee_management_ids": [60]},
+            lock_before=True,
+            lock_out=False,
+        )
+
+    def test_update_meeting_admin_remove_locked_out(self) -> None:
+        self.assert_lock_out_user(
+            "participant1",
+            1,
+            other_data={"group_ids": [2]},
+            lock_before=True,
+            lock_out=False,
+        )
+
+    def test_update_can_update_remove_locked_out(self) -> None:
+        self.assert_lock_out_user(
+            "account",
+            4,
+            other_data={"group_ids": [6]},
+            lock_before=True,
+            lock_out=False,
+        )
+
+    def test_create_permission_as_locked_out(self) -> None:
+        self.permission_setup()
+        self.create_meeting(base=4)
+        meeting_user_ids = self.set_user_groups(self.user_id, [3, 6])  # Admin-groups
+        self.set_group_permissions(3, [Permissions.User.CAN_UPDATE])
+        self.set_group_permissions(6, [Permissions.User.CAN_UPDATE])
+        self.set_user_groups(111, [1, 4])
+        self.set_models(
+            {
+                "meeting/4": {"committee_id": 60},
+                "committee/60": {"meeting_ids": [1, 4]},
+                **{
+                    f"meeting_user/{m_user_id}": {"locked_out": True}
+                    for m_user_id in meeting_user_ids
+                },
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "meeting_id": 1,
+                "group_ids": [1],
+            },
+        )
+
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committee of following meeting or Permission user.can_update for meeting 1",
             response.json["message"],
         )

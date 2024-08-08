@@ -1,5 +1,6 @@
 from openslides_backend.action.mixins.meeting_user_helper import (
     get_groups_from_meeting_user,
+    get_meeting_user,
 )
 
 from ..services.datastore.commands import GetManyRequest
@@ -36,7 +37,15 @@ def has_perm(
             ):
                 return True
 
-        group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
+        meeting_user = get_meeting_user(
+            datastore, meeting_id, user_id, ["group_ids", "locked_out"]
+        )
+        if not meeting_user:
+            group_ids = []
+        elif meeting_user.get("locked_out"):
+            return False
+        else:
+            group_ids = meeting_user.get("group_ids", [])
         if not group_ids:
             return False
     elif user_id == 0:

@@ -21,6 +21,7 @@
     vote_weight: decimal;
     about_me: HTML;
     comment: HTML;
+    locked_out: boolean;
 
     structure_level_id: Id;
     vote_delegated_to_id: Id;
@@ -60,6 +61,7 @@ Creates a user.
 * If `saml_id` is set in payload, there may be no `password` or `default_password` set or generated and `set_change_own_password` will be set to False.
 * The `member_number` must be unique within all users.
 * Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
+* The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the created user and throws an error if that is the case.
 
 ### Generate a username
 If no username is given, it will be set from a given `saml_id`. Otherwise it is generated from `first_name` and `last_name`. Join all non-empty values from these two fields in the given order. If both fields are empty, raise an error, that one of the fields is required (see [OS3](https://github.com/OpenSlides/OpenSlides/blob/main/server/openslides/users/serializers.py#L90)). Remove all spaces from a generated username.
