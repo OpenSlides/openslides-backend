@@ -11,11 +11,20 @@ from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .history_mixin import MeetingUserHistoryMixin
-from .mixin import MeetingUserGroupMixin, CheckLockOutPermissionMixin, meeting_user_standard_fields
+from .mixin import (
+    CheckLockOutPermissionMixin,
+    MeetingUserGroupMixin,
+    meeting_user_standard_fields,
+)
 
 
 @register_action("meeting_user.create", action_type=ActionType.BACKEND_INTERNAL)
-class MeetingUserCreate(MeetingUserHistoryMixin, CreateAction, MeetingUserGroupMixin, CheckLockOutPermissionMixin):
+class MeetingUserCreate(
+    MeetingUserHistoryMixin,
+    CreateAction,
+    MeetingUserGroupMixin,
+    CheckLockOutPermissionMixin,
+):
     """
     Action to create a meeting user.
     """
