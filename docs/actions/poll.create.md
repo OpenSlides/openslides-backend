@@ -62,7 +62,7 @@ If the `type` is `pseudoanonymous`, `is_pseudoanonymized` has to be set to `true
 
 If the `content_object_id` points to a `motion` and the `motion_state` of the motion misses `allow_create_poll`, it is forbidden to create a poll.
 
-The `entitled_user_ids` may not contain the meetings `anonymous_group_id`.
+The `entitled_group_ids` may not contain the meetings `anonymous_group_id`.
 
 ## Permissions
 The request user needs:

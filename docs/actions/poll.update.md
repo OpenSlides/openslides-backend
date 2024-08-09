@@ -37,7 +37,7 @@ For analog polls: If the state is created and at least one vote value is given (
 
 For electronic polls some fields can only be updated, if the state is *created*.
 
-The `entitled_user_ids` may not contain the meetings `anonymous_group_id`.
+The `entitled_group_ids` may not contain the meetings `anonymous_group_id`.
 
 ## Permissions
 The request user needs:
