@@ -29,3 +29,4 @@ The user must be the committee manager of the given committee.
 ### Info
 
 The `meeting` object must contain a valid `_migration_index` on root level.
+The `meeting` object cannot have `locked_from_inside` set to true.

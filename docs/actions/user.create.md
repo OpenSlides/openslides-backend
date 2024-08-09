@@ -89,10 +89,10 @@ The request user needs `user.can_manage` in the meeting of meeting_id.
 
 Group C:
 
-The request user must satisfy at least one of:
-- the OML `can_manage_users`
-- For each meeting:
-  * `user.can_manage` for the meeting, OR
+For each meeting the request user must satisfy at least one of:
+- `user.can_manage` for the meeting, OR
+- If the meeting is not locked via `locked_from_inside` setting:
+  * the OML `can_manage_users` in the organization
   * The CML `can_manage` for the committee of the meeting
 
 Group D:

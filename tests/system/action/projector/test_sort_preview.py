@@ -61,3 +61,10 @@ class ProjectorSortPreview(BaseActionTestCase):
             {"id": 1, "projection_ids": [2, 3, 1]},
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_sort_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projector.sort_preview",
+            {"id": 1, "projection_ids": [2, 3, 1]},
+        )

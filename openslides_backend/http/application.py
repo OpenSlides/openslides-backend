@@ -71,6 +71,7 @@ class OpenSlidesBackendWSGIApplication(WSGIApplication):
                 )
             except ActionException as e:
                 self.logger.error(f"Initial data creation failed: {e}")
+                return
 
             # in prod mode, set superadmin password
             if not self.env.is_dev_mode():

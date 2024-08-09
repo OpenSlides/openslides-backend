@@ -17,6 +17,7 @@
     users_email_replyto: string;
     users_email_subject: string;
     users_email_body: text;
+    require_duplicate_from: boolean;
     
 // Group B
     enable_electronic_voting: boolean;

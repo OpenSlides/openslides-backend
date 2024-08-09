@@ -436,12 +436,15 @@ class BaseActionTestCase(BaseSystemTestCase):
             Permission | list[Permission] | OrganizationManagementLevel | None
         ) = None,
         fail: bool | None = None,
+        lock_meeting: bool = False,
     ) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         if models:
             self.set_models(models)
+        if lock_meeting:
+            self.set_models({"meeting/1": {"locked_from_inside": True}})
         self.set_user_groups(self.user_id, [3])
         if permission:
             if isinstance(permission, OrganizationManagementLevel):
@@ -461,6 +464,21 @@ class BaseActionTestCase(BaseSystemTestCase):
             )
         else:
             self.assert_status_code(response, 200)
+
+    def base_locked_out_superadmin_permission_test(
+        self,
+        models: dict[str, dict[str, Any]],
+        action: str,
+        action_data: dict[str, Any],
+    ) -> None:
+        self.base_permission_test(
+            models,
+            action,
+            action_data,
+            OrganizationManagementLevel.SUPERADMIN,
+            True,
+            True,
+        )
 
     @with_database_context
     def assert_history_information(

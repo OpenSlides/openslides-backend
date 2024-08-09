@@ -1,6 +1,6 @@
 from typing import Any
 
-from openslides_backend.action.actions.user.delegation_based_restriction_mixin import (
+from openslides_backend.action.mixins.delegation_based_restriction_mixin import (
     DelegationBasedRestriction,
 )
 from openslides_backend.permissions.base_classes import Permission
@@ -103,6 +103,13 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
             "speaker.delete",
             {"id": 890},
             Permissions.ListOfSpeakers.CAN_MANAGE,
+        )
+
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "speaker.delete",
+            {"id": 890},
         )
 
     def test_delete_self(self) -> None:

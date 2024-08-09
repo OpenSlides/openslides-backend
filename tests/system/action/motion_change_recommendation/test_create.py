@@ -113,6 +113,18 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
             Permissions.Motion.CAN_MANAGE,
         )
 
+    def test_create_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "motion_change_recommendation.create",
+            {
+                "line_from": 125,
+                "line_to": 234,
+                "text": "text_DvLXGcdW",
+                "motion_id": 233,
+            },
+        )
+
 
 class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
     def setUp(self) -> None:

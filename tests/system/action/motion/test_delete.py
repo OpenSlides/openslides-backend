@@ -285,6 +285,13 @@ class MotionDeleteActionTest(BaseActionTestCase):
             Permissions.Motion.CAN_MANAGE,
         )
 
+    def test_delete_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion.delete",
+            {"id": 112},
+        )
+
     def test_delete_permission_submitter(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")

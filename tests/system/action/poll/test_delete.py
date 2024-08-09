@@ -111,6 +111,13 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
             Permissions.Poll.CAN_MANAGE,
         )
 
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {"poll/111": {"meeting_id": 1}},
+            "poll.delete",
+            {"id": 111},
+        )
+
     def test_delete_datastore_calls(self) -> None:
         self.prepare_users_and_poll(3)
 
@@ -119,7 +126,7 @@ class PollDeleteTest(PollTestMixin, BasePollTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("poll/1")
-        assert counter.calls == 6
+        assert counter.calls == 7
 
     @performance
     def test_delete_performance(self) -> None:

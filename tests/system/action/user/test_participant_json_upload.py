@@ -282,6 +282,13 @@ class ParticipantJsonUpload(BaseActionTestCase):
             True,
         )
 
+    def test_json_upload_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "participant.json_upload",
+            {"meeting_id": 1, "data": [{"username": "test"}]},
+        )
+
     def test_json_upload_names_and_email_find_add_meeting_data(self) -> None:
         self.set_models(
             {

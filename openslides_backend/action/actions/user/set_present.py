@@ -64,10 +64,6 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
                     yield instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
-        if has_organization_management_level(
-            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
-        ):
-            return
         if has_perm(
             self.datastore,
             self.user_id,
@@ -77,16 +73,23 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
             return
         meeting = self.datastore.get(
             fqid_from_collection_and_id("meeting", instance["meeting_id"]),
-            ["committee_id", "users_allow_self_set_present"],
+            ["committee_id", "users_allow_self_set_present", "locked_from_inside"],
             lock_result=False,
         )
-        if has_committee_management_level(
-            self.datastore,
-            self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
-            meeting["committee_id"],
-        ):
-            return
+        if not meeting.get("locked_from_inside"):
+            if has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                OrganizationManagementLevel.CAN_MANAGE_USERS,
+            ):
+                return
+            if has_committee_management_level(
+                self.datastore,
+                self.user_id,
+                CommitteeManagementLevel.CAN_MANAGE,
+                meeting["committee_id"],
+            ):
+                return
         if self.user_id == instance["id"] and meeting.get(
             "users_allow_self_set_present"
         ):

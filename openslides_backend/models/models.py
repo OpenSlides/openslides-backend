@@ -36,6 +36,7 @@ class Organization(Model):
     default_language = fields.CharField(
         required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
+    require_duplicate_from = fields.BooleanField()
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
     saml_attr_mapping = fields.JSONField()
@@ -148,6 +149,7 @@ class MeetingUser(Model):
     number = fields.CharField()
     about_me = fields.HTMLStrictField()
     vote_weight = fields.DecimalField(constraints={"minimum": "0.000001"})
+    locked_out = fields.BooleanField()
     user_id = fields.RelationField(
         to={"user": "meeting_user_ids"}, required=True, constant=True
     )
@@ -342,6 +344,7 @@ class Meeting(Model, MeetingModelMixin):
     location = fields.CharField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
+    locked_from_inside = fields.BooleanField()
     imported_at = fields.TimestampField()
     language = fields.CharField(
         required=True,
@@ -1240,11 +1243,11 @@ class Speaker(Model):
     verbose_name = "speaker"
 
     id = fields.IntegerField(constant=True)
-    begin_time = fields.TimestampField(read_only=True)
-    end_time = fields.TimestampField(read_only=True)
+    begin_time = fields.TimestampField()
+    end_time = fields.TimestampField()
     pause_time = fields.TimestampField(read_only=True)
-    unpause_time = fields.TimestampField(read_only=True)
-    total_pause = fields.IntegerField(read_only=True)
+    unpause_time = fields.TimestampField()
+    total_pause = fields.IntegerField()
     weight = fields.IntegerField(default=10000)
     speech_state = fields.CharField(
         constraints={

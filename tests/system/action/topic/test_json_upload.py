@@ -176,6 +176,13 @@ class TopicJsonUpload(BaseActionTestCase):
             Permissions.AgendaItem.CAN_MANAGE,
         )
 
+    def test_json_upload_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "topic.json_upload",
+            {"data": [{"title": "test"}], "meeting_id": 1},
+        )
+
 
 class TopicJsonUploadForUseInImport(BaseActionTestCase):
     def setUp(self) -> None:

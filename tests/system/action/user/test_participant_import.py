@@ -296,6 +296,11 @@ class ParticipantImport(BaseActionTestCase):
             True,
         )
 
+    def test_import_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {}, "participant.import", {"id": 1, "import": True}
+        )
+
 
 class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInImport):
     def test_upload_import_invalid_vote_weight_with_remove(self) -> None:
@@ -720,6 +725,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"id": group4_id, "info": "new", "value": "group4"},
             ],
             "structure_level": [{"info": "new", "value": "level up", "id": 2}],
+            "gender_id": 3,
         }
 
         row = result["rows"][1]
@@ -752,6 +758,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.NEW
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Gender 'unknown' is not in the allowed gender list.",
         ]
         assert row["data"] == {
             "username": {"info": ImportState.DONE, "value": "new_user5"},
@@ -826,6 +833,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
                 {"info": "new", "value": "group4"},
             ],
             "structure_level": [{"info": "new", "value": "level up"}],
+            "gender_id": 3,
         }
 
         row = result["rows"][1]
@@ -864,6 +872,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["state"] == ImportState.ERROR
         assert row["messages"] == [
             "Because this participant is connected with a saml_id: The default_password will be ignored and password will not be changeable in OpenSlides.",
+            "Gender 'unknown' is not in the allowed gender list.",
             "Error: saml_id 'saml5' found in different id (11 instead of None)",
         ]
         assert row["data"] == {

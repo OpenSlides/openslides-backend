@@ -181,3 +181,15 @@ class ProjectorAddToPreview(BaseActionTestCase):
             },
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_add_to_preview_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projector.add_to_preview",
+            {
+                "ids": [1, 2],
+                "content_object_id": "assignment/1",
+                "stable": False,
+                "meeting_id": 1,
+            },
+        )

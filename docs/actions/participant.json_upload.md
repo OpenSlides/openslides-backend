@@ -92,4 +92,4 @@ Permissions are analogue to `user.create` and `user.update`. The `saml_id` can b
 
 In case of an update, remove fields from the payload that don't change the content compared to database to avoid unnecessary
 permission errors. Don't forget the special permissions for `default_password` on `user.update`.
-Anyway the user must have the permission `user.can_manage`, `cml.can_manage` or >= `oml.can_manage_users`. Otherwise the whole import will be finished with an exception.
+Anyway the user must have the permission `user.can_manage` or, if the meeting is not locked via the setting `locked_from_inside`, `cml.can_manage` or >= `oml.can_manage_users`. Otherwise the whole import will be finished with an exception.

@@ -145,6 +145,7 @@ class MeetingImport(
 
     def preprocess_data(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.check_one_meeting(instance)
+        self.check_locked(instance)
         self.remove_not_allowed_fields(instance)
         self.set_committee_and_orga_relation(instance)
         instance = self.migrate_data(instance)
@@ -154,6 +155,10 @@ class MeetingImport(
     def check_one_meeting(self, instance: dict[str, Any]) -> None:
         if len(instance["meeting"]["meeting"]) != 1:
             raise ActionException("Need exactly one meeting in meeting collection.")
+
+    def check_locked(self, instance: dict[str, Any]) -> None:
+        if list(instance["meeting"]["meeting"].values())[0].get("locked_from_inside"):
+            raise ActionException("Cannot import a locked meeting.")
 
     def remove_not_allowed_fields(self, instance: dict[str, Any]) -> None:
         json_data = instance["meeting"]
