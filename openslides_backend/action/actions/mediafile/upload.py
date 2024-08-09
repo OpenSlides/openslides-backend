@@ -10,7 +10,7 @@ from pygments.util import ClassNotFound
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
-from ....models.models import Mediafile
+from ....models.models import Mediafile, MeetingMediafile
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
@@ -39,8 +39,11 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
         required_properties=["title", "owner_id", "filename"],
-        optional_properties=["token", "access_group_ids", "parent_id"],
+        optional_properties=["token", "parent_id"],
         additional_required_fields={"file": {"type": "string"}},
+        additional_optional_fields={
+            "access_group_ids": MeetingMediafile.access_group_ids.get_schema()
+        },
     )
     permission = Permissions.Mediafile.CAN_MANAGE
 
