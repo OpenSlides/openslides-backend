@@ -1,4 +1,4 @@
-from ....models.models import Mediafile
+from ....models.models import Mediafile, MeetingMediafile
 from ....permissions.permissions import Permissions
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
@@ -20,7 +20,10 @@ class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMix
 
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_update_schema(
-        optional_properties=["title", "access_group_ids", "token"]
+        optional_properties=["title", "token"],
+        additional_optional_fields={
+            "access_group_ids": MeetingMediafile.access_group_ids.get_schema()
+        },
     )
     permission = Permissions.Mediafile.CAN_MANAGE
 

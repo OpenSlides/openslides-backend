@@ -1,7 +1,7 @@
 import time
 from typing import Any
 
-from ....models.models import Mediafile
+from ....models.models import Mediafile, MeetingMediafile
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
@@ -19,7 +19,10 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
         required_properties=["owner_id", "title"],
-        optional_properties=["access_group_ids", "parent_id"],
+        optional_properties=["parent_id"],
+        additional_optional_fields={
+            "access_group_ids": MeetingMediafile.access_group_ids.get_schema()
+        },
     )
     permission = Permissions.Mediafile.CAN_MANAGE
 
