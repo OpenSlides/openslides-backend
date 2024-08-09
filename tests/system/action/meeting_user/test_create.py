@@ -31,6 +31,29 @@ class MeetingUserCreate(BaseActionTestCase):
         self.assert_model_exists("meeting_user/1", test_dict)
         self.assert_model_exists("user/1", {"committee_ids": [1]})
 
+    def test_create_anonymous_group_id(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2, 3, 4]},
+                "group/4": {"anonymous_group_for_meeting_id": 1},
+            }
+        )
+        user_id = self.create_user("dummy")
+        response = self.request(
+            "meeting_user.create",
+            {
+                "user_id": user_id,
+                "meeting_id": 1,
+                "group_ids": [4],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot add explicit users to a meetings anonymous group",
+            response.json["message"],
+        )
+
     def test_update_checks_locked_out_with_error(self) -> None:
         self.set_models(
             {

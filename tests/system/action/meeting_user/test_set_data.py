@@ -152,3 +152,48 @@ class MeetingUserSetData(BaseActionTestCase):
         response = self.request("meeting_user.set_data", {"vote_weight": "0.000000"})
         self.assert_status_code(response, 400)
         self.assert_model_exists("meeting_user/5", {"vote_weight": "1.000000"})
+
+    def test_set_data_anonymous_group_id(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2, 3, 4]},
+                "group/4": {"anonymous_group_for_meeting_id": 1},
+            }
+        )
+        self.create_user("dummy", [1])
+        response = self.request(
+            "meeting_user.set_data",
+            {
+                "id": 1,
+                "group_ids": [4],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot add explicit users to a meetings anonymous group",
+            response.json["message"],
+        )
+
+    def test_set_data_anonymous_group_id_2(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2, 3, 4]},
+                "group/4": {"anonymous_group_for_meeting_id": 1},
+            }
+        )
+        user_id = self.create_user("dummy")
+        response = self.request(
+            "meeting_user.set_data",
+            {
+                "user_id": user_id,
+                "meeting_id": 1,
+                "group_ids": [1, 4],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Cannot add explicit users to a meetings anonymous group",
+            response.json["message"],
+        )

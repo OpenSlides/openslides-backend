@@ -1078,3 +1078,24 @@ class CreatePoll(BasePollTestCase):
             "poll_candidate_list/2",
             {"option_id": 2, "meeting_id": 1, "poll_candidate_ids": [3, 4]},
         )
+
+    def test_with_anonymous_in_entitled_group_ids(self) -> None:
+        self.create_meeting()
+        self.set_anonymous()
+        response = self.request(
+            "poll.create",
+            {
+                "meeting_id": 1,
+                "options": [{"text": "test"}],
+                "pollmethod": "YNA",
+                "title": "test",
+                "type": Poll.TYPE_NAMED,
+                "entitled_group_ids": [4],
+                "content_object_id": "assignment/1",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Anonymous group is not allowed in entitled_group_ids.",
+            response.json["message"],
+        )

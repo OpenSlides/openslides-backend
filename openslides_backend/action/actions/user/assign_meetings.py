@@ -58,8 +58,11 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
             filter_ = And(
                 FilterOperator("name", "=", group_name),
                 FilterOperator("meeting_id", "=", meeting_id),
+                FilterOperator("anonymous_group_for_meeting_id", "=", None),
             )
-            groups = self.datastore.filter("group", filter_, ["meeting_id", "user_ids"])
+            groups = self.datastore.filter(
+                "group", filter_, ["meeting_id", "meeting_user_ids"]
+            )
             groups_meeting_ids.update(
                 {group["meeting_id"] for group in groups.values()}
             )

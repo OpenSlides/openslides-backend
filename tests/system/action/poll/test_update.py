@@ -212,6 +212,18 @@ class UpdatePollTestCase(BasePollTestCase):
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("entitled_group_ids"), [2])
 
+    def test_update_groups_with_anonymous(self) -> None:
+        group_id = self.set_anonymous()
+        response = self.request(
+            "poll.update",
+            {"entitled_group_ids": [group_id], "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Anonymous group is not allowed in entitled_group_ids.",
+            response.json["message"],
+        )
+
     def test_update_title_started(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_STARTED})
         response = self.request(

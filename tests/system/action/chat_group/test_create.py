@@ -177,3 +177,58 @@ class ChatGroupCreate(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("chat_group/22", {"name": "test", "meeting_id": 2})
+
+    def test_create_anonymous_may_read(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"enable_chat": True},
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "group/1": {"meeting_id": 1},
+                "group/2": {"meeting_id": 1},
+            }
+        )
+        anonymous_group = self.set_anonymous()
+        response = self.request(
+            "chat_group.create",
+            {
+                "name": "redekreis1",
+                "meeting_id": 1,
+                "read_group_ids": [anonymous_group],
+                "write_group_ids": [1, 2],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "chat_group/1",
+            {
+                "name": "redekreis1",
+                "meeting_id": 1,
+                "read_group_ids": [anonymous_group],
+                "write_group_ids": [1, 2],
+            },
+        )
+
+    def test_create_anonymous_may_not_write(self) -> None:
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {"enable_chat": True},
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "group/1": {"meeting_id": 1},
+                "group/2": {"meeting_id": 1},
+            }
+        )
+        anonymous_group = self.set_anonymous()
+        response = self.request(
+            "chat_group.create",
+            {
+                "name": "redekreis1",
+                "meeting_id": 1,
+                "read_group_ids": [1, 2],
+                "write_group_ids": [anonymous_group],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Anonymous group is not allowed in write_group_ids.",
+            response.json["message"],
+        )

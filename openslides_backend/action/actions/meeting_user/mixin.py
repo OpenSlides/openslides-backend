@@ -2,7 +2,6 @@ from typing import Any, cast
 
 from openslides_backend.services.datastore.commands import GetManyRequest
 
-from ....action.action import Action
 from ....action.mixins.meeting_user_helper import get_meeting_user
 from ....action.util.typing import ActionData, ActionResults
 from ....permissions.permissions import Permissions
@@ -10,6 +9,7 @@ from ....shared.exceptions import ActionException
 from ....shared.filters import And, Filter, FilterOperator, Or
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
+from ...action import Action
 from .history_mixin import MeetingUserHistoryMixin
 
 meeting_user_standard_fields = [
@@ -19,6 +19,21 @@ meeting_user_standard_fields = [
     "structure_level_ids",
     "locked_out",
 ]
+
+
+class MeetingUserGroupMixin(Action):
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        if len(group_ids := instance.get("group_ids", [])) and self.datastore.exists(
+            "group",
+            And(
+                FilterOperator("anonymous_group_for_meeting_id", "!=", None),
+                Or(FilterOperator("id", "=", id_) for id_ in group_ids),
+            ),
+        ):
+            raise ActionException(
+                "Cannot add explicit users to a meetings anonymous group"
+            )
+        return super().update_instance(instance)
 
 
 LockingStatusCheckResult = tuple[str, list[int] | None]  # message to broken group ids

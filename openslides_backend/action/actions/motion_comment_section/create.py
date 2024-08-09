@@ -1,13 +1,18 @@
+from typing import Any
+
 from ....models.models import MotionCommentSection
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
+from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("motion_comment_section.create")
-class MotionCommentSectionCreateAction(SequentialNumbersMixin, CreateAction):
+class MotionCommentSectionCreateAction(
+    SequentialNumbersMixin, CreateAction, ForbidAnonymousGroupMixin
+):
     """
     Create Action with default weight.
     """
@@ -22,3 +27,7 @@ class MotionCommentSectionCreateAction(SequentialNumbersMixin, CreateAction):
         ],
     )
     permission = Permissions.Motion.CAN_MANAGE
+
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.check_anonymous_not_in_list_fields(instance, ["write_group_ids"])
+        return super().update_instance(instance)

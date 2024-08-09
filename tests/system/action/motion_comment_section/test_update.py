@@ -106,3 +106,55 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
                 "write_group_ids": [23],
             },
         )
+
+    def test_update_anonymous_may_read(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"motion_comment_section_ids": [111]},
+                "motion_comment_section/111": {
+                    "name": "name_srtgb123",
+                    "meeting_id": 1,
+                },
+            }
+        )
+        anonymous_group = self.set_anonymous()
+        response = self.request(
+            "motion_comment_section.update",
+            {
+                "id": 111,
+                "read_group_ids": [anonymous_group],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion_comment_section/111",
+            {
+                "read_group_ids": [anonymous_group],
+            },
+        )
+
+    def test_update_anonymous_may_not_write(self) -> None:
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {"motion_comment_section_ids": [111]},
+                "motion_comment_section/111": {
+                    "name": "name_srtgb123",
+                    "meeting_id": 1,
+                },
+            }
+        )
+        anonymous_group = self.set_anonymous()
+        response = self.request(
+            "motion_comment_section.update",
+            {
+                "id": 111,
+                "write_group_ids": [anonymous_group],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Anonymous group is not allowed in write_group_ids.",
+            response.json["message"],
+        )

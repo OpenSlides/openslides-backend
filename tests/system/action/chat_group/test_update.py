@@ -110,3 +110,37 @@ class ChatGroupUpdate(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "The name of a chat group must be unique." == response.json["message"]
+
+    def test_update_anonymous_may_read(self) -> None:
+        self.set_models(self.test_models)
+        anonymous_group = self.set_anonymous()
+        response = self.request(
+            "chat_group.update",
+            {
+                "id": 1,
+                "read_group_ids": [anonymous_group],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "chat_group/1",
+            {
+                "read_group_ids": [anonymous_group],
+            },
+        )
+
+    def test_update_anonymous_may_not_write(self) -> None:
+        self.set_models(self.test_models)
+        anonymous_group = self.set_anonymous()
+        response = self.request(
+            "chat_group.update",
+            {
+                "id": 1,
+                "write_group_ids": [anonymous_group],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Anonymous group is not allowed in write_group_ids.",
+            response.json["message"],
+        )

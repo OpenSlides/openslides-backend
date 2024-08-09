@@ -93,3 +93,60 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
             "motion_comment_section.create",
             {"name": "test_Xcdfgee", "meeting_id": 1},
         )
+
+    def test_create_anonymous_may_read(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
+                "group/23": {"name": "name_IIwngcUT", "meeting_id": 222},
+            }
+        )
+        anonymous_group = self.set_anonymous(meeting_id=222)
+        response = self.request(
+            "motion_comment_section.create",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "read_group_ids": [anonymous_group],
+                "write_group_ids": [23],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion_comment_section/1",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "read_group_ids": [anonymous_group],
+                "write_group_ids": [23],
+            },
+        )
+
+    def test_create_anonymous_may_not_write(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
+                "group/23": {"name": "name_IIwngcUT", "meeting_id": 222},
+            }
+        )
+        anonymous_group = self.set_anonymous(meeting_id=222)
+        response = self.request(
+            "motion_comment_section.create",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "read_group_ids": [23],
+                "write_group_ids": [anonymous_group],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Anonymous group is not allowed in write_group_ids.",
+            response.json["message"],
+        )
