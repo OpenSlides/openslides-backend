@@ -96,7 +96,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             "motion/111",
             ["Workflow_timestamp set to {}", "1234567890", "Motion updated"],
         )
-        assert counter.calls == 3
+        assert counter.calls == 4
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
@@ -270,7 +270,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "Motion updated",
             ],
         )
-        assert counter.calls == 14
+        assert counter.calls == 15
 
     def test_update_workflow_id(self) -> None:
         self.set_models(

@@ -186,3 +186,12 @@ class AgendaItemSortActionTest(BaseActionTestCase):
             {"meeting_id": 1, "tree": [{"id": 22}]},
             Permissions.AgendaItem.CAN_MANAGE,
         )
+
+    def test_sort_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "agenda_item/22": {"meeting_id": 1, "comment": "test1"},
+            },
+            "agenda_item.sort",
+            {"meeting_id": 1, "tree": [{"id": 22}]},
+        )

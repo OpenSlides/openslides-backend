@@ -841,6 +841,24 @@ class CreatePoll(BasePollTestCase):
             Permissions.Assignment.CAN_MANAGE,
         )
 
+    def test_create_permissions_assignment_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+            },
+        )
+
     def test_create_forbidden_to_create_poll(self) -> None:
         self.set_models(
             {

@@ -1280,7 +1280,49 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"name": "A" * 90 + "... - Copy"})
 
-    def test_permissions_both_okay(self) -> None:
+    def test_permissions_explicit_source_committee_permission(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "user/1": {
+                    "committee_management_ids": [1],
+                    "committee_ids": [1],
+                    "organization_management_level": None,
+                },
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
+        )
+        self.assert_model_exists(
+            "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 1}
+        )
+
+    def test_permissions_foreign_template_meeting_cml(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "committee/2": {"organization_id": 1},
+                "user/1": {
+                    "committee_management_ids": [1, 2],
+                    "committee_ids": [2],
+                    "organization_management_level": None,
+                },
+                "meeting/1": {"template_for_organization_id": 1},
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
+        )
+        self.assert_model_exists(
+            "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 2}
+        )
+
+    def test_permissions_foreign_meeting_cml_error(self) -> None:
         self.set_models(self.test_models)
         self.set_models(
             {
@@ -1293,12 +1335,29 @@ class MeetingClone(BaseActionTestCase):
             }
         )
         response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action meeting.clone. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
         )
-        self.assert_model_exists(
-            "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 2}
+
+    def test_permissions_foreign_committee_cml_error(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "committee/2": {"organization_id": 1},
+                "user/1": {
+                    "committee_management_ids": [1],
+                    "committee_ids": [1],
+                    "organization_management_level": None,
+                },
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action meeting.clone. Missing OrganizationManagementLevel: can_manage_organization",
+            response.json["message"],
         )
 
     def test_permissions_oml_can_manage(self) -> None:
@@ -1318,25 +1377,6 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists(
             "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 2}
-        )
-
-    def test_permissions_missing_payload_committee_permission(self) -> None:
-        self.set_models(self.test_models)
-        self.set_models(
-            {
-                "committee/2": {"organization_id": 1},
-                "user/1": {
-                    "committee_management_ids": [1],
-                    "committee_ids": [1],
-                    "organization_management_level": None,
-                },
-            }
-        )
-        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "Missing permission: CommitteeManagementLevel can_manage in committee 2",
-            response.json["message"],
         )
 
     def test_permissions_missing_source_committee_permission(self) -> None:
@@ -1838,7 +1878,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 24
+        assert counter.calls == 25
 
     @performance
     def test_clone_performance(self) -> None:
@@ -1894,4 +1934,51 @@ class MeetingClone(BaseActionTestCase):
         assert (
             "motion/1/amendment_paragraphs error: Invalid html in 1\n\tmotion/1/amendment_paragraphs error: Invalid html in 2"
             in response.json["message"]
+        )
+
+    def test_permissions_oml_locked_meeting(self) -> None:
+        self.create_meeting()
+        self.set_models({"meeting/1": {"locked_from_inside": True}})
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 400)
+        assert "Cannot clone locked meeting." in response.json["message"]
+
+    def test_clone_require_duplicate_from_allowed(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "meeting/1": {"template_for_organization_id": 1, "name": "m1"},
+                "organization/1": {
+                    "template_meeting_ids": [1],
+                    "require_duplicate_from": True,
+                },
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_ids": [1],
+                    "committee_management_ids": [1],
+                },
+                "committee/1": {"user_ids": [1], "manager_ids": [1]},
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+
+    def test_clone_require_duplicate_from_not_allowed(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "organization/1": {"require_duplicate_from": True},
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_ids": [1],
+                    "committee_management_ids": [1],
+                },
+                "committee/1": {"user_ids": [1], "manager_ids": [1]},
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Committee manager cannot clone a non-template meeting if duplicate-from is required."
         )

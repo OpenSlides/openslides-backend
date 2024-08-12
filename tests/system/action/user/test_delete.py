@@ -21,7 +21,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         model = self.get_model("user/112")
         assert model.get("username") == "username_srtgb123"
 
-    def test_delete_correct_with_groups(self) -> None:
+    def test_delete_correct_with_groups_and_locked_meeting(self) -> None:
         self.set_models(
             {
                 "user/111": {
@@ -41,6 +41,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "user_ids": [111],
                     "is_active_in_organization_id": 1,
                     "meeting_user_ids": [1111],
+                    "locked_from_inside": True,
                 },
                 "committee/1": {
                     "meeting_ids": [456],
@@ -439,13 +440,36 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
     def test_delete_scope_organization_permission_in_committee(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Committee)
-        self.setup_scoped_user(UserScope.Organization)
+        self.set_models(
+            {
+                "committee/1": {"meeting_ids": [1]},
+                "committee/2": {"meeting_ids": [2]},
+                "meeting/1": {
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "committee_id": 2,
+                    "is_active_in_organization_id": 1,
+                },
+                "user/111": {},
+                "group/11": {"meeting_id": 1},
+                "group/22": {"meeting_id": 2},
+            }
+        )
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
             "You are not allowed to perform action user.delete. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
             response.json["message"],
         )
+
+    def test_delete_scope_multi_committee_permission_in_committee(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Committee)
+        self.setup_scoped_user(UserScope.Organization)
+        response = self.request("user.delete", {"id": 111})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("user/111")
 
     def test_delete_scope_organization_permission_in_meeting(self) -> None:
         self.setup_admin_scope_permissions(UserScope.Meeting)

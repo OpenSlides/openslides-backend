@@ -51,3 +51,10 @@ class PointOfOrderCategoryUpdate(BaseActionTestCase):
             {"id": 37, "text": "foo", "rank": 12},
             Permissions.Meeting.CAN_MANAGE_SETTINGS,
         )
+
+    def test_update_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "point_of_order_category.update",
+            {"id": 37, "text": "foo", "rank": 12},
+        )

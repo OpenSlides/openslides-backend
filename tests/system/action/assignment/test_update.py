@@ -78,3 +78,12 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
             {"id": 111, "title": "title_Xcdfgee"},
             Permissions.Assignment.CAN_MANAGE,
         )
+
+    def test_update_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "assignment/111": {"title": "title_srtgb123", "meeting_id": 1},
+            },
+            "assignment.update",
+            {"id": 111, "title": "title_Xcdfgee"},
+        )

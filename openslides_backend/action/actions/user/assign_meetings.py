@@ -2,6 +2,7 @@ from typing import Any
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
@@ -34,6 +35,7 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
     use_meeting_ids_for_archived_meeting_check = True
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        self.check_meetings(instance)
         user_id = instance["id"]
         meeting_ids = set(instance.pop("meeting_ids"))
         group_name = instance.pop("group_name")
@@ -134,6 +136,23 @@ class UserAssignMeetings(MeetingUserHelperMixin, UpdateAction):
             )
 
         return instance
+
+    def check_meetings(self, instance: dict[str, Any]) -> None:
+        if meeting_ids := instance.get("meeting_ids"):
+            locked_meetings = [
+                str(id_)
+                for id_, meeting in self.datastore.get_many(
+                    [GetManyRequest("meeting", meeting_ids, ["locked_from_inside"])],
+                    lock_result=False,
+                )
+                .get("meeting", {})
+                .items()
+                if meeting.get("locked_from_inside")
+            ]
+            if len(locked_meetings):
+                raise ActionException(
+                    f"Cannot assign meetings because some selected meetings are locked: {', '.join(locked_meetings)}."
+                )
 
     def create_action_result_element(
         self, instance: dict[str, Any]

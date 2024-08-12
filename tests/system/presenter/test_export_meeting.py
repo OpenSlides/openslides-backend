@@ -58,6 +58,16 @@ class TestExportMeeting(BasePresenterTestCase):
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 403
 
+    def test_with_locked_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"name": "test_foo", "locked_from_inside": True},
+            }
+        )
+        status_code, data = self.request("export_meeting", {"meeting_id": 1})
+        assert status_code == 400
+        assert data["message"] == "Cannot export: meeting 1 is locked."
+
     def test_organization_tags_exclusion(self) -> None:
         self.set_models(
             {

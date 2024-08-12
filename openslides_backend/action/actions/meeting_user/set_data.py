@@ -37,6 +37,7 @@ class MeetingUserSetData(
             "vote_delegated_to_id",
             "vote_delegations_from_ids",
             "group_ids",
+            "locked_out",
         ],
     )
     extend_history_to = "user_id"
