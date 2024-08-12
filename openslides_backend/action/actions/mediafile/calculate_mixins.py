@@ -3,6 +3,7 @@ from typing import Any
 from ....models.helper import calculate_inherited_groups_helper
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ...util.typing import ActionData
@@ -64,10 +65,40 @@ def calculate_inherited_groups_helper_with_parent_id(
     datastore: DatastoreService,
     access_group_ids: list[int] | None,
     parent_id: int | None,
+    meeting_id: int,
+) -> tuple[bool, list[int] | None]:
+    if parent_id:
+        parents = datastore.filter(
+            "meeting_mediafile",
+            And(
+                FilterOperator("meeting_id", "=", meeting_id),
+                FilterOperator("mediafile_id", "=", parent_id),
+            ),
+            ["is_public", "inherited_access_group_ids"],
+        )
+        if len(parents):
+            assert len(parents) == 1
+            parent = list(parents.values())[0]
+        else:
+            parent = {}
+    else:
+        parent = {}
+
+    return calculate_inherited_groups_helper(
+        access_group_ids,
+        parent.get("is_public"),
+        parent.get("inherited_access_group_ids"),
+    )
+
+
+def calculate_inherited_groups_helper_with_parent_meeting_mediafile_id(
+    datastore: DatastoreService,
+    access_group_ids: list[int] | None,
+    parent_id: int | None,
 ) -> tuple[bool, list[int] | None]:
     if parent_id:
         parent = datastore.get(
-            fqid_from_collection_and_id("mediafile", parent_id),
+            fqid_from_collection_and_id("meeting_mediafile", parent_id),
             ["is_public", "inherited_access_group_ids"],
         )
     else:

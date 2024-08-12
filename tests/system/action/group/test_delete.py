@@ -126,6 +126,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
             {
                 "meeting/22": {
                     "group_ids": [111, 112],
+                    "meeting_mediafile_ids": [1, 2],
                 },
                 "group/111": {
                     "mediafile_access_group_ids": [1, 2],
@@ -136,16 +137,22 @@ class GroupDeleteActionTest(BaseActionTestCase):
                     "mediafile_access_group_ids": [1],
                     "mediafile_inherited_access_group_ids": [1],
                 },
-                "mediafile/1": {
+                "meeting_mediafile/1": {
                     "access_group_ids": [111, 112],
                     "inherited_access_group_ids": [111, 112],
                     "is_public": False,
+                    "meeting_id": 22,
+                    "mediafile_id": 3,
                 },
-                "mediafile/2": {
+                "mediafile/3": {"meeting_mediafile_ids": [1]},
+                "meeting_mediafile/2": {
                     "access_group_ids": [111],
                     "inherited_access_group_ids": [111],
                     "is_public": False,
+                    "meeting_id": 22,
+                    "mediafile_id": 1,
                 },
+                "mediafile/1": {"meeting_mediafile_ids": [2]},
             }
         )
         response = self.request("group.delete", {"id": 111})
@@ -166,7 +173,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "mediafile/1",
+            "meeting_mediafile/1",
             {
                 "is_public": False,
                 "access_group_ids": [112],
@@ -174,7 +181,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "mediafile/2",
+            "meeting_mediafile/2",
             {
                 "is_public": True,
                 "access_group_ids": [],
@@ -187,6 +194,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
             {
                 "meeting/22": {
                     "group_ids": [111, 112],
+                    "meeting_mediafile_ids": [1, 2, 3, 4],
                 },
                 "group/111": {
                     "mediafile_access_group_ids": [1, 4],
@@ -198,29 +206,43 @@ class GroupDeleteActionTest(BaseActionTestCase):
                     "mediafile_inherited_access_group_ids": [],
                 },
                 "mediafile/1": {
+                    "child_ids": [2],
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [1],
+                },
+                "meeting_mediafile/1": {
+                    "mediafile_id": 1,
                     "access_group_ids": [111],
                     "inherited_access_group_ids": [111],
                     "is_public": False,
-                    "child_ids": [2],
-                    "is_directory": True,
+                    "meeting_id": 22,
                 },
                 "mediafile/2": {
                     "parent_id": 1,
-                    "inherited_access_group_ids": [111],
-                    "is_public": False,
                     "child_ids": [3, 4],
                     "is_directory": True,
+                    "meeting_mediafile_ids": [2],
                 },
-                "mediafile/3": {
-                    "parent_id": 2,
+                "meeting_mediafile/2": {
+                    "mediafile_id": 2,
                     "inherited_access_group_ids": [111],
                     "is_public": False,
+                    "meeting_id": 22,
                 },
-                "mediafile/4": {
-                    "parent_id": 2,
+                "mediafile/3": {"parent_id": 2, "meeting_mediafile_ids": [3]},
+                "meeting_mediafile/3": {
+                    "mediafile_id": 3,
+                    "inherited_access_group_ids": [111],
+                    "is_public": False,
+                    "meeting_id": 22,
+                },
+                "mediafile/4": {"parent_id": 2, "meeting_mediafile_ids": [3]},
+                "meeting_mediafile/4": {
+                    "mediafile_id": 4,
                     "access_group_ids": [111, 112],
                     "inherited_access_group_ids": [111],
                     "is_public": False,
+                    "meeting_id": 22,
                 },
             }
         )
@@ -242,7 +264,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "mediafile/1",
+            "meeting_mediafile/1",
             {
                 "is_public": True,
                 "access_group_ids": [],
@@ -250,7 +272,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "mediafile/2",
+            "meeting_mediafile/2",
             {
                 "is_public": True,
                 "access_group_ids": None,
@@ -258,7 +280,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "mediafile/3",
+            "meeting_mediafile/3",
             {
                 "is_public": True,
                 "access_group_ids": None,
@@ -266,7 +288,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "mediafile/4",
+            "meeting_mediafile/4",
             {
                 "is_public": False,
                 "access_group_ids": [112],
@@ -279,6 +301,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
             {
                 "meeting/22": {
                     "group_ids": [111, 112],
+                    "meeting_mediafile_ids": [1, 2],
                 },
                 "group/111": {
                     "mediafile_access_group_ids": [1, 2],
@@ -290,17 +313,24 @@ class GroupDeleteActionTest(BaseActionTestCase):
                     "mediafile_inherited_access_group_ids": [],
                 },
                 "mediafile/1": {
+                    "child_ids": [2],
+                    "is_directory": True,
+                    "meeting_mediafile_ids": [1],
+                },
+                "meeting_mediafile/1": {
+                    "mediafile_id": 1,
                     "access_group_ids": [111],
                     "inherited_access_group_ids": [111],
                     "is_public": False,
-                    "child_ids": [2],
-                    "is_directory": True,
+                    "meeting_id": 22,
                 },
-                "mediafile/2": {
-                    "parent_id": 1,
+                "mediafile/2": {"parent_id": 1, "meeting_mediafile_ids": [2]},
+                "meeting_mediafile/2": {
+                    "mediafile_id": 2,
                     "access_group_ids": [111, 112],
                     "inherited_access_group_ids": [111],
                     "is_public": False,
+                    "meeting_id": 22,
                 },
             }
         )
@@ -324,14 +354,19 @@ class GroupDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "mediafile/1",
             {
-                "is_public": True,
-                "access_group_ids": [],
-                "inherited_access_group_ids": [],
                 "is_directory": True,
             },
         )
         self.assert_model_exists(
-            "mediafile/2",
+            "meeting_mediafile/1",
+            {
+                "is_public": True,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/2",
             {
                 "is_public": True,
                 "access_group_ids": [],
