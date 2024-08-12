@@ -766,6 +766,37 @@ class UserMergeTogether(BaseVoteTestCase):
                 "default_vote_weight": "0.424242",
             },
         )
+        self.assert_model_exists(
+            "gender/2",
+            {
+                "id": 2,
+                "name": "female",
+                "user_ids": [2],
+                "organization_id": 1
+            }
+        )
+
+    def test_gender_not_changed(self) -> None:
+        self.setup_complex_user_fields()
+        response = self.request(
+            "user.merge_together",
+            {
+                "id": 3,
+                "user_ids": [2, 4, 5, 6],
+            },
+        )
+        self.assert_model_exists(
+            "user/3",
+            {
+                "gender_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "gender/1",
+            {
+                "user_ids": None,
+            }
+        )
 
     def test_with_custom_fields_simple(self) -> None:
         response = self.request(
