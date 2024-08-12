@@ -2164,15 +2164,13 @@ class MeetingMediafile(Model):
     )
     is_public = fields.BooleanField(
         required=True,
-        read_only=True,
         constraints={
-            "description": "Calculated field. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
+            "description": "Calculated in actions. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
         },
     )
     inherited_access_group_ids = fields.RelationListField(
         to={"group": "mediafile_inherited_access_group_ids"},
-        read_only=True,
-        constraints={"description": "Calculated field."},
+        constraints={"description": "Calculated in actions."},
     )
     access_group_ids = fields.RelationListField(
         to={"group": "mediafile_access_group_ids"}

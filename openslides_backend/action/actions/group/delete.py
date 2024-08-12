@@ -204,7 +204,7 @@ class GroupDeleteAction(DeleteAction):
                 )
 
     def find_meeting_mediafile_id_for_mediafile(
-        self, mediafile_id: int, meeting_id
+        self, mediafile_id: int, meeting_id: int
     ) -> int | None:
         meeting_mediafiles = list(
             self.datastore.filter(
