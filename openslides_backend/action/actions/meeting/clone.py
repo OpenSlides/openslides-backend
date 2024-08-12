@@ -10,7 +10,7 @@ from openslides_backend.models.checker import (
 )
 from openslides_backend.models.models import Meeting, MeetingUser
 from openslides_backend.services.datastore.interface import GetManyRequest
-from openslides_backend.shared.exceptions import ActionException
+from openslides_backend.shared.exceptions import ActionException, MissingPermission
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
@@ -79,6 +79,24 @@ class MeetingClone(MeetingImport):
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
+        if "committee_id" in instance:
+            meeting = self.datastore.get(
+                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
+                ["committee_id", "template_for_organization_id"],
+                lock_result=False,
+            )
+            if (
+                meeting["committee_id"] != instance["committee_id"]
+                and not meeting.get("template_for_organization_id")
+                and not has_organization_management_level(
+                    self.datastore,
+                    self.user_id,
+                    OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                )
+            ):
+                raise MissingPermission(
+                    OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+                )
         MeetingPermissionMixin.check_permissions(self, instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
