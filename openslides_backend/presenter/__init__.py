@@ -13,6 +13,5 @@ from . import (  # noqa
     number_of_users,
     search_for_id_by_external_id,
     search_users,
-    server_time,
 )
 from .presenter_interface import *  # noqa
