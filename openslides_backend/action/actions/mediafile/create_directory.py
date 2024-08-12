@@ -36,10 +36,10 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
         instance = super().update_instance(instance)
         instance["is_directory"] = True
         instance["create_timestamp"] = round(time.time())
-        collection, id_ = self.get_owner_data(instance)
+        collection, meeting_id = self.get_owner_data(instance)
         if collection == "meeting":
             mm_instance: dict[str, Any] = {
-                "meeting_id": id_,
+                "meeting_id": meeting_id,
                 "mediafile_id": instance["id"],
             }
             if "access_group_ids" in instance:
@@ -51,9 +51,7 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
                 self.datastore,
                 mm_instance.get("access_group_ids"),
                 instance.get("parent_id"),
-                id_,
+                meeting_id,
             )
             self.execute_other_action(MeetingMediafileCreate, [mm_instance])
-        elif "access_group_ids" in instance:
-            raise ActionException("Organization directories cannot have access groups")
         return instance

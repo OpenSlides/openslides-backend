@@ -655,6 +655,24 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Owner and access groups don't match." in response.json["message"]
 
+    def test_create_directory_access_groups_on_orga_owner(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [11], "is_active_in_organization_id": 1},
+                "group/11": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "owner_id": "organization/1",
+                "title": "title_1",
+                "access_group_ids": [11],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "access_group_ids is not allowed in organization mediafiles." in response.json["message"]
+
     def test_create_directory_two_meetings(self) -> None:
         self.set_models(
             {

@@ -20,6 +20,7 @@ from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..meeting_mediafile.create import MeetingMediafileCreate
 from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
 from .delete import MediafileDelete
 from .mixins import MediafileMixin
@@ -159,18 +160,24 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         instance["mimetype"] = use_mimetype
         if instance["mimetype"] == "application/pdf":
             instance["pdf_information"] = self.get_pdf_information(decoded_file)
-        collection, _ = self.get_owner_data(instance)
+        collection, meeting_id = self.get_owner_data(instance)
         if collection == "meeting":
+            mm_instance: dict[str, Any] = {
+                "meeting_id": meeting_id,
+                "mediafile_id": id_,
+            }
+            if "access_group_ids" in instance:
+                mm_instance["access_group_ids"] = instance.pop("access_group_ids")
             (
-                instance["is_public"],
-                instance["inherited_access_group_ids"],
+                mm_instance["is_public"],
+                mm_instance["inherited_access_group_ids"],
             ) = calculate_inherited_groups_helper_with_parent_id(
                 self.datastore,
-                instance.get("access_group_ids"),
+                mm_instance.get("access_group_ids"),
                 instance.get("parent_id"),
+                meeting_id,
             )
-        else:
-            instance["is_public"] = True
+            self.execute_other_action(MeetingMediafileCreate, [mm_instance])
         self.media.upload_mediafile(file_, id_, cast(str, use_mimetype))
         return instance
 
