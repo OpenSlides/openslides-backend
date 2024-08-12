@@ -9,6 +9,7 @@ from ...util.register import register_action
 class MeetingMediafileUpdate(UpdateAction):
     """
     Action to update a meeting_mediafile.
+    This only adds data, calculations will have to be done in calling class.
     """
 
     model = MeetingMediafile()
