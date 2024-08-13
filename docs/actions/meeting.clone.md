@@ -39,7 +39,7 @@ If set_as_template is given, template_for_organization_id has to be set to 1.
 
 ## Permission
 
-It is not allowed to clone a meeting from a different committee and said meeting isn't a template.
+It is not allowed to clone a meeting from a different committee if said meeting isn't a template.
 
 Otherwise the request user only needs the CML `can_manage` in the target committee (where the meeting is created).
 
