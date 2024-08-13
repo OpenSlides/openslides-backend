@@ -23,7 +23,7 @@ from ...util.typing import ActionData
 from ..meeting_mediafile.create import MeetingMediafileCreate
 from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
 from .delete import MediafileDelete
-from .mixins import MediafileMixin
+from .mixins import MediafileCreateMixin
 
 
 class PDFInformation(TypedDict, total=False):
@@ -32,7 +32,7 @@ class PDFInformation(TypedDict, total=False):
 
 
 @register_action("mediafile.upload")
-class MediafileUploadAction(MediafileMixin, CreateAction):
+class MediafileUploadAction(MediafileCreateMixin, CreateAction):
     """
     Action to upload a mediafile.
     """
@@ -40,7 +40,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
         required_properties=["title", "owner_id", "filename"],
-        optional_properties=["token", "parent_id"],
+        optional_properties=["token", "parent_id", "is_published_to_meetings"],
         additional_required_fields={"file": {"type": "string"}},
         additional_optional_fields={
             "access_group_ids": MeetingMediafile.access_group_ids.get_schema()

@@ -892,6 +892,19 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             == response.json["message"]
         )
 
+    def test_update_publicize_meeting_file(self) -> None:
+        self.permission_test_models["group/7"]["meeting_id"] = 2
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "mediafile.update",
+            {"id": 111, "is_published_to_meetings": True},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Only organization-owned mediafiles may be published."
+            in response.json["message"]
+        )
+
     def test_update_access_group_different_owner(self) -> None:
         self.permission_test_models["group/7"]["meeting_id"] = 2
         self.set_models(self.permission_test_models)

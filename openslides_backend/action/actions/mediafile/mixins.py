@@ -6,6 +6,7 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, DatastoreException, MissingPermission
 from ....shared.filters import And, Filter, FilterOperator, Not
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
+from ....shared.util import ONE_ORGANIZATION_ID
 from ...action import Action
 
 
@@ -44,6 +45,10 @@ class MediafileMixin(Action):
                     "access_group_ids is not allowed in organization mediafiles."
                 )
         else:
+            if instance.get("is_published_to_meetings"):
+                raise ActionException(
+                    "Only organization-owned mediafiles may be published."
+                )
             # check for token, not allowed in meeting.
             if "token" in instance:
                 raise ActionException("token is not allowed in meeting mediafiles.")
@@ -161,3 +166,24 @@ class MediafileMixin(Action):
             results = self.datastore.filter(self.model.collection, filter_, ["id"])
             if results:
                 raise ActionException(f"Token '{token}' is not unique.")
+
+
+class MediafileCreateMixin(MediafileMixin):
+    def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        instance = super().update_instance(instance)
+        published = (
+            ONE_ORGANIZATION_ID if instance.get("is_published_to_meetings") else None
+        )
+        if not published and (parent_id := instance.get("parent_id")):
+            parent = self.datastore.get(
+                fqid_from_collection_and_id("mediafile", parent_id),
+                ["published_to_meetings_in_organization_id"],
+            )
+            published = parent.get("published_to_meetings_in_organization_id")
+        if published:
+            instance["published_to_meetings_in_organization_id"] = published
+        return instance
+
+
+class MediafileUpdateMixin(MediafileMixin):
+    pass  # TODO: Write code for updating with publishing, also write specialized code in mediafile.update and -upload

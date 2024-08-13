@@ -8,11 +8,11 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting_mediafile.create import MeetingMediafileCreate
 from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
-from .mixins import MediafileMixin
+from .mixins import MediafileCreateMixin
 
 
 @register_action("mediafile.create_directory")
-class MediafileCreateDirectory(MediafileMixin, CreateAction):
+class MediafileCreateDirectory(MediafileCreateMixin, CreateAction):
     """
     Action to create directory a mediafile.
     """
@@ -20,7 +20,7 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
         required_properties=["owner_id", "title"],
-        optional_properties=["parent_id"],
+        optional_properties=["parent_id", "is_published_to_meetings"],
         additional_optional_fields={
             "access_group_ids": MeetingMediafile.access_group_ids.get_schema()
         },

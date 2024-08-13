@@ -16,18 +16,20 @@ from .calculate_mixins import (
     MediafileCalculatedFieldsMixin,
     calculate_inherited_groups_helper_with_parent_id,
 )
-from .mixins import MediafileMixin
+from .mixins import MediafileUpdateMixin
 
 
 @register_action("mediafile.update")
-class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMixin):
+class MediafileUpdate(
+    MediafileUpdateMixin, UpdateAction, MediafileCalculatedFieldsMixin
+):
     """
     Action to update a mediafile.
     """
 
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_update_schema(
-        optional_properties=["title", "token"],
+        optional_properties=["title", "token", "is_published_to_meetings"],
         additional_optional_fields={
             "meeting_id": optional_id_schema,
             "access_group_ids": MeetingMediafile.access_group_ids.get_schema(),
