@@ -63,8 +63,8 @@ class Organization(Model):
     mediafile_ids = fields.RelationListField(
         to={"mediafile": "owner_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    public_mediafile_ids = fields.RelationListField(
-        to={"mediafile": "public_in_organization_id"}
+    published_mediafile_ids = fields.RelationListField(
+        to={"mediafile": "published_to_meetings_in_organization_id"}
     )
     user_ids = fields.RelationListField(to={"user": "organization_id"})
     users_email_sender = fields.CharField(default="OpenSlides")
@@ -2132,9 +2132,9 @@ class Mediafile(Model):
     pdf_information = fields.JSONField()
     create_timestamp = fields.TimestampField()
     token = fields.CharField()
-    is_global = fields.BooleanField(constraints={"restiction_mode": "A"})
-    public_in_organization_id = fields.RelationField(
-        to={"organization": "public_mediafile_ids"}
+    is_published_to_meetings = fields.BooleanField(constraints={"restiction_mode": "A"})
+    published_to_meetings_in_organization_id = fields.RelationField(
+        to={"organization": "published_mediafile_ids"}
     )
     parent_id = fields.RelationField(
         to={"mediafile": "child_ids"}, equal_fields="owner_id"
