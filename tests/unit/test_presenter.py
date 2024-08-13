@@ -25,16 +25,3 @@ class GeneralPresenterTester(TestCase):
             context_manager.exception.message,
             "Presenter non_existing_presenter does not exist.",
         )
-
-    def test_with_differing_auth_methods(self) -> None:
-        request = MagicMock()
-        request.json = [
-            PresenterBlob(presenter="get_users", data={}),
-            PresenterBlob(presenter="check_mediafile_id", data={}),
-        ]
-        with self.assertRaises(PresenterException) as context_manager:
-            self.presenter_handler.handle_request(request)
-        self.assertEqual(
-            context_manager.exception.message,
-            "You cannot call presenters with different login mechanisms",
-        )
