@@ -2132,6 +2132,10 @@ class Mediafile(Model):
     pdf_information = fields.JSONField()
     create_timestamp = fields.TimestampField()
     token = fields.CharField()
+    is_public = fields.BooleanField(constraints={"restiction_mode": "A"})
+    public_in_organization_id = fields.RelationField(
+        to={"organization": "public_mediafile_ids"}
+    )
     parent_id = fields.RelationField(
         to={"mediafile": "child_ids"}, equal_fields="owner_id"
     )
@@ -2145,9 +2149,6 @@ class Mediafile(Model):
     )
     meeting_mediafile_ids = fields.RelationListField(
         to={"meeting_mediafile": "mediafile_id"}, on_delete=fields.OnDelete.CASCADE
-    )
-    public_in_organization_id = fields.RelationField(
-        to={"organization": "public_mediafile_ids"}
     )
 
 
