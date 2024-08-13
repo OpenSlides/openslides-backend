@@ -3,7 +3,6 @@ from typing import Any
 
 from ....models.models import Mediafile, MeetingMediafile
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action

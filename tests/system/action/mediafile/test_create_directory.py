@@ -671,7 +671,10 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "access_group_ids is not allowed in organization mediafiles." in response.json["message"]
+        assert (
+            "access_group_ids is not allowed in organization mediafiles."
+            in response.json["message"]
+        )
 
     def test_create_directory_two_meetings(self) -> None:
         self.set_models(

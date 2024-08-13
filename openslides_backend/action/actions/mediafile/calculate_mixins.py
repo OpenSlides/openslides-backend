@@ -1,9 +1,8 @@
 from typing import Any
 
 from ....models.helper import calculate_inherited_groups_helper
-from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
-from ....shared.filters import And, FilterOperator
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ...util.typing import ActionData
@@ -24,33 +23,44 @@ class MediafileCalculatedFieldsMixin(Action):
             fqid_from_collection_and_id("mediafile", instance["id"]), ["child_ids"]
         )
         if mediafile.get("child_ids"):
-            get_many_request = GetManyRequest(
-                "mediafile",
-                mediafile["child_ids"],
+            meeting_mediafile_children = self.datastore.filter(
+                "meeting_mediafile",
+                And(
+                    FilterOperator("meeting_id", "=", instance["meeting_id"]),
+                    Or(
+                        FilterOperator("mediafile_id", "=", child_id)
+                        for child_id in mediafile["child_ids"]
+                    ),
+                ),
                 [
                     "access_group_ids",
-                    "child_ids",
-                    "is_public",
                     "inherited_access_group_ids",
+                    "is_public",
+                    "mediafile_id",
                 ],
             )
-            gm_result = self.datastore.get_many([get_many_request])
-            children = gm_result.get("mediafile", {})
-            for child_id in children:
-                child = children.get(child_id, {})
-                new_instance: dict[str, Any] = {"id": child_id}
+            for meeting_mediafile_child_id in meeting_mediafile_children:
+                meeting_mediafile_child = meeting_mediafile_children.get(
+                    meeting_mediafile_child_id, {}
+                )
+                child_id = meeting_mediafile_child["mediafile_id"]
+                new_instance: dict[str, Any] = {
+                    "id": child_id,
+                    "meeting_id": instance["meeting_id"],
+                }
                 (
                     new_instance["is_public"],
                     new_instance["inherited_access_group_ids"],
                 ) = calculate_inherited_groups_helper(
-                    child.get("access_group_ids", []),
+                    meeting_mediafile_child.get("access_group_ids", []),
                     parent_is_public,
                     parent_inherited_access_group_ids,
                 )
 
                 if (
-                    child.get("is_public") != new_instance["is_public"]
-                    or child.get("inherited_access_group_ids")
+                    meeting_mediafile_child.get("is_public")
+                    != new_instance["is_public"]
+                    or meeting_mediafile_child.get("inherited_access_group_ids")
                     != new_instance["inherited_access_group_ids"]
                 ):
                     yield new_instance
