@@ -37,5 +37,12 @@ If set_as_template is given, template_for_organization_id has to be set to 1.
 
 ## Permission
 
+<<<<<<< HEAD
 The request user must have the CML `can_manage` in the target committee (where the meeting is created).
 If the organization setting `require_duplicate_from` is set, a committee manager can only clone template meetings.
+=======
+It is not allowed to clone a meeting from a different committee if said meeting isn't a template.
+
+Otherwise the request user only needs the CML `can_manage` in the target committee (where the meeting is created).
+
+>>>>>>> aa5bcf94 (Update clone perms: allow only template or same committee (#2568))
