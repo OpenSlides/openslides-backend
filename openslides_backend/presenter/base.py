@@ -19,7 +19,6 @@ class BasePresenter(BaseServiceProvider):
 
     data: Any
     schema: Callable[[Any], None] | None = None
-    csrf_exempt: bool
 
     def __init__(
         self,
