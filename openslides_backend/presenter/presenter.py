@@ -16,7 +16,6 @@ presenters_map: dict[str, type[BasePresenter]] = {}
 
 def register_presenter(
     name: str,
-    csrf_exempt: bool = False,
 ) -> Callable[[type[BasePresenter]], type[BasePresenter]]:
     """
     Decorator to be used for presenter classes. Registers the class so that it
@@ -24,7 +23,6 @@ def register_presenter(
     """
 
     def wrapper(clazz: type[BasePresenter]) -> type[BasePresenter]:
-        clazz.csrf_exempt = csrf_exempt
         presenters_map[name] = clazz
         return clazz
 
@@ -104,20 +102,12 @@ class PresenterHandler(BaseHandler):
                 )
             presenters.append(presenter)
 
-        if len({presenter.csrf_exempt for presenter in presenters}) > 1:
-            raise PresenterException(
-                "You cannot call presenters with different login mechanisms"
-            )
-
         self.services.authentication().set_authentication(
             request.headers.get(AUTHENTICATION_HEADER, ""),
             request.cookies.get(COOKIE_NAME, ""),
         )
         access_token: str | None = None
-        if presenters[0].csrf_exempt:
-            user_id = self.services.authentication().authenticate_only_refresh_id()
-        else:
-            user_id, access_token = self.services.authentication().authenticate()
+        user_id, access_token = self.services.authentication().authenticate()
 
         response = []
         for PresenterClass in presenters:
