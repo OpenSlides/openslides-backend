@@ -10,11 +10,7 @@ from openslides_backend.models.checker import (
 )
 from openslides_backend.models.models import Meeting, MeetingUser
 from openslides_backend.services.datastore.interface import GetManyRequest
-<<<<<<< HEAD
-from openslides_backend.shared.exceptions import ActionException
-=======
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
->>>>>>> aa5bcf94 (Update clone perms: allow only template or same committee (#2568))
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema, required_id_schema
@@ -80,8 +76,6 @@ class MeetingClone(MeetingImport):
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
-<<<<<<< HEAD
-=======
         if "committee_id" in instance:
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", instance["meeting_id"]),
@@ -94,7 +88,6 @@ class MeetingClone(MeetingImport):
                 raise PermissionDenied(
                     "Cannot clone meeting to a different committee if it is a non-template meeting."
                 )
->>>>>>> aa5bcf94 (Update clone perms: allow only template or same committee (#2568))
         MeetingPermissionMixin.check_permissions(self, instance)
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
