@@ -2431,7 +2431,7 @@ class ChatMessage(Model):
     content = fields.HTMLStrictField(required=True)
     created = fields.TimestampField(required=True)
     meeting_user_id = fields.RelationField(
-        to={"meeting_user": "chat_message_ids"}, required=True, constant=True
+        to={"meeting_user": "chat_message_ids"}, constant=True
     )
     chat_group_id = fields.RelationField(
         to={"chat_group": "chat_message_ids"}, required=True, constant=True
