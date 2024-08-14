@@ -1,7 +1,7 @@
 from typing import Any
 
 from openslides_backend.action.actions.motion.mixins import TextHashMixin
-from openslides_backend.action.actions.user.delegation_based_restriction_mixin import (
+from openslides_backend.action.mixins.delegation_based_restriction_mixin import (
     DelegationBasedRestriction,
 )
 from openslides_backend.permissions.base_classes import Permission
@@ -411,6 +411,17 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "text": "test",
             },
             Permissions.Motion.CAN_CREATE,
+        )
+
+    def test_create_permission_simple_fields_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+            },
         )
 
     def setup_permission_test(

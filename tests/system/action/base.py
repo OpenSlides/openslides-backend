@@ -216,8 +216,31 @@ class BaseActionTestCase(BaseSystemTestCase):
             }
         )
 
-    def set_anonymous(self, enable: bool = True, meeting_id: int = 1) -> None:
-        self.set_models({f"meeting/{meeting_id}": {"enable_anonymous": enable}})
+    def set_anonymous(
+        self,
+        enable: bool = True,
+        meeting_id: int = 1,
+        permissions: list[Permission] = [],
+    ) -> int:
+        """Also creates an anonymous group at the next-highest free group_id"""
+        next_group_id = self.datastore.reserve_id("group")
+        group_ids = self.get_model(f"meeting/{meeting_id}").get("group_ids", [])
+        self.set_models(
+            {
+                f"meeting/{meeting_id}": {
+                    "enable_anonymous": enable,
+                    "group_ids": [*group_ids, next_group_id],
+                    "anonymous_group_id": next_group_id,
+                },
+                f"group/{next_group_id}": {
+                    "name": "Anonymous",
+                    "meeting_id": meeting_id,
+                    "anonymous_group_for_meeting_id": meeting_id,
+                    "permissions": permissions,
+                },
+            }
+        )
+        return next_group_id
 
     def set_organization_management_level(
         self, level: OrganizationManagementLevel | None, user_id: int = 1
@@ -316,7 +339,10 @@ class BaseActionTestCase(BaseSystemTestCase):
         return user_id
 
     @with_database_context
-    def set_user_groups(self, user_id: int, group_ids: list[int]) -> None:
+    def set_user_groups(self, user_id: int, group_ids: list[int]) -> list[int]:
+        """
+        Sets the users groups, returns the meeting_user_ids
+        """
         assert isinstance(group_ids, list)
         groups = self.datastore.get_many(
             [
@@ -403,6 +429,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 },
             }
         )
+        return [mu["id"] for mu in meeting_users.values()]
 
     @with_database_context
     def _fetch_groups(self, group_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
@@ -436,13 +463,19 @@ class BaseActionTestCase(BaseSystemTestCase):
             Permission | list[Permission] | OrganizationManagementLevel | None
         ) = None,
         fail: bool | None = None,
+        lock_meeting: bool = False,
+        lock_out_calling_user: bool = False,
     ) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         if models:
             self.set_models(models)
-        self.set_user_groups(self.user_id, [3])
+        if lock_meeting:
+            self.set_models({"meeting/1": {"locked_from_inside": True}})
+        meeting_user_id = self.set_user_groups(self.user_id, [3])[0]
+        if lock_out_calling_user:
+            self.set_models({f"meeting_user/{meeting_user_id}": {"locked_out": True}})
         if permission:
             if isinstance(permission, OrganizationManagementLevel):
                 self.set_organization_management_level(permission, self.user_id)
@@ -461,6 +494,21 @@ class BaseActionTestCase(BaseSystemTestCase):
             )
         else:
             self.assert_status_code(response, 200)
+
+    def base_locked_out_superadmin_permission_test(
+        self,
+        models: dict[str, dict[str, Any]],
+        action: str,
+        action_data: dict[str, Any],
+    ) -> None:
+        self.base_permission_test(
+            models,
+            action,
+            action_data,
+            OrganizationManagementLevel.SUPERADMIN,
+            True,
+            True,
+        )
 
     @with_database_context
     def assert_history_information(

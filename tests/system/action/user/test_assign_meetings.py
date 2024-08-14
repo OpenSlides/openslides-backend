@@ -107,6 +107,118 @@ class UserAssignMeetings(BaseActionTestCase):
             "meeting_user/7", {"meeting_id": 4, "user_id": 1, "group_ids": [43]}
         )
 
+    def test_assign_meetings_ignore_meetings_anonymous_group(self) -> None:
+        """
+        ...and don't ignore groups that are just named "Anonymous"
+        """
+        self.set_models(
+            {
+                "group/11": {
+                    "name": "Anonymous",
+                    "meeting_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "group/22": {
+                    "name": "nothing",
+                    "meeting_id": 2,
+                    "meeting_user_ids": [2],
+                },
+                "group/31": {
+                    "name": "Anonymous",
+                    "meeting_id": 3,
+                    "anonymous_group_for_meeting_id": 3,
+                },
+                "group/32": {
+                    "name": "standard",
+                    "meeting_id": 3,
+                    "default_group_for_meeting_id": 3,
+                },
+                "group/43": {"name": "standard", "meeting_id": 4},
+                "group/51": {"name": "Anonymous", "meeting_id": 5},
+                "group/52": {
+                    "name": "Anonymous",
+                    "meeting_id": 5,
+                    "anonymous_group_for_meeting_id": 5,
+                },
+                "meeting/1": {
+                    "name": "success(existing)",
+                    "group_ids": [11],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "meeting_user_ids": [1],
+                },
+                "meeting/2": {
+                    "name": "nothing",
+                    "group_ids": [22],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "meeting_user_ids": [2],
+                },
+                "meeting/3": {
+                    "name": "success(added)",
+                    "group_ids": [30, 31],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "default_group_id": 32,
+                },
+                "meeting/4": {
+                    "name": "standard",
+                    "group_ids": [43],
+                    "is_active_in_organization_id": 1,
+                    "default_group_id": 43,
+                    "committee_id": 2,
+                },
+                "meeting/5": {
+                    "name": "success(added)",
+                    "group_ids": [51, 52],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                },
+                "user/1": {
+                    "meeting_user_ids": [1, 2, 5],
+                    "meeting_ids": [1, 2, 5],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [11],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 2,
+                    "user_id": 1,
+                    "group_ids": [22],
+                },
+                "committee/2": {"meeting_ids": [1, 2, 3, 4, 5]},
+            }
+        )
+        response = self.request(
+            "user.assign_meetings",
+            {
+                "id": 1,
+                "meeting_ids": [1, 2, 3, 4, 5],
+                "group_name": "Anonymous",
+            },
+        )
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["succeeded"] == [1, 5]
+        assert response.json["results"][0][0]["standard_group"] == [3, 4]
+        assert response.json["results"][0][0]["nothing"] == [2]
+        self.assert_model_exists(
+            "meeting_user/1", {"meeting_id": 1, "user_id": 1, "group_ids": [11]}
+        )
+        self.assert_model_exists(
+            "meeting_user/2", {"meeting_id": 2, "user_id": 1, "group_ids": [22]}
+        )
+        self.assert_model_exists(
+            "meeting_user/3", {"meeting_id": 5, "user_id": 1, "group_ids": [51]}
+        )
+        self.assert_model_exists(
+            "meeting_user/4", {"meeting_id": 3, "user_id": 1, "group_ids": [32]}
+        )
+        self.assert_model_exists(
+            "meeting_user/5", {"meeting_id": 4, "user_id": 1, "group_ids": [43]}
+        )
+
     def test_assign_meetings_multiple_committees(self) -> None:
         self.set_models(
             {
@@ -294,4 +406,98 @@ class UserAssignMeetings(BaseActionTestCase):
         assert (
             "Meeting Archived/1 cannot be changed, because it is archived."
             in response.json["message"]
+        )
+
+    def test_assign_meetings_with_locked_meetings(self) -> None:
+        self.set_models(
+            {
+                "group/11": {
+                    "name": "to_find",
+                    "meeting_id": 1,
+                    "meeting_user_ids": [1],
+                },
+                "group/22": {
+                    "name": "nothing",
+                    "meeting_id": 2,
+                    "meeting_user_ids": [2],
+                },
+                "group/31": {"name": "to_find", "meeting_id": 3},
+                "group/43": {"name": "standard", "meeting_id": 4},
+                "group/51": {"name": "to_find", "meeting_id": 5},
+                "group/52": {
+                    "name": "nothing",
+                    "meeting_id": 5,
+                    "meeting_user_ids": [5],
+                },
+                "meeting/1": {
+                    "name": "success(existing)",
+                    "group_ids": [11],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "meeting_user_ids": [1],
+                },
+                "meeting/2": {
+                    "name": "nothing",
+                    "group_ids": [22],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "meeting_user_ids": [2],
+                    "locked_from_inside": True,
+                },
+                "meeting/3": {
+                    "name": "success(added)",
+                    "group_ids": [31],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "locked_from_inside": False,
+                },
+                "meeting/4": {
+                    "name": "standard",
+                    "group_ids": [43],
+                    "is_active_in_organization_id": 1,
+                    "default_group_id": 43,
+                    "committee_id": 2,
+                    "locked_from_inside": True,
+                },
+                "meeting/5": {
+                    "name": "success(added)",
+                    "group_ids": [51, 52],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                    "meeting_user_ids": [5],
+                },
+                "user/1": {
+                    "meeting_user_ids": [1, 2, 5],
+                    "meeting_ids": [1, 2, 5],
+                },
+                "meeting_user/1": {
+                    "meeting_id": 1,
+                    "user_id": 1,
+                    "group_ids": [11],
+                },
+                "meeting_user/2": {
+                    "meeting_id": 2,
+                    "user_id": 1,
+                    "group_ids": [22],
+                },
+                "meeting_user/5": {
+                    "meeting_id": 5,
+                    "user_id": 1,
+                    "group_ids": [52],
+                },
+                "committee/2": {"meeting_ids": [1, 2, 3, 4, 5]},
+            }
+        )
+        response = self.request(
+            "user.assign_meetings",
+            {
+                "id": 1,
+                "meeting_ids": [1, 2, 3, 4, 5],
+                "group_name": "to_find",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Cannot assign meetings because some selected meetings are locked: 2, 4."
         )

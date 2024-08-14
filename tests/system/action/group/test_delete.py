@@ -47,6 +47,16 @@ class GroupDeleteActionTest(BaseActionTestCase):
         response = self.request("group.delete", {"id": 111})
         self.assert_status_code(response, 400)
 
+    def test_delete_anonymous_group(self) -> None:
+        self.set_models(
+            {
+                "meeting/22": {"anonymous_group_id": 111},
+                "group/111": {"anonymous_group_for_meeting_id": 22},
+            }
+        )
+        response = self.request("group.delete", {"id": 111})
+        self.assert_status_code(response, 400)
+
     def test_delete_with_users(self) -> None:
         self.set_models(
             {
@@ -110,6 +120,15 @@ class GroupDeleteActionTest(BaseActionTestCase):
             "group.delete",
             {"id": 111},
             Permissions.User.CAN_MANAGE,
+        )
+
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "group/111": {"name": "name_srtgb123", "meeting_id": 1},
+            },
+            "group.delete",
+            {"id": 111},
         )
 
     def test_delete_mediafile1(self) -> None:

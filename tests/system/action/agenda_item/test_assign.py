@@ -1,3 +1,4 @@
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls
@@ -85,7 +86,7 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                 "agenda_item.assign", {"meeting_id": 222, "ids": [8, 9], "parent_id": 7}
             )
         self.assert_status_code(response, 200)
-        assert counter.calls == 3
+        assert counter.calls == 4
         agenda_item_7 = self.get_model("agenda_item/7")
         assert agenda_item_7.get("child_ids") == [8, 9]
         assert agenda_item_7.get("parent_id") is None
@@ -140,4 +141,17 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
             "agenda_item.assign",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             Permissions.AgendaItem.CAN_MANAGE,
+        )
+
+    def test_assign_permissions_with_locked_meeting(self) -> None:
+        self.base_permission_test(
+            {
+                "agenda_item/7": {"meeting_id": 1},
+                "agenda_item/8": {"meeting_id": 1},
+            },
+            "agenda_item.assign",
+            {"meeting_id": 1, "ids": [8], "parent_id": 7},
+            OrganizationManagementLevel.SUPERADMIN,
+            True,
+            lock_meeting=True,
         )

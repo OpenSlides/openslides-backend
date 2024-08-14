@@ -133,3 +133,10 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             {"id": 1, "mediafile_id": 17, "place": "web_header"},
             Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,
         )
+
+    def test_set_logo_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "meeting.set_logo",
+            {"id": 1, "mediafile_id": 17, "place": "web_header"},
+        )

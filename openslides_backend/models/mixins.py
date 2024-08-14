@@ -4,6 +4,24 @@ class AgendaItemModelMixin:
     HIDDEN_ITEM = "hidden"
 
 
+DEFAULT_PROJECTOR_OPTIONS = (
+    "agenda_item_list",
+    "topic",
+    "list_of_speakers",
+    "current_los",
+    "motion",
+    "amendment",
+    "motion_block",
+    "assignment",
+    "mediafile",
+    "message",
+    "countdown",
+    "assignment_poll",
+    "motion_poll",
+    "poll",
+)
+
+
 class MeetingModelMixin:
     LOGO_PLACES = (
         "projector_main",
@@ -25,22 +43,6 @@ class MeetingModelMixin:
         "projector_h1",
         "projector_h2",
     )
-    DEFAULT_PROJECTOR_OPTIONS = (
-        "agenda_item_list",
-        "topic",
-        "list_of_speakers",
-        "current_los",
-        "motion",
-        "amendment",
-        "motion_block",
-        "assignment",
-        "mediafile",
-        "message",
-        "countdown",
-        "assignment_poll",
-        "motion_poll",
-        "poll",
-    )
 
     @classmethod
     def all_logo_places(cls) -> list[str]:
@@ -61,15 +63,14 @@ class MeetingModelMixin:
     @classmethod
     def all_default_projectors(cls) -> list[str]:
         return [
-            f"default_projector_{option}_ids"
-            for option in cls.DEFAULT_PROJECTOR_OPTIONS
+            f"default_projector_{option}_ids" for option in DEFAULT_PROJECTOR_OPTIONS
         ]
 
     @classmethod
     def reverse_default_projectors(cls) -> list[str]:
         return [
             f"used_as_default_projector_for_{option}_in_meeting_id"
-            for option in cls.DEFAULT_PROJECTOR_OPTIONS
+            for option in DEFAULT_PROJECTOR_OPTIONS
         ]
 
 

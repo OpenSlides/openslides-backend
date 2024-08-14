@@ -4,14 +4,10 @@ from typing import Any
 
 from openslides_backend.shared.typing import HistoryInformation
 
-from ....permissions.permission_helper import has_perm
-from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
-from ....services.datastore.interface import DatastoreService
-from ....shared.exceptions import MissingPermission, VoteServiceException
+from ....shared.exceptions import VoteServiceException
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import (
-    KEYSEPARATOR,
     collection_from_fqid,
     collectionfield_and_fqid_from_fqfield,
     fqid_from_collection_and_id,
@@ -21,6 +17,7 @@ from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownCommand, CountdownControl
 from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token
+from .functions import check_poll_or_option_perms
 
 
 class PollPermissionMixin(Action):
@@ -39,22 +36,6 @@ class PollPermissionMixin(Action):
         check_poll_or_option_perms(
             content_object_id, self.datastore, self.user_id, meeting_id
         )
-
-
-def check_poll_or_option_perms(
-    content_object_id: str,
-    datastore: DatastoreService,
-    user_id: int,
-    meeting_id: int,
-) -> None:
-    if content_object_id.startswith("motion" + KEYSEPARATOR):
-        perm: Permission = Permissions.Motion.CAN_MANAGE_POLLS
-    elif content_object_id.startswith("assignment" + KEYSEPARATOR):
-        perm = Permissions.Assignment.CAN_MANAGE
-    else:
-        perm = Permissions.Poll.CAN_MANAGE
-    if not has_perm(datastore, user_id, perm, meeting_id):
-        raise MissingPermission(perm)
 
 
 class StopControl(CountdownControl, Action):
@@ -99,6 +80,7 @@ class StopControl(CountdownControl, Action):
                 "poll_couple_countdown",
                 "poll_countdown_id",
                 "users_enable_vote_weight",
+                "users_enable_vote_delegations",
             ],
         )
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
@@ -180,9 +162,13 @@ class StopControl(CountdownControl, Action):
         instance["votesinvalid"] = "0.000000"
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_users(poll | instance)
+        instance["entitled_users_at_stop"] = self.get_entitled_users(
+            poll | instance, meeting
+        )
 
-    def get_entitled_users(self, poll: dict[str, Any]) -> list[dict[str, Any]]:
+    def get_entitled_users(
+        self, poll: dict[str, Any], meeting: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         entitled_users = []
         all_voted_users = set(poll.get("voted_ids", []))
 
@@ -203,14 +189,15 @@ class StopControl(CountdownControl, Action):
         gm_result = self.datastore.get_many([gmr])
         meeting_users = gm_result.get("meeting_user", {}).values()
 
-        # fetch vote delegations
-        delegated_to_mu_ids = list(
-            {id_ for mu in meeting_users if (id_ := mu.get("vote_delegated_to_id"))}
-        )
         mu_to_user_id = {}
-        if delegated_to_mu_ids:
-            gmr = GetManyRequest("meeting_user", delegated_to_mu_ids, ["user_id"])
-            mu_to_user_id = self.datastore.get_many([gmr]).get("meeting_user", {})
+        if meeting.get("users_enable_vote_delegations"):
+            # fetch vote delegations
+            delegated_to_mu_ids = list(
+                {id_ for mu in meeting_users if (id_ := mu.get("vote_delegated_to_id"))}
+            )
+            if delegated_to_mu_ids:
+                gmr = GetManyRequest("meeting_user", delegated_to_mu_ids, ["user_id"])
+                mu_to_user_id = self.datastore.get_many([gmr]).get("meeting_user", {})
 
         gmr = GetManyRequest(
             "user",
@@ -229,6 +216,7 @@ class StopControl(CountdownControl, Action):
                     "vote_delegated_to_user_id": (
                         mu_to_user_id[vote_mu_id]["user_id"]
                         if (vote_mu_id := mu.get("vote_delegated_to_id"))
+                        and meeting.get("users_enable_vote_delegations")
                         else None
                     ),
                 }

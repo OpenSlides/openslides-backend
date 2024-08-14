@@ -63,3 +63,10 @@ class MediafileUnsetFontActionTest(BaseActionTestCase):
             {"id": 1, "place": "bold"},
             Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,
         )
+
+    def test_unset_font_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "meeting.unset_font",
+            {"id": 1, "place": "bold"},
+        )

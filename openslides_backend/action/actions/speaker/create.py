@@ -13,9 +13,9 @@ from ....shared.schema import required_id_schema
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
+from ...mixins.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..user.delegation_based_restriction_mixin import DelegationBasedRestrictionMixin
 from .mixins import CheckSpeechState, PointOfOrderPermissionMixin, StructureLevelMixin
 from .sort import SpeakerSort
 from .speech_state import SpeechState

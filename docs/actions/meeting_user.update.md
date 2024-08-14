@@ -19,24 +19,26 @@
     chat_message_ids: Id[];
     vote_delegated_to_id: Id;
     vote_delegations_from_ids: Id[];
+    locked_out: boolean;
 
 // Group B
     about_me: HTML;
-}
+
 // Group C
     group_ids: Id[];
+
+// Group D
+    assignment_candidate_ids: Id[];
+    motion_working_group_speaker_ids: Id[];
+    motion_editor_ids: Id[];
+    supported_motion_ids: Id[];
+    chat_message_ids: Id[];
 }
 
 ```
-## Action
+## Internal action
 Updates a meeting_user. `vote_delegated_to_id` and `vote_delegations_from_ids` has special checks, see user checks.
 
-## Permissions
-Group A: The request user needs `user.can_manage`.
+Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
 
-Group B: The request user needs `user.can_manage` or must be the request user
-
-Group C: The request user must satisfy at least one of:
-- the OML `can_manage_users`
-- `user.can_manage` for the meeting
-- The CML `can_manage` for the committee of the meeting
+The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the updated meeting_user and throws an error if that is the case.

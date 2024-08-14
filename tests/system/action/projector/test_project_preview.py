@@ -94,3 +94,10 @@ class ProjectorProjectPreview(BaseActionTestCase):
             {"id": 3},
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_project_preview_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projector.project_preview",
+            {"id": 3},
+        )

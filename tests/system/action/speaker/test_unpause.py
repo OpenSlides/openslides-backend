@@ -179,3 +179,10 @@ class TestSpeakerUnpause(BaseActionTestCase):
             {"id": 890},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
+
+    def test_unpause_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.models,
+            "speaker.unpause",
+            {"id": 890},
+        )

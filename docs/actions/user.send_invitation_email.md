@@ -49,5 +49,4 @@ It does an equal string formatting  as for the subject. Use `meeting/users_email
 Sending email is no longer refused, the wrong keyword will be injected instead.
 
 ## Permissions
-The requesting user needs either the permission `user.can_update` (if a `meeting_id` is given) in
-each referenced meeting or the permission OML `can_manage_users`.
+The requesting user needs the permission `user.can_update` if a `meeting_id` is given or, if not, the permission OML `can_manage_users`.

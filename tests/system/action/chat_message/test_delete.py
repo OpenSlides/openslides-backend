@@ -47,3 +47,10 @@ class ChatMessageDelete(BaseActionTestCase):
             Permissions.Chat.CAN_MANAGE,
         )
         self.assert_model_deleted("chat_message/101")
+
+    def test_delete_correct_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.test_models,
+            "chat_message.delete",
+            {"id": 101},
+        )

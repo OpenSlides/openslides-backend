@@ -1,47 +1,62 @@
 from openslides_backend.action.mixins.meeting_user_helper import (
     get_groups_from_meeting_user,
+    get_meeting_user,
 )
 
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
-from ..shared.exceptions import PermissionDenied
+from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.patterns import fqid_from_collection_and_id
 from .management_levels import CommitteeManagementLevel, OrganizationManagementLevel
-from .permissions import Permission, permission_parents
+from .permissions import Permission, Permissions, permission_parents
 
 
 def has_perm(
     datastore: DatastoreService, user_id: int, permission: Permission, meeting_id: int
 ) -> bool:
+    meeting = datastore.get(
+        fqid_from_collection_and_id("meeting", meeting_id),
+        ["anonymous_group_id", "enable_anonymous", "locked_from_inside"],
+        lock_result=False,
+    )
+    not_locked_from_editing = not meeting.get("locked_from_inside")
     # anonymous cannot be fetched from db
     if user_id > 0:
-        user = datastore.get(
-            fqid_from_collection_and_id("user", user_id),
-            [
-                "organization_management_level",
-            ],
-            lock_result=False,
-        )
-        # superadmins have all permissions
-        if (
-            user.get("organization_management_level")
-            == OrganizationManagementLevel.SUPERADMIN
-        ):
-            return True
+        # superadmins have all permissions if the meeting isn't locked from the inside
+        if not_locked_from_editing:
+            user = datastore.get(
+                fqid_from_collection_and_id("user", user_id),
+                [
+                    "organization_management_level",
+                ],
+                lock_result=False,
+            )
+            if (
+                user.get("organization_management_level")
+                == OrganizationManagementLevel.SUPERADMIN
+            ):
+                return True
 
-        group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
+        meeting_user = get_meeting_user(
+            datastore, meeting_id, user_id, ["group_ids", "locked_out"]
+        )
+        if not meeting_user:
+            group_ids = []
+        elif meeting_user.get("locked_out"):
+            return False
+        else:
+            group_ids = meeting_user.get("group_ids", [])
         if not group_ids:
             return False
     elif user_id == 0:
-        # anonymous users are in the default group
-        meeting = datastore.get(
-            fqid_from_collection_and_id("meeting", meeting_id),
-            ["default_group_id", "enable_anonymous"],
-        )
+        # anonymous users are in the anonymous group
         # check if anonymous is allowed
         if not meeting.get("enable_anonymous"):
             raise PermissionDenied(f"Anonymous is not enabled for meeting {meeting_id}")
-        group_ids = [meeting["default_group_id"]]
+        if anonymous_group_id := meeting.get("anonymous_group_id"):
+            group_ids = [anonymous_group_id]
+        else:
+            return False
     else:
         return False
 
@@ -119,6 +134,32 @@ def has_committee_management_level(
     return False
 
 
+def get_shared_committee_management_levels(
+    datastore: DatastoreService,
+    user_id: int,
+    expected_level: CommitteeManagementLevel,
+    committee_ids: list[int],
+) -> list[int]:
+    """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
+    if user_id > 0:
+        cml_fields = ["committee_management_ids"]
+        user = datastore.get(
+            fqid_from_collection_and_id("user", user_id),
+            [*cml_fields],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        if user.get("organization_management_level") in (
+            OrganizationManagementLevel.SUPERADMIN,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+        ):
+            return committee_ids
+        return list(
+            set(committee_ids).intersection(user.get("committee_management_ids", []))
+        )
+    return []
+
+
 def filter_surplus_permissions(permission_list: list[Permission]) -> list[Permission]:
     reduced_permissions: list[Permission] = []
     for permission in permission_list:
@@ -135,14 +176,41 @@ def filter_surplus_permissions(permission_list: list[Permission]) -> list[Permis
 
 
 def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool:
-    if has_organization_management_level(
+    meeting = datastore.get(
+        fqid_from_collection_and_id("meeting", meeting_id),
+        ["admin_group_id", "locked_from_inside"],
+        lock_result=False,
+    )
+    if not meeting.get("locked_from_inside") and has_organization_management_level(
         datastore, user_id, OrganizationManagementLevel.SUPERADMIN
     ):
         return True
 
-    meeting = datastore.get(
-        fqid_from_collection_and_id("meeting", meeting_id),
-        ["admin_group_id"],
-    )
     group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
     return bool(group_ids) and meeting["admin_group_id"] in group_ids
+
+
+anonymous_perms_whitelist: set[Permission] = {
+    Permissions.AgendaItem.CAN_SEE,
+    Permissions.AgendaItem.CAN_SEE_INTERNAL,
+    Permissions.AgendaItem.CAN_SEE_MODERATOR_NOTES,
+    Permissions.Assignment.CAN_SEE,
+    Permissions.ListOfSpeakers.CAN_SEE,
+    Permissions.Mediafile.CAN_SEE,
+    Permissions.Meeting.CAN_SEE_AUTOPILOT,
+    Permissions.Meeting.CAN_SEE_FRONTPAGE,
+    Permissions.Meeting.CAN_SEE_HISTORY,
+    Permissions.Meeting.CAN_SEE_LIVESTREAM,
+    Permissions.Motion.CAN_SEE,
+    Permissions.Motion.CAN_SEE_INTERNAL,
+    Permissions.Projector.CAN_SEE,
+    Permissions.User.CAN_SEE,
+    Permissions.User.CAN_SEE_SENSITIVE_DATA,
+}
+
+
+def check_if_perms_are_allowed_for_anonymous(permissions: list[Permission]) -> None:
+    if len(forbidden := set(permissions).difference(anonymous_perms_whitelist)):
+        raise ActionException(
+            f"The following permissions may not be set for the anonymous group: {forbidden}"
+        )
