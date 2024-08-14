@@ -210,6 +210,13 @@ class MediafileDeleteActionTest(BaseActionTestCase):
             Permissions.Mediafile.CAN_MANAGE,
         )
 
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "mediafile.delete",
+            {"id": 222},
+        )
+
     def test_delete_orga_no_permissions(self) -> None:
         self.permission_test_models["mediafile/222"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.base_permission_test(

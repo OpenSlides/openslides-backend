@@ -18,6 +18,7 @@ from ....permissions.permission_helper import (
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.util import ONE_ORGANIZATION_FQID
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
@@ -33,6 +34,7 @@ meeting_settings_keys = [
     "location",
     "start_time",
     "end_time",
+    "locked_from_inside",
     "conference_show",
     "conference_auto_connect",
     "conference_los_restriction",
@@ -208,6 +210,40 @@ class MeetingUpdate(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # handle set_as_template
         set_as_template = instance.pop("set_as_template", None)
+        db_meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", instance["id"]),
+            ["template_for_organization_id", "locked_from_inside"],
+            lock_result=False,
+        )
+        lock_meeting = (
+            instance.get("locked_from_inside")
+            if instance.get("locked_from_inside") is not None
+            else db_meeting.get("locked_from_inside")
+        )
+        if lock_meeting and (
+            set_as_template
+            if set_as_template is not None
+            else db_meeting.get("template_for_organization_id")
+        ):
+            raise ActionException(
+                "A meeting cannot be locked from the inside and a template at the same time."
+            )
+        organization = self.datastore.get(
+            ONE_ORGANIZATION_FQID, ["require_duplicate_from"], lock_result=False
+        )
+        if (
+            organization.get("require_duplicate_from")
+            and set_as_template is not None
+            and not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            )
+        ):
+            raise ActionException(
+                "A meeting cannot be set as a template by a committee manager if duplicate from is required."
+            )
+
         if set_as_template is True:
             instance["template_for_organization_id"] = 1
         elif set_as_template is False:

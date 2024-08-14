@@ -138,3 +138,13 @@ class ProjectorCreateActionTest(BaseActionTestCase):
             },
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_create_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projector.create",
+            {
+                "name": "test projector",
+                "meeting_id": 1,
+            },
+        )

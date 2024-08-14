@@ -144,3 +144,13 @@ class MotionCategorySystemTest(BaseActionTestCase):
             },
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_update_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion_category.update",
+            {
+                "id": 111,
+                "name": "name_Xcdfgee",
+            },
+        )

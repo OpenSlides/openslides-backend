@@ -94,3 +94,15 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
             },
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion_comment_section.update",
+            {
+                "id": 111,
+                "name": "name_iuqAPRuD",
+                "read_group_ids": [23],
+                "write_group_ids": [23],
+            },
+        )

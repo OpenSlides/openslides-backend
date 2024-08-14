@@ -181,3 +181,20 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             {"id": 111},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "meeting/1": {
+                    "name": "name_testtest",
+                    "motions_default_workflow_id": 12,
+                    "motions_default_statute_amendment_workflow_id": 13,
+                    "motion_workflow_ids": [111, 2],
+                    "is_active_in_organization_id": 1,
+                },
+                "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 1},
+                "motion_workflow/2": {"meeting_id": 1},
+            },
+            "motion_workflow.delete",
+            {"id": 111},
+        )

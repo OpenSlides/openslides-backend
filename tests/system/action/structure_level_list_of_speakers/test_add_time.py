@@ -164,3 +164,10 @@ class StructureLevelListOfSpeakersAddTimeTest(BaseActionTestCase):
             {"id": 1},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
+
+    def test_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.models,
+            "structure_level_list_of_speakers.add_time",
+            {"id": 1},
+        )

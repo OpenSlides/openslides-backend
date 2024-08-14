@@ -326,6 +326,13 @@ class AgendaItemSystemTest(BaseActionTestCase):
             Permissions.AgendaItem.CAN_MANAGE,
         )
 
+    def test_create_permissions_with_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {"topic/1": {"meeting_id": 1}},
+            "agenda_item.create",
+            {"content_object_id": "topic/1"},
+        )
+
     def test_create_moderator_notes_no_permissions(self) -> None:
         self.base_permission_test(
             {"topic/1": {"meeting_id": 1}},

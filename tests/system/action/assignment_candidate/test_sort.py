@@ -170,3 +170,10 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             {"assignment_id": 222, "candidate_ids": [32, 31]},
             Permissions.Assignment.CAN_MANAGE,
         )
+
+    def test_create_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "assignment_candidate.sort",
+            {"assignment_id": 222, "candidate_ids": [32, 31]},
+        )

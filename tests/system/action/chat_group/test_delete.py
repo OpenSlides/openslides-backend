@@ -37,3 +37,10 @@ class ChatGroupDelete(BaseActionTestCase):
             {"id": 1},
             Permissions.Chat.CAN_MANAGE,
         )
+
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.test_models,
+            "chat_group.delete",
+            {"id": 1},
+        )

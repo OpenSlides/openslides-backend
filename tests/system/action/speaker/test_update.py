@@ -163,6 +163,13 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
 
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.models,
+            "speaker.update",
+            {"id": 890, "speech_state": SpeechState.PRO},
+        )
+
     def test_update_check_request_user_is_user_not_can_see(self) -> None:
         self.create_meeting()
         self.set_models(

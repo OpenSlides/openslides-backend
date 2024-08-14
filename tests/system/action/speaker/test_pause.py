@@ -190,3 +190,10 @@ class TestSpeakerPause(BaseActionTestCase):
             {"id": 890},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
+
+    def test_pause_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.models,
+            "speaker.pause",
+            {"id": 890},
+        )

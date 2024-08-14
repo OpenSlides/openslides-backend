@@ -173,3 +173,10 @@ class MotionResetStateActionTest(BaseActionTestCase):
             {"id": 22},
             Permissions.Motion.CAN_MANAGE_METADATA,
         )
+
+    def test_reset_state_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion.reset_state",
+            {"id": 22},
+        )

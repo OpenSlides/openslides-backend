@@ -45,3 +45,13 @@ class ProjectionUpdateOptions(BaseActionTestCase):
             },
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.test_models,
+            "projection.update_options",
+            {
+                "id": 33,
+                "options": {"bla": []},
+            },
+        )

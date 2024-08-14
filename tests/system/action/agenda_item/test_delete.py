@@ -102,3 +102,13 @@ class AgendaItemActionTest(BaseActionTestCase):
             {"id": 111},
             Permissions.AgendaItem.CAN_MANAGE,
         )
+
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "motion/34": {"agenda_item_id": 111, "meeting_id": 1},
+                "agenda_item/111": {"content_object_id": "motion/34", "meeting_id": 1},
+            },
+            "agenda_item.delete",
+            {"id": 111},
+        )

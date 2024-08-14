@@ -87,3 +87,10 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             {"name": "test_Xcdfgee", "meeting_id": 1},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_create_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "motion_workflow.create",
+            {"name": "test_Xcdfgee", "meeting_id": 1},
+        )

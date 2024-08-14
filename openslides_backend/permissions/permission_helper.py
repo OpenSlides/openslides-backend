@@ -13,31 +13,34 @@ from .permissions import Permission, permission_parents
 def has_perm(
     datastore: DatastoreService, user_id: int, permission: Permission, meeting_id: int
 ) -> bool:
+    meeting = datastore.get(
+        fqid_from_collection_and_id("meeting", meeting_id),
+        ["default_group_id", "enable_anonymous", "locked_from_inside"],
+        lock_result=False,
+    )
+    not_locked_from_editing = not meeting.get("locked_from_inside")
     # anonymous cannot be fetched from db
     if user_id > 0:
-        user = datastore.get(
-            fqid_from_collection_and_id("user", user_id),
-            [
-                "organization_management_level",
-            ],
-            lock_result=False,
-        )
-        # superadmins have all permissions
-        if (
-            user.get("organization_management_level")
-            == OrganizationManagementLevel.SUPERADMIN
-        ):
-            return True
+        # superadmins have all permissions if the meeting isn't locked from the inside
+        if not_locked_from_editing:
+            user = datastore.get(
+                fqid_from_collection_and_id("user", user_id),
+                [
+                    "organization_management_level",
+                ],
+                lock_result=False,
+            )
+            if (
+                user.get("organization_management_level")
+                == OrganizationManagementLevel.SUPERADMIN
+            ):
+                return True
 
         group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
         if not group_ids:
             return False
     elif user_id == 0:
         # anonymous users are in the default group
-        meeting = datastore.get(
-            fqid_from_collection_and_id("meeting", meeting_id),
-            ["default_group_id", "enable_anonymous"],
-        )
         # check if anonymous is allowed
         if not meeting.get("enable_anonymous"):
             raise PermissionDenied(f"Anonymous is not enabled for meeting {meeting_id}")
@@ -161,14 +164,15 @@ def filter_surplus_permissions(permission_list: list[Permission]) -> list[Permis
 
 
 def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool:
-    if has_organization_management_level(
+    meeting = datastore.get(
+        fqid_from_collection_and_id("meeting", meeting_id),
+        ["admin_group_id", "locked_from_inside"],
+        lock_result=False,
+    )
+    if not meeting.get("locked_from_inside") and has_organization_management_level(
         datastore, user_id, OrganizationManagementLevel.SUPERADMIN
     ):
         return True
 
-    meeting = datastore.get(
-        fqid_from_collection_and_id("meeting", meeting_id),
-        ["admin_group_id"],
-    )
     group_ids = get_groups_from_meeting_user(datastore, meeting_id, user_id)
     return bool(group_ids) and meeting["admin_group_id"] in group_ids

@@ -96,3 +96,10 @@ class ProjectorPrevious(BaseActionTestCase):
             {"id": 4},
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_previous_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projector.previous",
+            {"id": 4},
+        )

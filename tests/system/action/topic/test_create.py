@@ -244,3 +244,10 @@ class TopicCreateSystemTest(BaseActionTestCase):
             {"meeting_id": 1, "title": "test"},
             Permissions.AgendaItem.CAN_MANAGE,
         )
+
+    def test_create_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "topic.create",
+            {"meeting_id": 1, "title": "test"},
+        )

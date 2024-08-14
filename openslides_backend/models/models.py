@@ -36,6 +36,7 @@ class Organization(Model):
     default_language = fields.CharField(
         required=True, constraints={"enum": ["en", "de", "it", "es", "ru", "cs", "fr"]}
     )
+    require_duplicate_from = fields.BooleanField()
     saml_enabled = fields.BooleanField()
     saml_login_button_text = fields.CharField(default="SAML login")
     saml_attr_mapping = fields.JSONField()
@@ -330,6 +331,7 @@ class Meeting(Model, MeetingModelMixin):
     location = fields.CharField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
+    locked_from_inside = fields.BooleanField()
     imported_at = fields.TimestampField()
     language = fields.CharField(
         required=True,

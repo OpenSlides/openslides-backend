@@ -113,3 +113,10 @@ class PollAnonymize(BasePollTestCase):
             {"id": 1},
             Permissions.Poll.CAN_MANAGE,
         )
+
+    def test_anonymize_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "poll.anonymize",
+            {"id": 1},
+        )
