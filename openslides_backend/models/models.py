@@ -1214,7 +1214,9 @@ class Group(Model):
         is_view_field=True,
     )
     anonymous_group_for_meeting_id = fields.RelationField(
-        to={"meeting": "anonymous_group_id"}, on_delete=fields.OnDelete.PROTECT
+        to={"meeting": "anonymous_group_id"},
+        on_delete=fields.OnDelete.PROTECT,
+        is_view_field=True,
     )
     mediafile_access_group_ids = fields.RelationListField(
         to={"mediafile": "access_group_ids"},
