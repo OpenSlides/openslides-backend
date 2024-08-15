@@ -213,7 +213,9 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
     def check_permissions(self, instance: dict[str, Any]) -> None:
         """
         Checks the permissions on a per field and user.scope base, details see
-        https://github.com/OpenSlides/OpenSlides/wiki/user.update or user.create
+        https://github.com/OpenSlides/OpenSlides/wiki/Users
+        https://github.com/OpenSlides/OpenSlides/wiki/Permission-System
+        https://github.com/OpenSlides/OpenSlides/wiki/Restrictions-Overview
         The fields groups and their necessary permissions are also documented there.
         """
         self.assert_not_anonymous()
@@ -227,13 +229,14 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
             )
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
 
-        # store scope, id and OML-permission for requested user
+        # store id, scope, scope id and OML-permission for requested user
+        self.instance_id = instance.get("id", 0)
         (
             self.instance_user_scope,
             self.instance_user_scope_id,
             self.instance_user_oml_permission,
             self.instance_committee_ids,
-        ) = self.get_user_scope(instance.get("id") or instance)
+        ) = self.get_user_scope(self.instance_id or instance)
 
         if self.permstore.user_oml != OrganizationManagementLevel.SUPERADMIN:
             self._check_for_higher_OML(actual_group_fields, instance)
@@ -247,7 +250,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
                 lock_result=False,
             ).get("locked_from_inside", False)
 
-        # Ordered by supposed velocity advantages. Changing order can only effect the sequence of detected errors for tests
+        # Ordered by supposed speed advantages. Changing order can only effect the sequence of detected errors for tests
         self.check_group_H(actual_group_fields["H"])
         self.check_group_E(actual_group_fields["E"], instance)
         self.check_group_D(actual_group_fields["D"], instance)
@@ -256,6 +259,70 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         self.check_group_A(actual_group_fields["A"])
         self.check_group_F(actual_group_fields["F"])
         self.check_group_G(actual_group_fields["G"])
+
+    def _meeting_admin_can_manage_non_admin(self) -> bool:
+        """
+        Checks if the requesting user has permissions to manage participants in all of requested users meetings.
+        Also checks if the requesting user has meeting admin rights and the requested user doesn't.
+        Returns true if permissions are given. False if not. Raises no Exceptions.
+        """
+        a_meeting_ids = self.permstore.user_meetings
+        b_meeting_ids = set(
+            self.datastore.get(
+                fqid_from_collection_and_id("user", self.instance_id),
+                ["meeting_ids"],
+                lock_result=False,
+            ).get("meeting_ids", [])
+        )
+        intersection_meeting_ids = a_meeting_ids.intersection(b_meeting_ids)
+        if not b_meeting_ids.issubset(intersection_meeting_ids):
+            return False
+        intersection_meetings = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    "meeting",
+                    list(intersection_meeting_ids),
+                    ["meeting_user_ids", "admin_group_id"],
+                )
+            ],
+            lock_result=False,
+        ).get("meeting", {})
+        for meeting_id, meeting_dict in intersection_meetings.items():
+            # get meetings admins
+            admin_group = self.datastore.get(
+                fqid_from_collection_and_id(
+                    "group", meeting_dict.get("admin_group_id", 0)
+                ),
+                ["meeting_user_ids"],
+                lock_result=False,
+            )
+            admin_meeting_users = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "meeting_user",
+                        admin_group.get("meeting_user_ids", []),
+                        ["user_id"],
+                    )
+                ],
+                lock_result=False,
+            ).get("meeting_user", {})
+            # if instance/requested user is a meeting admin in this meeting.
+            if [
+                admin_meeting_user
+                for admin_meeting_user in admin_meeting_users.values()
+                if admin_meeting_user.get("user_id") == self.instance_id
+            ] != []:
+                return False
+            # if requesting user is not a meeting admin in this meeting.
+            if not next(
+                iter(
+                    admin_meeting_user
+                    for admin_meeting_user in admin_meeting_users.values()
+                    if admin_meeting_user.get("user_id") == self.user_id
+                )
+            ):
+                return False
+        return True
 
     def check_group_A(
         self,
@@ -272,7 +339,10 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         if self.instance_user_scope == UserScope.Organization:
             if self.permstore.user_committees.intersection(self.instance_committee_ids):
                 return
-            raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
+            elif not self._meeting_admin_can_manage_non_admin():
+                raise MissingPermission(
+                    {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
+                )
         if self.instance_user_scope == UserScope.Committee:
             if self.instance_user_scope_id not in self.permstore.user_committees:
                 raise MissingPermission(

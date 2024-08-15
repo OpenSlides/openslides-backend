@@ -860,6 +860,54 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_perm_group_A_belongs_to_same_meetings(self) -> None:
+        """May update group A fields on any scope as long as admin user Ann belongs to all meetings user Ben belongs to. See issue 2522."""
+        self.permission_setup()  # meeting 1 + logged in test user + user 111
+        self.create_meeting(4)  # meeting 4
+        # Admin groups of meeting/1 and meeting/4 for test user
+        self.set_user_groups(self.user_id, [2, 5])
+        self.set_user_groups(111, [1, 4])  # 111 into both meetings
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "pronoun": "I'm gonna get updated.",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "pronoun": "I'm gonna get updated.",
+            },
+        )
+
+    def test_perm_group_A_belongs_to_same_meetings_both_admin(self) -> None:
+        """May update group A fields on any scope as long as admin user Ann belongs to all meetings user Ben belongs to. See issue 2522."""
+        self.permission_setup()  # meeting 1 + logged in test user + user 111
+        self.create_meeting(4)  # meeting 4
+        # Admin groups of meeting/1 and meeting/4 for test user
+        self.set_user_groups(self.user_id, [2, 5])
+        self.set_user_groups(111, [1, 5])  # 111 into both meetings one admin group
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "pronoun": "I'm gonna get updated.",
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "user/111",
+            {
+                "pronoun": None,
+            },
+        )
+
     def test_perm_group_A_meeting_manage_user_archived_meeting(self) -> None:
         self.perm_group_A_meeting_manage_user_archived_meeting(
             Permissions.User.CAN_UPDATE
