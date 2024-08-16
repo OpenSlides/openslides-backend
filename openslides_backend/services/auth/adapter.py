@@ -41,18 +41,6 @@ class AuthenticationHTTPAdapter(AuthenticationService, AuthenticatedService):
             self.logger.debug(f"Error in auth service: {e.message}")
             raise AuthenticationException(e.message)
 
-    def authenticate_only_refresh_id(self) -> int:
-        self.logger.debug(
-            f"Start request to authentication service with the following cookie: {self.refresh_id}"
-        )
-        try:
-            return self.auth_handler.authenticate_only_refresh_id(
-                parse.unquote(self.refresh_id)
-            )
-        except (AuthenticateException, InvalidCredentialsException) as e:
-            self.logger.debug(f"Error in auth service: {e.message}")
-            raise AuthenticationException(e.message)
-
     def hash(self, toHash: str) -> str:
         return self.auth_handler.hash(toHash)
 
