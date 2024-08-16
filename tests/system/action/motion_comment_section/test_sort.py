@@ -113,3 +113,10 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
             {"meeting_id": 1, "motion_comment_section_ids": [32, 31]},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_sort_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion_comment_section.sort",
+            {"meeting_id": 1, "motion_comment_section_ids": [32, 31]},
+        )

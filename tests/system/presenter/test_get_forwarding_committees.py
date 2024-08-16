@@ -91,3 +91,14 @@ class TestGetForwardingCommittees(BasePresenterTestCase):
         status_code, data = self.request("get_forwarding_committees", {"meeting_id": 3})
         assert status_code == 403
         assert "Missing permission" in data["message"]
+
+    def test_with_locked_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/3": {"group_ids": [3], "locked_from_inside": True},
+                "group/3": {"meeting_id": 3},
+            }
+        )
+        status_code, data = self.request("get_forwarding_committees", {"meeting_id": 3})
+        assert status_code == 403
+        assert "Missing permission: motion.can_manage_metadata" in data["message"]

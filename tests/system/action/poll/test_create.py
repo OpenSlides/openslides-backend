@@ -841,6 +841,24 @@ class CreatePoll(BasePollTestCase):
             Permissions.Assignment.CAN_MANAGE,
         )
 
+    def test_create_permissions_assignment_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+            },
+        )
+
     def test_create_forbidden_to_create_poll(self) -> None:
         self.set_models(
             {
@@ -1059,4 +1077,25 @@ class CreatePoll(BasePollTestCase):
         self.assert_model_exists(
             "poll_candidate_list/2",
             {"option_id": 2, "meeting_id": 1, "poll_candidate_ids": [3, 4]},
+        )
+
+    def test_with_anonymous_in_entitled_group_ids(self) -> None:
+        self.create_meeting()
+        self.set_anonymous()
+        response = self.request(
+            "poll.create",
+            {
+                "meeting_id": 1,
+                "options": [{"text": "test"}],
+                "pollmethod": "YNA",
+                "title": "test",
+                "type": Poll.TYPE_NAMED,
+                "entitled_group_ids": [4],
+                "content_object_id": "assignment/1",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Anonymous group is not allowed in entitled_group_ids.",
+            response.json["message"],
         )

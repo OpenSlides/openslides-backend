@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from openslides_backend.action.mixins.check_unique_name_mixin import (
     CheckUniqueInContextMixin,
@@ -18,11 +18,14 @@ from ....permissions.permission_helper import (
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.util import ONE_ORGANIZATION_FQID
 from ...generics.update import UpdateAction
+from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...mixins.send_email_mixin import EmailCheckMixin, EmailSenderCheckMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..group.create import GroupCreate
 from .mixins import GetMeetingIdFromIdMixin, MeetingCheckTimesMixin
 
 meeting_settings_keys = [
@@ -33,6 +36,7 @@ meeting_settings_keys = [
     "location",
     "start_time",
     "end_time",
+    "locked_from_inside",
     "conference_show",
     "conference_auto_connect",
     "conference_los_restriction",
@@ -171,6 +175,7 @@ class MeetingUpdate(
     UpdateAction,
     GetMeetingIdFromIdMixin,
     MeetingCheckTimesMixin,
+    ForbidAnonymousGroupMixin,
 ):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
@@ -208,6 +213,23 @@ class MeetingUpdate(
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
         # handle set_as_template
         set_as_template = instance.pop("set_as_template", None)
+        self.check_locking(instance, set_as_template)
+        organization = self.datastore.get(
+            ONE_ORGANIZATION_FQID, ["require_duplicate_from"], lock_result=False
+        )
+        if (
+            organization.get("require_duplicate_from")
+            and set_as_template is not None
+            and not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            )
+        ):
+            raise ActionException(
+                "A meeting cannot be set as a template by a committee manager if duplicate from is required."
+            )
+
         if set_as_template is True:
             instance["template_for_organization_id"] = 1
         elif set_as_template is False:
@@ -247,6 +269,35 @@ class MeetingUpdate(
                 raise ActionException("It is not allowed to end jitsi_domain with '/'.")
 
         self.check_start_and_end_time(instance)
+
+        anonymous_group_id = self.datastore.get(
+            fqid_from_collection_and_id("meeting", instance["id"]),
+            ["anonymous_group_id"],
+        ).get("anonymous_group_id")
+
+        if instance.get("enable_anonymous") and not anonymous_group_id:
+            group_result = self.execute_other_action(
+                GroupCreate,
+                [
+                    {
+                        "name": "Anonymous",
+                        "meeting_id": instance["id"],
+                    }
+                ],
+            )
+            instance["anonymous_group_id"] = anonymous_group_id = cast(
+                list[dict[str, Any]], group_result
+            )[0]["id"]
+        self.check_anonymous_not_in_list_fields(
+            instance,
+            [
+                "assignment_poll_default_group_ids",
+                "topic_poll_default_group_ids",
+                "motion_poll_default_group_ids",
+            ],
+            anonymous_group_id,
+        )
+
         instance = super().update_instance(instance)
         return instance
 
@@ -330,3 +381,32 @@ class MeetingUpdate(
                 lock_result=False,
             )["committee_id"]
         return self._committee_id
+
+    def check_locking(self, instance: dict[str, Any], set_as_template: bool) -> None:
+        db_meeting = self.datastore.get(
+            fqid_from_collection_and_id("meeting", instance["id"]),
+            ["template_for_organization_id", "locked_from_inside", "enable_anonymous"],
+            lock_result=False,
+        )
+        lock_meeting = (
+            instance.get("locked_from_inside")
+            if instance.get("locked_from_inside") is not None
+            else db_meeting.get("locked_from_inside")
+        )
+        if lock_meeting:
+            if (
+                set_as_template
+                if set_as_template is not None
+                else db_meeting.get("template_for_organization_id")
+            ):
+                raise ActionException(
+                    "A meeting cannot be locked from the inside and a template at the same time."
+                )
+            if (
+                instance.get("enable_anonymous")
+                if instance.get("enable_anonymous") is not None
+                else db_meeting.get("enable_anonymous")
+            ):
+                raise ActionException(
+                    "A meeting cannot be locked from the inside and have anonymous enabled at the same time."
+                )

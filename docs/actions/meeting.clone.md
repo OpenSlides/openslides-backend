@@ -25,7 +25,11 @@ The users in user_ids/admin_ids will also be added to the default_group/admin_gr
 A differing committee_id can be given, otherwise the committee_id
 will be cloned untouched. 
 
-It has to be checked, whether the organization.limit_of_meetings is unlimited(=0) or lower than the active meetings in organization.active_meeting_ids, if the new meeting is not archived (`is_active_in_organization_id` is set)
+If an archived meeting is cloned, the created meeting will be active.
+
+It has to be checked, whether the organization.limit_of_meetings is unlimited(=0) or lower than the active meetings in organization.active_meeting_ids.
+
+Meetings that have `locked_from_inside` set to true can not be cloned.
 
 ### Pre Updating fields
 
@@ -35,4 +39,7 @@ If set_as_template is given, template_for_organization_id has to be set to 1.
 
 ## Permission
 
-The request user must have the CML `can_manage` in the target committee (where the meeting is created).
+It is not allowed to clone a meeting from a different committee if said meeting isn't a template.
+
+Otherwise the request user only needs the CML `can_manage` in the target committee (where the meeting is created).
+

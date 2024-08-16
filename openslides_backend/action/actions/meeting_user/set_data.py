@@ -9,7 +9,7 @@ from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .helper_mixin import MeetingUserHelperMixin
-from .mixin import MeetingUserMixin
+from .mixin import MeetingUserGroupMixin, MeetingUserMixin
 
 
 @register_action("meeting_user.set_data", action_type=ActionType.BACKEND_INTERNAL)
@@ -18,6 +18,7 @@ class MeetingUserSetData(
     ExtendHistoryMixin,
     MeetingUserHelperMixin,
     UpdateAction,
+    MeetingUserGroupMixin,
 ):
     """
     Action to create, update or delete a meeting_user.
@@ -37,6 +38,7 @@ class MeetingUserSetData(
             "vote_delegated_to_id",
             "vote_delegations_from_ids",
             "group_ids",
+            "locked_out",
         ],
     )
     extend_history_to = "user_id"

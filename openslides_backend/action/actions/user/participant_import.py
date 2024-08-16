@@ -43,6 +43,11 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 model_name,
                 And(
                     FilterOperator("meeting_id", "=", self.meeting_id),
+                    *(
+                        [FilterOperator("anonymous_group_for_meeting_id", "=", None)]
+                        if model_name == "group"
+                        else []
+                    ),
                     Or([FilterOperator("name", "=", name) for name in to_create]),
                 ),
                 ["name", "id"],
@@ -177,6 +182,10 @@ class ParticipantImport(BaseUserImport, ParticipantCommon):
                 )
                 row["state"] = ImportState.ERROR
                 instances[0]["info"] = ImportState.ERROR
+
+        self.validate_locked_out_status(
+            entry, row["messages"], entry.get("groups", []), row
+        )
 
         entry.pop("meeting_id")
         if row["state"] == ImportState.ERROR and self.import_state == ImportState.DONE:

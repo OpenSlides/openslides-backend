@@ -77,3 +77,10 @@ class ProjectorCountdownUpdate(BaseActionTestCase):
             {"id": 2, "title": "new_title"},
             Permissions.Projector.CAN_MANAGE,
         )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {},
+            "projector_countdown.update",
+            {"id": 2, "title": "new_title"},
+        )

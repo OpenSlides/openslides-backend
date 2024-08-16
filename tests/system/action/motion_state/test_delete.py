@@ -76,3 +76,10 @@ class MotionStateActionTest(BaseActionTestCase):
             {"id": 111},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_delete_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion_state.delete",
+            {"id": 111},
+        )

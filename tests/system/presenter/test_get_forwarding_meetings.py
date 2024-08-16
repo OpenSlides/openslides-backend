@@ -301,3 +301,14 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 "message": "There is no committee given for meeting/1 meeting1.",
             },
         )
+
+    def test_with_locked_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/3": {"group_ids": [3], "locked_from_inside": True},
+                "group/3": {"meeting_id": 3},
+            }
+        )
+        status_code, data = self.request("get_forwarding_meetings", {"meeting_id": 3})
+        assert status_code == 403
+        assert "Missing permission: motion.can_manage" in data["message"]

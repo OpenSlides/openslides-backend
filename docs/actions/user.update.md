@@ -24,6 +24,7 @@
     vote_weight: decimal;
     about_me: HTML;
     comment: HTML;
+    locked_out: boolean;
 
     structure_level_id: Id;
     vote_delegated_to_id: Id;
@@ -48,6 +49,14 @@
 
 // Group H
     saml_id: string;
+
+// only internal
+    is_present_in_meeting_ids: Id[];
+    option_ids: Id[];
+    poll_candidate_ids: Id[];
+    poll_voted_ids: Id[];
+    vote_ids: Id[];
+    delegated_vote_ids: Id[];
 }
 ```
 
@@ -59,6 +68,8 @@ Updates a user.
 * Remove starting and trailing spaces from `username`, `first_name` and `last_name`
 * The given `gender` must be present in `organization/genders`
 * The `member_number` must be unique within all users.
+* Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
+* The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the updated user and throws an error if that is the case.
 
 Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present.md).
 
@@ -79,10 +90,11 @@ The request user needs `user.can_update` in each referenced meeting.
 
 Group C:
 
-The request user must satisfy at least one of:
-- the OML `can_manage_users`
-- `user.can_update` for the meeting, OR
-- The CML `can_manage` for the committee of the meeting
+For each meeting the request user must satisfy at least one of:
+- `user.can_manage` for the meeting, OR
+- If the meeting is not locked via `locked_from_inside` setting:
+  * the OML `can_manage_users` in the organization
+  * The CML `can_manage` for the committee of the meeting
 
 Group D:
 

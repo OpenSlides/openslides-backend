@@ -104,6 +104,13 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
             Permissions.Poll.CAN_MANAGE,
         )
 
+    def test_reset_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.test_models,
+            "poll.reset",
+            {"id": 1},
+        )
+
     def test_reset_not_allowed_to_vote_again(self) -> None:
         self.set_models(self.test_models)
         self.set_models(
@@ -144,7 +151,7 @@ class PollResetActionTest(PollTestMixin, BasePollTestCase):
         self.assert_model_exists(
             "poll/1", {"voted_ids": [], "state": Poll.STATE_CREATED}
         )
-        assert counter.calls == 4
+        assert counter.calls == 5
 
     @performance
     def test_reset_performance(self) -> None:

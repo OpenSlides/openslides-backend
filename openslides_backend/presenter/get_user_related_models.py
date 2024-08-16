@@ -7,6 +7,7 @@ from openslides_backend.shared.schema import id_list_schema
 
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PresenterException
+from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -96,6 +97,7 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
             "speaker_ids",
             "motion_submitter_ids",
             "assignment_candidate_ids",
+            "locked_out",
         )
         meeting_users = [
             meeting_user
@@ -117,9 +119,15 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
         gmr = GetManyRequest(
             "meeting",
             [meeting_user["meeting_id"] for meeting_user in meeting_users],
-            ["id", "name", "is_active_in_organization_id"],
+            ["id", "name", "is_active_in_organization_id", "locked_from_inside"],
         )
         meetings = self.datastore.get_many([gmr]).get("meeting", {})
+        operator_meetings = self.datastore.get(
+            fqid_from_collection_and_id("user", self.user_id),
+            ["meeting_ids"],
+            lock_result=False,
+        ).get("meeting_ids", [])
+
         return [
             {
                 "id": meeting["id"],
@@ -127,10 +135,15 @@ class GetUserRelatedModels(UserScopeMixin, BasePresenter):
                 "is_active_in_organization_id": meeting.get(
                     "is_active_in_organization_id"
                 ),
+                "is_locked": meeting.get("locked_from_inside", False),
                 **{
                     field: value
                     for field in result_fields
                     if (value := meeting_user.get(field))
+                    and (
+                        not meeting.get("locked_from_inside")
+                        or meeting["id"] in operator_meetings
+                    )
                 },
             }
             for meeting_user in meeting_users

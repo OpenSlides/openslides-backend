@@ -1,6 +1,6 @@
 from typing import Any
 
-from openslides_backend.action.actions.user.delegation_based_restriction_mixin import (
+from openslides_backend.action.mixins.delegation_based_restriction_mixin import (
     DelegationBasedRestriction,
 )
 from openslides_backend.permissions.base_classes import Permission
@@ -203,6 +203,13 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
             "motion.set_support_self",
             {"motion_id": 1, "support": True},
             Permissions.Motion.CAN_SUPPORT,
+        )
+
+    def test_set_support_self_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion.set_support_self",
+            {"motion_id": 1, "support": True},
         )
 
     def create_delegator_test_data(

@@ -2,7 +2,7 @@ from time import time
 from typing import Any
 
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
-from openslides_backend.action.actions.user.delegation_based_restriction_mixin import (
+from openslides_backend.action.mixins.delegation_based_restriction_mixin import (
     DelegationBasedRestriction,
 )
 from openslides_backend.permissions.base_classes import Permission
@@ -504,6 +504,13 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             "speaker.create",
             {"meeting_user_id": 17, "list_of_speakers_id": 23},
             Permissions.ListOfSpeakers.CAN_MANAGE,
+        )
+
+    def test_create_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.test_models,
+            "speaker.create",
+            {"meeting_user_id": 17, "list_of_speakers_id": 23},
         )
 
     def test_create_permissions_selfadd(self) -> None:

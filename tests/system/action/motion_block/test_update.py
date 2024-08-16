@@ -50,3 +50,12 @@ class MotionBlockActionTest(BaseActionTestCase):
             {"id": 111, "title": "title_Xcdfgee"},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_update_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            {
+                "motion_block/111": {"meeting_id": 1, "title": "title_srtgb123"},
+            },
+            "motion_block.update",
+            {"id": 111, "title": "title_Xcdfgee"},
+        )

@@ -24,14 +24,6 @@ class AuthenticationService(AuthenticatedServiceInterface, Protocol):
         Authentication data must be set beforehand via set_authentication.
         """
 
-    def authenticate_only_refresh_id(self) -> int:
-        """
-        Analogous to authenticate, but works without the token.
-        Therefore returns only the user id.
-
-        Authentication data must be set beforehand via set_authentication.
-        """
-
     def hash(self, toHash: str) -> str:
         """
         Hashes a given value. A random salt (64bit) is generated and added to the hashed value.

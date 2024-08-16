@@ -1,7 +1,6 @@
 Available presenters:
 - [check_database](presenters/check_database.md)
 - [check_database_all](presenters/check_database_all.md)
-- [check_mediafile_id](presenters/check_mediafile_id.md)
 - [export_meeting](presenters/export_meeting.md)
 - [get_active_users_amount](presenters/get_active_users_amount.md)
 - [get_forwarding_meetings](presenters/get_forwarding_meetings.md)

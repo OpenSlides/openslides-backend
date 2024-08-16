@@ -82,3 +82,10 @@ class PollPublishActionTest(BasePollTestCase):
             {"id": 1},
             Permissions.Poll.CAN_MANAGE,
         )
+
+    def test_publish_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.test_models,
+            "poll.publish",
+            {"id": 1},
+        )

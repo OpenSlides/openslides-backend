@@ -89,3 +89,10 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
             {"id": 222, "motion_ids": [32, 31]},
             Permissions.Motion.CAN_MANAGE,
         )
+
+    def test_sort_permission_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.permission_test_models,
+            "motion_category.sort_motions_in_category",
+            {"id": 222, "motion_ids": [32, 31]},
+        )

@@ -364,6 +364,13 @@ class SpeakerSpeakTester(BaseActionTestCase):
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
 
+    def test_speak_permissions_locked_meeting(self) -> None:
+        self.base_locked_out_superadmin_permission_test(
+            self.models,
+            "speaker.speak",
+            {"id": 890},
+        )
+
     def test_speak_stop_paused_speaker(self) -> None:
         self.set_models(
             {
