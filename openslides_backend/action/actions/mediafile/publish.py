@@ -42,25 +42,18 @@ class MediafilePublish(UpdateAction, CheckForArchivedMeetingMixin):
                     "meeting_mediafile_ids",
                 ],
             )
-            instance["meeting_mediafile_ids"] = mediafile.get("meeting_mediafile_ids")
             collection, _ = str(mediafile["owner_id"]).split(KEYSEPARATOR)
             if collection != "organization":
                 raise ActionException(
                     "Only organization-owned mediafiles may be published"
                 )
+            if mediafile.get("parent_id"):
+                raise ActionException("Only top-level mediafiles may be published")
+            instance["meeting_mediafile_ids"] = mediafile.get("meeting_mediafile_ids")
             if instance["is_published_to_meetings"] == mediafile.get(
                 "is_published_to_meetings", False
             ):
                 yield instance
-            if parent_id := mediafile.get("parent_id"):
-                parent = self.datastore.get(
-                    fqid_from_collection_and_id("mediafile", parent_id), [relation_key]
-                )
-                if parent.get(relation_key):
-                    # if the parent is visible, this mediafile and all its children
-                    # are already visible and can remain so
-                    yield instance
-                    continue
             yield from self.get_publish_instances(
                 instance,
                 instance["is_published_to_meetings"],

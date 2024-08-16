@@ -89,14 +89,22 @@ class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMix
                         MeetingMediafileUpdate, [{"id": m_id, **m_mediafile}]
                     )
                 else:
-                    self.execute_other_action(
-                        MeetingMediafileCreate,
-                        [
-                            {
-                                "meeting_id": meeting_id,
-                                "mediafile_id": instance["id"],
-                                **m_mediafile,
-                            }
-                        ],
-                    )
+                    if m_mediafile.get("access_group_ids") or m_mediafile.get(
+                        "inherited_access_group_ids"
+                    ) != [
+                        self.datastore.get(
+                            fqid_from_collection_and_id("meeting", meeting_id),
+                            ["admin_group_id"],
+                        )["admin_group_id"]
+                    ]:
+                        self.execute_other_action(
+                            MeetingMediafileCreate,
+                            [
+                                {
+                                    "meeting_id": meeting_id,
+                                    "mediafile_id": instance["id"],
+                                    **m_mediafile,
+                                }
+                            ],
+                        )
         return instance

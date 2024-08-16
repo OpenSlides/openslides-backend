@@ -5,6 +5,7 @@ from ....services.datastore.interface import DatastoreService
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
+from ...mixins.meeting_mediafile_helper import find_meeting_mediafile_generate_implicit
 from ...util.typing import ActionData
 
 
@@ -22,7 +23,7 @@ class MediafileCalculatedFieldsMixin(Action):
         mediafile = self.datastore.get(
             fqid_from_collection_and_id("mediafile", instance["id"]), ["child_ids"]
         )
-        if mediafile.get("child_ids"):
+        if child_ids := mediafile.get("child_ids"):
             meeting_mediafile_children = self.datastore.filter(
                 "meeting_mediafile",
                 And(
@@ -37,13 +38,17 @@ class MediafileCalculatedFieldsMixin(Action):
                     "inherited_access_group_ids",
                     "is_public",
                     "mediafile_id",
+                    "id",
                 ],
             )
-            for meeting_mediafile_child_id in meeting_mediafile_children:
-                meeting_mediafile_child = meeting_mediafile_children.get(
-                    meeting_mediafile_child_id, {}
+            mediafile_id_to_child: dict[int, dict[str, Any]] = {
+                m_mediafile["mediafile_id"]: m_mediafile
+                for m_mediafile in meeting_mediafile_children.values()
+            }
+            for child_id in child_ids:
+                meeting_mediafile_child: dict[str, Any] = mediafile_id_to_child.get(
+                    child_id, {}
                 )
-                child_id = meeting_mediafile_child["mediafile_id"]
                 new_instance: dict[str, Any] = {
                     "id": child_id,
                     "meeting_id": instance["meeting_id"],
@@ -78,19 +83,12 @@ def calculate_inherited_groups_helper_with_parent_id(
     meeting_id: int,
 ) -> tuple[bool, list[int] | None]:
     if parent_id:
-        parents = datastore.filter(
-            "meeting_mediafile",
-            And(
-                FilterOperator("meeting_id", "=", meeting_id),
-                FilterOperator("mediafile_id", "=", parent_id),
-            ),
+        parent = find_meeting_mediafile_generate_implicit(
+            datastore,
+            meeting_id,
+            parent_id,
             ["is_public", "inherited_access_group_ids"],
-        )
-        if len(parents):
-            assert len(parents) == 1
-            parent = list(parents.values())[0]
-        else:
-            parent = {}
+        )[1]
     else:
         parent = {}
 

@@ -43,10 +43,14 @@ class MediafileUploadActionTest(BaseActionTestCase):
         )
         assert mediafile.get("create_timestamp", 0) >= start_time
         assert not mediafile.get("is_directory")
+        self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
+
+        # It is essential that a meeting_mediafile is always created for meeting mediafiles
+        # since non-existence means that the access_group will be assumed to be the meetings
+        # admin group. The below line therefore is essential to ensure the correct functionality.
         self.assert_model_exists(
             "meeting_mediafile/1", {"is_public": True, "inherited_access_group_ids": []}
         )
-        self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
     def test_create_orga(self) -> None:
         filename = "fn_jumbo.txt"
@@ -143,6 +147,32 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "published_to_meetings_in_organization_id": 1,
             },
         )
+
+    def test_upload_with_parent_and_publish(self) -> None:
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "title": "don't care",
+                    "is_directory": True,
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                }
+            }
+        )
+        filename = "fn_jumbo.txt"
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "filename": filename,
+                "file": file_content,
+                "parent_id": 1,
+                "is_published_to_meetings": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Only top-level mediafiles may be published" in response.json["message"]
 
     def test_create_orga_missing_token(self) -> None:
         filename = "fn_jumbo.txt"

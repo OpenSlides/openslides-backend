@@ -40,7 +40,12 @@ class MediafileMixin(Action):
 
         if collection == "organization":
             self.check_token_unique(instance.get("token"), instance.get("id"))
-            if "access_group_ids" in instance:
+            if instance.get("is_published_to_meetings") and parent_id:
+                raise ActionException("Only top-level mediafiles may be published")
+            if "access_group_ids" in instance and (
+                "meeting_id" not in instance
+                or not self.check_implicitly_published(instance, parent_id)
+            ):
                 raise ActionException(
                     "access_group_ids is not allowed in organization mediafiles."
                 )
@@ -55,6 +60,28 @@ class MediafileMixin(Action):
             self.check_access_groups_and_owner(instance.get("access_group_ids"), id_)
 
         return instance
+
+    def check_implicitly_published(
+        self, instance: dict[str, Any], parent_id: int | None
+    ) -> bool:
+        if instance.get("is_published_to_meetings") or (
+            "id" in instance
+            and self.datastore.get(
+                fqid_from_collection_and_id("mediafile", instance["id"]),
+                ["published_to_meetings_in_organization_id"],
+            ).get("published_to_meetings_in_organization_id")
+            == ONE_ORGANIZATION_ID
+        ):
+            return True
+        if not parent_id:
+            return False
+        return (
+            self.datastore.get(
+                fqid_from_collection_and_id("mediafile", parent_id),
+                ["published_to_meetings_in_organization_id"],
+            ).get("published_to_meetings_in_organization_id")
+            == ONE_ORGANIZATION_ID
+        )
 
     def check_permissions(self, instance: dict[str, Any]) -> None:
         collection, _ = self.get_owner_data(instance)

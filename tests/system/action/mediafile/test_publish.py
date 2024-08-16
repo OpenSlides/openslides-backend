@@ -76,7 +76,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "meeting_mediafile_ids": [1112],
             },
             "mediafile/113": {
-                "is_published_to_meetings": True,
                 "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
                 "meeting_mediafile_ids": [1113],
             },
@@ -159,7 +158,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
             },
         )
-        for id_ in [111, 112]:
+        for id_ in [111, 112, 113]:
             self.assert_model_exists(
                 f"mediafile/{id_}",
                 {
@@ -167,12 +166,17 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "is_published_to_meetings": None,
                 },
             )
-        self.assert_model_exists(
-            "mediafile/113",
-            {
-                "is_published_to_meetings": True,
-                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-            },
+
+    def test_publish_non_top_level_file(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "mediafile.publish",
+            {"id": 111, "is_published_to_meetings": True},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Only top-level mediafiles may be published",
+            response.json["message"],
         )
 
     def test_publish_implicitly_published_file(self) -> None:
@@ -182,30 +186,10 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "mediafile.publish",
             {"id": 112, "is_published_to_meetings": True},
         )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "group/7",
-            {
-                "mediafile_access_group_ids": [1113],
-                "mediafile_inherited_access_group_ids": [1113],
-            },
-        )
-        for id_ in [110, 111, 112, 113]:
-            self.assert_model_exists(f"meeting_mediafile/1{id_}", {"mediafile_id": id_})
-        for id_ in [110, 112, 113]:
-            self.assert_model_exists(
-                f"mediafile/{id_}",
-                {
-                    "is_published_to_meetings": True,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                },
-            )
-        self.assert_model_exists(
-            "mediafile/111",
-            {
-                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                "is_published_to_meetings": None,
-            },
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Only top-level mediafiles may be published",
+            response.json["message"],
         )
 
     def test_unpublish(self) -> None:
@@ -219,8 +203,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "group/7",
             {
-                "mediafile_access_group_ids": [1113],
-                "mediafile_inherited_access_group_ids": [1113],
+                "mediafile_access_group_ids": [],
+                "mediafile_inherited_access_group_ids": [],
             },
         )
         self.assert_model_exists(
@@ -230,95 +214,16 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "published_to_meetings_in_organization_id": None,
             },
         )
-        for id_ in [1110, 1111, 1112]:
-            self.assert_model_deleted(f"meeting_mediafile/{id_}")
-        for id_ in [111, 112]:
-            self.assert_model_exists(
-                f"mediafile/{id_}",
-                {
-                    "published_to_meetings_in_organization_id": None,
-                    "is_published_to_meetings": None,
-                },
-            )
-        self.assert_model_exists("meeting_mediafile/1113", {"mediafile_id": 113})
-        self.assert_model_exists(
-            "mediafile/113",
-            {
-                "is_published_to_meetings": True,
-                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-            },
-        )
-
-    def test_unpublish_with_parent_inheritance(self) -> None:
-        self.set_models(self.test_models)
-        self.set_models(self.published_update_data)
-        response = self.request(
-            "mediafile.publish",
-            {"id": 113, "is_published_to_meetings": False},
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "group/7",
-            {
-                "mediafile_access_group_ids": [1113],
-                "mediafile_inherited_access_group_ids": [1113],
-            },
-        )
-        self.assert_model_exists(
-            "mediafile/110",
-            {
-                "is_published_to_meetings": True,
-                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-            },
-        )
-        self.assert_model_exists("meeting_mediafile/1110")
-        for id_ in [111, 112]:
-            self.assert_model_exists(
-                f"mediafile/{id_}",
-                {
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                    "is_published_to_meetings": None,
-                },
-            )
-            self.assert_model_exists(f"meeting_mediafile/1{id_}")
-        self.assert_model_exists(
-            "mediafile/113",
-            {
-                "is_published_to_meetings": False,
-                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-            },
-        )
-        self.assert_model_exists("meeting_mediafile/1113")
-        response = self.request(
-            "mediafile.publish",
-            {"id": 110, "is_published_to_meetings": False},
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "group/7",
-            {
-                "mediafile_access_group_ids": [],
-                "mediafile_inherited_access_group_ids": [],
-            },
-        )
-        for id_ in [110, 113]:
-            self.assert_model_exists(
-                f"mediafile/{id_}",
-                {
-                    "published_to_meetings_in_organization_id": None,
-                    "is_published_to_meetings": False,
-                },
-            )
-        for id_ in [111, 112]:
-            self.assert_model_exists(
-                f"mediafile/{id_}",
-                {
-                    "published_to_meetings_in_organization_id": None,
-                    "is_published_to_meetings": None,
-                },
-            )
         for id_ in [1110, 1111, 1112, 1113]:
             self.assert_model_deleted(f"meeting_mediafile/{id_}")
+        for id_ in [111, 112, 113]:
+            self.assert_model_exists(
+                f"mediafile/{id_}",
+                {
+                    "published_to_meetings_in_organization_id": None,
+                    "is_published_to_meetings": None,
+                },
+            )
 
     def test_unpublish_implicitly_published(self) -> None:
         self.set_models(self.test_models)
@@ -327,38 +232,33 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "mediafile.publish",
             {"id": 111, "is_published_to_meetings": False},
         )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "group/7",
-            {
-                "mediafile_access_group_ids": [1113],
-                "mediafile_inherited_access_group_ids": [1113],
-            },
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Only top-level mediafiles may be published",
+            response.json["message"],
         )
-        for id_ in [110, 113]:
-            self.assert_model_exists(
-                f"mediafile/{id_}",
-                {
-                    "is_published_to_meetings": True,
-                    "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
+
+    def test_publish_single_mediafile(self) -> None:
+        self.set_models(
+            {
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "owner_id": ONE_ORGANIZATION_FQID,
                 },
-            )
+            }
+        )
+        response = self.request(
+            "mediafile.publish",
+            {"id": 111, "is_published_to_meetings": True},
+        )
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "mediafile/111",
             {
+                "is_published_to_meetings": True,
                 "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                "is_published_to_meetings": False,
             },
         )
-        self.assert_model_exists(
-            "mediafile/112",
-            {
-                "published_to_meetings_in_organization_id": ONE_ORGANIZATION_ID,
-                "is_published_to_meetings": None,
-            },
-        )
-        for id_ in [1110, 1111, 1112, 1113]:
-            self.assert_model_exists(f"meeting_mediafile/{id_}")
 
     def test_publish_meeting_mediafile(self) -> None:
         self.set_models(

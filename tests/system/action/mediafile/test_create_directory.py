@@ -589,6 +589,10 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "meeting_mediafile_ids": [1],
             },
         )
+
+        # It is essential that a meeting_mediafile is always created for meeting mediafiles
+        # since non-existence means that the access_group will be assumed to be the meetings
+        # admin group. The below line therefore is essential to ensure the correct functionality.
         self.assert_model_exists(
             "meeting_mediafile/1",
             {
@@ -733,6 +737,28 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             "Only organization-owned mediafiles may be published."
             in response.json["message"]
         )
+
+    def test_create_directory_with_parent_and_publish(self) -> None:
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "title": "don't care",
+                    "is_directory": True,
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                }
+            }
+        )
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "title": "title_xXRGTLAJ",
+                "parent_id": 1,
+                "is_published_to_meetings": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Only top-level mediafiles may be published" in response.json["message"]
 
     def test_create_directory_access_groups_on_orga_owner(self) -> None:
         self.set_models(
