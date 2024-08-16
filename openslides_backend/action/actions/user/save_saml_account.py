@@ -17,6 +17,7 @@ from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.action_type import ActionType
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement
+from ..gender.create import GenderCreate
 from .create import UserCreate
 from .update import UserUpdate
 from .user_mixins import UsernameMixin
@@ -124,16 +125,7 @@ class UserSaveSamlAccount(
                     if isinstance((tx := instance_old[payload_field]), list) and len(tx)
                     else tx
                 )
-                if payload_field == "gender":
-                    gender_dict = self.datastore.filter(
-                        "gender",
-                        FilterOperator("name", "=", value),
-                        ["id", "name"],
-                    )
-                    if gender_dict:
-                        gender = next(iter(gender_dict.values()))
-                        instance["gender_id"] = gender.get("id", 0)
-                elif value not in (None, []):
+                if value not in (None, []):
                     instance[model_field] = value
 
         return super().validate_fields(instance)
@@ -152,6 +144,25 @@ class UserSaveSamlAccount(
             FilterOperator("saml_id", "=", instance["saml_id"]),
             ["id", "gender_id", *allowed_user_fields],
         )
+
+        if gender := instance.get("gender"):
+            if gender == "":
+                instance["gender_id"] = None
+            else:
+                gender_dict = self.datastore.filter(
+                    "gender",
+                    FilterOperator("name", "=", gender),
+                    ["id"],
+                )
+                if gender_dict:
+                    gender_id = next(iter(gender_dict.keys()))
+                else:
+                    action_result = self.execute_other_action(
+                        GenderCreate, [{"name": gender}]
+                    )
+                    gender_id = action_result[0].get("id", 0)  # type: ignore
+                instance["gender_id"] = gender_id
+            del instance["gender"]
         if len(users) == 1:
             self.user = next(iter(users.values()))
             instance["id"] = (user_id := cast(int, self.user["id"]))
@@ -167,7 +178,6 @@ class UserSaveSamlAccount(
                 else:
                     instance["meeting_id"] = meeting_id
                     instance["group_ids"] = [group_id]
-
             instance = {
                 k: v for k, v in instance.items() if k == "id" or v != self.user.get(k)
             }

@@ -34,7 +34,12 @@ class UserBaseSamlAccount(BaseActionTestCase):
                         "is_active": "is_active",
                         "is_physical_person": "is_person",
                     },
-                }
+                    "gender_ids": [1, 2, 3, 4],
+                },
+                "gender/1": {"organization_id": 1, "name": "male"},
+                "gender/2": {"organization_id": 1, "name": "female"},
+                "gender/3": {"organization_id": 1, "name": "diverse"},
+                "gender/4": {"organization_id": 1, "name": "non-binary"},
             }
         )
 
@@ -70,7 +75,7 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
 
     def test_save_attr_empty_saml_id_provided(self) -> None:
         response = self.request(
-            "user.save_saml_account", {"username": [], "lastName": "Cartwright"}
+            "user.save_saml_account", {"username": "", "lastName": "Cartwright"}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -117,14 +122,27 @@ class UserCommonSamlAccount(UserBaseSamlAccount):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "Joe", "default_number": None})
 
+    def test_create_new_gender(self) -> None:
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": "111222333",
+                "gender": "cloud",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "111222333",
+                "gender_id": 5,
+            },
+        )
+        self.assert_model_exists("gender/5", {"name": "cloud"})
+
 
 class UserCreateSamlAccount(UserBaseSamlAccount):
     def test_create_saml_account_all_fields(self) -> None:
-        self.set_models(
-            {
-                "gender/1": {"name": "male"},
-            }
-        )
         response = self.request(
             "user.save_saml_account",
             {
@@ -163,11 +181,6 @@ class UserCreateSamlAccount(UserBaseSamlAccount):
         )
 
     def test_create_saml_account_all_fields_as_list(self) -> None:
-        self.set_models(
-            {
-                "gender/1": {"name": "male"},
-            }
-        )
         response = self.request(
             "user.save_saml_account",
             {
@@ -276,7 +289,6 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
         self.set_models(
             {
                 "user/78": {"username": "Saml", "saml_id": "111222333"},
-                "gender/1": {"name": "male"},
             }
         )
         response = self.request(
@@ -324,7 +336,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
             "is_physical_person": True,
         }
 
-        self.set_models({"gender/1": {"name": "male"}, "user/78": user_data})
+        self.set_models({"user/78": user_data})
         old_position = self.get_current_db_position()
         response = self.request(
             "user.save_saml_account",
@@ -476,7 +488,7 @@ class UserAddToGroup(UserBaseSamlAccount):
                 "first_name": "firstName",
                 "last_name": "lastName",
                 "email": "email",
-                "gender": "gender_id",
+                "gender": "gender",
                 "pronoun": "pronoun",
                 "is_active": "is_active",
                 "is_physical_person": "is_person",

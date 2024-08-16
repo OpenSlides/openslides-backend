@@ -26,6 +26,7 @@ class MeetingImport(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [1],
                     "committee_ids": [1],
+                    "gender_ids": [1, 4],
                 },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
                 "meeting/1": {
@@ -40,6 +41,8 @@ class MeetingImport(BaseActionTestCase):
                     "sequential_number": 26,
                     "number_value": 31,
                 },
+                "gender/1": {"name": "male", "organization_id": 1},
+                "gender/4": {"name": "diverse", "organization_id": 1},
             }
         )
 
@@ -2188,6 +2191,41 @@ class MeetingImport(BaseActionTestCase):
 
     def test_all_migrations(self) -> None:
         data = self.create_request_data({})
+        # user 2 is used to showcase migration 0054 works on older imports
+        self.update_model(ONE_ORGANIZATION_FQID, {"user_ids": [1, 2]})
+
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "other_user",
+                    "first_name": "other",
+                    "last_name": "user",
+                    "email": "other@us.er",
+                    "organization_id": 1,
+                    "gender_id": 4,
+                }
+            }
+        )
+        other_user_request_data = {
+            "2": {
+                "id": 2,
+                "username": "other_user",
+                "first_name": "other",
+                "last_name": "user",
+                "email": "other@us.er",
+                "committee_ids": [1],
+                "meeting_user_ids": [12],
+                "gender": "male",
+            }
+        }
+        data["meeting"]["meeting_user"] = data["meeting"]["meeting_user"] | {
+            "12": {"id": 12, "meeting_id": 1, "user_id": 2, "group_ids": [1]}
+        }
+        data["meeting"]["group"]["1"]["meeting_user_ids"] = [11, 12]
+        data["meeting"]["meeting"]["1"]["user_ids"] = [1, 2]
+        data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [11, 12]
+        data["meeting"]["user"]["1"]["gender"] = "male"  # also for migration 0054
+        data["meeting"]["user"] = data["meeting"]["user"] | other_user_request_data
         data["meeting"]["_migration_index"] = 1
         del data["meeting"]["user"]["1"]["organization_id"]
         data["meeting"]["meeting"]["1"]["motion_poll_default_100_percent_base"] = "Y"
@@ -2195,13 +2233,12 @@ class MeetingImport(BaseActionTestCase):
             "assignment_poll_default_100_percent_base"
         ] = "YN"
         data["meeting"]["meeting"]["1"]["poll_default_100_percent_base"] = "YNA"
-        data["meeting"]["user"]["1"]["gender"] = "male"  # migration 0054
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
-        assert counter.calls == 5
+        assert counter.calls == 8
         self.assert_model_exists(
-            "meeting_user/2", {"user_id": 1, "meeting_id": 2, "group_ids": [2]}
+            "meeting_user/3", {"user_id": 1, "meeting_id": 2, "group_ids": [2]}
         )
         meeting = self.assert_model_exists(
             "meeting/2",
@@ -2212,21 +2249,30 @@ class MeetingImport(BaseActionTestCase):
                 "poll_default_onehundred_percent_base": "YNA",
             },
         )  # checker repair
-        self.assertCountEqual(meeting["user_ids"], [1, 2])
+
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "other_user",
+                "committee_ids": [1],
+                "gender": None,
+                "gender_id": 4,
+            },
+        )  # migration 0054 existing user updated not changing gender
+        self.assert_model_exists(
+            "user/3", {"username": "test", "gender": None, "gender_id": None}
+        )  # migration 0054 new user created without gender
+        self.assertCountEqual(meeting["user_ids"], [1, 2, 3])
         group2 = self.assert_model_exists("group/2")
-        self.assertCountEqual(group2["meeting_user_ids"], [1, 2])
+        self.assertCountEqual(group2["meeting_user_ids"], [1, 2, 3])
         committee1 = self.get_model("committee/1")
-        self.assertCountEqual(committee1["user_ids"], [1, 2])
+        self.assertCountEqual(committee1["user_ids"], [1, 2, 3])
         self.assertCountEqual(committee1["meeting_ids"], [1, 2])
         self.assert_model_exists("motion_workflow/1", {"sequential_number": 1})
         self.assert_model_exists("projector/2", {"sequential_number": 1})
         self.assert_model_exists(
-            "organization/1", {"user_ids": [1, 2], "active_meeting_ids": [1, 2]}
+            "organization/1", {"user_ids": [1, 2, 3], "active_meeting_ids": [1, 2]}
         )
-
-        self._assert_fields(
-            "user/2", {"gender": None, "gender_id": None}
-        )  # migration 0054
 
     @performance
     def test_big_file(self) -> None:

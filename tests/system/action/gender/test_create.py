@@ -1,21 +1,21 @@
-from typing import Any
-
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
 class GenderCreateActionTest(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.test_models: dict[str, dict[str, Any]] = {
-            ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
-            "user/20": {"username": "test_user20"},
-        }
 
     def test_create(self) -> None:
-        self.set_models(self.test_models)
-        self.set_models({"gender/1": {"organization_id": 1, "name": "male"}})
+        self.set_models(
+            {
+                ONE_ORGANIZATION_FQID: {
+                    "name": "test_organization1",
+                    "gender_ids": [1],
+                },
+                "user/20": {"username": "test_user20"},
+                "gender/1": {"organization_id": 1, "name": "male"},
+            }
+        )
         gender_name = "female"
 
         response = self.request(
@@ -39,6 +39,7 @@ class GenderCreateActionTest(BaseActionTestCase):
                 "organization_id": 1,
             },
         )
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"gender_ids": [1, 2]})
 
     def test_create_wrong_field(self) -> None:
         response = self.request(

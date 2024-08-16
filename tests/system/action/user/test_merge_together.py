@@ -768,12 +768,7 @@ class UserMergeTogether(BaseVoteTestCase):
         )
         self.assert_model_exists(
             "gender/2",
-            {
-                "id": 2,
-                "name": "female",
-                "user_ids": [2],
-                "organization_id": 1
-            }
+            {"id": 2, "name": "female", "user_ids": [2], "organization_id": 1},
         )
 
     def test_gender_not_changed(self) -> None:
@@ -785,6 +780,7 @@ class UserMergeTogether(BaseVoteTestCase):
                 "user_ids": [2, 4, 5, 6],
             },
         )
+        self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/3",
             {
@@ -795,7 +791,7 @@ class UserMergeTogether(BaseVoteTestCase):
             "gender/1",
             {
                 "user_ids": None,
-            }
+            },
         )
 
     def test_with_custom_fields_simple(self) -> None:

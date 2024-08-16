@@ -16,11 +16,11 @@ Import one meeting from a file. The file must only contain exactly one meeting.
 - The request user is assigned to the admin group.
 - meeting.is_active_in_organization_id is set.
 - It has to be checked, whether the organization.limit_of_meetings is unlimited(=0) or lower than the active meetings in organization.active_meeting_ids, if the new meeting is not archived (`is_active_in_organization_id` is set)
-- Search for users and if username, first-name, last-name and email are identical use this existing user instead of creating a duplicate. Keep the data, including password, of the existing user. Relavent relations such as to the meeting will be updated though.
+- Search for users and if username, first-name, last-name and email are identical use this existing user instead of creating a duplicate. Keep the data, including password, of the existing user. Relevant relations such as to the meeting will be updated though.
 - Users, that still have to be duplicated:
   - Imported usernames will be checked for uniqueness and adjusted in the case of collisions.
   - All previously set user passwords will be replaced
-- Genders will neither be updated nor imported.
+- Genders will neither be updated nor imported and are not an allowed user specific field anymore.
 
 
 ## Permissions

@@ -39,7 +39,6 @@ class GenderDeleteActionTest(BaseActionTestCase):
                 ONE_ORGANIZATION_FQID: {"gender_ids": [1, self.gender_id, 6]},
             }
         )
-        # user = self.request("user.update", {"id": 21, "gender_id": self.gender_id}) #error?
         response = self.request("gender.delete", {"id": self.gender_id})
 
         self.assert_status_code(response, 200)
