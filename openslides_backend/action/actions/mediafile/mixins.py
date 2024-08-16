@@ -183,7 +183,3 @@ class MediafileCreateMixin(MediafileMixin):
         if published:
             instance["published_to_meetings_in_organization_id"] = published
         return instance
-
-
-class MediafileUpdateMixin(MediafileMixin):
-    pass  # TODO: Write code for updating with publishing, also write specialized code in mediafile.update and -upload

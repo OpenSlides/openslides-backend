@@ -16,13 +16,11 @@ from .calculate_mixins import (
     MediafileCalculatedFieldsMixin,
     calculate_inherited_groups_helper_with_parent_id,
 )
-from .mixins import MediafileUpdateMixin
+from .mixins import MediafileMixin
 
 
 @register_action("mediafile.update")
-class MediafileUpdate(
-    MediafileUpdateMixin, UpdateAction, MediafileCalculatedFieldsMixin
-):
+class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMixin):
     """
     Action to update a mediafile.
     """
