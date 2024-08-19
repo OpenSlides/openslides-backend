@@ -19,7 +19,10 @@ class MediafileCalculatedFieldsMixin(Action):
         instance: dict[str, Any],
         parent_is_public: bool | None,
         parent_inherited_access_group_ids: list[int] | None,
+        meeting_id: int | None = None,
     ) -> ActionData:
+        if not meeting_id:
+            meeting_id = instance["meeting_id"]
         mediafile = self.datastore.get(
             fqid_from_collection_and_id("mediafile", instance["id"]), ["child_ids"]
         )
@@ -27,7 +30,7 @@ class MediafileCalculatedFieldsMixin(Action):
             meeting_mediafile_children = self.datastore.filter(
                 "meeting_mediafile",
                 And(
-                    FilterOperator("meeting_id", "=", instance["meeting_id"]),
+                    FilterOperator("meeting_id", "=", meeting_id),
                     Or(
                         FilterOperator("mediafile_id", "=", child_id)
                         for child_id in mediafile["child_ids"]
@@ -51,7 +54,7 @@ class MediafileCalculatedFieldsMixin(Action):
                 )
                 new_instance: dict[str, Any] = {
                     "id": child_id,
-                    "meeting_id": instance["meeting_id"],
+                    "meeting_id": meeting_id,
                 }
                 (
                     new_instance["is_public"],
@@ -73,6 +76,7 @@ class MediafileCalculatedFieldsMixin(Action):
                         new_instance,
                         new_instance["is_public"],
                         new_instance["inherited_access_group_ids"],
+                        meeting_id,
                     )
 
 
