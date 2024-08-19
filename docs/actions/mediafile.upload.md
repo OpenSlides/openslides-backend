@@ -20,10 +20,11 @@ The given `owner_id` determines whether a meeting-wide or an organization-wide m
 
 The `parent_id`, if given, must be a directory (flag `mediafile/is_directory`) and belong to the same `owner_id`. The combination of `title` and `parent_id` must be unique (a file with one title can only exist once in a directory). `access_group_ids` can only be given for meeting-wide mediafiles and must then belong to the meeting given in `owner_id`. `token` can only be given for organization-wide mediafiles and must be unique across all of them.
 
+If `is_published_to_meetings` is set to true, The file will be immediately published, for this the `owner_id` has to be the organization and there may be no `parent_id`.
+
 Additional fields to set:
 - `is_directory` must be set to `false`.
 - `create_timestamp` must be set to the current timestamp.
-- `inherited_access_group_ids` and `is_public` must be calculated in case of a meeting-wide mediafile.
 - `mimetype` is guessed by the ~~`filename`~~ `filecontent` (since 4.0.16)
 - `pdf_information`: If the mimetype is `aplication/pdf` this object needs to be filled:
     ```
@@ -34,6 +35,8 @@ Additional fields to set:
     ```
     It is tried to get the amount of pages from the pdf. If it is encrypted or the extraction fails `pages` will be set to 0 and `entrypted` to true.
 - `filesize`: Size of the file in bytes.
+- `published_to_meetings_in_organization_id` must be `1` if if the mediafile is being published or the parent is a published orga-owned mediafile.
+- `inherited_access_group_ids` and `is_public` must be calculated in case of a meeting-wide mediafile or a published orga-level parent (for those meetings where the parent has meeting_mediafiles).
 
 The `file` is not stored into the datastore but uploaded to the mediaservice.
 

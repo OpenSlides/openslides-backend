@@ -107,7 +107,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request(
             "mediafile.publish",
-            {"id": 110, "is_published_to_meetings": True},
+            {"id": 110, "publish": True},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -139,7 +139,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(self.published_update_data)
         response = self.request(
             "mediafile.publish",
-            {"id": 110, "is_published_to_meetings": True},
+            {"id": 110, "publish": True},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -171,7 +171,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request(
             "mediafile.publish",
-            {"id": 111, "is_published_to_meetings": True},
+            {"id": 111, "publish": True},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -184,7 +184,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(self.published_update_data)
         response = self.request(
             "mediafile.publish",
-            {"id": 112, "is_published_to_meetings": True},
+            {"id": 112, "publish": True},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -197,7 +197,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.set_models(self.published_update_data)
         response = self.request(
             "mediafile.publish",
-            {"id": 110, "is_published_to_meetings": False},
+            {"id": 110, "publish": False},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -225,12 +225,22 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 },
             )
 
+    def test_publish_wrong_payload(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(self.published_update_data)
+        response = self.request(
+            "mediafile.publish",
+            {"id": 110, "publish": None},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("data.publish must be boolean", response.json["message"])
+
     def test_unpublish_implicitly_published(self) -> None:
         self.set_models(self.test_models)
         self.set_models(self.published_update_data)
         response = self.request(
             "mediafile.publish",
-            {"id": 111, "is_published_to_meetings": False},
+            {"id": 111, "publish": False},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -249,7 +259,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         response = self.request(
             "mediafile.publish",
-            {"id": 111, "is_published_to_meetings": True},
+            {"id": 111, "publish": True},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -282,7 +292,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
         response = self.request(
             "mediafile.publish",
-            {"id": 111, "is_published_to_meetings": True},
+            {"id": 111, "publish": True},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -294,13 +304,13 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.orga_permission_test_models,
             "mediafile.publish",
-            {"id": 111, "is_published_to_meetings": True},
+            {"id": 111, "publish": True},
         )
 
     def test_publish_permissions_orga_owner(self) -> None:
         self.base_permission_test(
             self.orga_permission_test_models,
             "mediafile.publish",
-            {"id": 111, "is_published_to_meetings": False},
+            {"id": 111, "publish": False},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )

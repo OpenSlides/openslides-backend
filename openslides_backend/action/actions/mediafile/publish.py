@@ -24,13 +24,14 @@ class MediafilePublish(UpdateAction, CheckForArchivedMeetingMixin):
 
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_update_schema(
-        required_properties=["is_published_to_meetings"],
+        additional_required_fields={"publish": {"type": "boolean"}}
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         relation_key = "published_to_meetings_in_organization_id"
         for instance in action_data:
+            instance["is_published_to_meetings"] = instance.pop("publish", False)
             mediafile = self.datastore.get(
                 fqid_from_collection_and_id("mediafile", instance["id"]),
                 [

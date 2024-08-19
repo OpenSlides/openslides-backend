@@ -27,7 +27,7 @@ class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMix
 
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_update_schema(
-        optional_properties=["title", "token", "is_published_to_meetings"],
+        optional_properties=["title", "token"],
         additional_optional_fields={
             "meeting_id": optional_id_schema,
             "access_group_ids": MeetingMediafile.access_group_ids.get_schema(),
