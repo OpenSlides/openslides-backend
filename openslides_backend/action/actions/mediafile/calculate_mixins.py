@@ -102,11 +102,13 @@ def calculate_inherited_groups_helper_with_parent_id(
 def calculate_inherited_groups_helper_with_parent_meeting_mediafile_id(
     datastore: DatastoreService,
     access_group_ids: list[int] | None,
-    parent_id: int | None,
+    parent_meeting_mediafile_id: int | None,
 ) -> tuple[bool, list[int] | None]:
-    if parent_id:
+    if parent_meeting_mediafile_id:
         parent = datastore.get(
-            fqid_from_collection_and_id("meeting_mediafile", parent_id),
+            fqid_from_collection_and_id(
+                "meeting_mediafile", parent_meeting_mediafile_id
+            ),
             ["is_public", "inherited_access_group_ids"],
         )
     else:
