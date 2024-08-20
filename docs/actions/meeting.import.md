@@ -20,7 +20,7 @@ Import one meeting from a file. The file must only contain exactly one meeting.
 - Users, that still have to be duplicated:
   - Imported usernames will be checked for uniqueness and adjusted in the case of collisions.
   - All previously set user passwords will be replaced
-- Genders will neither be updated nor imported and are not an allowed user specific field anymore.
+- Genders will only be updated or imported if a new user needs to be created. Updated users will not have their genders updated.
 
 
 ## Permissions

@@ -162,6 +162,10 @@ def add_users(
             user["is_present_in_meeting_ids"] = [meeting_id]
         else:
             user["is_present_in_meeting_ids"] = None
+        if user.get("gender_id"):
+            gender = datastore.get(fqid_from_collection_and_id("gender", user["gender_id"]),["name"])
+            user["gender"] = gender.get("name")
+            del user["gender_id"]
         # limit user fields to exported objects
         collection_field_tupels = [
             ("meeting_user", "meeting_user_ids"),

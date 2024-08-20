@@ -2191,9 +2191,11 @@ class MeetingImport(BaseActionTestCase):
 
     def test_all_migrations(self) -> None:
         data = self.create_request_data({})
-        # user 2 is used to showcase migration 0054 works on older imports
+        # user 2 is added to showcase migration 0054 works on older imports 
+        # and gender is not being updated. User 1 shows that a new user will 
+        # be created with gender_id (also with a new gender). 
         self.update_model(ONE_ORGANIZATION_FQID, {"user_ids": [1, 2]})
-
+        self.update_model("gender/4", {"user_ids": [2]})
         self.set_models(
             {
                 "user/2": {
@@ -2224,7 +2226,7 @@ class MeetingImport(BaseActionTestCase):
         data["meeting"]["group"]["1"]["meeting_user_ids"] = [11, 12]
         data["meeting"]["meeting"]["1"]["user_ids"] = [1, 2]
         data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [11, 12]
-        data["meeting"]["user"]["1"]["gender"] = "male"  # also for migration 0054
+        data["meeting"]["user"]["1"]["gender"] = "needs_to_be_created"  # also for migration 0054
         data["meeting"]["user"] = data["meeting"]["user"] | other_user_request_data
         data["meeting"]["_migration_index"] = 1
         del data["meeting"]["user"]["1"]["organization_id"]
@@ -2236,7 +2238,7 @@ class MeetingImport(BaseActionTestCase):
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
-        assert counter.calls == 8
+        assert counter.calls == 9
         self.assert_model_exists(
             "meeting_user/3", {"user_id": 1, "meeting_id": 2, "group_ids": [2]}
         )
@@ -2259,9 +2261,12 @@ class MeetingImport(BaseActionTestCase):
                 "gender_id": 4,
             },
         )  # migration 0054 existing user updated not changing gender
+        self.assert_model_exists("gender/4", {"name": "diverse", "user_ids": [2]})
         self.assert_model_exists(
-            "user/3", {"username": "test", "gender": None, "gender_id": None}
-        )  # migration 0054 new user created without gender
+            "user/3", {"username": "test", "gender": None, "gender_id": 5}
+        )  # migration 0054 new user created with new gender
+        self.assert_model_exists("gender/5", {"name": "needs_to_be_created", "user_ids": [3]})
+
         self.assertCountEqual(meeting["user_ids"], [1, 2, 3])
         group2 = self.assert_model_exists("group/2")
         self.assertCountEqual(group2["meeting_user_ids"], [1, 2, 3])

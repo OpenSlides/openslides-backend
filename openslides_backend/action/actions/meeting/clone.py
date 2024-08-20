@@ -18,11 +18,11 @@ from openslides_backend.shared.schema import id_list_schema, required_id_schema
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....shared.export_helper import export_meeting
-from ....shared.util import ONE_ORGANIZATION_FQID
+from ....shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .import_ import ONE_ORGANIZATION_ID, MeetingImport
+from .import_ import MeetingImport
 
 updatable_fields = [
     "committee_id",

@@ -33,16 +33,17 @@ from openslides_backend.shared.patterns import (
     fqid_from_collection_and_id,
 )
 from openslides_backend.shared.schema import models_map_object
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....shared.interfaces.event import Event, ListFields, ListFieldsDict
-from ....shared.util import ALLOWED_HTML_TAGS_STRICT, ONE_ORGANIZATION_ID, validate_html
+from ....shared.util import ALLOWED_HTML_TAGS_STRICT, ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID, validate_html
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
+from ..user.update import UserUpdate
+from ..gender.create import GenderCreate
 from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..motion.update import EXTENSION_REFERENCE_IDS_PATTERN
 from ..user.user_mixins import LimitOfUserMixin, UsernameMixin
@@ -146,6 +147,7 @@ class MeetingImport(
     def preprocess_data(self, instance: dict[str, Any]) -> dict[str, Any]:
         self.check_one_meeting(instance)
         self.check_locked(instance)
+        self.stash_gender_relations(instance)
         self.remove_not_allowed_fields(instance)
         self.set_committee_and_orga_relation(instance)
         instance = self.migrate_data(instance)
@@ -160,6 +162,16 @@ class MeetingImport(
         if list(instance["meeting"]["meeting"].values())[0].get("locked_from_inside"):
             raise ActionException("Cannot import a locked meeting.")
 
+    def stash_gender_relations(self, instance) -> None:
+        self.user_id_to_gender = {}
+        users = instance["meeting"].get("user", {})
+        for user in users.values():
+            if gender := user.get("gender"):
+                del user["gender"]
+                # if user is to be created, convert to gender_id
+                if gender != "":
+                    self.user_id_to_gender[user["id"]] = gender
+        
     def remove_not_allowed_fields(self, instance: dict[str, Any]) -> None:
         json_data = instance["meeting"]
 
@@ -245,6 +257,7 @@ class MeetingImport(
         meeting_json = instance["meeting"]
         self.update_admin_group(meeting_json)
         self.upload_mediadata()
+        self.handle_gender_string(instance)
         return instance
 
     def empty_if_none(self, value: str | None) -> str:
@@ -304,16 +317,25 @@ class MeetingImport(
         for entry, username in zip(user_entries, new_usernames):
             entry["username"] = username
 
-    # def transform_gender_to_id(self, user_json: dict[str,Any]) -> dict[str,Any]:
-    #     for user_id, user in user_json.items():
-    #         if "gender" in user:
-    #             gender_dict = datastore.get_all(user["gender"], ["id", "name"], lock_result=False)
-    #             if gender := next(
-    #                 (model for model in gender_dict.values() if model["name"] == user["gender"]), None
-    #             ):
-    #                 user["gender_id"] = datastore.get("gender", ["name"])
-    #             del user["gender"]
-    #     return user_json
+    def handle_gender_string(self, instance: dict[str, Any]) -> None:
+        users = instance["meeting"].get("user", {})
+        for user_id, gender in self.user_id_to_gender.items():
+            if user_id not in self.merge_user_map:
+                gender_dict = self.datastore.filter(
+                    "gender",
+                    FilterOperator("name", "=", gender),
+                    ["id"],lock_result=False
+                )
+                if gender_dict:
+                    gender_id = next(iter(gender_dict.keys()))
+                else:
+                    action_result = self.execute_other_action(
+                        GenderCreate, [{"name": gender}]
+                    )
+                    gender_id = action_result[0].get("id", 0)  # type: ignore
+                self.execute_other_action(
+                    UserUpdate, [{"id": self.replace_map["user"][user_id], "gender_id": gender_id}]
+                )
 
     def check_limit_of_meetings(
         self, text: str = "import", text2: str = "active "

@@ -70,15 +70,4 @@ class Migration(BaseModelMigration):
                         },
                     )
                 )
-        else:
-            for user_id, user in users.items():
-                if "gender" in user:
-                    events.append(
-                        RequestUpdateEvent(
-                            fqid_from_collection_and_id("user", user_id),
-                            {
-                                "gender": None,
-                            },
-                        )
-                    )
         return events

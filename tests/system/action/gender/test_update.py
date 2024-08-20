@@ -2,7 +2,7 @@ from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
-class CommitteeUpdateActionTest(BaseActionTestCase):
+class GenderUpdateActionTest(BaseActionTestCase):
     gender_id = 5
     gender_fqid = f"gender/{gender_id}"
     gender_name = "dragon"
