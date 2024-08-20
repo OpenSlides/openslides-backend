@@ -70,7 +70,12 @@ class MediafileMoveAction(
         get_many_request = GetManyRequest(
             self.model.collection,
             ids,
-            ["owner_id", "is_published_to_meetings", "meeting_mediafile_ids"],
+            [
+                "owner_id",
+                "is_published_to_meetings",
+                "meeting_mediafile_ids",
+                "child_ids",
+            ],
         )
         gm_result = self.datastore.get_many([get_many_request])
         db_instances = gm_result.get(self.model.collection, {})
@@ -118,8 +123,8 @@ class MediafileMoveAction(
                         f"Database corrupt: Expected meeting-owned mediafile {id_} to have exactly one meeting_mediafile"
                     )
                 meeting_mediafile_id = db_instances[id_]["meeting_mediafile_ids"][0]
-                meeting_mediafiles = []
-                should_be_empty = []
+                meeting_mediafiles: list[dict[str, Any]] = []
+                should_be_empty: list[dict[str, Any]] = []
                 self.expand_children_meeting_mediafile_payload_lists(
                     instance,
                     meeting_mediafile_id,
@@ -133,8 +138,35 @@ class MediafileMoveAction(
                     )
                 self.execute_other_action(MeetingMediafileUpdate, meeting_mediafiles)
             else:
+                published = (parent or {}).get(
+                    "published_to_meetings_in_organization_id"
+                )
+                instance["published_to_meetings_in_organization_id"] = published
+                yield from self.handle_published_for_children(
+                    db_instances[id_],
+                    (parent or {}).get("published_to_meetings_in_organization_id"),
+                )
                 self.handle_orga_meeting_mediafiles(instance, db_instances[id_], parent)
             yield instance
+
+    def handle_published_for_children(
+        self,
+        db_instance: dict[str, Any],
+        published_to_meetings_in_organization_id: int | None,
+    ) -> ActionData:
+        child_ids = db_instance.get("child_ids", [])
+        if len(child_ids):
+            db_children = self.datastore.get_many(
+                [GetManyRequest("mediafile", child_ids, ["child_ids"])]
+            )["mediafile"]
+            for id_, db_child in db_children.items():
+                yield {
+                    "id": id_,
+                    "published_to_meetings_in_organization_id": published_to_meetings_in_organization_id,
+                }
+                yield from self.handle_published_for_children(
+                    db_child, published_to_meetings_in_organization_id
+                )
 
     def handle_orga_meeting_mediafiles(
         self,
@@ -192,10 +224,28 @@ class MediafileMoveAction(
                 self.execute_other_action(
                     MeetingMediafileUpdate, update_meeting_mediafiles
                 )
-        elif meeting_mediafile_ids := db_instance.get("meeting_mediafile_ids"):
+        elif meeting_mediafile_ids := self.get_entire_branch_of_meeting_mediafile_ids(
+            db_instance
+        ):
             self.execute_other_action(
                 MeetingMediafileDelete, [{"id": id_} for id_ in meeting_mediafile_ids]
             )
+
+    def get_entire_branch_of_meeting_mediafile_ids(
+        self, db_instance: dict[str, Any]
+    ) -> list[int]:
+        ids: list[int] = db_instance.get("meeting_mediafile_ids", [])
+        if child_ids := db_instance.get("child_ids"):
+            children = self.datastore.get_many(
+                [
+                    GetManyRequest(
+                        "mediafile", child_ids, ["child_ids", "meeting_mediafile_ids"]
+                    )
+                ]
+            )["mediafile"]
+            for child in children.values():
+                ids.extend(self.get_entire_branch_of_meeting_mediafile_ids(child))
+        return ids
 
     def expand_children_meeting_mediafile_payload_lists(
         self,
