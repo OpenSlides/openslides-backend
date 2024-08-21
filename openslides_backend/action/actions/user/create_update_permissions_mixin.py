@@ -271,14 +271,13 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         if not self.instance_id:
             return False
         b_user = self.datastore.get(
-                fqid_from_collection_and_id("user", self.instance_id),
-                ["meeting_ids", "committee_management_ids"],
-                lock_result=False,
-            )
+            fqid_from_collection_and_id("user", self.instance_id),
+            ["meeting_ids", "committee_management_ids"],
+            lock_result=False,
+        )
         if b_user.get("committee_management_ids"):
             return False
-        b_meeting_ids = set(b_user.get("meeting_ids", [])
-        )
+        b_meeting_ids = set(b_user.get("meeting_ids", []))
         if not b_meeting_ids:
             return False
         a_meeting_ids = self.permstore.user_meetings
@@ -347,9 +346,7 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         if self.instance_user_scope == UserScope.Organization:
             if self.permstore.user_committees.intersection(self.instance_committee_ids):
                 return
-            raise MissingPermission(
-                {OrganizationManagementLevel.CAN_MANAGE_USERS: 1}
-            )
+            raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
         if self.instance_user_scope == UserScope.Committee:
             if self.instance_user_scope_id not in self.permstore.user_committees:
                 raise MissingPermission(

@@ -909,14 +909,15 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_perm_group_A_belongs_to_same_meetings_committe_admin(self) -> None:
-        """May not update group A fields on any scope as long as admin user Ann belongs 
-        to all meetings user Ben belongs to but Ben is committee admin. See issue 2522."""
+        """May not update group A fields on any scope as long as admin user Ann belongs
+        to all meetings user Ben belongs to but Ben is committee admin. See issue 2522.
+        """
         self.permission_setup()  # meeting 1 + logged in test user + user 111
         self.create_meeting(4)  # meeting 4
         # Admin groups of meeting/1 and meeting/4 for test user
         self.set_user_groups(self.user_id, [2, 5])
         self.set_user_groups(111, [1, 4])  # 111 into both meetings
-        self.set_committee_management_level([60], 111) # 111 is committee admin
+        self.set_committee_management_level([60], 111)  # 111 is committee admin
         response = self.request(
             "user.update",
             {
