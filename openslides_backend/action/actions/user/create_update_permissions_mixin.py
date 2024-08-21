@@ -268,6 +268,8 @@ class CreateUpdatePermissionsMixin(UserMixin, UserScopeMixin, Action):
         Also checks if the requesting user has meeting admin rights and the requested user doesn't.
         Returns true if permissions are given. False if not. Raises no Exceptions.
         """
+        if not self.instance_id:
+            return False
         b_user = self.datastore.get(
                 fqid_from_collection_and_id("user", self.instance_id),
                 ["meeting_ids", "committee_management_ids"],
