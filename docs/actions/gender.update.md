@@ -1,10 +1,8 @@
 ## Payload
-```
+```js
  {
 // Required
     id: number;
-
-// Optional
 // Group A
     name: string;
 }

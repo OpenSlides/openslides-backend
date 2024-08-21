@@ -35,17 +35,22 @@ from openslides_backend.shared.patterns import (
 from openslides_backend.shared.schema import models_map_object
 
 from ....shared.interfaces.event import Event, ListFields, ListFieldsDict
-from ....shared.util import ALLOWED_HTML_TAGS_STRICT, ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID, validate_html
+from ....shared.util import (
+    ALLOWED_HTML_TAGS_STRICT,
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    validate_html,
+)
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_password
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
-from ..user.update import UserUpdate
 from ..gender.create import GenderCreate
 from ..meeting_user.helper_mixin import MeetingUserHelperMixin
 from ..motion.update import EXTENSION_REFERENCE_IDS_PATTERN
+from ..user.update import UserUpdate
 from ..user.user_mixins import LimitOfUserMixin, UsernameMixin
 
 
@@ -162,16 +167,16 @@ class MeetingImport(
         if list(instance["meeting"]["meeting"].values())[0].get("locked_from_inside"):
             raise ActionException("Cannot import a locked meeting.")
 
-    def stash_gender_relations(self, instance) -> None:
+    def stash_gender_relations(self, instance: dict[str, Any]) -> None:
         self.user_id_to_gender = {}
         users = instance["meeting"].get("user", {})
         for user in users.values():
             if gender := user.get("gender"):
                 del user["gender"]
-                # if user is to be created, convert to gender_id
-                if gender != "":
-                    self.user_id_to_gender[user["id"]] = gender
-        
+                self.user_id_to_gender[user["id"]] = gender
+            elif gender == "":
+                del user["gender"]
+
     def remove_not_allowed_fields(self, instance: dict[str, Any]) -> None:
         json_data = instance["meeting"]
 
@@ -318,23 +323,22 @@ class MeetingImport(
             entry["username"] = username
 
     def handle_gender_string(self, instance: dict[str, Any]) -> None:
-        users = instance["meeting"].get("user", {})
+        genders = self.datastore.get_all("gender", ["name"], lock_result=False)
+        gender_dict = {
+            gender.get("name", ""): gender_id for gender_id, gender in genders.items()
+        }
         for user_id, gender in self.user_id_to_gender.items():
             if user_id not in self.merge_user_map:
-                gender_dict = self.datastore.filter(
-                    "gender",
-                    FilterOperator("name", "=", gender),
-                    ["id"],lock_result=False
-                )
-                if gender_dict:
-                    gender_id = next(iter(gender_dict.keys()))
+                if gender in gender_dict:
+                    gender_id = gender_dict[gender]
                 else:
                     action_result = self.execute_other_action(
                         GenderCreate, [{"name": gender}]
                     )
                     gender_id = action_result[0].get("id", 0)  # type: ignore
                 self.execute_other_action(
-                    UserUpdate, [{"id": self.replace_map["user"][user_id], "gender_id": gender_id}]
+                    UserUpdate,
+                    [{"id": self.replace_map["user"][user_id], "gender_id": gender_id}],
                 )
 
     def check_limit_of_meetings(

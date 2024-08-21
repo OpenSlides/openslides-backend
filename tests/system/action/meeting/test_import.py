@@ -2097,7 +2097,10 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_with_listfields_from_migration(self) -> None:
-        """test for listFields in event.data after migration. Uses migration 0035 to create one"""
+        """
+        Test for listFields in event.data after migration. Uses migration 0035 to create one
+        Additionally adds a gender to user 1 to show that migration 0054 does not interfere with the import.
+        """
         data = self.create_request_data(
             {
                 "motion": {
@@ -2191,43 +2194,6 @@ class MeetingImport(BaseActionTestCase):
 
     def test_all_migrations(self) -> None:
         data = self.create_request_data({})
-        # user 2 is added to showcase migration 0054 works on older imports 
-        # and gender is not being updated. User 1 shows that a new user will 
-        # be created with gender_id (also with a new gender). 
-        self.update_model(ONE_ORGANIZATION_FQID, {"user_ids": [1, 2]})
-        self.update_model("gender/4", {"user_ids": [2]})
-        self.set_models(
-            {
-                "user/2": {
-                    "username": "other_user",
-                    "first_name": "other",
-                    "last_name": "user",
-                    "email": "other@us.er",
-                    "organization_id": 1,
-                    "gender_id": 4,
-                }
-            }
-        )
-        other_user_request_data = {
-            "2": {
-                "id": 2,
-                "username": "other_user",
-                "first_name": "other",
-                "last_name": "user",
-                "email": "other@us.er",
-                "committee_ids": [1],
-                "meeting_user_ids": [12],
-                "gender": "male",
-            }
-        }
-        data["meeting"]["meeting_user"] = data["meeting"]["meeting_user"] | {
-            "12": {"id": 12, "meeting_id": 1, "user_id": 2, "group_ids": [1]}
-        }
-        data["meeting"]["group"]["1"]["meeting_user_ids"] = [11, 12]
-        data["meeting"]["meeting"]["1"]["user_ids"] = [1, 2]
-        data["meeting"]["meeting"]["1"]["meeting_user_ids"] = [11, 12]
-        data["meeting"]["user"]["1"]["gender"] = "needs_to_be_created"  # also for migration 0054
-        data["meeting"]["user"] = data["meeting"]["user"] | other_user_request_data
         data["meeting"]["_migration_index"] = 1
         del data["meeting"]["user"]["1"]["organization_id"]
         data["meeting"]["meeting"]["1"]["motion_poll_default_100_percent_base"] = "Y"
@@ -2238,9 +2204,10 @@ class MeetingImport(BaseActionTestCase):
         with CountDatastoreCalls(verbose=True) as counter:
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
-        assert counter.calls == 9
+        assert counter.calls == 5
+        self.assert_model_exists("user/1", {"meeting_user_ids": [2]})
         self.assert_model_exists(
-            "meeting_user/3", {"user_id": 1, "meeting_id": 2, "group_ids": [2]}
+            "meeting_user/2", {"user_id": 1, "meeting_id": 2, "group_ids": [2]}
         )
         meeting = self.assert_model_exists(
             "meeting/2",
@@ -2251,32 +2218,16 @@ class MeetingImport(BaseActionTestCase):
                 "poll_default_onehundred_percent_base": "YNA",
             },
         )  # checker repair
-
-        self.assert_model_exists(
-            "user/2",
-            {
-                "username": "other_user",
-                "committee_ids": [1],
-                "gender": None,
-                "gender_id": 4,
-            },
-        )  # migration 0054 existing user updated not changing gender
-        self.assert_model_exists("gender/4", {"name": "diverse", "user_ids": [2]})
-        self.assert_model_exists(
-            "user/3", {"username": "test", "gender": None, "gender_id": 5}
-        )  # migration 0054 new user created with new gender
-        self.assert_model_exists("gender/5", {"name": "needs_to_be_created", "user_ids": [3]})
-
-        self.assertCountEqual(meeting["user_ids"], [1, 2, 3])
+        self.assertCountEqual(meeting["user_ids"], [1, 2])
         group2 = self.assert_model_exists("group/2")
-        self.assertCountEqual(group2["meeting_user_ids"], [1, 2, 3])
+        self.assertCountEqual(group2["meeting_user_ids"], [1, 2])
         committee1 = self.get_model("committee/1")
-        self.assertCountEqual(committee1["user_ids"], [1, 2, 3])
+        self.assertCountEqual(committee1["user_ids"], [1, 2])
         self.assertCountEqual(committee1["meeting_ids"], [1, 2])
         self.assert_model_exists("motion_workflow/1", {"sequential_number": 1})
         self.assert_model_exists("projector/2", {"sequential_number": 1})
         self.assert_model_exists(
-            "organization/1", {"user_ids": [1, 2, 3], "active_meeting_ids": [1, 2]}
+            "organization/1", {"user_ids": [1, 2], "active_meeting_ids": [1, 2]}
         )
 
     @performance
@@ -2400,6 +2351,76 @@ class MeetingImport(BaseActionTestCase):
                 "delegated_vote_ids": [2],
                 "meeting_user_ids": [1],
             },
+        )
+
+    def test_gender_import(self) -> None:
+        """
+        User 1 shows that a new user will be created with gender_id (also with a new gender).
+        User 2 is added to showcase the gender is not being updated.
+        User 3 shows that a user with empty gender can be created.
+        """
+        data = self.create_request_data({})
+        self.update_model(ONE_ORGANIZATION_FQID, {"user_ids": [1, 2]})
+        self.update_model("gender/4", {"user_ids": [2]})
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "other_user",
+                    "first_name": "other",
+                    "last_name": "user",
+                    "email": "other@us.er",
+                    "organization_id": 1,
+                    "gender_id": 4,
+                }
+            }
+        )
+        other_user_request_data = {
+            "2": {
+                "id": 2,
+                "username": "other_user",
+                "first_name": "other",
+                "last_name": "user",
+                "email": "other@us.er",
+                "gender": "male",
+                "organization_id": 1,
+            }
+        }
+        other_user_request_data = {
+            "3": {
+                "id": 3,
+                "username": "new_user",
+                "first_name": "new",
+                "last_name": "user",
+                "gender": "",
+                "organization_id": 1,
+            }
+        }
+        data["meeting"]["user"]["1"]["gender"] = "needs_to_be_created"
+        data["meeting"]["user"] = data["meeting"]["user"] | other_user_request_data
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "other_user",
+                "gender": None,
+                "gender_id": 4,
+            },
+        )
+        self.assert_model_exists(
+            "user/3", {"username": "test", "gender": None, "gender_id": 5}
+        )
+        self.assert_model_exists(
+            "user/4",
+            {
+                "username": "new_user",
+                "gender": None,
+                "gender_id": None,
+            },
+        )
+        self.assert_model_exists("gender/4", {"name": "diverse", "user_ids": [2]})
+        self.assert_model_exists(
+            "gender/5", {"name": "needs_to_be_created", "user_ids": [3]}
         )
 
     def test_import_existing_user_with_vote(self) -> None:

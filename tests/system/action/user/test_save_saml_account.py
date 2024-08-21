@@ -288,7 +288,7 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
     def test_update_saml_account_all_fields(self) -> None:
         self.set_models(
             {
-                "user/78": {"username": "Saml", "saml_id": "111222333"},
+                "user/78": {"username": "Saml", "saml_id": "111222333", "gender_id": 4},
             }
         )
         response = self.request(
@@ -401,6 +401,35 @@ class UserUpdateSamlAccount(UserBaseSamlAccount):
                 "pronoun": "er",
                 "is_active": False,
                 "is_physical_person": True,
+            },
+        )
+
+    def test_gender_to_none(self) -> None:
+        self.set_models(
+            {
+                "user/78": {"username": "Saml", "saml_id": "111222333", "gender_id": 4},
+            }
+        )
+        response = self.request(
+            "user.save_saml_account",
+            {
+                "username": "111222333",
+                "title": "Dr.",
+                "firstName": "Max",
+                "lastName": "Mustermann",
+                "gender": "",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/78",
+            {
+                "saml_id": "111222333",
+                "username": "Saml",
+                "title": "Dr.",
+                "first_name": "Max",
+                "last_name": "Mustermann",
+                "gender_id": None,
             },
         )
 

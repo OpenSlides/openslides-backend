@@ -163,6 +163,9 @@ class UserSaveSamlAccount(
                     gender_id = action_result[0].get("id", 0)  # type: ignore
                 instance["gender_id"] = gender_id
             del instance["gender"]
+        elif gender == "":
+            instance["gender_id"] = None
+            del instance["gender"]
         if len(users) == 1:
             self.user = next(iter(users.values()))
             instance["id"] = (user_id := cast(int, self.user["id"]))

@@ -22,11 +22,15 @@ class Migration(BaseModelMigration):
 
     def migrate_models(self) -> list[BaseRequestEvent] | None:
         events: list[BaseRequestEvent] = []
-        users = self.reader.get_all("user", ["gender"])
         if not self.reader.is_in_memory_migration:
+            users = self.reader.get_all("user", ["gender"])
+            default_genders = ["male", "femle", "diverse", "non-binary"]
             gender_strings = self.reader.get("organization/1", ["genders"]).get(
                 "genders", ""
             )
+            gender_strings = default_genders + [
+                gender for gender in gender_strings if gender not in default_genders
+            ]
             # update organization
             events.append(
                 RequestUpdateEvent(
@@ -57,7 +61,6 @@ class Migration(BaseModelMigration):
                             {"gender": None},
                         )
                     )
-            # create genders with back relation to users
             for gender_id, gender in enumerate(gender_strings, start=1):
                 events.append(
                     RequestCreateEvent(
