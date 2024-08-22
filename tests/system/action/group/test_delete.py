@@ -47,6 +47,16 @@ class GroupDeleteActionTest(BaseActionTestCase):
         response = self.request("group.delete", {"id": 111})
         self.assert_status_code(response, 400)
 
+    def test_delete_anonymous_group(self) -> None:
+        self.set_models(
+            {
+                "meeting/22": {"anonymous_group_id": 111},
+                "group/111": {"anonymous_group_for_meeting_id": 22},
+            }
+        )
+        response = self.request("group.delete", {"id": 111})
+        self.assert_status_code(response, 400)
+
     def test_delete_with_users(self) -> None:
         self.set_models(
             {

@@ -4,13 +4,16 @@ from ....models.models import ChatGroup
 from ....permissions.permissions import Permissions
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
+from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .mixins import ChatEnabledMixin, CheckUniqueNameMixin
 
 
 @register_action("chat_group.update")
-class ChatGroupUpdate(ChatEnabledMixin, CheckUniqueNameMixin, UpdateAction):
+class ChatGroupUpdate(
+    ChatEnabledMixin, CheckUniqueNameMixin, UpdateAction, ForbidAnonymousGroupMixin
+):
     """
     Action to update a chat group.
     """
@@ -31,4 +34,5 @@ class ChatGroupUpdate(ChatEnabledMixin, CheckUniqueNameMixin, UpdateAction):
             )
             if instance["name"] != chat_group.get("name"):
                 self.check_name_unique(instance)
+        self.check_anonymous_not_in_list_fields(instance, ["write_group_ids"])
         return instance
