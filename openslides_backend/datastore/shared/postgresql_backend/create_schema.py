@@ -13,7 +13,8 @@ from openslides_backend.shared.exceptions import DatabaseException
 
 def create_schema() -> None:
     """
-    Helper function to write the database schema into the database.
+    Helper function to write the relational database schema into the database.
+    Other schemata, vote and event-schema ar expected to be applied by their services, i.e. vote and datastore-service
     """
     connection: Connection
     try:
@@ -50,7 +51,7 @@ def create_schema() -> None:
                 sql.SQL(
                     "SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = %s AND schemaname = %s);"
                 ),
-                ("poll", "vote"),
+                ("organization_t", "public"),
             ).fetchone()
             if result and result.get("exists"):
                 print(
@@ -66,10 +67,3 @@ def create_schema() -> None:
                 print(f"On applying relational schema there was an error: {str(e)}\n")
                 return
             print("Relational schema applied\n")
-
-            # idempotent vote-service database
-            path = os.path.realpath(
-                os.path.join(os.getcwd(), "vote-schema", "schema.sql")
-            )
-            cursor.execute(open(path).read())
-            print("Idempotent openslides-vote-service schema applied\n")

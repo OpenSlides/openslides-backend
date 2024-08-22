@@ -17,7 +17,6 @@ services:
             - ../cli:/app/cli
             - ../global:/app/global
             - ../scripts:/app/scripts
-            - ../../openslides-vote-service/backend/postgres/schema.sql:/app/vote-schema/schema.sql
         environment:
             - DATASTORE_READER_HOST=datastore-reader
             - DATASTORE_READER_PORT=9010

@@ -93,21 +93,6 @@ class MockAuthenticationHTTPAdapter:
         self.logger.debug(f"Error in auth service: {message}")
         raise AuthenticationException(message)
 
-    def authenticate_only_refresh_id(self) -> int:
-        self.logger.debug(
-            f"Mock: Start request to authentication service with the following cookie: {self.refresh_id}"
-        )
-        if not self.refresh_id:
-            return ANONYMOUS_USER
-        if user_id := self.cookie_to_user_ids.get(self.refresh_id):
-            return user_id
-        elif (user_id := id_from_fqid(self.refresh_id)) in self.user_sessions:
-            self.cookie_to_user_ids[self.refresh_id] = user_id
-            return user_id
-        message = f"Mock: Cookie error on cookie_token {self.refresh_id}"
-        self.logger.debug(f"Error in auth service: {message}")
-        raise AuthenticationException(message)
-
     def hash(self, toHash: str) -> str:
         return toHash
 

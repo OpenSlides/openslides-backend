@@ -10,25 +10,6 @@ from openslides_backend.shared.exceptions import DatabaseException
 
 env = Environment(os.environ)
 conn_string_without_db = f"host='{env.DATABASE_HOST}' port='{env.DATABASE_PORT}' user='{env.DATABASE_USER}' password='{env.PGPASSWORD}' "
-system_conn_pool = psycopg_pool.ConnectionPool(
-    conninfo=conn_string_without_db + "dbname='postgres'",
-    connection_class=psycopg.Connection,
-    kwargs={"autocommit": True, "row_factory": psycopg.rows.dict_row},
-    min_size=1,
-    max_size=1,
-    open=True,
-    check=psycopg_pool.ConnectionPool.check_connection,
-    name="ConnPool for dev postgres",
-    timeout=5.0,
-    max_waiting=0,
-    max_lifetime=3600.0,
-    max_idle=600.0,
-    reconnect_timeout=300.0,
-    num_workers=1,
-)
-
-
-# os_conn_pool: psycopg_pool.ConnectionPool = None
 
 
 def create_os_conn_pool(open: bool = True) -> psycopg_pool.ConnectionPool:
@@ -78,7 +59,7 @@ def get_unpooled_db_connection(
     autocommit: bool = False,
     row_factory: Callable = psycopg.rows.dict_row,
 ) -> psycopg.Connection:
-    """Use for temporary connections, where pooling is not helpfull like tests and other specific DDL-Connections"""
+    """Use for temporary connections, where pooling is not helpfull like specific DDL-Connections"""
     try:
         db_connection = psycopg.connect(
             f"host='{env.DATABASE_HOST}' port='{env.DATABASE_PORT}' dbname='{db_name}' user='{env.DATABASE_USER}' password='{env.PGPASSWORD}'",
