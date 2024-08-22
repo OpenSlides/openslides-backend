@@ -27,6 +27,24 @@ class TopicUpdateTest(BaseActionTestCase):
         self.assertEqual(topic.get("title"), "test2")
         self.assertEqual(topic.get("text"), "text")
 
+    def test_update_with_attachment(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "topic/1": {"title": "test", "meeting_id": 1},
+                "mediafile/1": {"owner_id": "meeting/1", "meeting_mediafile_ids": [11]},
+                "meeting_mediafile/11": {"meeting_id": 1, "mediafile_id": 1},
+            }
+        )
+        response = self.request(
+            "topic.update",
+            {"id": 1, "title": "test2", "text": "text", "attachment_ids": [1]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "topic/1", {"title": "test2", "text": "text", "attachment_ids": [11]}
+        )
+
     def test_update_text_with_iframe(self) -> None:
         self.set_models(
             {

@@ -20,6 +20,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..meeting_mediafile.attachment_mixin import AttachmentMixin
 from .mixins import (
     AmendmentParagraphHelper,
     PermissionHelperMixin,
@@ -37,6 +38,7 @@ class MotionUpdate(
     PermissionHelperMixin,
     SetNumberMixin,
     TextHashMixin,
+    AttachmentMixin,
     UpdateAction,
 ):
     """
@@ -102,6 +104,7 @@ class MotionUpdate(
         )
 
     def update_instance(self, instance: dict[str, Any]) -> dict[str, Any]:
+        instance = super().update_instance(instance)
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
         motion = self.datastore.get(

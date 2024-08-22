@@ -16,10 +16,12 @@ from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
+from ..meeting_mediafile.attachment_mixin import AttachmentMixin
 
 
 @register_action("topic.create")
 class TopicCreate(
+    AttachmentMixin,
     SequentialNumbersMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,

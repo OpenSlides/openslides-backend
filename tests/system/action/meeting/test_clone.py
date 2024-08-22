@@ -968,14 +968,15 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_with_mediafile(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["mediafile_ids"] = [1, 2]
+        self.test_models["meeting/1"]["meeting_mediafile_ids"] = [10, 20]
         self.test_models["meeting/1"]["meeting_user_ids"] = [1]
         self.test_models["group/1"]["meeting_user_ids"] = [1]
         self.set_models(self.test_models)
         self.set_models(
             {
                 "meeting/1": {
-                    "logo_web_header_id": 1,
-                    "font_bold_id": 2,
+                    "logo_web_header_id": 10,
+                    "font_bold_id": 20,
                     "meeting_user_ids": [1],
                 },
                 "user/1": {
@@ -989,15 +990,25 @@ class MeetingClone(BaseActionTestCase):
                 },
                 "mediafile/1": {
                     "owner_id": "meeting/1",
-                    "attachment_ids": [],
                     "mimetype": "text/plain",
-                    "is_public": True,
-                    "used_as_logo_web_header_in_meeting_id": 1,
+                    "meeting_mediafile_ids": [10],
                 },
                 "mediafile/2": {
                     "owner_id": "meeting/1",
-                    "attachment_ids": [],
                     "mimetype": "text/plain",
+                    "meeting_mediafile_ids": [20],
+                },
+                "meeting_mediafile/10": {
+                    "meeting_id": 1,
+                    "mediafile_id": 1,
+                    "attachment_ids": [],
+                    "is_public": True,
+                    "used_as_logo_web_header_in_meeting_id": 1,
+                },
+                "meeting_mediafile/20": {
+                    "meeting_id": 1,
+                    "mediafile_id": 2,
+                    "attachment_ids": [],
                     "is_public": True,
                     "used_as_font_bold_in_meeting_id": 1,
                 },
@@ -1008,19 +1019,23 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.media.duplicate_mediafile.assert_called_with(2, 4)
         self.assert_model_exists(
-            "mediafile/3",
+            "meeting_mediafile/21",
             {
+                "meeting_id": 2,
+                "mediafile_id": 3,
                 "used_as_logo_web_header_in_meeting_id": 2,
             },
         )
         self.assert_model_exists(
-            "mediafile/4",
+            "meeting_mediafile/22",
             {
+                "meeting_id": 2,
+                "mediafile_id": 4,
                 "used_as_font_bold_in_meeting_id": 2,
             },
         )
         self.assert_model_exists(
-            "meeting/2", {"logo_web_header_id": 3, "font_bold_id": 4}
+            "meeting/2", {"logo_web_header_id": 21, "font_bold_id": 22}
         )
 
     def test_clone_with_mediafile_directory(self) -> None:

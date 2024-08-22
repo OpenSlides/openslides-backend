@@ -17,8 +17,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
             "assignment.update", {"id": 111, "title": "title_Xcdfgee"}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("assignment/111")
-        assert model.get("title") == "title_Xcdfgee"
+        self.assert_model_exists("assignment/111", {"title": "title_Xcdfgee"})
 
     def test_update_correct_full_fields(self) -> None:
         self.set_models(
@@ -26,8 +25,14 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                 "meeting/110": {
                     "name": "name_sdurqw12",
                     "is_active_in_organization_id": 1,
+                    "meeting_mediafile_ids": [11],
                 },
                 "assignment/111": {"title": "title_srtgb123", "meeting_id": 110},
+                "mediafile/1": {
+                    "owner_id": "meeting/110",
+                    "meeting_mediafile_ids": [11],
+                },
+                "meeting_mediafile/11": {"mediafile_id": 1, "meeting_id": 110},
             }
         )
         response = self.request(
@@ -40,16 +45,22 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                 "phase": "search",
                 "default_poll_description": "text_test2",
                 "number_poll_candidates": True,
+                "attachment_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("assignment/111")
-        assert model.get("title") == "title_Xcdfgee"
-        assert model.get("description") == "text_test1"
-        assert model.get("open_posts") == 12
-        assert model.get("phase") == "search"
-        assert model.get("default_poll_description") == "text_test2"
-        assert model.get("number_poll_candidates") is True
+        self.assert_model_exists(
+            "assignment/111",
+            {
+                "title": "title_Xcdfgee",
+                "attachment_ids": [11],
+                "description": "text_test1",
+                "open_posts": 12,
+                "phase": "search",
+                "default_poll_description": "text_test2",
+                "number_poll_candidates": True,
+            },
+        )
 
     def test_update_wrong_id(self) -> None:
         self.create_model("assignment/111", {"title": "title_srtgb123"})

@@ -17,6 +17,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..agenda_item.agenda_creation import agenda_creation_properties
+from ..meeting_mediafile.attachment_mixin import AttachmentMixin
 from .create_base import MotionCreateBase
 from .mixins import AmendmentParagraphHelper, TextHashMixin
 from .payload_validation_mixin import MotionCreatePayloadValidationMixin
@@ -28,6 +29,7 @@ class MotionCreate(
     MotionCreatePayloadValidationMixin,
     DelegationBasedRestrictionMixin,
     TextHashMixin,
+    AttachmentMixin,
     MotionCreateBase,
 ):
     """
@@ -131,6 +133,7 @@ class MotionCreate(
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         self.set_text_hash(instance)
+        instance = super().update_instance(instance)
         return instance
 
     def check_permissions(self, instance: dict[str, Any]) -> None:

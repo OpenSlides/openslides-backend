@@ -69,7 +69,29 @@ class TopicCreateSystemTest(BaseActionTestCase):
     def test_create_more_fields(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+                "meeting/1": {
+                    "name": "test",
+                    "is_active_in_organization_id": 1,
+                    "meeting_mediafile_ids": [11, 14],
+                    "group_ids": [2],
+                    "admin_group_id": 2,
+                },
+                "group/2": {"meeting_id": 1, "admin_group_for_meeting_id": 1},
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                    "meeting_mediafile_ids": [11],
+                },
+                "meeting_mediafile/11": {"mediafile_id": 1, "meeting_id": 1},
+                "mediafile/2": {"owner_id": "meeting/1", "child_ids": [3]},
+                "mediafile/3": {
+                    "parent_id": 2,
+                    "owner_id": "meeting/1",
+                },
+                "mediafile/4": {
+                    "owner_id": "meeting/1",
+                    "meeting_mediafile_ids": [14],
+                },
+                "meeting_mediafile/14": {"mediafile_id": 4, "meeting_id": 1},
                 "tag/37": {"meeting_id": 1},
             }
         )
@@ -81,21 +103,41 @@ class TopicCreateSystemTest(BaseActionTestCase):
                 "agenda_type": AgendaItem.INTERNAL_ITEM,
                 "agenda_duration": 60,
                 "agenda_tag_ids": [37],
+                "attachment_ids": [1, 3, 4],
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("topic/1")
-        topic = self.get_model("topic/1")
-        self.assertEqual(topic.get("meeting_id"), 1)
-        self.assertEqual(topic.get("agenda_item_id"), 1)
-        self.assertTrue(topic.get("agenda_type") is None)
-        agenda_item = self.get_model("agenda_item/1")
-        self.assertEqual(agenda_item.get("meeting_id"), 1)
-        self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
-        self.assertEqual(agenda_item["type"], AgendaItem.INTERNAL_ITEM)
-        self.assertEqual(agenda_item["duration"], 60)
-        self.assertEqual(agenda_item["weight"], 1)
-        self.assertEqual(agenda_item["tag_ids"], [37])
+        self.assert_model_exists(
+            "topic/1",
+            {
+                "meeting_id": 1,
+                "agenda_item_id": 1,
+                "agenda_type": None,
+                "attachment_ids": [11, 15, 14],
+            },
+        )
+        self.assert_model_exists(
+            "meeting_mediafile/15",
+            {
+                "meeting_id": 1,
+                "mediafile_id": 3,
+                "attachment_ids": ["topic/1"],
+                "inherited_access_group_ids": [2],
+                "access_group_ids": None,
+                "is_public": False,
+            },
+        )
+        self.assert_model_exists(
+            "agenda_item/1",
+            {
+                "meeting_id": 1,
+                "content_object_id": "topic/1",
+                "type": AgendaItem.INTERNAL_ITEM,
+                "duration": 60,
+                "weight": 1,
+                "tag_ids": [37],
+            },
+        )
         self.assert_model_exists(
             "tag/37", {"meeting_id": 1, "tagged_ids": ["agenda_item/1"]}
         )
