@@ -68,6 +68,7 @@ Updates a user.
 * Remove starting and trailing spaces from `username`, `first_name` and `last_name`
 * The given `gender` must be present in `organization/genders`
 * The `member_number` must be unique within all users.
+* Will throw an error if the `group_ids` contain the meetings `anonymous_group_id`.
 * The action checks, whether at the end the field `locked_out` will be set together with any of `user.can_manage` or any admin statuses on the updated user and throws an error if that is the case.
 
 Note: `is_present_in_meeting_ids` is not available in update, since there is no possibility to partially update this field. This can be done via [user.set_present](user.set_present.md).

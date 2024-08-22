@@ -204,7 +204,7 @@ class Gender(Model):
     verbose_name = "gender"
 
     id = fields.IntegerField(constant=True)
-    name = fields.CharField(required=True)
+    name = fields.CharField(required=True, constraints={"description": "unique"})
     organization_id = fields.OrganizationField(
         to={"organization": "gender_ids"}, required=True
     )

@@ -545,16 +545,10 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         self.json_upload_multiple_users()
         response = self.request("participant.import", {"id": 1, "import": True})
         self.assert_status_code(response, 200)
-        group = self.assert_model_exists("group/8")
-        if group["name"] == "unknown":
-            self.assert_model_exists("group/9", {"name": "group4"})
-            unknown_id = 8
-            group4_id = 9
-        else:
-            assert group["name"] == "group4"
-            self.assert_model_exists("group/9", {"name": "unknown"})
-            unknown_id = 9
-            group4_id = 8
+        created_groups = {
+            self.assert_model_exists(f"group/{id_}")["name"]: id_ for id_ in [9, 10, 11]
+        }
+        assert sorted(list(created_groups.keys())) == ["Anonymous", "group4", "unknown"]
         self.assert_model_exists(
             "user/2",
             {
@@ -582,7 +576,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "meeting_user/38",
             {
                 "user_id": 2,
-                "group_ids": [3, group4_id],
+                "group_ids": [3, created_groups["group4"]],
                 "meeting_id": 1,
                 "structure_level_ids": [level_up["id"]],
             },
@@ -628,7 +622,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "meeting_user/39",
             {
                 "user_id": 4,
-                "group_ids": [group4_id],
+                "group_ids": [created_groups["group4"]],
                 "meeting_id": 1,
                 "vote_weight": None,
             },
@@ -671,7 +665,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "meeting_user/36",
             {
                 "user_id": 6,
-                "group_ids": [group4_id],
+                "group_ids": [created_groups["group4"]],
                 "meeting_id": 1,
             },
         )
@@ -692,7 +686,13 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "meeting_user/37",
             {
                 "user_id": 7,
-                "group_ids": [2, group4_id, unknown_id, 7],
+                "group_ids": [
+                    2,
+                    created_groups["group4"],
+                    created_groups["Anonymous"],
+                    created_groups["unknown"],
+                    7,
+                ],
                 "meeting_id": 1,
             },
         )
@@ -701,13 +701,10 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         self.json_upload_multiple_users()
         self.request("structure_level.create", {"meeting_id": 1, "name": "no. 5"})
         response = self.request("participant.import", {"id": 1, "import": True})
-        group = self.assert_model_exists("group/8")
-        if group["name"] == "unknown":
-            self.assert_model_exists("group/9", {"name": "group4"})
-            group4_id = 9
-        else:
-            assert group["name"] == "group4"
-            group4_id = 8
+        created_groups = {
+            self.assert_model_exists(f"group/{id_}")["name"]: id_ for id_ in [9, 10, 11]
+        }
+        assert sorted(list(created_groups.keys())) == ["Anonymous", "group4", "unknown"]
         self.assert_status_code(response, 200)
         assert (result := response.json["results"][0][0])["state"] == ImportState.DONE
         row = result["rows"][0]
@@ -722,7 +719,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "default_password": {"info": ImportState.WARNING, "value": ""},
             "groups": [
                 {"id": 3, "info": "done", "value": "group3"},
-                {"id": group4_id, "info": "new", "value": "group4"},
+                {"id": created_groups["group4"], "info": "new", "value": "group4"},
             ],
             "structure_level": [{"info": "new", "value": "level up", "id": 2}],
             "gender_id": 3,
@@ -751,7 +748,9 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "username": {"id": 4, "info": ImportState.DONE, "value": "user4"},
             "last_name": {"value": "Luther King", "info": ImportState.DONE},
             "first_name": {"value": "Martin", "info": ImportState.DONE},
-            "groups": [{"id": group4_id, "info": "new", "value": "group4"}],
+            "groups": [
+                {"id": created_groups["group4"], "info": "new", "value": "group4"}
+            ],
         }
 
         row = result["rows"][3]
@@ -784,7 +783,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
             "default_password": {"info": ImportState.WARNING, "value": ""},
             "is_present": {"info": "done", "value": True},
             "groups": [
-                {"id": group4_id, "info": "new", "value": "group4"},
+                {"id": created_groups["group4"], "info": "new", "value": "group4"},
             ],
         }
 
@@ -915,6 +914,7 @@ class ParticipantJsonImportWithIncludedJsonUpload(ParticipantJsonUploadForUseInI
         assert row["data"]["groups"] == [
             {"id": 2, "info": "warning", "value": "group2"},
             {"info": "new", "value": "group4"},
+            {"info": "new", "value": "Anonymous"},
             {"info": "new", "value": "unknown"},
             {"id": 7, "info": "warning", "value": "group7M1"},
         ]

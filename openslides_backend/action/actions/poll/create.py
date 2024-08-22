@@ -7,6 +7,7 @@ from ....shared.exceptions import ActionException
 from ....shared.patterns import collection_from_fqid, fqid_from_collection_and_id
 from ....shared.schema import decimal_schema, id_list_schema, optional_fqid_schema
 from ...generics.create import CreateAction
+from ...mixins.forbid_anonymous_group_mixin import ForbidAnonymousGroupMixin
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -31,7 +32,11 @@ options_schema = {
 
 @register_action("poll.create")
 class PollCreateAction(
-    SequentialNumbersMixin, CreateAction, PollPermissionMixin, PollHistoryMixin
+    SequentialNumbersMixin,
+    CreateAction,
+    PollPermissionMixin,
+    PollHistoryMixin,
+    ForbidAnonymousGroupMixin,
 ):
     """
     Action to create a poll.
@@ -201,6 +206,7 @@ class PollCreateAction(
 
         instance.pop("options", None)
         instance.pop("publish_immediately", None)
+        self.check_anonymous_not_in_list_fields(instance, ["entitled_group_ids"])
         return instance
 
     def parse_vote_value(self, data: dict[str, Any], field: str) -> Any:
