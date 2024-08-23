@@ -1,19 +1,23 @@
+import os
 from collections.abc import Iterable
 from typing import Any, Literal, cast
 
+import pytest
 from openslides_backend.action.actions.speaker.speech_state import SpeechState
-from openslides_backend.action.relations.relation_manager import RelationManager
+from openslides_backend.action.relations.relation_manager import \
+    RelationManager
 from openslides_backend.action.util.actions_map import actions_map
-from openslides_backend.permissions.management_levels import OrganizationManagementLevel
-from openslides_backend.shared.patterns import (
-    CollectionField,
-    fqid_from_collection_and_id,
-)
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+from openslides_backend.permissions.management_levels import \
+    OrganizationManagementLevel
+from openslides_backend.shared.patterns import (CollectionField,
+                                                fqid_from_collection_and_id)
+from openslides_backend.shared.util import (ONE_ORGANIZATION_FQID,
+                                            ONE_ORGANIZATION_ID)
+from tests.system.action.base import BaseActionTestCase
 from tests.system.action.poll.test_vote import BaseVoteTestCase
 
 
-class UserMergeTogether(BaseVoteTestCase):
+class UserMergeTogether(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         models = {
@@ -1121,6 +1125,9 @@ class UserMergeTogether(BaseVoteTestCase):
             },
         )
 
+    @pytest.mark.skipif(
+        not isinstance("UserMergeTogether", BaseVoteTestCase), reason="set base class to BaseVoteTestCase, if auth isn't mocked for polls anymore. Subsequently remove the skipifs."
+    )
     def test_merge_with_polls_correct(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
         self.create_polls_with_correct_votes()
@@ -1128,6 +1135,9 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 200)
         self.assert_merge_with_polls_correct(password)
 
+    @pytest.mark.skipif(
+        not isinstance("UserMergeTogether", BaseVoteTestCase), reason="set base class to BaseVoteTestCase, if auth isn't mocked for polls anymore. Subsequently remove the skipifs."
+    )
     def test_merge_with_polls_and_subsequent_merges(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
         self.create_polls_with_correct_votes()
@@ -1137,6 +1147,9 @@ class UserMergeTogether(BaseVoteTestCase):
         self.assert_status_code(response, 200)
         self.assert_merge_with_polls_correct(password, 1)
 
+    @pytest.mark.skipif(
+        not isinstance("UserMergeTogether", BaseVoteTestCase), reason="set base class to BaseVoteTestCase, if auth isn't mocked for polls anymore. Subsequently remove the skipifs."
+    )
     def test_merge_with_polls_all_errors(self) -> None:
         self.set_up_polls_for_merge()
         self.request_multi("poll.start", [{"id": i} for i in range(1, 7)])
@@ -2370,6 +2383,9 @@ class UserMergeTogether(BaseVoteTestCase):
         self.archive_all_meetings()
         self.test_merge_normal()
 
+    @pytest.mark.skipif(
+        not isinstance("UserMergeTogether", BaseVoteTestCase), reason="set base class to BaseVoteTestCase, if auth isn't mocked for polls anymore. Subsequently remove the skipifs."
+    )
     def test_merge_archived_polls(self) -> None:
         password = self.assert_model_exists("user/2")["password"]
         self.create_polls_with_correct_votes()
