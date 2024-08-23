@@ -25,7 +25,7 @@ def data():
 def test_initial_migration_index(json_client, data, db_cur):
     create_model(json_client, data)
 
-    db_cur.execute("select migration_index from positions where position=%s", [1])
+    db_cur.execute("SELECT migration_index FROM positions WHERE position=%s", [1])
     migration_index = db_cur.fetchone()["migration_index"]
     assert migration_index == -1
 
@@ -34,7 +34,7 @@ def test_use_current_migration_index(json_client, data, db_connection, db_cur):
     create_model(json_client, data)
 
     # change the migration index and reset the read DB
-    db_cur.execute("update positions set migration_index=3 where position=1", [])
+    db_cur.execute("UPDATE positions SET migration_index=3 WHERE position=1", [])
     db_connection.commit()
 
     data["events"][0] = {"type": "update", "fqid": "a/1", "fields": {"f": 2}}
@@ -42,7 +42,7 @@ def test_use_current_migration_index(json_client, data, db_connection, db_cur):
     assert_response_code(response, 201)
     assert_model("a/1", {"f": 2}, 2)
 
-    db_cur.execute("select migration_index from positions where position=%s", [2])
+    db_cur.execute("SELECT migration_index FROM positions WHERE position=%s", [2])
     migration_index = db_cur.fetchone()["migration_index"]
     assert migration_index == 3
 
@@ -57,7 +57,7 @@ def test_varying_migration_indices(json_client, data, db_connection, db_cur):
     assert_model("a/1", {"f": 2}, 2)
 
     # modify the migration index of the second position and reset the read db
-    db_cur.execute("update positions set migration_index=3 where position=2", [])
+    db_cur.execute("UPDATE positions SET migration_index=3 WHERE position=2", [])
     db_connection.commit()
 
     data["events"][0] = {"type": "update", "fqid": "a/1", "fields": {"f": 3}}
@@ -70,7 +70,7 @@ def test_send_migration_index(json_client, data, db_cur):
     data["migration_index"] = 3
     create_model(json_client, data)
 
-    db_cur.execute("select migration_index from positions where position=%s", [1])
+    db_cur.execute("SELECT migration_index FROM positions WHERE position=%s", [1])
     migration_index = db_cur.fetchone()["migration_index"]
     assert migration_index == 3
 
@@ -87,6 +87,6 @@ def test_send_migration_index_not_empty(json_client, data, db_cur):
         == response.json["error"]["msg"]
     )
 
-    db_cur.execute("select migration_index from positions where position=%s", [1])
+    db_cur.execute("SELECT migration_index FROM positions WHERE position=%s", [1])
     migration_index = db_cur.fetchone()["migration_index"]
     assert migration_index == -1

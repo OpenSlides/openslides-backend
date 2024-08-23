@@ -35,7 +35,7 @@ def test_create_simple(json_client, data):
 
 def test_increased_id_sequence(json_client, data, db_cur):
     create_model(json_client, data)
-    db_cur.execute("select id from id_sequences where collection = %s", ["a"])
+    db_cur.execute("SELECT id FROM id_sequences WHERE collection = %s", ["a"])
     assert db_cur.fetchone()["id"] == 2
 
 
@@ -44,7 +44,7 @@ def test_create_double_increased_id_sequence(json_client, data, db_cur):
     data["events"][0]["fqid"] = "a/3"
     response = json_client.post(WRITE_URL, data)
     assert_response_code(response, 201)
-    db_cur.execute("select id from id_sequences where collection = %s", ["a"])
+    db_cur.execute("SELECT id FROM id_sequences WHERE collection = %s", ["a"])
     assert db_cur.fetchone()["id"] == 4
 
 
@@ -73,6 +73,6 @@ def test_create_no_meta_fields_in_db(json_client, data, connection_handler):
     create_model(json_client, data)
     with connection_handler.get_connection_context():
         event_data = connection_handler.query_single_value(
-            "select data from events where id=1", []
+            "SELECT data FROM events WHERE id=1", []
         )
         assert event_data == {"f": 1}

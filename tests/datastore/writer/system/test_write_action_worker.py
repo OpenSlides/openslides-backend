@@ -39,7 +39,7 @@ def test_create_update_action_worker(json_client, data, db_cur):
     response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 201)
 
-    db_cur.execute("select fqid, data from models where fqid = 'action_worker/1'")
+    db_cur.execute("SELECT fqid, data FROM models WHERE fqid = 'action_worker/1'")
     fqid, result = db_cur.fetchone().values()
     assert fqid == "action_worker/1"
     assert result["name"] == "motion.create"
@@ -53,7 +53,7 @@ def test_create_update_action_worker(json_client, data, db_cur):
     }
     response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 201)
-    db_cur.execute("select fqid, data from models where fqid = 'action_worker/1'")
+    db_cur.execute("SELECT fqid, data FROM models WHERE fqid = 'action_worker/1'")
     fqid, result = db_cur.fetchone().values()
     assert fqid == "action_worker/1"
     assert result["name"] == "motion.create"
@@ -66,7 +66,7 @@ def test_create_update_action_worker(json_client, data, db_cur):
     }
     response = json_client.post(WRITE_WITHOUT_EVENTS_URL, data)
     assert_response_code(response, 201)
-    db_cur.execute("select fqid, data from models where fqid = 'action_worker/1'")
+    db_cur.execute("SELECT fqid, data FROM models WHERE fqid = 'action_worker/1'")
     fqid, result = db_cur.fetchone().values()
     assert fqid == "action_worker/1"
     assert result["name"] == "motion.create"

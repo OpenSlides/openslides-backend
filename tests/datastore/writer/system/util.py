@@ -28,7 +28,7 @@ def assert_model(fqid, model, position):
         built_model = read_db.build_model_ignore_deleted(fqid)
         assert built_model == model
         event_type = connection_handler.query_single_value(
-            "select type from events where fqid=%s order by position desc, weight desc limit 1",
+            "SELECT type FROM events WHERE fqid=%s ORDER BY position DESC, weight DESC LIMIT 1",
             [fqid],
         )
         assert (
@@ -49,7 +49,7 @@ def assert_no_model(fqid):
 
         # assert last event is a deleted one
         event_type = connection_handler.query_single_value(
-            "select type from events where fqid=%s order by position desc, weight desc limit 1",
+            "SELECT type FROM events WHERE fqid=%s ORDER BY position DESC, weight DESC LIMIT 1",
             [fqid],
         )
         assert event_type in (EVENT_TYPE.DELETE, None)
@@ -57,5 +57,5 @@ def assert_no_model(fqid):
 
 def assert_no_db_entry(db_cur):
     for table in ALL_TABLES:
-        db_cur.execute(f"select count(*) from {table}")
+        db_cur.execute(f"SELECT COUNT(*) FROM {table}")
         assert db_cur.fetchone()["count"] == 0
