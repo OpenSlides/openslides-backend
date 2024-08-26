@@ -2138,7 +2138,7 @@ class Mediafile(Model):
     pdf_information = fields.JSONField()
     create_timestamp = fields.TimestampField()
     token = fields.CharField()
-    is_published_to_meetings = fields.BooleanField(constraints={"restiction_mode": "A"})
+    is_published_to_meetings = fields.BooleanField()
     published_to_meetings_in_organization_id = fields.RelationField(
         to={"organization": "published_mediafile_ids"}
     )
