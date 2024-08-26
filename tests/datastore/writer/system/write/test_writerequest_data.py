@@ -16,10 +16,10 @@ def test_user_id_and_information(json_client, db_cur):
     )
     assert_response_code(response, 201)
 
-    db_cur.execute("select user_id, information from positions where position=%s", [1])
+    db_cur.execute("SELECT user_id, information FROM positions WHERE position=%s", [1])
     row = db_cur.fetchone()
-    assert row[0] == 42
-    assert row[1] == {"k": "v"}
+    assert row["user_id"] == 42
+    assert row["information"] == {"k": "v"}
 
 
 def test_timestamp(json_client, db_cur):
@@ -36,8 +36,8 @@ def test_timestamp(json_client, db_cur):
     end = datetime.now().timestamp()
     assert_response_code(response, 201)
 
-    db_cur.execute("select timestamp from positions where position=%s", [1])
-    timestamp = db_cur.fetchone()[0].timestamp()
+    db_cur.execute("SELECT timestamp FROM positions WHERE position=%s", [1])
+    timestamp = db_cur.fetchone()["timestamp"].timestamp()
     assert timestamp > start
     assert timestamp < end
 
@@ -64,6 +64,6 @@ def test_empty_information(json_client, db_cur):
         )
         assert_response_code(response, 201)
 
-    db_cur.execute("select information from positions")
+    db_cur.execute("SELECT information FROM positions")
     for result in db_cur.fetchall():
-        assert result[0] is None
+        assert result["information"] is None

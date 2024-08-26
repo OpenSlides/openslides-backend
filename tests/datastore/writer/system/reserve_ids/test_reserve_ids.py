@@ -15,7 +15,7 @@ def test_simple(json_client, db_cur):
     assert response.json == {"ids": [1]}
     db_cur.execute("select * from id_sequences")
     result = db_cur.fetchall()
-    assert result == [("test_collection", 2)]
+    assert result == [{"collection": "test_collection", "id": 2}]
 
 
 def test_multiple(json_client, db_cur):
@@ -27,7 +27,7 @@ def test_multiple(json_client, db_cur):
     assert response.json == {"ids": [1, 2, 3]}
     db_cur.execute("select * from id_sequences")
     result = db_cur.fetchall()
-    assert result == [("test_collection", 4)]
+    assert result == [{"collection": "test_collection", "id": 4}]
 
 
 def test_successive(json_client, db_cur):
@@ -44,12 +44,12 @@ def test_successive(json_client, db_cur):
     assert response.json == {"ids": [4, 5, 6, 7]}
     db_cur.execute("select * from id_sequences")
     result = db_cur.fetchall()
-    assert result == [("test_collection", 8)]
+    assert result == [{"collection": "test_collection", "id": 8}]
 
 
 def assert_no_db_entry(db_cur):
     db_cur.execute("select count(*) from id_sequences")
-    assert db_cur.fetchone()[0] == 0
+    assert db_cur.fetchone()["count"] == 0
 
 
 def test_wrong_format(json_client, db_cur):

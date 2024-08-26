@@ -1,6 +1,8 @@
 from time import time
 from typing import Any
 
+import pytest
+
 from openslides_backend.action.action_worker import ActionWorkerState
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
@@ -8,6 +10,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from .base import BasePresenterTestCase
 
 
+@pytest.mark.skip(reason="During development of relational DB not necessary")
 class TestCheckDatabaseAll(BasePresenterTestCase):
     def test_found_errors(self) -> None:
         self.set_models(

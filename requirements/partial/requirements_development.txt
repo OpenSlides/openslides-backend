@@ -20,3 +20,6 @@ types-PyYAML==6.0.12.20240808
 types-requests==2.32.0.20240712
 types-simplejson==3.19.0.20240801
 types-Pygments==2.18.0.20240506
+
+# analyze pstats from Profiler
+snakeviz==2.2.0

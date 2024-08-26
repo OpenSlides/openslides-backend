@@ -85,10 +85,8 @@ create-database:
 
 apply-db-schema:
 	make -C global/meta/dev apply-db-schema
-	python cli/create_schema.py
 
 create-database-with-schema:
-	make -C global/meta/dev create-database-with-schema
 	python cli/create_schema.py
 
 run-psql:
