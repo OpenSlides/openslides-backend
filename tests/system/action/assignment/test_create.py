@@ -1,4 +1,5 @@
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -158,6 +159,40 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "agenda_item/1", {"meeting_id": 110, "content_object_id": "assignment/1"}
+        )
+
+    def test_create_non_published_orga_attachments(self) -> None:
+        self.set_models(
+            {
+                "meeting/110": {
+                    "name": "name_zvfbAjpZ",
+                    "agenda_item_creation": "default_yes",
+                    "is_active_in_organization_id": 1,
+                    "admin_group_id": 1,
+                },
+                "mediafile/1": {
+                    "owner_id": ONE_ORGANIZATION_FQID,
+                },
+                "group/1": {"admin_group_for_meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "assignment.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 110,
+                "description": "text_test1",
+                "open_posts": 12,
+                "phase": "search",
+                "default_poll_description": "text_test2",
+                "number_poll_candidates": True,
+                "attachment_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Mediafile is neither a meeting mediafile nor published.",
+            response.json["message"],
         )
 
     def test_create_empty_data(self) -> None:

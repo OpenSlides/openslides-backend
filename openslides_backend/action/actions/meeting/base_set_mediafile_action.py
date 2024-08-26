@@ -2,7 +2,7 @@ from typing import Any, cast
 
 from ....models.models import Meeting
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException, BadCodingException
+from ....shared.exceptions import ActionException
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
@@ -62,12 +62,7 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
             create_result = self.execute_other_action(
                 MeetingMediafileCreate, [mm_id_or_payload]
             )
-            if create_result is None:
-                raise BadCodingException(
-                    "Expected MeetingMediafileCreate to return an id"
-                )
-            else:
-                meeting_mediafile_id = cast(dict[str, Any], create_result[0])["id"]
+            meeting_mediafile_id = cast(list[dict[str, Any]], create_result)[0]["id"]
         if mediafile.get("is_directory"):
             raise ActionException("Cannot set a directory.")
         if mediafile.get("mimetype") not in self.allowed_mimetypes:
