@@ -66,10 +66,13 @@ class GetMediafileContext(BasePresenter):
                 "published": mediafile.get("published_to_meetings_in_organization_id")
                 == 1,
             }
+            amount_and_meeting_data = self.get_children_amount_and_meeting_data(
+                mediafile
+            )
             (
                 mediafile_data["children_amount"],
                 mediafile_data["meetings_of_interest"],
-            ) = self.get_children_amount_and_meeting_data(mediafile)
+            ) = amount_and_meeting_data
         return result
 
     def check_permissions(self, owner_ids: set[str]) -> None:
@@ -135,6 +138,7 @@ class GetMediafileContext(BasePresenter):
                     "projection",
                     list(projection_ids),
                     [
+                        "meeting_id",
                         "current_projector_id",
                         "history_projector_id",
                         "preview_projector_id",
@@ -157,18 +161,17 @@ class GetMediafileContext(BasePresenter):
             meeting_id = meeting_mediafile["meeting_id"]
             contains_attachment = len(meeting_mediafile.get("attachment_ids", [])) > 0
             contains_logo = any(
-                len(meeting_mediafile.get(field, [])) > 0 for field in self.logo_fields
+                meeting_mediafile.get(field, 0) > 0 for field in self.logo_fields
             )
             contains_font = any(
-                len(meeting_mediafile.get(field, [])) > 0 for field in self.font_fields
+                meeting_mediafile.get(field, 0) > 0 for field in self.font_fields
             )
             contains_projection = {
                 place: any(
-                    data.get("projection", {})
-                    .get(projection_id, {})
-                    .get(place + "_projector_id")
-                    is not None
+                    projection["meeting_id"] == meeting_id
+                    and projection.get(place + "_projector_id") is not None
                     for projection_id in projection_ids
+                    if (projection := data.get("projection", {}).get(projection_id, {}))
                 )
                 for place in self.projection_places
             }
@@ -180,15 +183,15 @@ class GetMediafileContext(BasePresenter):
             ):
                 meeting_data[meeting_id] = {
                     "name": self.meeting_names[meeting_id],
-                    "contains_attachment": contains_attachment,
-                    "contains_logo": contains_logo,
-                    "contains_font": contains_font,
+                    "holds_attachments": contains_attachment,
+                    "holds_logos": contains_logo,
+                    "holds_fonts": contains_font,
                     **{
                         "holds_" + place + "_projections": contains_projection[place]
                         for place in self.projection_places
                     },
                 }
-        if meeting_mediafiles := data.get("meeting_mediafiles", {}):
+        if meeting_mediafiles := data.get("meeting_mediafile", {}):
             pass  # TODO: What here
         if children := data.get("mediafile", {}):
             for i, child in enumerate(children.values()):
@@ -219,9 +222,9 @@ class GetMediafileContext(BasePresenter):
                 merge_into[id_] = date
             else:
                 for field in [
-                    "contains_attachment",
-                    "contains_logo",
-                    "contains_font",
+                    "holds_attachments",
+                    "holds_logos",
+                    "holds_fonts",
                     *[
                         "holds_" + place + "_projections"
                         for place in self.projection_places

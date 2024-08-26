@@ -572,6 +572,13 @@ class Checker:
                 assert parent
                 parent_is_public = parent["is_public"]
                 parent_inherited_access_group_ids = parent["inherited_access_group_ids"]
+            else:
+                # If the parent has no meeting_mediafiles, but the child does,
+                # that means that both are published and that the parent just
+                # doesn't have explicit meeting data. In this case the parent
+                # must be assumed to have inherited_access_group admin
+                parent_is_public = False
+                parent_inherited_access_group_ids = [meeting["admin_group_id"]]
         is_public, inherited_access_group_ids = calculate_inherited_groups_helper(
             access_group_ids, parent_is_public, parent_inherited_access_group_ids
         )
