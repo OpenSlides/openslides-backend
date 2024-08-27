@@ -6,18 +6,6 @@ from tests.system.action.base import BaseActionTestCase
 
 class UserBaseSamlAccount(BaseActionTestCase):
     def setUp(self) -> None:
-        self.results = {
-            "saml_id": "111222333",
-            "title": "Dr.",
-            "first_name": "Max",
-            "last_name": "Mustermann",
-            "email": "test@example.com",
-            "gender_id": 1,
-            "pronoun": "er",
-            "is_active": True,
-            "is_physical_person": True,
-        }
-
         super().setUp()
         self.set_models(
             {

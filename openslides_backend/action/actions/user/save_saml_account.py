@@ -84,7 +84,7 @@ class UserSaveSamlAccount(
                     ]
                 }
                 for model_field, payload_field in self.saml_attr_mapping.items()
-                # handle only allowed fields. handle gender seperatly since it needs conversion to id
+                # handle only allowed fields. handle gender separately since it needs conversion to id
                 if model_field in allowed_user_fields and model_field != "gender"
             },
             "required": [self.saml_attr_mapping["saml_id"]],

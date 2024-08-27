@@ -1,6 +1,9 @@
 ## Payload
 ```
-{id: Id;}
+{
+//Required
+    id: Id;
+}
 ```
 
 ## Action

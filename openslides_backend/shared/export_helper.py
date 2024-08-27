@@ -157,7 +157,6 @@ def add_users(
     )
 
     for user in users.values():
-        # convert to gender string
         gender_dict = datastore.get_all("gender", ["name"], lock_result=False)
         user["meeting_ids"] = [meeting_id]
         if meeting_id in (user.get("is_present_in_meeting_ids") or []):

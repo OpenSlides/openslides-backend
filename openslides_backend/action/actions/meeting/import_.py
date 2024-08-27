@@ -168,14 +168,12 @@ class MeetingImport(
             raise ActionException("Cannot import a locked meeting.")
 
     def stash_gender_relations(self, instance: dict[str, Any]) -> None:
+        # The Checker will not allow the gender to have or not to have an orga relation. So we need to circumvent it.
         self.user_id_to_gender = {}
         users = instance["meeting"].get("user", {})
         for user in users.values():
-            if gender := user.get("gender"):
-                del user["gender"]
+            if gender := user.pop("gender", None):
                 self.user_id_to_gender[user["id"]] = gender
-            elif gender == "":
-                del user["gender"]
 
     def remove_not_allowed_fields(self, instance: dict[str, Any]) -> None:
         json_data = instance["meeting"]
@@ -336,6 +334,7 @@ class MeetingImport(
                         GenderCreate, [{"name": gender}]
                     )
                     gender_id = action_result[0].get("id", 0)  # type: ignore
+                    gender_dict[gender] = gender_id
                 self.execute_other_action(
                     UserUpdate,
                     [{"id": self.replace_map["user"][user_id], "gender_id": gender_id}],
